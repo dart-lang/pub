@@ -10,7 +10,7 @@ import 'package:scheduled_test/scheduled_server.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/descriptor.dart';
 
-import '../../pub/utils.dart';
+import '../lib/src/utils.dart';
 import 'descriptor/git.dart';
 import 'descriptor/tar.dart';
 import 'test_pub.dart';

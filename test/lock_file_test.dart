@@ -7,12 +7,12 @@ library lock_file_test;
 import 'package:unittest/unittest.dart';
 import 'package:yaml/yaml.dart';
 
-import '../../pub/lock_file.dart';
-import '../../pub/package.dart';
-import '../../pub/source.dart';
-import '../../pub/source_registry.dart';
-import '../../pub/utils.dart';
-import '../../pub/version.dart';
+import '../lib/src/lock_file.dart';
+import '../lib/src/package.dart';
+import '../lib/src/source.dart';
+import '../lib/src/source_registry.dart';
+import '../lib/src/utils.dart';
+import '../lib/src/version.dart';
 
 class MockSource extends Source {
   final String name = 'mock';

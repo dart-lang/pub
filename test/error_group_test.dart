@@ -8,8 +8,8 @@ import 'dart:async';
 
 import 'package:unittest/unittest.dart';
 
-import '../../pub/error_group.dart';
-import '../../pub/utils.dart';
+import '../lib/src/error_group.dart';
+import '../lib/src/utils.dart';
 
 ErrorGroup errorGroup;
 

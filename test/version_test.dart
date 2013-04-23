@@ -6,8 +6,8 @@ library version_test;
 
 import 'package:unittest/unittest.dart';
 import 'test_pub.dart';
-import '../../pub/utils.dart';
-import '../../pub/version.dart';
+import '../lib/src/utils.dart';
+import '../lib/src/version.dart';
 
 main() {
   initConfig();

@@ -10,7 +10,7 @@ import 'dart:json' as json;
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 
-import '../../../pub/io.dart';
+import '../../lib/src/io.dart';
 import '../test_pub.dart';
 
 void handleUploadForm(ScheduledServer server, [Map body]) {

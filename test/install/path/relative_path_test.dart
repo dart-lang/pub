@@ -4,7 +4,7 @@
 
 import 'package:pathos/path.dart' as path;
 
-import '../../../../pub/exit_codes.dart' as exit_codes;
+import '../../../lib/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 

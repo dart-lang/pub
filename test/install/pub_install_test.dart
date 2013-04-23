@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:pathos/path.dart' as path;
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../../pub/io.dart';
+import '../../lib/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 

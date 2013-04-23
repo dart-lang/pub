@@ -6,7 +6,7 @@ library lock_file_test;
 
 import 'package:unittest/unittest.dart';
 
-import '../../pub/directory_tree.dart';
+import '../lib/src/directory_tree.dart';
 
 main() {
   test('no files', () {

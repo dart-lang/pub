@@ -5,9 +5,9 @@
 import 'package:pathos/path.dart' as path;
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../../pub/entrypoint.dart';
-import '../../../pub/validator.dart';
-import '../../../pub/validator/directory.dart';
+import '../../lib/src/entrypoint.dart';
+import '../../lib/src/validator.dart';
+import '../../lib/src/validator/directory.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

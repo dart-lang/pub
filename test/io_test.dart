@@ -9,8 +9,8 @@ import 'dart:io';
 import 'package:pathos/path.dart' as path;
 import 'package:unittest/unittest.dart';
 
-import '../../pub/io.dart';
-import '../../pub/utils.dart';
+import '../lib/src/io.dart';
+import '../lib/src/utils.dart';
 import 'test_pub.dart';
 
 main() {

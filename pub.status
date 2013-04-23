@@ -2,8 +2,8 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-pub_uploader_test: Pass, Fail # Issue 9357
-oauth2/with_server_rejected_credentials_authenticates_again_test: Pass, Fail # Issue 9839.
+test/pub_uploader_test: Pass, Fail # Issue 9357
+test/oauth2/with_server_rejected_credentials_authenticates_again_test: Pass, Fail # Issue 9839.
 
 # Pub only runs on the VM, so just rule out all compilers.
 [ $compiler == dart2js || $compiler == dart2dart ]
@@ -14,5 +14,5 @@ oauth2/with_server_rejected_credentials_authenticates_again_test: Pass, Fail # I
 *: Skip
 
 [ $system == windows ]
-io_test: Fail # Issue 7505
-install/hosted/fail_gracefully_on_url_resolve_test: Pass, Fail # Issue 9503
+test/io_test: Fail # Issue 7505
+test/install/hosted/fail_gracefully_on_url_resolve_test: Pass, Fail # Issue 9503

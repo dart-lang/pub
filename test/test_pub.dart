@@ -24,20 +24,20 @@ import 'package:scheduled_test/scheduled_server.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:yaml/yaml.dart';
 
-import '../../pub/entrypoint.dart';
+import '../lib/src/entrypoint.dart';
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
 // with the git descriptor method. Maybe we should try to clean up the top level
 // scope a bit?
-import '../../pub/git.dart' as gitlib;
-import '../../pub/git_source.dart';
-import '../../pub/hosted_source.dart';
-import '../../pub/http.dart';
-import '../../pub/io.dart';
-import '../../pub/path_source.dart';
-import '../../pub/safe_http_server.dart';
-import '../../pub/system_cache.dart';
-import '../../pub/utils.dart';
-import '../../pub/validator.dart';
+import '../lib/src/git.dart' as gitlib;
+import '../lib/src/git_source.dart';
+import '../lib/src/hosted_source.dart';
+import '../lib/src/http.dart';
+import '../lib/src/io.dart';
+import '../lib/src/path_source.dart';
+import '../lib/src/safe_http_server.dart';
+import '../lib/src/system_cache.dart';
+import '../lib/src/utils.dart';
+import '../lib/src/validator.dart';
 import 'command_line_config.dart';
 import 'descriptor.dart' as d;
 
@@ -270,11 +270,11 @@ void _integration(String description, void body(), [Function testFn]) {
   });
 }
 
-/// Get the path to the root "util/test/pub" directory containing the pub
+/// Get the path to the root "pub/test" directory containing the pub
 /// tests.
 String get testDirectory {
   var dir = new Options().script;
-  while (path.basename(dir) != 'pub') dir = path.dirname(dir);
+  while (path.basename(dir) != 'test') dir = path.dirname(dir);
 
   return path.absolute(dir);
 }
@@ -368,7 +368,7 @@ ScheduledProcess startPub({List args, Future<Uri> tokenEndpoint}) {
   }
 
   // Find the main pub entrypoint.
-  var pubPath = path.join(testDirectory, '..', '..', 'pub', 'pub.dart');
+  var pubPath = path.join(testDirectory, '..', 'bin', 'pub.dart');
 
   var dartArgs = ['--package-root=$_packageRoot/', '--checked', pubPath,
       '--trace'];
@@ -395,14 +395,16 @@ ScheduledProcess startPub({List args, Future<Uri> tokenEndpoint}) {
 
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
-bool get _runningFromSdk => path.dirname(relativeToPub('..')) == 'util';
+bool get _runningFromSdk =>
+  fileExists(relativeToPub(path.join('..', '..', '..', '..', 'version')));
 
 // TODO(nweiz): use the built-in mechanism for accessing this once it exists
 // (issue 9119).
 /// The path to the `packages` directory from which pub loads its dependencies.
 String get _packageRoot {
   if (_runningFromSdk) {
-    return path.absolute(relativeToPub(path.join('..', '..', 'packages')));
+    return path.absolute(relativeToPub(
+        path.join('..', '..', '..', '..', 'packages')));
   } else {
     return path.absolute(path.join(
         path.dirname(new Options().executable), '..', '..', 'packages'));

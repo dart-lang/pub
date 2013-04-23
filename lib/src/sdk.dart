@@ -28,10 +28,8 @@ String get rootDirectory {
     return dir;
   }
 
-  var pubDir = path.dirname(new Options().script);
-  dir = path.normalize(path.join(pubDir, "../../"));
-  log.fine("Located SDK at $dir");
-  return dir;
+  throw new Exception('DART_SDK environment variable not set, unable to find '
+      'the SDK.');
 }
 
 /// Gets the SDK's revision number formatted to be a semantic version.

@@ -76,7 +76,7 @@ ArgParser get pubArgParser {
   return parser;
 }
 
-main() {
+void run() {
   var globalOptions;
   try {
     globalOptions = pubArgParser.parse(new Options().arguments);

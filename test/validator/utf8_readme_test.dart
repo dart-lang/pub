@@ -4,9 +4,9 @@
 
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../../pub/entrypoint.dart';
-import '../../../pub/validator.dart';
-import '../../../pub/validator/utf8_readme.dart';
+import '../../lib/src/entrypoint.dart';
+import '../../lib/src/validator.dart';
+import '../../lib/src/validator/utf8_readme.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

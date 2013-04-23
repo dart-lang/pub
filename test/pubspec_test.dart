@@ -6,11 +6,11 @@ library pubspec_test;
 
 import 'package:unittest/unittest.dart';
 
-import '../../pub/pubspec.dart';
-import '../../pub/source.dart';
-import '../../pub/source_registry.dart';
-import '../../pub/utils.dart';
-import '../../pub/version.dart';
+import '../lib/src/pubspec.dart';
+import '../lib/src/source.dart';
+import '../lib/src/source_registry.dart';
+import '../lib/src/utils.dart';
+import '../lib/src/version.dart';
 import 'test_pub.dart';
 
 class MockSource extends Source {

@@ -9,7 +9,7 @@ import 'dart:math' as math;
 
 import 'package:pathos/path.dart' as path;
 import 'package:unittest/unittest.dart';
-import '../../pub/utils.dart';
+import '../lib/src/utils.dart';
 
 /// Gets a "special" string (ANSI escape or Unicode). On Windows, returns
 /// something else since those aren't supported.

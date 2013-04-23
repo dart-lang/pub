@@ -9,16 +9,16 @@ import 'dart:io';
 
 import 'package:unittest/unittest.dart';
 
-import '../../pub/lock_file.dart';
-import '../../pub/package.dart';
-import '../../pub/pubspec.dart';
-import '../../pub/sdk.dart' as sdk;
-import '../../pub/source.dart';
-import '../../pub/source_registry.dart';
-import '../../pub/system_cache.dart';
-import '../../pub/utils.dart';
-import '../../pub/version.dart';
-import '../../pub/solver/version_solver.dart';
+import '../lib/src/lock_file.dart';
+import '../lib/src/package.dart';
+import '../lib/src/pubspec.dart';
+import '../lib/src/sdk.dart' as sdk;
+import '../lib/src/source.dart';
+import '../lib/src/source_registry.dart';
+import '../lib/src/system_cache.dart';
+import '../lib/src/utils.dart';
+import '../lib/src/version.dart';
+import '../lib/src/solver/version_solver.dart';
 import 'test_pub.dart';
 
 MockSource source1;

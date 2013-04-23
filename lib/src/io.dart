@@ -252,23 +252,22 @@ void createPackageSymlink(String name, String target, String symlink,
   }
 }
 
-/// Resolves [target] relative to the location of pub.dart.
+/// Resolves [target] relative to the root directory of pub.
 String relativeToPub(String target) {
   var scriptPath = new File(new Options().script).fullPathSync();
 
-  // Walk up until we hit the "util(s)" directory. This lets us figure out where
-  // we are if this function is called from pub.dart, or one of the tests,
-  // which also live under "utils", or from the SDK where pub is in "util".
-  var utilDir = path.dirname(scriptPath);
-  while (path.basename(utilDir) != 'utils' &&
-         path.basename(utilDir) != 'util') {
-    if (path.basename(utilDir) == '') {
+  // Walk up until we hit the "internal(s)" directory. This lets us figure out
+  // where we are if this function is called from pub.dart, one of the tests, or
+  // from the SDK.
+  var internalDir = path.dirname(scriptPath);
+  while (path.basename(internalDir) != '_internal') {
+    if (path.basename(internalDir) == '') {
       throw new Exception('Could not find path to pub.');
     }
-    utilDir = path.dirname(utilDir);
+    internalDir = path.dirname(internalDir);
   }
 
-  return path.normalize(path.join(utilDir, 'pub', target));
+  return path.normalize(path.join(internalDir, 'pub', target));
 }
 
 /// A line-by-line stream of standard input.
@@ -564,7 +563,7 @@ Future<bool> _extractTarGzWindows(Stream<List<int>> stream,
 
   // Note: This line of code gets munged by create_sdk.py to be the correct
   // relative path to 7zip in the SDK.
-  var pathTo7zip = '../../third_party/7zip/7za.exe';
+  var pathTo7zip = '../../../../third_party/7zip/7za.exe';
   var command = relativeToPub(pathTo7zip);
 
   return withTempDir((tempDir) {
@@ -652,7 +651,7 @@ ByteStream createTarGz(List contents, {baseDir}) {
 
     // Note: This line of code gets munged by create_sdk.py to be the correct
     // relative path to 7zip in the SDK.
-    var pathTo7zip = '../../third_party/7zip/7za.exe';
+    var pathTo7zip = '../../../../third_party/7zip/7za.exe';
     var command = relativeToPub(pathTo7zip);
 
     // We're passing 'baseDir' both as '-w' and setting it as the working
