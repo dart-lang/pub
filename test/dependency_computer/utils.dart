@@ -4,11 +4,12 @@
 
 library pub_tests;
 
+import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../lib/src/barback/cycle_exception.dart';
-import '../../lib/src/barback/transformers_needed_by_transformers.dart';
+import '../../lib/src/barback/dependency_computer.dart';
 import '../../lib/src/entrypoint.dart';
 import '../../lib/src/io.dart';
 import '../../lib/src/package.dart';
@@ -18,15 +19,16 @@ import '../../lib/src/system_cache.dart';
 import '../../lib/src/utils.dart';
 import '../test_pub.dart';
 
-/// Expects that [computeTransformersNeededByTransformers] will return a graph
-/// matching [expected] when run on the package graph defined by packages in
-/// the sandbox.
+/// Expects that [DependencyComputer.transformersNeededByTransformers] will
+/// return a graph matching [expected] when run on the package graph defined by
+/// packages in the sandbox.
 void expectDependencies(Map<String, Iterable<String>> expected) {
   expected = mapMap(expected, value: (_, ids) => ids.toSet());
 
   schedule(() {
+    var computer = new DependencyComputer(_loadPackageGraph());
     var result = mapMap(
-        computeTransformersNeededByTransformers(_loadPackageGraph()),
+        computer.transformersNeededByTransformers(),
         key: (id, _) => id.toString(),
         value: (_, ids) => ids.map((id) => id.toString()).toSet());
     expect(result, equals(expected));
@@ -38,8 +40,10 @@ void expectDependencies(Map<String, Iterable<String>> expected) {
 /// packages in the sandbox.
 void expectException(matcher) {
   schedule(() {
-    expect(() => computeTransformersNeededByTransformers(_loadPackageGraph()),
-        throwsA(matcher));
+    expect(() {
+      var computer = new DependencyComputer(_loadPackageGraph());
+      computer.transformersNeededByTransformers();
+    }, throwsA(matcher));
   }, "expect an exception: $matcher");
 }
 
@@ -52,6 +56,20 @@ void expectCycleException(Iterable<String> steps) {
     expect(error.steps, equals(steps));
     return true;
   }, "cycle exception:\n${steps.map((step) => "  $step").join("\n")}"));
+}
+
+/// Expects that [DependencyComputer.transformersNeededByLibrary] will return
+/// transformer ids matching [expected] when run on the library identified by
+/// [id].
+void expectLibraryDependencies(String id, Iterable<String> expected) {
+  expected = expected.toSet();
+
+  schedule(() {
+    var computer = new DependencyComputer(_loadPackageGraph());
+    var result = computer.transformersNeededByLibrary(new AssetId.parse(id))
+        .map((id) => id.toString()).toSet();
+    expect(result, equals(expected));
+  }, "expect dependencies to match $expected");
 }
 
 /// Loads a [PackageGraph] from the packages in the sandbox.
