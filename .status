@@ -2,6 +2,27 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+# Skip non-test files ending with "_test".
+packages/*: SkipByDesign
+*/packages/*: SkipByDesign
+*/*/packages/*: SkipByDesign
+*/*/*/packages/*: SkipByDesign
+*/*/*/*packages/*: SkipByDesign
+*/*/*/*/*packages/*: SkipByDesign
+
+# Only run tests from the test directory, since we don't care about the
+# difference between transformed an untransformed code.
+build/test/*: SkipByDesign
+build/test/*/*: SkipByDesign
+build/test/*/*/*: SkipByDesign
+build/test/*/*/*/*: SkipByDesign
+
+# Don't run library files as tests
+lib/*: SkipByDesign
+lib/*/*: SkipByDesign
+lib/*/*/*: SkipByDesign
+lib/*/*/*/*: SkipByDesign
+
 test/dart2js/compiles_generated_file_from_dependency_test: Pass, Slow
 test/serve/web_socket/url_to_asset_id_test: Pass, Slow
 test/transformer/loads_a_diamond_transformer_dependency_graph_test: Pass, Slow
