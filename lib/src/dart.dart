@@ -12,8 +12,8 @@ import 'dart:isolate';
 import 'package:analyzer/analyzer.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:compiler/compiler.dart' as compiler;
-import 'package:compiler/src/filenames.dart'
+import 'package:compiler_unsupported/compiler.dart' as compiler;
+import 'package:compiler_unsupported/src/filenames.dart'
     show appendSlash;
 
 import '../../asset/dart/serialize.dart';

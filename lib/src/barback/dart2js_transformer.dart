@@ -12,10 +12,10 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 import 'package:pool/pool.dart';
 
-import 'package:compiler/compiler.dart' as compiler;
-import 'package:compiler/src/dart2js.dart'
+import 'package:compiler_unsupported/compiler.dart' as compiler;
+import 'package:compiler_unsupported/src/dart2js.dart'
     show AbortLeg;
-import 'package:compiler/src/io/source_file.dart';
+import 'package:compiler_unsupported/src/io/source_file.dart';
 import '../barback.dart';
 import '../dart.dart' as dart;
 import '../utils.dart';
