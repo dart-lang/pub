@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -38,6 +39,7 @@ import '../lib/src/lock_file.dart';
 import '../lib/src/log.dart' as log;
 import '../lib/src/package.dart';
 import '../lib/src/pubspec.dart';
+import '../lib/src/sdk.dart' as sdk;
 import '../lib/src/source/hosted.dart';
 import '../lib/src/source/path.dart';
 import '../lib/src/source_registry.dart';
@@ -519,14 +521,9 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
     dartBin = p.absolute(dartBin);
   }
 
-  // Always run pub from a snapshot. Since we require the SDK to be built, the
-  // snapshot should be there. Note that this *does* mean that the snapshot has
-  // to be manually updated when changing code before running the tests.
-  // Otherwise, you will test against stale data.
-  //
-  // Using the snapshot makes running the tests much faster, which is why we
-  // make this trade-off.
-  var pubPath = p.join(p.dirname(dartBin), 'snapshots/pub.dart.snapshot');
+  // Always run pub from a snapshot. Using the snapshot makes running the tests
+  // much faster, especially when multiple tests are run at once.
+  var pubPath = p.absolute(p.join(pubRoot, '.pub/pub.test.snapshot'));
   var dartArgs = [pubPath, '--verbose'];
   dartArgs.addAll(args);
 
@@ -538,9 +535,65 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
     return pubEnvironment;
   });
 
+  _ensureSnapshot();
+
   return new PubProcess.start(dartBin, dartArgs, environment: environmentFuture,
       workingDirectory: _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
+}
+
+/// Ensure that a snapshot of the current pub source exists at
+/// ".pub/pub.snapshot".
+void _ensureSnapshot() {
+  ensureDir(p.join(pubRoot, '.pub'));
+
+  var version = sdk.version.toString();
+  var hash = _hashChanges();
+
+  var snapshotPath = p.join(pubRoot, '.pub', 'pub.test.snapshot');
+  var hashPath = p.join(pubRoot, '.pub', 'pub.hash');
+  var versionPath = p.join(pubRoot, '.pub', 'pub.version');
+  if (fileExists(hashPath) && fileExists(versionPath)) {
+    var oldHash = readTextFile(hashPath);
+    var oldVersion = readTextFile(versionPath);
+
+    if (oldHash == hash && oldVersion == version && fileExists(snapshotPath)) {
+      return;
+    }
+  }
+
+  var dartSnapshot = runProcessSync(Platform.executable, [
+    '--snapshot=$snapshotPath',
+    p.join(pubRoot, 'bin', 'pub.dart')
+  ]);
+  if (dartSnapshot.exitCode != 0) throw "Failed to run dart --snapshot.";
+
+  writeTextFile(hashPath, hash);
+  writeTextFile(versionPath, version);
+}
+
+/// Returns a hash that encapsulates the current state of the repo.
+String _hashChanges() {
+  var hash = new SHA1();
+
+  // Include the current Git commit.
+  hash.add(UTF8.encode(gitlib.runSync(['rev-parse', 'HEAD']).first));
+
+  // Include the changes in lib and bin relative to the current Git commit.
+  var tracked = gitlib.runSync(['diff-index', '--patch', 'HEAD', 'lib', 'bin']);
+  for (var line in tracked) {
+    hash.add(UTF8.encode("$line\n"));
+  }
+
+  // Include the full contents of non-ignored files in lib and bin that aren't
+  // tracked by Git.
+  var untracked = gitlib.runSync(
+      ['ls-files', '--others', '--exclude-standard', 'lib', 'bin']);
+  for (var path in untracked) {
+    hash.add(readBinaryFile(path));
+  }
+
+  return CryptoUtils.bytesToHex(hash.close());
 }
 
 /// A subclass of [ScheduledProcess] that parses pub's verbose logging output

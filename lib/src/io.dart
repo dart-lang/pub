@@ -477,7 +477,7 @@ void createPackageSymlink(String name, String target, String symlink,
 
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
-final bool runningFromSdk = Platform.script.path.endsWith('.snapshot');
+final bool runningFromSdk = Platform.script.path.endsWith('.dart.snapshot');
 
 /// Resolves [target] relative to the path to pub's `asset` directory.
 String assetPath(String target) {

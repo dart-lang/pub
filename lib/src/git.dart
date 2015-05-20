@@ -76,6 +76,18 @@ List<String> runSync(List<String> args, {String workingDir,
   return result.stdout;
 }
 
+/// Starts a git process and returns it.
+Future<PubProcess> start(List<String> args,
+    {String workingDir, Map<String, String> environment}) {
+  if (!isInstalled) {
+    fail("Cannot find a Git executable.\n"
+        "Please ensure Git is correctly installed.");
+  }
+
+  return startProcess(_gitCommand, args, workingDir: workingDir,
+      environment: environment);
+}
+
 /// Returns the name of the git command-line app, or null if Git could not be
 /// found on the user's PATH.
 String get _gitCommand {
