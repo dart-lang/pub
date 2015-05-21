@@ -373,11 +373,6 @@ void _integration(String description, void body(), [Function testFn]) {
   });
 }
 
-/// Get the path to the root "pub/test" directory containing the pub
-/// tests.
-String get testDirectory =>
-  p.absolute(p.dirname(libraryPath('test_pub')));
-
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
 /// are assumed to be relative to [sandboxDir].
 void scheduleRename(String from, String to) {
@@ -857,8 +852,7 @@ Map packageMap(String name, String version, [Map dependencies]) {
 }
 
 /// Resolves [target] relative to the path to pub's `test/asset` directory.
-String testAssetPath(String target) =>
-    p.join(p.dirname(libraryPath('test_pub')), 'asset', target);
+String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 
 /// Returns a Map in the format used by the pub.dartlang.org API to represent a
 /// package version.

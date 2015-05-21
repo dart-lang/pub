@@ -7,23 +7,28 @@ library pub.sdk;
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'io.dart';
 
-/// Gets the path to the root directory of the SDK.
+/// The path to the root directory of the SDK.
 ///
-/// When running from the actual built SDK, this will be the SDK that contains
-/// the running Dart executable. When running from the repo, it will be the
-/// "sdk" directory in the Dart repository itself.
-final String rootDirectory =
-    runningFromSdk ? _rootDirectory : path.join(repoRoot, "sdk");
+/// Note that if pub is running from source within the Dart repo (for example
+/// when building Observatory), this will be the repo's "sdk/" directory, which
+/// doesn't look exactly like the built SDK.
+final String rootDirectory = (() {
+  var dartSdk = Platform.environment["DART_SDK"];
+  if (dartSdk != null) return dartSdk;
 
-/// Gets the path to the root directory of the SDK, assuming that the currently
-/// running Dart executable is within it.
-final String _rootDirectory =
-    path.dirname(path.dirname(Platform.executable));
+  if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
+
+  // The Dart exectuable is in "/path/to/sdk/bin/dart", so two levels up is
+  // "/path/to/sdk".
+  var aboveExecutable = p.dirname(p.dirname(Platform.executable));
+  assert(fileExists(p.join(aboveExecutable, 'version')));
+  return aboveExecutable;
+})();
 
 /// The SDK's revision number formatted to be a semantic version.
 ///
@@ -39,15 +44,15 @@ Version _getVersion() {
   var sdkVersion = Platform.environment["_PUB_TEST_SDK_VERSION"];
   if (sdkVersion != null) return new Version.parse(sdkVersion);
 
-  if (runningFromSdk) {
+  if (!runningFromDartRepo) {
     // Read the "version" file.
-    var version = readTextFile(path.join(_rootDirectory, "version")).trim();
+    var version = readTextFile(p.join(rootDirectory, "version")).trim();
     return new Version.parse(version);
   }
 
-  // When running from the repo, read the canonical VERSION file in tools/.
+  // When running from the Dart repo, read the canonical VERSION file in tools/.
   // This makes it possible to run pub without having built the SDK first.
-  var contents = readTextFile(path.join(repoRoot, "tools/VERSION"));
+  var contents = readTextFile(p.join(dartRepoRoot, "tools/VERSION"));
 
   parseField(name) {
     var pattern = new RegExp("^$name ([a-z0-9]+)", multiLine: true);

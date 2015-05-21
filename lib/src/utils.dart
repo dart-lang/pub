@@ -9,16 +9,12 @@ import 'dart:async';
 import "dart:convert";
 import 'dart:io';
 
-// This is used by [libraryPath]. It must be kept up-to-date with all libraries
-// whose paths are looked up using that function.
-@MirrorsUsed(targets: const ['pub.io', 'test_pub'])
-import 'dart:mirrors';
-
 import "package:crypto/crypto.dart";
 import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
 
 import 'exceptions.dart';
+import 'io.dart';
 import 'log.dart' as log;
 
 export '../../asset/dart/utils.dart';
@@ -782,16 +778,6 @@ Future awaitObject(object) {
     }
     return map;
   });
-}
-
-/// Returns the path to the library named [libraryName].
-///
-/// The library name must be globally unique, or the wrong library path may be
-/// returned. Any libraries accessed must be added to the [MirrorsUsed]
-/// declaration in the import above.
-String libraryPath(String libraryName) {
-  var lib = currentMirrorSystem().findLibrary(new Symbol(libraryName));
-  return path.fromUri(lib.uri);
 }
 
 /// Whether "special" strings such as Unicode characters or color escapes are

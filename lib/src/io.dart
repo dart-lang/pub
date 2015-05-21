@@ -475,39 +475,81 @@ void createPackageSymlink(String name, String target, String symlink,
   createSymlink(target, symlink, relative: relative);
 }
 
+/// Whether the current process is one of pub's test files.
+///
+/// This works because an actual pub executable that imports this will always
+/// start with "pub".
+final bool runningAsTest =
+    !path.url.basename(Platform.script.path).startsWith('pub.');
+
+/// Whether the current process is a pub subprocess being run from a test.
+///
+/// This works because when running from tests, pub always uses a snapshot named
+/// "pub.test.snapshot", which is not used outside of tests.
+final bool runningFromTest = Platform.script.path.endsWith('.test.snapshot');
+
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
-final bool runningFromSdk = Platform.script.path.endsWith('.dart.snapshot');
+final bool runningFromSdk =
+    !runningFromTest && Platform.script.path.endsWith('.snapshot');
+
+/// Whether pub is running from source in the Dart repo.
+///
+/// This can happen when building Observatory, for example.
+final bool runningFromDartRepo =
+    Platform.script.path.endsWith('/third_party/pkg/pub/bin/pub.dart');
 
 /// Resolves [target] relative to the path to pub's `asset` directory.
-String assetPath(String target) {
-  if (runningFromSdk) {
-    return path.join(
-        sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', target);
-  } else {
-    return path.join(pubRoot, 'asset', target);
+String assetPath(String target) => runningFromSdk
+    ? sdkAssetPath(target)
+    : path.join(pubRoot, 'lib', 'src', 'asset', target);
+
+/// Resolves [target] relative to the Dart SDK's `asset` directory.
+///
+/// Throws a [StateError] if called from within the Dart repo.
+String sdkAssetPath(String target) {
+  if (runningFromDartRepo) {
+    throw new StateError("Can't get SDK assets from within the Dart repo.");
   }
+
+  return path.join(
+    sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', target);
 }
 
-/// Returns the path to the root of pub's sources in the Dart repo.
-String get pubRoot => path.join(repoRoot, 'sdk', 'lib', '_internal', 'pub');
-
-/// Returns the path to the root of the Dart repository.
+/// The path to the root of pub's sources in the pub repo.
 ///
 /// This throws a [StateError] if it's called when running pub from the SDK.
-String get repoRoot {
+final String pubRoot = (() {
   if (runningFromSdk) {
-    throw new StateError("Can't get the repo root from the SDK.");
+    throw new StateError("Can't get pub's root from the SDK.");
   }
 
-  // Get the path to the directory containing this very file.
-  var libDir = path.dirname(libraryPath('pub.io'));
+  var script = path.fromUri(Platform.script);
+  if (runningAsTest) {
+    // Running from "test/../some_test.dart".
+    var components = path.split(script);
+    var testIndex = components.indexOf("test");
+    if (testIndex == -1) throw new StateError("Can't find pub's root.");
+    return path.joinAll(components.take(testIndex));
+  }
 
-  // Assume we're running directly from the source location in the repo:
-  //
-  //      <repo>/sdk/lib/_internal/pub/lib/src
-  return path.normalize(path.join(libDir, '..', '..', '..', '..', '..', '..'));
-}
+  // Pub is either run from ".pub/pub.test.snapshot" or "bin/pub.dart".
+  return path.dirname(path.dirname(script));
+})();
+
+/// The path to the root of the Dart repo.
+///
+/// This throws a [StateError] if it's called when not running pub from source
+/// in the Dart repo.
+final String dartRepoRoot = (() {
+  if (!runningFromDartRepo) {
+    throw new StateError("Not running from source in the Dart repo.");
+  }
+
+  // In the Dart repo, the script is in "third_party/pkg/pub/bin".
+  return path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(
+      path.fromUri(Platform.script))))));
+})();
 
 /// A line-by-line stream of standard input.
 final Stream<String> stdinLines = streamToLines(
@@ -873,10 +915,10 @@ bool _computeNoUnknownKeyword() {
   return major >= 2 || (major == 1 && minor >= 23);
 }
 
-String get pathTo7zip {
-  if (runningFromSdk) return assetPath(path.join('7zip', '7za.exe'));
-  return path.join(repoRoot, 'third_party', '7zip', '7za.exe');
-}
+final String pathTo7zip = (() {
+  if (!runningFromDartRepo) return sdkAssetPath(path.join('7zip', '7za.exe'));
+  return path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe');
+})();
 
 Future<bool> _extractTarGzWindows(Stream<List<int>> stream,
     String destination) {
