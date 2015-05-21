@@ -4,6 +4,8 @@ name: pub
 version: 1.0.0-unreleased
 
 dependencies:
+  # Note: Pub's test infrastructure assumes that any dependencies used in tests
+  # will be hosted dependencies.
   analyzer: "^0.25.0"
   args: "^0.13.0"
   barback: "^0.15.2"
@@ -32,4 +34,3 @@ dev_dependencies:
   scheduled_test: "^0.11.8"
   source_maps: "^0.9.0"
   unittest: "^0.11.0"
-  

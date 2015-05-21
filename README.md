@@ -1,10 +1,12 @@
+Pub is the package manager for Dart.
+
 # Contibuting to pub
 
 Thanks for being interested in contributing to pub! Contributing to a new
 project can be hard: there's a lot of new code and practices to learn. This
 document is intended to get you up and running as quickly as possible. If you're
 looking for documentation on using pub, try
-[pub.dartlang.org](http://pub.dartlang.org/doc).
+[dartlang.org](https://www.dartlang.org/tools/pub/).
 
 The first step towards contributing is to contact the pub dev team and let us
 know what you're working on, so we can be sure not to start working on the same
@@ -28,32 +30,30 @@ directories:
   types "pub" on the command line or runs it in the Dart editor. This is usually
   run through shell scripts in `sdk/bin` at the root of the Dart repository.
 
-* `resource/` contains static resource files that pub uses. They're
-  automatically distributed in the Dart SDK.
-
 It's probably easiest to start diving into the codebase by looking at a
 particular pub command. Each command is encapsulated in files in
 `lib/src/command/`.
 
 ## Running pub
 
-To run pub from the Dart repository, first [build Dart][building]. From the root
-of the repo:
+To run pub from the Git repository, run:
 
-    ./tools/build.py -m release
-
-You'll need to re-build whenever you sync the repository, but not when you
-modify pub or any packages it depends on. To run pub, just run `sdk/bin/pub` (or
-`sdk/bin/pub.bat` on Windows).
-
-[building]: https://code.google.com/p/dart/wiki/Building
+    dart bin/pub.dart
 
 ## Testing pub
 
-Before any change is made to pub, all tests should pass. To run all the pub
-tests, run this from the root of the Dart repository:
+Before any change is made to pub, all tests should pass. To run a pub test, run:
 
-    ./tools/test.py -m release pub
+    dart test/path/to/pub_test.dart
+
+A way to run all tests at once is coming soon.
+
+Some pub tests require specific versions of other packages. These packages are
+included in the repository as [Git submodules][]. To get them, run:
+
+[Git submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+    git submodule update --init
 
 Changes to pub should be accompanied by one or more tests that exercise the new
 functionality. When adding a test, the best strategy is to find a similar test
@@ -75,16 +75,10 @@ avoid having the tests time out when running on the build bots. For example,
 `tests/get/hosted/get_transitive_test.dart` tests the resolution of transitive
 hosted dependencies when using `pub get`.
 
-When testing new functionality, it's often useful to run a single test rather
-than the entire test suite. You can do this by appending the path to the test
-file to the test command. For example, to run `get/relative_symlink_test.dart`:
-
-    ./tools/test.py -m release pub/get/relative_symlink_test
-
 ## Landing your patch
 
-All patches to the Dart repo, including to pub, need to undergo code review
-before they're submitted. The full process for putting up your patch for review
-is [documented elsewhere][contributing].
+All patches to official Dart packages, including to pub, need to undergo code
+review before they're submitted. The full process for putting up your patch for
+review is [documented elsewhere][contributing].
 
-[contributing]: https://code.google.com/p/dart/wiki/Contributing
+[contributing]: https://github.com/dart-lang/sdk/wiki/Contributing

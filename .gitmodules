@@ -1,0 +1,12 @@
+[submodule "third_party/barback-0.13.0"]
+	path = third_party/barback-0.13.0
+	url = git://github.com/dart-lang/barback
+[submodule "third_party/barback-0.14.0+2"]
+	path = third_party/barback-0.14.0+2
+	url = git://github.com/dart-lang/barback
+[submodule "third_party/barback-0.14.1+4"]
+	path = third_party/barback-0.14.1+4
+	url = git://github.com/dart-lang/barback
+[submodule "third_party/source_maps-0.9.4"]
+	path = third_party/source_maps-0.9.4
+	url = git://github.com/dart-lang/source_maps

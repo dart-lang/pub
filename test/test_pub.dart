@@ -79,6 +79,10 @@ Matcher isMinifiedDart2JSOutput =
 Matcher isUnminifiedDart2JSOutput =
     contains("// The code supports the following hooks");
 
+/// The entrypoint for pub itself.
+final _entrypoint = new Entrypoint(
+    pubRoot, new SystemCache.withSources(isOffline: true));
+
 /// A map from package names to paths from which those packages should be loaded
 /// for [createLockFile].
 ///
@@ -86,8 +90,7 @@ Matcher isUnminifiedDart2JSOutput =
 /// to be used when testing pub.
 Map<String, String> _packageOverrides;
 
-/// A map from barback versions to the paths of directories in the repo
-/// containing them.
+/// A map from barback versions to the paths to directories containing them.
 ///
 /// This includes the latest version of barback from pkg as well as all old
 /// versions of barback in third_party.
@@ -108,11 +111,13 @@ final _barbackDeps = {
 /// Populates [_barbackVersions].
 Map<Version, String> _findBarbackVersions() {
   var versions = {};
-  var currentBarback = p.join(repoRoot, 'third_party', 'pkg', 'barback');
-  versions[new Pubspec.load(currentBarback, new SourceRegistry()).version] =
-      currentBarback;
 
-  for (var dir in listDir(p.join(repoRoot, 'third_party', 'pkg'))) {
+  // It would be nice if this could use HostedSource's logic, but it's
+  // asynchronous and this is a variable initializer.
+  var currentBarback = packagePath('barback');
+  versions[_entrypoint.lockFile.packages['barback'].version] = currentBarback;
+
+  for (var dir in listDir(p.join(pubRoot, 'third_party'))) {
     var basename = p.basename(dir);
     if (!basename.startsWith('barback-')) continue;
     versions[new Version.parse(split1(basename, '-').last)] = dir;
@@ -143,9 +148,10 @@ void withBarbackVersions(String versionConstraint, void callback()) {
         _packageOverrides['barback'] = _barbackVersions[version];
         _barbackDeps.forEach((constraint, deps) {
           if (!constraint.allows(version)) return;
+
           deps.forEach((packageName, version) {
             _packageOverrides[packageName] = p.join(
-                repoRoot, 'third_party', 'pkg', '$packageName-$version');
+                pubRoot, 'third_party', '$packageName-$version');
           });
         });
 
@@ -817,11 +823,18 @@ Iterable<String> pkg, Map<String, String> hosted}) {
   return lockFile;
 }
 
-/// Returns the path to [package] within the repo.
-String packagePath(String package) =>
-    dirExists(p.join(repoRoot, 'pkg', package)) ?
-        p.join(repoRoot, 'pkg', package) :
-        p.join(repoRoot, 'third_party', 'pkg', package);
+/// Returns the path to the version of [package] used by pub.
+String packagePath(String package) {
+  var id = _entrypoint.lockFile.packages[package];
+  if (id == null) {
+    throw new StateError(
+        'The tests rely on "$package", but it\'s not in the lockfile.');
+  }
+
+  return p.join(
+      SystemCache.defaultDir,
+      'hosted/pub.dartlang.org/$package-${id.version}');
+}
 
 /// Uses [client] as the mock HTTP client for this test.
 ///
