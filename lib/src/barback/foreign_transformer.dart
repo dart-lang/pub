@@ -9,7 +9,7 @@ import 'dart:isolate';
 
 import 'package:barback/barback.dart';
 
-import '../../../asset/dart/serialize.dart';
+import '../asset/dart/serialize.dart';
 import 'excluding_transformer.dart';
 import 'excluding_aggregate_transformer.dart';
 import 'transformer_config.dart';

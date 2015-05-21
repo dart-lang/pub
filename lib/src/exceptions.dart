@@ -13,7 +13,7 @@ import "package:http/http.dart" as http;
 import "package:stack_trace/stack_trace.dart";
 import "package:yaml/yaml.dart";
 
-import '../../asset/dart/serialize.dart';
+import 'asset/dart/serialize.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///

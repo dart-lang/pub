@@ -12,7 +12,7 @@ import 'package:barback/barback.dart';
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import '../../../asset/dart/serialize.dart';
+import '../asset/dart/serialize.dart';
 import '../barback.dart';
 import '../exceptions.dart';
 import '../dart.dart' as dart;
