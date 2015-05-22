@@ -4,10 +4,9 @@
 
 library lock_file_test;
 
+import 'package:pub/src/ascii_tree.dart' as tree;
+import 'package:pub/src/utils.dart';
 import 'package:unittest/unittest.dart';
-
-import '../lib/src/ascii_tree.dart' as tree;
-import '../lib/src/utils.dart';
 
 main() {
   runningAsTest = true;

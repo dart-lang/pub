@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE d.file.
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 
-import '../../../lib/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 

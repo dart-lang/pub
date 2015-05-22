@@ -2,9 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import '../../lib/src/entrypoint.dart';
-import '../../lib/src/validator.dart';
-import '../../lib/src/validator/dependency_override.dart';
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/validator.dart';
+import 'package:pub/src/validator/dependency_override.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

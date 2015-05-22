@@ -4,9 +4,10 @@
 
 library version_test;
 
+import 'package:pub/src/transcript.dart';
 import 'package:unittest/unittest.dart';
+
 import 'test_pub.dart';
-import '../lib/src/transcript.dart';
 
 main() {
   initConfig();

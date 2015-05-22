@@ -6,10 +6,9 @@ library error_group_test;
 
 import 'dart:async';
 
+import 'package:pub/src/error_group.dart';
+import 'package:pub/src/utils.dart';
 import 'package:unittest/unittest.dart';
-
-import '../lib/src/error_group.dart';
-import '../lib/src/utils.dart';
 
 ErrorGroup errorGroup;
 

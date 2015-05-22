@@ -6,11 +6,11 @@ library lish.utils;
 
 import 'dart:convert';
 
+import 'package:pub/src/io.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
 
-import '../../lib/src/io.dart';
 
 void handleUploadForm(ScheduledServer server, [Map body]) {
   server.handle('GET', '/api/packages/versions/new', (request) {

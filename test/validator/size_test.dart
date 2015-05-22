@@ -5,9 +5,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:pub/src/validator/size.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../lib/src/validator/size.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

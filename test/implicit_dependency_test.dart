@@ -2,11 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/barback.dart' as barback;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
-import '../lib/src/barback.dart' as barback;
 
 main() {
   initConfig();

@@ -8,9 +8,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/io.dart';
 import 'package:unittest/unittest.dart';
 
-import '../lib/src/io.dart';
 import 'test_pub.dart';
 
 main() {

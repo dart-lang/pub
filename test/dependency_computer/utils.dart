@@ -6,17 +6,17 @@ library pub_tests;
 
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub/src/barback/cycle_exception.dart';
+import 'package:pub/src/barback/dependency_computer.dart';
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/package.dart';
+import 'package:pub/src/package_graph.dart';
+import 'package:pub/src/source/path.dart';
+import 'package:pub/src/system_cache.dart';
+import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../lib/src/barback/cycle_exception.dart';
-import '../../lib/src/barback/dependency_computer.dart';
-import '../../lib/src/entrypoint.dart';
-import '../../lib/src/io.dart';
-import '../../lib/src/package.dart';
-import '../../lib/src/package_graph.dart';
-import '../../lib/src/source/path.dart';
-import '../../lib/src/system_cache.dart';
-import '../../lib/src/utils.dart';
 import '../test_pub.dart';
 
 /// Expects that [DependencyComputer.transformersNeededByTransformers] will

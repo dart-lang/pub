@@ -4,9 +4,10 @@
 
 library utils_test;
 
+import 'package:pub/src/utils.dart';
 import 'package:unittest/unittest.dart';
+
 import 'test_pub.dart';
-import '../lib/src/utils.dart';
 
 main() {
   initConfig();

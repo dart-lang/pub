@@ -7,10 +7,10 @@ library descriptor.tar;
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/io.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/descriptor.dart';
 
-import '../../lib/src/io.dart';
 
 /// Describes a tar file and its contents.
 class TarFileDescriptor extends DirectoryDescriptor

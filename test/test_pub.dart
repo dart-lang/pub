@@ -17,6 +17,25 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+// TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
+// with the git descriptor method. Maybe we should try to clean up the top level
+// scope a bit?
+import 'package:pub/src/git.dart' as gitlib;
+import 'package:pub/src/http.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/package.dart';
+import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/sdk.dart' as sdk;
+import 'package:pub/src/source/hosted.dart';
+import 'package:pub/src/source/path.dart';
+import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/system_cache.dart';
+import 'package:pub/src/utils.dart';
+import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:scheduled_test/scheduled_process.dart';
 import 'package:scheduled_test/scheduled_server.dart';
@@ -27,25 +46,6 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:unittest/compact_vm_config.dart';
 import 'package:yaml/yaml.dart';
 
-import '../lib/src/entrypoint.dart';
-import '../lib/src/exit_codes.dart' as exit_codes;
-// TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
-// with the git descriptor method. Maybe we should try to clean up the top level
-// scope a bit?
-import '../lib/src/git.dart' as gitlib;
-import '../lib/src/http.dart';
-import '../lib/src/io.dart';
-import '../lib/src/lock_file.dart';
-import '../lib/src/log.dart' as log;
-import '../lib/src/package.dart';
-import '../lib/src/pubspec.dart';
-import '../lib/src/sdk.dart' as sdk;
-import '../lib/src/source/hosted.dart';
-import '../lib/src/source/path.dart';
-import '../lib/src/source_registry.dart';
-import '../lib/src/system_cache.dart';
-import '../lib/src/utils.dart';
-import '../lib/src/validator.dart';
 import 'descriptor.dart' as d;
 import 'serve_packages.dart';
 

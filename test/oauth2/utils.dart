@@ -7,12 +7,12 @@ library oauth2.utils;
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/scheduled_process.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
 
-import '../../lib/src/utils.dart';
 
 void authorizePub(ScheduledProcess pub, ScheduledServer server,
     [String accessToken="access token"]) {

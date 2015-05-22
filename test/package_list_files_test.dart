@@ -5,11 +5,11 @@
 library packages_list_files_test;
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../lib/src/entrypoint.dart';
-import '../lib/src/io.dart';
-import '../lib/src/system_cache.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 

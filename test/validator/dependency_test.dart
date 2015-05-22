@@ -8,11 +8,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/validator.dart';
+import 'package:pub/src/validator/dependency.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../lib/src/entrypoint.dart';
-import '../../lib/src/validator.dart';
-import '../../lib/src/validator/dependency.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

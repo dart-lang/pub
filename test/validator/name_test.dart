@@ -3,12 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/validator.dart';
+import 'package:pub/src/validator/name.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../lib/src/entrypoint.dart';
-import '../../lib/src/io.dart';
-import '../../lib/src/validator.dart';
-import '../../lib/src/validator/name.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';

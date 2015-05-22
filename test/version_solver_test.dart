@@ -6,18 +6,18 @@ library pub_upgrade_test;
 
 import 'dart:async';
 
+import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/package.dart';
+import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/sdk.dart' as sdk;
+import 'package:pub/src/solver/version_solver.dart';
+import 'package:pub/src/source/cached.dart';
+import 'package:pub/src/system_cache.dart';
+import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:unittest/unittest.dart';
 
-import '../lib/src/lock_file.dart';
-import '../lib/src/log.dart' as log;
-import '../lib/src/package.dart';
-import '../lib/src/pubspec.dart';
-import '../lib/src/sdk.dart' as sdk;
-import '../lib/src/source/cached.dart';
-import '../lib/src/system_cache.dart';
-import '../lib/src/utils.dart';
-import '../lib/src/solver/version_solver.dart';
 import 'test_pub.dart';
 
 MockSource source1;
