@@ -497,7 +497,7 @@ final bool runningFromSdk =
 ///
 /// This can happen when building Observatory, for example.
 final bool runningFromDartRepo =
-    Platform.script.path.endsWith('/third_party/pkg/pub/bin/pub.dart');
+    Platform.script.path.endsWith('/third_party/pkg_tested/pub/bin/pub.dart');
 
 /// Resolves [target] relative to the path to pub's `asset` directory.
 String assetPath(String target) => runningFromSdk
@@ -546,7 +546,7 @@ final String dartRepoRoot = (() {
     throw new StateError("Not running from source in the Dart repo.");
   }
 
-  // In the Dart repo, the script is in "third_party/pkg/pub/bin".
+  // In the Dart repo, the script is in "third_party/pkg_tested/pub/bin".
   return path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(
       path.fromUri(Platform.script))))));
 })();
