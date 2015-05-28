@@ -9,8 +9,6 @@ import 'package:pub/src/utils.dart';
 import 'package:unittest/unittest.dart';
 
 main() {
-  runningAsTest = true;
-
   group('tree.fromFiles', () {
     test('no files', () {
       expect(tree.fromFiles([]), equals(""));

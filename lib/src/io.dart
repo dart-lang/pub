@@ -564,7 +564,7 @@ final Stream<String> stdinLines = streamToLines(
 /// should just be a fragment like, "Are you sure you want to proceed".
 Future<bool> confirm(String message) {
   log.fine('Showing confirm message: $message');
-  if (runningAsTest) {
+  if (runningFromTest) {
     log.message("$message (y/n)?");
   } else {
     stdout.write(log.format("$message (y/n)? "));

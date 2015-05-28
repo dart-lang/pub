@@ -785,7 +785,7 @@ Future awaitObject(object) {
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
-bool get canUseSpecialChars => !runningAsTest &&
+bool get canUseSpecialChars => !runningFromTest && !runningAsTest &&
     Platform.operatingSystem != 'windows' &&
     stdioType(stdout) == StdioType.TERMINAL;
 
@@ -811,14 +811,10 @@ String prefixLines(String text, {String prefix: '| ', String firstPrefix}) {
   return lines.join('\n');
 }
 
-/// Whether pub is running as a subprocess in an integration test or in a unit
-/// test that has explicitly set this.
-bool runningAsTest = Platform.environment.containsKey('_PUB_TESTING');
-
 /// Whether today is April Fools' day.
 bool get isAprilFools {
   // Tests should never see April Fools' output.
-  if (runningAsTest) return false;
+  if (runningFromTest) return false;
 
   var date = new DateTime.now();
   return date.month == 4 && date.day == 1;
