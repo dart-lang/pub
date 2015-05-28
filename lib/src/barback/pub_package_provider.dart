@@ -5,6 +5,7 @@
 library pub.pub_package_provider;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
@@ -14,6 +15,26 @@ import '../package_graph.dart';
 import '../preprocess.dart';
 import '../sdk.dart' as sdk;
 import '../utils.dart';
+
+
+import '../log.dart' as log;
+
+/// The path to the lib directory of the compiler_unsupported package used by
+/// pub.
+///
+/// This is used to make sure dart2js is running against its own version of its
+/// internal libraries when running from the pub repo. It's `null` if we're
+/// running from the Dart repo or from the built SDK.
+final _compilerUnsupportedLib = (() {
+  if (runningFromSdk) return null;
+  if (runningFromDartRepo) return null;
+
+  // TODO(nweiz): When we switch over to ".packages", read the path from there
+  // instead, or from the resource API if it's usable by that point.
+  return path.join(pubRoot, 'packages', 'compiler_unsupported');
+})();
+
+final _zlib = new ZLibCodec();
 
 /// An implementation of barback's [PackageProvider] interface so that barback
 /// can find assets within pub packages.
@@ -58,17 +79,29 @@ class PubPackageProvider implements StaticPackageProvider {
     // sources in the SDK. The dart2js transformer uses this to locate the Dart
     // sources for "dart:" libraries.
     if (id.package == r'$sdk') {
-      // The asset path contains two "lib" entries. The first represent's pub's
+      // The asset path contains two "lib" entries. The first represents pub's
       // concept that all public assets are in "lib". The second comes from the
       // organization of the SDK itself. Strip off the first. Leave the second
       // since dart2js adds it and expects it to be there.
       var parts = path.split(path.fromUri(id.path));
       assert(parts.isNotEmpty && parts[0] == 'lib');
-      parts = parts.skip(1);
+      parts = parts.skip(1).toList();
 
-      var file = path.join(sdk.rootDirectory, path.joinAll(parts));
+      if (_compilerUnsupportedLib == null) {
+        var file = path.join(sdk.rootDirectory, path.joinAll(parts));
+        _assertExists(file, id);
+        return new Asset.fromPath(id, file);
+      }
+
+      // If we're running from pub's repo, our version of dart2js comes from
+      // compiler_unsupported and may expect different SDK sources than the
+      // actual SDK we're using. Handily, compiler_unsupported contains a full
+      // (ZLib-encoded) copy of the SDK, so we load sources from that instead.
+      var file = path.join(_compilerUnsupportedLib, 'sdk',
+          path.joinAll(parts.skip(1))) + "_";
       _assertExists(file, id);
-      return new Asset.fromPath(id, file);
+      return new Asset.fromStream(id, callbackStream(() =>
+          _zlib.decoder.bind(new File(file).openRead())));
     }
 
     var nativePath = path.fromUri(id.path);
@@ -99,12 +132,24 @@ class PubPackageProvider implements StaticPackageProvider {
       // "$sdk" is a pseudo-package that allows the dart2js transformer to find
       // the Dart core libraries without hitting the file system directly. This
       // ensures they work with source maps.
-      var libPath = path.join(sdk.rootDirectory, "lib");
-      return new Stream.fromIterable(listDir(libPath, recursive: true)
+      var libPath = _compilerUnsupportedLib == null
+          ? path.join(sdk.rootDirectory, "lib")
+          : path.join(_compilerUnsupportedLib, "sdk");
+      var files = listDir(libPath, recursive: true);
+
+      if (_compilerUnsupportedLib != null) {
+        // compiler_unsupported's SDK sources are ZLib-encoded; to indicate
+        // this, they end in "_". We serve them decoded, though, so we strip the
+        // underscore to get the asset paths.
+        var trailingUnderscore = new RegExp(r"_$");
+        files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
+      }
+
+      return new Stream.fromIterable(files
           .where((file) => path.extension(file) == ".dart")
           .map((file) {
-        var idPath = path.join("lib",
-            path.relative(file, from: sdk.rootDirectory));
+        var idPath = path.join("lib", "lib",
+            path.relative(file, from: libPath));
         return new AssetId('\$sdk', path.toUri(idPath).toString());
       }));
     } else {
