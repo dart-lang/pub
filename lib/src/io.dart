@@ -493,11 +493,16 @@ final bool runningFromTest = Platform.script.path.endsWith('.test.snapshot');
 final bool runningFromSdk =
     !runningFromTest && Platform.script.path.endsWith('.snapshot');
 
+/// A regular expression to match the script path of a pub script running from
+/// source in the Dart repo.
+final _dartRepoRegExp = new RegExp(
+    r"/third_party/pkg_tested/pub/(bin/pub.dart|test/.*_test\.dart)$");
+
 /// Whether pub is running from source in the Dart repo.
 ///
 /// This can happen when building Observatory, for example.
 final bool runningFromDartRepo =
-    Platform.script.path.endsWith('/third_party/pkg_tested/pub/bin/pub.dart');
+    Platform.script.path.contains(_dartRepoRegExp);
 
 /// Resolves [target] relative to the path to pub's `asset` directory.
 String assetPath(String target) => runningFromSdk
@@ -546,9 +551,11 @@ final String dartRepoRoot = (() {
     throw new StateError("Not running from source in the Dart repo.");
   }
 
-  // In the Dart repo, the script is in "third_party/pkg_tested/pub/bin".
-  return path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(
-      path.fromUri(Platform.script))))));
+  // Get the URL of the repo root in a way that works when either both running
+  // as a test or as a pub executable.
+  var url = Platform.script.replace(
+      path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
+  return path.fromUri(url);
 })();
 
 /// A line-by-line stream of standard input.

@@ -112,12 +112,21 @@ final _barbackDeps = {
 Map<Version, String> _findBarbackVersions() {
   var versions = {};
 
-  // It would be nice if this could use HostedSource's logic, but it's
-  // asynchronous and this is a variable initializer.
-  var currentBarback = packagePath('barback');
-  versions[_entrypoint.lockFile.packages['barback'].version] = currentBarback;
+  var currentBarback;
+  var pkgPath;
+  if (runningFromDartRepo) {
+    currentBarback = p.join(dartRepoRoot, 'third_party', 'pkg', 'barback');
+    pkgPath = p.join(dartRepoRoot, 'third_party', 'pkg');
+  } else {
+    // It would be nice if this could use HostedSource's logic, but it's
+    // asynchronous and this is a variable initializer.
+    currentBarback = packagePath('barback');
+    pkgPath = p.join(pubRoot, 'third_party');
+  }
+  versions[new Pubspec.load(currentBarback, new SourceRegistry()).version] =
+      currentBarback;
 
-  for (var dir in listDir(p.join(pubRoot, 'third_party'))) {
+  for (var dir in listDir(pkgPath)) {
     var basename = p.basename(dir);
     if (!basename.startsWith('barback-')) continue;
     versions[new Version.parse(split1(basename, '-').last)] = dir;
@@ -150,8 +159,9 @@ void withBarbackVersions(String versionConstraint, void callback()) {
           if (!constraint.allows(version)) return;
 
           deps.forEach((packageName, version) {
-            _packageOverrides[packageName] = p.join(
-                pubRoot, 'third_party', '$packageName-$version');
+            _packageOverrides[packageName] = runningFromDartRepo
+                ? p.join(dartRepoRoot, 'third_party/pkg/$packageName-$version')
+                : p.join(pubRoot, 'third_party/$packageName-$version');
           });
         });
 
@@ -578,10 +588,12 @@ String _hashChanges() {
   var hash = new SHA1();
 
   // Include the current Git commit.
-  hash.add(UTF8.encode(gitlib.runSync(['rev-parse', 'HEAD']).first));
+  hash.add(UTF8.encode(
+      gitlib.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).first));
 
   // Include the changes in lib and bin relative to the current Git commit.
-  var tracked = gitlib.runSync(['diff-index', '--patch', 'HEAD', 'lib', 'bin']);
+  var tracked = gitlib.runSync(['diff-index', '--patch', 'HEAD', 'lib', 'bin'],
+      workingDir: pubRoot);
   for (var line in tracked) {
     hash.add(UTF8.encode("$line\n"));
   }
@@ -589,7 +601,8 @@ String _hashChanges() {
   // Include the full contents of non-ignored files in lib and bin that aren't
   // tracked by Git.
   var untracked = gitlib.runSync(
-      ['ls-files', '--others', '--exclude-standard', 'lib', 'bin']);
+      ['ls-files', '--others', '--exclude-standard', 'lib', 'bin'],
+      workingDir: pubRoot);
   for (var path in untracked) {
     hash.add(readBinaryFile(path));
   }
@@ -825,6 +838,12 @@ Iterable<String> pkg, Map<String, String> hosted}) {
 
 /// Returns the path to the version of [package] used by pub.
 String packagePath(String package) {
+  if (runningFromDartRepo) {
+    return dirExists(p.join(dartRepoRoot, 'pkg', package))
+        ? p.join(dartRepoRoot, 'pkg', package)
+        : p.join(dartRepoRoot, 'third_party', 'pkg', package);
+  }
+
   var id = _entrypoint.lockFile.packages[package];
   if (id == null) {
     throw new StateError(
