@@ -16,9 +16,6 @@ import '../preprocess.dart';
 import '../sdk.dart' as sdk;
 import '../utils.dart';
 
-
-import '../log.dart' as log;
-
 /// The path to the lib directory of the compiler_unsupported package used by
 /// pub.
 ///

@@ -573,10 +573,13 @@ void _ensureSnapshot() {
     }
   }
 
-  var dartSnapshot = runProcessSync(Platform.executable, [
-    '--snapshot=$snapshotPath',
-    p.join(pubRoot, 'bin', 'pub.dart')
-  ]);
+  var args = ['--snapshot=$snapshotPath'];
+  if (Platform.packageRoot.isNotEmpty) {
+    args.add('--package-root=${Platform.packageRoot}');
+  }
+  args.add(p.join(pubRoot, 'bin', 'pub.dart'));
+
+  var dartSnapshot = runProcessSync(Platform.executable, args);
   if (dartSnapshot.exitCode != 0) throw "Failed to run dart --snapshot.";
 
   writeTextFile(hashPath, hash);
