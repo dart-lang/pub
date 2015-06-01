@@ -4,6 +4,7 @@
 
 library pub_tests;
 
+import 'package:analyzer/analyzer.dart';
 import 'package:pub/src/exceptions.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
