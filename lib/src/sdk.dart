@@ -18,10 +18,10 @@ import 'io.dart';
 /// when building Observatory), this will be the repo's "sdk/" directory, which
 /// doesn't look exactly like the built SDK.
 final String rootDirectory = (() {
+  if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
+
   var dartSdk = Platform.environment["DART_SDK"];
   if (dartSdk != null) return dartSdk;
-
-  if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
   // The Dart exectuable is in "/path/to/sdk/bin/dart", so two levels up is
   // "/path/to/sdk".
