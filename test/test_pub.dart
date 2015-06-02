@@ -559,16 +559,21 @@ void _ensureSnapshot() {
   ensureDir(p.join(pubRoot, '.pub'));
 
   var version = sdk.version.toString();
-  var hash = _hashChanges();
+  var pubHash = _hashChanges();
+  var dartHash = runningFromDartRepo ? _hashExecutable() : null;
 
   var snapshotPath = p.join(pubRoot, '.pub', 'pub.test.snapshot');
-  var hashPath = p.join(pubRoot, '.pub', 'pub.hash');
+  var pubHashPath = p.join(pubRoot, '.pub', 'pub.hash');
+  var dartHashPath = p.join(pubRoot, '.pub', 'dart.hash');
   var versionPath = p.join(pubRoot, '.pub', 'pub.version');
-  if (fileExists(hashPath) && fileExists(versionPath)) {
-    var oldHash = readTextFile(hashPath);
+  if (fileExists(pubHashPath) && fileExists(versionPath) &&
+      (!runningFromDartRepo || fileExists(dartHashPath))) {
+    var oldPubHash = readTextFile(pubHashPath);
+    var oldDartHash = runningFromDartRepo ? readTextFile(dartHashPath) : null;
     var oldVersion = readTextFile(versionPath);
 
-    if (oldHash == hash && oldVersion == version && fileExists(snapshotPath)) {
+    if (oldPubHash == pubHash && oldDartHash == dartHash &&
+        oldVersion == version && fileExists(snapshotPath)) {
       return;
     }
   }
@@ -582,7 +587,8 @@ void _ensureSnapshot() {
   var dartSnapshot = runProcessSync(Platform.executable, args);
   if (dartSnapshot.exitCode != 0) throw "Failed to run dart --snapshot.";
 
-  writeTextFile(hashPath, hash);
+  writeTextFile(pubHashPath, pubHash);
+  if (runningFromDartRepo) writeTextFile(dartHashPath, dartHash);
   writeTextFile(versionPath, version);
 }
 
@@ -610,6 +616,16 @@ String _hashChanges() {
     hash.add(readBinaryFile(path));
   }
 
+  return CryptoUtils.bytesToHex(hash.close());
+}
+
+/// Return a SHA1 hash of the Dart executable used to run this script.
+///
+/// This is used when running within the Dart repo to ensure that the snapshot
+/// is invalidated when the executable changes.
+String _hashExecutable() {
+  var hash = new SHA1();
+  hash.add(new File(Platform.executable).readAsBytesSync());
   return CryptoUtils.bytesToHex(hash.close());
 }
 
