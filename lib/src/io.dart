@@ -496,7 +496,7 @@ final bool runningFromSdk =
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
 final _dartRepoRegExp = new RegExp(
-    r"/third_party/pkg_tested/pub/("
+    r"/third_party/pkg/pub/("
             r"bin/pub\.dart"
         r"|"
             r"\.pub/pub\.test\.snapshot"
