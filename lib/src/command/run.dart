@@ -12,14 +12,12 @@ import 'package:path/path.dart' as p;
 import '../command.dart';
 import '../executable.dart';
 import '../io.dart';
-import '../log.dart' as log;
 import '../utils.dart';
 
 /// Handles the `run` pub command.
 class RunCommand extends PubCommand {
   String get name => "run";
-  String get description => "Run an executable from a package.\n"
-      "NOTE: We are currently optimizing this command's startup time.";
+  String get description => "Run an executable from a package.";
   String get invocation => "pub run <executable> [args...]";
   bool get allowTrailingOptions => false;
 

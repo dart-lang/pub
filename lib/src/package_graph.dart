@@ -72,6 +72,34 @@ class PackageGraph {
     return _transitiveDependencies[package];
   }
 
+  /// Returns whether [package], or any of its transitive dependencies, have
+  /// transformers that run on any of their public assets.
+  ///
+  /// This is pessimistic; if any package can't be determined to be transformed,
+  /// this returns `true`.
+  bool isPackageTransformed(String packageName) {
+    if (_isIndividualPackageTransformed(packages[packageName])) return true;
+
+    return transitiveDependencies(packageName)
+        .any(_isIndividualPackageTransformed);
+  }
+
+  /// Returns whether [package] itself has transformers that run on any of its
+  /// public assets.
+  bool _isIndividualPackageTransformed(Package package) {
+    // If the caller passed in an unknown package name to isPackageTransformed,
+    // the package will be null.
+    if (package == null) return true;
+
+    if (package.name == entrypoint.root.name) {
+      return package.pubspec.transformers.isNotEmpty;
+    }
+
+    return package.pubspec.transformers.any((phase) {
+      return phase.any((config) => config.canTransformPublicFiles);
+    });
+  }
+
   /// Returns whether [package] is mutable.
   ///
   /// A package is considered to be mutable if it or any of its dependencies

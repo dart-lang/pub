@@ -74,13 +74,11 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     log.verbosity = log.Verbosity.WARNING;
   }
 
-  // Ignore a trailing extension.
-  if (p.extension(executable) == ".dart") {
-    executable = p.withoutExtension(executable);
-  }
+  // Ensure that there's a trailing extension.
+  if (p.extension(executable) != ".dart") executable += ".dart";
 
   var localSnapshotPath = p.join(".pub", "bin", package,
-      "$executable.dart.snapshot");
+      "$executable.snapshot");
   if (!isGlobal && fileExists(localSnapshotPath) &&
       // Dependencies are only snapshotted in release mode, since that's the
       // default mode for them to run. We can't run them in a different mode
@@ -92,16 +90,65 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // If the command has a path separator, then it's a path relative to the
   // root of the package. Otherwise, it's implicitly understood to be in
   // "bin".
-  var rootDir = "bin";
-  var parts = p.split(executable);
-  if (parts.length > 1) {
-    assert(!isGlobal && package == entrypoint.root.name);
-    rootDir = parts.first;
-  } else {
-    executable = p.join("bin", executable);
+  if (p.split(executable).length == 1) executable = p.join("bin", executable);
+
+  var vmArgs = [];
+
+  // Run in checked mode.
+  // TODO(rnystrom): Make this configurable.
+  vmArgs.add("--checked");
+
+  var executableUrl = await _executableUrl(
+      entrypoint, package, executable, isGlobal: isGlobal, mode: mode);
+
+  if (executableUrl == null) {
+    var message = "Could not find ${log.bold(executable)}";
+    if (package != entrypoint.root.name) {
+      message += " in package ${log.bold(package)}";
+    }
+    log.error("$message.");
+    return exit_codes.NO_INPUT;
   }
 
-  var assetPath = "${p.url.joinAll(p.split(executable))}.dart";
+  vmArgs.add(executableUrl.toString());
+  vmArgs.addAll(args);
+
+  var process = await Process.start(Platform.executable, vmArgs);
+
+  _forwardSignals(process);
+
+  // Note: we're not using process.std___.pipe(std___) here because
+  // that prevents pub from also writing to the output streams.
+  process.stderr.listen(stderr.add);
+  process.stdout.listen(stdout.add);
+  stdin.listen(process.stdin.add);
+
+  return process.exitCode;
+}
+
+/// Returns the URL the VM should use to load the executable at [path].
+///
+/// [path] must be relative to the root of [package]. If [path] doesn't exist,
+/// returns `null`.
+Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
+    {bool isGlobal: false, BarbackMode mode}) async {
+  assert(p.isRelative(path));
+
+  // If neither the executable nor any of its dependencies are transformed,
+  // there's no need to spin up a barback server. Just run the VM directly
+  // against the filesystem.
+  //
+  // TODO(nweiz): Once sdk#23369 is fixed, allow global executables to be run
+  // (and snapshotted) from the filesystem using package specs. A spec can by
+  // saved when activating the package.
+  var packageGraph = await entrypoint.loadPackageGraph();
+  if (!isGlobal && !packageGraph.isPackageTransformed(package)) {
+    var fullPath = packageGraph.packages[package].path(path);
+    if (!fileExists(fullPath)) return null;
+    return p.toUri(fullPath);
+  }
+
+  var assetPath = p.url.joinAll(p.split(path));
   var id = new AssetId(package, assetPath);
 
   // TODO(nweiz): Use [packages] to only load assets from packages that the
@@ -117,48 +164,24 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     // Serve the entire root-most directory containing the entrypoint. That
     // ensures that, for example, things like `import '../../utils.dart';`
     // will work from within some deeply nested script.
-    server = await environment.serveDirectory(rootDir);
+    server = await environment.serveDirectory(p.split(path).first);
   } else {
+    assert(p.split(path).first == "bin");
+
     // For other packages, always use the "bin" directory.
     server = await environment.servePackageBinDirectory(package);
   }
 
   try {
     await environment.barback.getAssetById(id);
-  } on AssetNotFoundException catch (error, stackTrace) {
-    var message = "Could not find ${log.bold(executable + ".dart")}";
-    if (package != entrypoint.root.name) {
-      message += " in package ${log.bold(server.package)}";
-    }
-
-    log.error("$message.");
-    log.fine(new Chain.forTrace(stackTrace));
-    return exit_codes.NO_INPUT;
+  } on AssetNotFoundException catch (_) {
+    return null;
   }
-
-  var vmArgs = [];
-
-  // Run in checked mode.
-  // TODO(rnystrom): Make this configurable.
-  vmArgs.add("--checked");
 
   // Get the URL of the executable, relative to the server's root directory.
   var relativePath = p.url.relative(assetPath,
       from: p.url.joinAll(p.split(server.rootDirectory)));
-  vmArgs.add(server.url.resolve(relativePath).toString());
-  vmArgs.addAll(args);
-
-  var process = await Process.start(Platform.executable, vmArgs);
-
-  _forwardSignals(process);
-
-  // Note: we're not using process.std___.pipe(std___) here because
-  // that prevents pub from also writing to the output streams.
-  process.stderr.listen(stderr.add);
-  process.stdout.listen(stdout.add);
-  stdin.listen(process.stdin.add);
-
-  return process.exitCode;
+  return server.url.resolve(relativePath);
 }
 
 /// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and
