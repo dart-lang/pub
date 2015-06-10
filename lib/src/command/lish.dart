@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 
 import '../command.dart';
+import '../exit_codes.dart' as exit_codes;
 import '../ascii_tree.dart' as tree;
 import '../http.dart';
 import '../io.dart';
@@ -58,14 +59,15 @@ class LishCommand extends PubCommand {
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(packageBytes) {
+  Future _publish(packageBytes) async {
     var cloudStorageUrl;
-    return oauth2.withClient(cache, (client) {
-      return log.progress('Uploading', () {
-        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-        // should report that error and exit.
-        var newUri = server.resolve("/api/packages/versions/new");
-        return client.get(newUri, headers: PUB_API_HEADERS).then((response) {
+    try {
+      await oauth2.withClient(cache, (client) {
+        return log.progress('Uploading', () async {
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
+          var newUri = server.resolve("/api/packages/versions/new");
+          var response = await client.get(newUri, headers: PUB_API_HEADERS);
           var parameters = parseJsonResponse(response);
 
           var url = _expectField(parameters, 'url', response);
@@ -84,16 +86,16 @@ class LishCommand extends PubCommand {
           request.followRedirects = false;
           request.files.add(new http.MultipartFile.fromBytes(
               'file', packageBytes, filename: 'package.tar.gz'));
-          return client.send(request);
-        }).then(http.Response.fromStream).then((response) {
-          var location = response.headers['location'];
-          if (location == null) throw new PubHttpException(response);
-          return location;
-        }).then((location) => client.get(location, headers: PUB_API_HEADERS))
-          .then(handleJsonSuccess);
+          var postResponse = await http.Response.fromStream(
+              await client.send(request));
+
+          var location = postResponse.headers['location'];
+          if (location == null) throw new PubHttpException(postResponse);
+          handleJsonSuccess(
+              await client.get(location, headers: PUB_API_HEADERS));
+        });
       });
-    }).catchError((error) {
-      if (error is! PubHttpException) throw error;
+    } on PubHttpException catch (error) {
       var url = error.response.request.url;
       if (urisEqual(url, cloudStorageUrl)) {
         // TODO(nweiz): the response may have XML-formatted information about
@@ -103,12 +105,12 @@ class LishCommand extends PubCommand {
       } else if (urisEqual(Uri.parse(url.origin), Uri.parse(server.origin))) {
         handleJsonError(error.response);
       } else {
-        throw error;
+        rethrow;
       }
-    });
+    }
   }
 
-  Future run() {
+  Future run() async {
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }
@@ -132,10 +134,15 @@ class LishCommand extends PubCommand {
         .toBytes();
 
     // Validate the package.
-    return _validate(packageBytesFuture.then((bytes) => bytes.length))
-        .then((isValid) {
-       if (isValid) return packageBytesFuture.then(_publish);
-    });
+    var isValid = await _validate(
+        packageBytesFuture.then((bytes) => bytes.length));
+    if (!isValid) {
+      await flushThenExit(exit_codes.DATA); 
+    } else if (dryRun) {
+      await flushThenExit(exit_codes.SUCCESS);
+    } else {
+      await _publish(await packageBytesFuture);
+    }
   }
 
   /// Returns the value associated with [key] in [map]. Throws a user-friendly
@@ -147,41 +154,39 @@ class LishCommand extends PubCommand {
 
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
-  Future<bool> _validate(Future<int> packageSize) {
-    return Validator.runAll(entrypoint, packageSize).then((pair) {
-      var errors = pair.first;
-      var warnings = pair.last;
+  Future<bool> _validate(Future<int> packageSize) async {
+    var pair = await Validator.runAll(entrypoint, packageSize);
+    var errors = pair.first;
+    var warnings = pair.last;
 
-      if (!errors.isEmpty) {
-        log.error("Sorry, your package is missing "
-            "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
-            "and can't be published yet.\nFor more information, see: "
-            "http://pub.dartlang.org/doc/pub-lish.html.\n");
-        return false;
-      }
+    if (!errors.isEmpty) {
+      log.error("Sorry, your package is missing "
+          "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
+          "and can't be published yet.\nFor more information, see: "
+          "http://pub.dartlang.org/doc/pub-lish.html.\n");
+      return false;
+    }
 
-      if (force) return true;
+    if (force) return true;
 
-      if (dryRun) {
-        var s = warnings.length == 1 ? '' : 's';
-        log.warning("\nPackage has ${warnings.length} warning$s.");
-        return false;
-      }
+    if (dryRun) {
+      var s = warnings.length == 1 ? '' : 's';
+      log.warning("\nPackage has ${warnings.length} warning$s.");
+      return warnings.isEmpty;
+    }
 
-      var message = '\nLooks great! Are you ready to upload your package';
+    var message = '\nLooks great! Are you ready to upload your package';
 
-      if (!warnings.isEmpty) {
-        var s = warnings.length == 1 ? '' : 's';
-        message = "\nPackage has ${warnings.length} warning$s. Upload anyway";
-      }
+    if (!warnings.isEmpty) {
+      var s = warnings.length == 1 ? '' : 's';
+      message = "\nPackage has ${warnings.length} warning$s. Upload anyway";
+    }
 
-      return confirm(message).then((confirmed) {
-        if (!confirmed) {
-          log.error("Package upload canceled.");
-          return false;
-        }
-        return true;
-      });
-    });
+    var confirmed = await confirm(message);
+    if (!confirmed) {
+      log.error("Package upload canceled.");
+      return false;
+    }
+    return true;
   }
 }

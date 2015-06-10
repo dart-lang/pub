@@ -22,7 +22,7 @@ main() {
     var server = new ScheduledServer();
     var pub = startPublish(server, args: ['--force']);
 
-    pub.shouldExit(exit_codes.SUCCESS);
+    pub.shouldExit(exit_codes.DATA);
     pub.stderr.expect(consumeThrough("Sorry, your package is missing a "
         "requirement and can't be published yet."));
   });

@@ -23,7 +23,7 @@ main() {
     var pub = startPublish(server);
 
     pub.writeLine("n");
-    pub.shouldExit(exit_codes.SUCCESS);
+    pub.shouldExit(exit_codes.DATA);
     pub.stderr.expect(consumeThrough("Package upload canceled."));
   });
 }

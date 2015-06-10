@@ -22,7 +22,7 @@ main() {
     var server = new ScheduledServer();
     var pub = startPublish(server, args: ['--dry-run']);
 
-    pub.shouldExit(exit_codes.SUCCESS);
+    pub.shouldExit(exit_codes.DATA);
     pub.stderr.expect(consumeThrough('Suggestions:'));
     pub.stderr.expect(emitsLines(
         '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
