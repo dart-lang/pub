@@ -5,19 +5,26 @@
 /// Pub-specific scheduled_test descriptors.
 library descriptor;
 
+import "dart:io" show File;
+
 import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/descriptor.dart';
 import 'package:scheduled_test/scheduled_server.dart';
+import 'package:package_config/packages_file.dart' as packages_file;
+import 'package:stack_trace/stack_trace.dart';
 
 import 'descriptor/git.dart';
 import 'descriptor/tar.dart';
+import 'descriptor/packages.dart';
 import 'test_pub.dart';
 
 export 'package:scheduled_test/descriptor.dart';
 export 'descriptor/git.dart';
 export 'descriptor/tar.dart';
+export 'descriptor/packages.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
 GitRepoDescriptor git(String name, [Iterable<Descriptor> contents]) =>
@@ -182,3 +189,14 @@ Descriptor credentialsFile(
 /// the given [dependencies].
 DirectoryDescriptor appDir([Map dependencies]) =>
   dir(appPath, [appPubspec(dependencies)]);
+
+/// Describes a `.packages` file.
+///
+/// [dependencies] maps package names to version strings.
+///
+/// Validation checks that the `.packages` file exists, has the expected
+/// entries (one per key in [dependencies]), each with a path that contains
+/// either the version string (for a reference to the pub cache) or a
+/// path to a path dependency, relative to the application directory.
+Descriptor packagesFile([Map dependencies]) =>
+  new PackagesFileDescriptor(dependencies);
