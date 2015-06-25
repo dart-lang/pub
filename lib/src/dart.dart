@@ -158,7 +158,7 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     async {
   if (snapshot != null && fileExists(snapshot)) {
     log.fine("Spawning isolate from $snapshot.");
-    if (packageRoot != null) packageRoot = packageRoot.toString();
+    if (packageRoot != null) packageRoot = Uri.parse(packageRoot.toString());
     try {
       await Isolate.spawnUri(path.toUri(snapshot), [], message,
           packageRoot: packageRoot);
