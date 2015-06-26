@@ -532,9 +532,14 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
     dartBin = p.absolute(dartBin);
   }
 
-  // Always run pub from a snapshot. Using the snapshot makes running the tests
-  // much faster, especially when multiple tests are run at once.
-  var pubPath = p.absolute(p.join(pubRoot, '.pub/pub.test.snapshot'));
+  // If there's a snapshot available, use it. The user is responsible for
+  // ensuring this is up-to-date..
+  //
+  // TODO(nweiz): When the test runner supports plugins, create one to
+  // auto-generate the snapshot before each run.
+  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
+  if (fileExists('$pubPath.snapshot')) pubPath += '.snapshot';
+
   var dartArgs = [pubPath, '--verbose'];
   dartArgs.addAll(args);
 
@@ -546,87 +551,9 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
     return pubEnvironment;
   });
 
-  _ensureSnapshot();
-
   return new PubProcess.start(dartBin, dartArgs, environment: environmentFuture,
       workingDirectory: _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
-}
-
-/// Ensure that a snapshot of the current pub source exists at
-/// ".pub/pub.snapshot".
-void _ensureSnapshot() {
-  ensureDir(p.join(pubRoot, '.pub'));
-
-  var version = sdk.version.toString();
-  var pubHash = _hashChanges();
-  var dartHash = runningFromDartRepo ? _hashExecutable() : null;
-
-  var snapshotPath = p.join(pubRoot, '.pub', 'pub.test.snapshot');
-  var pubHashPath = p.join(pubRoot, '.pub', 'pub.hash');
-  var dartHashPath = p.join(pubRoot, '.pub', 'dart.hash');
-  var versionPath = p.join(pubRoot, '.pub', 'pub.version');
-  if (fileExists(pubHashPath) && fileExists(versionPath) &&
-      (!runningFromDartRepo || fileExists(dartHashPath))) {
-    var oldPubHash = readTextFile(pubHashPath);
-    var oldDartHash = runningFromDartRepo ? readTextFile(dartHashPath) : null;
-    var oldVersion = readTextFile(versionPath);
-
-    if (oldPubHash == pubHash && oldDartHash == dartHash &&
-        oldVersion == version && fileExists(snapshotPath)) {
-      return;
-    }
-  }
-
-  var args = ['--snapshot=$snapshotPath'];
-  if (Platform.packageRoot.isNotEmpty) {
-    args.add('--package-root=${Platform.packageRoot}');
-  }
-  args.add(p.join(pubRoot, 'bin', 'pub.dart'));
-
-  var dartSnapshot = runProcessSync(Platform.executable, args);
-  if (dartSnapshot.exitCode != 0) throw "Failed to run dart --snapshot.";
-
-  writeTextFile(pubHashPath, pubHash);
-  if (runningFromDartRepo) writeTextFile(dartHashPath, dartHash);
-  writeTextFile(versionPath, version);
-}
-
-/// Returns a hash that encapsulates the current state of the repo.
-String _hashChanges() {
-  var hash = new SHA1();
-
-  // Include the current Git commit.
-  hash.add(UTF8.encode(
-      gitlib.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).first));
-
-  // Include the changes in lib and bin relative to the current Git commit.
-  var tracked = gitlib.runSync(['diff-index', '--patch', 'HEAD', 'lib', 'bin'],
-      workingDir: pubRoot);
-  for (var line in tracked) {
-    hash.add(UTF8.encode("$line\n"));
-  }
-
-  // Include the full contents of non-ignored files in lib and bin that aren't
-  // tracked by Git.
-  var untracked = gitlib.runSync(
-      ['ls-files', '--others', '--exclude-standard', 'lib', 'bin'],
-      workingDir: pubRoot);
-  for (var path in untracked) {
-    hash.add(readBinaryFile(path));
-  }
-
-  return CryptoUtils.bytesToHex(hash.close());
-}
-
-/// Return a SHA1 hash of the Dart executable used to run this script.
-///
-/// This is used when running within the Dart repo to ensure that the snapshot
-/// is invalidated when the executable changes.
-String _hashExecutable() {
-  var hash = new SHA1();
-  hash.add(new File(Platform.executable).readAsBytesSync());
-  return CryptoUtils.bytesToHex(hash.close());
 }
 
 /// A subclass of [ScheduledProcess] that parses pub's verbose logging output

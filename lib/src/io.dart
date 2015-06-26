@@ -484,9 +484,9 @@ final bool runningAsTest =
 
 /// Whether the current process is a pub subprocess being run from a test.
 ///
-/// This works because when running from tests, pub always uses a snapshot named
-/// "pub.test.snapshot", which is not used outside of tests.
-final bool runningFromTest = Platform.script.path.endsWith('.test.snapshot');
+/// The "_PUB_TESTING" variable is automatically set for all the test code's
+/// invocations of pub.
+final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
 
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
