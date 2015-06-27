@@ -20,12 +20,9 @@ import 'io.dart';
 final String rootDirectory = (() {
   if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
-  var dartSdk = Platform.environment["DART_SDK"];
-  if (dartSdk != null) return dartSdk;
-
   // The Dart exectuable is in "/path/to/sdk/bin/dart", so two levels up is
   // "/path/to/sdk".
-  var aboveExecutable = p.dirname(p.dirname(Platform.executable));
+  var aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
   assert(fileExists(p.join(aboveExecutable, 'version')));
   return aboveExecutable;
 })();

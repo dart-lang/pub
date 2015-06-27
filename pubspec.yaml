@@ -36,4 +36,4 @@ dev_dependencies:
   unittest: "^0.11.0"
 
 environment:
-  sdk: ">=1.11.0-dev.3.0 <2.0.0"
+  sdk: ">=1.11.0 <2.0.0"
