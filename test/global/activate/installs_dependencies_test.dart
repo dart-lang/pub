@@ -7,7 +7,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activating a package installs its dependencies', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "any"});

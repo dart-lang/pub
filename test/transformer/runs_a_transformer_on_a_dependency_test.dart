@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("runs a local transformer on a dependency", () {
       d.dir("foo", [

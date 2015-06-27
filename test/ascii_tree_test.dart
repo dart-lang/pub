@@ -6,7 +6,7 @@ library lock_file_test;
 
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:pub/src/utils.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 main() {
   group('tree.fromFiles', () {

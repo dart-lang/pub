@@ -6,8 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration("preserves .htaccess as a special case", () {
     d.dir(appPath, [
       d.appPubspec(),

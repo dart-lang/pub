@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activating a hosted package deactivates the path one', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [

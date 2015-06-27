@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("applies includes before excludes if both are present", () {
       d.dir(appPath, [

@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't create a snapshot for a path dependency", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.2.3"),

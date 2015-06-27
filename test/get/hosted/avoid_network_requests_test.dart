@@ -10,8 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration('only requests versions that are needed during solving', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0");

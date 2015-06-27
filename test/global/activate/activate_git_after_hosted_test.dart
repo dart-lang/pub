@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activating a Git package deactivates the hosted one', () {
     ensureGit();
 

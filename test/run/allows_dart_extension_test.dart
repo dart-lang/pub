@@ -16,7 +16,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   integration('allows a ".dart" extension on the argument', () {
     d.dir(appPath, [
       d.appPubspec(),

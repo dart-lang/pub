@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('prints the local paths to all packages in the lockfile', () {
     servePackages((builder) => builder.serve("bar", "1.0.0"));
 

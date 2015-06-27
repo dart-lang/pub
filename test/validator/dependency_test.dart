@@ -55,8 +55,6 @@ setUpDependency(Map dep, {List<String> hostedVersions}) {
 }
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     integration('looks normal', () {
       d.validPackage.create();

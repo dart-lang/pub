@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("loads different configurations from the same isolate", () {
       // If different configurations are loaded from different isolates, a

@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("does not get if a dependency is removed", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

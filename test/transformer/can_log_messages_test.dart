@@ -65,7 +65,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   // This intentionally tests barback 0.14.2 with both transformers, since it
   // supports both types of span.
   withBarbackVersions("<0.15.0", () => runTest(SOURCE_MAPS_TRANSFORMER));

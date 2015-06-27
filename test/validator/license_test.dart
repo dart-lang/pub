@@ -16,8 +16,6 @@ import 'utils.dart';
 Validator license(Entrypoint entrypoint) => new LicenseValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("creates binstubs when activating a path package", () {
     d.dir("foo", [
       d.pubspec({

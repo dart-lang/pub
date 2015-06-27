@@ -5,7 +5,6 @@
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('ignores previously activated version',
         () {
     servePackages((builder) {

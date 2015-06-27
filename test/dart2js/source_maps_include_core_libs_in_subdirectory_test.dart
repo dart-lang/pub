@@ -10,8 +10,6 @@ import '../serve/utils.dart';
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   // This test is a bit shaky. Since dart2js is free to inline things, it's
   // not precise as to which source libraries will actually be referenced in
   // the source map. But this tries to use a type in the core library

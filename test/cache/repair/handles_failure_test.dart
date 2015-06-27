@@ -11,7 +11,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('handles failure to reinstall some packages', () {
     // Only serve two packages so repairing will have a failure.
     servePackages((builder) {

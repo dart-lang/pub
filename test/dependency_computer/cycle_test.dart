@@ -9,8 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("allows a package dependency cycle that's unrelated to "
       "transformers", () {
     d.dir(appPath, [

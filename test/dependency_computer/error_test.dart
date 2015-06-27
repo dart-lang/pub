@@ -13,8 +13,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("fails if an unknown package is imported", () {
     d.dir(appPath, [
       d.pubspec({

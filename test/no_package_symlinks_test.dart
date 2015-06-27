@@ -8,8 +8,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     group("with --no-package-symlinks", () {
       integration("installs hosted dependencies to the cache", () {

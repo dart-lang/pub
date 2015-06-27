@@ -7,7 +7,6 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('errors if the constraint matches no versions', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0");

@@ -23,8 +23,6 @@ class BrokenTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
-
   // Regression test for issue 20917.
   integration("snapshots the transformed version of an executable", () {
     servePackages((builder) {

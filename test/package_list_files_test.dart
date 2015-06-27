@@ -17,8 +17,6 @@ String root;
 Entrypoint entrypoint;
 
 main() {
-  initConfig();
-
   group('not in a git repo', () {
     setUp(() {
       d.appDir().create();

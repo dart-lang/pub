@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("ignores a Dart entrypoint in a dependency", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

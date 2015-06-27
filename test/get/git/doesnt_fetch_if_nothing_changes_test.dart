@@ -12,7 +12,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't re-fetch a repository if nothing changes", () {
     ensureGit();
 

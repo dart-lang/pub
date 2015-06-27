@@ -11,8 +11,6 @@ import '../test_pub.dart';
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration('fails gracefully if the package does not exist', () {
       serveNoPackages();

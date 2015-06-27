@@ -12,8 +12,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
-
   withBarbackVersions("any", () {
     integration("fails to load a pubspec with reserved transformer", () {
       d.dir(appPath, [

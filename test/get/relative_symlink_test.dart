@@ -16,7 +16,6 @@ main() {
   // So just skip it.
   if (Platform.operatingSystem == "windows") return;
 
-  initConfig();
   integration('uses a relative symlink for the self link', () {
     d.dir(appPath, [
       d.appPubspec(),

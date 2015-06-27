@@ -38,7 +38,6 @@ class GetInputTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("AssetNotFoundExceptions are detectable", () {
       d.dir(appPath, [

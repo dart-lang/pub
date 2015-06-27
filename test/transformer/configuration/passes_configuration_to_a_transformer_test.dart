@@ -34,7 +34,6 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("passes configuration to a transformer", () {
       var configuration = {"param": ["list", "of", "values"]};

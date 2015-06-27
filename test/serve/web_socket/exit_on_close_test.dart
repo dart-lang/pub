@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("exits when the connection closes", () {
     d.dir(appPath, [
       d.appPubspec(),

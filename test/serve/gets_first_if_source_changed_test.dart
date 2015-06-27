@@ -11,7 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if a dependency's source doesn't match the one in "
       "the lock file", () {
     d.dir("foo", [

@@ -14,7 +14,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration('runs transformers in the entrypoint package', () {
       d.dir(appPath, [

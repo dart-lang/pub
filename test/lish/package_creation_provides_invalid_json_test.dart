@@ -11,7 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('package creation provides invalid JSON', () {

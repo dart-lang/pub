@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("fails to load a non-existent transform", () {
       d.dir(appPath, [

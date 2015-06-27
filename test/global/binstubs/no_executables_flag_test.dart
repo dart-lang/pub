@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("does not create binstubs if --no-executables is passed", () {
     d.dir("foo", [
       d.pubspec({

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("the binstubs runs pub global run if there is no snapshot", () {
     d.dir("foo", [
       d.pubspec({

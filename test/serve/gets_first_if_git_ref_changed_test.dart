@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if a git dependency's ref doesn't match the one in "
       "the lock file", () {
     var repo = d.git('foo.git', [

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('path dependency with absolute path', () {
     d.dir('foo', [
       d.libDir('foo'),

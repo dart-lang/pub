@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('reinstalls previously cached hosted packages', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3");

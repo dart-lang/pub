@@ -7,7 +7,6 @@ library pub_tests;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('does nothing if the cache is empty', () {
     // Repair them.
     schedulePub(args: ["cache", "repair"],

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('path dependency to non-package directory', () {
     // Make an empty directory.
     d.dir('foo').create();

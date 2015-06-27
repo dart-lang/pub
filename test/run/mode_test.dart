@@ -26,7 +26,6 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration('runs a local script with customizable modes', () {
       d.dir(appPath, [

@@ -19,7 +19,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   integration('the spawned application can read from stdin', () {
     d.dir(appPath, [
       d.appPubspec(),

@@ -26,8 +26,6 @@ class RejectConfigTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
-
   withBarbackVersions("any", () {
      integration("a transformer can reject is configuration", () {
        d.dir(appPath, [

@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("overwrites an existing binstub if --overwrite is passed", () {
     d.dir("foo", [
       d.pubspec({

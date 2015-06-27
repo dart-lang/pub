@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("can specify the output directory to build into", () {
     d.dir(appPath, [
       d.appPubspec(),

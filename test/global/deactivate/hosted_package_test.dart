@@ -5,7 +5,6 @@
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('deactivates an active hosted package', () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));
 

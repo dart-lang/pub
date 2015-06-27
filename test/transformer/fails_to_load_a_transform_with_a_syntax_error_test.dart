@@ -12,8 +12,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
-
   // A syntax error will cause the analyzer to fail to parse the transformer
   // when attempting to rewrite its imports.
   withBarbackVersions("any", () {

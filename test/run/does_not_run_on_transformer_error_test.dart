@@ -30,7 +30,6 @@ class FailingTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration('does not run if a transformer has an error', () {
       d.dir(appPath, [

@@ -12,7 +12,6 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  initConfig();
   integration("watches modifications to files when using the native watcher",
       () {
     d.dir(appPath, [

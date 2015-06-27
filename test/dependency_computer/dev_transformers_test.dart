@@ -9,8 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("doesn't return a dependency's transformer that can't run on lib",
       () {
     d.dir(appPath, [

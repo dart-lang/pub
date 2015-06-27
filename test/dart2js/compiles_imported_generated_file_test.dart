@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("compiles a Dart file that imports a generated file to JS", () {
       d.dir(appPath, [

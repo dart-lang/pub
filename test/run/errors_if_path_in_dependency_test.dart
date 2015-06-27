@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('Errors if the executable is in a subdirectory in a '
       'dependency.', () {
     d.dir("foo", [

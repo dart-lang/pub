@@ -29,7 +29,6 @@ class ModeTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("defaults to debug mode", () {
       d.dir(appPath, [

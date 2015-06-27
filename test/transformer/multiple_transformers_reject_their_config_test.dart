@@ -27,8 +27,6 @@ class RejectConfigTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
-
   withBarbackVersions("any", () {
      integration("multiple transformers in the same phase reject their "
          "configurations", () {

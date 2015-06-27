@@ -11,7 +11,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("binds a directory to a new port and immediately requests an "
       "asset URL from that server", () {
     d.dir(appPath, [

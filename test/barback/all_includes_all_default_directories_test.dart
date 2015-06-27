@@ -9,8 +9,6 @@ import '../serve/utils.dart';
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   setUp(() {
     d.dir(appPath, [
       d.appPubspec(),

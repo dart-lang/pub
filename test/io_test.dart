@@ -9,13 +9,11 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   group('listDir', () {
     test('ignores hidden files by default', () {
       expect(withTempDir((temp) {

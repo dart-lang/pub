@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("excludes a list of assets", () {
       d.dir(appPath, [

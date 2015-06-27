@@ -15,8 +15,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   // This test is a bit funny.
   //
   // Pub parses the "version" file that gets generated and shipped with the SDK.

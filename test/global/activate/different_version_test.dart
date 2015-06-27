@@ -5,7 +5,6 @@
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("discards the previous active version if it doesn't match the "
       "constraint", () {
     servePackages((builder) {

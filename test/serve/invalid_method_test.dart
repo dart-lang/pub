@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("responds with a 405 for an invalid method", () {
     d.dir(appPath, [
       d.appPubspec(),

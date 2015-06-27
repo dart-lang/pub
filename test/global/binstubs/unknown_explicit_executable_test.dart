@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("errors on an unknown explicit executable", () {
     d.dir("foo", [
       d.pubspec({

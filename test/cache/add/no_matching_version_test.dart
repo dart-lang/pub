@@ -7,7 +7,6 @@ library pub_tests;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('fails if no version matches the version constraint', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.2");

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't upgrade dependencies whose constraints have been "
       "removed", () {
     servePackages((builder) {

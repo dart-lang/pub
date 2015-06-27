@@ -12,8 +12,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration('sends the correct Accept header', () {
       var server = new ScheduledServer();

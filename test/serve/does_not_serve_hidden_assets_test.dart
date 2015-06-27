@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("doesn't serve hidden assets", () {
     d.dir(appPath, [
       d.appPubspec(),

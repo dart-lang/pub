@@ -6,8 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration("copies non-Dart files to build/", () {
     servePackages((builder) => builder.serve("browser", "1.0.0"));
 

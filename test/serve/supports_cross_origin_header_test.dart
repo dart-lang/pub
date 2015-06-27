@@ -11,7 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("sends responses that allow cross-origin requests", () {
     d.dir(appPath, [
       d.appPubspec(),

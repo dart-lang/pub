@@ -15,8 +15,6 @@ Validator pubspecField(Entrypoint entrypoint) =>
   new PubspecFieldValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 

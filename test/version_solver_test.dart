@@ -16,7 +16,7 @@ import 'package:pub/src/source/cached.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
@@ -24,8 +24,6 @@ MockSource source1;
 MockSource source2;
 
 main() {
-  initConfig();
-
   // Uncomment this to debug failing tests.
   // log.verbosity = log.Verbosity.SOLVER;
 
@@ -1178,6 +1176,7 @@ _testResolve(void testFn(String description, Function body),
     }
 
     // Resolve the versions.
+    log.verbosity = log.Verbosity.NONE;
     var future = resolveVersions(
         downgrade ? SolveType.DOWNGRADE : SolveType.GET,
         cache.sources, root, lockFile: realLockFile);

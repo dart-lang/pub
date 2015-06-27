@@ -6,13 +6,11 @@ import 'package:path/path.dart' as path;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:scheduled_test/scheduled_test.dart';
-import 'package:unittest/unittest.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("can use relative path", () {
     d.dir("foo", [
       d.libDir("foo"),

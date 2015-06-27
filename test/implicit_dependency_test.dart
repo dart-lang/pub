@@ -9,8 +9,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration("implicitly constrains it to versions pub supports", () {
       servePackages((builder) {

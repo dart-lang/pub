@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('errors if the script is in a subdirectory.', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [

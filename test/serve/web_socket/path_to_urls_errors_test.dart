@@ -13,7 +13,6 @@ import '../utils.dart';
 
 main() {
   // TODO(rnystrom): Split into independent tests.
-  initConfig();
   integration("pathToUrls errors on bad inputs", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),

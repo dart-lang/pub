@@ -23,7 +23,6 @@ class BrokenTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("doesn't load an unnecessary transformer", () {
       d.dir(appPath, [

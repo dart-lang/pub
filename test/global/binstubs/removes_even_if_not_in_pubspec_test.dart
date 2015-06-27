@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("removes all binstubs for package", () {
     d.dir("foo", [
       d.pubspec({

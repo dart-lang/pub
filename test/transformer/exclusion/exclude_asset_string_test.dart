@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("allows a single string as the asset to exclude", () {
       d.dir(appPath, [

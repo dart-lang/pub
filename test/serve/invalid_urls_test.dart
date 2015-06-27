@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("responds with a 404 on incomplete special URLs", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1")

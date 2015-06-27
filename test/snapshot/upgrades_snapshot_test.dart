@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("upgrades a snapshot when its package is upgraded", () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", contents: [

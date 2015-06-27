@@ -20,7 +20,6 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 """;
 
 main() {
-  initConfig();
   integration('handles an orphaned binstub script', () {
     d.dir(cachePath, [
       d.dir('bin', [

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("highlights overridden packages", () {
     servePackages((builder) => builder.serve("overridden", "1.0.0"));
 

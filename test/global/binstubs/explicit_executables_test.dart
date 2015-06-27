@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("only creates binstubs for the listed executables", () {
     d.dir("foo", [
       d.pubspec({

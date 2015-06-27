@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// Dart2js can take a long time to compile dart code, so we increase the timeout
+// to cope with that.
+@Timeout.factor(3)
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:scheduled_test/scheduled_test.dart';
@@ -11,12 +15,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("reports Dart parse errors", () {
-    // Dart2js can take a long time to compile dart code, so we increase the
-    // timeout to cope with that.
-    currentSchedule.timeout *= 3;
-
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [

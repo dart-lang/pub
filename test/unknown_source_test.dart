@@ -10,8 +10,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration('fails gracefully on a dependency from an unknown source', () {
       d.appDir({"foo": {"bad": "foo"}}).create();

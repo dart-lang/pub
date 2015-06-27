@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("'packages' URLs look in the app's lib directory", () {
     d.dir(appPath, [
       d.appPubspec(),

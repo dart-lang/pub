@@ -47,7 +47,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
      integration("with configuration, only instantiates configurable "
          "transformers", () {

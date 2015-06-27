@@ -2,7 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library pub_tests;
+// Dart2js can take a long time to compile dart code, so we increase the timeout
+// to cope with that.
+@Timeout.factor(3)
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:scheduled_test/scheduled_test.dart';
@@ -25,13 +27,8 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("outputs error to JSON in a failed build", () {
-      // Loading transformers takes several seconds, so make sure we don't
-      // timeout.
-      currentSchedule.timeout *= 2;
-
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",

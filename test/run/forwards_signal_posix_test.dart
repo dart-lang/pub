@@ -30,7 +30,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   integration('forwards signals to the inner script', () {
     d.dir(appPath, [
       d.appPubspec(),

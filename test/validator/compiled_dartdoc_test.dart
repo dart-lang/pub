@@ -15,8 +15,6 @@ Validator compiledDartdoc(Entrypoint entrypoint) =>
   new CompiledDartdocValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 

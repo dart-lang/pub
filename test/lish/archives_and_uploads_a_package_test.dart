@@ -14,7 +14,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('archives and uploads a package', () {

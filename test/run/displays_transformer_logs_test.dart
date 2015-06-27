@@ -45,7 +45,6 @@ class LoggingTransformer extends Transformer implements LazyTransformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration('displays transformer log messages', () {
       d.dir(appPath, [

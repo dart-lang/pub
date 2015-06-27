@@ -12,7 +12,7 @@ import 'package:pub/src/source.dart';
 import 'package:pub/src/source/path.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
@@ -41,21 +41,20 @@ class MockSource extends Source {
 }
 
 main() {
-  initConfig();
   group('parse()', () {
     var sources = new SourceRegistry();
     sources.register(new MockSource());
     sources.register(new PathSource());
 
     var throwsPubspecException =
-      throwsA(new isInstanceOf<PubspecException>('PubspecException'));
+        throwsA(new isInstanceOf<PubspecException>());
 
     expectPubspecException(String contents, fn(Pubspec pubspec),
         [String expectedContains]) {
       var expectation = throwsPubspecException;
       if (expectedContains != null) {
         expectation = throwsA(allOf(
-            new isInstanceOf<PubspecException>('PubspecException'),
+            new isInstanceOf<PubspecException>(),
             predicate((error) => error.message.contains(expectedContains))));
       }
 

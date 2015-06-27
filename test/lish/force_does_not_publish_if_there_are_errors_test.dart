@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('--force does not publish if there are errors', () {

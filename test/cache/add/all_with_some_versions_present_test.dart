@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('"--all" adds all non-installed versions of the package', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.1");

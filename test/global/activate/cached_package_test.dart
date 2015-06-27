@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('can activate an already cached package', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0");

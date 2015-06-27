@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activating a path package installs dependencies', () {
     servePackages((builder) {
       builder.serve("bar", "1.0.0", deps: {"baz": "any"});

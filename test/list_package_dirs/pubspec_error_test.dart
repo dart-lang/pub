@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("reports the pubspec path when there is an error in it", () {
     d.dir(appPath, [
       d.file("pubspec.yaml", "some bad yaml")

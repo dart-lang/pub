@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('removes the 1.6-style lockfile', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0");

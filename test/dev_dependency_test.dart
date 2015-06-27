@@ -6,7 +6,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
   integration("includes root package's dev dependencies", () {
     d.dir('foo', [
       d.libDir('foo'),

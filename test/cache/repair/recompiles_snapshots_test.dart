@@ -10,7 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('recompiles activated executable snapshots', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [

@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("doesn't crash if an unused .dart file has a syntax error", () {
       d.dir(appPath, [

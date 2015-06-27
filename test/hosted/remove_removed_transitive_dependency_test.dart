@@ -8,8 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration("removes a transitive dependency that's no longer depended "
         "on", () {

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('defaults to the package name if the script is omitted', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [

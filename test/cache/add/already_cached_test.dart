@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('does nothing if the package is already cached', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3");

@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("picks up files added after serving started", () {
     d.dir(appPath, [
       d.appPubspec(),

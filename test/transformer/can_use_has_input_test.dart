@@ -33,7 +33,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("a transform can use hasInput", () {
       d.dir(appPath, [

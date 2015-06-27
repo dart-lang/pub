@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't snapshots the executables for a path package", () {
     d.dir('foo', [
       d.libPubspec("foo", "1.0.0"),

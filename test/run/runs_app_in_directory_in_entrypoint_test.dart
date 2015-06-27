@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('runs a Dart application in the entrypoint package', () {
     d.dir(appPath, [
       d.appPubspec(),

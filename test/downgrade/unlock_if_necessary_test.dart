@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("downgrades one locked hosted package's dependencies if it's "
       "necessary", () {
     servePackages((builder) {

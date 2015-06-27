@@ -13,7 +13,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if a dependency is not installed", () {
     servePackages((builder) => builder.serve("foo", "1.2.3"));
 

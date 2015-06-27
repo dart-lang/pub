@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('performs verison solver backtracking if necessary', () {
     servePackages((builder) {
       builder.serve("foo", "1.1.0", pubspec: {

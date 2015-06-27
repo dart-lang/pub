@@ -11,8 +11,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
-
   // An import error will cause the isolate API to fail synchronously while
   // loading the transformer.
   withBarbackVersions("any", () {

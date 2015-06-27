@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("upgrades one locked pub server package's dependencies if it's "
       "necessary", () {
     servePackages((builder) {

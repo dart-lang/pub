@@ -12,7 +12,6 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("works on the dart2js transformer", () {
       d.dir(appPath, [

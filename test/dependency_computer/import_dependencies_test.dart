@@ -9,8 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("reports a dependency if a transformed local file is imported",
       () {
     d.dir(appPath, [

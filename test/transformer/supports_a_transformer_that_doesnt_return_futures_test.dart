@@ -30,7 +30,6 @@ class RewriteTransformer extends Transformer implements DeclaringTransformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("supports a transformer that doesn't return futures", () {
       d.dir(appPath, [

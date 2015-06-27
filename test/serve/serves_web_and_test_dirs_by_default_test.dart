@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("serves web/ and test/ dirs by default", () {
     d.dir(appPath, [
       d.appPubspec(),

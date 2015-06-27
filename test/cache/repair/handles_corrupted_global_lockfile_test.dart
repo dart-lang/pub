@@ -10,7 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('handles a corrupted global lockfile', () {
     d.dir(cachePath, [
       d.dir('global_packages/foo', [

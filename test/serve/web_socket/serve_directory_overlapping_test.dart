@@ -12,7 +12,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("fails if the directory overlaps one already being served", () {
     d.dir(appPath, [
       d.appPubspec(),

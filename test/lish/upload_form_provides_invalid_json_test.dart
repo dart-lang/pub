@@ -10,7 +10,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('upload form provides invalid JSON', () {

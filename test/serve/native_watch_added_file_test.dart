@@ -12,7 +12,6 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  initConfig();
   integration("picks up files added after serving started when using the "
       "native watcher", () {
     d.dir(appPath, [

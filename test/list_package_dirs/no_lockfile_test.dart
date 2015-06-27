@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('with no lockfile, exits with error', () {
     d.dir(appPath, [
       d.appPubspec()

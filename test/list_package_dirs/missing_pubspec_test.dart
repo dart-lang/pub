@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   // This is a regression test for #20065.
   integration("reports a missing pubspec error using JSON", () {
     d.dir(appPath).create();

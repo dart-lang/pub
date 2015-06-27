@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("shows how many newer versions are available", () {
     servePackages((builder) {
       builder.serve("multiple_newer", "1.0.0");

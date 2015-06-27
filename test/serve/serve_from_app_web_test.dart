@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("finds files in the app's web directory", () {
     d.dir(appPath, [
       d.appPubspec(),

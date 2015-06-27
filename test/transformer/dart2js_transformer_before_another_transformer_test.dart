@@ -10,7 +10,6 @@ import '../serve/utils.dart';
 
 // Regression test for issue 21726.
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("runs a dart2js transformer before a local transformer", () {
       d.dir(appPath, [

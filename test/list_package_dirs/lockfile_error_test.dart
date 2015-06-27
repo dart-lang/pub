@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("reports the lockfile path when there is an error in it", () {
     d.dir(appPath, [
       d.appPubspec(),

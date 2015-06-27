@@ -29,8 +29,6 @@ import 'utils.dart';
 const _pathMax = 260 - 1;
 
 main() {
-  initConfig();
-
   integration('archives and uploads a package with more files than can fit on '
       'the command line', () {
     d.validPackage.create();

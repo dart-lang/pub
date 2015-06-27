@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("does not watch changes to compiled JS files in the package", () {
     d.dir(appPath, [
       d.appPubspec(),

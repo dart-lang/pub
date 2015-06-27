@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("passes along environment constants", () {
     d.dir(appPath, [
       d.pubspec({

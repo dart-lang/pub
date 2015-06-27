@@ -11,7 +11,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("binds a directory to a new port", () {
     d.dir(appPath, [
       d.appPubspec(),
@@ -26,9 +25,11 @@ main() {
     pubServe(args: ["web"]);
 
     // Bind the new directory.
-    expectWebSocketResult("serveDirectory", {"path": "test"}, {
-      "url": matches(r"http://localhost:\d+")
-    }).then((response) {
+    schedule(() async {
+      var response = await expectWebSocketResult(
+          "serveDirectory", {"path": "test"},
+          {"url": matches(r"http://localhost:\d+")});
+
       var url = Uri.parse(response["url"]);
       registerServerPort("test", url.port);
     });

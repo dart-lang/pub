@@ -15,8 +15,6 @@ Validator directory(Entrypoint entrypoint) =>
   new DirectoryValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 

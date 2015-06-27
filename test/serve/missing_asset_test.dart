@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("responds with a 404 for missing assets", () {
     d.dir(appPath, [
       d.appPubspec()

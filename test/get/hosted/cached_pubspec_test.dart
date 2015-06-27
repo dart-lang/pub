@@ -10,8 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration('does not request a pubspec for a cached package', () {
     servePackages((builder) => builder.serve("foo", "1.2.3"));
 

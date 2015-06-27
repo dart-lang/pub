@@ -76,8 +76,6 @@ void setUp() {
 }
 
 main() {
-  initConfig();
-
   integration("caches a transformer snapshot", () {
     setUp();
 

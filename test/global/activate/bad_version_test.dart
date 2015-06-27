@@ -8,7 +8,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('fails if the version constraint cannot be parsed', () {
     schedulePub(args: ["global", "activate", "foo", "1.0"],
         error: contains(

@@ -16,7 +16,6 @@ import 'utils.dart';
 
 main() {
   // This is a regression test for http://dartbug.com/21402.
-  initConfig();
   withBarbackVersions("any", () {
     integration("picks up files replaced after serving started when using the "
         "native watcher", () {

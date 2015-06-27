@@ -13,7 +13,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if a transitive dependency is not installed", () {
     servePackages((builder) => builder.serve("bar", "1.2.3"));
 

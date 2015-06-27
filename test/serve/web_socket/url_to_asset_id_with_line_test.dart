@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("provides output line number if given source one", () {
     d.dir(appPath, [
       d.appPubspec(),

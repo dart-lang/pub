@@ -9,7 +9,6 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('fails if the version constraint cannot be parsed', () {
     schedulePub(args: ["cache", "add", "foo", "-v", "1.0"],
         error: """

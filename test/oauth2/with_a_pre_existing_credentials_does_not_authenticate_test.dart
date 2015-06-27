@@ -10,7 +10,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('with a pre-existing credentials.json does not authenticate', () {
     d.validPackage.create();
 

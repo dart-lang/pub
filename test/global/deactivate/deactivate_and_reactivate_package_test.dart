@@ -5,7 +5,6 @@
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activates a different version after deactivating', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0");

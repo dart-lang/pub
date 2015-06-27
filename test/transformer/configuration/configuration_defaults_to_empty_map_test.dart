@@ -34,7 +34,6 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("configuration defaults to an empty map", () {
       d.dir(appPath, [

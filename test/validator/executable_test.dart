@@ -15,8 +15,6 @@ Validator executable(Entrypoint entrypoint) =>
   new ExecutableValidator(entrypoint);
 
 main() {
-  initConfig();
-
   setUp(d.validPackage.create);
 
   group('should consider a package valid if it', () {

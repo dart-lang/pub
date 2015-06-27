@@ -16,7 +16,6 @@ main() {
   // So just skip it.
   if (Platform.operatingSystem == "windows") return;
 
-  initConfig();
   integration("generates a symlink with a relative path if the dependency "
               "path was relative", () {
     d.dir("foo", [

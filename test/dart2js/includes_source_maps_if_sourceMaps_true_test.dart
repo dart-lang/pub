@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("includes source maps in a release build if sourceMaps true", () {
     d.dir(appPath, [
       d.pubspec({

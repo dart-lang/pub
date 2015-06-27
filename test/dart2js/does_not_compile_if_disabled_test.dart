@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("does not compile if dart2js is disabled", () {
     d.dir(appPath, [
       d.appPubspec(),

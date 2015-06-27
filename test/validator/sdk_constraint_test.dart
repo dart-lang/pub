@@ -21,8 +21,6 @@ Validator sdkConstraint(Entrypoint entrypoint) =>
   new SdkConstraintValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     integration('has no SDK constraint', () {
       d.validPackage.create();

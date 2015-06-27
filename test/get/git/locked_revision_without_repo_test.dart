@@ -14,7 +14,6 @@ import '../../test_pub.dart';
 // Regression test for issue 16470.
 
 main() {
-  initConfig();
   integration('checks out the repository for a locked revision', () {
     ensureGit();
 

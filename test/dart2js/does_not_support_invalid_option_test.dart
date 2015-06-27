@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("doesn't support an invalid dart2js option", () {
     d.dir(appPath, [
       d.pubspec({

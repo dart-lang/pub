@@ -5,13 +5,11 @@
 library utils_test;
 
 import 'package:pub/src/utils.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   group('yamlToString()', () {
     test('null', () {
       expect(yamlToString(null), equals('null'));

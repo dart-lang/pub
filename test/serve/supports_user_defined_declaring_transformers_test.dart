@@ -35,7 +35,6 @@ class DeclaringRewriteTransformer extends Transformer
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("supports a user-defined declaring transformer", () {
       d.dir(appPath, [

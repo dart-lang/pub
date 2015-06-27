@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("generates a symlink with an absolute path if the dependency "
               "path was absolute", () {
     d.dir("foo", [

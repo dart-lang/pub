@@ -16,7 +16,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   integration('allows assets in parent directories of the entrypoint to be'
       'accessed', () {
     d.dir(appPath, [

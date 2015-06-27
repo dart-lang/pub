@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("does not get first if a git dependency's url is unchanged", () {
     d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),

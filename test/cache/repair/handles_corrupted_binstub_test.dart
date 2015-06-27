@@ -12,7 +12,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('handles a corrupted binstub script', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [

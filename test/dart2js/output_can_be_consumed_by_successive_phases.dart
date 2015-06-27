@@ -27,7 +27,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("output can be consumed by successive phases", () {
       d.dir(appPath, [

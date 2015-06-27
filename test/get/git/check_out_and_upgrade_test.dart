@@ -10,7 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('checks out and upgrades a package from Git', () {
     ensureGit();
 

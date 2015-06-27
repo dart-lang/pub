@@ -13,7 +13,6 @@ import '../utils.dart';
 
 main() {
   // TODO(rnystrom): Split into independent tests.
-  initConfig();
   integration("pathToUrls converts asset ids to matching URL paths", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),

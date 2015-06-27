@@ -18,8 +18,6 @@ Function size(int size) {
 }
 
 main() {
-  initConfig();
-
   setUp(d.validPackage.create);
 
   integration('considers a package valid if it is <= 100 MB', () {

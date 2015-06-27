@@ -6,7 +6,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('runs a script in a git package', () {
     ensureGit();
 

@@ -11,8 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("reports previous transformers as dependencies if the "
       "transformer is transformed", () {
     // The root app just exists so that something is transformed by pkg and qux.

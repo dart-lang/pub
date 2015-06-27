@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("returns the old URL if the directory is already served", () {
     d.dir(appPath, [
       d.appPubspec(),

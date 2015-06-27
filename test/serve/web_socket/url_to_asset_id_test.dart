@@ -11,7 +11,6 @@ import '../utils.dart';
 
 main() {
   // TODO(rnystrom): Split into independent tests.
-  initConfig();
   setUp(() {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

@@ -16,8 +16,6 @@ import 'utils.dart';
 Validator name(Entrypoint entrypoint) => new NameValidator(entrypoint);
 
 main() {
-  initConfig();
-
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 

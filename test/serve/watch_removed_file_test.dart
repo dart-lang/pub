@@ -13,7 +13,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("stop serving a file that is removed", () {
     d.dir(appPath, [
       d.appPubspec(),

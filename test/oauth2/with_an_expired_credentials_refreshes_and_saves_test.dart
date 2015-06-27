@@ -12,7 +12,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('with an expired credentials.json, refreshes and saves the '
       'refreshed access token to credentials.json', () {
     d.validPackage.create();

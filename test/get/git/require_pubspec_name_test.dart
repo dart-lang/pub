@@ -11,7 +11,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('requires the dependency to have a pubspec with a name '
       'field', () {
     ensureGit();

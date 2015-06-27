@@ -10,7 +10,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('replaces a broken "packages" symlink', () {
     d.dir(appPath, [
       d.appPubspec(),

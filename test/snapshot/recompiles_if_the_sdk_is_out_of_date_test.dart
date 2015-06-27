@@ -12,7 +12,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("creates a snapshot for an immediate dependency's executables",
       () {
     servePackages((builder) {

@@ -6,7 +6,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
   forBothPubGetAndUpgrade((command) {
     integration('.packages file is created', () {
       servePackages((builder) {

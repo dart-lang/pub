@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('--force cannot be combined with --dry-run', () {

@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't create a snapshot for a package that depends on the "
       "entrypoint", () {
     servePackages((builder) {

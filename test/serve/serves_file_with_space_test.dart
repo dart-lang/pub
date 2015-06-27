@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("serves a filename with a space", () {
     d.dir(appPath, [
       d.appPubspec(),

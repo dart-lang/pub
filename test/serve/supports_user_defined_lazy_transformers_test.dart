@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("supports a user-defined lazy transformer", () {
       d.dir(appPath, [

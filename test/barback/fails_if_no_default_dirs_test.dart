@@ -10,8 +10,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
-
   setUp(() {
     d.appDir().create();
   });

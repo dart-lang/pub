@@ -28,7 +28,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("prefers transformer.dart to <package name>.dart", () {
       d.dir(appPath, [

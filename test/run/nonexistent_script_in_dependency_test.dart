@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('Errors if the script in a dependency does not exist.', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0")

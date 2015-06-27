@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("doesn't support invalid commandLineOptions type", () {
     d.dir(appPath, [
       d.pubspec({

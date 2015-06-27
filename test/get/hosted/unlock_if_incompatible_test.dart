@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('upgrades a locked pub server package with a new incompatible '
       'constraint', () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));

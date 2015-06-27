@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("does not show how many newer versions are available for "
       "packages that are locked and not being upgraded", () {
     servePackages((builder) {

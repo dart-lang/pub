@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('doesn\'t require the repository name to match the name in the '
       'pubspec', () {
     ensureGit();

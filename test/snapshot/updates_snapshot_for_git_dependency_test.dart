@@ -11,7 +11,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("upgrades a snapshot when a git dependency is upgraded", () {
     ensureGit();
 

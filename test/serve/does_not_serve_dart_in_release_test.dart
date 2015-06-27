@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("does not serve .dart files in release mode", () {
 
     d.dir("foo", [

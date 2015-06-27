@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("errors if an executable's script can't be found", () {
     d.dir("foo", [
       d.pubspec({

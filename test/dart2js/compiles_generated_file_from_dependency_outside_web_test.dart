@@ -10,7 +10,6 @@ import '../serve/utils.dart';
 
 main() {
   // This is a regression test for issue #17198.
-  initConfig();
   withBarbackVersions("any", () {
     integration("compiles a Dart file that imports a generated file to JS "
         "outside web/", () {

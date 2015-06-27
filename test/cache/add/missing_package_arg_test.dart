@@ -9,7 +9,6 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('fails if no package was given', () {
     schedulePub(args: ["cache", "add"],
         error: """

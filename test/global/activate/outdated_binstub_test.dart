@@ -24,7 +24,6 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 """;
 
 main() {
-  initConfig();
   integration("an outdated binstub is replaced", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

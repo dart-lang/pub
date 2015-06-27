@@ -13,7 +13,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("binds a directory to a new port and immediately unbinds that "
       "directory", () {
     d.dir(appPath, [

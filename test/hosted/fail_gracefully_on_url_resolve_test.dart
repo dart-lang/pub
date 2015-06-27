@@ -10,8 +10,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration('fails gracefully if the url does not resolve', () {
       d.dir(appPath, [

@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activates a package at a local path', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),

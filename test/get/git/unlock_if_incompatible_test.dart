@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('upgrades a locked Git package with a new incompatible '
       'constraint', () {
     ensureGit();

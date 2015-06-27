@@ -10,7 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('gets a package from a pub server', () {
     servePackages((builder) => builder.serve("foo", "1.2.3"));
 

@@ -8,8 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration('upgrades a package using the cache', () {
       // Run the server so that we know what URL to use in the system cache.

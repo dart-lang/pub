@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("shows how package changed from previous lockfile", () {
     servePackages((builder) {
       builder.serve("unchanged", "1.0.0");

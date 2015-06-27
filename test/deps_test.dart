@@ -8,8 +8,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   setUp(() {
     servePackages((builder) {
       builder.serve("normal", "1.2.3", deps: {

@@ -8,7 +8,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('errors if the package could not be found', () {
     serveNoPackages();
 

@@ -28,7 +28,6 @@ class ModeTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("defaults to release mode", () {
       d.dir(appPath, [

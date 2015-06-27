@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("supports most dart2js command-line options", () {
     d.dir(appPath, [
       d.pubspec({

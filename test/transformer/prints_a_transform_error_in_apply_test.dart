@@ -23,7 +23,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("prints a transform error in apply", () {
       d.dir(appPath, [

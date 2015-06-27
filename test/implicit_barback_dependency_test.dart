@@ -9,8 +9,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   var constraint = barback.pubConstraints["barback"];
   var current = constraint.min.toString();
   var previous = new Version(constraint.min.major, constraint.min.minor - 1, 0)

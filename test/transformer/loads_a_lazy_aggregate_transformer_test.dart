@@ -42,7 +42,6 @@ class ManyToOneTransformer extends AggregateTransformer
 """;
 
 main() {
-  initConfig();
   withBarbackVersions(">=0.14.1", () {
     integration("loads a lazy aggregate transformer", () {
       d.dir(appPath, [

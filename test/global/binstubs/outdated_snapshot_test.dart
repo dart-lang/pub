@@ -15,7 +15,6 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("a binstub runs 'pub global run' for an outdated snapshot", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

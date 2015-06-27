@@ -6,7 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("doesn't choke on an explicit dart2js transformer", () {
     d.dir(appPath, [
       d.pubspec({

@@ -8,8 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration("includes Dart files in debug mode", () {
     d.dir(appPath, [
       d.appPubspec(),

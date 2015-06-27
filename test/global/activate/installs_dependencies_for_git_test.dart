@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('activating a Git package installs its dependencies', () {
     servePackages((builder) {
       builder.serve("bar", "1.0.0", deps: {"baz": "any"});

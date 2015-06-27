@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("does not get if the locked version of a dependency is allowed "
       "by the pubspec's constraint", () {
     d.dir("foo", [

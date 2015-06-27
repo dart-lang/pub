@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("removes previous binstubs when reactivating a package", () {
     d.dir("foo", [
       d.pubspec({

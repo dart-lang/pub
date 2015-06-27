@@ -6,7 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('runs a shorthand Dart application in a dependency', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),

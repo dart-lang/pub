@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  initConfig();
   integration("unbinds a directory from a port", () {
     d.dir(appPath, [
       d.appPubspec(),

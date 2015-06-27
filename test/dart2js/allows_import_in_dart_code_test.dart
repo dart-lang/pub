@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("handles imports in the Dart code", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

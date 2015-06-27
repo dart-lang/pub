@@ -16,7 +16,6 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  initConfig();
   integration("stop serving a file that is removed when using the native "
       "watcher", () {
     d.dir(appPath, [

@@ -9,7 +9,6 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("removes binstubs when the package is deactivated", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

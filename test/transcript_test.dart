@@ -5,13 +5,11 @@
 library version_test;
 
 import 'package:pub/src/transcript.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   test("discards from the middle once it reaches the maximum", () {
     var transcript = new Transcript<String>(4);
     forEachToString() {

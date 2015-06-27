@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   // Regression test for issue 23480
   integration("ignores a transformer on test files in a dependency", () {
     servePackages((builder) {

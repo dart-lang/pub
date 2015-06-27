@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('adds the latest stable version of the package', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.2");

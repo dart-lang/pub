@@ -482,6 +482,15 @@ void createPackageSymlink(String name, String target, String symlink,
 final bool runningAsTest =
     !path.url.basename(Platform.script.path).startsWith('pub.');
 
+// TODO(nweiz): Use the test API when test#48 is fixed.
+/// Whether the current process is one of pub's test files being run through the
+/// test package's test runner.
+///
+/// The test runner starts all tests from an entrypoint called
+/// "runInIsolate.dart'>
+final bool runningAsTestRunner =
+    path.url.basename(Platform.script.path).startsWith('runInIsolate.dart');
+
 /// Whether the current process is a pub subprocess being run from a test.
 ///
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
@@ -534,6 +543,9 @@ final String pubRoot = (() {
   if (runningFromSdk) {
     throw new StateError("Can't get pub's root from the SDK.");
   }
+
+  // The test runner always runs from the working directory.
+  if (runningAsTestRunner) return path.current;
 
   var script = path.fromUri(Platform.script);
   if (runningAsTest) {

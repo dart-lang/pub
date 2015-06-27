@@ -6,7 +6,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('changes in a path package are immediately reflected',
       () {
     d.dir("foo", [

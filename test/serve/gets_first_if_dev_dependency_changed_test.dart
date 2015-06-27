@@ -11,7 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if a dev dependency has changed", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

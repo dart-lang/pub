@@ -14,8 +14,6 @@ Validator dependencyOverride(Entrypoint entrypoint) =>
     new DependencyOverrideValidator(entrypoint);
 
 main() {
-  initConfig();
-
   integration('invalidates a package if it has dependency overrides', () {
     d.dir(appPath, [
       d.pubspec({

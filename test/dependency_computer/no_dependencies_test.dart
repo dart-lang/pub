@@ -11,8 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("reports no dependencies if no transformers are used", () {
     d.dir(appPath, [
       d.pubspec({

@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   // Regression test for issue 23113
   integration('runs a named Dart application in a dependency', () {
     servePackages((builder) {

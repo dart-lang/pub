@@ -12,7 +12,6 @@ main(List<String> args) {
 """;
 
 main() {
-  initConfig();
   integration('passes arguments to the spawned script', () {
     d.dir(appPath, [
       d.appPubspec(),

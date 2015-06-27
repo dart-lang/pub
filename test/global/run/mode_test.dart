@@ -26,7 +26,6 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   integration('runs a script in an activated package with customizable modes',
       () {
     servePackages((builder) {

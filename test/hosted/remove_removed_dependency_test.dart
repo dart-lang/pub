@@ -8,8 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     integration("removes a dependency that's removed from the pubspec", () {
       servePackages((builder) {

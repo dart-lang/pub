@@ -12,7 +12,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   // Regression test for issue 20947.
   integration('checks out an unfetched and locked revision of a cached '
       'repository', () {

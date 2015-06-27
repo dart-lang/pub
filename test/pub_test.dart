@@ -10,8 +10,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   integration('running pub with no command displays usage', () {
     schedulePub(args: [], output: """
         Pub is a package manager for Dart.

@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("gets first if there is no lockfile", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

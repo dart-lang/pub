@@ -29,7 +29,6 @@ class ModeTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("allows user-defined mode names", () {
       d.dir(appPath, [

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("upgrades dependencies whose constraints have been removed", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"shared-dep": "any"});

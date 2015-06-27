@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('resolves version constraints from a pub server', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", deps: {"baz": ">=2.0.0"});

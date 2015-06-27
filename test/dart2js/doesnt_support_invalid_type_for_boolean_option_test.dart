@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("doesn't support invalid type for boolean option", () {
     d.dir(appPath, [
       d.pubspec({

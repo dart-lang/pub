@@ -10,7 +10,6 @@ import 'utils.dart';
 
 main() {
   // This is a regression test for https://dartbug.com/15180.
-  initConfig();
   integration("does not get if the locked version matches the override", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),

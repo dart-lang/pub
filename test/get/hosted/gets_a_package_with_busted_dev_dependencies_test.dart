@@ -10,8 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
-
   // Regression test for issue 22194.
   integration('gets a dependency with broken dev dependencies from a pub '
       'server', () {

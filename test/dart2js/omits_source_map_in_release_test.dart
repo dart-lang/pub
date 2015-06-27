@@ -6,7 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("omits source maps from a release build", () {
     d.dir(appPath, [
       d.appPubspec(),

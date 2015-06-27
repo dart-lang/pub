@@ -21,7 +21,6 @@ class RewriteGroup implements TransformerGroup {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("runs a transformer group", () {
       d.dir(appPath, [

@@ -13,7 +13,6 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("the generated binstub runs a snapshotted executable", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

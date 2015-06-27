@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('uses the publish_to URL', () {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["publish_to"] = "http://example.com";

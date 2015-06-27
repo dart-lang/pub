@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("creates binstubs for each executable in the pubspec", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

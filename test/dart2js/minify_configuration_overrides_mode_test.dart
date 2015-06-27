@@ -7,7 +7,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("minify configuration overrides the mode", () {
     d.dir(appPath, [
       d.pubspec({

@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("the character before each package describes the change", () {
     servePackages((builder) {
       builder.serve("added", "1.0.0");

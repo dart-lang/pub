@@ -9,8 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  initConfig();
-
   integration("reports a dependency if the library itself is transformed", () {
     d.dir(appPath, [
       d.pubspec({

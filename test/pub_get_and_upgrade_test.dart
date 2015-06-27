@@ -11,8 +11,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  initConfig();
-
   forBothPubGetAndUpgrade((command) {
     group('requires', () {
       integration('a pubspec', () {

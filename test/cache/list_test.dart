@@ -10,8 +10,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   hostedDir(package) {
     return path.join(sandboxDir, cachePath, "hosted",
         "pub.dartlang.org", package);

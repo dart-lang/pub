@@ -21,7 +21,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("prints a transform interface error", () {
       d.dir(appPath, [

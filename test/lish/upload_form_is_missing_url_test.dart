@@ -12,7 +12,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   setUp(d.validPackage.create);
 
   integration('upload form is missing url', () {

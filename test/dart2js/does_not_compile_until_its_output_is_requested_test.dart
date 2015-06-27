@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  initConfig();
   integration("does not compile until its output is requested", () {
     d.dir(appPath, [
       d.pubspec({

@@ -14,7 +14,6 @@ main() {
 """;
 
 main() {
-  initConfig();
   integration('runs the script in checked mode by default', () {
     d.dir(appPath, [
       d.appPubspec(),

@@ -43,21 +43,12 @@ import 'package:scheduled_test/scheduled_stream.dart';
 import 'package:scheduled_test/scheduled_test.dart' hide fail;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:unittest/compact_vm_config.dart';
 import 'package:yaml/yaml.dart';
 
 import 'descriptor.dart' as d;
 import 'serve_packages.dart';
 
 export 'serve_packages.dart';
-
-/// This should be called at the top of a test file to set up an appropriate
-/// test configuration for the machine running the tests.
-initConfig() {
-  useCompactVMConfiguration();
-  filterStacks = true;
-  unittestConfiguration.timeout = null;
-}
 
 /// The current [HttpServer] created using [serve].
 var _server;
@@ -210,7 +201,6 @@ void serve([List<d.Descriptor> contents]) {
   schedule(() {
     return _closeServer().then((_) {
       return shelf_io.serve((request) {
-        currentSchedule.heartbeat();
         var path = p.posix.fromUri(request.url.path.replaceFirst("/", ""));
         _requestedPaths.add(path);
 
@@ -371,14 +361,6 @@ void solo_integration(String description, void body()) =>
 
 void _integration(String description, void body(), [Function testFn]) {
   testFn(description, () {
-    // TODO(nweiz): remove this when issue 15362 is fixed.
-    currentSchedule.timeout *= 2;
-
-    // The windows bots are very slow, so we increase the default timeout.
-    if (Platform.operatingSystem == "windows") {
-      currentSchedule.timeout *= 2;
-    }
-
     _sandboxDir = createSystemTempDir();
     d.defaultRoot = sandboxDir;
     currentSchedule.onComplete.schedule(() => deleteEntry(_sandboxDir),
@@ -650,10 +632,6 @@ String get _packageRoot => p.absolute(Platform.packageRoot);
 /// This also increases the [Schedule] timeout to 30 seconds on Windows,
 /// where Git runs really slowly.
 void ensureGit() {
-  if (Platform.operatingSystem == "windows") {
-    currentSchedule.timeout = new Duration(seconds: 30);
-  }
-
   if (!gitlib.isInstalled) {
     throw new Exception("Git must be installed to run this test.");
   }

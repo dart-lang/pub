@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("shared dependency with same path", () {
     d.dir("shared", [
       d.libDir("shared"),

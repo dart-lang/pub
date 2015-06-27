@@ -30,7 +30,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
   withBarbackVersions("any", () {
     integration("a transform can use consumePrimary", () {
       d.dir(appPath, [

@@ -57,8 +57,6 @@ class HasInputTransformer extends Transformer {
 """;
 
 main() {
-  initConfig();
-
   integration("caches a transformed dependency", () {
     servePackages((builder) {
       builder.serveRepoPackage('barback');

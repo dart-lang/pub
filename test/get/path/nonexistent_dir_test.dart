@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('path dependency to non-existent directory', () {
     var badPath = path.join(sandboxDir, "bad_path");
 

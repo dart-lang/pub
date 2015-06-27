@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('force does not publish if the package is private', () {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["publish_to"] = "none";

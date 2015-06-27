@@ -8,7 +8,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration("upgrades a locked package's dependers in order to get it to max "
       "version", () {
     servePackages((builder) {

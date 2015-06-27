@@ -12,7 +12,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('upgrades a locked pub server package with a nonexistent version',
       () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));

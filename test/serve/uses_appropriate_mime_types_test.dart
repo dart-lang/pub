@@ -11,7 +11,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("uses appropriate mime types", () {
     d.dir(appPath, [
       d.appPubspec(),

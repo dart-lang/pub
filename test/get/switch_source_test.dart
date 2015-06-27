@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration('re-gets a package if its source has changed', () {
     servePackages((builder) => builder.serve("foo", "1.2.3"));
 

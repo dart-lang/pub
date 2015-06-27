@@ -9,7 +9,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   // Regression test for issue 20103.
   integration('path dependency to an empty pubspec', () {
     d.dir('foo', [

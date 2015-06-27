@@ -8,7 +8,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("includes source map URLs in a debug build", () {
     d.dir(appPath, [
       d.appPubspec(),

@@ -6,8 +6,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
-
   integration("cleans entire build directory before a build", () {
     d.dir(appPath, [
       d.appPubspec(),

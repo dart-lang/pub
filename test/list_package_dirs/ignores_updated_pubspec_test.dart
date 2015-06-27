@@ -9,7 +9,6 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  initConfig();
   integration("uses what's in the lockfile regardless of the pubspec", () {
     d.dir("foo", [
       d.libDir("foo"),

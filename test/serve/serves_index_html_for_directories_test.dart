@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("serves index.html for directories", () {
     d.dir(appPath, [
       d.appPubspec(),

@@ -9,7 +9,6 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  initConfig();
   integration("watches modifications to files", () {
     d.dir(appPath, [
       d.appPubspec(),

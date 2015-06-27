@@ -12,7 +12,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  initConfig();
   integration('reinstalls previously cached git packages', () {
     // Create two cached revisions of foo.
     d.git('foo.git', [
