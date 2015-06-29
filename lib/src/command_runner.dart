@@ -56,8 +56,9 @@ class PubCommandRunner extends CommandRunner {
         help: 'Shortcut for "--verbosity=all".');
     argParser.addFlag('with-prejudice', hide: !isAprilFools,
         negatable: false, help: 'Execute commands with prejudice.');
-    argParser.addFlag('package-symlinks', hide: true, negatable: true,
-        defaultsTo: true);
+    argParser.addFlag('package-symlinks',
+        negatable: true, defaultsTo: true,
+        help: "Generate packages/ directories when installing packages.");
 
     addCommand(new BuildCommand());
     addCommand(new CacheCommand());
