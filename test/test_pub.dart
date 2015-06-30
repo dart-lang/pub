@@ -522,8 +522,11 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
   var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
   if (fileExists('$pubPath.snapshot')) pubPath += '.snapshot';
 
-  var dartArgs = [pubPath, '--verbose'];
-  dartArgs.addAll(args);
+  var dartArgs = [
+    '--package-root=${p.toUri(p.absolute(p.fromUri(Platform.packageRoot)))}',
+    pubPath,
+    '--verbose'
+  ]..addAll(args);
 
   if (tokenEndpoint == null) tokenEndpoint = new Future.value();
   var environmentFuture = tokenEndpoint

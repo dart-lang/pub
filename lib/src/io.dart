@@ -515,9 +515,19 @@ final _dartRepoRegExp = new RegExp(
 
 /// Whether pub is running from source in the Dart repo.
 ///
-/// This can happen when building Observatory, for example.
-final bool runningFromDartRepo =
-    Platform.script.path.contains(_dartRepoRegExp);
+/// This can happen when running tests against the repo, as well as when
+/// building Observatory.
+final bool runningFromDartRepo = (() {
+  if (runningAsTestRunner) {
+    // When running from the test runner, we can't find our location via
+    // Platform.script since the runner munges that. However, it guarantees that
+    // the working directory is <repo>/third_party/pkg/pub.
+    return path.current.contains(
+        new RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
+  } else {
+    return Platform.script.path.contains(_dartRepoRegExp);
+  }
+})();
 
 /// Resolves [target] relative to the path to pub's `asset` directory.
 String assetPath(String target) => runningFromSdk
@@ -567,6 +577,12 @@ final String pubRoot = (() {
 final String dartRepoRoot = (() {
   if (!runningFromDartRepo) {
     throw new StateError("Not running from source in the Dart repo.");
+  }
+
+  if (runningAsTestRunner) {
+    // When running in test code started by the test runner, the working
+    // directory will always be <repo>/third_party/pkg/pub.
+    return path.dirname(path.dirname(path.dirname(path.current)));
   }
 
   // Get the URL of the repo root in a way that works when either both running
