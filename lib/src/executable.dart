@@ -113,7 +113,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // If we're running an executable directly from the filesystem, make sure that
   // it knows where to load the packages. If it's a dependency's executable, for
   // example, it may not have the right packages directory itself.
-  if (executableUrl.scheme == 'file') {
+  if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
     // TODO(nweiz): use a .packages file once sdk#23369 is fixed.
     vmArgs.add('--package-root=${p.toUri(entrypoint.packagesDir)}');
   }

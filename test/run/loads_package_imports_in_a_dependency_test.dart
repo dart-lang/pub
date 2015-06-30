@@ -6,7 +6,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('runs a named Dart application in a dependency', () {
+  integration('loads package imports in a dependency', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
