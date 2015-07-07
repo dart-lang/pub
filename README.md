@@ -46,7 +46,9 @@ Before any change is made to pub, all tests should pass. To run a pub test, run:
 
     dart test/path/to/pub_test.dart
 
-A way to run all tests at once is coming soon.
+To run all tests at once, run:
+
+    pub run test
 
 Some pub tests require specific versions of other packages. These packages are
 included in the repository as [Git submodules][]. To get them, run:
