@@ -23,14 +23,15 @@ class PackagesFileDescriptor extends Descriptor {
       new RegExp(r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
                 r"(?:-[a-zA-Z\d-]+)?(?:\+[a-zA-Z\d-]+)?$");
 
-  final _dependencies;
+  /// A map from package names to strings describing where the packages are
+  /// located on disk.
+  final Map<String, String> _dependencies;
 
   /// Describes a `.packages` file with the given dependencies.
   ///
-  /// Dependencies maps package name to semantic version.
-  PackagesFileDescriptor([Map<String, String> dependencies])
-      : _dependencies = dependencies,
-        super('.packages');
+  /// [dependencies] maps package names to strings describing where the packages
+  /// are located on disk.
+  PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
   Future create([String parent]) => schedule(() {
     if (parent == null) parent = defaultRoot;
@@ -45,7 +46,7 @@ class PackagesFileDescriptor extends Descriptor {
         } else {
           // Otherwise it's a path relative to the .pubspec file,
           // which is also the relative path wrt. the .packages file.
-          packagePath = version;
+          packagePath = p.fromUri(version);
         }
         mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
       });
@@ -80,19 +81,22 @@ class PackagesFileDescriptor extends Descriptor {
       if (!map.containsKey(package)) {
         fail(".packages does not contain $package entry");
       }
-      var version = _dependencies[package];
-      if (_semverRE.hasMatch(version)) {
-        if (!map[package].path.contains(version)) {
+
+      var description = _dependencies[package];
+      if (_semverRE.hasMatch(description)) {
+        if (!map[package].path.contains(description)) {
           fail(".packages of $package has incorrect version. "
-               "Expected $version, found location: ${map[package]}.");
+               "Expected $description, found location: ${map[package]}.");
         }
       } else {
-        var packagePath = fileUri.resolve("$version/lib/");
-        if (!packagePath.path.endsWith('/')) {
-          packagePath = packagePath.replace(path: packagePath.path + '/');
-        }
-        if ("${map[package]}" != "$packagePath") {
-          fail("Relative path: Expected $packagePath, found ${map[package]}");
+        var expected = p.normalize(p.join(
+            p.dirname(fullPath), p.fromUri(description), 'lib'));
+        expected = new File(expected).resolveSymbolicLinksSync();
+        var actual = new File(p.normalize(p.absolute(p.fromUri(map[package]))))
+            .resolveSymbolicLinksSync();
+
+        if (expected != actual) {
+          fail("Relative path: Expected $description, found ${map[package]}");
         }
       }
     }
