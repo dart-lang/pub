@@ -172,9 +172,15 @@ class DependencyComputer {
         for (var config in phase) {
           var id = config.id;
           if (id.isBuiltInTransformer) continue;
+          if (packageName != _graph.entrypoint.root.name &&
+              !config.canTransformPublicFiles) {
+            continue;
+          }
+
           if (_loadingPackageComputers.contains(id.package)) {
             throw new CycleException("$packageName is transformed by $id");
           }
+
           results.add(id);
         }
       }
@@ -264,9 +270,9 @@ class _PackageDependencyComputer {
     // [_transformersNeededByLibraries] while [_applicableTransformers] is
     // smaller.
     for (var phase in _package.pubspec.transformers) {
-      for (var config in phase) {
+      _applicableTransformers.addAll(phase.where((config) {
         // Ignore non-root transformers on non-public files.
-        if (!isRootPackage && !config.canTransformPublicFiles) continue;
+        if (!isRootPackage && !config.canTransformPublicFiles) return false;
 
         var id = config.id;
         try {
@@ -287,13 +293,14 @@ class _PackageDependencyComputer {
         } on CycleException catch (error) {
           throw error.prependStep("$packageName is transformed by $id");
         }
-      }
+
+        return true;
+      }));
 
       // Clear the cached imports and exports because the new transformers may
       // start transforming a library whose directives were previously
       // statically analyzable.
       _transitiveExternalDirectives.clear();
-      _applicableTransformers.addAll(phase);
     }
   }
 

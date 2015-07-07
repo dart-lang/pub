@@ -88,4 +88,40 @@ void main() {
 
     expectDependencies({"foo": []});
   });
+
+  // Regression test for #1291
+  integration("doesn't return a dependency's transformer that can't run on lib "
+      "when the app's transformer imports the dependency's", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "dependencies": {"foo": {"path": "../foo"}},
+        "transformers": ["myapp"]
+      }),
+      d.dir("lib", [
+        d.file("myapp.dart", transformer(['package:foo/foo.dart']))
+      ])
+    ]).create();
+
+    d.dir("foo", [
+      d.pubspec({
+        "name": "foo",
+        "version": "1.0.0",
+        "transformers": [
+          ["foo/bar"],
+          [{"foo": {"\$include": "test/foo_test.dart"}}]
+        ]
+      }),
+      d.dir("lib", [
+        d.file("foo.dart", transformer()),
+        d.file("bar.dart", transformer())
+      ]),
+      d.dir("test", [d.file("foo_test.dart", "")])
+    ]).create();
+
+    expectDependencies({
+      'foo/bar': [],
+      'myapp': ['foo/bar']
+    });
+  });
 }
