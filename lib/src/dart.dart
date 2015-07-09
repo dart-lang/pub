@@ -101,9 +101,9 @@ Future compile(String entrypoint, CompilerProvider provider, {
     }
 
     return compiler.compile(
-        path.toUri(entrypoint),
+        path.toUri(path.absolute(entrypoint)),
         provider.libraryRoot,
-        path.toUri(appendSlash(packageRoot)),
+        path.toUri(appendSlash(path.absolute(packageRoot))),
         provider.provideInput,
         provider.handleDiagnostic,
         options,

@@ -200,7 +200,8 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
 /// difference is that it uses barback's logging code and, more importantly, it
 /// handles missing source files more gracefully.
 class _BarbackCompilerProvider implements dart.CompilerProvider {
-  Uri get libraryRoot => Uri.parse("${path.toUri(_libraryRootPath)}/");
+  Uri get libraryRoot =>
+      Uri.parse("${path.toUri(path.absolute(_libraryRootPath))}/");
 
   final AssetEnvironment _environment;
   final Transform _transform;
