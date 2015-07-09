@@ -6,7 +6,7 @@ library pub.command.list_package_dirs;
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../log.dart' as log;
@@ -41,20 +41,23 @@ class ListPackageDirsCommand extends PubCommand {
     entrypoint.lockFile.packages.forEach((name, package) {
       var source = entrypoint.cache.sources[package.source];
       futures.add(source.getDirectory(package).then((packageDir) {
-        packages[name] = path.join(packageDir, "lib");
+        // Normalize paths and make them absolute for backwards compatibility
+        // with the protocol used by the analyzer.
+        packages[name] = p.normalize(p.absolute(p.join(packageDir, "lib")));
       }));
     });
 
     output["packages"] = packages;
 
     // Include the self link.
-    packages[entrypoint.root.name] = entrypoint.root.path("lib");
+    packages[entrypoint.root.name] =
+        p.normalize(p.absolute(entrypoint.root.path("lib")));
 
     // Include the file(s) which when modified will affect the results. For pub,
     // that's just the pubspec and lockfile.
     output["input_files"] = [
-      entrypoint.lockFilePath,
-      entrypoint.pubspecPath
+      p.normalize(p.absolute(entrypoint.lockFilePath)),
+      p.normalize(p.absolute(entrypoint.pubspecPath))
     ];
 
     return Future.wait(futures).then((_) {

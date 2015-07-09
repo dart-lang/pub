@@ -9,7 +9,7 @@ import 'dart:convert';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 
 import 'package:compiler_unsupported/compiler.dart' as compiler;
@@ -201,7 +201,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
 /// handles missing source files more gracefully.
 class _BarbackCompilerProvider implements dart.CompilerProvider {
   Uri get libraryRoot =>
-      Uri.parse("${path.toUri(path.absolute(_libraryRootPath))}/");
+      Uri.parse("${p.toUri(p.normalize(p.absolute(_libraryRootPath)))}/");
 
   final AssetEnvironment _environment;
   final Transform _transform;
@@ -272,10 +272,10 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
 
-    var sourcePath = path.fromUri(resourceUri);
+    var sourcePath = p.fromUri(resourceUri);
     return _readResource(resourceUri).then((source) {
       _sourceFiles[resourceUri.toString()] =
-          new StringSourceFile(resourceUri, path.relative(sourcePath), source);
+          new StringSourceFile(resourceUri, p.relative(sourcePath), source);
       return source;
     });
   }
@@ -299,8 +299,8 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     if (name == "") {
       outPath = _transform.primaryInput.id.path;
     } else {
-      var dirname = path.url.dirname(_transform.primaryInput.id.path);
-      outPath = path.url.join(dirname, name);
+      var dirname = p.url.dirname(_transform.primaryInput.id.path);
+      outPath = p.url.join(dirname, name);
     }
 
     var id = new AssetId(primaryId.package, "$outPath.$extension");
@@ -399,9 +399,9 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     // See if it's a path to a "public" asset within the root package. All
     // other files in the root package are not visible to transformers, so
     // should be loaded directly from disk.
-    var sourcePath = path.fromUri(url);
+    var sourcePath = p.fromUri(url);
     if (_environment.containsPath(sourcePath)) {
-      var relative = path.toUri(_environment.rootPackage.relative(sourcePath))
+      var relative = p.toUri(_environment.rootPackage.relative(sourcePath))
           .toString();
 
       return new AssetId(_environment.rootPackage.name, relative);

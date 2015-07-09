@@ -190,6 +190,9 @@ class Package {
   /// convert them to paths relative to the package root, use [relative].
   List<String> listFiles({String beneath, bool recursive: true,
       bool useGitIgnore: false}) {
+    // An in-memory package has no files.
+    if (dir == null) return [];
+
     if (beneath == null) {
       beneath = dir;
     } else {

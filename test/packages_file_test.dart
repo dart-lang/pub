@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
@@ -60,7 +62,10 @@ main() {
       ]).create();
 
       pubCommand(command, args: ['--offline'],
-                 error: "Could not find package foo in cache.\n");
+          error: "Could not find package foo in cache.\n"
+                 "Depended on by:\n"
+                 "- myapp",
+          exitCode: exit_codes.UNAVAILABLE);
 
       d.dir(appPath, [d.nothing('.packages')]).validate();
     });

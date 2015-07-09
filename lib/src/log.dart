@@ -528,11 +528,14 @@ class _JsonLogger {
 
     // If the error came from a file, include the path.
     if (error is SourceSpanException && error.span.sourceUrl != null) {
-      errorJson["path"] = p.fromUri(error.span.sourceUrl);
+      // Normalize paths and make them absolute for backwards compatibility with
+      // the protocol used by the analyzer.
+      errorJson["path"] = p.normalize(p.absolute(
+          p.fromUri(error.span.sourceUrl)));
     }
 
     if (error is FileException) {
-      errorJson["path"] = error.path;
+      errorJson["path"] = p.normalize(p.absolute(error.path));
     }
 
     this.message(errorJson);

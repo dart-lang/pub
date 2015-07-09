@@ -13,7 +13,7 @@ import 'package:analyzer/analyzer.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
 import 'package:compiler_unsupported/src/filenames.dart'
     show appendSlash;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'asset/dart/serialize.dart';
 import 'io.dart';
@@ -70,46 +70,50 @@ Future compile(String entrypoint, CompilerProvider provider, {
     bool suppressPackageWarnings: true,
     bool terse: false,
     bool includeSourceMapUrls: false,
-    bool toDart: false}) {
-  return new Future.sync(() {
-    var options = <String>['--categories=Client,Server'];
-    if (checked) options.add('--enable-checked-mode');
-    if (csp) options.add('--csp');
-    if (minify) options.add('--minify');
-    if (verbose) options.add('--verbose');
-    if (analyzeAll) options.add('--analyze-all');
-    if (preserveUris) options.add('--preserve-uris');
-    if (suppressWarnings) options.add('--suppress-warnings');
-    if (suppressHints) options.add('--suppress-hints');
-    if (!suppressPackageWarnings) options.add('--show-package-warnings');
-    if (terse) options.add('--terse');
-    if (toDart) options.add('--output-type=dart');
+    bool toDart: false}) async {
+  // dart2js chokes on relative paths. Including "/./" can also confuse it, so
+  // we normalize as well.
+  entrypoint = p.normalize(p.absolute(entrypoint));
 
-    var sourceUrl = path.toUri(entrypoint);
-    options.add("--out=$sourceUrl.js");
+  var options = <String>['--categories=Client,Server'];
+  if (checked) options.add('--enable-checked-mode');
+  if (csp) options.add('--csp');
+  if (minify) options.add('--minify');
+  if (verbose) options.add('--verbose');
+  if (analyzeAll) options.add('--analyze-all');
+  if (preserveUris) options.add('--preserve-uris');
+  if (suppressWarnings) options.add('--suppress-warnings');
+  if (suppressHints) options.add('--suppress-hints');
+  if (!suppressPackageWarnings) options.add('--show-package-warnings');
+  if (terse) options.add('--terse');
+  if (toDart) options.add('--output-type=dart');
 
-    // Add the source map URLs.
-    if (includeSourceMapUrls) {
-      options.add("--source-map=$sourceUrl.js.map");
-    }
+  var sourceUrl = p.toUri(entrypoint);
+  options.add("--out=$sourceUrl.js");
 
-    if (environment == null) environment = {};
-    if (commandLineOptions != null) options.addAll(commandLineOptions);
+  // Add the source map URLs.
+  if (includeSourceMapUrls) {
+    options.add("--source-map=$sourceUrl.js.map");
+  }
 
-    if (packageRoot == null) {
-      packageRoot = path.join(path.dirname(entrypoint), 'packages');
-    }
+  if (environment == null) environment = {};
+  if (commandLineOptions != null) options.addAll(commandLineOptions);
 
-    return compiler.compile(
-        path.toUri(path.absolute(entrypoint)),
-        provider.libraryRoot,
-        path.toUri(appendSlash(path.absolute(packageRoot))),
-        provider.provideInput,
-        provider.handleDiagnostic,
-        options,
-        provider.provideOutput,
-        environment);
-  });
+  if (packageRoot == null) {
+    packageRoot = p.join(p.dirname(entrypoint), 'packages');
+  } else {
+    packageRoot = p.normalize(p.absolute(packageRoot));
+  }
+
+  await compiler.compile(
+      p.toUri(entrypoint),
+      provider.libraryRoot,
+      p.toUri(appendSlash(packageRoot)),
+      provider.provideInput,
+      provider.handleDiagnostic,
+      options,
+      provider.provideOutput,
+      environment);
 }
 
 /// Returns whether [dart] looks like an entrypoint file.
@@ -160,7 +164,7 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     log.fine("Spawning isolate from $snapshot.");
     if (packageRoot != null) packageRoot = Uri.parse(packageRoot.toString());
     try {
-      await Isolate.spawnUri(path.toUri(snapshot), [], message,
+      await Isolate.spawnUri(p.toUri(snapshot), [], message,
           packageRoot: packageRoot);
       return;
     } on IsolateSpawnException catch (error) {
@@ -170,12 +174,12 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
   }
 
   await withTempDir((dir) async {
-    var dartPath = path.join(dir, 'runInIsolate.dart');
+    var dartPath = p.join(dir, 'runInIsolate.dart');
     writeTextFile(dartPath, code, dontLogContents: true);
     var port = new ReceivePort();
     await Isolate.spawn(_isolateBuffer, {
       'replyTo': port.sendPort,
-      'uri': path.toUri(dartPath).toString(),
+      'uri': p.toUri(dartPath).toString(),
       'packageRoot': packageRoot == null ? null : packageRoot.toString(),
       'message': message
     });
@@ -187,7 +191,7 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
 
     if (snapshot == null) return;
 
-    ensureDir(path.dirname(snapshot));
+    ensureDir(p.dirname(snapshot));
     var snapshotArgs = [];
     if (packageRoot != null) snapshotArgs.add('--package-root=$packageRoot');
     snapshotArgs.addAll(['--snapshot=$snapshot', dartPath]);
@@ -198,7 +202,7 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     // Don't emit a fatal error here, since we don't want to crash the
     // otherwise successful isolate load.
     log.warning("Failed to compile a snapshot to "
-        "${path.relative(snapshot)}:\n" + result.stderr.join("\n"));
+        "${p.relative(snapshot)}:\n" + result.stderr.join("\n"));
   });
 }
 
