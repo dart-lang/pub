@@ -193,7 +193,7 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 /// Describes a `.packages` file.
 ///
 /// [dependencies] maps package names to strings describing where the packages
-/// are located on disk. If the strings are sematnic versions, then the packages
+/// are located on disk. If the strings are semantic versions, then the packages
 /// are located in the system cache; otherwise, the strings are interpreted as
 /// relative `file:` URLs.
 ///
