@@ -218,6 +218,24 @@ void serve([List<d.Descriptor> contents]) {
   }, 'starting a server serving:\n${baseDir.describe()}');
 }
 
+/// Like [serve], but reports an error if a request ever comes in to the server.
+void serveErrors() {
+  _hasServer = true;
+
+  schedule(() async {
+    await _closeServer();
+
+    _server = await shelf_io.serve((request) {
+      fail("The HTTP server received an unexpected request:\n"
+          "${request.method} ${request.requestedUri}");
+      return new shelf.Response.forbidden(null);
+    }, 'localhost', 0);
+
+    _portCompleter.complete(_server.port);
+    currentSchedule.onComplete.schedule(_closeServer);
+  });
+}
+
 /// Closes [_server].
 ///
 /// Returns a [Future] that completes after the [_server] is closed.

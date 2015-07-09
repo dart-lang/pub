@@ -252,7 +252,10 @@ class OfflineHostedSource extends HostedSource {
         .toList();
 
     // If there are no versions in the cache, report a clearer error.
-    if (versions.isEmpty) fail("Could not find package $name in cache.");
+    if (versions.isEmpty) {
+      throw new PackageNotFoundException(
+          "Could not find package $name in cache.");
+    }
 
     return versions;
   }
@@ -264,12 +267,9 @@ class OfflineHostedSource extends HostedSource {
     throw new UnsupportedError("Cannot download packages when offline.");
   }
 
-  Future<Pubspec> doDescribeUncached(PackageId id) {
-    // [getVersions()] will only return packages that are already cached.
-    // [CachedSource] will only call [doDescribeUncached()] on a package after
-    // it has failed to find it in the cache, so this code should not be
-    // reached.
-    throw new UnsupportedError("Cannot describe packages when offline.");
+  Future<Pubspec> describeUncached(PackageId id) {
+    throw new PackageNotFoundException(
+        "${id.name} ${id.version} is not available in your system cache.");
   }
 }
 
