@@ -16,12 +16,15 @@ main() {
             deps: {"bar": "3.2.1"}, contents: [d.dir("lib", [])]);
       });
 
-      d.appDir({"foo": "1.2.3"}).create();
+      d.dir(appPath, [
+        d.appPubspec({"foo": "1.2.3"}),
+        d.dir('lib')
+      ]).create();
 
       pubCommand(command);
 
       d.dir(appPath, [d.packagesFile({
-          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "0.0.0"})])
+          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})])
        .validate();
     });
 
@@ -34,7 +37,10 @@ main() {
             deps: {"bar": "3.2.1"}, contents: [d.dir("lib", [])]);
       });
 
-      d.appDir({"foo": "1.2.3"}).create();
+      d.dir(appPath, [
+        d.appPubspec({"foo": "1.2.3"}),
+        d.dir('lib')
+      ]).create();
 
       var oldFile = d.dir(appPath, [d.packagesFile({"notFoo": "9.9.9"})]);
       oldFile.create();
@@ -43,12 +49,15 @@ main() {
       pubCommand(command);
 
       d.dir(appPath, [d.packagesFile({
-          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "0.0.0"})])
+          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})])
        .validate();
     });
 
     integration('.packages file is not created if pub command fails', () {
-      d.appDir({"foo": "1.2.3"}).create();
+      d.dir(appPath, [
+        d.appPubspec({"foo": "1.2.3"}),
+        d.dir('lib')
+      ]).create();
 
       pubCommand(command, args: ['--offline'],
                  error: "Could not find package foo in cache.\n");
@@ -76,14 +85,18 @@ main() {
           "dependency_overrides": {
             "baz": {"path": "../local_baz"},
           }
-        })
+        }),
+        d.dir('lib')
       ]).create();
 
       pubCommand(command);
 
-      d.dir(appPath, [d.packagesFile({"myapp": "0.0.0",
-                                      "baz": "../local_baz"})]).validate();
+      d.dir(appPath, [
+        d.packagesFile({
+          "myapp": ".",
+          "baz": "../local_baz"
+        })
+      ]).validate();
     });
-
   });
 }

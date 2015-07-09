@@ -44,8 +44,8 @@ class PackagesFileDescriptor extends Descriptor {
           // If it's a semver, it's a cache reference.
           packagePath = p.join(cachePath, "$package-$version");
         } else {
-          // Otherwise it's a path relative to the .pubspec file,
-          // which is also the relative path wrt. the .packages file.
+          // Otherwise it's a path relative to the pubspec file,
+          // which is also relative to the .packages file.
           packagePath = p.fromUri(version);
         }
         mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
@@ -74,8 +74,11 @@ class PackagesFileDescriptor extends Descriptor {
   /// A function that throws an error if [binaryContents] doesn't match the
   /// expected contents of the descriptor.
   void _validateNow(List<int> binaryContents, String fullPath) {
-    var fileUri = p.toUri(fullPath);
-    var map = packages_file.parse(binaryContents, fileUri);
+    // Resolve against a dummy URL so that we can test whether the URLs in
+    // the package file are themselves relative. We can't resolve against just
+    // "." due to sdk#23809.
+    var base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
+    var map = packages_file.parse(binaryContents, Uri.parse(base));
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {
@@ -89,14 +92,12 @@ class PackagesFileDescriptor extends Descriptor {
                "Expected $description, found location: ${map[package]}.");
         }
       } else {
-        var expected = p.normalize(p.join(
-            p.dirname(fullPath), p.fromUri(description), 'lib'));
-        expected = new File(expected).resolveSymbolicLinksSync();
-        var actual = new File(p.normalize(p.absolute(p.fromUri(map[package]))))
-            .resolveSymbolicLinksSync();
+        var expected = p.normalize(p.join(p.fromUri(description), 'lib'));
+        var actual = p.normalize(p.fromUri(
+            p.url.relative(map[package].toString(), from: p.dirname(base))));
 
         if (expected != actual) {
-          fail("Relative path: Expected $description, found ${map[package]}");
+          fail("Relative path: Expected $expected, found $actual");
         }
       }
     }

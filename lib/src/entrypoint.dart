@@ -470,6 +470,8 @@ class Entrypoint {
     var graph = await log.progress("Loading package graph", () async {
       if (result != null) {
         var packages = await Future.wait(result.packages.map((id) async {
+          if (id.name == root.name) return root;
+
           var dir = await cache.sources[id.source].getDirectory(id);
           return new Package(result.pubspecs[id.name], dir);
         }));
