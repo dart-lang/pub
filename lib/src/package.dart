@@ -108,6 +108,25 @@ class Package {
     }));
   }
 
+  /// Returns whether or not this package is in a Git repo.
+  bool get _inGitRepo {
+    if (_inGitRepoCache != null) return _inGitRepoCache;
+
+    if (dir == null || !git.isInstalled) {
+      _inGitRepoCache = false;
+    } else {
+      try {
+        git.runSync(['rev-parse'], workingDir: dir);
+        _inGitRepoCache = true;
+      } on git.GitException catch (_) {
+        _inGitRepoCache = false;
+      }
+    }
+
+    return _inGitRepoCache;
+  }
+  bool _inGitRepoCache;
+
   /// Loads the package whose root directory is [packageDir].
   ///
   /// [name] is the expected name of that package (e.g. the name given in the
@@ -207,7 +226,7 @@ class Package {
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
     var files;
-    if (useGitIgnore && git.isInstalled && dirExists(path('.git'))) {
+    if (useGitIgnore && _inGitRepo) {
       // Later versions of git do not allow a path for ls-files that appears to
       // be outside of the repo, so make sure we give it a relative path.
       var relativeBeneath = p.relative(beneath, from: dir);

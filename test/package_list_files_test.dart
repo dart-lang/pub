@@ -4,7 +4,7 @@
 
 library packages_list_files_test;
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/system_cache.dart';
@@ -23,7 +23,6 @@ main() {
       scheduleEntrypoint();
     });
 
-
     integration('lists files recursively', () {
       d.dir(appPath, [
         d.file('file1.txt', 'contents'),
@@ -36,11 +35,11 @@ main() {
 
       schedule(() {
         expect(entrypoint.root.listFiles(), unorderedEquals([
-          path.join(root, 'pubspec.yaml'),
-          path.join(root, 'file1.txt'),
-          path.join(root, 'file2.txt'),
-          path.join(root, 'subdir', 'subfile1.txt'),
-          path.join(root, 'subdir', 'subfile2.txt')
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'subfile1.txt'),
+          p.join(root, 'subdir', 'subfile2.txt')
         ]));
       });
     });
@@ -67,11 +66,11 @@ main() {
 
       schedule(() {
         expect(entrypoint.root.listFiles(), unorderedEquals([
-          path.join(root, 'pubspec.yaml'),
-          path.join(root, 'file1.txt'),
-          path.join(root, 'file2.txt'),
-          path.join(root, 'subdir', 'subfile1.txt'),
-          path.join(root, 'subdir', 'subfile2.txt')
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'subfile1.txt'),
+          p.join(root, 'subdir', 'subfile2.txt')
         ]));
       });
     });
@@ -89,20 +88,57 @@ main() {
 
       schedule(() {
         expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
-          path.join(root, 'pubspec.yaml'),
-          path.join(root, '.gitignore'),
-          path.join(root, 'file2.text'),
-          path.join(root, 'subdir', 'subfile2.text')
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, '.gitignore'),
+          p.join(root, 'file2.text'),
+          p.join(root, 'subdir', 'subfile2.text')
         ]));
       });
 
       schedule(() {
         expect(entrypoint.root.listFiles(), unorderedEquals([
-          path.join(root, 'pubspec.yaml'),
-          path.join(root, 'file1.txt'),
-          path.join(root, 'file2.text'),
-          path.join(root, 'subdir', 'subfile1.txt'),
-          path.join(root, 'subdir', 'subfile2.text')
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.text'),
+          p.join(root, 'subdir', 'subfile1.txt'),
+          p.join(root, 'subdir', 'subfile2.text')
+        ]));
+      });
+    });
+
+    integration("ignores files that are gitignored even if the package isn't "
+        "the repo root", () {
+      d.dir(appPath, [
+        d.dir('sub', [
+          d.appPubspec(),
+          d.file('.gitignore', '*.txt'),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.text', 'contents'),
+          d.dir('subdir', [
+            d.file('subfile1.txt', 'subcontents'),
+            d.file('subfile2.text', 'subcontents')
+          ])
+        ])
+      ]).create();
+
+      scheduleEntrypoint(p.join(appPath, 'sub'));
+
+      schedule(() {
+        expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, '.gitignore'),
+          p.join(root, 'file2.text'),
+          p.join(root, 'subdir', 'subfile2.text')
+        ]));
+      });
+
+      schedule(() {
+        expect(entrypoint.root.listFiles(), unorderedEquals([
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.text'),
+          p.join(root, 'subdir', 'subfile1.txt'),
+          p.join(root, 'subdir', 'subfile2.text')
         ]));
       });
     });
@@ -111,12 +147,13 @@ main() {
   });
 }
 
-void scheduleEntrypoint() {
+void scheduleEntrypoint([String path]) {
+  if (path == null) path = appPath;
   schedule(() {
-    root = path.join(sandboxDir, appPath);
+    root = p.join(sandboxDir, path);
     entrypoint = new Entrypoint(root,
         new SystemCache.withSources(rootDir: root));
-  }, 'initializing entrypoint');
+  }, 'initializing entrypoint at $path');
 
   currentSchedule.onComplete.schedule(() {
     entrypoint = null;
@@ -127,12 +164,12 @@ void commonTests() {
   integration('ignores broken symlinks', () {
     // Windows requires us to symlink to a directory that actually exists.
     d.dir(appPath, [d.dir('target')]).create();
-    scheduleSymlink(path.join(appPath, 'target'), path.join(appPath, 'link'));
-    schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'target')));
+    scheduleSymlink(p.join(appPath, 'target'), p.join(appPath, 'link'));
+    schedule(() => deleteEntry(p.join(sandboxDir, appPath, 'target')));
 
     schedule(() {
       expect(entrypoint.root.listFiles(),
-          equals([path.join(root, 'pubspec.yaml')]));
+          equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -144,7 +181,7 @@ void commonTests() {
 
     schedule(() {
       expect(entrypoint.root.listFiles(),
-          equals([path.join(root, 'pubspec.yaml')]));
+          equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -158,7 +195,7 @@ void commonTests() {
 
     schedule(() {
       expect(entrypoint.root.listFiles(),
-          equals([path.join(root, 'pubspec.yaml')]));
+          equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -171,8 +208,8 @@ void commonTests() {
 
     schedule(() {
       expect(entrypoint.root.listFiles(), unorderedEquals([
-        path.join(root, 'pubspec.yaml'),
-        path.join(root, 'pubspec.lock', 'file.txt')
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'pubspec.lock', 'file.txt')
       ]));
     });
   });
@@ -193,12 +230,12 @@ void commonTests() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(beneath: path.join(root, 'subdir')),
+        expect(entrypoint.root.listFiles(beneath: p.join(root, 'subdir')),
             unorderedEquals([
-          path.join(root, 'subdir', 'subfile1.txt'),
-          path.join(root, 'subdir', 'subfile2.txt'),
-          path.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
-          path.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
+          p.join(root, 'subdir', 'subfile1.txt'),
+          p.join(root, 'subdir', 'subfile2.txt'),
+          p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
+          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
         ]));
       });
     });
@@ -218,12 +255,12 @@ void commonTests() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(beneath: path.join(root, 'packages')),
+        expect(entrypoint.root.listFiles(beneath: p.join(root, 'packages')),
             unorderedEquals([
-          path.join(root, 'packages', 'subfile1.txt'),
-          path.join(root, 'packages', 'subfile2.txt'),
-          path.join(root, 'packages', 'subsubdir', 'subsubfile1.txt'),
-          path.join(root, 'packages', 'subsubdir', 'subsubfile2.txt')
+          p.join(root, 'packages', 'subfile1.txt'),
+          p.join(root, 'packages', 'subfile2.txt'),
+          p.join(root, 'packages', 'subsubdir', 'subsubfile1.txt'),
+          p.join(root, 'packages', 'subsubdir', 'subsubfile2.txt')
         ]));
       });
     });
