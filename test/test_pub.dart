@@ -381,8 +381,16 @@ void _integration(String description, void body(), [Function testFn]) {
   testFn(description, () {
     _sandboxDir = createSystemTempDir();
     d.defaultRoot = sandboxDir;
-    currentSchedule.onComplete.schedule(() => deleteEntry(_sandboxDir),
-        'deleting the sandbox directory');
+    currentSchedule.onComplete.schedule(() {
+      try {
+        deleteEntry(_sandboxDir);
+      } on ApplicationException catch (_) {
+        // Silently swallow exceptions on Windows. If the test failed, there may
+        // still be lingering processes that have files in the sandbox open,
+        // which will cause this to fail on Windows.
+        if (!Platform.isWindows) rethrow;
+      }
+    }, 'deleting the sandbox directory');
 
     // Schedule the test.
     body();
