@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -26,6 +27,7 @@ import 'command/uploader.dart';
 import 'command/version.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
+import 'git.dart' as git;
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -89,6 +91,8 @@ class PubCommandRunner extends CommandRunner {
   Future runCommand(ArgResults options) async {
     log.withPrejudice = options['with-prejudice'];
 
+    _checkDepsSynced();
+
     if (options['version']) {
       log.message('Pub ${sdk.version}');
       return;
@@ -148,6 +152,31 @@ and include the results in a bug report on http://dartbug.com/new.
 
   void printUsage() {
     log.message(usage);
+  }
+
+  /// Print a warning if we're running from the Dart SDK repo and pub isn't
+  /// up-to-date.
+  ///
+  /// This is otherwise hard to tell, and can produce confusing behavior issues.
+  void _checkDepsSynced() {
+    if (!runningFromDartRepo) return;
+
+    var deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
+    var pubRevRegExp = new RegExp(
+        r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
+    var match = pubRevRegExp.firstMatch(deps);
+    if (match == null) return;
+    var depsRev = match[1];
+
+    var actualRev = git.runSync(["rev-parse", "HEAD"], workingDir: pubRoot)
+        .single;
+
+    if (depsRev == actualRev) return;
+    log.warning(
+        "${log.yellow('Warning:')} the revision of pub in DEPS is "
+            "${log.bold(depsRev)},\n"
+        "but ${log.bold(actualRev)} is checked out in "
+            "${p.relative(pubRoot)}.\n\n");
   }
 
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
