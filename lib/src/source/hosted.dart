@@ -82,19 +82,15 @@ class HostedSource extends CachedSource {
   }
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId id) {
-    return isInSystemCache(id).then((inCache) {
-      // Already cached so don't download it.
-      if (inCache) return true;
-
+  Future<Package> downloadToSystemCache(PackageId id) async {
+    if (!(await isInSystemCache(id))) {
       var packageDir = _getDirectory(id);
       ensureDir(path.dirname(packageDir));
       var parsed = _parseDescription(id.description);
-      return _download(parsed.last, parsed.first, id.version, packageDir);
-    }).then((found) {
-      if (!found) fail('Package $id not found.');
-      return new Package.load(id.name, _getDirectory(id), systemCache.sources);
-    });
+      await _download(parsed.last, parsed.first, id.version, packageDir);
+    }
+
+    return new Package.load(id.name, _getDirectory(id), systemCache.sources);
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -179,32 +175,25 @@ class HostedSource extends CachedSource {
 
   /// Downloads package [package] at [version] from [server], and unpacks it
   /// into [destPath].
-  Future<bool> _download(String server, String package, Version version,
-      String destPath) {
-    return new Future.sync(() {
-      var url = Uri.parse("$server/packages/$package/versions/$version.tar.gz");
-      log.io("Get package from $url.");
-      log.message('Downloading ${log.bold(package)} ${version}...');
+  Future _download(String server, String package, Version version,
+      String destPath) async {
+    var url = Uri.parse("$server/packages/$package/versions/$version.tar.gz");
+    log.io("Get package from $url.");
+    log.message('Downloading ${log.bold(package)} ${version}...');
 
-      // Download and extract the archive to a temp directory.
-      var tempDir = systemCache.createTempDir();
-      return httpClient.send(new http.Request("GET", url))
-          .then((response) => response.stream)
-          .then((stream) {
-        return timeout(extractTarGz(stream, tempDir), HTTP_TIMEOUT, url,
-            'downloading $url');
-      }).then((_) {
-        // Remove the existing directory if it exists. This will happen if
-        // we're forcing a download to repair the cache.
-        if (dirExists(destPath)) deleteEntry(destPath);
+    // Download and extract the archive to a temp directory.
+    var tempDir = systemCache.createTempDir();
+    var response = await httpClient.send(new http.Request("GET", url));
+    await extractTarGz(response.stream, tempDir);
 
-        // Now that the get has succeeded, move it to the real location in the
-        // cache. This ensures that we don't leave half-busted ghost
-        // directories in the user's pub cache if a get fails.
-        renameDir(tempDir, destPath);
-        return true;
-      });
-    });
+    // Remove the existing directory if it exists. This will happen if
+    // we're forcing a download to repair the cache.
+    if (dirExists(destPath)) deleteEntry(destPath);
+
+    // Now that the get has succeeded, move it to the real location in the
+    // cache. This ensures that we don't leave half-busted ghost
+    // directories in the user's pub cache if a get fails.
+    renameDir(tempDir, destPath);
   }
 
   /// When an error occurs trying to read something about [package] from [url],
@@ -217,11 +206,6 @@ class HostedSource extends CachedSource {
         error.response.statusCode == 404) {
       throw new PackageNotFoundException(
           "Could not find package $package at $url.", error, stackTrace);
-    }
-
-    if (error is TimeoutException) {
-      fail("Timed out trying to find package $package at $url.",
-          error, stackTrace);
     }
 
     if (error is io.SocketException) {
@@ -260,7 +244,7 @@ class OfflineHostedSource extends HostedSource {
     return versions;
   }
 
-  Future<bool> _download(String server, String package, Version version,
+  Future _download(String server, String package, Version version,
       String destPath) {
     // Since HostedSource is cached, this will only be called for uncached
     // packages.

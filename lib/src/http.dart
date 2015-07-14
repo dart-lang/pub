@@ -13,16 +13,10 @@ import 'package:http/http.dart' as http;
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'sdk.dart' as sdk;
 import 'utils.dart';
-
-// TODO(nweiz): make this configurable
-/// The amount of time in milliseconds to allow HTTP requests before assuming
-/// they've failed.
-final HTTP_TIMEOUT = 30 * 1000;
 
 /// Headers and field names that should be censored in the log output.
 final _CENSORED_FIELDS = const ['refresh_token', 'authorization'];
@@ -36,10 +30,6 @@ final PUB_API_HEADERS = const {'Accept': 'application/vnd.pub.v2+json'};
 
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
-///
-/// This also adds a 30-second timeout to every request. This can be configured
-/// on a per-request basis by setting the 'Pub-Request-Timeout' header to the
-/// desired number of milliseconds, or to "None" to disable the timeout.
 class _PubHttpClient extends http.BaseClient {
   final _requestStopwatches = new Map<http.BaseRequest, Stopwatch>();
 
@@ -48,82 +38,72 @@ class _PubHttpClient extends http.BaseClient {
   _PubHttpClient([http.Client inner])
       : this._inner = inner == null ? new http.Client() : inner;
 
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
     _requestStopwatches[request] = new Stopwatch()..start();
     request.headers[HttpHeaders.USER_AGENT] = "Dart pub ${sdk.version}";
     _logRequest(request);
 
-    var timeoutLength = HTTP_TIMEOUT;
-    var timeoutString = request.headers.remove('Pub-Request-Timeout');
-    if (timeoutString == 'None') {
-      timeoutLength = null;
-    } else if (timeoutString != null) {
-      timeoutLength = int.parse(timeoutString);
-    }
-
-    var future = _inner.send(request).then((streamedResponse) {
-      _logResponse(streamedResponse);
-
-      var status = streamedResponse.statusCode;
-      // 401 responses should be handled by the OAuth2 client. It's very
-      // unlikely that they'll be returned by non-OAuth2 requests. We also want
-      // to pass along 400 responses from the token endpoint.
-      var tokenRequest = urisEqual(
-          streamedResponse.request.url, oauth2.tokenEndpoint);
-      if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
-        return streamedResponse;
-      }
-
-      if (status == 406 &&
-          request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
-        fail("Pub ${sdk.version} is incompatible with the current version of "
-                 "${request.url.host}.\n"
-             "Upgrade pub to the latest version and try again.");
-      }
-
-      if (status == 500 &&
-          (request.url.host == "pub.dartlang.org" ||
-          request.url.host == "storage.googleapis.com")) {
-        var message = "HTTP error 500: Internal Server Error at "
-            "${request.url}.";
-
-        if (request.url.host == "pub.dartlang.org" ||
-            request.url.host == "storage.googleapis.com") {
-          message += "\nThis is likely a transient error. Please try again "
-              "later.";
-        }
-
-        fail(message);
-      }
-
-      return http.Response.fromStream(streamedResponse).then((response) {
-        throw new PubHttpException(response);
-      });
-    }).catchError((error, stackTrace) {
+    var streamedResponse;
+    try {
+      streamedResponse = await _inner.send(request);
+    } on SocketException catch (error, stackTrace) {
       // Work around issue 23008.
       if (stackTrace == null) stackTrace = new Chain.current();
 
-      if (error is SocketException &&
-          error.osError != null) {
-        if (error.osError.errorCode == 8 ||
-            error.osError.errorCode == -2 ||
-            error.osError.errorCode == -5 ||
-            error.osError.errorCode == 11001 ||
-            error.osError.errorCode == 11004) {
-          fail('Could not resolve URL "${request.url.origin}".',
-              error, stackTrace);
-        } else if (error.osError.errorCode == -12276) {
-          fail('Unable to validate SSL certificate for '
-              '"${request.url.origin}".',
-              error, stackTrace);
-        }
-      }
-      throw error;
-    });
+      if (error.osError == null) rethrow;
 
-    if (timeoutLength == null) return future;
-    return timeout(future, timeoutLength, request.url,
-        'fetching URL "${request.url}"');
+      if (error.osError.errorCode == 8 ||
+          error.osError.errorCode == -2 ||
+          error.osError.errorCode == -5 ||
+          error.osError.errorCode == 11001 ||
+          error.osError.errorCode == 11004) {
+        fail('Could not resolve URL "${request.url.origin}".',
+            error, stackTrace);
+      } else if (error.osError.errorCode == -12276) {
+        fail('Unable to validate SSL certificate for '
+            '"${request.url.origin}".',
+            error, stackTrace);
+      } else {
+        rethrow;
+      }
+    }
+
+    _logResponse(streamedResponse);
+
+    var status = streamedResponse.statusCode;
+    // 401 responses should be handled by the OAuth2 client. It's very
+    // unlikely that they'll be returned by non-OAuth2 requests. We also want
+    // to pass along 400 responses from the token endpoint.
+    var tokenRequest = urisEqual(
+        streamedResponse.request.url, oauth2.tokenEndpoint);
+    if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
+      return streamedResponse;
+    }
+
+    if (status == 406 &&
+        request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
+      fail("Pub ${sdk.version} is incompatible with the current version of "
+               "${request.url.host}.\n"
+           "Upgrade pub to the latest version and try again.");
+    }
+
+    if (status == 500 &&
+        (request.url.host == "pub.dartlang.org" ||
+            request.url.host == "storage.googleapis.com")) {
+      var message = "HTTP error 500: Internal Server Error at "
+          "${request.url}.";
+
+      if (request.url.host == "pub.dartlang.org" ||
+          request.url.host == "storage.googleapis.com") {
+        message += "\nThis is likely a transient error. Please try again "
+            "later.";
+      }
+
+      fail(message);
+    }
+
+    throw new PubHttpException(
+        await http.Response.fromStream(streamedResponse));
   }
 
   /// Logs the fact that [request] was sent, and information about it.

@@ -829,47 +829,6 @@ _doProcess(Function fn, String executable, List<String> args,
       environment: environment);
 }
 
-/// Wraps [input], an asynchronous network operation to provide a timeout.
-///
-/// If [input] completes before [milliseconds] have passed, then the return
-/// value completes in the same way. However, if [milliseconds] pass before
-/// [input] has completed, it completes with a [TimeoutException] with
-/// [description] (which should be a fragment describing the action that timed
-/// out).
-///
-/// [url] is the URL being accessed asynchronously.
-///
-/// Note that timing out will not cancel the asynchronous operation behind
-/// [input].
-Future timeout(Future input, int milliseconds, Uri url, String description) {
-  // TODO(nwiez): Replace this with [Future.timeout].
-  var completer = new Completer();
-  var duration = new Duration(milliseconds: milliseconds);
-  var timer = new Timer(duration, () {
-    // Include the duration ourselves in the message instead of passing it to
-    // TimeoutException since we show nicer output.
-    var message = 'Timed out after ${niceDuration(duration)} while '
-                  '$description.';
-
-    if (url.host == "pub.dartlang.org" ||
-        url.host == "storage.googleapis.com") {
-      message += "\nThis is likely a transient error. Please try again later.";
-    }
-
-    completer.completeError(new TimeoutException(message), new Chain.current());
-  });
-  input.then((value) {
-    if (completer.isCompleted) return;
-    timer.cancel();
-    completer.complete(value);
-  }).catchError((e, stackTrace) {
-    if (completer.isCompleted) return;
-    timer.cancel();
-    completer.completeError(e, stackTrace);
-  });
-  return completer.future;
-}
-
 /// Creates a temporary directory and passes its path to [fn].
 ///
 /// Once the [Future] returned by [fn] completes, the temporary directory and
@@ -896,13 +855,11 @@ Future<HttpServer> bindServer(String host, int port) {
 }
 
 /// Extracts a `.tar.gz` file from [stream] to [destination].
-///
-/// Returns whether or not the extraction was successful.
-Future<bool> extractTarGz(Stream<List<int>> stream, String destination) {
+Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine("Extracting .tar.gz stream to $destination.");
 
   if (Platform.operatingSystem == "windows") {
-    return _extractTarGzWindows(stream, destination);
+    return await _extractTarGzWindows(stream, destination);
   }
 
   var args = ["--extract", "--gunzip", "--directory", destination];
@@ -914,24 +871,24 @@ Future<bool> extractTarGz(Stream<List<int>> stream, String destination) {
     args.insert(0, "--warning=no-unknown-keyword");
   }
 
-  return startProcess("tar", args).then((process) {
-    // Ignore errors on process.std{out,err}. They'll be passed to
-    // process.exitCode, and we don't want them being top-levelled by
-    // std{out,err}Sink.
-    store(process.stdout.handleError((_) {}), stdout, closeSink: false);
-    store(process.stderr.handleError((_) {}), stderr, closeSink: false);
-    return Future.wait([
-      store(stream, process.stdin),
-      process.exitCode
-    ]);
-  }).then((results) {
-    var exitCode = results[1];
-    if (exitCode != exit_codes.SUCCESS) {
-      throw new Exception("Failed to extract .tar.gz stream to $destination "
-          "(exit code $exitCode).");
-    }
-    log.fine("Extracted .tar.gz stream to $destination. Exit code $exitCode.");
-  });
+  var process = await startProcess("tar", args);
+
+  // Ignore errors on process.std{out,err}. They'll be passed to
+  // process.exitCode, and we don't want them being top-levelled by
+  // std{out,err}Sink.
+  store(process.stdout.handleError((_) {}), stdout, closeSink: false);
+  store(process.stderr.handleError((_) {}), stderr, closeSink: false);
+  var results = await Future.wait([
+    store(stream, process.stdin),
+    process.exitCode
+  ]);
+
+  var exitCode = results[1];
+  if (exitCode != exit_codes.SUCCESS) {
+    throw new Exception("Failed to extract .tar.gz stream to $destination "
+        "(exit code $exitCode).");
+  }
+  log.fine("Extracted .tar.gz stream to $destination. Exit code $exitCode.");
 }
 
 /// Whether to include "--warning=no-unknown-keyword" when invoking tar.
@@ -961,8 +918,7 @@ final String pathTo7zip = (() {
   return path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe');
 })();
 
-Future<bool> _extractTarGzWindows(Stream<List<int>> stream,
-    String destination) {
+Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
   // TODO(rnystrom): In the repo's history, there is an older implementation of
   // this that does everything in memory by piping streams directly together
   // instead of writing out temp files. The code is simpler, but unfortunately,
@@ -970,41 +926,41 @@ Future<bool> _extractTarGzWindows(Stream<List<int>> stream,
   // read from stdin instead of a file. Consider resurrecting that version if
   // we can figure out why it fails.
 
-  return withTempDir((tempDir) {
+  return withTempDir((tempDir) async {
     // Write the archive to a temp file.
     var dataFile = path.join(tempDir, 'data.tar.gz');
-    return createFileFromStream(stream, dataFile).then((_) {
-      // 7zip can't unarchive from gzip -> tar -> destination all in one step
-      // first we un-gzip it to a tar file.
-      // Note: Setting the working directory instead of passing in a full file
-      // path because 7zip says "A full path is not allowed here."
-      return runProcess(pathTo7zip, ['e', 'data.tar.gz'], workingDir: tempDir);
-    }).then((result) {
-      if (result.exitCode != exit_codes.SUCCESS) {
-        throw new Exception('Could not un-gzip (exit code ${result.exitCode}). '
-                'Error:\n'
-            '${result.stdout.join("\n")}\n'
-            '${result.stderr.join("\n")}');
-      }
+    await createFileFromStream(stream, dataFile);
 
-      // Find the tar file we just created since we don't know its name.
-      var tarFile = listDir(tempDir).firstWhere(
-          (file) => path.extension(file) == '.tar',
-          orElse: () {
-        throw new FormatException('The gzip file did not contain a tar file.');
-      });
+    // 7zip can't unarchive from gzip -> tar -> destination all in one step
+    // first we un-gzip it to a tar file.
+    // Note: Setting the working directory instead of passing in a full file
+    // path because 7zip says "A full path is not allowed here."
+    var unzipResult = await runProcess(pathTo7zip, ['e', 'data.tar.gz'],
+        workingDir: tempDir);
 
-      // Untar the archive into the destination directory.
-      return runProcess(pathTo7zip, ['x', tarFile], workingDir: destination);
-    }).then((result) {
-      if (result.exitCode != exit_codes.SUCCESS) {
-        throw new Exception('Could not un-tar (exit code ${result.exitCode}). '
-                'Error:\n'
-            '${result.stdout.join("\n")}\n'
-            '${result.stderr.join("\n")}');
-      }
-      return true;
+    if (unzipResult.exitCode != exit_codes.SUCCESS) {
+      throw new Exception(
+          'Could not un-gzip (exit code ${unzipResult.exitCode}). Error:\n'
+          '${unzipResult.stdout.join("\n")}\n'
+          '${unzipResult.stderr.join("\n")}');
+    }
+
+    // Find the tar file we just created since we don't know its name.
+    var tarFile = listDir(tempDir).firstWhere(
+        (file) => path.extension(file) == '.tar',
+        orElse: () {
+      throw new FormatException('The gzip file did not contain a tar file.');
     });
+
+    // Untar the archive into the destination directory.
+    var untarResult = await runProcess(pathTo7zip, ['x', tarFile],
+        workingDir: destination);
+    if (untarResult.exitCode != exit_codes.SUCCESS) {
+      throw new Exception(
+          'Could not un-tar (exit code ${untarResult.exitCode}). Error:\n'
+          '${untarResult.stdout.join("\n")}\n'
+          '${untarResult.stderr.join("\n")}');
+    }
   });
 }
 
