@@ -115,7 +115,12 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // example, it may not have the right packages directory itself.
   if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
     // TODO(nweiz): use a .packages file once sdk#23369 is fixed.
-    vmArgs.add('--package-root=${p.toUri(entrypoint.packagesDir)}');
+
+    // We use an absolute path here not because the VM insists but because it's
+    // helpful for the subprocess to be able to spawn Dart with
+    // Platform.executableArguments and have that work regardless of the working
+    // directory.
+    vmArgs.add('--package-root=${p.toUri(p.absolute(entrypoint.packagesDir))}');
   }
 
   vmArgs.add(executableUrl.toString());
