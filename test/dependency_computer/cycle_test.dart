@@ -205,4 +205,22 @@ void main() {
 
     expectDependencies({'myapp': []});
   });
+
+  // Regression test for #1298
+  integration("allows a single-package import cycle with two uses of "
+      "the same transformer", () {
+     d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp", "myapp"]
+      }),
+      d.dir('lib', [
+        d.file("myapp.dart", transformer(['foo.dart'])),
+        d.file("foo.dart", "import 'bar.dart';"),
+        d.file("bar.dart", "import 'myapp.dart';"),
+      ])
+    ]).create();
+
+    expectDependencies({'myapp': []});
+  });
 }

@@ -287,8 +287,8 @@ class _PackageDependencyComputer {
             // this stored set of dependencies rather than the potentially wider
             // set that would be recomputed if [transformersNeededByLibrary]
             // were called anew.
-            _transformersNeededByTransformers[id] =
-                transformersNeededByLibrary(_package.transformerPath(id));
+            _transformersNeededByTransformers.putIfAbsent(id, () =>
+                transformersNeededByLibrary(_package.transformerPath(id)));
           }
         } on CycleException catch (error) {
           throw error.prependStep("$packageName is transformed by $id");
