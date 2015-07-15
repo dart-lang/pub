@@ -1437,7 +1437,7 @@ class MockSource extends CachedSource {
   List<Package> getCachedPackages() =>
       throw new UnsupportedError('Cannot get mock packages');
 
-  Future<Pair<int, int>> repairCachedPackages() =>
+  Future<Pair<List<Package>, List<Package>>> repairCachedPackages() =>
       throw new UnsupportedError('Cannot repair mock packages');
 
   void addPackage(String description, Package package) {

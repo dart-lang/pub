@@ -163,11 +163,11 @@ class GitSource extends CachedSource {
 
   /// Resets all cached packages back to the pristine state of the Git
   /// repository at the revision they are pinned to.
-  Future<Pair<int, int>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return new Pair(0, 0);
+  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
+    if (!dirExists(systemCacheRoot)) return new Pair([], []);
 
-    var successes = 0;
-    var failures = 0;
+    var successes = [];
+    var failures = [];
 
     var packages = listDir(systemCacheRoot)
         .where((entry) => dirExists(path.join(entry, ".git")))
@@ -180,6 +180,8 @@ class GitSource extends CachedSource {
     packages.sort(Package.orderByNameAndVersion);
 
     for (var package in packages) {
+      var id = new PackageId(package.name, this.name, package.version, null);
+
       log.message("Resetting Git repository for "
           "${log.bold(package.name)} ${package.version}...");
 
@@ -191,12 +193,12 @@ class GitSource extends CachedSource {
         // Discard all changes to tracked files.
         await git.run(["reset", "--hard", "HEAD"], workingDir: package.dir);
 
-        successes++;
+        successes.add(id);
       } on git.GitException catch (error, stackTrace) {
         log.error("Failed to reset ${log.bold(package.name)} "
             "${package.version}. Error:\n$error");
         log.fine(stackTrace);
-        failures++;
+        failures.add(id);
 
         tryDeleteEntry(package.dir);
       }

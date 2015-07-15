@@ -125,11 +125,11 @@ class HostedSource extends CachedSource {
 
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
-  Future<Pair<int, int>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return new Pair(0, 0);
+  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
+    if (!dirExists(systemCacheRoot)) return new Pair([], []);
 
-    var successes = 0;
-    var failures = 0;
+    var successes = [];
+    var failures = [];
 
     for (var serverDir in listDir(systemCacheRoot)) {
       var url = _directoryToUrl(path.basename(serverDir));
@@ -137,11 +137,13 @@ class HostedSource extends CachedSource {
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
+        var id = new PackageId(package.name, this.name, package.version, null);
+
         try {
           await _download(url, package.name, package.version, package.dir);
-          successes++;
+          successes.add(id);
         } catch (error, stackTrace) {
-          failures++;
+          failures.add(id);
           var message = "Failed to repair ${log.bold(package.name)} "
               "${package.version}";
           if (url != defaultUrl) message += " from $url";

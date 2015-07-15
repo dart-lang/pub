@@ -4,6 +4,7 @@
 
 library pub_tests;
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
@@ -19,6 +20,8 @@ main() {
 
     schedulePub(args: ["cache", "repair"],
         error: contains('Failed to reactivate foo:'),
-        output: contains('Failed to reactivate 1 package.'));
+        output: contains('Failed to reactivate 1 package:\n'
+                         '- foo'),
+        exitCode: exit_codes.UNAVAILABLE);
   });
 }

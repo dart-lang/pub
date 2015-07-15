@@ -410,9 +410,10 @@ class GlobalPackages {
 
   /// Repairs any corrupted globally-activated packages and their binstubs.
   ///
-  /// Returns a pair of two [int]s. The first indicates how many packages were
-  /// successfully re-activated; the second indicates how many failed.
-  Future<Pair<int, int>> repairActivatedPackages() async {
+  /// Returns a pair of two lists of strings. The first indicates which packages
+  /// were successfully re-activated; the second indicates which failed.
+  Future<Pair<List<String>, List<String>>> repairActivatedPackages()
+      async {
     var executables = {};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
@@ -440,8 +441,8 @@ class GlobalPackages {
       }
     }
 
-    var successes = 0;
-    var failures = 0;
+    var successes = [];
+    var failures = [];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
         var id;
@@ -458,7 +459,7 @@ class GlobalPackages {
           _updateBinStubs(graph.packages[id.name], packageExecutables,
               overwriteBinStubs: true, snapshots: snapshots,
               suggestIfNotOnPath: false);
-          successes++;
+          successes.add(id.name);
         } catch (error, stackTrace) {
           var message = "Failed to reactivate "
               "${log.bold(p.basenameWithoutExtension(entry))}";
@@ -468,7 +469,7 @@ class GlobalPackages {
           }
 
           log.error(message, error, stackTrace);
-          failures++;
+          failures.add(p.basenameWithoutExtension(entry));
 
           tryDeleteEntry(entry);
         }

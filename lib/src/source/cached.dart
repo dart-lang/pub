@@ -67,7 +67,8 @@ abstract class CachedSource extends Source {
   /// Reinstalls all packages that have been previously installed into the
   /// system cache by this source.
   ///
-  /// Returns a [Pair] whose first element is the number of packages
-  /// successfully repaired and the second is the number of failures.
-  Future<Pair<int, int>> repairCachedPackages();
+  /// Returns a [Pair] whose first element is the packages that were
+  /// successfully repaired and the second is the packages that failed to be
+  /// repaired.
+  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages();
 }

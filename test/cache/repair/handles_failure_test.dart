@@ -49,7 +49,8 @@ main() {
     pub.stderr.expect("HTTP error 404: Not Found");
 
     pub.stdout.expect("Reinstalled 2 packages.");
-    pub.stdout.expect("Failed to reinstall 1 package.");
+    pub.stdout.expect("Failed to reinstall 1 package:");
+    pub.stdout.expect("- foo 1.2.4");
 
     pub.shouldExit(exit_codes.UNAVAILABLE);
   });
