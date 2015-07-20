@@ -165,14 +165,16 @@ List<int> readBinaryFile(String file) {
 ///
 /// If [dontLogContents] is true, the contents of the file will never be logged.
 String writeTextFile(String file, String contents,
-  {bool dontLogContents: false}) {
+    {bool dontLogContents: false, Encoding encoding}) {
+  if (encoding == null) encoding = UTF8;
+
   // Sanity check: don't spew a huge file.
   log.io("Writing ${contents.length} characters to text file $file.");
   if (!dontLogContents && contents.length < 1024 * 1024) {
     log.fine("Contents:\n$contents");
   }
 
-  new File(file).writeAsStringSync(contents);
+  new File(file).writeAsStringSync(contents, encoding: encoding);
   return file;
 }
 

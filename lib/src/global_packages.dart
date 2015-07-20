@@ -5,6 +5,7 @@
 library pub.global_packages;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -694,7 +695,9 @@ pub global run ${package.name}:$script "\$@"
 """;
       }
 
-      writeTextFile(binStubPath, bash);
+      // Write this as the system encoding since the system is going to execute
+      // it and it might contain non-ASCII caharacters in the pathnames.
+      writeTextFile(binStubPath, bash, encoding: const SystemEncoding());
 
       // Make it executable.
       var result = Process.runSync('chmod', ['+x', binStubPath]);
