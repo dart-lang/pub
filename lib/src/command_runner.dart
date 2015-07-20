@@ -160,6 +160,7 @@ and include the results in a bug report on http://dartbug.com/new.
   /// This is otherwise hard to tell, and can produce confusing behavior issues.
   void _checkDepsSynced() {
     if (!runningFromDartRepo) return;
+    if (!git.isInstalled) return;
 
     var deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
     var pubRevRegExp = new RegExp(
@@ -168,8 +169,14 @@ and include the results in a bug report on http://dartbug.com/new.
     if (match == null) return;
     var depsRev = match[1];
 
-    var actualRev = git.runSync(["rev-parse", "HEAD"], workingDir: pubRoot)
-        .single;
+    var actualRev;
+    try {
+      actualRev = git.runSync(["rev-parse", "HEAD"], workingDir: pubRoot)
+          .single;
+    } on git.GitException catch (_) {
+      // When building for Debian, pub isn't checked out via git.
+      return;
+    }
 
     if (depsRev == actualRev) return;
     log.warning(
