@@ -117,7 +117,7 @@ bool _tryGitCommand(String command) {
   } on ProcessException catch (error, stackTrace) {
     var chain = new Chain.forTrace(stackTrace);
     // If the process failed, they probably don't have it.
-    log.message('Git command is not "$command": $error\n$chain');
+    log.error('Git command is not "$command": $error\n$chain');
     return false;
   }
 }

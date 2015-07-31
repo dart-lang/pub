@@ -47,12 +47,14 @@ class PubCommandRunner extends CommandRunner {
          help: 'Print debugging information when an error occurs.');
     argParser.addOption('verbosity',
         help: 'Control output verbosity.',
-        allowed: ['normal', 'io', 'solver', 'all'],
+        allowed: ['error', 'warning', 'normal', 'io', 'solver', 'all'],
         allowedHelp: {
-          'normal': 'Show errors, warnings, and user messages.',
-          'io':     'Also show IO operations.',
-          'solver': 'Show steps during version resolution.',
-          'all':    'Show all output including internal tracing messages.'
+          'error':   'Show only errors.',
+          'warning': 'Show only errors and warnings.',
+          'normal':  'Show errors, warnings, and user messages.',
+          'io':      'Also show IO operations.',
+          'solver':  'Show steps during version resolution.',
+          'all':     'Show all output including internal tracing messages.'
         });
     argParser.addFlag('verbose', abbr: 'v', negatable: false,
         help: 'Shortcut for "--verbosity=all".');
@@ -103,10 +105,12 @@ class PubCommandRunner extends CommandRunner {
     }
 
     switch (options['verbosity']) {
-      case 'normal': log.verbosity = log.Verbosity.NORMAL; break;
-      case 'io':     log.verbosity = log.Verbosity.IO; break;
-      case 'solver': log.verbosity = log.Verbosity.SOLVER; break;
-      case 'all':    log.verbosity = log.Verbosity.ALL; break;
+      case 'error':   log.verbosity = log.Verbosity.ERROR; break;
+      case 'warning': log.verbosity = log.Verbosity.WARNING; break;
+      case 'normal':  log.verbosity = log.Verbosity.NORMAL; break;
+      case 'io':      log.verbosity = log.Verbosity.IO; break;
+      case 'solver':  log.verbosity = log.Verbosity.SOLVER; break;
+      case 'all':     log.verbosity = log.Verbosity.ALL; break;
       default:
         // No specific verbosity given, so check for the shortcut.
         if (options['verbose']) log.verbosity = log.Verbosity.ALL;

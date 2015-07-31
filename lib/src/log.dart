@@ -111,6 +111,16 @@ class Verbosity {
     Level.FINE:    null
   });
 
+  /// Shows only errors.
+  static const ERROR = const Verbosity._("error", const {
+    Level.ERROR:   _logToStderr,
+    Level.WARNING: null,
+    Level.MESSAGE: null,
+    Level.IO:      null,
+    Level.SOLVER:  null,
+    Level.FINE:    null
+  });
+
   /// Shows only errors and warnings.
   static const WARNING = const Verbosity._("warning", const {
     Level.ERROR:   _logToStderr,

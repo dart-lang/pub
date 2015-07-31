@@ -23,9 +23,11 @@ main() {
             --verbosity                Control output verbosity.
 
                   [all]                Show all output including internal tracing messages.
+                  [error]              Show only errors.
                   [io]                 Also show IO operations.
                   [normal]             Show errors, warnings, and user messages.
                   [solver]             Show steps during version resolution.
+                  [warning]            Show only errors and warnings.
 
         -v, --verbose                  Shortcut for "--verbosity=all".
             --[no-]package-symlinks    Generate packages/ directories when installing packages.
