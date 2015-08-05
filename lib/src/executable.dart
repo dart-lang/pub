@@ -120,7 +120,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     // helpful for the subprocess to be able to spawn Dart with
     // Platform.executableArguments and have that work regardless of the working
     // directory.
-    vmArgs.add('--packages=${p.toUri(p.absolute(entrypoint.packagesFile))}');
+    vmArgs.add('--package-root=${p.toUri(p.absolute(entrypoint.packagesDir))}');
   }
 
   vmArgs.add(executableUrl.toString());

@@ -76,9 +76,6 @@ class Entrypoint {
   /// The path to the entrypoint's "packages" directory.
   String get packagesDir => root.path('packages');
 
-  /// The path to the entrypoint's ".packages" file.
-  String get packagesFile => root.path('.packages');
-
   /// `true` if the entrypoint package currently has a lock file.
   bool get lockFileExists => _lockFile != null || entryExists(lockFilePath);
 
