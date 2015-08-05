@@ -48,6 +48,8 @@ Transcript<Entry> _transcript;
 /// This will also be in [_progresses].
 Progress _animatedProgress;
 
+_Collapser _collapser;
+
 final _cyan = getSpecial('\u001b[36m');
 final _green = getSpecial('\u001b[32m');
 final _magenta = getSpecial('\u001b[35m');
@@ -219,6 +221,9 @@ void fine(message) => write(Level.FINE, message);
 
 /// Logs [message] at [level].
 void write(Level level, message) {
+  // Don't allow interleaving collapsible messages with other kinds.
+  if (_collapser != null) _collapser.end();
+
   message = message.toString();
   var lines = splitLines(message);
 
@@ -419,6 +424,31 @@ void unmuteProgress() {
   _numMutes--;
 }
 
+/// Logs a collapsible [message].
+///
+/// If a number of collapsible messages are printed in short succession, they
+/// are collapsed to just showing [template] with "##" replaced with the number
+/// of collapsed messages. Avoids spamming the output with not-very-interesting
+/// output.
+void collapsible(String message, String template) {
+  // Only collapse messages when the output is not verbose.
+  if (verbosity._loggers[Level.MESSAGE] != _logToStdout) {
+    write(Level.MESSAGE, message);
+    return;
+  }
+
+  // If this is a different set of collapsed messages, end the previous ones.
+  if (_collapser != null && _collapser._template != template) {
+    _collapser.end();
+  }
+
+  if (_collapser != null) {
+    _collapser.increment();
+  } else {
+    _collapser = new _Collapser(message, template);
+  }
+}
+
 /// Wraps [text] in the ANSI escape codes to make it bold when on a platform
 /// that supports that.
 ///
@@ -556,5 +586,59 @@ class _JsonLogger {
     if (!enabled) return;
 
     print(JSON.encode(message));
+  }
+}
+
+/// Collapses a series of collapsible messages into a single line of output if
+/// they happen within a short window of time.
+class _Collapser {
+  /// The window of time where a series of calls to [collapsible] will be
+  /// collapsed to a single message.
+  static final _window = new Duration(milliseconds: 100);
+
+  /// The Timer used to coalesce a number of collapsible messages.
+  ///
+  /// This is `null` if no collapsible messages are waiting to be displayed.
+  Timer _timer;
+
+  /// The first collapsible message waiting to be displayed.
+  String _firstMessage;
+
+  /// The template used to display the number of collapsed messages when more
+  /// than one collapsible message is logged within the window of time.
+  ///
+  /// Inside the template, "##" will be replaced with the number of collapsed
+  /// messages.
+  String _template;
+
+  /// The number of collapsible messages that are waiting to be logged.
+  int _count = 1;
+
+  _Collapser(this._firstMessage, this._template) {
+    _initTimer();
+  }
+
+  void increment() {
+    // Reset the timer.
+    _timer.cancel();
+    _initTimer();
+
+    _count++;
+  }
+
+  void end() {
+    // Clear this first so we don't stack overflow when we call message() below.
+    _collapser = null;
+
+    _timer.cancel();
+    if (_count == 1) {
+      message(_firstMessage);
+    } else {
+      message(_template.replaceAll("##", _count.toString()));
+    }
+  }
+
+  void _initTimer() {
+    _timer = new Timer(_window, end);
   }
 }

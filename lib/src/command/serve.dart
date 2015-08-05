@@ -148,18 +148,17 @@ class ServeCommand extends BarbackCommand {
     }
 
     // Add two characters to account for "[" and "]".
-    var prefix = log.gray(
+    var directory = log.gray(
         padRight("[${server.rootDirectory}]", directoryLength + 2));
 
     server.results.listen((result) {
-      var buffer = new StringBuffer();
-      buffer.write("$prefix ");
-
       if (result.isSuccess) {
-        buffer.write(
-            "${log.green('GET')} ${result.url.path} $_arrow ${result.id}");
+        var prefix = "$directory ${log.green('GET')}";
+        log.collapsible("$prefix ${result.url.path} $_arrow ${result.id}",
+            "$prefix Served ## assets.");
       } else {
-        buffer.write("${log.red('GET')} ${result.url.path} $_arrow");
+        var buffer = new StringBuffer();
+        buffer.write("$directory ${log.red('GET')} ${result.url.path} $_arrow");
 
         var error = result.error.toString();
         if (error.contains("\n")) {
@@ -167,9 +166,9 @@ class ServeCommand extends BarbackCommand {
         } else {
           buffer.write(" $error");
         }
-      }
 
-      log.message(buffer);
+        log.error(buffer);
+      }
     }, onError: _fatalError);
 
     log.message("Serving ${entrypoint.root.name} "
