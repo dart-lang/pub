@@ -27,6 +27,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     var pub = startPub(args: ["build"]);
     pub.stdout.expect(startsWith("Loading source assets..."));
     pub.stdout.expect(startsWith("Building myapp..."));

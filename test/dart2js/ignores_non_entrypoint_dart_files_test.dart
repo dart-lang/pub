@@ -33,7 +33,7 @@ main() {
   });
 
   integration("serve ignores non-entrypoint Dart files", () {
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShould404("file1.dart.js");
     requestShould404("file2.dart.js");
     requestShould404("file3.dart.js");

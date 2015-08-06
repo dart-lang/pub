@@ -21,7 +21,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["--no-force-poll"]);
+    pubServe(args: ["--no-force-poll"], shouldGetFirst: true);
     requestShouldSucceed("index.html", "before");
 
     d.dir(appPath, [

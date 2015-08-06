@@ -38,7 +38,7 @@ main() {
   });
 
   integration("serves only the given directories", () {
-    pubServe(args: ["foo", "bar"]);
+    pubServe(args: ["foo", "bar"], shouldGetFirst: true);
 
     requestShouldSucceed("file.txt", "bar", root: "bar");
     requestShouldSucceed("file.txt", "foo", root: "foo");

@@ -14,7 +14,7 @@ main() {
       d.appPubspec()
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShould404("index.html");
     requestShould404("packages/myapp/nope.dart");
     requestShould404("dir/packages/myapp/nope.dart");

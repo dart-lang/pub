@@ -38,7 +38,7 @@ main() {
     });
 
     integration('from "pub serve"', () {
-      pubServe(args: ["--define", "name=fblthp"]);
+      pubServe(args: ["--define", "name=fblthp"], shouldGetFirst: true);
       requestShouldSucceed("file.dart.js", contains("fblthp"));
       endPubServe();
     });
@@ -53,7 +53,7 @@ main() {
         })
       ]).create();
 
-      pubServe(args: ["--define", "name=fblthp"]);
+      pubServe(args: ["--define", "name=fblthp"], shouldGetFirst: true);
       requestShouldSucceed("file.dart.js", allOf([
         contains("fblthp"),
         isNot(contains("slartibartfast"))

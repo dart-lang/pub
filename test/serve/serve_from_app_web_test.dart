@@ -22,7 +22,7 @@ main() {
       ])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShouldSucceed("index.html", "<body>");
     requestShouldSucceed("file.dart", "main() => print('hello');");
     requestShouldSucceed("sub/file.html", "<body>in subdir</body>");

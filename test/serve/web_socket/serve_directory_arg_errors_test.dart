@@ -22,7 +22,7 @@ main() {
   });
 
   integration("responds with an error if 'path' is not a string", () {
-    pubServe();
+    pubServe(shouldGetFirst: true);
     expectWebSocketError("serveDirectory", {"path": 123},
         rpc_error_code.INVALID_PARAMS,
         'Parameter "path" for method "serveDirectory" must be a string, but '
@@ -31,7 +31,7 @@ main() {
   });
 
   integration("responds with an error if 'path' is absolute", () {
-    pubServe();
+    pubServe(shouldGetFirst: true);
     expectWebSocketError("serveDirectory", {"path": "/absolute.txt"},
         rpc_error_code.INVALID_PARAMS,
         '"path" must be a relative path. Got "/absolute.txt".');
@@ -39,7 +39,7 @@ main() {
   });
 
   integration("responds with an error if 'path' reaches out", () {
-    pubServe();
+    pubServe(shouldGetFirst: true);
     expectWebSocketError("serveDirectory", {"path": "a/../../bad.txt"},
         rpc_error_code.INVALID_PARAMS,
         '"path" cannot reach out of its containing directory. Got '

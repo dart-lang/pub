@@ -21,7 +21,7 @@ main() {
       ])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShouldSucceed("index.html", "body");
 
     schedule(() => deleteEntry(

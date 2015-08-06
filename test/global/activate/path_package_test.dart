@@ -4,6 +4,7 @@
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
+import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -19,6 +20,6 @@ main() {
 
     var path = canonicalize(p.join(sandboxDir, "foo"));
     schedulePub(args: ["global", "activate", "--source", "path", "../foo"],
-        output: 'Activated foo 1.0.0 at path "$path".');
+        output: endsWith('Activated foo 1.0.0 at path "$path".'));
   });
 }

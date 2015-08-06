@@ -33,7 +33,7 @@ main() {
   });
 
   integration("serve ignores Dart entrypoints in lib", () {
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShould404("packages/myapp/main.dart.js");
     endPubServe();
   });

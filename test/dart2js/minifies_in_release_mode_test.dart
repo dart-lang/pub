@@ -15,7 +15,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["--mode", "release"]);
+    pubServe(args: ["--mode", "release"], shouldGetFirst: true);
     requestShouldSucceed("main.dart.js", isMinifiedDart2JSOutput);
     endPubServe();
   });

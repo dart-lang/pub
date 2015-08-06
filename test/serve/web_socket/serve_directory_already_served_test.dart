@@ -17,7 +17,7 @@ main() {
       ])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
 
     expectWebSocketResult("serveDirectory", {"path": "web"}, {
       "url": getServerUrl("web")

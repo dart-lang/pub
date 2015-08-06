@@ -23,7 +23,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["web"]);
+    pubServe(args: ["web"], shouldGetFirst: true);
 
     // Bind the new directory.
     expect(webSocketRequest("serveDirectory", {"path": "test"}), completes);

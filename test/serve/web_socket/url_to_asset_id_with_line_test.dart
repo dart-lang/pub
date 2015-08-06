@@ -17,7 +17,7 @@ main() {
       ])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
 
     // Paths in web/.
     expectWebSocketResult("urlToAssetId", {

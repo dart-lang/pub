@@ -21,7 +21,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["--no-force-poll"]);
+    pubServe(args: ["--no-force-poll"], shouldGetFirst: true);
     waitForBuildSuccess();
     requestShouldSucceed("index.html", "body");
 

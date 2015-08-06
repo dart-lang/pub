@@ -20,7 +20,7 @@ main() {
       ])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShouldSucceed("main.dart.js", isMinifiedDart2JSOutput);
     endPubServe();
   });

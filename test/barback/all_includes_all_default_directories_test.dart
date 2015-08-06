@@ -49,7 +49,7 @@ main() {
   });
 
   integration("serve --all finds assets in default source directories", () {
-    pubServe(args: ["--all"]);
+    pubServe(args: ["--all"], shouldGetFirst: true);
 
     requestShouldSucceed("file.txt", "benchmark", root: "benchmark");
     requestShouldSucceed("file.txt", "bin", root: "bin");

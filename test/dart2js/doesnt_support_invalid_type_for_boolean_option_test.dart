@@ -20,7 +20,7 @@ main() {
       d.dir("web", [d.file("main.dart", "void main() {}")])
     ]).create();
 
-    var server = pubServe();
+    var server = pubServe(shouldGetFirst: true);
     requestShould404("main.dart.js");
     server.stderr.expect(emitsLines(
         'Build error:\n'

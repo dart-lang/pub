@@ -15,7 +15,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["--no-dart2js"]);
+    pubServe(args: ["--no-dart2js"], shouldGetFirst: true);
     requestShould404("main.dart.js");
     endPubServe();
   });

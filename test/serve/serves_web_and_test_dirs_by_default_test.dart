@@ -17,7 +17,7 @@ main() {
       d.dir("example", [d.file("baz", "contents")])
     ]).create();
 
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShouldSucceed("foo", "contents", root: "web");
     requestShouldSucceed("bar", "contents", root: "test");
     requestShould404("baz", root: "web");

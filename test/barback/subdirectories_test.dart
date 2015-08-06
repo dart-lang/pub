@@ -50,7 +50,7 @@ main() {
   });
 
   integration("serves subdirectories", () {
-    pubServe(args: [webOne, webTwoInner]);
+    pubServe(args: [webOne, webTwoInner], shouldGetFirst: true);
 
     requestShouldSucceed("inner/file.txt", "one", root: webOne);
     requestShouldSucceed("file.txt", "two", root: webTwoInner);

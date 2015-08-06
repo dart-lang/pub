@@ -20,7 +20,7 @@ main() {
       ])
     ]).create();
 
-    var server = pubServe();
+    var server = pubServe(shouldGetFirst: true);
     server.stdout.expect("Build completed successfully");
 
     // Once we request the output, it should start compiling and fail.

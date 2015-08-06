@@ -22,7 +22,7 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["web"]);
+    pubServe(args: ["web"], shouldGetFirst: true);
 
     // Bind the new directory.
     schedule(() async {

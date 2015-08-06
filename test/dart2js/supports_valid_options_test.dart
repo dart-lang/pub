@@ -35,7 +35,7 @@ main() {
     ]).create();
 
     // None of these options should be rejected, either by pub or by dart2js.
-    pubServe();
+    pubServe(shouldGetFirst: true);
     requestShouldSucceed("main.dart.js", isNot(isEmpty));
     endPubServe();
   });
