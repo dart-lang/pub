@@ -425,37 +425,26 @@ class Entrypoint {
 
   /// Gets dependencies if the lockfile is out of date with respect to the
   /// pubspec.
-  Future ensureLockFileIsUpToDate() {
-    return new Future.sync(() {
-      // If we don't have a current lock file, we definitely need to install.
-      if (!_isLockFileUpToDate(lockFile)) {
-        if (lockFileExists) {
-          log.message(
-              "Your pubspec has changed, so we need to update your lockfile:");
-        } else {
-          log.message(
-              "You don't have a lockfile, so we need to generate that:");
-        }
-
-        return false;
-      }
-
-      // If we do have a lock file, we still need to make sure the packages
-      // are actually installed. The user may have just gotten a package that
+  Future ensureLockFileIsUpToDate() async {
+    if (!lockFileExists) {
+      log.message(
+          "You don't have a lockfile, so we need to generate that:");
+    } else if (_isLockFileUpToDate(lockFile)) {
+      // If we do have a lock file, we still need to make sure the packages are
+      // actually installed. The user may have just gotten a package that
       // includes a lockfile.
-      return _arePackagesAvailable(lockFile).then((available) {
-        if (!available) {
-          log.message(
-              "You are missing some dependencies, so we need to install them "
-              "first:");
-        }
+      if (await _arePackagesAvailable(lockFile)) return;
 
-        return available;
-      });
-    }).then((upToDate) {
-      if (upToDate) return null;
-      return acquireDependencies(SolveType.GET);
-    });
+      // If we don't have a current lock file, we definitely need to install.
+      log.message(
+          "You are missing some dependencies, so we need to install them "
+          "first:");
+    } else {
+      log.message(
+          "Your pubspec has changed, so we need to update your lockfile:");
+    }
+
+    await acquireDependencies(SolveType.GET);
   }
 
   /// Loads the package graph for the application and all of its transitive

@@ -17,7 +17,7 @@ main() {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["bin/script"]);
+    var pub = pubRun(args: ["bin/script"], shouldGetFirst: true);
     pub.stdout.expect("Hello!");
     pub.shouldExit(0);
   });

@@ -41,7 +41,7 @@ main() {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["bin/script"]);
+    var pub = pubRun(args: ["bin/script"], shouldGetFirst: true);
 
     pub.stdout.expect("ready");
     for (var signal in _catchableSignals) {

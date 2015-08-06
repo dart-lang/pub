@@ -354,10 +354,18 @@ void pubDowngrade({Iterable<String> args, output, error, warning,
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-ScheduledProcess pubRun({bool global: false, Iterable<String> args}) {
+ScheduledProcess pubRun({bool shouldGetFirst: false, bool global: false,
+    Iterable<String> args}) {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
   var pub = startPub(args: pubArgs);
+
+  if (shouldGetFirst) {
+    pub.stdout.expect(consumeThrough(anyOf([
+      "Got dependencies!",
+      matches(new RegExp(r"^Changed \d+ dependenc"))
+    ])));
+  }
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
