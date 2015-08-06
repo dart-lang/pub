@@ -329,12 +329,13 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [mode] is passed, it's used as the barback mode; it defaults to
+  /// If [checked] is true, the program is run in checked mode. If [mode] is
+  /// passed, it's used as the barback mode; it defaults to
   /// [BarbackMode.RELEASE].
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(String package, String executable,
-      Iterable<String> args, {BarbackMode mode}) {
+      Iterable<String> args, {bool checked: false, BarbackMode mode}) {
     if (mode == null) mode = BarbackMode.RELEASE;
 
     var binDir = p.join(_directory, package, 'bin');
@@ -342,7 +343,7 @@ class GlobalPackages {
         !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
       return find(package).then((entrypoint) {
         return exe.runExecutable(entrypoint, package, executable, args,
-            mode: mode, isGlobal: true);
+            isGlobal: true, checked: checked, mode: mode);
       });
     }
 
@@ -353,7 +354,7 @@ class GlobalPackages {
     }
 
     var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
-    return exe.runSnapshot(snapshotPath, args, recompile: () {
+    return exe.runSnapshot(snapshotPath, args, checked: checked, recompile: () {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
       return find(package)

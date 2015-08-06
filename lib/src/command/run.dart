@@ -22,6 +22,8 @@ class RunCommand extends PubCommand {
   bool get allowTrailingOptions => false;
 
   RunCommand() {
+    argParser.addFlag("checked", abbr: "c",
+        help: "Enable runtime type checks and assertions.");
     argParser.addOption("mode",
         help: 'Mode to run transformers in.\n'
               '(defaults to "release" for dependencies, "debug" for '
@@ -66,7 +68,7 @@ class RunCommand extends PubCommand {
     }
 
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        mode: mode);
+        checked: argResults['checked'], mode: mode);
     await flushThenExit(exitCode);
   }
 }

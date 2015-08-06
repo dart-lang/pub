@@ -7,17 +7,22 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
+const SCRIPT = """
 main() {
-  integration('runs the script in checked mode with "--checked"', () {
+  int a = true;
+  print("no checks");
+}
+""";
+
+main() {
+  integration('runs the script in unchecked mode by default', () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [
-        d.file("script.dart", "main() { int a = true; }")
+        d.file("script.dart", SCRIPT)
       ])
     ]).create();
 
-    schedulePub(args: ["run", "--checked", "bin/script"],
-        error: contains("'bool' is not a subtype of type 'int' of 'a'"),
-        exitCode: 255);
+    schedulePub(args: ["run", "bin/script"], output: contains("no checks"));
   });
 }

@@ -26,6 +26,8 @@ class GlobalRunCommand extends PubCommand {
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
   GlobalRunCommand() {
+    argParser.addFlag("checked", abbr: "c",
+        help: "Enable runtime type checks and assertions.");
     argParser.addOption("mode", defaultsTo: "release",
         help: 'Mode to run transformers in.');
   }
@@ -48,14 +50,12 @@ class GlobalRunCommand extends PubCommand {
 
     var args = argResults.rest.skip(1).toList();
     if (p.split(executable).length > 1) {
-      // TODO(nweiz): Use adjacent strings when the new async/await compiler
-      // lands.
-      usageException('Cannot run an executable in a subdirectory of a global ' +
+      usageException('Cannot run an executable in a subdirectory of a global '
           'package.');
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,
-        mode: mode);
+        checked: argResults["checked"], mode: mode);
     await flushThenExit(exitCode);
   }
 }

@@ -44,13 +44,13 @@ final _catchableSignals = Platform.isWindows
 ///
 /// Arguments from [args] will be passed to the spawned Dart application.
 ///
-/// If [mode] is passed, it's used as the barback mode; it defaults to
-/// [BarbackMode.RELEASE].
+/// If [checked] is true, the program is run in checked mode. If [mode] is
+/// passed, it's used as the barback mode; it defaults to [BarbackMode.RELEASE].
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args, {bool isGlobal: false,
-    BarbackMode mode}) async {
+    bool checked: false, BarbackMode mode}) async {
   if (mode == null) mode = BarbackMode.RELEASE;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
@@ -84,7 +84,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
       // default mode for them to run. We can't run them in a different mode
       // using the snapshot.
       mode == BarbackMode.RELEASE) {
-    return _runCachedExecutable(entrypoint, localSnapshotPath, args);
+    return _runCachedExecutable(entrypoint, localSnapshotPath, args,
+        checked: checked);
   }
 
   // If the command has a path separator, then it's a path relative to the
@@ -95,8 +96,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   var vmArgs = [];
 
   // Run in checked mode.
-  // TODO(rnystrom): Make this configurable.
-  vmArgs.add("--checked");
+  if (checked) vmArgs.add("--checked");
 
   var executableUrl = await _executableUrl(
       entrypoint, package, executable, isGlobal: isGlobal, mode: mode);
@@ -268,8 +268,8 @@ void _forwardSignals(Process process) {
 
 /// Runs the executable snapshot at [snapshotPath].
 Future<int> _runCachedExecutable(Entrypoint entrypoint, String snapshotPath,
-    List<String> args) {
-  return runSnapshot(snapshotPath, args, checked: true, recompile: () {
+    List<String> args, {bool checked: false}) {
+  return runSnapshot(snapshotPath, args, checked: checked, recompile: () {
     log.fine("Precompiled executable is out of date.");
     return entrypoint.precompileExecutables();
   });
