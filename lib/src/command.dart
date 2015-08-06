@@ -6,7 +6,6 @@ library pub.command;
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:path/path.dart' as path;
 
 import 'entrypoint.dart';
 import 'log.dart' as log;

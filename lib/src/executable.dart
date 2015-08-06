@@ -9,7 +9,6 @@ import 'dart:io';
 
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
-import 'package:stack_trace/stack_trace.dart';
 
 import 'barback/asset_environment.dart';
 import 'entrypoint.dart';
@@ -114,8 +113,6 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // it knows where to load the packages. If it's a dependency's executable, for
   // example, it may not have the right packages directory itself.
   if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
-    // TODO(nweiz): use a .packages file once sdk#23369 is fixed.
-
     // We use an absolute path here not because the VM insists but because it's
     // helpful for the subprocess to be able to spawn Dart with
     // Platform.executableArguments and have that work regardless of the working
@@ -210,12 +207,22 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
 ///
 /// This doesn't do any validation of the snapshot's SDK version.
 Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
-    bool checked: false}) async {
-  var vmArgs = [path]..addAll(args);
-
+    String packagesFile, bool checked: false}) async {
   // TODO(nweiz): pass a flag to silence the "Wrong full snapshot version"
   // message when issue 20784 is fixed.
-  if (checked) vmArgs.insert(0, "--checked");
+  var vmArgs = [];
+  if (checked) vmArgs.add("--checked");
+
+  if (packagesFile != null) {
+    // We use an absolute path here not because the VM insists but because it's
+    // helpful for the subprocess to be able to spawn Dart with
+    // Platform.executableArguments and have that work regardless of the working
+    // directory.
+    vmArgs.add("--packages=${p.toUri(p.absolute(packagesFile))}");
+  }
+
+  vmArgs.add(path);
+  vmArgs.addAll(args);
 
   // We need to split stdin so that we can send the same input both to the
   // first and second process, if we start more than one.
@@ -269,7 +276,10 @@ void _forwardSignals(Process process) {
 /// Runs the executable snapshot at [snapshotPath].
 Future<int> _runCachedExecutable(Entrypoint entrypoint, String snapshotPath,
     List<String> args, {bool checked: false}) {
-  return runSnapshot(snapshotPath, args, checked: checked, recompile: () {
+  return runSnapshot(snapshotPath, args,
+      packagesFile: entrypoint.packagesFile,
+      checked: checked,
+      recompile: () {
     log.fine("Precompiled executable is out of date.");
     return entrypoint.precompileExecutables();
   });

@@ -6,25 +6,23 @@
 // TODO(lrn): Also move packages/ directory management to this library.
 library pub.package_locations;
 
-import 'dart:async';
-
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 
 import 'package_graph.dart';
 import 'io.dart';
-import 'log.dart' as log;
 import 'utils.dart' show ordered;
 
 /// Creates a `.packages` file with the locations of the packages in [graph].
 ///
-/// The file is written in the root directory of the entrypoint of [graph].
+/// The file is written to [path], which defaults to the root directory of the
+/// entrypoint of [graph].
 ///
 /// If the file already exists, it is deleted before the new content is written.
-void writePackagesMap(PackageGraph graph) {
-  var packagesFilePath = graph.entrypoint.root.path(".packages");
+void writePackagesMap(PackageGraph graph, [String path]) {
+  path ??= graph.entrypoint.root.path(".packages");
   var content = _createPackagesMap(graph);
-  writeTextFile(packagesFilePath, content);
+  writeTextFile(path, content);
 }
 
 /// Template for header text put into `.packages` file.
@@ -46,7 +44,14 @@ String _createPackagesMap(PackageGraph packageGraph) {
   var packages = packageGraph.packages;
   var uriMap = {};
   for (var packageName in ordered(packages.keys)) {
-    var location = packages[packageName].path("lib");
+    var package = packages[packageName];
+
+    // This indicates an in-memory package, which is presumably a fake
+    // entrypoint we created for something like "pub global activate". We don't
+    // need to import from it anyway, so we can just not add it to the map.
+    if (package.dir == null) continue;
+
+    var location = package.path("lib");
     uriMap[packageName] = p.toUri(location);
   }
 

@@ -5,7 +5,6 @@
 library pub.global_packages;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -20,6 +19,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_locations.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
@@ -177,6 +177,7 @@ class GlobalPackages {
         .loadPackageGraph(result);
     var snapshots = await _precompileExecutables(graph.entrypoint, dep.name);
     _writeLockFile(dep.name, lockFile);
+    writePackagesMap(graph, _getPackagesFilePath(dep.name));
 
     _updateBinStubs(graph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
@@ -354,7 +355,10 @@ class GlobalPackages {
     }
 
     var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
-    return exe.runSnapshot(snapshotPath, args, checked: checked, recompile: () {
+    return exe.runSnapshot(snapshotPath, args,
+        checked: checked,
+        packagesFile: _getPackagesFilePath(package),
+        recompile: () {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
       return find(package)
@@ -367,6 +371,11 @@ class GlobalPackages {
   /// [name].
   String _getLockFilePath(String name) =>
       p.join(_directory, name, "pubspec.lock");
+
+  /// Gets the path to the .packages file for an activated cached package with
+  /// [name].
+  String _getPackagesFilePath(String name) =>
+      p.join(_directory, name, ".packages");
 
   /// Shows the user a formatted list of globally activated packages.
   void listActivePackages() {
