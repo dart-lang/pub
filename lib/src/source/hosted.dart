@@ -83,14 +83,14 @@ class HostedSource extends CachedSource {
 
   /// Downloads the package identified by [id] to the system cache.
   Future<Package> downloadToSystemCache(PackageId id) async {
-    if (!(await isInSystemCache(id))) {
-      var packageDir = _getDirectory(id);
+    if (!isInSystemCache(id)) {
+      var packageDir = getDirectory(id);
       ensureDir(path.dirname(packageDir));
       var parsed = _parseDescription(id.description);
       await _download(parsed.last, parsed.first, id.version, packageDir);
     }
 
-    return new Package.load(id.name, _getDirectory(id), systemCache.sources);
+    return new Package.load(id.name, getDirectory(id), systemCache.sources);
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -98,10 +98,7 @@ class HostedSource extends CachedSource {
   ///
   /// Each of these subdirectories then contains a subdirectory for each
   /// package downloaded from that site.
-  Future<String> getDirectory(PackageId id) =>
-      new Future.value(_getDirectory(id));
-
-  String _getDirectory(PackageId id) {
+  String getDirectory(PackageId id) {
     var parsed = _parseDescription(id.description);
     var dir = _urlToDirectory(parsed.last);
     return path.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");

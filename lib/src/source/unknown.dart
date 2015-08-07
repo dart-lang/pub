@@ -35,7 +35,7 @@ class UnknownSource extends Source {
       "Cannot get an unknown source '$name'.");
 
   /// Returns the directory where this package can be found locally.
-  Future<String> getDirectory(PackageId id) => throw new UnsupportedError(
+  String getDirectory(PackageId id) => throw new UnsupportedError(
       "Cannot find a package from an unknown source '$name'.");
 
   bool descriptionsEqual(description1, description2) =>

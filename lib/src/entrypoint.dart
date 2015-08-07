@@ -402,8 +402,8 @@ class Entrypoint {
   ///
   /// Note: this assumes [isLockFileUpToDate] has already been called and
   /// returned `true`.
-  Future<bool> _arePackagesAvailable(LockFile lockFile) {
-    return Future.wait(lockFile.packages.values.map((package) {
+  bool _arePackagesAvailable(LockFile lockFile) {
+    return lockFile.packages.values.every((package) {
       var source = cache.sources[package.source];
 
       // This should only be called after [_isLockFileUpToDate] has returned
@@ -413,16 +413,12 @@ class Entrypoint {
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
       // found error later since installing won't accomplish anything.
-      if (source is! CachedSource) return new Future.value(true);
+      if (source is! CachedSource) return true;
 
       // Get the directory.
-      return source.getDirectory(package).then((dir) {
-        // See if the directory is there and looks like a package.
-        return dirExists(dir) || fileExists(path.join(dir, "pubspec.yaml"));
-      });
-    })).then((results) {
-      // Make sure they are all true.
-      return results.every((result) => result);
+      var dir = source.getDirectory(package);
+      // See if the directory is there and looks like a package.
+      return dirExists(dir) || fileExists(path.join(dir, "pubspec.yaml"));
     });
   }
 
@@ -436,7 +432,7 @@ class Entrypoint {
       // If we do have a lock file, we still need to make sure the packages are
       // actually installed. The user may have just gotten a package that
       // includes a lockfile.
-      if (await _arePackagesAvailable(lockFile)) return;
+      if (_arePackagesAvailable(lockFile)) return;
 
       // If we don't have a current lock file, we definitely need to install.
       log.message(
@@ -461,27 +457,27 @@ class Entrypoint {
 
     var graph = await log.progress("Loading package graph", () async {
       if (result != null) {
-        var packages = await Future.wait(result.packages.map((id) async {
+        var packages = new Map.fromIterable(result.packages,
+            key: (id) => id.name,
+            value: (id) {
           if (id.name == root.name) return root;
 
-          var dir = await cache.sources[id.source].getDirectory(id);
-          return new Package(result.pubspecs[id.name], dir);
-        }));
+          return new Package(result.pubspecs[id.name],
+              cache.sources[id.source].getDirectory(id));
+        });
 
-        return new PackageGraph(this, new LockFile(result.packages),
-            new Map.fromIterable(packages, key: (package) => package.name));
+        return new PackageGraph(this, new LockFile(result.packages), packages);
       }
 
       await ensureLockFileIsUpToDate();
-      var packages = await Future.wait(lockFile.packages.values.map((id) async {
-        var source = cache.sources[id.source];
-        var dir = await source.getDirectory(id);
+      var packages = new Map.fromIterable(lockFile.packages.values,
+          key: (id) => id.name,
+          value: (id) {
+        var dir = cache.sources[id.source].getDirectory(id);
         return new Package.load(id.name, dir, cache.sources);
-      }));
-
-      var packageMap = new Map.fromIterable(packages, key: (p) => p.name);
-      packageMap[root.name] = root;
-      return new PackageGraph(this, lockFile, packageMap);
+      });
+      packages[root.name] = root;
+      return new PackageGraph(this, lockFile, packages);
     }, fine: true);
 
     _packageGraph = graph;

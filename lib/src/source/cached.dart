@@ -29,15 +29,14 @@ abstract class CachedSource extends Source {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
-  Future<Pubspec> doDescribe(PackageId id) {
-    return getDirectory(id).then((packageDir) {
-      if (fileExists(path.join(packageDir, "pubspec.yaml"))) {
-        return new Pubspec.load(packageDir, systemCache.sources,
-            expectedName: id.name);
-      }
+  Future<Pubspec> doDescribe(PackageId id) async {
+    var packageDir = getDirectory(await resolveId(id));
+    if (fileExists(path.join(packageDir, "pubspec.yaml"))) {
+      return new Pubspec.load(packageDir, systemCache.sources,
+          expectedName: id.name);
+    }
 
-      return describeUncached(id);
-    });
+    return await describeUncached(id);
   }
 
   /// Loads the (possibly remote) pubspec for the package version identified by
@@ -55,8 +54,10 @@ abstract class CachedSource extends Source {
 
   /// Determines if the package with [id] is already downloaded to the system
   /// cache.
-  Future<bool> isInSystemCache(PackageId id) =>
-      getDirectory(id).then(dirExists);
+  ///
+  /// Depending on the source, this may throw an [ArgumentError] if [id] isn't
+  /// resolved using [resolveId].
+  bool isInSystemCache(PackageId id) => dirExists(getDirectory(id));
 
   /// Downloads the package identified by [id] to the system cache.
   Future<Package> downloadToSystemCache(PackageId id);

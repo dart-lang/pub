@@ -58,34 +58,33 @@ class GitSource extends CachedSource {
   /// `<package name>-<url hash>`. These are used to check out the repository
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
-  Future<Package> downloadToSystemCache(PackageId id) {
-    var revisionCachePath;
-
+  Future<Package> downloadToSystemCache(PackageId id) async {
     if (!git.isInstalled) {
       fail("Cannot get ${id.name} from Git (${_getUrl(id)}).\n"
           "Please ensure Git is correctly installed.");
     }
 
     ensureDir(path.join(systemCacheRoot, 'cache'));
-    return _ensureRevision(id).then((_) => getDirectory(id)).then((path) {
-      revisionCachePath = path;
-      if (entryExists(revisionCachePath)) return null;
-      return _clone(_repoCachePath(id), revisionCachePath, mirror: false);
-    }).then((_) {
-      var ref = _getEffectiveRef(id);
-      if (ref == 'HEAD') return null;
-      return _checkOut(revisionCachePath, ref);
-    }).then((_) {
-      return new Package.load(id.name, revisionCachePath, systemCache.sources);
-    });
+    await _ensureRevision(id);
+    var revisionCachePath = getDirectory(await resolveId(id));
+    if (!entryExists(revisionCachePath)) {
+      await _clone(_repoCachePath(id), revisionCachePath, mirror: false);
+    }
+
+    var ref = _getEffectiveRef(id);
+    if (ref != 'HEAD') await _checkOut(revisionCachePath, ref);
+
+    return new Package.load(id.name, revisionCachePath, systemCache.sources);
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  Future<String> getDirectory(PackageId id) {
-    return _ensureRevision(id).then((rev) {
-      var revisionCacheName = '${id.name}-$rev';
-      return path.join(systemCacheRoot, revisionCacheName);
-    });
+  String getDirectory(PackageId id) {
+    if (id.description is! Map || !id.description.containsKey('resolved-ref')) {
+      throw new ArgumentError("Can't get the directory for unresolved id $id.");
+    }
+
+    return path.join(systemCacheRoot,
+        "${id.name}-${id.description['resolved-ref']}");
   }
 
   /// Ensures [description] is a Git URL.

@@ -57,8 +57,7 @@ class PathSource extends Source {
     });
   }
 
-  Future<String> getDirectory(PackageId id) =>
-      newFuture(() => _validatePath(id.name, id.description));
+  String getDirectory(PackageId id) => _validatePath(id.name, id.description);
 
   /// Parses a path dependency.
   ///

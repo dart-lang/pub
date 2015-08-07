@@ -282,7 +282,7 @@ class GlobalPackages {
   /// Finds the active package with [name].
   ///
   /// Returns an [Entrypoint] loaded with the active package if found.
-  Future<Entrypoint> find(String name) async {
+  Entrypoint find(String name) {
     var lockFilePath = _getLockFilePath(name);
     var lockFile;
     try {
@@ -312,7 +312,7 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      var dir = await cache.sources[id.source].getDirectory(id);
+      var dir = cache.sources[id.source].getDirectory(id);
       var package = new Package.load(name, dir, cache.sources);
       return new Entrypoint.inMemory(package, lockFile, cache);
     }
@@ -342,10 +342,8 @@ class GlobalPackages {
     var binDir = p.join(_directory, package, 'bin');
     if (mode != BarbackMode.RELEASE ||
         !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
-      return find(package).then((entrypoint) {
-        return exe.runExecutable(entrypoint, package, executable, args,
-            isGlobal: true, checked: checked, mode: mode);
-      });
+      return exe.runExecutable(find(package), package, executable, args,
+          isGlobal: true, checked: checked, mode: mode);
     }
 
     // Unless the user overrides the verbosity, we want to filter out the
@@ -358,12 +356,11 @@ class GlobalPackages {
     return exe.runSnapshot(snapshotPath, args,
         checked: checked,
         packagesFile: _getPackagesFilePath(package),
-        recompile: () {
+        recompile: () async {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
-      return find(package)
-          .then((entrypoint) => entrypoint.loadPackageGraph())
-          .then((graph) => _precompileExecutables(graph.entrypoint, package));
+      var graph = await find(package).loadPackageGraph();
+      await _precompileExecutables(graph.entrypoint, package);
     });
   }
 
@@ -461,8 +458,7 @@ class GlobalPackages {
           id = _loadPackageId(entry);
           log.message("Reactivating ${log.bold(id.name)} ${id.version}...");
 
-          var entrypoint = await find(id.name);
-
+          var entrypoint = find(id.name);
           var graph = await entrypoint.loadPackageGraph();
           var snapshots = await _precompileExecutables(entrypoint, id.name);
           var packageExecutables = executables.remove(id.name);

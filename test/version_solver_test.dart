@@ -1392,9 +1392,7 @@ class MockSource extends CachedSource {
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
-  Future<String> getDirectory(PackageId id) {
-    return new Future.value('${id.name}-${id.version}');
-  }
+  String getDirectory(PackageId id) => '${id.name}-${id.version}';
 
   Future<List<Pubspec>> getVersions(String name, String description) {
     return new Future.sync(() {

@@ -25,7 +25,7 @@ class MockSource extends Source {
   Future get(PackageId id, String symlink) => throw new UnsupportedError(
       "Cannot get a mock package.");
 
-  Future<String> getDirectory(PackageId id) => throw new UnsupportedError(
+  String getDirectory(PackageId id) => throw new UnsupportedError(
       "Cannot get the directory for mock packages.");
 
   dynamic parseDescription(String filePath, description,

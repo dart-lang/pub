@@ -4,7 +4,6 @@
 
 library pub.system_cache;
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -79,7 +78,10 @@ class SystemCache {
   }
 
   /// Determines if the system cache contains the package identified by [id].
-  Future<bool> contains(PackageId id) {
+  ///
+  /// Depending on the source, this may throw an [ArgumentError] if [id] isn't
+  /// resolved using [Source.resolveId].
+  bool contains(PackageId id) {
     var source = sources[id.source];
 
     if (source is! CachedSource) {

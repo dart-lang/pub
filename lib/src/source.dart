@@ -107,10 +107,10 @@ abstract class Source {
 
   /// Returns the directory where this package can (or could) be found locally.
   ///
-  /// If the source is cached, this will be a path in the system cache. In that
-  /// case, this will return a directory even if the package has not been
-  /// installed into the cache yet.
-  Future<String> getDirectory(PackageId id);
+  /// If the source is cached, this will be a path in the system cache.
+  /// Depending on the source, this may throw an [ArgumentError] if [id] isn't
+  /// resolved using [resolveId].
+  String getDirectory(PackageId id);
 
   /// Gives the source a chance to interpret and validate the description for
   /// a package coming from this source.
@@ -181,6 +181,9 @@ abstract class Source {
   ///
   /// By default, this just returns [id].
   Future<PackageId> resolveId(PackageId id) => new Future.value(id);
+
+  /// Returns whether [id] is fully-resolved, according to [resolveId].
+  bool isResolved(PackageId id) => true;
 
   /// Returns the source's name.
   String toString() => name;
