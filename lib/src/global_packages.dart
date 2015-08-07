@@ -140,7 +140,7 @@ class GlobalPackages {
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(name, new LockFile([id]));
+    _writeLockFile(name, new LockFile([id], cache.sources));
 
     var binDir = p.join(_directory, name, 'bin');
     if (dirExists(binDir)) deleteEntry(binDir);
@@ -169,7 +169,7 @@ class GlobalPackages {
 
     // Make sure all of the dependencies are locally installed.
     var ids = await Future.wait(result.packages.map(_cacheDependency));
-    var lockFile = new LockFile(ids);
+    var lockFile = new LockFile(ids, cache.sources);
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
@@ -230,8 +230,7 @@ class GlobalPackages {
     var oldPath = p.join(_directory, "$package.lock");
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
-    writeTextFile(_getLockFilePath(package),
-        lockFile.serialize(cache.rootDir, cache.sources));
+    writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
 
     var id = lockFile.packages[package];
     log.message('Activated ${_formatPackage(id)}.');
@@ -304,9 +303,11 @@ class GlobalPackages {
       new File(oldLockFilePath).renameSync(lockFilePath);
     }
 
-    // Load the package from the cache.
+    // Remove the package itself from the lockfile. We put it in there so we
+    // could find and load the [Package] object, but normally an entrypoint
+    // doesn't expect to be in its own lockfile.
     var id = lockFile.packages[name];
-    lockFile.packages.remove(name);
+    lockFile = lockFile.removePackage(name);
 
     var source = cache.sources[id.source];
     if (source is CachedSource) {

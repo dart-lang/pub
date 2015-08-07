@@ -691,21 +691,21 @@ void makeGlobalPackage(String package, String version,
     d.dir("$package-$version", contents)
   ]).create();
 
-  var lockFile = _createLockFile(pkg: pkg, hosted: hosted);
-
-  // Add the root package to the lockfile.
-  var id = new PackageId(package, "hosted", new Version.parse(version),
-      package);
-  lockFile.packages[package] = id;
-
   // Write the lockfile to the global cache.
   var sources = new SourceRegistry();
   sources.register(new HostedSource());
   sources.register(new PathSource());
 
+  var lockFile = _createLockFile(sources, pkg: pkg, hosted: hosted);
+
+  // Add the root package to the lockfile.
+  var id = new PackageId(package, "hosted", new Version.parse(version),
+      package);
+  lockFile = lockFile.setPackage(id);
+
   d.dir(cachePath, [
     d.dir("global_packages", [
-      d.file("$package.lock", lockFile.serialize(null, sources))
+      d.file("$package.lock", lockFile.serialize(null))
     ])
   ]).create();
 }
@@ -721,14 +721,14 @@ void makeGlobalPackage(String package, String version,
 /// hosted packages.
 void createLockFile(String package, {Iterable<String> sandbox,
     Iterable<String> pkg, Map<String, String> hosted}) {
-  var lockFile = _createLockFile(sandbox: sandbox, pkg: pkg, hosted: hosted);
-
   var sources = new SourceRegistry();
   sources.register(new HostedSource());
   sources.register(new PathSource());
 
-  d.file(p.join(package, 'pubspec.lock'),
-      lockFile.serialize(null, sources)).create();
+  var lockFile = _createLockFile(sources,
+      sandbox: sandbox, pkg: pkg, hosted: hosted);
+
+  d.file(p.join(package, 'pubspec.lock'), lockFile.serialize(null)).create();
 }
 
 /// Creates a lock file for [package] without running `pub get`.
@@ -740,8 +740,8 @@ void createLockFile(String package, {Iterable<String> sandbox,
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-LockFile _createLockFile({Iterable<String> sandbox,
-Iterable<String> pkg, Map<String, String> hosted}) {
+LockFile _createLockFile(SourceRegistry sources, {Iterable<String> sandbox,
+    Iterable<String> pkg, Map<String, String> hosted}) {
   var dependencies = {};
 
   if (sandbox != null) {
@@ -778,23 +778,22 @@ Iterable<String> pkg, Map<String, String> hosted}) {
     pkg.forEach(_addPackage);
   }
 
-  var lockFile = new LockFile.empty();
-  dependencies.forEach((name, dependencyPath) {
-    var id = new PackageId(name, 'path', new Version(0, 0, 0), {
+  var packages = dependencies.keys.map((name) {
+    var dependencyPath = dependencies[name];
+    return new PackageId(name, 'path', new Version(0, 0, 0), {
       'path': dependencyPath,
       'relative': p.isRelative(dependencyPath)
     });
-    lockFile.packages[name] = id;
-  });
+  }).toList();
 
   if (hosted != null) {
     hosted.forEach((name, version) {
       var id = new PackageId(name, 'hosted', new Version.parse(version), name);
-      lockFile.packages[name] = id;
+      packages.add(id);
     });
   }
 
-  return lockFile;
+  return new LockFile(packages, sources);
 }
 
 /// Returns the path to the version of [package] used by pub.

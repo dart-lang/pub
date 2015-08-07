@@ -195,33 +195,28 @@ packages:
       });
     });
 
-    group('serialize()', () {
-      var lockfile;
-      setUp(() {
-        lockfile = new LockFile.empty();
-      });
+    test('serialize() dumps the lockfile to YAML', () {
+      var lockfile = new LockFile([
+        new PackageId(
+          'foo', mockSource.name, new Version.parse('1.2.3'), 'foo desc'),
+        new PackageId(
+          'bar', mockSource.name, new Version.parse('3.2.1'), 'bar desc')
+      ], sources);
 
-      test('dumps the lockfile to YAML', () {
-        lockfile.packages['foo'] = new PackageId(
-            'foo', mockSource.name, new Version.parse('1.2.3'), 'foo desc');
-        lockfile.packages['bar'] = new PackageId(
-            'bar', mockSource.name, new Version.parse('3.2.1'), 'bar desc');
-
-        expect(loadYaml(lockfile.serialize(null, sources)), equals({
-          'packages': {
-            'foo': {
-              'version': '1.2.3',
-              'source': 'mock',
-              'description': 'foo desc'
-            },
-            'bar': {
-              'version': '3.2.1',
-              'source': 'mock',
-              'description': 'bar desc'
-            }
+      expect(loadYaml(lockfile.serialize(null, sources)), equals({
+        'packages': {
+          'foo': {
+            'version': '1.2.3',
+            'source': 'mock',
+            'description': 'foo desc'
+          },
+          'bar': {
+            'version': '3.2.1',
+            'source': 'mock',
+            'description': 'bar desc'
           }
-        }));
-      });
+        }
+      }));
     });
   });
 }

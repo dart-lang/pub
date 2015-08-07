@@ -86,7 +86,7 @@ class Entrypoint {
     if (_lockFile != null) return _lockFile;
 
     if (!lockFileExists) {
-      _lockFile = new LockFile.empty();
+      _lockFile = new LockFile.empty(cache.sources);
     } else {
       _lockFile = new LockFile.load(lockFilePath, cache.sources);
     }
@@ -466,7 +466,10 @@ class Entrypoint {
               cache.sources[id.source].getDirectory(id));
         });
 
-        return new PackageGraph(this, new LockFile(result.packages), packages);
+        return new PackageGraph(
+            this,
+            new LockFile(result.packages, cache.sources),
+            packages);
       }
 
       await ensureLockFileIsUpToDate();
@@ -486,9 +489,9 @@ class Entrypoint {
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
   void _saveLockFile(List<PackageId> packageIds) {
-    _lockFile = new LockFile(packageIds);
+    _lockFile = new LockFile(packageIds, cache.sources);
     var lockFilePath = root.path('pubspec.lock');
-    writeTextFile(lockFilePath, _lockFile.serialize(root.dir, cache.sources));
+    writeTextFile(lockFilePath, _lockFile.serialize(root.dir));
   }
 
   /// Creates a self-referential symlink in the `packages` directory that allows

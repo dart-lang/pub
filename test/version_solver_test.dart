@@ -1166,13 +1166,14 @@ _testResolve(void testFn(String description, Function body),
     }
 
     // Parse the lockfile.
-    var realLockFile = new LockFile.empty();
-    if (lockfile != null) {
-      lockfile.forEach((name, version) {
-        version = new Version.parse(version);
-        realLockFile.packages[name] =
-            new PackageId(name, source1.name, version, name);
-      });
+    var realLockFile;
+    if (lockfile == null) {
+      realLockFile = new LockFile.empty(cache.sources);
+    } else {
+      realLockFile = new LockFile(lockfile.keys.map((name) {
+        var version = new Version.parse(lockfile[name]);
+        return new PackageId(name, source1.name, version, name);
+      }), cache.sources);
     }
 
     // Resolve the versions.

@@ -4,6 +4,8 @@
 
 library pub.lock_file;
 
+import 'dart:collection';
+
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -16,23 +18,36 @@ import 'utils.dart';
 
 /// A parsed and validated `pubspec.lock` file.
 class LockFile {
+  /// The source registry with which the lock file's IDs are interpreted.
+  final SourceRegistry _sources;
+
   /// The packages this lockfile pins.
-  Map<String, PackageId> packages;
+  final Map<String, PackageId> packages;
 
   /// Creates a new lockfile containing [ids].
-  factory LockFile(List<PackageId> ids) {
-    var lockFile = new LockFile.empty();
+  ///
+  /// Throws an [ArgumentError] if any package has an unresolved ID according to
+  /// [Source.isResolved].
+  factory LockFile(Iterable<PackageId> ids, SourceRegistry sources) {
+    var packages = {};
     for (var id in ids) {
-      if (!id.isRoot) lockFile.packages[id.name] = id;
+      if (id.isRoot) continue;
+
+      if (!sources[id.source].isResolved(id)) {
+        throw new ArgumentError('ID "$id" is not resolved.');
+      }
+
+      packages[id.name] = id;
     }
 
-    return lockFile;
+    return new LockFile._(packages, sources);
   }
 
-  LockFile._(this.packages);
+  LockFile._(Map<String, PackageId> packages, this._sources)
+      : packages = new UnmodifiableMapView(packages);
 
-  LockFile.empty()
-    : packages = <String, PackageId>{};
+  LockFile.empty(this._sources)
+      : packages = const {};
 
   /// Loads a lockfile from [filePath].
   factory LockFile.load(String filePath, SourceRegistry sources) {
@@ -50,9 +65,9 @@ class LockFile {
   /// `null`.
   static LockFile _parse(String filePath, String contents,
       SourceRegistry sources) {
-    var packages = <String, PackageId>{};
+    var packages = {};
 
-    if (contents.trim() == '') return new LockFile.empty();
+    if (contents.trim() == '') return new LockFile.empty(sources);
 
     var sourceUrl;
     if (filePath != null) sourceUrl = p.toUri(filePath);
@@ -100,7 +115,7 @@ class LockFile {
       });
     }
 
-    return new LockFile._(packages);
+    return new LockFile._(packages, sources);
   }
 
   /// If [condition] is `false` throws a format error with [message] for [node].
@@ -109,16 +124,44 @@ class LockFile {
     throw new SourceSpanFormatException(message, node.span);
   }
 
+  /// Returns a copy of this LockFile with [id] added.
+  ///
+  /// Throws an [ArgumentError] if [id] isn't resolved according to
+  /// [Source.isResolved]. If there's already an ID with the same name as [id]
+  /// in the LockFile, it's overwritten.
+  LockFile setPackage(PackageId id) {
+    if (id.isRoot) return this;
+
+    if (!_sources[id.source].isResolved(id)) {
+      throw new ArgumentError('ID "$id" is not resolved.');
+    }
+
+    var packages = new Map.from(this.packages);
+    packages[id.name] = id;
+    return new LockFile._(packages, _sources);
+  }
+
+  /// Returns a copy of this LockFile with a package named [name] removed.
+  ///
+  /// Returns an identical [LockFile] if there's no package named [name].
+  LockFile removePackage(String name) {
+    if (!this.packages.containsKey(name)) return this;
+
+    var packages = new Map.from(this.packages);
+    packages.remove(name);
+    return new LockFile._(packages, _sources);
+  }
+
   /// Returns the serialized YAML text of the lock file.
   ///
   /// [packageDir] is the containing directory of the root package, used to
   /// properly serialize package descriptions.
-  String serialize(String packageDir, SourceRegistry sources) {
+  String serialize(String packageDir) {
     // Convert the dependencies to a simple object.
     var data = {};
     packages.forEach((name, package) {
-      var description = sources[package.source].serializeDescription(packageDir,
-          package.description);
+      var description = _sources[package.source]
+          .serializeDescription(packageDir, package.description);
 
       data[name] = {
         'version': package.version.toString(),

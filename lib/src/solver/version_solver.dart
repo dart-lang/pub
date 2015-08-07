@@ -32,7 +32,7 @@ import 'solve_report.dart';
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> resolveVersions(SolveType type, SourceRegistry sources,
     Package root, {LockFile lockFile, List<String> useLatest}) {
-  if (lockFile == null) lockFile = new LockFile.empty();
+  if (lockFile == null) lockFile = new LockFile.empty(sources);
   if (useLatest == null) useLatest = [];
 
   return log.progress('Resolving dependencies', () {
