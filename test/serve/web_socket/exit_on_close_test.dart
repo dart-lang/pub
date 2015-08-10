@@ -17,7 +17,8 @@ main() {
       ])
     ]).create();
 
-    var server = pubServe(shouldGetFirst: true);
+    pubGet();
+    var server = pubServe();
 
     // Make sure the web socket is active.
     expectWebSocketResult("urlToAssetId", {

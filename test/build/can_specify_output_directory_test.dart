@@ -19,6 +19,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     var outDir = path.join("out", "dir");
     schedulePub(args: ["build", "-o", outDir],
         output: contains('Built 1 file to "$outDir".'));

@@ -21,6 +21,7 @@ main() {
         })
       ]).create();
 
+      pubGet();
       var pub = startPubServe();
       pub.stderr.expect(contains('"foo" is not a dependency.'));
       pub.shouldExit(exit_codes.DATA);

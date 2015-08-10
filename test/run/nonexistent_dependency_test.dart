@@ -13,6 +13,7 @@ main() {
       d.appPubspec()
     ]).create();
 
+    pubGet();
     var pub = pubRun(args: ["foo:script"]);
     pub.stderr.expect('Could not find package "foo". Did you forget to add a '
         'dependency?');

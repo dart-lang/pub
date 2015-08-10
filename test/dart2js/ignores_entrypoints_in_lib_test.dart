@@ -22,6 +22,7 @@ main() {
   });
 
   integration("build ignores Dart entrypoints in lib", () {
+    pubGet();
     schedulePub(args: ["build", "--all"],
         output: new RegExp(r'Built 1 file to "build".'));
 
@@ -33,7 +34,8 @@ main() {
   });
 
   integration("serve ignores Dart entrypoints in lib", () {
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShould404("packages/myapp/main.dart.js");
     endPubServe();
   });

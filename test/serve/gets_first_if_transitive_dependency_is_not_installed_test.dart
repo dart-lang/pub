@@ -33,7 +33,8 @@ main() {
     // Delete the system cache so bar isn't installed any more.
     schedule(() => deleteEntry(path.join(sandboxDir, cachePath)));
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("packages/bar/bar.dart", 'main() => "bar 1.2.3";');
     endPubServe();
   });

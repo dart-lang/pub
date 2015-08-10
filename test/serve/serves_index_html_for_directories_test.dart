@@ -20,7 +20,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("", "<body>super");
     requestShouldSucceed("sub/", "<body>sub");
     requestShouldRedirect("sub", "/sub/");

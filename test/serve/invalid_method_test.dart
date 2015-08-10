@@ -17,7 +17,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     postShould405("index.html");
     endPubServe();

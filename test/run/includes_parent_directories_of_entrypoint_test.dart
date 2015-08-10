@@ -31,8 +31,8 @@ main() {
       ])
     ]).create();
 
-    var pub = pubRun(args: [path.join("tool", "a", "b", "app")],
-        shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: [path.join("tool", "a", "b", "app")]);
     pub.stdout.expect("a b");
     pub.shouldExit();
   });

@@ -19,7 +19,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     expectWebSocketResult("pathToUrls", {
       "path": p.join("web", "main.dart"),

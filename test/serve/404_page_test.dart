@@ -18,7 +18,8 @@ main() {
   });
 
   integration("the 404 page describes the missing asset", () {
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     scheduleRequest("packages/foo/missing.txt").then((response) {
       expect(response.statusCode, equals(404));
@@ -32,7 +33,8 @@ main() {
   });
 
   integration("the 404 page describes the error", () {
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     scheduleRequest("packages").then((response) {
       expect(response.statusCode, equals(404));

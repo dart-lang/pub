@@ -354,18 +354,10 @@ void pubDowngrade({Iterable<String> args, output, error, warning,
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-ScheduledProcess pubRun({bool shouldGetFirst: false, bool global: false,
-    Iterable<String> args}) {
+ScheduledProcess pubRun({bool global: false, Iterable<String> args}) {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
   var pub = startPub(args: pubArgs);
-
-  if (shouldGetFirst) {
-    pub.stdout.expect(consumeThrough(anyOf([
-      "Got dependencies!",
-      matches(new RegExp(r"^Changed \d+ dependenc"))
-    ])));
-  }
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -508,7 +500,7 @@ String _pathInSandbox(String relPath) {
 Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
   var environment = {};
   environment['_PUB_TESTING'] = 'true';
-  environment['PUB_CACHE'] = _pathInSandbox(cachePath);
+  environment['PUB_CACHE'] = await schedule(() => _pathInSandbox(cachePath));
 
   // Ensure a known SDK version is set for the tests that rely on that.
   environment['_PUB_TEST_SDK_VERSION'] = "0.1.2+3";
@@ -518,10 +510,7 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
   }
 
   if (_hasServer) {
-    return port.then((p) {
-      environment['PUB_HOSTED_URL'] = "http://localhost:$p";
-      return environment;
-    });
+    environment['PUB_HOSTED_URL'] = "http://localhost:${await port}";
   }
 
   return environment;
@@ -536,7 +525,9 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
 /// variables passed to the spawned process.
 ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
     Map<String, String> environment}) {
-  ensureDir(_pathInSandbox(appPath));
+  schedule(() {
+    ensureDir(_pathInSandbox(appPath));
+  }, "ensuring $appPath exists");
 
   // Find a Dart executable we can use to spawn. Use the same one that was
   // used to run this script itself.
@@ -571,7 +562,7 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
   });
 
   return new PubProcess.start(dartBin, dartArgs, environment: environmentFuture,
-      workingDirectory: _pathInSandbox(appPath),
+      workingDirectory: schedule(() => _pathInSandbox(appPath)),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
 }
 
@@ -692,11 +683,10 @@ void makeGlobalPackage(String package, String version,
   ]).create();
 
   // Write the lockfile to the global cache.
-  var sources = new SourceRegistry();
-  sources.register(new HostedSource());
-  sources.register(new PathSource());
+  var cache = new SystemCache.withSources(
+      rootDir: p.join(sandboxDir, cachePath));
 
-  var lockFile = _createLockFile(sources, pkg: pkg, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources, pkg: pkg, hosted: hosted);
 
   // Add the root package to the lockfile.
   var id = new PackageId(package, "hosted", new Version.parse(version),
@@ -705,7 +695,10 @@ void makeGlobalPackage(String package, String version,
 
   d.dir(cachePath, [
     d.dir("global_packages", [
-      d.file("$package.lock", lockFile.serialize(null))
+      d.dir(package, [
+        d.file("pubspec.lock", lockFile.serialize(null)),
+        d.file(".packages", lockFile.packagesFile())
+      ])
     ])
   ]).create();
 }
@@ -721,14 +714,16 @@ void makeGlobalPackage(String package, String version,
 /// hosted packages.
 void createLockFile(String package, {Iterable<String> sandbox,
     Iterable<String> pkg, Map<String, String> hosted}) {
-  var sources = new SourceRegistry();
-  sources.register(new HostedSource());
-  sources.register(new PathSource());
+  var cache = new SystemCache.withSources(
+      rootDir: p.join(sandboxDir, cachePath));
 
-  var lockFile = _createLockFile(sources,
+  var lockFile = _createLockFile(cache.sources,
       sandbox: sandbox, pkg: pkg, hosted: hosted);
 
-  d.file(p.join(package, 'pubspec.lock'), lockFile.serialize(null)).create();
+  d.dir(package, [
+    d.file('pubspec.lock', lockFile.serialize(null)),
+    d.file('.packages', lockFile.packagesFile(package))
+  ]).create();
 }
 
 /// Creates a lock file for [package] without running `pub get`.

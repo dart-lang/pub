@@ -20,7 +20,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     requestShouldSucceed("index.html", "<body>");
     requestShouldSucceed("index.html", "<test body>", root: "test");

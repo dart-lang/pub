@@ -25,6 +25,8 @@ main() {
         ])
       ])
     ]).create();
+
+    pubGet();
   });
 
   var webOne = p.join("web", "one");
@@ -50,7 +52,7 @@ main() {
   });
 
   integration("serves subdirectories", () {
-    pubServe(args: [webOne, webTwoInner], shouldGetFirst: true);
+    pubServe(args: [webOne, webTwoInner]);
 
     requestShouldSucceed("inner/file.txt", "one", root: webOne);
     requestShouldSucceed("file.txt", "two", root: webTwoInner);

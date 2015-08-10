@@ -32,7 +32,8 @@ main() {
       "foo": {"path": "../foo-after"}
     }).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
     endPubServe();
   });

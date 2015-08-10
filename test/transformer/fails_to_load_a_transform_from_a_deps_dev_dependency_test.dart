@@ -40,6 +40,7 @@ main() {
         })
       ]).create();
 
+      pubGet();
       var pub = startPubServe();
       pub.stderr.expect(contains('Error loading transformer "bar": package '
           '"bar" is not a dependency.'));

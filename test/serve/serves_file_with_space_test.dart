@@ -20,7 +20,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("foo%20bar.txt", "outer contents");
     requestShouldSucceed("sub%20dir/inner.txt", "inner contents");
     endPubServe();

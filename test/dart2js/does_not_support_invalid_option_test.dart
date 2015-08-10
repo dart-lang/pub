@@ -19,6 +19,8 @@ main() {
       })
     ]).create();
 
+    pubGet();
+
     // TODO(nweiz): This should provide more context about how the option got
     // passed to dart2js. See issue 16008.
     var pub = startPubServe();

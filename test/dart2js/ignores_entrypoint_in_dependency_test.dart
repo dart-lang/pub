@@ -21,7 +21,8 @@ main() {
       })
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShould404("web/packages/foo/lib.dart.js");
     endPubServe();
   });

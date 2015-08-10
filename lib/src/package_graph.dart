@@ -8,12 +8,11 @@ import 'barback/transformer_cache.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';
+import 'solver/version_solver.dart';
 import 'source/cached.dart';
 import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
-///
-/// A package graph can be loaded using [Entrypoint.loadPackageGraph].
 class PackageGraph {
   /// The entrypoint.
   final Entrypoint entrypoint;
@@ -38,6 +37,27 @@ class PackageGraph {
   TransformerCache _transformerCache;
 
   PackageGraph(this.entrypoint, this.lockFile, this.packages);
+
+  /// Creates a package graph using the data from [result].
+  ///
+  /// This is generally faster than loading a package graph from scratch, since
+  /// the packages' pubspecs are already fully-parsed.
+  factory PackageGraph.fromSolveResult(Entrypoint entrypoint,
+      SolveResult result) {
+    var packages = new Map.fromIterable(result.packages,
+        key: (id) => id.name,
+        value: (id) {
+      if (id.name == entrypoint.root.name) return entrypoint.root;
+
+      return new Package(result.pubspecs[id.name],
+          entrypoint.cache.sources[id.source].getDirectory(id));
+    });
+
+    return new PackageGraph(
+        entrypoint,
+        new LockFile(result.packages, entrypoint.cache.sources),
+        packages);
+  }
 
   /// Loads the transformer cache for this graph.
   ///

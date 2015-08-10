@@ -168,14 +168,11 @@ ScheduledProcess startPubServe({Iterable<String> args,
 /// Schedules starting the "pub serve" process and records its port number for
 /// future requests.
 ///
-/// If [shouldGetFirst] is `true`, validates that pub get is run first.
-///
 /// If [createWebDir] is `true`, creates a `web/` directory if one doesn't exist
 /// so pub doesn't complain about having nothing to serve.
 ///
 /// Returns the `pub serve` process.
-ScheduledProcess pubServe({bool shouldGetFirst: false, bool createWebDir: true,
-    Iterable<String> args}) {
+ScheduledProcess pubServe({bool createWebDir: true, Iterable<String> args}) {
   _pubServer = startPubServe(args: args, createWebDir: createWebDir);
   _portsCompleter = new Completer();
 
@@ -189,13 +186,6 @@ ScheduledProcess pubServe({bool shouldGetFirst: false, bool createWebDir: true,
       _webSocketBroadcastStream = null;
     }
   });
-
-  if (shouldGetFirst) {
-    _pubServer.stdout.expect(consumeThrough(anyOf([
-      "Got dependencies!",
-      matches(new RegExp(r"^Changed \d+ dependenc"))
-    ])));
-  }
 
   _pubServer.stdout.expect(startsWith("Loading source assets..."));
   _pubServer.stdout.expect(consumeWhile(matches("Loading .* transformers...")));

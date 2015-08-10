@@ -42,7 +42,8 @@ void main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("main.dart.js", contains("footext"));
     requestShouldSucceed("main.dart.js", contains("libtext"));
     endPubServe();

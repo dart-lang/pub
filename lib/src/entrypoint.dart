@@ -5,6 +5,7 @@
 library pub.entrypoint;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:barback/barback.dart';
@@ -50,13 +51,59 @@ class Entrypoint {
   /// the installed packages.
   final bool _packageSymlinks;
 
+  /// Whether this entrypoint is in memory only, as opposed to representing a
+  /// real directory on disk.
+  final bool _inMemory;
+
   /// The lockfile for the entrypoint.
   ///
-  /// If not provided to the entrypoint, it will be laoded lazily from disc.
+  /// If not provided to the entrypoint, it will be loaded lazily from disk.
+  LockFile get lockFile {
+    if (_lockFile != null) return _lockFile;
+
+    if (!fileExists(lockFilePath)) {
+      _lockFile = new LockFile.empty(cache.sources);
+    } else {
+      _lockFile = new LockFile.load(lockFilePath, cache.sources);
+    }
+
+    return _lockFile;
+  }
   LockFile _lockFile;
 
-  /// The graph of all packages reachable from the entrypoint.
+  /// The package graph for the application and all of its transitive
+  /// dependencies.
+  ///
+  /// Throws a [DataError] if the `.packages` file isn't up-to-date relative to
+  /// the pubspec and the lockfile.
+  PackageGraph get packageGraph {
+    if (_packageGraph != null) return _packageGraph;
+
+    assertUpToDate();
+    var packages = new Map.fromIterable(lockFile.packages.values,
+        key: (id) => id.name,
+        value: (id) {
+      var dir = cache.sources[id.source].getDirectory(id);
+      return new Package.load(id.name, dir, cache.sources);
+    });
+    packages[root.name] = root;
+
+    _packageGraph = new PackageGraph(this, lockFile, packages);
+    return _packageGraph;
+  }
   PackageGraph _packageGraph;
+
+  /// The path to the entrypoint's "packages" directory.
+  String get packagesDir => root.path('packages');
+
+  /// The path to the entrypoint's ".packages" file.
+  String get packagesFile => root.path('.packages');
+
+  /// The path to the entrypoint package's pubspec.
+  String get pubspecPath => root.path('pubspec.yaml');
+
+  /// The path to the entrypoint package's lockfile.
+  String get lockFilePath => root.path('pubspec.lock');
 
   /// Loads the entrypoint from a package at [rootDir].
   ///
@@ -66,38 +113,22 @@ class Entrypoint {
   Entrypoint(String rootDir, SystemCache cache, {bool packageSymlinks: true})
       : root = new Package.load(null, rootDir, cache.sources),
         cache = cache,
-        _packageSymlinks = packageSymlinks;
+        _packageSymlinks = packageSymlinks,
+        _inMemory = false;
 
   /// Creates an entrypoint given package and lockfile objects.
   Entrypoint.inMemory(this.root, this._lockFile, this.cache)
-      : _packageSymlinks = false;
+      : _packageSymlinks = false,
+        _inMemory = true;
 
-  /// The path to the entrypoint's "packages" directory.
-  String get packagesDir => root.path('packages');
-
-  /// The path to the entrypoint's ".packages" file.
-  String get packagesFile => root.path('.packages');
-
-  /// `true` if the entrypoint package currently has a lock file.
-  bool get lockFileExists => _lockFile != null || entryExists(lockFilePath);
-
-  LockFile get lockFile {
-    if (_lockFile != null) return _lockFile;
-
-    if (!lockFileExists) {
-      _lockFile = new LockFile.empty(cache.sources);
-    } else {
-      _lockFile = new LockFile.load(lockFilePath, cache.sources);
-    }
-
-    return _lockFile;
+  /// Creates an entrypoint given a package and a [solveResult], from which the
+  /// package graph and lockfile will be computed.
+  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
+      : _packageSymlinks = false,
+        _inMemory = true {
+    _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
+    _lockFile = _packageGraph.lockFile;
   }
-
-  /// The path to the entrypoint package's pubspec.
-  String get pubspecPath => root.path('pubspec.yaml');
-
-  /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => root.path('pubspec.lock');
 
   /// Gets all dependencies of the [root] package.
   ///
@@ -113,6 +144,8 @@ class Entrypoint {
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
   /// the report. Otherwise, only dependencies that were changed are shown. If
   /// [dryRun] is `true`, no physical changes are made.
+  ///
+  /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type, {List<String> useLatest,
       bool dryRun: false}) async {
     var result = await resolveVersions(type, cache.sources, root,
@@ -143,7 +176,7 @@ class Entrypoint {
 
     /// Build a package graph from the version solver results so we don't
     /// have to reload and reparse all the pubspecs.
-    var packageGraph = await loadPackageGraph(result);
+    _packageGraph = new PackageGraph.fromSolveResult(this, result);
     packageGraph.loadTransformerCache().clearIfOutdated(result.changedPackages);
 
     try {
@@ -165,16 +198,15 @@ class Entrypoint {
   Future precompileDependencies({Iterable<String> changed}) async {
     if (changed != null) changed = changed.toSet();
 
-    var graph = await loadPackageGraph();
-
     // Just precompile the debug version of a package. We're mostly interested
     // in improving speed for development iteration loops, which usually use
     // debug mode.
     var depsDir = path.join('.pub', 'deps', 'debug');
 
-    var dependenciesToPrecompile = graph.packages.values.where((package) {
+    var dependenciesToPrecompile = packageGraph.packages.values
+        .where((package) {
       if (package.pubspec.transformers.isEmpty) return false;
-      if (graph.isPackageMutable(package.name)) return false;
+      if (packageGraph.isPackageMutable(package.name)) return false;
       if (!dirExists(path.join(depsDir, package.name))) return true;
       if (changed == null) return true;
 
@@ -182,7 +214,7 @@ class Entrypoint {
       /// changed. We check all transitive dependencies because it's possible
       /// that a transformer makes decisions based on their contents.
       return overlaps(
-          graph.transitiveDependencies(package.name)
+          packageGraph.transitiveDependencies(package.name)
             .map((package) => package.name).toSet(),
           changed);
     }).map((package) => package.name).toSet();
@@ -195,9 +227,9 @@ class Entrypoint {
 
       // Also delete any cached dependencies that should no longer be cached.
       for (var subdir in listDir(depsDir)) {
-        var package = graph.packages[path.basename(subdir)];
+        var package = packageGraph.packages[path.basename(subdir)];
         if (package == null || package.pubspec.transformers.isEmpty ||
-            graph.isPackageMutable(package.name)) {
+            packageGraph.isPackageMutable(package.name)) {
           deleteEntry(subdir);
         }
       }
@@ -208,7 +240,8 @@ class Entrypoint {
     try {
       await log.progress("Precompiling dependencies", () async {
         var packagesToLoad =
-            unionAll(dependenciesToPrecompile.map(graph.transitiveDependencies))
+            unionAll(dependenciesToPrecompile.map(
+                packageGraph.transitiveDependencies))
             .map((package) => package.name).toSet();
 
         var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
@@ -259,16 +292,14 @@ class Entrypoint {
         readTextFile(sdkVersionPath) == "${sdk.version}\n";
     if (!sdkMatches) changed = null;
 
-    var graph = await loadPackageGraph();
-
     // Clean out any outdated snapshots.
     if (dirExists(binDir)) {
       for (var entry in listDir(binDir)) {
         if (!dirExists(entry)) continue;
 
         var package = path.basename(entry);
-        if (!graph.packages.containsKey(package) ||
-            graph.isPackageMutable(package)) {
+        if (!packageGraph.packages.containsKey(package) ||
+            packageGraph.isPackageMutable(package)) {
           deleteEntry(entry);
         }
       }
@@ -276,7 +307,7 @@ class Entrypoint {
 
     var executables = new Map.fromIterable(root.immediateDependencies,
         key: (dep) => dep.name,
-        value: (dep) => _executablesForPackage(graph, dep.name, changed));
+        value: (dep) => _executablesForPackage(dep.name, changed));
 
     for (var package in executables.keys.toList()) {
       if (executables[package].isEmpty) executables.remove(package);
@@ -293,7 +324,7 @@ class Entrypoint {
       writeTextFile(sdkVersionPath, "${sdk.version}\n");
 
       var packagesToLoad =
-          unionAll(executables.keys.map(graph.transitiveDependencies))
+          unionAll(executables.keys.map(packageGraph.transitiveDependencies))
           .map((package) => package.name).toSet();
       var executableIds = unionAll(
           executables.values.map((ids) => ids.toSet()));
@@ -319,12 +350,12 @@ class Entrypoint {
   ///
   /// If [changed] isn't `null`, executables for [packageName] will only be
   /// compiled if they might depend on a package in [changed].
-  List<AssetId> _executablesForPackage(PackageGraph graph, String packageName,
+  List<AssetId> _executablesForPackage(String packageName,
       Set<String> changed) {
-    var package = graph.packages[packageName];
+    var package = packageGraph.packages[packageName];
     var binDir = package.path('bin');
     if (!dirExists(binDir)) return [];
-    if (graph.isPackageMutable(packageName)) return [];
+    if (packageGraph.isPackageMutable(packageName)) return [];
 
     var executables = package.executableIds;
 
@@ -333,7 +364,7 @@ class Entrypoint {
     if (changed == null) return executables;
 
     // If any of the package's dependencies changed, recompile the executables.
-    if (graph.transitiveDependencies(packageName)
+    if (packageGraph.transitiveDependencies(packageName)
         .any((package) => changed.contains(package.name))) {
       return executables;
     }
@@ -371,119 +402,31 @@ class Entrypoint {
     }).then((_) => source.resolveId(id));
   }
 
-  /// Determines whether or not the lockfile is out of date with respect to the
-  /// pubspec.
-  ///
-  /// This will be `false` if there is no lockfile at all, or if the pubspec
-  /// contains dependencies that are not in the lockfile or that don't match
-  /// what's in there.
-  bool _isLockFileUpToDate(LockFile lockFile) {
-    /// If this is an entrypoint for an in-memory package, trust the in-memory
-    /// lockfile provided for it.
-    if (root.dir == null) return true;
+  /// Throws a [DataError] if the `.packages` file doesn't exist or if it's
+  /// out-of-date relative to the lockfile or the pubspec.
+  void assertUpToDate() {
+    if (_inMemory) return;
 
-    return root.immediateDependencies.every((package) {
-      var locked = lockFile.packages[package.name];
-      if (locked == null) return false;
-
-      if (package.source != locked.source) return false;
-      if (!package.constraint.allows(locked.version)) return false;
-
-      var source = cache.sources[package.source];
-      if (source == null) return false;
-
-      return source.descriptionsEqual(package.description, locked.description);
-    });
-  }
-
-  /// Determines whether all of the packages in the lockfile are already
-  /// installed and available.
-  ///
-  /// Note: this assumes [isLockFileUpToDate] has already been called and
-  /// returned `true`.
-  bool _arePackagesAvailable(LockFile lockFile) {
-    return lockFile.packages.values.every((package) {
-      var source = cache.sources[package.source];
-
-      // This should only be called after [_isLockFileUpToDate] has returned
-      // `true`, which ensures all of the sources in the lock file are valid.
-      assert(source != null);
-
-      // We only care about cached sources. Uncached sources aren't "installed".
-      // If one of those is missing, we want to show the user the file not
-      // found error later since installing won't accomplish anything.
-      if (source is! CachedSource) return true;
-
-      // Get the directory.
-      var dir = source.getDirectory(package);
-      // See if the directory is there and looks like a package.
-      return dirExists(dir) || fileExists(path.join(dir, "pubspec.yaml"));
-    });
-  }
-
-  /// Gets dependencies if the lockfile is out of date with respect to the
-  /// pubspec.
-  Future ensureLockFileIsUpToDate() async {
-    if (!lockFileExists) {
-      log.message(
-          "You don't have a lockfile, so we need to generate that:");
-    } else if (_isLockFileUpToDate(lockFile)) {
-      // If we do have a lock file, we still need to make sure the packages are
-      // actually installed. The user may have just gotten a package that
-      // includes a lockfile.
-      if (_arePackagesAvailable(lockFile)) return;
-
-      // If we don't have a current lock file, we definitely need to install.
-      log.message(
-          "You are missing some dependencies, so we need to install them "
-          "first:");
-    } else {
-      log.message(
-          "Your pubspec has changed, so we need to update your lockfile:");
+    if (!entryExists(lockFilePath)) {
+      dataError('No pubspec.lock file found, please run "pub get" first.');
     }
 
-    await acquireDependencies(SolveType.GET);
-  }
+    if (!entryExists(packagesFile)) {
+      dataError('No .packages file found, please run "pub get" first.');
+    }
 
-  /// Loads the package graph for the application and all of its transitive
-  /// dependencies.
-  ///
-  /// If [result] is passed, this loads the graph from it without re-parsing the
-  /// lockfile or any pubspecs. Otherwise, before loading, this makes sure the
-  /// lockfile and dependencies are installed and up to date.
-  Future<PackageGraph> loadPackageGraph([SolveResult result]) async {
-    if (_packageGraph != null) return _packageGraph;
+    var packagesModified = new File(packagesFile).lastModifiedSync();
+    var pubspecModified = new File(pubspecPath).lastModifiedSync();
+    if (packagesModified.isBefore(pubspecModified)) {
+      dataError('The pubspec.yaml file has changed since the .packages file '
+          'was generated, please run "pub get" again.');
+    }
 
-    var graph = await log.progress("Loading package graph", () async {
-      if (result != null) {
-        var packages = new Map.fromIterable(result.packages,
-            key: (id) => id.name,
-            value: (id) {
-          if (id.name == root.name) return root;
-
-          return new Package(result.pubspecs[id.name],
-              cache.sources[id.source].getDirectory(id));
-        });
-
-        return new PackageGraph(
-            this,
-            new LockFile(result.packages, cache.sources),
-            packages);
-      }
-
-      await ensureLockFileIsUpToDate();
-      var packages = new Map.fromIterable(lockFile.packages.values,
-          key: (id) => id.name,
-          value: (id) {
-        var dir = cache.sources[id.source].getDirectory(id);
-        return new Package.load(id.name, dir, cache.sources);
-      });
-      packages[root.name] = root;
-      return new PackageGraph(this, lockFile, packages);
-    }, fine: true);
-
-    _packageGraph = graph;
-    return graph;
+    var lockFileModified = new File(lockFilePath).lastModifiedSync();
+    if (packagesModified.isBefore(lockFileModified)) {
+      dataError('The pubspec.lock file has changed since the .packages file '
+          'was generated, please run "pub get" again.');
+    }
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.

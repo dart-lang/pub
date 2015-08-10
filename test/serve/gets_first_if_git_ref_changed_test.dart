@@ -37,7 +37,8 @@ main() {
       "foo": {"git": {"url": "../foo.git", "ref": commit2}}
     }).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
     endPubServe();
   });

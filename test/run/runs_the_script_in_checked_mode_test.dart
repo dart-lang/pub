@@ -16,6 +16,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["run", "--checked", "bin/script"],
         error: contains("'bool' is not a subtype of type 'int' of 'a'"),
         exitCode: 255);

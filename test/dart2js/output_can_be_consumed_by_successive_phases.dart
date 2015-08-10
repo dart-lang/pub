@@ -42,7 +42,8 @@ main() {
 
       createLockFile('myapp', pkg: ['barback']);
 
-      pubServe(shouldGetFirst: true);
+      pubGet();
+      pubServe();
       requestShouldSucceed("main.dart.out", isUnminifiedDart2JSOutput);
       endPubServe();
     });

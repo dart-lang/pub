@@ -21,6 +21,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["build"],
         output: new RegExp(r'Built 2 files to "build".'));
 

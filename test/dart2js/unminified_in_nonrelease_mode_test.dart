@@ -15,7 +15,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["--mode", "whatever"], shouldGetFirst: true);
+    pubGet();
+    pubServe(args: ["--mode", "whatever"]);
     requestShouldSucceed("main.dart.js", isUnminifiedDart2JSOutput);
     endPubServe();
   });

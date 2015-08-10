@@ -49,7 +49,8 @@ main() async {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["bin/script"], shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: ["bin/script"]);
 
     // TODO(nweiz): Enable this when sdk#23990 is fixed.
     // pub.stdout.expect(p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")));
@@ -84,7 +85,8 @@ main() async {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["bin/script"], shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: ["bin/script"]);
 
     // TODO(nweiz): Enable this when sdk#23990 is fixed.
     // pub.stdout.expect(p.toUri(p.join(sandboxDir, "foo/lib/resource.txt")));

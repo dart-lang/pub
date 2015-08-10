@@ -20,10 +20,11 @@ main() {
       ])
     ]).create();
 
+    pubGet();
+
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub = pubRun(args: ["bin/args", "--verbose", "-m", "--", "help"],
-        shouldGetFirst: true);
+    var pub = pubRun(args: ["bin/args", "--verbose", "-m", "--", "help"]);
 
     pub.stdout.expect("--verbose -m -- help");
     pub.shouldExit();

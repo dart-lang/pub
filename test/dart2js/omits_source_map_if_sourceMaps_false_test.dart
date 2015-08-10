@@ -21,6 +21,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["build", "--mode", "debug"],
         output: new RegExp(r'Built \d+ files to "build".'),
         exitCode: 0);

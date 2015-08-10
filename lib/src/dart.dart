@@ -164,7 +164,8 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     log.fine("Spawning isolate from $snapshot.");
     if (packageRoot != null) packageRoot = Uri.parse(packageRoot.toString());
     try {
-      await Isolate.spawnUri(p.toUri(snapshot), [], message,
+      // Make the snapshot URI absolute to work around sdk#8440.
+      await Isolate.spawnUri(p.toUri(p.absolute(snapshot)), [], message,
           packageRoot: packageRoot);
       return;
     } on IsolateSpawnException catch (error) {
@@ -179,7 +180,8 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     var port = new ReceivePort();
     await Isolate.spawn(_isolateBuffer, {
       'replyTo': port.sendPort,
-      'uri': p.toUri(dartPath).toString(),
+      // Make the snapshot URI absolute to work around sdk#8440.
+      'uri': p.toUri(p.absolute(dartPath)).toString(),
       'packageRoot': packageRoot == null ? null : packageRoot.toString(),
       'message': message
     });

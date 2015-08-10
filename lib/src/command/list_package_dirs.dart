@@ -7,6 +7,7 @@ library pub.command.list_package_dirs;
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -27,7 +28,7 @@ class ListPackageDirsCommand extends PubCommand {
   void run() {
     log.json.enabled = true;
 
-    if (!entrypoint.lockFileExists) {
+    if (!fileExists(entrypoint.lockFilePath)) {
       dataError('Package "myapp" has no lockfile. Please run "pub get" first.');
     }
 

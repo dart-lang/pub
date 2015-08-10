@@ -17,7 +17,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("index.html", "before");
 
     d.dir(appPath, [

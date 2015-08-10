@@ -17,7 +17,8 @@ main() {
       d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("index.html", "<body>",
         headers: containsPair("access-control-allow-origin", "*"));
     endPubServe();

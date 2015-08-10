@@ -24,7 +24,8 @@ main() {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["script.dart"], shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: ["script.dart"]);
     pub.stdout.expect("stdout output");
     pub.stderr.expect("stderr output");
     pub.shouldExit(123);

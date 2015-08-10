@@ -25,7 +25,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["web"], shouldGetFirst: true);
+    pubGet();
+    pubServe(args: ["web"]);
 
     // We call [webSocketRequest] outside of the [schedule] call below because
     // we need it to schedule the sending of the request to guarantee that the

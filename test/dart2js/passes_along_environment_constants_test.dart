@@ -28,7 +28,8 @@ void main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("main.dart.js", contains("hello"));
     endPubServe();
   });

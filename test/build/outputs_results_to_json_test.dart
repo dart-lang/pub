@@ -20,40 +20,40 @@ main() {
       ])
     ]).create();
 
-    schedulePub(args: ["build", "--format", "json"],
-        outputJson: {
-          'buildResult': 'success',
-          'outputDirectory': 'build',
-          'numFiles': 1,
-          'log': [
-            {
-              'level': 'Info',
-              'transformer': {
-                'name': 'Dart2JS',
-                'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
-              },
-              'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
-              'message': 'Compiling myapp|web/main.dart...'
-            },
-            {
-              'level': 'Info',
-              'transformer': {
-                'name': 'Dart2JS',
-                'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
-              },
-              'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
-              'message': contains(r'to compile myapp|web/main.dart.')
-            },
-            {
-              'level': 'Fine',
-              'transformer': {
-                'name': 'Dart2JS',
-                'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
-              },
-              'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
-              'message': contains(r'Took')
-            }
-          ]
-        });
+    pubGet();
+    schedulePub(args: ["build", "--format", "json"], outputJson: {
+      'buildResult': 'success',
+      'outputDirectory': 'build',
+      'numFiles': 1,
+      'log': [
+        {
+          'level': 'Info',
+          'transformer': {
+            'name': 'Dart2JS',
+            'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
+          },
+          'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
+          'message': 'Compiling myapp|web/main.dart...'
+        },
+        {
+          'level': 'Info',
+          'transformer': {
+            'name': 'Dart2JS',
+            'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
+          },
+          'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
+          'message': contains(r'to compile myapp|web/main.dart.')
+        },
+        {
+          'level': 'Fine',
+          'transformer': {
+            'name': 'Dart2JS',
+            'primaryInput': {'package': 'myapp', 'path': 'web/main.dart'}
+          },
+          'assetId': {'package': 'myapp', 'path': 'web/main.dart'},
+          'message': contains(r'Took')
+        }
+      ]
+    });
   });
 }

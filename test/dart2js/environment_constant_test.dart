@@ -25,6 +25,7 @@ main() {
     });
 
     integration('from "pub build"', () {
+      pubGet();
       schedulePub(args: ["build", "--define", "name=fblthp"],
           output: new RegExp(r'Built 1 file to "build".'));
 
@@ -38,7 +39,8 @@ main() {
     });
 
     integration('from "pub serve"', () {
-      pubServe(args: ["--define", "name=fblthp"], shouldGetFirst: true);
+      pubGet();
+      pubServe(args: ["--define", "name=fblthp"]);
       requestShouldSucceed("file.dart.js", contains("fblthp"));
       endPubServe();
     });
@@ -53,7 +55,8 @@ main() {
         })
       ]).create();
 
-      pubServe(args: ["--define", "name=fblthp"], shouldGetFirst: true);
+      pubGet();
+      pubServe(args: ["--define", "name=fblthp"]);
       requestShouldSucceed("file.dart.js", allOf([
         contains("fblthp"),
         isNot(contains("slartibartfast"))

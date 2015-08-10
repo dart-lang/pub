@@ -25,8 +25,10 @@ main() {
       ])
     ]).create();
 
+    pubGet();
+
     var webSub = path.join("web", "sub");
-    pubServe(args: [webSub], shouldGetFirst: true);
+    pubServe(args: [webSub]);
 
     requestShouldSucceed("main.dart.js.map",
         contains(r"packages/$sdk/lib/core/duration.dart"),

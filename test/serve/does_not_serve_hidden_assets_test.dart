@@ -20,7 +20,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShould404(".outer.txt");
     requestShould404(".dir/inner.txt");
     endPubServe();

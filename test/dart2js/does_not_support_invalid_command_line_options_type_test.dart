@@ -20,7 +20,8 @@ main() {
       d.dir("web", [d.file("main.dart", "void main() {}")])
     ]).create();
 
-    var server = pubServe(shouldGetFirst: true);
+    pubGet();
+    var server = pubServe();
     // Make a request first to trigger compilation.
     requestShould404("main.dart.js");
     server.stderr.expect(emitsLines(

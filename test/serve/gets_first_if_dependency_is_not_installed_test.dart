@@ -24,7 +24,8 @@ main() {
     // Delete the system cache so it isn't installed any more.
     schedule(() => deleteEntry(path.join(sandboxDir, cachePath)));
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("packages/foo/foo.dart", 'main() => "foo 1.2.3";');
     endPubServe();
   });

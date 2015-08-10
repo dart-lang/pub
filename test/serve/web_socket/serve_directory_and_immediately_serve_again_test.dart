@@ -25,7 +25,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["web"], shouldGetFirst: true);
+    pubGet();
+    pubServe(args: ["web"]);
 
     schedule(() {
       return Future.wait([

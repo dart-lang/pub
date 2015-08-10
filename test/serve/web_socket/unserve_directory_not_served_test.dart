@@ -17,7 +17,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     // Unbind the directory.
     expectWebSocketError("unserveDirectory", {"path": "test"}, NOT_SERVED,

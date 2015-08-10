@@ -22,7 +22,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("index.html", anything,
         headers: containsPair('content-type', 'text/html'));
     requestShouldSucceed("file.dart", anything,

@@ -22,6 +22,7 @@ main() {
   });
 
   integration("build ignores non-entrypoint Dart files", () {
+    pubGet();
     schedulePub(args: ["build"],
         output: new RegExp(r'Built 0 files to "build".'));
 
@@ -33,7 +34,8 @@ main() {
   });
 
   integration("serve ignores non-entrypoint Dart files", () {
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShould404("file1.dart.js");
     requestShould404("file2.dart.js");
     requestShould404("file3.dart.js");

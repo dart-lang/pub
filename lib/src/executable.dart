@@ -57,8 +57,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   if (entrypoint.root.name != package &&
       !entrypoint.root.immediateDependencies
           .any((dep) => dep.name == package)) {
-    var graph = await entrypoint.loadPackageGraph();
-    if (graph.packages.containsKey(package)) {
+    if (entrypoint.packageGraph.packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
           'Cannot run executables in transitive dependencies.');
     } else {
@@ -151,9 +150,8 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   // TODO(nweiz): Once sdk#23369 is fixed, allow global executables to be run
   // (and snapshotted) from the filesystem using package specs. A spec can by
   // saved when activating the package.
-  var packageGraph = await entrypoint.loadPackageGraph();
-  if (!isGlobal && !packageGraph.isPackageTransformed(package)) {
-    var fullPath = packageGraph.packages[package].path(path);
+  if (!isGlobal && !entrypoint.packageGraph.isPackageTransformed(package)) {
+    var fullPath = entrypoint.packageGraph.packages[package].path(path);
     if (!fileExists(fullPath)) return null;
     return p.toUri(fullPath);
   }

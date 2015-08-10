@@ -23,7 +23,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     var webSub = path.join("web", "sub");
     expectWebSocketError("serveDirectory", {"path": webSub}, 2,

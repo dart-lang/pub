@@ -43,7 +43,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(args: ["test", "web", "randomdir"], shouldGetFirst: true);
+    pubGet();
+    pubServe(args: ["test", "web", "randomdir"]);
 
     // Paths in web/.
     expectWebSocketResult("pathToUrls", {

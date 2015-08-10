@@ -23,6 +23,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["run", "bin/script"], output: contains("no checks"));
   });
 }

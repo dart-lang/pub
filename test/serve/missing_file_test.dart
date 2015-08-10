@@ -26,7 +26,8 @@ main() {
 
     // Start the server with the files present so that it creates barback
     // assets for them.
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     // Now delete them.
     schedule(() {

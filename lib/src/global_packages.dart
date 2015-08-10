@@ -126,7 +126,7 @@ class GlobalPackages {
     var entrypoint = new Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.ensureLockFileIsUpToDate();
+    await entrypoint.acquireDependencies(SolveType.GET);
     var name = entrypoint.root.name;
 
     // Call this just to log what the current active package is, if any.
@@ -172,13 +172,12 @@ class GlobalPackages {
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
-    var graph = await new Entrypoint.inMemory(root, lockFile, cache)
-        .loadPackageGraph(result);
-    var snapshots = await _precompileExecutables(graph.entrypoint, dep.name);
+    var entrypoint = new Entrypoint.fromSolveResult(root, cache, result);
+    var snapshots = await _precompileExecutables(entrypoint, dep.name);
     _writeLockFile(dep.name, lockFile);
     writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile());
 
-    _updateBinStubs(graph.packages[dep.name], executables,
+    _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
   }
 
@@ -193,10 +192,9 @@ class GlobalPackages {
       var binDir = p.join(_directory, package, 'bin');
       cleanDir(binDir);
 
-      var graph = await entrypoint.loadPackageGraph();
       var environment = await AssetEnvironment.create(
           entrypoint, BarbackMode.RELEASE,
-          entrypoints: graph.packages[package].executableIds,
+          entrypoints: entrypoint.packageGraph.packages[package].executableIds,
           useDart2JS: false);
       environment.barback.errors.listen((error) {
         log.error(log.red("Build error:\n$error"));
@@ -359,8 +357,8 @@ class GlobalPackages {
         recompile: () async {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
-      var graph = await find(package).loadPackageGraph();
-      await _precompileExecutables(graph.entrypoint, package);
+      await _precompileExecutables(
+          find(package).packageGraph.entrypoint, package);
     });
   }
 
@@ -459,12 +457,14 @@ class GlobalPackages {
           log.message("Reactivating ${log.bold(id.name)} ${id.version}...");
 
           var entrypoint = find(id.name);
-          var graph = await entrypoint.loadPackageGraph();
           var snapshots = await _precompileExecutables(entrypoint, id.name);
           var packageExecutables = executables.remove(id.name);
           if (packageExecutables == null) packageExecutables = [];
-          _updateBinStubs(graph.packages[id.name], packageExecutables,
-              overwriteBinStubs: true, snapshots: snapshots,
+          _updateBinStubs(
+              entrypoint.packageGraph.packages[id.name],
+              packageExecutables,
+              overwriteBinStubs: true,
+              snapshots: snapshots,
               suggestIfNotOnPath: false);
           successes.add(id.name);
         } catch (error, stackTrace) {

@@ -148,6 +148,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     process = pubRun(args: ['myapp']);
     process.stdout.expect("See ya!");
     process.shouldExit();
@@ -306,10 +307,9 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     process = pubRun(args: ['myapp']);
-    process.stdout.expect(
-        "Your pubspec has changed, so we need to update your lockfile:");
-    process.stdout.expect(consumeThrough("Goodbye!"));
+    process.stdout.expect("Goodbye!");
     process.shouldExit();
 
     // "bar" should still be in the manifest, since there's no reason to

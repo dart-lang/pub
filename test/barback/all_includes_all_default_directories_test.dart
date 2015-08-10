@@ -19,6 +19,8 @@ main() {
       d.dir('web',       [d.file('file.txt', 'web')]),
       d.dir('unknown',   [d.file('file.txt', 'unknown')])
     ]).create();
+
+    pubGet();
   });
 
   integration("build --all finds assets in default source directories", () {
@@ -49,7 +51,7 @@ main() {
   });
 
   integration("serve --all finds assets in default source directories", () {
-    pubServe(args: ["--all"], shouldGetFirst: true);
+    pubServe(args: ["--all"]);
 
     requestShouldSucceed("file.txt", "benchmark", root: "benchmark");
     requestShouldSucceed("file.txt", "bin", root: "bin");

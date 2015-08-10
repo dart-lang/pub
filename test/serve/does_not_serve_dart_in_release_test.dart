@@ -41,7 +41,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true, args: ["--mode", "release"]);
+    pubGet();
+    pubServe(args: ["--mode", "release"]);
     requestShould404("file.dart");
     requestShould404("packages/myapp/lib.dart");
     requestShould404("packages/foo/foo.dart");

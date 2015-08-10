@@ -74,8 +74,7 @@ class AssetEnvironment {
     if (environmentConstants == null) environmentConstants = {};
 
     return log.progress("Loading asset environment", () async {
-      var graph = await entrypoint.loadPackageGraph();
-      graph = _adjustPackageGraph(graph, mode, packages);
+      var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
       var barback = new Barback(new PubPackageProvider(graph));
       barback.log.listen(_log);
 

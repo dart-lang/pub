@@ -32,7 +32,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
 
     // Bad arguments.
     expectWebSocketError("pathToUrls", {"path": 123},

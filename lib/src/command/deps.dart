@@ -4,14 +4,12 @@
 
 library pub.command.list;
 
-import 'dart:async';
 import 'dart:collection';
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../log.dart' as log;
 import '../package.dart';
-import '../package_graph.dart';
 import '../utils.dart';
 
 /// Handles the `deps` pub command.
@@ -23,9 +21,6 @@ class DepsCommand extends PubCommand {
   String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-deps.html";
   bool get takesArguments => false;
 
-  /// The loaded package graph.
-  PackageGraph _graph;
-
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
 
@@ -36,21 +31,21 @@ class DepsCommand extends PubCommand {
         defaultsTo: "tree");
   }
 
-  Future run() {
-    return entrypoint.loadPackageGraph().then((graph) {
-      _graph = graph;
-      _buffer = new StringBuffer();
+  void run() {
+    // Explicitly run this in case we don't access `entrypoint.packageGraph`.
+    entrypoint.assertUpToDate();
 
-      _buffer.writeln(_labelPackage(entrypoint.root));
+    _buffer = new StringBuffer();
 
-      switch (argResults["style"]) {
-        case "compact": _outputCompact(); break;
-        case "list": _outputList(); break;
-        case "tree": _outputTree(); break;
-      }
+    _buffer.writeln(_labelPackage(entrypoint.root));
 
-      log.message(_buffer);
-    });
+    switch (argResults["style"]) {
+      case "compact": _outputCompact(); break;
+      case "list": _outputList(); break;
+      case "tree": _outputTree(); break;
+    }
+
+    log.message(_buffer);
   }
 
   /// Outputs a list of all of the package's immediate, dev, override, and
@@ -79,7 +74,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln();
     _buffer.writeln("$section:");
     for (var name in ordered(names)) {
-      var package = _graph.packages[name];
+      var package = entrypoint.packageGraph.packages[name];
 
       _buffer.write("- ${_labelPackage(package)}");
       if (package.dependencies.isEmpty) {
@@ -120,7 +115,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln("$name:");
 
     for (var name in deps) {
-      var package = _graph.packages[name];
+      var package = entrypoint.packageGraph.packages[name];
       _buffer.writeln("- ${_labelPackage(package)}");
 
       for (var dep in package.dependencies) {
@@ -146,7 +141,8 @@ class DepsCommand extends PubCommand {
     // Start with the root dependencies.
     var packageTree = {};
     for (var dep in entrypoint.root.immediateDependencies) {
-      toWalk.add(new Pair(_graph.packages[dep.name], packageTree));
+      toWalk.add(
+          new Pair(entrypoint.packageGraph.packages[dep.name], packageTree));
     }
 
     // Do a breadth-first walk to the dependency graph.
@@ -167,7 +163,8 @@ class DepsCommand extends PubCommand {
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies) {
-        toWalk.add(new Pair(_graph.packages[dep.name], childMap));
+        toWalk.add(
+            new Pair(entrypoint.packageGraph.packages[dep.name], childMap));
       }
     }
 
@@ -179,7 +176,7 @@ class DepsCommand extends PubCommand {
 
   /// Gets the names of the non-immediate dependencies of the root package.
   Set<String> _getTransitiveDependencies() {
-    var transitive = _graph.packages.keys.toSet();
+    var transitive = entrypoint.packageGraph.packages.keys.toSet();
     var root = entrypoint.root;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.map((dep) => dep.name));

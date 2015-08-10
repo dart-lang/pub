@@ -22,7 +22,8 @@ main() {
       ])
     ]).create();
 
-    pubServe(shouldGetFirst: true);
+    pubGet();
+    pubServe();
     requestShouldSucceed("isolate.dart.js", contains("hello"));
     endPubServe();
   });

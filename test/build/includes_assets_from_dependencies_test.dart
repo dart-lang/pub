@@ -38,6 +38,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["build", "--all"],
         output: new RegExp(r'Built 7 files to "build".'));
 

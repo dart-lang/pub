@@ -17,6 +17,8 @@ main() {
       ])
     ]).create();
 
+    pubGet();
+
     // Make a build directory containing "example".
     schedulePub(args: ["build", "example"],
         output: new RegExp(r'Built 1 file to "build".'));

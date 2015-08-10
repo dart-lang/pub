@@ -27,7 +27,8 @@ main() {
       ])
     ]).create();
 
-    var pub = pubRun(args: ["bin/script"], shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: ["bin/script"]);
 
     pub.stdout.expect("started");
     pub.writeLine("first");

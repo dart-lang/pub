@@ -57,7 +57,7 @@ class PathSource extends Source {
     });
   }
 
-  String getDirectory(PackageId id) => _validatePath(id.name, id.description);
+  String getDirectory(PackageId id) => id.description["path"];
 
   /// Parses a path dependency.
   ///

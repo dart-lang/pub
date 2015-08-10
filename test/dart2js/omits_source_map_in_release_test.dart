@@ -14,6 +14,7 @@ main() {
       ])
     ]).create();
 
+    pubGet();
     schedulePub(args: ["build"],
         output: new RegExp(r'Built 1 file to "build".'),
         exitCode: 0);

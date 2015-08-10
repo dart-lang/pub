@@ -20,7 +20,8 @@ main() {
       })
     ]).create();
 
-    var pub = pubRun(args: ["foo:bar"], shouldGetFirst: true);
+    pubGet();
+    var pub = pubRun(args: ["foo:bar"]);
     pub.stdout.expect("foobar");
     pub.shouldExit();
   });
