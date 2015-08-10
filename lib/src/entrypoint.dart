@@ -15,7 +15,6 @@ import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_graph.dart';
-import 'package_locations.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
@@ -156,7 +155,7 @@ class Entrypoint {
       log.exception(error, stackTrace);
     }
 
-    writePackagesMap(_packageGraph);
+    writeTextFile(packagesFile, lockFile.packagesFile(root.name));
   }
 
   /// Precompile any transformed dependencies of the entrypoint.

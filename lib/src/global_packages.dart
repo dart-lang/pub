@@ -19,7 +19,6 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_locations.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
@@ -177,7 +176,7 @@ class GlobalPackages {
         .loadPackageGraph(result);
     var snapshots = await _precompileExecutables(graph.entrypoint, dep.name);
     _writeLockFile(dep.name, lockFile);
-    writePackagesMap(graph, _getPackagesFilePath(dep.name));
+    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile());
 
     _updateBinStubs(graph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
