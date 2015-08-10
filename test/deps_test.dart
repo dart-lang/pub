@@ -17,7 +17,7 @@ main() {
       builder.serve("transitive", "1.2.3", deps: {"shared": "any"});
       builder.serve("shared", "1.2.3", deps: {"other": "any"});
       builder.serve("unittest", "1.2.3", deps: {"shared": "any"});
-      builder.serve("other", "1.0.0");
+      builder.serve("other", "1.0.0", deps: {"myapp": "any"});
       builder.serve("overridden", "1.0.0");
       builder.serve("overridden", "2.0.0");
       builder.serve("override_only", "1.2.3");
@@ -69,7 +69,7 @@ main() {
         transitive dependencies:
         - circular_a 1.2.3 [circular_b]
         - circular_b 1.2.3 [circular_a]
-        - other 1.0.0
+        - other 1.0.0 [myapp]
         - shared 1.2.3 [other]
         - transitive 1.2.3 [shared]
         ''');
@@ -101,6 +101,7 @@ main() {
         - circular_b 1.2.3
           - circular_a any
         - other 1.0.0
+          - myapp any
         - shared 1.2.3
           - other any
         - transitive 1.2.3
@@ -124,6 +125,7 @@ main() {
         '-- unittest 1.2.3
             '-- shared 1.2.3
                 '-- other 1.0.0
+                    '-- myapp...
         ''');
   });
 }
