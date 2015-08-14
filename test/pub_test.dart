@@ -17,21 +17,19 @@ main() {
         Usage: pub <command> [arguments]
 
         Global options:
-        -h, --help                     Print this usage information.
-            --version                  Print pub version.
-            --[no-]trace               Print debugging information when an error occurs.
-            --verbosity                Control output verbosity.
+        -h, --help             Print this usage information.
+            --version          Print pub version.
+            --[no-]trace       Print debugging information when an error occurs.
+            --verbosity        Control output verbosity.
 
-                  [all]                Show all output including internal tracing messages.
-                  [error]              Show only errors.
-                  [io]                 Also show IO operations.
-                  [normal]             Show errors, warnings, and user messages.
-                  [solver]             Show steps during version resolution.
-                  [warning]            Show only errors and warnings.
+                  [all]        Show all output including internal tracing messages.
+                  [error]      Show only errors.
+                  [io]         Also show IO operations.
+                  [normal]     Show errors, warnings, and user messages.
+                  [solver]     Show steps during version resolution.
+                  [warning]    Show only errors and warnings.
 
-        -v, --verbose                  Shortcut for "--verbosity=all".
-            --[no-]package-symlinks    Generate packages/ directories when installing packages.
-                                       (defaults to on)
+        -v, --verbose          Shortcut for "--verbosity=all".
 
         Available commands:
           build       Apply transformers to build a package.

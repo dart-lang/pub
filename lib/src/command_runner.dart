@@ -61,7 +61,7 @@ class PubCommandRunner extends CommandRunner {
     argParser.addFlag('with-prejudice', hide: !isAprilFools,
         negatable: false, help: 'Execute commands with prejudice.');
     argParser.addFlag('package-symlinks',
-        negatable: true, defaultsTo: true,
+        negatable: true, defaultsTo: true, hide: true,
         help: "Generate packages/ directories when installing packages.");
 
     addCommand(new BuildCommand());
