@@ -353,7 +353,6 @@ class GlobalPackages {
     var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
     return exe.runSnapshot(snapshotPath, args,
         checked: checked,
-        packagesFile: _getPackagesFilePath(package),
         recompile: () async {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
