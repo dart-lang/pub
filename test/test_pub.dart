@@ -201,7 +201,7 @@ void serve([List<d.Descriptor> contents]) {
   schedule(() {
     return _closeServer().then((_) {
       return shelf_io.serve((request) {
-        var path = p.posix.fromUri(request.url.path.replaceFirst("/", ""));
+        var path = p.posix.fromUri(request.url.path);
         _requestedPaths.add(path);
 
         return validateStream(baseDir.load(path))

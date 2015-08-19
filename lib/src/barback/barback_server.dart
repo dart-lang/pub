@@ -119,13 +119,15 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       if (error is! AssetNotFoundException) throw error;
       return environment.barback.getAssetById(id.addExtension("/index.html"))
           .then((asset) {
-        if (request.url.path.endsWith('/')) return _serveAsset(request, asset);
+        if (request.url.path.isEmpty || request.url.path.endsWith('/')) {
+          return _serveAsset(request, asset);
+        }
 
         // We only want to serve index.html if the URL explicitly ends in a
         // slash. For other URLs, we redirect to one with the slash added to
         // implicitly support that too. This follows Apache's behavior.
-        logRequest(request, "302 Redirect to ${request.url}/");
-        return new shelf.Response.found('${request.url}/');
+        logRequest(request, "302 Redirect to /${request.url}/");
+        return new shelf.Response.found('/${request.url}/');
       }).catchError((newError, newTrace) {
         // If we find neither the original file or the index, we should report
         // the error about the original to the user.

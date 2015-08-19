@@ -183,7 +183,7 @@ Future<Client> _authorize() {
   var completer = new Completer();
   bindServer('localhost', 0).then((server) {
     shelf_io.serveRequests(server, (request) {
-      if (request.url.path != "/") {
+      if (request.url.path.isNotEmpty) {
         return new shelf.Response.notFound('Invalid URI.');
       }
 
