@@ -642,17 +642,18 @@ class BacktrackingSolver {
     // Indent for the previous selections.
     log.solver(prefixLines(message, prefix: '| ' * _versions.length));
   }
-}
 
-/// Ensures that if [pubspec] has an SDK constraint, then it is compatible
-/// with the current SDK.
-///
-/// Throws a [SolveFailure] if not.
-void _validateSdkConstraint(Pubspec pubspec) {
-  if (pubspec.environment.sdkVersion.allows(sdk.version)) return;
+  /// Ensures that if [pubspec] has an SDK constraint, then it is compatible
+  /// with the current SDK.
+  ///
+  /// Throws a [SolveFailure] if not.
+  void _validateSdkConstraint(Pubspec pubspec) {
+    if (_overrides.containsKey(pubspec.name)) return;
+    if (pubspec.environment.sdkVersion.allows(sdk.version)) return;
 
-  throw new BadSdkVersionException(pubspec.name,
-      'Package ${pubspec.name} requires SDK version '
-      '${pubspec.environment.sdkVersion} but the current SDK is '
-      '${sdk.version}.');
+    throw new BadSdkVersionException(pubspec.name,
+        'Package ${pubspec.name} requires SDK version '
+        '${pubspec.environment.sdkVersion} but the current SDK is '
+        '${sdk.version}.');
+  }
 }

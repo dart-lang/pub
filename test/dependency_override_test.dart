@@ -86,6 +86,31 @@ main() {
       }).validate();
     });
 
+    integration("ignores SDK constraints", () {
+      servePackages((builder) {
+        builder.serve("foo", "1.0.0", pubspec: {
+          "environment": {
+            "sdk": "5.6.7-fblthp"
+          }
+        });
+      });
+
+      d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "dependency_overrides": {
+            "foo": "any"
+          }
+        })
+      ]).create();
+
+      pubCommand(command);
+
+      d.packagesDir({
+        "foo": "1.0.0"
+      }).validate();
+    });
+
     integration("warns about overridden dependencies", () {
       servePackages((builder) {
         builder.serve("foo", "1.0.0");
