@@ -95,8 +95,9 @@ class Package {
   /// pub.dartlang.org for choosing the primary one: the README with the fewest
   /// extensions that is lexically ordered first is chosen.
   String get readmePath {
-    var readmes = listFiles(recursive: false).map(p.basename).
-        where((entry) => entry.contains(_README_REGEXP));
+    var readmes = listFiles(recursive: false, useGitIgnore: true)
+        .map(p.basename)
+        .where((entry) => entry.contains(_README_REGEXP));
     if (readmes.isEmpty) return null;
 
     return p.join(dir, readmes.reduce((readme1, readme2) {
@@ -194,16 +195,14 @@ class Package {
 
   /// Returns a list of files that are considered to be part of this package.
   ///
-  /// If this is a Git repository, this will respect .gitignore; otherwise, it
-  /// will return all non-hidden, non-blacklisted files.
-  ///
   /// If [beneath] is passed, this will only return files beneath that path,
   /// which is expected to be relative to the package's root directory. If
   /// [recursive] is true, this will return all files beneath that path;
   /// otherwise, it will only return files one level beneath it.
   ///
   /// If [useGitIgnore] is passed, this will take the .gitignore rules into
-  /// account if the package's root directory is a Git repository.
+  /// account if the root directory of the package is (or is contained within) a
+  /// Git repository.
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].

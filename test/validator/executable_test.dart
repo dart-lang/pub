@@ -51,5 +51,24 @@ main() {
       ]).create();
       expectValidationWarning(executable);
     });
+
+    integration('has .gitignored one or more listed executables', () {
+      d.git(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "executables": {
+            "one": "one_script",
+            "two": null
+          }
+        }),
+        d.dir("bin", [
+          d.file("one_script.dart", "main() => print('ok');"),
+          d.file("two.dart", "main() => print('ok');")
+        ]),
+        d.file(".gitignore", "bin")
+      ]).create();
+      expectValidationWarning(executable);
+    });
   });
 }

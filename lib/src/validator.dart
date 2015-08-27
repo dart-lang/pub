@@ -16,6 +16,7 @@ import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
+import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
@@ -58,6 +59,7 @@ abstract class Validator {
   static Future<Pair<List<String>, List<String>>> runAll(
       Entrypoint entrypoint, [Future<int> packageSize]) {
     var validators = [
+      new PubspecValidator(entrypoint),
       new LicenseValidator(entrypoint),
       new NameValidator(entrypoint),
       new PubspecFieldValidator(entrypoint),

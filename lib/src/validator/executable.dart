@@ -20,7 +20,8 @@ class ExecutableValidator extends Validator {
   Future validate() async {
     // TODO(rnystrom): This can print false positives since a script may be
     // produced by a transformer. Do something better.
-    var binFiles = entrypoint.root.listFiles(beneath: "bin", recursive: false)
+    var binFiles = entrypoint.root.listFiles(
+            beneath: "bin", recursive: false, useGitIgnore: true)
         .map((path) => entrypoint.root.relative(path))
         .toList();
 
