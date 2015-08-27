@@ -27,6 +27,16 @@ main() {
       ]).create();
       expectNoValidationError(utf8Readme);
     });
+
+    integration('has a .gitignored README with invalid utf-8', () {
+      var repo = d.git(appPath, [
+        d.binaryFile("README", [192]),
+        d.file(".gitignore", "README")
+      ]);
+      d.validPackage.create();
+      repo.create();
+      expectNoValidationError(utf8Readme);
+    });
   });
 
   integration('should consider a package invalid if it has a README with '

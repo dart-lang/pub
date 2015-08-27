@@ -22,7 +22,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       return _runGitCommands(parent, [
         ['init'],
         ['add', '.'],
-        ['commit', '-m', 'initial commit']
+        ['commit', '-m', 'initial commit', '--allow-empty']
       ]);
     });
   }, 'creating Git repo:\n${describe()}');

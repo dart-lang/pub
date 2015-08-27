@@ -40,10 +40,18 @@ main() {
     });
   });
 
-  integration('should consider a package invalid if it has no LICENSE file',
-      () {
-    d.validPackage.create();
-    schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
-    expectValidationError(license);
+  group('should consider a package invalid if it', () {
+    integration('has no LICENSE file', () {
+      d.validPackage.create();
+      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
+      expectValidationError(license);
+    });
+
+    integration('has a .gitignored LICENSE file', () {
+      var repo = d.git(appPath, [d.file(".gitignore", "LICENSE")]);
+      d.validPackage.create();
+      repo.create();
+      expectValidationError(license);
+    });
   });
 }
