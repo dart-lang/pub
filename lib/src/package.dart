@@ -116,12 +116,12 @@ class Package {
     if (dir == null || !git.isInstalled) {
       _inGitRepoCache = false;
     } else {
-      try {
-        git.runSync(['rev-parse'], workingDir: dir);
-        _inGitRepoCache = true;
-      } on git.GitException catch (_) {
-        _inGitRepoCache = false;
-      }
+      // If the entire package directory is ignored, don't consider it part of a
+      // git repo. `git check-ignore` will return a status code of 0 for
+      // ignored, 1 for not ignored, and 128 for not a Git repo.
+      var result = runProcessSync(git.command, ['check-ignore', '--quiet', '.'],
+          workingDir: dir);
+      _inGitRepoCache = result.exitCode == 1;
     }
 
     return _inGitRepoCache;
