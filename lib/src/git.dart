@@ -34,7 +34,7 @@ class GitException implements ApplicationException {
 /// Tests whether or not the git command-line app is available for use.
 bool get isInstalled {
   if (_isInstalledCache != null) return _isInstalledCache;
-  _isInstalledCache = _gitCommand != null;
+  _isInstalledCache = command != null;
   return _isInstalledCache;
 }
 bool _isInstalledCache;
@@ -51,7 +51,7 @@ Future<List<String>> run(List<String> args,
   }
 
   log.muteProgress();
-  return runProcess(_gitCommand, args, workingDir: workingDir,
+  return runProcess(command, args, workingDir: workingDir,
       environment: environment).then((result) {
     if (!result.success) throw new GitException(args, result.stderr.join("\n"));
 
@@ -69,7 +69,7 @@ List<String> runSync(List<String> args, {String workingDir,
         "Please ensure Git is correctly installed.");
   }
 
-  var result = runProcessSync(_gitCommand, args,
+  var result = runProcessSync(command, args,
       workingDir: workingDir,
       environment: environment);
   if (!result.success) throw new GitException(args, result.stderr.join("\n"));
@@ -84,13 +84,13 @@ Future<PubProcess> start(List<String> args,
         "Please ensure Git is correctly installed.");
   }
 
-  return startProcess(_gitCommand, args, workingDir: workingDir,
+  return startProcess(command, args, workingDir: workingDir,
       environment: environment);
 }
 
 /// Returns the name of the git command-line app, or null if Git could not be
 /// found on the user's PATH.
-String get _gitCommand {
+String get command {
   if (_commandCache != null) return _commandCache;
 
   var command;
