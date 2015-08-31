@@ -7,7 +7,8 @@ library pub.entrypoint;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:package_config/packages_file.dart' as packages_file;
+import 'package:path/path.dart' as p;
 import 'package:barback/barback.dart';
 
 import 'barback/asset_environment.dart';
@@ -201,13 +202,13 @@ class Entrypoint {
     // Just precompile the debug version of a package. We're mostly interested
     // in improving speed for development iteration loops, which usually use
     // debug mode.
-    var depsDir = path.join('.pub', 'deps', 'debug');
+    var depsDir = p.join('.pub', 'deps', 'debug');
 
     var dependenciesToPrecompile = packageGraph.packages.values
         .where((package) {
       if (package.pubspec.transformers.isEmpty) return false;
       if (packageGraph.isPackageMutable(package.name)) return false;
-      if (!dirExists(path.join(depsDir, package.name))) return true;
+      if (!dirExists(p.join(depsDir, package.name))) return true;
       if (changed == null) return true;
 
       /// Only recompile [package] if any of its transitive dependencies have
@@ -222,12 +223,12 @@ class Entrypoint {
     if (dirExists(depsDir)) {
       // Delete any cached dependencies that are going to be recached.
       for (var package in dependenciesToPrecompile) {
-        deleteEntry(path.join(depsDir, package));
+        deleteEntry(p.join(depsDir, package));
       }
 
       // Also delete any cached dependencies that should no longer be cached.
       for (var subdir in listDir(depsDir)) {
-        var package = packageGraph.packages[path.basename(subdir)];
+        var package = packageGraph.packages[p.basename(subdir)];
         if (package == null || package.pubspec.transformers.isEmpty ||
             packageGraph.isPackageMutable(package.name)) {
           deleteEntry(subdir);
@@ -257,9 +258,9 @@ class Entrypoint {
         await waitAndPrintErrors(assets.map((asset) async {
           if (!dependenciesToPrecompile.contains(asset.id.package)) return;
 
-          var destPath = path.join(
-              depsDir, asset.id.package, path.fromUri(asset.id.path));
-          ensureDir(path.dirname(destPath));
+          var destPath = p.join(
+              depsDir, asset.id.package, p.fromUri(asset.id.path));
+          ensureDir(p.dirname(destPath));
           await createFileFromStream(asset.read(), destPath);
         }));
 
@@ -271,7 +272,7 @@ class Entrypoint {
       // assets (issue 19491), catch and handle compilation errors on a
       // per-package basis.
       for (var package in dependenciesToPrecompile) {
-        deleteEntry(path.join(depsDir, package));
+        deleteEntry(p.join(depsDir, package));
       }
       rethrow;
     }
@@ -282,8 +283,8 @@ class Entrypoint {
   Future precompileExecutables({Iterable<String> changed}) async {
     if (changed != null) changed = changed.toSet();
 
-    var binDir = path.join('.pub', 'bin');
-    var sdkVersionPath = path.join(binDir, 'sdk-version');
+    var binDir = p.join('.pub', 'bin');
+    var sdkVersionPath = p.join(binDir, 'sdk-version');
 
     // If the existing executable was compiled with a different SDK, we need to
     // recompile regardless of what changed.
@@ -297,7 +298,7 @@ class Entrypoint {
       for (var entry in listDir(binDir)) {
         if (!dirExists(entry)) continue;
 
-        var package = path.basename(entry);
+        var package = p.basename(entry);
         if (!packageGraph.packages.containsKey(package) ||
             packageGraph.isPackageMutable(package)) {
           deleteEntry(entry);
@@ -337,7 +338,7 @@ class Entrypoint {
       });
 
       await waitAndPrintErrors(executables.keys.map((package) async {
-        var dir = path.join(binDir, package);
+        var dir = p.join(binDir, package);
         cleanDir(dir);
         await environment.precompileExecutables(package, dir,
             executableIds: executables[package]);
@@ -373,8 +374,8 @@ class Entrypoint {
     // changed. Since we delete the bin directory before recompiling, we need to
     // recompile all executables.
     var executablesExist = executables.every((executable) =>
-        fileExists(path.join('.pub', 'bin', packageName,
-            "${path.url.basename(executable.path)}.snapshot")));
+        fileExists(p.join('.pub', 'bin', packageName,
+            "${p.url.basename(executable.path)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
@@ -396,7 +397,7 @@ class Entrypoint {
         return source.downloadToSystemCache(id);
       }
 
-      var packageDir = path.join(packagesDir, id.name);
+      var packageDir = p.join(packagesDir, id.name);
       if (entryExists(packageDir)) deleteEntry(packageDir);
       return source.get(id, packageDir);
     }).then((_) => source.resolveId(id));
@@ -415,18 +416,125 @@ class Entrypoint {
       dataError('No .packages file found, please run "pub get" first.');
     }
 
-    var packagesModified = new File(packagesFile).lastModifiedSync();
     var pubspecModified = new File(pubspecPath).lastModifiedSync();
-    if (packagesModified.isBefore(pubspecModified)) {
-      dataError('The pubspec.yaml file has changed since the .packages file '
-          'was generated, please run "pub get" again.');
+    var lockFileModified = new File(lockFilePath).lastModifiedSync();
+
+    var touchedLockFile = false;
+    if (lockFileModified.isBefore(pubspecModified)) {
+      if (_isLockFileUpToDate() && _arePackagesAvailable()) {
+        touchedLockFile = true;
+        touch(lockFilePath);
+      } else {
+        dataError('The pubspec.yaml file has changed since the pubspec.lock '
+            'file was generated, please run "pub get" again.');
+      }
     }
 
-    var lockFileModified = new File(lockFilePath).lastModifiedSync();
+    var packagesModified = new File(packagesFile).lastModifiedSync();
     if (packagesModified.isBefore(lockFileModified)) {
-      dataError('The pubspec.lock file has changed since the .packages file '
-          'was generated, please run "pub get" again.');
+      if (_isPackagesFileUpToDate()) {
+        touch(packagesFile);
+      } else {
+        dataError('The pubspec.lock file has changed since the .packages file '
+            'was generated, please run "pub get" again.');
+      }
+    } else if (touchedLockFile) {
+      touch(packagesFile);
     }
+  }
+
+  /// Determines whether or not the lockfile is out of date with respect to the
+  /// pubspec.
+  ///
+  /// This will be `false` if the pubspec contains dependencies that are not in
+  /// the lockfile or that don't match what's in there.
+  bool _isLockFileUpToDate() {
+    return root.immediateDependencies.every((package) {
+      var locked = lockFile.packages[package.name];
+      if (locked == null) return false;
+
+      if (package.source != locked.source) return false;
+
+      if (!package.constraint.allows(locked.version)) return false;
+
+      var source = cache.sources[package.source];
+      if (source == null) return false;
+
+      return source.descriptionsEqual(package.description, locked.description);
+    });
+  }
+
+  /// Determines whether all of the packages in the lockfile are already
+  /// installed and available.
+  ///
+  /// Note: this assumes [_isLockFileUpToDate] has already been called and
+  /// returned `true`.
+  bool _arePackagesAvailable() {
+    return lockFile.packages.values.every((package) {
+      var source = cache.sources[package.source];
+
+      // This should only be called after [_isLockFileUpToDate] has returned
+      // `true`, which ensures all of the sources in the lock file are valid.
+      assert(source != null);
+
+      // We only care about cached sources. Uncached sources aren't "installed".
+      // If one of those is missing, we want to show the user the file not
+      // found error later since installing won't accomplish anything.
+      if (source is! CachedSource) return true;
+
+      // Get the directory.
+      var dir = source.getDirectory(package);
+      // See if the directory is there and looks like a package.
+      return dirExists(dir) && fileExists(p.join(dir, "pubspec.yaml"));
+    });
+  }
+
+  /// Determines whether or not the `.packages` file is out of date with respect
+  /// to the lockfile.
+  ///
+  /// This will be `false` if the packages file contains dependencies that are
+  /// not in the lockfile or that don't match what's in there.
+  bool _isPackagesFileUpToDate() {
+    var packages = packages_file.parse(
+        new File(packagesFile).readAsBytesSync(),
+        p.toUri(packagesFile));
+
+    return lockFile.packages.values.every((lockFileId) {
+      var source = cache.sources[lockFileId.source];
+
+      // It's very unlikely that the lockfile is invalid here, but it's not
+      // impossible—for example, the user may have a very old application
+      // package with a checked-in lockfile that's newer than the pubspec, but
+      // that contains sdk dependencies.
+      if (source == null) return false;
+
+      var packagesFileUri = packages[lockFileId.name];
+      if (packagesFileUri == null) return false;
+
+      // Pub only generates "file:" and relative URIs.
+      if (packagesFileUri.scheme != 'file' &&
+          packagesFileUri.scheme.isNotEmpty) {
+        return false;
+      }
+
+      // Get the dirname of the .packages path, since it's pointing to lib/.
+      var packagesFilePath = p.dirname(
+          p.join(root.dir, p.fromUri(packagesFileUri)));
+      var lockFilePath = p.join(root.dir, source.getDirectory(lockFileId));
+
+      // For cached sources, make sure the directory exists and looks like a
+      // package. This is also done by [_arePackagesAvailable] but that may not
+      // be run if the lockfile is newer than the pubspec.
+      if (source is CachedSource &&
+          !dirExists(packagesFilePath) ||
+          !fileExists(p.join(packagesFilePath, "pubspec.yaml"))) {
+        return false;
+      }
+
+      // Make sure that the packages file agrees with the lock file about the
+      // path to the package.
+      return p.normalize(packagesFilePath) == p.normalize(lockFilePath);
+    });
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
@@ -439,7 +547,7 @@ class Entrypoint {
   /// Creates a self-referential symlink in the `packages` directory that allows
   /// a package to import its own files using `package:`.
   void _linkSelf() {
-    var linkPath = path.join(packagesDir, root.name);
+    var linkPath = p.join(packagesDir, root.name);
     // Create the symlink if it doesn't exist.
     if (entryExists(linkPath)) return;
     ensureDir(packagesDir);
@@ -482,7 +590,7 @@ class Entrypoint {
   /// files and `package` files.
   List<String> _listDirWithoutPackages(dir) {
     return flatten(listDir(dir).map((file) {
-      if (path.basename(file) == 'packages') return [];
+      if (p.basename(file) == 'packages') return [];
       if (!dirExists(file)) return [];
       var fileAndSubfiles = [file];
       fileAndSubfiles.addAll(_listDirWithoutPackages(file));
@@ -495,7 +603,7 @@ class Entrypoint {
   ///
   /// Otherwise, deletes a "packages" directories in [dir] if one exists.
   void _linkOrDeleteSecondaryPackageDir(String dir) {
-    var symlink = path.join(dir, 'packages');
+    var symlink = p.join(dir, 'packages');
     if (entryExists(symlink)) deleteEntry(symlink);
     if (_packageSymlinks) createSymlink(packagesDir, symlink, relative: true);
   }
