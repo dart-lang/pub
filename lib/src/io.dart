@@ -831,6 +831,15 @@ _doProcess(Function fn, String executable, List<String> args,
       environment: environment);
 }
 
+/// Updates [path]'s modification time.
+void touch(String path) {
+  var file = new File(path).openSync(mode: FileMode.APPEND);
+  var originalLength = file.lengthSync();
+  file.writeByteSync(0);
+  file.truncateSync(originalLength);
+  file.closeSync();
+}
+
 /// Creates a temporary directory and passes its path to [fn].
 ///
 /// Once the [Future] returned by [fn] completes, the temporary directory and

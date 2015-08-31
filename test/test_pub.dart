@@ -714,16 +714,35 @@ void makeGlobalPackage(String package, String version,
 /// hosted packages.
 void createLockFile(String package, {Iterable<String> sandbox,
     Iterable<String> pkg, Map<String, String> hosted}) {
-  var cache = new SystemCache.withSources(
-      rootDir: p.join(sandboxDir, cachePath));
+  schedule(() async {
+    var cache = new SystemCache.withSources(
+        rootDir: p.join(sandboxDir, cachePath));
 
-  var lockFile = _createLockFile(cache.sources,
-      sandbox: sandbox, pkg: pkg, hosted: hosted);
+    var lockFile = _createLockFile(cache.sources,
+        sandbox: sandbox, pkg: pkg, hosted: hosted);
 
-  d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(null)),
-    d.file('.packages', lockFile.packagesFile(package))
-  ]).create();
+    await d.dir(package, [
+      d.file('pubspec.lock', lockFile.serialize(null)),
+      d.file('.packages', lockFile.packagesFile(package))
+    ]).create();
+  }, "creating lockfile for $package");
+}
+
+/// Like [createLockFile], but creates only a `.packages` file without a
+/// lockfile.
+void createPackagesFile(String package, {Iterable<String> sandbox,
+    Iterable<String> pkg, Map<String, String> hosted}) {
+  schedule(() async {
+    var cache = new SystemCache.withSources(
+        rootDir: p.join(sandboxDir, cachePath));
+
+    var lockFile = _createLockFile(cache.sources,
+        sandbox: sandbox, pkg: pkg, hosted: hosted);
+
+    await d.dir(package, [
+      d.file('.packages', lockFile.packagesFile(package))
+    ]).create();
+  }, "creating .packages for $package");
 }
 
 /// Creates a lock file for [package] without running `pub get`.

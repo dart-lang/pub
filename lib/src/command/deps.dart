@@ -74,7 +74,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln();
     _buffer.writeln("$section:");
     for (var name in ordered(names)) {
-      var package = entrypoint.packageGraph.packages[name];
+      var package = _getPackage(name);
 
       _buffer.write("- ${_labelPackage(package)}");
       if (package.dependencies.isEmpty) {
@@ -115,7 +115,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln("$name:");
 
     for (var name in deps) {
-      var package = entrypoint.packageGraph.packages[name];
+      var package = _getPackage(name);
       _buffer.writeln("- ${_labelPackage(package)}");
 
       for (var dep in package.dependencies) {
@@ -141,8 +141,7 @@ class DepsCommand extends PubCommand {
     // Start with the root dependencies.
     var packageTree = {};
     for (var dep in entrypoint.root.immediateDependencies) {
-      toWalk.add(
-          new Pair(entrypoint.packageGraph.packages[dep.name], packageTree));
+      toWalk.add(new Pair(_getPackage(dep.name), packageTree));
     }
 
     // Do a breadth-first walk to the dependency graph.
@@ -163,8 +162,7 @@ class DepsCommand extends PubCommand {
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies) {
-        toWalk.add(
-            new Pair(entrypoint.packageGraph.packages[dep.name], childMap));
+        toWalk.add(new Pair(_getPackage(dep.name), childMap));
       }
     }
 
@@ -183,5 +181,18 @@ class DepsCommand extends PubCommand {
     transitive.removeAll(root.devDependencies.map((dep) => dep.name));
     transitive.removeAll(root.dependencyOverrides.map((dep) => dep.name));
     return transitive;
+  }
+
+  /// Get the package named [name], or throw a [DataError] if it's not
+  /// available.
+  ///
+  /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,
+  /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
+  /// check can return a false negative. This fails gracefully if that happens.
+  Package _getPackage(String name) {
+    var package = entrypoint.packageGraph.packages[name];
+    if (package != null) return package;
+    dataError('The pubspec.yaml file has changed since the pubspec.lock file '
+        'was generated, please run "pub get" again.');
   }
 }

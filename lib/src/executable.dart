@@ -82,6 +82,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
       // default mode for them to run. We can't run them in a different mode
       // using the snapshot.
       mode == BarbackMode.RELEASE) {
+    // Since we don't access the package graph, this doesn't happen
+    // automatically.
+    entrypoint.assertUpToDate();
+
     return _runCachedExecutable(entrypoint, localSnapshotPath, args,
         checked: checked);
   }
