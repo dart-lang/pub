@@ -860,9 +860,12 @@ Future withTempDir(Future fn(String path)) {
 ///
 /// If [host] is "localhost", this will automatically listen on both the IPv4
 /// and IPv6 loopback addresses.
-Future<HttpServer> bindServer(String host, int port) {
-  if (host == 'localhost') return HttpMultiServer.loopback(port);
-  return HttpServer.bind(host, port);
+Future<HttpServer> bindServer(String host, int port) async {
+  var server = host == 'localhost'
+      ? await HttpMultiServer.loopback(port)
+      : await HttpServer.bind(host, port);
+  server.autoCompress = true;
+  return server;
 }
 
 /// Extracts a `.tar.gz` file from [stream] to [destination].
