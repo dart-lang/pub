@@ -111,16 +111,18 @@ Future withClient(SystemCache cache, Future fn(Client client)) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) {
-  return new Future.sync(() {
-    var credentials = _loadCredentials(cache);
-    if (credentials == null) return _authorize();
+Future<Client> _getClient(SystemCache cache) async {
+  var credentials = _loadCredentials(cache);
+  if (credentials == null) return await _authorize();
 
-    var client = new Client(_identifier, _secret, credentials,
-        httpClient: httpClient);
-    _saveCredentials(cache, client.credentials);
-    return client;
-  });
+  var client = new Client(credentials,
+      identifier: _identifier,
+      secret: _secret,
+      // Google's OAuth2 API doesn't support basic auth.
+      basicAuth: false,
+      httpClient: httpClient);
+  _saveCredentials(cache, client.credentials);
+  return client;
 }
 
 /// Loads the user's OAuth2 credentials from the in-memory cache or the
@@ -172,9 +174,11 @@ String _credentialsFile(SystemCache cache) =>
 Future<Client> _authorize() {
   var grant = new AuthorizationCodeGrant(
       _identifier,
-      _secret,
       authorizationEndpoint,
       tokenEndpoint,
+      secret: _secret,
+      // Google's OAuth2 API doesn't support basic auth.
+      basicAuth: false,
       httpClient: httpClient);
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
