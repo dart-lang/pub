@@ -21,8 +21,9 @@ main() {
             "minify": true,
             "verbose": true,
             "environment": {"name": "value"},
-            "suppressWarnings": true,
-            "suppressHints": true,
+            // TOOD(nweiz): Re-add these when sdk#24653 is fixed.
+            // "suppressWarnings": true,
+            // "suppressHints": true,
             "suppressPackageWarnings": false,
             "terse": true,
             "sourceMaps": false

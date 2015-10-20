@@ -177,10 +177,10 @@ Descriptor credentialsFile(
     return dir(cachePath, [
       file('credentials.json', new oauth2.Credentials(
           accessToken,
-          refreshToken,
-          url.resolve('/token'),
-          ['https://www.googleapis.com/auth/userinfo.email'],
-          expiration).toJson())
+          refreshToken: refreshToken,
+          tokenEndpoint: url.resolve('/token'),
+          scopes: ['https://www.googleapis.com/auth/userinfo.email'],
+          expiration: expiration).toJson())
     ]);
   }));
 }

@@ -9,7 +9,7 @@ dependencies:
   analyzer: ">=0.25.0 <0.27.0"
   args: "^0.13.0"
   barback: "^0.15.2"
-  compiler_unsupported: "^1.10.0"
+  compiler_unsupported: "^1.13.0-dev"
   crypto: "^0.9.0"
   glob: "^1.0.0"
   http: "^0.11.0"

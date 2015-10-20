@@ -488,10 +488,8 @@ final bool runningAsTest =
 /// Whether the current process is one of pub's test files being run through the
 /// test package's test runner.
 ///
-/// The test runner starts all tests from an entrypoint called
-/// "runInIsolate.dart'>
-final bool runningAsTestRunner =
-    path.url.basename(Platform.script.path).startsWith('runInIsolate.dart');
+/// The test runner starts all tests from a `data:` URI.
+final bool runningAsTestRunner = Platform.script.scheme == 'data';
 
 /// Whether the current process is a pub subprocess being run from a test.
 ///
