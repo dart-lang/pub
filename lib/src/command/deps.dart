@@ -24,11 +24,18 @@ class DepsCommand extends PubCommand {
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
 
+  /// Whether to include dev dependencies.
+  bool get _includeDev => argResults['dev'];
+
   DepsCommand() {
     argParser.addOption("style", abbr: "s",
         help: "How output should be displayed.",
         allowed: ["compact", "tree", "list"],
         defaultsTo: "tree");
+
+    argParser.addFlag("dev", negatable: true,
+        help: "Whether to include dev dependencies.",
+        defaultsTo: true);
   }
 
   void run() {
@@ -58,8 +65,10 @@ class DepsCommand extends PubCommand {
     var root = entrypoint.root;
     _outputCompactPackages("dependencies",
         root.dependencies.map((dep) => dep.name));
-    _outputCompactPackages("dev dependencies",
-        root.devDependencies.map((dep) => dep.name));
+    if (_includeDev) {
+      _outputCompactPackages("dev dependencies",
+          root.devDependencies.map((dep) => dep.name));
+    }
     _outputCompactPackages("dependency overrides",
         root.dependencyOverrides.map((dep) => dep.name));
 
@@ -96,8 +105,10 @@ class DepsCommand extends PubCommand {
     var root = entrypoint.root;
     _outputListSection("dependencies",
         root.dependencies.map((dep) => dep.name));
-    _outputListSection("dev dependencies",
-        root.devDependencies.map((dep) => dep.name));
+    if (_includeDev) {
+      _outputListSection("dev dependencies",
+          root.devDependencies.map((dep) => dep.name));
+    }
     _outputListSection("dependency overrides",
         root.dependencyOverrides.map((dep) => dep.name));
 
@@ -140,7 +151,11 @@ class DepsCommand extends PubCommand {
 
     // Start with the root dependencies.
     var packageTree = {};
-    for (var dep in entrypoint.root.immediateDependencies) {
+    var immediateDependencies = entrypoint.root.immediateDependencies.toSet();
+    if (!_includeDev) {
+      immediateDependencies.removeAll(entrypoint.root.devDependencies);
+    }
+    for (var dep in immediateDependenciesr) {
       toWalk.add(new Pair(_getPackage(dep.name), packageTree));
     }
 
@@ -174,13 +189,27 @@ class DepsCommand extends PubCommand {
 
   /// Gets the names of the non-immediate dependencies of the root package.
   Set<String> _getTransitiveDependencies() {
-    var transitive = entrypoint.packageGraph.packages.keys.toSet();
+    var transitive = _getAllDependencies();
     var root = entrypoint.root;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.map((dep) => dep.name));
-    transitive.removeAll(root.devDependencies.map((dep) => dep.name));
+    if (_includeDev) {
+      transitive.removeAll(root.devDependencies.map((dep) => dep.name));
+    }
     transitive.removeAll(root.dependencyOverrides.map((dep) => dep.name));
     return transitive;
+  }
+
+  Set<String> _getAllDependencies() {
+    if (_includeDev) return entrypoint.packageGraph.packages.keys.toSet();
+
+    var nonDevDependencies = entrypoint.root.dependencies.toList()
+        ..addAll(entrypoint.root.dependencyOverrides);
+    return nonDevDependencies
+        .expand((dep) =>
+            entrypoint.packageGraph.transitiveDependencies(dep.name))
+        .map((package) => package.name)
+        .toSet();
   }
 
   /// Get the package named [name], or throw a [DataError] if it's not

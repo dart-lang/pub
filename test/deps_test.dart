@@ -16,7 +16,11 @@ main() {
       });
       builder.serve("transitive", "1.2.3", deps: {"shared": "any"});
       builder.serve("shared", "1.2.3", deps: {"other": "any"});
-      builder.serve("unittest", "1.2.3", deps: {"shared": "any"});
+      builder.serve("dev_only", "1.2.3");
+      builder.serve("unittest", "1.2.3", deps: {
+        "shared": "any",
+        "dev_only": "any"
+      });
       builder.serve("other", "1.0.0", deps: {"myapp": "any"});
       builder.serve("overridden", "1.0.0");
       builder.serve("overridden", "2.0.0");
@@ -49,83 +53,162 @@ main() {
     ]).create();
   });
 
-  integration("lists dependencies in compact form", () {
-    pubGet();
-    schedulePub(args: ['deps', '-s', 'compact'], output: '''
-        myapp 0.0.0
+  group("lists all dependencies", () {
+    integration("in compact form", () {
+      pubGet();
+      schedulePub(args: ['deps', '-s', 'compact'], output: '''
+          myapp 0.0.0
 
-        dependencies:
-        - from_path 1.2.3
-        - normal 1.2.3 [transitive circular_a]
-        - overridden 2.0.0
+          dependencies:
+          - from_path 1.2.3
+          - normal 1.2.3 [transitive circular_a]
+          - overridden 2.0.0
 
-        dev dependencies:
-        - unittest 1.2.3 [shared]
+          dev dependencies:
+          - unittest 1.2.3 [shared dev_only]
 
-        dependency overrides:
-        - overridden 2.0.0
-        - override_only 1.2.3
+          dependency overrides:
+          - overridden 2.0.0
+          - override_only 1.2.3
 
-        transitive dependencies:
-        - circular_a 1.2.3 [circular_b]
-        - circular_b 1.2.3 [circular_a]
-        - other 1.0.0 [myapp]
-        - shared 1.2.3 [other]
-        - transitive 1.2.3 [shared]
-        ''');
+          transitive dependencies:
+          - circular_a 1.2.3 [circular_b]
+          - circular_b 1.2.3 [circular_a]
+          - dev_only 1.2.3
+          - other 1.0.0 [myapp]
+          - shared 1.2.3 [other]
+          - transitive 1.2.3 [shared]
+          ''');
+    });
+
+    integration("in list form", () {
+      pubGet();
+      schedulePub(args: ['deps', '--style', 'list'], output: '''
+          myapp 0.0.0
+
+          dependencies:
+          - from_path 1.2.3
+          - normal 1.2.3
+            - transitive any
+            - circular_a any
+          - overridden 2.0.0
+
+          dev dependencies:
+          - unittest 1.2.3
+            - shared any
+            - dev_only any
+
+          dependency overrides:
+          - overridden 2.0.0
+          - override_only 1.2.3
+
+          transitive dependencies:
+          - circular_a 1.2.3
+            - circular_b any
+          - circular_b 1.2.3
+            - circular_a any
+          - dev_only 1.2.3
+          - other 1.0.0
+            - myapp any
+          - shared 1.2.3
+            - other any
+          - transitive 1.2.3
+            - shared any
+          ''');
+    });
+
+    integration("lists dependencies in tree form", () {
+      pubGet();
+      schedulePub(args: ['deps'], output: '''
+          myapp 0.0.0
+          |-- from_path 1.2.3
+          |-- normal 1.2.3
+          |   |-- circular_a 1.2.3
+          |   |   '-- circular_b 1.2.3
+          |   |       '-- circular_a...
+          |   '-- transitive 1.2.3
+          |       '-- shared...
+          |-- overridden 2.0.0
+          |-- override_only 1.2.3
+          '-- unittest 1.2.3
+              |-- dev_only 1.2.3
+              '-- shared 1.2.3
+                  '-- other 1.0.0
+                      '-- myapp...
+          ''');
+    });
   });
 
-  integration("lists dependencies in list form", () {
-    pubGet();
-    schedulePub(args: ['deps', '--style', 'list'], output: '''
-        myapp 0.0.0
+  group("lists non-dev dependencies", () {
+    integration("in compact form", () {
+      pubGet();
+      schedulePub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
+          myapp 0.0.0
 
-        dependencies:
-        - from_path 1.2.3
-        - normal 1.2.3
-          - transitive any
-          - circular_a any
-        - overridden 2.0.0
+          dependencies:
+          - from_path 1.2.3
+          - normal 1.2.3 [transitive circular_a]
+          - overridden 2.0.0
 
-        dev dependencies:
-        - unittest 1.2.3
-          - shared any
+          dependency overrides:
+          - overridden 2.0.0
+          - override_only 1.2.3
 
-        dependency overrides:
-        - overridden 2.0.0
-        - override_only 1.2.3
+          transitive dependencies:
+          - circular_a 1.2.3 [circular_b]
+          - circular_b 1.2.3 [circular_a]
+          - other 1.0.0 [myapp]
+          - shared 1.2.3 [other]
+          - transitive 1.2.3 [shared]
+          ''');
+    });
 
-        transitive dependencies:
-        - circular_a 1.2.3
-          - circular_b any
-        - circular_b 1.2.3
-          - circular_a any
-        - other 1.0.0
-          - myapp any
-        - shared 1.2.3
-          - other any
-        - transitive 1.2.3
-          - shared any
-        ''');
-  });
+    integration("in list form", () {
+      pubGet();
+      schedulePub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
+          myapp 0.0.0
 
-  integration("lists dependencies in tree form", () {
-    pubGet();
-    schedulePub(args: ['deps'], output: '''
-        myapp 0.0.0
-        |-- from_path 1.2.3
-        |-- normal 1.2.3
-        |   |-- circular_a 1.2.3
-        |   |   '-- circular_b 1.2.3
-        |   |       '-- circular_a...
-        |   '-- transitive 1.2.3
-        |       '-- shared...
-        |-- overridden 2.0.0
-        |-- override_only 1.2.3
-        '-- unittest 1.2.3
-            '-- shared 1.2.3
-                '-- other 1.0.0
-                    '-- myapp...
-        ''');
+          dependencies:
+          - from_path 1.2.3
+          - normal 1.2.3
+            - transitive any
+            - circular_a any
+          - overridden 2.0.0
+
+          dependency overrides:
+          - overridden 2.0.0
+          - override_only 1.2.3
+
+          transitive dependencies:
+          - circular_a 1.2.3
+            - circular_b any
+          - circular_b 1.2.3
+            - circular_a any
+          - other 1.0.0
+            - myapp any
+          - shared 1.2.3
+            - other any
+          - transitive 1.2.3
+            - shared any
+          ''');
+    });
+
+    integration("in tree form", () {
+      pubGet();
+      schedulePub(args: ['deps', '--no-dev'], output: '''
+          myapp 0.0.0
+          |-- from_path 1.2.3
+          |-- normal 1.2.3
+          |   |-- circular_a 1.2.3
+          |   |   '-- circular_b 1.2.3
+          |   |       '-- circular_a...
+          |   '-- transitive 1.2.3
+          |       '-- shared 1.2.3
+          |           '-- other 1.0.0
+          |               '-- myapp...
+          |-- overridden 2.0.0
+          '-- override_only 1.2.3
+          ''');
+    });
   });
 }
