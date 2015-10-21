@@ -463,6 +463,8 @@ class Pubspec {
         var sourceNames = spec.keys.toList();
         if (sourceNames.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
+        } else if (sourceNames.isEmpty) {
+          _error('A dependency must contain a source.', specNode.span);
         }
 
         sourceName = sourceNames.single;

@@ -229,6 +229,14 @@ dependencies:
 ''', (pubspec) => pubspec.dependencies);
     });
 
+    test("throws if there's no source", () {
+      expectPubspecException('''
+dependencies:
+  foo:
+    version: 1.2.3
+''', (pubspec) => pubspec.dependencies);
+    });
+
     test("throws if 'name' is not a string", () {
       expectPubspecException('name: [not, a, string]',
           (pubspec) => pubspec.name);
