@@ -105,7 +105,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   if (executableUrl == null) {
     var message = "Could not find ${log.bold(executable)}";
-    if (package != entrypoint.root.name) {
+    if (isGlobal || package != entrypoint.root.name) {
       message += " in package ${log.bold(package)}";
     }
     log.error("$message.");

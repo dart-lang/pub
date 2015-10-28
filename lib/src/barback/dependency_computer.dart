@@ -43,6 +43,10 @@ class DependencyComputer {
   /// This is precomputed before any package computers are loaded.
   final _untransformedPackages = new Set<String>();
 
+  /// Creates a dependency computer for [graph].
+  ///
+  /// If [rootDevDependencies] is true, this includes the root package's dev
+  /// dependencies in the computation.
   DependencyComputer(this._graph) {
     for (var package in ordered(_graph.packages.keys)) {
       if (_graph.transitiveDependencies(package).every((dependency) =>
@@ -185,8 +189,11 @@ class DependencyComputer {
         }
       }
 
-      var dependencies = packageName == _graph.entrypoint.root.name ?
-          package.immediateDependencies : package.dependencies;
+      var dependencies =
+          !_graph.entrypoint.isGlobal &&
+                  packageName == _graph.entrypoint.root.name
+              ? package.immediateDependencies
+              : package.dependencies;
       for (var dep in dependencies) {
         try {
           traversePackage(dep.name);
@@ -335,8 +342,11 @@ class _PackageDependencyComputer {
       var externalDirectives = _getTransitiveExternalDirectives(library);
       if (externalDirectives == null) {
         var rootName = _dependencyComputer._graph.entrypoint.root.name;
-        var dependencies = _package.name == rootName ?
-            _package.immediateDependencies : _package.dependencies;
+        var dependencies =
+            !_dependencyComputer._graph.entrypoint.isGlobal &&
+                    _package.name == rootName
+                ? _package.immediateDependencies
+                : _package.dependencies;
 
         // If anything transitively imported/exported by [library] within this
         // package is modified by a transformer, we don't know what it will

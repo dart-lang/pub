@@ -56,6 +56,9 @@ class Entrypoint {
   /// real directory on disk.
   final bool _inMemory;
 
+  /// Whether this is an entrypoint for a globally-activated package.
+  final bool isGlobal;
+
   /// The lockfile for the entrypoint.
   ///
   /// If not provided to the entrypoint, it will be loaded lazily from disk.
@@ -111,20 +114,23 @@ class Entrypoint {
   /// If [packageSymlinks] is `true`, this will create a "packages" directory
   /// with symlinks to the installed packages. This directory will be symlinked
   /// into any directory that might contain an entrypoint.
-  Entrypoint(String rootDir, SystemCache cache, {bool packageSymlinks: true})
+  Entrypoint(String rootDir, SystemCache cache, {bool packageSymlinks: true,
+          this.isGlobal: false})
       : root = new Package.load(null, rootDir, cache.sources),
         cache = cache,
         _packageSymlinks = packageSymlinks,
         _inMemory = false;
 
   /// Creates an entrypoint given package and lockfile objects.
-  Entrypoint.inMemory(this.root, this._lockFile, this.cache)
+  Entrypoint.inMemory(this.root, this._lockFile, this.cache,
+          {this.isGlobal: false})
       : _packageSymlinks = false,
         _inMemory = true;
 
   /// Creates an entrypoint given a package and a [solveResult], from which the
   /// package graph and lockfile will be computed.
-  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
+  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult,
+          {this.isGlobal: false})
       : _packageSymlinks = false,
         _inMemory = true {
     _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
