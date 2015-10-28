@@ -9,7 +9,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('recompiles a script if the SDK version is out-of-date', () {
+  integration('recompiles a script if the snapshot is out-of-date', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir("bin", [

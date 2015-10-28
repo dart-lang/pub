@@ -308,19 +308,29 @@ class GlobalPackages {
     lockFile = lockFile.removePackage(name);
 
     var source = cache.sources[id.source];
+    var entrypoint;
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       var dir = cache.sources[id.source].getDirectory(id);
       var package = new Package.load(name, dir, cache.sources);
-      return new Entrypoint.inMemory(package, lockFile, cache, isGlobal: true);
+      entrypoint = new Entrypoint.inMemory(
+          package, lockFile, cache, isGlobal: true);
+    } else {
+      // For uncached sources (i.e. path), the ID just points to the real
+      // directory for the package.
+      assert(id.source == "path");
+      entrypoint = new Entrypoint(
+          PathSource.pathFromDescription(id.description), cache,
+          isGlobal: true);
     }
 
-    // For uncached sources (i.e. path), the ID just points to the real
-    // directory for the package.
-    assert(id.source == "path");
-    return new Entrypoint(
-        PathSource.pathFromDescription(id.description), cache, isGlobal: true);
+    if (entrypoint.root.pubspec.environment.sdkVersion.allows(sdk.version)) {
+      return entrypoint;
+    }
+
+    dataError("${log.bold(name)} ${entrypoint.root.version} doesn't support "
+        "Dart ${sdk.version}.");
   }
 
   /// Runs [package]'s [executable] with [args].
