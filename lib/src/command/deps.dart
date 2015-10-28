@@ -155,7 +155,7 @@ class DepsCommand extends PubCommand {
     if (!_includeDev) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies);
     }
-    for (var dep in immediateDependenciesr) {
+    for (var dep in immediateDependencies) {
       toWalk.add(new Pair(_getPackage(dep.name), packageTree));
     }
 
