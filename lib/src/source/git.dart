@@ -76,7 +76,7 @@ class GitSource extends CachedSource {
       } on FormatException {}
     }
 
-    if (validVersions.length > 0) {
+    if (validVersions.isNotEmpty) {
       return validVersions;
     }
 
@@ -302,20 +302,22 @@ class GitSource extends CachedSource {
   /// by [id] on the effective ref of [id].
   ///
   /// This assumes that the canonical clone already exists.
-  Future<String> _getRev(PackageId id) {
+  Future<String> _getRev(PackageId id) async {
     var ref = _getEffectiveRef(id);
-    return git
-        .run(["rev-list", "--max-count=1", ref], workingDir: _repoCachePath(id))
-        .then((result) => result.first)
-        .catchError((e) {
+    try {
+      var result = await git.run(["rev-list", "--max-count=1", ref],
+          workingDir: _repoCachePath(id));
+      return result.first;
+    } on git.GitException catch (e) {
       if (ref == id.version.toString()) {
         // Try again with a "v" before the ref in case this was a version tag
         ref = 'v$ref';
-        return git.run(["rev-list", "--max-count=1", ref],
-            workingDir: _repoCachePath(id)).then((result) => result.first);
+        var result = await git.run(["rev-list", "--max-count=1", ref],
+            workingDir: _repoCachePath(id));
+        return result.first;
       }
       throw e;
-    });
+    }
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local
@@ -344,14 +346,13 @@ class GitSource extends CachedSource {
   }
 
   /// Checks out the reference [ref] in [repoPath].
-  Future _checkOut(String repoPath, String ref) {
-    return git.run(["checkout", ref], workingDir: repoPath)
-        .then((result) => null)
-        .catchError((_) {
+  Future _checkOut(String repoPath, String ref) async {
+    try {
+      await git.run(["checkout", ref], workingDir: repoPath);
+    } on git.GitException {
       // Try again with a "v" before the ref in case this was a version tag
-      return git.run(["checkout", 'v$ref'], workingDir: repoPath)
-          .then((result) => null);
-    });
+      await git.run(["checkout", 'v$ref'], workingDir: repoPath);
+    }
   }
 
   /// Use `git show` to get the pubspec.yaml at a particular ref,
@@ -359,14 +360,14 @@ class GitSource extends CachedSource {
   ///
   /// It is possible that a pubspec didn't always exist, return null if
   /// that is the case.
-  Future<Pubspec> _getPubspec(String repoPath, String ref) {
-    return git.run(['show', '$ref:pubspec.yaml'], workingDir: repoPath)
-        .catchError((_) => null)
-        .then((result) {
-      if (result != null) {
-        return new Pubspec.parse(result.join('\n'), systemCache.sources);
-      }
-    });
+  Future<Pubspec> _getPubspec(String repoPath, String ref) async {
+    try {
+      var result = await git.run(['show', '$ref:pubspec.yaml'],
+          workingDir: repoPath);
+      return new Pubspec.parse(result.join('\n'), systemCache.sources);
+    } on git.GitException {
+      return null;
+    }
   }
 
   /// Returns the path to the canonical clone of the repository referred to by
