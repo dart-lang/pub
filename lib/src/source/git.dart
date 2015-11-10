@@ -67,10 +67,12 @@ class GitSource extends CachedSource {
       }
       try {
         // Use Version.parse to determine valid version tags
-        PackageId packageAtVersion = new PackageId(
-            name, this.name, new Version.parse(version), description);
+        Version validVersion = new Version.parse(version);
         // Fetch the pubspec for this version
-        validVersions.add(await describeUncached(packageAtVersion));
+        Pubspec pubspec = await _getPubspec(cachePath, validVersion.toString());
+        if (pubspec != null) {
+          validVersions.add(pubspec);
+        }
       } on FormatException {}
     }
 
@@ -349,6 +351,21 @@ class GitSource extends CachedSource {
       // Try again with a "v" before the ref in case this was a version tag
       return git.run(["checkout", 'v$ref'], workingDir: repoPath)
           .then((result) => null);
+    });
+  }
+
+  /// Use `git show` to get the pubspec.yaml at a particular ref,
+  /// then parse it into a Pubspec object
+  ///
+  /// It is possible that a pubspec didn't always exist, return null if
+  /// that is the case.
+  Future<Pubspec> _getPubspec(String repoPath, String ref) {
+    return git.run(['show', '$ref:pubspec.yaml'], workingDir: repoPath)
+        .catchError((_) => null)
+        .then((result) {
+      if (result != null) {
+        return new Pubspec.parse(result.join('\n'), systemCache.sources);
+      }
     });
   }
 
