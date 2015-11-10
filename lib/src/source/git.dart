@@ -45,23 +45,40 @@ class GitSource extends CachedSource {
   /// Anything that Version.parse understands is considered a version,
   /// it will also attempt to strip off a preceding 'v' e.g. v1.0.0
   Future<List<Pubspec>> getVersions(String name, description) async {
-    PackageId id = new PackageId(name, null, null, _getDescription(description));
-    await describeUncached(id);
-    List results = await git.run(["tag", "-l"], workingDir: _repoCachePath(id));
+    if (!_useVersionTags(description)) {
+      // No need to get versions if the useVersionTags option is false
+      return super.getVersions(name, description);
+    }
+
+    PackageId id =
+        new PackageId(name, this.name, null, _getDescription(description));
+    String cachePath = _repoCachePath(id);
+    if (!entryExists(cachePath)) {
+      // Must have the repo cloned in order to list its tags
+      await _clone(_getUrl(id), cachePath);
+    }
+
+    List results = await git.run(["tag", "-l"], workingDir: cachePath);
     List<Pubspec> validVersions = [];
-    results.forEach((String version) {
+    for (String version in results) {
       // Strip preceding 'v' character so 'v1.0.0' can be parsed into a Version
       if (version.startsWith('v')) {
         version = version.substring(1);
       }
       try {
-        Pubspec pubspec = new Pubspec(name, version: new Version.parse(version));
-        validVersions.add(pubspec);
+        // Use Version.parse to determine valid version tags
+        PackageId packageAtVersion = new PackageId(
+            name, this.name, new Version.parse(version), description);
+        // Fetch the pubspec for this version
+        validVersions.add(await describeUncached(packageAtVersion));
       } on FormatException {}
-    });
+    }
+
     if (validVersions.length > 0) {
       return validVersions;
     }
+
+    // No valid version tags were found, defer to super
     return super.getVersions(name, description);
   }
 
@@ -129,6 +146,7 @@ class GitSource extends CachedSource {
     var parsed = new Map.from(description);
     parsed.remove('url');
     parsed.remove('ref');
+    parsed.remove('use_version_tags');
     if (fromLockFile) parsed.remove('resolved-ref');
 
     if (!parsed.isEmpty) {
@@ -174,6 +192,10 @@ class GitSource extends CachedSource {
   Future<PackageId> resolveId(PackageId id) {
     return _ensureRevision(id).then((revision) {
       var description = {'url': _getUrl(id), 'ref': _getRef(id)};
+      bool useVersionTags = _useVersionTags(id);
+      if (useVersionTags) {
+        description['use_version_tags'] = useVersionTags;
+      }
       description['resolved-ref'] = revision;
       return new PackageId(id.name, name, id.version, description);
     });
@@ -279,8 +301,19 @@ class GitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future<String> _getRev(PackageId id) {
-    return git.run(["rev-list", "--max-count=1", _getEffectiveRef(id)],
-        workingDir: _repoCachePath(id)).then((result) => result.first);
+    var ref = _getEffectiveRef(id);
+    return git
+        .run(["rev-list", "--max-count=1", ref], workingDir: _repoCachePath(id))
+        .then((result) => result.first)
+        .catchError((e) {
+      if (ref == id.version.toString()) {
+        // Try again with a "v" before the ref in case this was a version tag
+        ref = 'v$ref';
+        return git.run(["rev-list", "--max-count=1", ref],
+            workingDir: _repoCachePath(id)).then((result) => result.first);
+      }
+      throw e;
+    });
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local
@@ -310,8 +343,13 @@ class GitSource extends CachedSource {
 
   /// Checks out the reference [ref] in [repoPath].
   Future _checkOut(String repoPath, String ref) {
-    return git.run(["checkout", ref], workingDir: repoPath).then(
-        (result) => null);
+    return git.run(["checkout", ref], workingDir: repoPath)
+        .then((result) => null)
+        .catchError((_) {
+      // Try again with a "v" before the ref in case this was a version tag
+      return git.run(["checkout", 'v$ref'], workingDir: repoPath)
+          .then((result) => null);
+    });
   }
 
   /// Returns the path to the canonical clone of the repository referred to by
@@ -345,7 +383,8 @@ class GitSource extends CachedSource {
     }
 
     var ref = _getRef(description);
-    if (ref == null && id.version != null && id.version != Version.none) {
+    if (_useVersionTags(description) && id.version != null &&
+        id.version != Version.none) {
       return id.version.toString();
     }
     return ref == null ? 'HEAD' : ref;
@@ -365,5 +404,15 @@ class GitSource extends CachedSource {
   _getDescription(description) {
     if (description is PackageId) return description.description;
     return description;
+  }
+
+  /// Returns value of "use_version_tags" in the description
+  ///
+  /// [description] may be a description or a [PackageId].
+  bool _useVersionTags(description) {
+    description = _getDescription(description);
+    if (description is String) return false;
+    return description.containsKey('use_version_tags')
+        ? description['use_version_tags'] : false;
   }
 }
