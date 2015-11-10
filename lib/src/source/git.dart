@@ -308,7 +308,7 @@ class GitSource extends CachedSource {
       var result = await git.run(["rev-list", "--max-count=1", ref],
           workingDir: _repoCachePath(id));
       return result.first;
-    } on git.GitException catch (e) {
+    } on git.GitException {
       if (ref == id.version.toString()) {
         // Try again with a "v" before the ref in case this was a version tag
         ref = 'v$ref';
@@ -316,7 +316,7 @@ class GitSource extends CachedSource {
             workingDir: _repoCachePath(id));
         return result.first;
       }
-      throw e;
+      rethrow;
     }
   }
 
