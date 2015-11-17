@@ -50,12 +50,11 @@ class GitSource extends CachedSource {
       return super.getVersions(name, description);
     }
 
-    PackageId id =
-        new PackageId(name, this.name, null, _getDescription(description));
-    String cachePath = _repoCachePath(id);
+    var ref = new PackageRef(name, this.name, _getDescription(description));
+    String cachePath = _repoCachePath(ref);
     if (!entryExists(cachePath)) {
       // Must have the repo cloned in order to list its tags
-      await _clone(_getUrl(id), cachePath);
+      await _clone(_getUrl(ref), cachePath);
     }
 
     List results = await git.run(["tag", "-l"], workingDir: cachePath);
@@ -112,7 +111,8 @@ class GitSource extends CachedSource {
     await _ensureRevision(id);
     var revisionCachePath = getDirectory(await resolveId(id));
     if (!entryExists(revisionCachePath)) {
-      await _clone(_repoCachePath(id), revisionCachePath, mirror: false);
+      var cachePath = _repoCachePath(id.toRef());
+      await _clone(cachePath, revisionCachePath, mirror: false);
     }
 
     var ref = _getEffectiveRef(id);
@@ -263,7 +263,7 @@ class GitSource extends CachedSource {
   /// [id].
   Future<String> _ensureRevision(PackageId id) {
     return new Future.sync(() {
-      var path = _repoCachePath(id);
+      var path = _repoCachePath(id.toRef());
       if (!entryExists(path)) {
         return _clone(_getUrl(id), path, mirror: true)
             .then((_) => _getRev(id));
@@ -291,7 +291,7 @@ class GitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future _updateRepoCache(PackageId id) {
-    var path = _repoCachePath(id);
+    var path = _repoCachePath(id.toRef());
     if (_updatedRepos.contains(path)) return new Future.value();
     return git.run(["fetch"], workingDir: path).then((_) {
       _updatedRepos.add(path);
@@ -306,14 +306,14 @@ class GitSource extends CachedSource {
     var ref = _getEffectiveRef(id);
     try {
       var result = await git.run(["rev-list", "--max-count=1", ref],
-          workingDir: _repoCachePath(id));
+          workingDir: _repoCachePath(id.toRef()));
       return result.first;
     } on git.GitException {
       if (ref == id.version.toString()) {
         // Try again with a "v" before the ref in case this was a version tag
         ref = 'v$ref';
         var result = await git.run(["rev-list", "--max-count=1", ref],
-            workingDir: _repoCachePath(id));
+            workingDir: _repoCachePath(id.toRef()));
         return result.first;
       }
       rethrow;
@@ -372,14 +372,14 @@ class GitSource extends CachedSource {
 
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).
-  String _repoCachePath(PackageId id) {
-    var repoCacheName = '${id.name}-${sha1(_getUrl(id))}';
+  String _repoCachePath(PackageRef ref) {
+    var repoCacheName = '${ref.name}-${sha1(_getUrl(ref))}';
     return path.join(systemCacheRoot, 'cache', repoCacheName);
   }
 
   /// Returns the repository URL for [id].
   ///
-  /// [description] may be a description or a [PackageId].
+  /// [description] may be a description, a [PackageId], or a [PackageRef].
   String _getUrl(description) {
     description = _getDescription(description);
     if (description is String) return description;
@@ -393,7 +393,7 @@ class GitSource extends CachedSource {
   /// exist, and it will respect the "resolved-ref" parameter set by
   /// [resolveId].
   ///
-  /// [description] may be a description or a [PackageId].
+  /// [description] may be a description, a [PackageId], or a [PackageRef].
   String _getEffectiveRef(PackageId id) {
     Map description = _getDescription(id);
     if (description is Map && description.containsKey('resolved-ref')) {
@@ -417,16 +417,18 @@ class GitSource extends CachedSource {
     return description['ref'];
   }
 
-  /// Returns [description] if it's a description, or [PackageId.description] if
-  /// it's a [PackageId].
+  /// Returns [description] if it's a description, a [PackageId.description] if
+  /// it's a [PackageId], or a [PackageRef.description] if it's a [PackageRef].
   _getDescription(description) {
-    if (description is PackageId) return description.description;
+    if (description is PackageId || description is PackageRef) {
+      return description.description;
+    }
     return description;
   }
 
   /// Returns value of "use_version_tags" in the description
   ///
-  /// [description] may be a description or a [PackageId].
+  /// [description] may be a description a [PackageId], or a [PackageRef].
   bool _useVersionTags(description) {
     description = _getDescription(description);
     if (description is String) return false;
