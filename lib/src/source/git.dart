@@ -54,7 +54,7 @@ class GitSource extends CachedSource {
     await _ensureRepo(ref);
 
     var cachePath = _repoCachePath(ref);
-    List results = await git.run(["tag", "-l"], workingDir: cachePath);
+    List results = await git.run(['tag', '-l', '*.*.*'], workingDir: cachePath);
     List<Pubspec> validVersions = [];
     for (String version in results) {
       // Strip preceding 'v' character so 'v1.0.0' can be parsed into a Version
