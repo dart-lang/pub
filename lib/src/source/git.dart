@@ -55,7 +55,7 @@ class GitSource extends CachedSource {
 
     var cachePath = _repoCachePath(ref);
     List results = await git.run(['tag', '-l', '*.*.*'], workingDir: cachePath);
-    List<Pubspec> validVersions = [];
+    Map<String, Pubspec> validVersionPubspecs = {};
     for (String tag in results) {
       // Strip preceding 'v' character so 'v1.0.0' can be parsed into a Version
       String versionTag = tag;
@@ -67,14 +67,20 @@ class GitSource extends CachedSource {
         new Version.parse(versionTag);
         // Fetch the pubspec for this version
         Pubspec pubspec = await _getPubspec(cachePath, tag);
+        // Skip this version if a pubspec didn't exist
         if (pubspec != null) {
-          validVersions.add(pubspec);
+          // This logic prevents duplicate versions and prefers the non-"v"
+          // tag in the case of "1.0.0" and "v1.0.0"
+          if (!validVersionPubspecs.containsKey(versionTag)
+              || !tag.startsWith('v')) {
+            validVersionPubspecs[versionTag] = pubspec;
+          }
         }
       } on FormatException {}
     }
 
-    if (validVersions.isNotEmpty) {
-      return validVersions;
+    if (validVersionPubspecs.isNotEmpty) {
+      return validVersionPubspecs.values.toList();
     }
 
     // No valid version tags were found, defer to super
