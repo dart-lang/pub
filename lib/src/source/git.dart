@@ -113,7 +113,7 @@ class GitSource extends CachedSource {
       await _clone(cachePath, revisionCachePath, mirror: false);
     }
 
-    var ref = _getEffectiveRef(id);
+    var ref = await _getRev(id);
     if (ref != 'HEAD') await _checkOut(revisionCachePath, ref);
 
     return new Package.load(id.name, revisionCachePath, systemCache.sources);
