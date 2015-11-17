@@ -257,11 +257,11 @@ class GitSource extends CachedSource {
   ///
   /// Returns a future that completes with true if the repo was cloned, and
   /// false if the repo clone already exists.
-  Future<bool> _ensureRepo(PackageRef ref) async {
+  Future<bool> _ensureRepo(PackageRef ref, {mirror: false}) async {
     String cachePath = _repoCachePath(ref);
     if (!entryExists(cachePath)) {
       // Must have the repo cloned in order to list its tags
-      await _clone(_getUrl(ref), cachePath);
+      await _clone(_getUrl(ref), cachePath, mirror: mirror);
       return true;
     }
     return false;
@@ -275,7 +275,7 @@ class GitSource extends CachedSource {
   /// [id].
   Future<String> _ensureRevision(PackageId id) async {
     PackageRef packageRef = id.toRef();
-    if (await _ensureRepo(packageRef)) {
+    if (await _ensureRepo(packageRef, mirror: true)) {
       return _getRev(id);
     }
 
