@@ -51,12 +51,9 @@ class GitSource extends CachedSource {
     }
 
     var ref = new PackageRef(name, this.name, _getDescription(description));
-    String cachePath = _repoCachePath(ref);
-    if (!entryExists(cachePath)) {
-      // Must have the repo cloned in order to list its tags
-      await _clone(_getUrl(ref), cachePath);
-    }
+    await _ensureRepo(ref);
 
+    var cachePath = _repoCachePath(ref);
     List results = await git.run(["tag", "-l"], workingDir: cachePath);
     List<Pubspec> validVersions = [];
     for (String version in results) {
@@ -255,34 +252,45 @@ class GitSource extends CachedSource {
     return new Pair(successes, failures);
   }
 
+  /// Ensure the canonical clone of the repository referred to by [ref] exists.
+  ///
+  /// Returns a future that completes with true if the repo was cloned, and
+  /// false if the repo clone already exists.
+  Future<bool> _ensureRepo(PackageRef ref) async {
+    String cachePath = _repoCachePath(ref);
+    if (!entryExists(cachePath)) {
+      // Must have the repo cloned in order to list its tags
+      await _clone(_getUrl(ref), cachePath);
+      return true;
+    }
+    return false;
+  }
+
   /// Ensure that the canonical clone of the repository referred to by [id] (the
   /// one in `<system cache>/git/cache`) exists and contains the revision
   /// referred to by [id].
   ///
   /// Returns a future that completes to the hash of the revision identified by
   /// [id].
-  Future<String> _ensureRevision(PackageId id) {
-    return new Future.sync(() {
-      var path = _repoCachePath(id.toRef());
-      if (!entryExists(path)) {
-        return _clone(_getUrl(id), path, mirror: true)
-            .then((_) => _getRev(id));
-      }
+  Future<String> _ensureRevision(PackageId id) async {
+    PackageRef packageRef = id.toRef();
+    if (await _ensureRepo(packageRef)) {
+      return _getRev(id);
+    }
 
-      // If [id] didn't come from a lockfile, it may be using a symbolic
-      // reference. We want to get the latest version of that reference.
-      var description = id.description;
-      if (description is! Map || !description.containsKey('resolved-ref')) {
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      }
+    // If [id] didn't come from a lockfile, it may be using a symbolic
+    // reference. We want to get the latest version of that reference.
+    var description = id.description;
+    if (description is! Map || !description.containsKey('resolved-ref')) {
+      return _updateRepoCache(id).then((_) => _getRev(id));
+    }
 
-      // If [id] did come from a lockfile, then we want to avoid running "git
-      // fetch" if possible to avoid networking time and errors. See if the
-      // revision exists in the repo cache before updating it.
-      return _getRev(id).catchError((error) {
-        if (error is! git.GitException) throw error;
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      });
+    // If [id] did come from a lockfile, then we want to avoid running "git
+    // fetch" if possible to avoid networking time and errors. See if the
+    // revision exists in the repo cache before updating it.
+    return _getRev(id).catchError((error) {
+      if (error is! git.GitException) throw error;
+      return _updateRepoCache(id).then((_) => _getRev(id));
     });
   }
 
