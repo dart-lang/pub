@@ -66,7 +66,8 @@ class BacktrackingSolver {
   /// The lockfile that was present before solving.
   final LockFile lockFile;
 
-  final PubspecCache cache;
+  /// A cache of data requested during solving.
+  final SolverCache cache;
 
   /// The set of packages that are being explicitly upgraded.
   ///
@@ -117,11 +118,21 @@ class BacktrackingSolver {
   /// The number of solutions the solver has tried so far.
   var _attemptedSolutions = 1;
 
+  /// A pubspec for pub's implicit dependencies on barback and related packages.
+  final Pubspec _implicitPubspec = () {
+    var dependencies = [];
+    barback.pubConstraints.forEach((name, constraint) {
+      dependencies.add(new PackageDep(name, "hosted", constraint, name));
+    });
+
+    return new Pubspec("pub itself", dependencies: dependencies);
+  }();
+
   BacktrackingSolver(SolveType type, SourceRegistry sources, this.root,
           this.lockFile, List<String> useLatest)
       : type = type,
         sources = sources,
-        cache = new PubspecCache(type, sources) {
+        cache = new SolverCache(type, sources) {
     _selection = new VersionSelection(this);
 
     for (var package in useLatest) {
@@ -151,8 +162,6 @@ class BacktrackingSolver {
 
       // Pre-cache the root package's known pubspec.
       var rootID = new PackageId.root(root);
-      cache.cache(rootID, root.pubspec);
-      cache.cache(new PackageId.magic('pub itself'), _implicitPubspec());
       await _selection.select(rootID);
 
       _validateSdkConstraint(root.pubspec);
@@ -160,9 +169,10 @@ class BacktrackingSolver {
       logSolve();
       var packages = await _solve();
 
-      var pubspecs = new Map.fromIterable(packages,
-          key: (id) => id.name,
-          value: (id) => cache.getCachedPubspec(id));
+      var pubspecs = {};
+      for (var id in packages) {
+        pubspecs[id.name] = await _getPubspec(id);
+      }
 
       var resolved = await Future.wait(
           packages.map((id) => sources[id.source].resolveId(id)));
@@ -181,17 +191,6 @@ class BacktrackingSolver {
       buffer.writeln(cache.describeResults());
       log.solver(buffer);
     }
-  }
-
-  /// Creates a pubspec for pub's implicit dependencies on barback and related
-  /// packages.
-  Pubspec _implicitPubspec() {
-    var dependencies = [];
-    barback.pubConstraints.forEach((name, constraint) {
-      dependencies.add(new PackageDep(name, "hosted", constraint, name));
-    });
-
-    return new Pubspec("pub itself", dependencies: dependencies);
   }
 
   /// Generates a map containing all of the known available versions for each
@@ -476,7 +475,7 @@ class BacktrackingSolver {
 
     var pubspec;
     try {
-      pubspec = await cache.getPubspec(id);
+      pubspec = await _getPubspec(id);
     } on PackageNotFoundException {
       // We can only get here if the lockfile refers to a specific package
       // version that doesn't exist (probably because it was yanked).
@@ -569,7 +568,7 @@ class BacktrackingSolver {
   ///
   /// This takes overrides and dev dependencies into account when neccessary.
   Future<Set<PackageDep>> depsFor(PackageId id) async {
-    var pubspec = await cache.getPubspec(id);
+    var pubspec = await _getPubspec(id);
     var deps = pubspec.dependencies.toSet();
     if (id.isRoot) {
       // Include dev dependencies of the root package.
@@ -604,6 +603,15 @@ class BacktrackingSolver {
     }
 
     return deps;
+  }
+
+  /// Loads and returns the pubspec for [id].
+  Future<Pubspec> _getPubspec(PackageId id) async {
+    if (id.isRoot) return root.pubspec;
+    if (id.isMagic && id.name == 'pub itself') return _implicitPubspec;
+
+    var source = sources[id.source];
+    return await source.describe(id);
   }
 
   /// Logs the initial parameters to the solver.

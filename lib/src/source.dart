@@ -37,6 +37,9 @@ abstract class Source {
   /// Whether or not this source is the default source.
   bool get isDefault => systemCache.sources.defaultSource == this;
 
+  /// A cache of pubspecs described by [describe].
+  final _pubspecs = <PackageId, Pubspec>{};
+
   /// The system cache with which this source is registered.
   SystemCache get systemCache {
     assert(_systemCache != null);
@@ -57,10 +60,7 @@ abstract class Source {
     this._systemCache = systemCache;
   }
 
-  /// Get the pubspecs of all versions that exist for the package described by
-  /// [description].
-  ///
-  /// [name] is the expected name of the package.
+  /// Get the IDs of all versions that match [ref].
   ///
   /// Note that this does *not* require the packages to be downloaded locally,
   /// which is the point. This is used during version resolution to determine
@@ -69,26 +69,56 @@ abstract class Source {
   ///
   /// By default, this assumes that each description has a single version and
   /// uses [describe] to get that version.
-  Future<List<Pubspec>> getVersions(String name, description) async {
-    var id = new PackageId(name, this.name, Version.none, description);
-    return [await describe(id)];
+  ///
+  /// Sources should not override this. Instead, they implement [doGetVersions].
+  Future<List<PackageId>> getVersions(PackageRef ref) {
+    if (ref.isRoot) {
+      throw new ArgumentError("Cannot get versions for the root package.");
+    }
+    if (ref.source != name) {
+      throw new ArgumentError("Package $ref does not use source $name.");
+    }
+
+    return doGetVersions(ref);
+  }
+
+  /// Get the IDs of all versions that match [ref].
+  ///
+  /// Note that this does *not* require the packages to be downloaded locally,
+  /// which is the point. This is used during version resolution to determine
+  /// which package versions are available to be downloaded (or already
+  /// downloaded).
+  ///
+  /// By default, this assumes that each description has a single version and
+  /// uses [describe] to get that version.
+  ///
+  /// This method is effectively protected: subclasses must implement it, but
+  /// external code should not call this. Instead, call [getVersions].
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    var pubspec = await describe(ref.atVersion(Version.none));
+    return [ref.atVersion(pubspec.version)];
   }
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
   /// This may be called for packages that have not yet been downloaded during
-  /// the version resolution process.
+  /// the version resolution process. Its results are automatically memoized.
   ///
   /// Sources should not override this. Instead, they implement [doDescribe].
-  Future<Pubspec> describe(PackageId id) {
+  Future<Pubspec> describe(PackageId id) async {
     if (id.isRoot) throw new ArgumentError("Cannot describe the root package.");
     if (id.source != name) {
       throw new ArgumentError("Package $id does not use source $name.");
     }
 
+    var pubspec = _pubspecs[id];
+    if (pubspec != null) return pubspec;
+
     // Delegate to the overridden one.
-    return doDescribe(id);
+    pubspec = await doDescribe(id);
+    _pubspecs[id.atVersion(pubspec.version)] = pubspec;
+    return pubspec;
   }
 
   /// Loads the (possibly remote) pubspec for the package version identified by
@@ -184,6 +214,13 @@ abstract class Source {
 
   /// Returns whether [id] is fully-resolved, according to [resolveId].
   bool isResolved(PackageId id) => true;
+
+  /// Stores [pubspec] so it's returned when [describe] is called with [id].
+  ///
+  /// This is notionally protected; it should only be called by subclasses.
+  void memoizePubspec(PackageId id, Pubspec pubspec) {
+    _pubspecs[id] = pubspec;
+  }
 
   /// Returns the source's name.
   String toString() => name;

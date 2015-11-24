@@ -37,8 +37,8 @@ class HostedSource extends CachedSource {
 
   /// Downloads a list of all versions of a package that are available from the
   /// site.
-  Future<List<Pubspec>> getVersions(String name, description) async {
-    var url = _makeUrl(description,
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    var url = _makeUrl(ref.description,
         (server, package) => "$server/api/packages/$package");
 
     log.io("Get versions from $url.");
@@ -47,15 +47,19 @@ class HostedSource extends CachedSource {
     try {
       body = await httpClient.read(url, headers: PUB_API_HEADERS);
     } catch (error, stackTrace) {
-      var parsed = _parseDescription(description);
+      var parsed = _parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
 
     var doc = JSON.decode(body);
     return doc['versions'].map((map) {
-      return new Pubspec.fromMap(
+      var pubspec = new Pubspec.fromMap(
           map['pubspec'], systemCache.sources,
-          expectedName: name, location: url);
+          expectedName: ref.name, location: url);
+      var id = ref.atVersion(pubspec.version);
+      memoizePubspec(id, pubspec);
+
+      return id;
     }).toList();
   }
 
@@ -223,21 +227,30 @@ class HostedSource extends CachedSource {
 /// This uses the system cache to get the list of available packages and does
 /// no network access.
 class OfflineHostedSource extends HostedSource {
-  /// Gets the list of all versions of [name] that are in the system cache.
-  Future<List<Pubspec>> getVersions(String name, description) async {
-    var parsed = _parseDescription(description);
+  /// Gets the list of all versions of [ref] that are in the system cache.
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    var parsed = _parseDescription(ref.description);
     var server = parsed.last;
-    log.io("Finding versions of $name in "
+    log.io("Finding versions of ${ref.name} in "
         "$systemCacheRoot/${_urlToDirectory(server)}");
-    var versions = await _getCachedPackagesInDirectory(_urlToDirectory(server))
-        .where((package) => package.name == name)
-        .map((package) => package.pubspec)
-        .toList();
+
+    var dir = path.join(systemCacheRoot, _urlToDirectory(server));
+
+    var versions;
+    if (dirExists(dir)) {
+      versions = await listDir(dir).map((entry) {
+        var components = path.basename(entry).split("-");
+        if (components.first != ref.name) return null;
+        return ref.atVersion(new Version.parse(components.last));
+      }).where((id) => id != null).toList();
+    } else {
+      versions = [];
+    }
 
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw new PackageNotFoundException(
-          "Could not find package $name in cache.");
+          "Could not find package ${ref.name} in cache.");
     }
 
     return versions;

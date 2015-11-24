@@ -1395,24 +1395,22 @@ class MockSource extends CachedSource {
 
   String getDirectory(PackageId id) => '${id.name}-${id.version}';
 
-  Future<List<Pubspec>> getVersions(String name, String description) {
-    return new Future.sync(() {
-      // Make sure the solver doesn't request the same thing twice.
-      if (_requestedVersions.contains(description)) {
-        throw new Exception('Version list for $description was already '
-            'requested.');
-      }
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    // Make sure the solver doesn't request the same thing twice.
+    if (_requestedVersions.contains(ref.description)) {
+      throw new Exception('Version list for $description was already '
+          'requested.');
+    }
 
-      _requestedVersions.add(description);
+    _requestedVersions.add(ref.description);
 
-      if (!_packages.containsKey(description)){
-        throw new Exception('MockSource does not have a package matching '
-            '"$description".');
-      }
+    if (!_packages.containsKey(ref.description)){
+      throw new Exception('MockSource does not have a package matching '
+          '"${ref.description}".');
+    }
 
-      return _packages[description].values
-          .map((package) => package.pubspec).toList();
-    });
+    return _packages[ref.description].values
+        .map((package) => ref.atVersion(package.version)).toList();
   }
 
   Future<Pubspec> describeUncached(PackageId id) {

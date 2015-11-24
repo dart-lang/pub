@@ -59,8 +59,9 @@ class CacheAddCommand extends PubCommand {
     var source = cache.sources["hosted"];
 
     // TODO(rnystrom): Allow specifying the server.
-    var pubspecs = await source.getVersions(package, package);
-    var versions = pubspecs.map((pubspec) => pubspec.version)
+    var ids = await source.getVersions(
+        new PackageRef(package, 'hosted', package));
+    var versions = ids.map((id) => id.version)
         .where(constraint.allows).toList();
 
     if (versions.isEmpty) {

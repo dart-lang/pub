@@ -133,26 +133,15 @@ class SolveResult {
   }
 }
 
-/// Maintains a cache of previously-requested data: pubspecs and version lists.
-///
-/// Used to avoid requesting the same pubspec from the server repeatedly.
-class PubspecCache {
+/// Maintains a cache of previously-requested version lists.
+class SolverCache {
   final SourceRegistry _sources;
 
-  /// The already-requested cached pubspec lists.
+  /// The already-requested cached version lists.
   final _versions = new Map<PackageRef, List<PackageId>>();
 
   /// The errors from failed version list requests.
   final _versionErrors = new Map<PackageRef, Pair<Object, Chain>>();
-
-  /// The already-requested cached pubspecs.
-  final _pubspecs = new Map<PackageId, Pubspec>();
-
-  // TODO(nweiz): Currently, if [getCachedPubspec] returns pubspecs cached via
-  // [getVersions], the "complex backtrack" test case in version_solver_test
-  // fails. Fix that. See also [BacktrackingSolver._getTransitiveDependers].
-  /// The set of package ids for which [getPubspec] has been explicitly called.
-  final _explicitlyCached = new Set<PackageId>();
 
   /// The type of version resolution that was run.
   final SolveType _type;
@@ -165,43 +154,7 @@ class PubspecCache {
   /// was returned.
   int _versionCacheHits = 0;
 
-  /// The number of times a pubspec was requested and it wasn't cached and had
-  /// to be requested from the source.
-  int _pubspecCacheMisses = 0;
-
-  /// The number of times a pubspec was requested and the cached version was
-  /// returned.
-  int _pubspecCacheHits = 0;
-
-  PubspecCache(this._type, this._sources);
-
-  /// Caches [pubspec] as the [Pubspec] for the package identified by [id].
-  void cache(PackageId id, Pubspec pubspec) {
-    _pubspecs[id] = pubspec;
-  }
-
-  /// Loads the pubspec for the package identified by [id].
-  Future<Pubspec> getPubspec(PackageId id) async {
-    _explicitlyCached.add(id);
-
-    // Complete immediately if it's already cached.
-    if (_pubspecs.containsKey(id)) {
-      _pubspecCacheHits++;
-      return _pubspecs[id];
-    }
-
-    _pubspecCacheMisses++;
-
-    var source = _sources[id.source];
-    var pubspec = await source.describe(id);
-    _pubspecs[id] = pubspec;
-    return pubspec;
-  }
-
-  /// Returns the previously cached pubspec for the package identified by [id]
-  /// or returns `null` if not in the cache.
-  Pubspec getCachedPubspec(PackageId id) =>
-      _explicitlyCached.contains(id) ? _pubspecs[id] : null;
+  SolverCache(this._type, this._sources);
 
   /// Gets the list of versions for [package].
   ///
@@ -233,9 +186,9 @@ class PubspecCache {
     _versionCacheMisses++;
 
     var source = _sources[package.source];
-    var pubspecs;
+    var ids;
     try {
-      pubspecs = await source.getVersions(package.name, package.description);
+      ids = await source.getVersions(package);
     } catch (error, stackTrace) {
       // If an error occurs, cache that too. We only want to do one request
       // for any given package, successful or not.
@@ -247,18 +200,15 @@ class PubspecCache {
     }
 
     // Sort by priority so we try preferred versions first.
-    pubspecs.sort((pubspec1, pubspec2) {
+    ids.sort((id1, id2) {
+      // Reverse the IDs because we want the newest version at the front of the
+      // list.
       return _type == SolveType.DOWNGRADE
-          ? Version.antiprioritize(pubspec1.version, pubspec2.version)
-          : Version.prioritize(pubspec1.version, pubspec2.version);
+          ? Version.antiprioritize(id2.version, id1.version)
+          : Version.prioritize(id2.version, id1.version);
     });
 
-    var ids = pubspecs.reversed.map((pubspec) {
-      var id = package.atVersion(pubspec.version);
-      // Eagerly cache the pubspec now since we have it.
-      _pubspecs[id] = pubspec;
-      return id;
-    }).toList();
+    ids = ids.toList();
     _versions[package] = ids;
     return ids;
   }
@@ -271,8 +221,6 @@ class PubspecCache {
   String describeResults() {
     var results = '''- Requested $_versionCacheMisses version lists
 - Looked up $_versionCacheHits cached version lists
-- Requested $_pubspecCacheMisses pubspecs
-- Looked up $_pubspecCacheHits cached pubspecs
 ''';
 
     // Uncomment this to dump the visited package graph to JSON.
