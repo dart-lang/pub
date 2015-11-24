@@ -7,6 +7,7 @@ library pub.source.git;
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
 import '../io.dart';
@@ -40,6 +41,52 @@ class GitSource extends CachedSource {
     });
   }
 
+  /// Gets the list of all versions from git tags.
+  /// Anything that Version.parse understands is considered a version,
+  /// it will also attempt to strip off a preceding 'v' e.g. v1.0.0
+  Future<List<Pubspec>> getVersions(String name, description) async {
+    if (!_useVersionTags(description)) {
+      // No need to get versions if the useVersionTags option is false
+      return super.getVersions(name, description);
+    }
+
+    var ref = new PackageRef(name, this.name, _getDescription(description));
+    await _ensureRepo(ref);
+
+    var cachePath = _repoCachePath(ref);
+    List results = await git.run(['tag', '-l', '*.*.*'], workingDir: cachePath);
+    Map<String, Pubspec> validVersionPubspecs = {};
+    for (String tag in results) {
+      // Strip preceding 'v' character so 'v1.0.0' can be parsed into a Version
+      String versionTag = tag;
+      if (versionTag.startsWith('v')) {
+        versionTag = versionTag.substring(1);
+      }
+      try {
+        // Use Version.parse to determine valid version tags
+        new Version.parse(versionTag);
+        // Fetch the pubspec for this version
+        Pubspec pubspec = await _getPubspec(cachePath, tag);
+        // Skip this version if a pubspec didn't exist
+        if (pubspec != null) {
+          // This logic prevents duplicate versions and prefers the non-"v"
+          // tag in the case of "1.0.0" and "v1.0.0"
+          if (!validVersionPubspecs.containsKey(versionTag)
+              || !tag.startsWith('v')) {
+            validVersionPubspecs[versionTag] = pubspec;
+          }
+        }
+      } on FormatException {}
+    }
+
+    if (validVersionPubspecs.isNotEmpty) {
+      return validVersionPubspecs.values.toList();
+    }
+
+    // No valid version tags were found, defer to super
+    return super.getVersions(name, description);
+  }
+
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
   Future<Pubspec> describeUncached(PackageId id) {
@@ -68,10 +115,11 @@ class GitSource extends CachedSource {
     await _ensureRevision(id);
     var revisionCachePath = getDirectory(await resolveId(id));
     if (!entryExists(revisionCachePath)) {
-      await _clone(_repoCachePath(id), revisionCachePath, mirror: false);
+      var cachePath = _repoCachePath(id.toRef());
+      await _clone(cachePath, revisionCachePath, mirror: false);
     }
 
-    var ref = _getEffectiveRef(id);
+    var ref = await _getRev(id);
     if (ref != 'HEAD') await _checkOut(revisionCachePath, ref);
 
     return new Package.load(id.name, revisionCachePath, systemCache.sources);
@@ -104,6 +152,7 @@ class GitSource extends CachedSource {
     var parsed = new Map.from(description);
     parsed.remove('url');
     parsed.remove('ref');
+    parsed.remove('use_version_tags');
     if (fromLockFile) parsed.remove('resolved-ref');
 
     if (!parsed.isEmpty) {
@@ -149,6 +198,10 @@ class GitSource extends CachedSource {
   Future<PackageId> resolveId(PackageId id) {
     return _ensureRevision(id).then((revision) {
       var description = {'url': _getUrl(id), 'ref': _getRef(id)};
+      bool useVersionTags = _useVersionTags(id);
+      if (useVersionTags) {
+        description['use_version_tags'] = useVersionTags;
+      }
       description['resolved-ref'] = revision;
       return new PackageId(id.name, name, id.version, description);
     });
@@ -206,34 +259,45 @@ class GitSource extends CachedSource {
     return new Pair(successes, failures);
   }
 
+  /// Ensure the canonical clone of the repository referred to by [ref] exists.
+  ///
+  /// Returns a future that completes with true if the repo was cloned, and
+  /// false if the repo clone already exists.
+  Future<bool> _ensureRepo(PackageRef ref, {mirror: false}) async {
+    String cachePath = _repoCachePath(ref);
+    if (!entryExists(cachePath)) {
+      // Must have the repo cloned in order to list its tags
+      await _clone(_getUrl(ref), cachePath, mirror: mirror);
+      return true;
+    }
+    return false;
+  }
+
   /// Ensure that the canonical clone of the repository referred to by [id] (the
   /// one in `<system cache>/git/cache`) exists and contains the revision
   /// referred to by [id].
   ///
   /// Returns a future that completes to the hash of the revision identified by
   /// [id].
-  Future<String> _ensureRevision(PackageId id) {
-    return new Future.sync(() {
-      var path = _repoCachePath(id);
-      if (!entryExists(path)) {
-        return _clone(_getUrl(id), path, mirror: true)
-            .then((_) => _getRev(id));
-      }
+  Future<String> _ensureRevision(PackageId id) async {
+    PackageRef packageRef = id.toRef();
+    if (await _ensureRepo(packageRef, mirror: true)) {
+      return _getRev(id);
+    }
 
-      // If [id] didn't come from a lockfile, it may be using a symbolic
-      // reference. We want to get the latest version of that reference.
-      var description = id.description;
-      if (description is! Map || !description.containsKey('resolved-ref')) {
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      }
+    // If [id] didn't come from a lockfile, it may be using a symbolic
+    // reference. We want to get the latest version of that reference.
+    var description = id.description;
+    if (description is! Map || !description.containsKey('resolved-ref')) {
+      return _updateRepoCache(id).then((_) => _getRev(id));
+    }
 
-      // If [id] did come from a lockfile, then we want to avoid running "git
-      // fetch" if possible to avoid networking time and errors. See if the
-      // revision exists in the repo cache before updating it.
-      return _getRev(id).catchError((error) {
-        if (error is! git.GitException) throw error;
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      });
+    // If [id] did come from a lockfile, then we want to avoid running "git
+    // fetch" if possible to avoid networking time and errors. See if the
+    // revision exists in the repo cache before updating it.
+    return _getRev(id).catchError((error) {
+      if (error is! git.GitException) throw error;
+      return _updateRepoCache(id).then((_) => _getRev(id));
     });
   }
 
@@ -242,7 +306,7 @@ class GitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future _updateRepoCache(PackageId id) {
-    var path = _repoCachePath(id);
+    var path = _repoCachePath(id.toRef());
     if (_updatedRepos.contains(path)) return new Future.value();
     return git.run(["fetch"], workingDir: path).then((_) {
       _updatedRepos.add(path);
@@ -253,9 +317,22 @@ class GitSource extends CachedSource {
   /// by [id] on the effective ref of [id].
   ///
   /// This assumes that the canonical clone already exists.
-  Future<String> _getRev(PackageId id) {
-    return git.run(["rev-list", "--max-count=1", _getEffectiveRef(id)],
-        workingDir: _repoCachePath(id)).then((result) => result.first);
+  Future<String> _getRev(PackageId id) async {
+    var ref = _getEffectiveRef(id);
+    try {
+      var result = await git.run(["rev-list", "--max-count=1", ref],
+          workingDir: _repoCachePath(id.toRef()));
+      return result.first;
+    } on git.GitException {
+      if (ref == id.version.toString()) {
+        // Try again with a "v" before the ref in case this was a version tag
+        ref = 'v$ref';
+        var result = await git.run(["rev-list", "--max-count=1", ref],
+            workingDir: _repoCachePath(id.toRef()));
+        return result.first;
+      }
+      rethrow;
+    }
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local
@@ -284,21 +361,40 @@ class GitSource extends CachedSource {
   }
 
   /// Checks out the reference [ref] in [repoPath].
-  Future _checkOut(String repoPath, String ref) {
-    return git.run(["checkout", ref], workingDir: repoPath).then(
-        (result) => null);
+  Future _checkOut(String repoPath, String ref) async {
+    try {
+      await git.run(["checkout", ref], workingDir: repoPath);
+    } on git.GitException {
+      // Try again with a "v" before the ref in case this was a version tag
+      await git.run(["checkout", 'v$ref'], workingDir: repoPath);
+    }
+  }
+
+  /// Use `git show` to get the pubspec.yaml at a particular ref,
+  /// then parse it into a Pubspec object
+  ///
+  /// It is possible that a pubspec didn't always exist, return null if
+  /// that is the case.
+  Future<Pubspec> _getPubspec(String repoPath, String ref) async {
+    try {
+      var result = await git.run(['show', '$ref:pubspec.yaml'],
+          workingDir: repoPath);
+      return new Pubspec.parse(result.join('\n'), systemCache.sources);
+    } on git.GitException {
+      return null;
+    }
   }
 
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).
-  String _repoCachePath(PackageId id) {
-    var repoCacheName = '${id.name}-${sha1(_getUrl(id))}';
+  String _repoCachePath(PackageRef ref) {
+    var repoCacheName = '${ref.name}-${sha1(_getUrl(ref))}';
     return path.join(systemCacheRoot, 'cache', repoCacheName);
   }
 
   /// Returns the repository URL for [id].
   ///
-  /// [description] may be a description or a [PackageId].
+  /// [description] may be a description, a [PackageId], or a [PackageRef].
   String _getUrl(description) {
     description = _getDescription(description);
     if (description is String) return description;
@@ -312,14 +408,18 @@ class GitSource extends CachedSource {
   /// exist, and it will respect the "resolved-ref" parameter set by
   /// [resolveId].
   ///
-  /// [description] may be a description or a [PackageId].
-  String _getEffectiveRef(description) {
-    description = _getDescription(description);
+  /// [description] may be a description, a [PackageId], or a [PackageRef].
+  String _getEffectiveRef(PackageId id) {
+    Map description = _getDescription(id);
     if (description is Map && description.containsKey('resolved-ref')) {
       return description['resolved-ref'];
     }
 
     var ref = _getRef(description);
+    if (_useVersionTags(description) && id.version != null &&
+        id.version != Version.none) {
+      return id.version.toString();
+    }
     return ref == null ? 'HEAD' : ref;
   }
 
@@ -332,10 +432,22 @@ class GitSource extends CachedSource {
     return description['ref'];
   }
 
-  /// Returns [description] if it's a description, or [PackageId.description] if
-  /// it's a [PackageId].
+  /// Returns [description] if it's a description, a [PackageId.description] if
+  /// it's a [PackageId], or a [PackageRef.description] if it's a [PackageRef].
   _getDescription(description) {
-    if (description is PackageId) return description.description;
+    if (description is PackageId || description is PackageRef) {
+      return description.description;
+    }
     return description;
+  }
+
+  /// Returns value of "use_version_tags" in the description
+  ///
+  /// [description] may be a description a [PackageId], or a [PackageRef].
+  bool _useVersionTags(description) {
+    description = _getDescription(description);
+    if (description is String) return false;
+    return description.containsKey('use_version_tags')
+        ? description['use_version_tags'] : false;
   }
 }
