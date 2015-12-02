@@ -9,15 +9,8 @@ import 'dart:async';
 import 'package:path/path.dart' as path;
 
 import '../entrypoint.dart';
+import '../utils.dart';
 import '../validator.dart';
-
-/// Dart reserved words, from the Dart spec.
-final _RESERVED_WORDS = [
-  "assert", "break", "case", "catch", "class", "const", "continue", "default",
-  "do", "else", "extends", "false", "final", "finally", "for", "if", "in", "is",
-  "new", "null", "return", "super", "switch", "this", "throw", "true", "try",
-  "var", "void", "while", "with"
-];
 
 /// A validator that validates the name of the package and its libraries.
 class NameValidator extends Validator {
@@ -70,7 +63,7 @@ class NameValidator extends Validator {
     } else if (!new RegExp(r"^[a-zA-Z_]").hasMatch(name)) {
       messages.add("$description must begin with a letter or underscore.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
-    } else if (_RESERVED_WORDS.contains(name.toLowerCase())) {
+    } else if (reservedWords.contains(name.toLowerCase())) {
       messages.add("$description may not be a reserved word in Dart.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
     } else if (new RegExp(r"[A-Z]").hasMatch(name)) {

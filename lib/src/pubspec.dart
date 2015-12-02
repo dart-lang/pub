@@ -16,6 +16,14 @@ import 'package.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
+/// A regular expression matching allowed package names.
+///
+/// This allows dot-separated valid Dart identifiers. The dots are there for
+/// compatibility with Google's internal Dart packages, but they may not be used
+/// when publishing a package to pub.dartlang.org.
+final _packageName = new RegExp(
+    "^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
+
 /// The parsed contents of a pubspec file.
 ///
 /// The fields of a pubspec are, for the most part, validated when they're first
@@ -56,6 +64,14 @@ class Pubspec {
     } else if (name is! String) {
       throw new PubspecException(
           '"name" field must be a string.', fields.nodes['name'].span);
+    } else if (!_packageName.hasMatch(name)) {
+      throw new PubspecException(
+          '"name" field must be a valid Dart identifier.',
+          fields.nodes['name'].span);
+    } else if (reservedWords.contains(name)) {
+      throw new PubspecException(
+          '"name" field may not be a Dart reserved word.',
+          fields.nodes['name'].span);
     }
 
     _name = name;

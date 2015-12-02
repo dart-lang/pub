@@ -22,11 +22,19 @@ export 'asset/dart/utils.dart';
 /// A regular expression matching a Dart identifier.
 ///
 /// This also matches a package name, since they must be Dart identifiers.
-final identifierRegExp = new RegExp(r"[a-zA-Z_][a-zA-Z0-9_]+");
+final identifierRegExp = new RegExp(r"[a-zA-Z_]\w*");
 
 /// Like [identifierRegExp], but anchored so that it only matches strings that
 /// are *just* Dart identifiers.
 final onlyIdentifierRegExp = new RegExp("^${identifierRegExp.pattern}\$");
+
+/// Dart reserved words, from the Dart spec.
+const reservedWords = const [
+  "assert", "break", "case", "catch", "class", "const", "continue", "default",
+  "do", "else", "extends", "false", "final", "finally", "for", "if", "in", "is",
+  "new", "null", "return", "super", "switch", "this", "throw", "true", "try",
+  "var", "void", "while", "with"
+];
 
 /// A pair of values.
 class Pair<E, F> {
