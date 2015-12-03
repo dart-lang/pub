@@ -15,13 +15,13 @@ main() {
     d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec("foo", "1.0.0", deps: {
-        "foo-dep": {"git": "../foo-dep.git"
+        "foo_dep": {"git": "../foo_dep.git"
       }})
     ]).create();
 
-    d.git('foo-dep.git', [
-      d.libDir('foo-dep'),
-      d.libPubspec('foo-dep', '1.0.0')
+    d.git('foo_dep.git', [
+      d.libDir('foo_dep'),
+      d.libPubspec('foo_dep', '1.0.0')
     ]).create();
 
     d.appDir({"foo": {"git": "../foo.git"}}).create();
@@ -32,21 +32,21 @@ main() {
       d.dir('foo', [
         d.file('foo.dart', 'main() => "foo";')
       ]),
-      d.dir('foo-dep', [
-        d.file('foo-dep.dart', 'main() => "foo-dep";')
+      d.dir('foo_dep', [
+        d.file('foo_dep.dart', 'main() => "foo_dep";')
       ])
     ]).validate();
 
     d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
       d.libPubspec("foo", "1.0.0", deps: {
-        "foo-dep": {"git": "../foo-dep.git"}
+        "foo_dep": {"git": "../foo_dep.git"}
       })
     ]).create();
 
-    d.git('foo-dep.git', [
-      d.libDir('foo-dep', 'foo-dep 2'),
-      d.libPubspec('foo-dep', '1.0.0')
+    d.git('foo_dep.git', [
+      d.libDir('foo_dep', 'foo_dep 2'),
+      d.libPubspec('foo_dep', '1.0.0')
     ]).commit();
 
     pubUpgrade(args: ['foo']);
@@ -55,8 +55,8 @@ main() {
       d.dir('foo', [
         d.file('foo.dart', 'main() => "foo 2";')
       ]),
-      d.dir('foo-dep', [
-        d.file('foo-dep.dart', 'main() => "foo-dep";')
+      d.dir('foo_dep', [
+        d.file('foo_dep.dart', 'main() => "foo_dep";')
       ]),
     ]).validate();
   });

@@ -11,10 +11,10 @@ main() {
   integration("doesn't upgrade dependencies whose constraints have been "
       "removed", () {
     servePackages((builder) {
-      builder.serve("foo", "1.0.0", deps: {"shared-dep": "any"});
-      builder.serve("bar", "1.0.0", deps: {"shared-dep": "<2.0.0"});
-      builder.serve("shared-dep", "1.0.0");
-      builder.serve("shared-dep", "2.0.0");
+      builder.serve("foo", "1.0.0", deps: {"shared_dep": "any"});
+      builder.serve("bar", "1.0.0", deps: {"shared_dep": "<2.0.0"});
+      builder.serve("shared_dep", "1.0.0");
+      builder.serve("shared_dep", "2.0.0");
     });
 
     d.appDir({"foo": "any", "bar": "any"}).create();
@@ -24,7 +24,7 @@ main() {
     d.packagesDir({
       "foo": "1.0.0",
       "bar": "1.0.0",
-      "shared-dep": "1.0.0"
+      "shared_dep": "1.0.0"
     }).validate();
 
     d.appDir({"foo": "any"}).create();
@@ -34,7 +34,7 @@ main() {
     d.packagesDir({
       "foo": "1.0.0",
       "bar": null,
-      "shared-dep": "1.0.0"
+      "shared_dep": "1.0.0"
     }).validate();
   });
 }

@@ -27,7 +27,7 @@ main() {
 
       createLockFile('myapp', pkg: ['barback']);
       var pub = startPubServe();
-      pub.stderr.expect("Unhandled exception:");
+      pub.stderr.expect("Unable to spawn isolate: Unhandled exception:");
       pub.stderr.expect(
           startsWith("Load Error for "));
       pub.shouldExit(1);

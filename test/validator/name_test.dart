@@ -46,29 +46,9 @@ main() {
   group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
 
-    integration('has an empty package name', () {
-      d.dir(appPath, [d.libPubspec("", "1.0.0")]).create();
-      expectValidationError(name);
-    });
-
-    integration('has a package name with an invalid character', () {
-      d.dir(appPath, [d.libPubspec("test-pkg", "1.0.0")]).create();
-      expectValidationError(name);
-    });
-
-    integration('has a package name that begins with a number', () {
-      d.dir(appPath, [d.libPubspec("8ball", "1.0.0")]).create();
-      expectValidationError(name);
-    });
-
     integration('has a package name that contains upper-case letters', () {
       d.dir(appPath, [d.libPubspec("TestPkg", "1.0.0")]).create();
       expectValidationWarning(name);
-    });
-
-    integration('has a package name that is a Dart reserved word', () {
-      d.dir(appPath, [d.libPubspec("final", "1.0.0")]).create();
-      expectValidationError(name);
     });
 
     integration('has a library name with an invalid character', () {

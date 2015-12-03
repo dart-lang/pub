@@ -13,14 +13,14 @@ main() {
         "on", () {
       servePackages((builder) {
         builder.serve("foo", "1.0.0", deps: {
-          "shared-dep": "any"
+          "shared_dep": "any"
         });
         builder.serve("bar", "1.0.0", deps: {
-          "shared-dep": "any",
-          "bar-dep": "any"
+          "shared_dep": "any",
+          "bar_dep": "any"
         });
-        builder.serve("shared-dep", "1.0.0");
-        builder.serve("bar-dep", "1.0.0");
+        builder.serve("shared_dep", "1.0.0");
+        builder.serve("bar_dep", "1.0.0");
       });
 
       d.appDir({
@@ -33,8 +33,8 @@ main() {
       d.packagesDir({
         "foo": "1.0.0",
         "bar": "1.0.0",
-        "shared-dep": "1.0.0",
-        "bar-dep": "1.0.0",
+        "shared_dep": "1.0.0",
+        "bar_dep": "1.0.0",
       }).validate();
 
       d.appDir({"foo": "any"}).create();
@@ -44,8 +44,8 @@ main() {
       d.packagesDir({
         "foo": "1.0.0",
         "bar": null,
-        "shared-dep": "1.0.0",
-        "bar-dep": null,
+        "shared_dep": "1.0.0",
+        "bar_dep": null,
       }).validate();
     });
   });
