@@ -6,14 +6,14 @@ version: 1.0.0-unreleased
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
-  analyzer: ">=0.25.0 <0.27.0"
+  analyzer: ">=0.25.0 <0.28.0"
   args: "^0.13.0"
   barback: "^0.15.2"
   compiler_unsupported: "^1.13.0-dev"
   crypto: "^0.9.0"
   glob: "^1.0.0"
   http: "^0.11.0"
-  http_multi_server: "^1.0.0"
+  http_multi_server: ">=1.0.0 <3.0.0"
   http_parser: ">=0.0.2 <2.0.0"
   http_throttle: "^1.0.0"
   json_rpc_2: "^1.0.0"
