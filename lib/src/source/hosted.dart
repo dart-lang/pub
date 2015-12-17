@@ -24,6 +24,32 @@ import 'cached.dart';
 /// A package source that gets packages from a package hosting site that uses
 /// the same API as pub.dartlang.org.
 class HostedSource extends CachedSource {
+  /// Returns a reference to a hosted package named [name].
+  ///
+  /// If [url] is passed, it's the URL of the pub server from which the package
+  /// should be downloaded. It can be a [Uri] or a [String].
+  static PackageRef refFor(String name, {url}) =>
+      new PackageRef(name, 'hosted', _descriptionFor(name, url));
+
+  /// Returns an ID for a hosted package named [name] at [version].
+  ///
+  /// If [url] is passed, it's the URL of the pub server from which the package
+  /// should be downloaded. It can be a [Uri] or a [String].
+  static PackageId idFor(String name, Version version, {url}) =>
+      new PackageId(name, 'hosted', version, _descriptionFor(name, url));
+
+  /// Returns the description for a hosted package named [name] with the
+  /// given package server [url].
+  static _descriptionFor(String name, [url]) {
+    if (url == null) return name;
+
+    if (url is! String && url is! Uri) {
+      throw new ArgumentError.value(url, 'url', 'must be a Uri or a String.');
+    }
+
+    return {'name': name, 'url': url.toString()};
+  }
+
   final name = "hosted";
   final hasMultipleVersions = true;
 
@@ -56,7 +82,7 @@ class HostedSource extends CachedSource {
       var pubspec = new Pubspec.fromMap(
           map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
-      var id = ref.atVersion(pubspec.version);
+      var id = idFor(ref.name, pubspec.version);
       memoizePubspec(id, pubspec);
 
       return id;
@@ -118,10 +144,14 @@ class HostedSource extends CachedSource {
   /// There are two valid formats. A plain string refers to a package with the
   /// given name from the default host, while a map with keys "name" and "url"
   /// refers to a package with the given name from the host at the given URL.
-  dynamic parseDescription(String containingPath, description,
-                           {bool fromLockFile: false}) {
+  PackageRef parseRef(String name, description, {String containingPath}) {
     _parseDescription(description);
-    return description;
+    return new PackageRef(name, this.name, description);
+  }
+
+  PackageId parseId(String name, Version version, description) {
+    _parseDescription(description);
+    return new PackageId(name, this.name, version, description);
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -138,7 +168,7 @@ class HostedSource extends CachedSource {
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
-        var id = new PackageId(package.name, this.name, package.version, null);
+        var id = idFor(package.name, package.version);
 
         try {
           await _download(url, package.name, package.version, package.dir);
@@ -241,7 +271,7 @@ class OfflineHostedSource extends HostedSource {
       versions = await listDir(dir).map((entry) {
         var components = path.basename(entry).split("-");
         if (components.first != ref.name) return null;
-        return ref.atVersion(new Version.parse(components.last));
+        return HostedSource.idFor(ref.name, new Version.parse(components.last));
       }).where((id) => id != null).toList();
     } else {
       versions = [];

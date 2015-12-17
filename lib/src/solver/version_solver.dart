@@ -196,7 +196,7 @@ class SolverCache {
       log.solver("Could not get versions for $package:\n$error\n\n" +
           chain.terse.toString());
       _versionErrors[package] = new Pair(error, chain);
-      throw error;
+      rethrow;
     }
 
     // Sort by priority so we try preferred versions first.

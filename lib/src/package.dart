@@ -340,10 +340,6 @@ class _PackageName {
       ? new PackageRef.magic(name)
       : new PackageRef(name, source, description);
 
-  /// Returns a [PackageId] for this package with the given concrete version.
-  PackageId atVersion(Version version) =>
-    new PackageId(name, source, version, description);
-
   /// Returns a [PackageDep] for this package with the given version constraint.
   PackageDep withConstraint(VersionConstraint constraint) =>
     new PackageDep(name, source, constraint, description);
@@ -351,6 +347,12 @@ class _PackageName {
 
 /// A reference to a [Package], but not any particular version(s) of it.
 class PackageRef extends _PackageName {
+  /// Creates a reference to a package with the given [name], [source], and
+  /// [description].
+  ///
+  /// Since an ID's description is an implementation detail of its source, this
+  /// should generally not be called outside of [Source] subclasses. A reference
+  /// can be obtained from a user-supplied description using [Source.parseRef].
   PackageRef(String name, String source, description)
       : super(name, source, description);
 
@@ -373,14 +375,24 @@ class PackageRef extends _PackageName {
 ///
 /// A package ID contains enough information to correctly get the package.
 ///
-/// Note that it's possible for multiple distinct package IDs to point to
-/// different packages that have identical contents. For example, the same
-/// package may be available from multiple sources. As far as Pub is concerned,
-/// those packages are different.
+/// It's possible for multiple distinct package IDs to point to different
+/// packages that have identical contents. For example, the same package may be
+/// available from multiple sources. As far as Pub is concerned, those packages
+/// are different.
+///
+/// Note that a package ID's [description] field has a different structure than
+/// the [PackageRef.description] or [PackageDep.description] fields for some
+/// sources. For example, the `git` source adds revision information to the
+/// description to ensure that the same ID always points to the same source.
 class PackageId extends _PackageName {
   /// The package's version.
   final Version version;
 
+  /// Creates an ID for a package with the given [name], [source], [version],
+  /// and [description].
+  ///
+  /// Since an ID's description is an implementation detail of its source, this
+  /// should generally not be called outside of [Source] subclasses.
   PackageId(String name, String source, this.version, description)
       : super(name, source, description);
 
@@ -417,6 +429,11 @@ class PackageDep extends _PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
+  /// Creates a reference to package with the given [name], [source],
+  /// [constraint], and [description].
+  ///
+  /// Since an ID's description is an implementation detail of its source, this
+  /// should generally not be called outside of [Source] subclasses.
   PackageDep(String name, String source, this.constraint, description)
       : super(name, source, description);
 

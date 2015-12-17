@@ -24,6 +24,7 @@ import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
+import 'source/hosted.dart';
 import 'source/path.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -91,7 +92,7 @@ class GlobalPackages {
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
     await _installInCache(
-        new PackageDep(name, "git", VersionConstraint.any, repo),
+        GitSource.refFor(name, repo).withConstraint(VersionConstraint.any),
         executables, overwriteBinStubs: overwriteBinStubs);
   }
 
@@ -108,7 +109,7 @@ class GlobalPackages {
   Future activateHosted(String name, VersionConstraint constraint,
       List<String> executables, {bool overwriteBinStubs}) async {
     _describeActive(name);
-    await _installInCache(new PackageDep(name, "hosted", constraint, name),
+    await _installInCache(HostedSource.refFor(name).withConstraint(constraint),
         executables, overwriteBinStubs: overwriteBinStubs);
   }
 
@@ -134,8 +135,7 @@ class GlobalPackages {
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
-    var id = new PackageId(name, "path", entrypoint.root.version,
-        PathSource.describePath(fullPath));
+    var id = PathSource.idFor(name, entrypoint.root.version, fullPath);
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
@@ -167,8 +167,8 @@ class GlobalPackages {
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.
-    var ids = await Future.wait(result.packages.map(_cacheDependency));
-    var lockFile = new LockFile(ids, cache.sources);
+    await Future.wait(result.packages.map(_cacheDependency));
+    var lockFile = new LockFile(result.packages, cache.sources);
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
@@ -206,16 +206,13 @@ class GlobalPackages {
   }
 
   /// Downloads [id] into the system cache if it's a cached package.
-  ///
-  /// Returns the resolved [PackageId] for [id].
-  Future<PackageId> _cacheDependency(PackageId id) async {
+  Future _cacheDependency(PackageId id) async {
+    if (id.isRoot) return;
+
     var source = cache.sources[id.source];
+    if (source is! CachedSource) return;
 
-    if (!id.isRoot && source is CachedSource) {
-      await source.downloadToSystemCache(id);
-    }
-
-    return source.resolveId(id);
+    await source.downloadToSystemCache(id);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.

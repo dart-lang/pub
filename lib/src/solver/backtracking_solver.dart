@@ -47,6 +47,7 @@ import '../package.dart';
 import '../pubspec.dart';
 import '../sdk.dart' as sdk;
 import '../source_registry.dart';
+import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../utils.dart';
 import 'version_queue.dart';
@@ -122,7 +123,7 @@ class BacktrackingSolver {
   final Pubspec _implicitPubspec = () {
     var dependencies = [];
     barback.pubConstraints.forEach((name, constraint) {
-      dependencies.add(new PackageDep(name, "hosted", constraint, name));
+      dependencies.add(HostedSource.refFor(name).withConstraint(constraint));
     });
 
     return new Pubspec("pub itself", dependencies: dependencies);
@@ -174,11 +175,8 @@ class BacktrackingSolver {
         pubspecs[id.name] = await _getPubspec(id);
       }
 
-      var resolved = await Future.wait(
-          packages.map((id) => sources[id.source].resolveId(id)));
-
-      return new SolveResult.success(sources, root, lockFile, resolved,
-          overrides, pubspecs, _getAvailableVersions(resolved),
+      return new SolveResult.success(sources, root, lockFile, packages,
+          overrides, pubspecs, _getAvailableVersions(packages),
           _attemptedSolutions);
     } on SolveFailure catch (error) {
       // Wrap a failure in a result so we can attach some other data.

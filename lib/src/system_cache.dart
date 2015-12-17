@@ -78,9 +78,6 @@ class SystemCache {
   }
 
   /// Determines if the system cache contains the package identified by [id].
-  ///
-  /// Depending on the source, this may throw an [ArgumentError] if [id] isn't
-  /// resolved using [Source.resolveId].
   bool contains(PackageId id) {
     var source = sources[id.source];
 

@@ -11,6 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../entrypoint.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../source/hosted.dart';
 import '../validator.dart';
 
 /// The range of all pub versions that don't support `^` version constraints.
@@ -67,8 +68,8 @@ class DependencyValidator extends Validator {
   Future _warnAboutSource(PackageDep dep) async {
     var versions;
     try {
-      var ref = new PackageRef(dep.name, 'hosted', dep.name);
-      var ids = await entrypoint.cache.sources['hosted'].getVersions(ref);
+      var ids = await entrypoint.cache.sources['hosted']
+          .getVersions(HostedSource.refFor(dep.name));
       versions = ids.map((id) => id.version).toList();
     } catch (error) {
       versions = [];

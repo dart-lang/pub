@@ -18,6 +18,6 @@ main() {
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
     pubGet(error: new RegExp(r'Could not find a file named "pubspec\.yaml" '
-        r'in "[^\n]*"\.'));
+        r'in [^\n]\.'));
   });
 }

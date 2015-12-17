@@ -10,7 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../log.dart' as log;
-import '../package.dart';
+import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `cache add` pub command.
@@ -59,18 +59,16 @@ class CacheAddCommand extends PubCommand {
     var source = cache.sources["hosted"];
 
     // TODO(rnystrom): Allow specifying the server.
-    var ids = await source.getVersions(
-        new PackageRef(package, 'hosted', package));
-    var versions = ids.map((id) => id.version)
-        .where(constraint.allows).toList();
+    var ids = (await source.getVersions(HostedSource.refFor(package)))
+        .where((id) => constraint.allows(id.version))
+        .toList();
 
-    if (versions.isEmpty) {
+    if (ids.isEmpty) {
       // TODO(rnystrom): Show most recent unmatching version?
       fail("Package $package has no versions that match $constraint.");
     }
 
-    downloadVersion(version) async {
-      var id = new PackageId(package, source.name, version, package);
+    downloadVersion(id) async {
       if (cache.contains(id)) {
         // TODO(rnystrom): Include source and description if not hosted.
         // See solve_report.dart for code to harvest.
@@ -84,12 +82,12 @@ class CacheAddCommand extends PubCommand {
 
     if (argResults["all"]) {
       // Install them in ascending order.
-      versions.sort();
-      await Future.forEach(versions, downloadVersion);
+      ids.sort((id1, id2) => id1.version.compareTo(id2.version));
+      await Future.forEach(ids, downloadVersion);
     } else {
       // Pick the best matching version.
-      versions.sort(Version.prioritize);
-      await downloadVersion(versions.last);
+      ids.sort((id1, id2) => Version.prioritize(id1.version, id2.version));
+      await downloadVersion(ids.last);
     }
   }
 }

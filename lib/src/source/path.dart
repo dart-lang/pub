@@ -7,6 +7,7 @@ library pub.source.path;
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
 import '../io.dart';
@@ -17,12 +18,21 @@ import '../utils.dart';
 
 /// A package [Source] that gets packages from a given local file path.
 class PathSource extends Source {
-  /// Returns a valid description for a reference to a package at [path].
-  static describePath(String path) {
-    return {
+  /// Returns a reference to a path package named [name] at [path].
+  static PackageRef refFor(String name, String path) {
+    return new PackageRef(name, 'path', {
       "path": path,
       "relative": p.isRelative(path)
-    };
+    });
+  }
+
+  /// Returns an ID for a path package with the given [name] and [version] at
+  /// [path].
+  static PackageId idFor(String name, Version version, String path) {
+    return new PackageId(name, 'path', version, {
+      "path": path,
+      "relative": p.isRelative(path)
+    });
   }
 
   /// Given a valid path reference description, returns the file path it
@@ -34,12 +44,21 @@ class PathSource extends Source {
 
   final name = 'path';
 
-  Future<Pubspec> doDescribe(PackageId id) {
-    return new Future.sync(() {
-      var dir = _validatePath(id.name, id.description);
-      return new Pubspec.load(dir, systemCache.sources,
-          expectedName: id.name);
-    });
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    // There's only one package ID for a given path. We just need to find the
+    // version.
+    var pubspec = _loadPubspec(ref);
+    var id = new PackageId(ref.name, name, pubspec.version, ref.description);
+    memoizePubspec(id, pubspec);
+    return [id];
+  }
+
+  Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id.toRef());
+
+  Pubspec _loadPubspec(PackageRef ref) {
+    var dir = _validatePath(ref.name, ref.description);
+    return new Pubspec.load(dir, systemCache.sources,
+        expectedName: ref.name);
   }
 
   bool descriptionsEqual(description1, description2) {
@@ -64,29 +83,7 @@ class PathSource extends Source {
   /// This takes in a path string and returns a map. The "path" key will be the
   /// original path but resolved relative to the containing path. The
   /// "relative" key will be `true` if the original path was relative.
-  ///
-  /// A path coming from a pubspec is a simple string. From a lock file, it's
-  /// an expanded {"path": ..., "relative": ...} map.
-  dynamic parseDescription(String containingPath, description,
-                           {bool fromLockFile: false}) {
-    if (fromLockFile) {
-      if (description is! Map) {
-        throw new FormatException("The description must be a map.");
-      }
-
-      if (description["path"] is! String) {
-        throw new FormatException("The 'path' field of the description must "
-            "be a string.");
-      }
-
-      if (description["relative"] is! bool) {
-        throw new FormatException("The 'relative' field of the description "
-            "must be a boolean.");
-      }
-
-      return description;
-    }
-
+  PackageRef parseRef(String name, description, {String containingPath}) {
     if (description is! String) {
       throw new FormatException("The description must be a path string.");
     }
@@ -107,10 +104,28 @@ class PathSource extends Source {
           p.join(p.dirname(containingPath), description));
     }
 
-    return {
+    return new PackageRef(name, this.name, {
       "path": description,
       "relative": isRelative
-    };
+    });
+  }
+
+  PackageId parseId(String name, Version version, description) {
+    if (description is! Map) {
+      throw new FormatException("The description must be a map.");
+    }
+
+    if (description["path"] is! String) {
+      throw new FormatException("The 'path' field of the description must "
+          "be a string.");
+    }
+
+    if (description["relative"] is! bool) {
+      throw new FormatException("The 'relative' field of the description "
+          "must be a boolean.");
+    }
+
+    return new PackageId(name, this.name, version, description);
   }
 
   /// Serializes path dependency's [description].

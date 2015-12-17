@@ -496,19 +496,17 @@ class Pubspec {
       }
 
       // Let the source validate the description.
-      var description = _wrapFormatException('description',
-          descriptionNode.span, () {
+      var ref = _wrapFormatException('description', descriptionNode.span, () {
         var pubspecPath;
         if (_location != null && _isFileUri(_location)) {
           pubspecPath = path.fromUri(_location);
         }
 
-        return _sources[sourceName].parseDescription(
-            pubspecPath, descriptionNode.value, fromLockFile: false);
+        return _sources[sourceName].parseRef(name, descriptionNode.value,
+            containingPath: pubspecPath);
       });
 
-      dependencies.add(new PackageDep(
-          name, sourceName, versionConstraint, description));
+      dependencies.add(ref.withConstraint(versionConstraint));
     });
 
     return dependencies;

@@ -26,21 +26,10 @@ class LockFile {
   final Map<String, PackageId> packages;
 
   /// Creates a new lockfile containing [ids].
-  ///
-  /// Throws an [ArgumentError] if any package has an unresolved ID according to
-  /// [Source.isResolved].
   factory LockFile(Iterable<PackageId> ids, SourceRegistry sources) {
-    var packages = {};
-    for (var id in ids) {
-      if (id.isRoot) continue;
-
-      if (!sources[id.source].isResolved(id)) {
-        throw new ArgumentError('ID "$id" is not resolved.');
-      }
-
-      packages[id.name] = id;
-    }
-
+    var packages = new Map.fromIterable(
+        ids.where((id) => !id.isRoot),
+        key: (id) => id.name);
     return new LockFile._(packages, sources);
   }
 
@@ -98,15 +87,13 @@ class LockFile {
 
         // Let the source parse the description.
         var source = sources[sourceName];
+        var id;
         try {
-          description = source.parseDescription(filePath, description,
-              fromLockFile: true);
+          id = source.parseId(name, version, description);
         } on FormatException catch (ex) {
           throw new SourceSpanFormatException(ex.message,
-              spec.nodes['source'].span);
+              spec.nodes['description'].span);
         }
-
-        var id = new PackageId(name, sourceName, version, description);
 
         // Validate the name.
         _validate(name == id.name,
@@ -127,15 +114,10 @@ class LockFile {
 
   /// Returns a copy of this LockFile with [id] added.
   ///
-  /// Throws an [ArgumentError] if [id] isn't resolved according to
-  /// [Source.isResolved]. If there's already an ID with the same name as [id]
-  /// in the LockFile, it's overwritten.
+  /// If there's already an ID with the same name as [id] in the LockFile, it's
+  /// overwritten.
   LockFile setPackage(PackageId id) {
     if (id.isRoot) return this;
-
-    if (!_sources[id.source].isResolved(id)) {
-      throw new ArgumentError('ID "$id" is not resolved.');
-    }
 
     var packages = new Map.from(this.packages);
     packages[id.name] = id;

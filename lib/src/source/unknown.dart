@@ -6,6 +6,8 @@ library pub.source.unknown;
 
 import 'dart:async';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import '../package.dart';
 import '../pubspec.dart';
 import '../source.dart';
@@ -28,6 +30,10 @@ class UnknownSource extends Source {
 
   int get hashCode => name.hashCode;
 
+  Future<List<PackageId>> doGetVersions(PackageRef ref) =>
+      throw new UnsupportedError(
+          "Cannot get package versions from unknown source '$name'.");
+
   Future<Pubspec> doDescribe(PackageId id) => throw new UnsupportedError(
       "Cannot describe a package from unknown source '$name'.");
 
@@ -41,7 +47,9 @@ class UnknownSource extends Source {
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
-  /// Unknown sources do no validation.
-  dynamic parseDescription(String containingPath, description,
-                           {bool fromLockFile: false}) => description;
+  PackageRef parseRef(String name, description, {String containingPath}) =>
+      new PackageRef(name, this.name, description);
+
+  PackageId parseId(String name, Version version, description) =>
+      new PackageId(name, this.name, version, description);
 }

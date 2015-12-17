@@ -7,6 +7,7 @@ library pub.source.git;
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
 import '../io.dart';
@@ -18,6 +19,12 @@ import 'cached.dart';
 
 /// A package source that gets packages from Git repos.
 class GitSource extends CachedSource {
+  /// Returns a reference to a git package with the given [name] and [url].
+  ///
+  /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
+  static PackageRef refFor(String name, String url, {String reference}) =>
+      new PackageRef(name, "git", {'url': url, 'ref': reference ?? 'HEAD'});
+
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
   static String urlFromDescription(description) => description["url"];
@@ -40,10 +47,43 @@ class GitSource extends CachedSource {
     });
   }
 
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    await _ensureRepoCache(ref);
+    var path = _repoCachePath(ref);
+    var revision = await _firstRevision(path, ref.description['ref']);
+    var pubspec = await _describeUncached(ref, revision);
+
+    return [
+      new PackageId(ref.name, name, pubspec.version, {
+        'url': ref.description['url'],
+        'ref': ref.description['ref'],
+        'resolved-ref': revision
+      })
+    ];
+  }
+
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
-  Future<Pubspec> describeUncached(PackageId id) {
-    return downloadToSystemCache(id).then((package) => package.pubspec);
+  Future<Pubspec> describeUncached(PackageId id) =>
+      _describeUncached(id.toRef(), id.description['resolved-ref']);
+
+  /// Like [describeUncached], but takes a separate [ref] and Git [revision]
+  /// rather than a single ID.
+  Future<Pubspec> _describeUncached(PackageRef ref, String revision) async {
+    await _ensureRevision(ref, revision);
+    var path = _repoCachePath(ref);
+
+    var lines;
+    try {
+      lines = await git.run(["show", "$revision:pubspec.yaml"],
+          workingDir: path);
+    } on git.GitException catch (_) {
+      fail('Could not find a file named "pubspec.yaml" in '
+          '${ref.description['url']} $revision.');
+    }
+
+    return new Pubspec.parse(lines.join("\n"), systemCache.sources,
+        expectedName: ref.name);
   }
 
   /// Clones a Git repo to the local filesystem.
@@ -59,60 +99,87 @@ class GitSource extends CachedSource {
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
   Future<Package> downloadToSystemCache(PackageId id) async {
+    var ref = id.toRef();
     if (!git.isInstalled) {
-      fail("Cannot get ${id.name} from Git (${_getUrl(id)}).\n"
+      fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
           "Please ensure Git is correctly installed.");
     }
 
     ensureDir(path.join(systemCacheRoot, 'cache'));
-    await _ensureRevision(id);
-    var revisionCachePath = getDirectory(await resolveId(id));
-    if (!entryExists(revisionCachePath)) {
-      await _clone(_repoCachePath(id), revisionCachePath, mirror: false);
-    }
+    await _ensureRevision(ref, id.description['resolved-ref']);
 
-    var ref = _getEffectiveRef(id);
-    if (ref != 'HEAD') await _checkOut(revisionCachePath, ref);
+    var revisionCachePath = getDirectory(id);
+    if (!entryExists(revisionCachePath)) {
+      await _clone(_repoCachePath(ref), revisionCachePath);
+      await _checkOut(revisionCachePath, id.description['resolved-ref']);
+    }
 
     return new Package.load(id.name, revisionCachePath, systemCache.sources);
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) {
-    if (id.description is! Map || !id.description.containsKey('resolved-ref')) {
-      throw new ArgumentError("Can't get the directory for unresolved id $id.");
-    }
+  String getDirectory(PackageId id) => path.join(
+      systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
 
-    return path.join(systemCacheRoot,
-        "${id.name}-${id.description['resolved-ref']}");
-  }
-
-  /// Ensures [description] is a Git URL.
-  dynamic parseDescription(String containingPath, description,
-                           {bool fromLockFile: false}) {
+  PackageRef parseRef(String name, description, {String containingPath}) {
     // TODO(rnystrom): Handle git URLs that are relative file paths (#8570).
-    // TODO(rnystrom): Now that this function can modify the description, it
-    // may as well canonicalize it to a map so that other code in the source
-    // can assume that.
-    // A single string is assumed to be a Git URL.
-    if (description is String) return description;
-    if (description is! Map || !description.containsKey('url')) {
+    if (description is String) description = {'url': description};
+
+    if (description is! Map) {
       throw new FormatException("The description must be a Git URL or a map "
           "with a 'url' key.");
     }
 
-    var parsed = new Map.from(description);
-    parsed.remove('url');
-    parsed.remove('ref');
-    if (fromLockFile) parsed.remove('resolved-ref');
-
-    if (!parsed.isEmpty) {
-      var plural = parsed.length > 1;
-      var keys = parsed.keys.join(', ');
-      throw new FormatException("Invalid key${plural ? 's' : ''}: $keys.");
+    if (description["url"] is! String) {
+      throw new FormatException("The 'url' field of the description must be a "
+          "string.");
     }
 
-    return description;
+    // Ensure that it's a valid URL.
+    Uri.parse(description["url"]);
+
+    var ref = description["ref"];
+    if (ref != null && ref is! String) {
+      throw new FormatException("The 'ref' field of the description must be a "
+          "string.");
+    }
+
+    return new PackageRef(name, this.name, {
+      "url": description["url"],
+      "ref": description["ref"] ?? "HEAD"
+    });
+  }
+
+  PackageId parseId(String name, Version version, description) {
+    if (description is! Map) {
+      throw new FormatException("The description must be a map with a 'url' "
+          "key.");
+    }
+
+    if (description["url"] is! String) {
+      throw new FormatException("The 'url' field of the description must be a "
+          "string.");
+    }
+
+    // Ensure that it's a valid URL.
+    Uri.parse(description["url"]);
+
+    var ref = description["ref"];
+    if (ref != null && ref is! String) {
+      throw new FormatException("The 'ref' field of the description must be a "
+          "string.");
+    }
+
+    if (description["resolved-ref"] is! String) {
+      throw new FormatException("The 'resolved-ref' field of the description "
+          "must be a string.");
+    }
+
+    return new PackageId(name, this.name, version, {
+      "url": description["url"],
+      "ref": description["ref"] ?? "HEAD",
+      "resolved-ref": description["resolved-ref"]
+    });
   }
 
   /// If [description] has a resolved ref, print it out in short-form.
@@ -134,24 +201,15 @@ class GitSource extends CachedSource {
     // TODO(nweiz): Do we really want to throw an error if you have two
     // dependencies on some repo, one of which specifies a ref and one of which
     // doesn't? If not, how do we handle that case in the version solver?
-    if (_getUrl(description1) != _getUrl(description2)) return false;
-    if (_getRef(description1) != _getRef(description2)) return false;
+    if (description1['url'] != description2['url']) return false;
+    if (description1['ref'] != description2['ref']) return false;
 
-    if (description1 is Map && description1.containsKey('resolved-ref') &&
-        description2 is Map && description2.containsKey('resolved-ref')) {
+    if (description1.containsKey('resolved-ref') &&
+        description2.containsKey('resolved-ref')) {
       return description1['resolved-ref'] == description2['resolved-ref'];
     }
 
     return true;
-  }
-
-  /// Attaches a specific commit to [id] to disambiguate it.
-  Future<PackageId> resolveId(PackageId id) {
-    return _ensureRevision(id).then((revision) {
-      var description = {'url': _getUrl(id), 'ref': _getRef(id)};
-      description['resolved-ref'] = revision;
-      return new PackageId(id.name, name, id.version, description);
-    });
   }
 
   List<Package> getCachedPackages() {
@@ -206,56 +264,65 @@ class GitSource extends CachedSource {
     return new Pair(successes, failures);
   }
 
-  /// Ensure that the canonical clone of the repository referred to by [id] (the
-  /// one in `<system cache>/git/cache`) exists and contains the revision
-  /// referred to by [id].
+  /// Ensures that the canonical clone of the repository referred to by [ref]
+  /// contains the given Git [revision].
+  Future _ensureRevision(PackageRef ref, String revision) async {
+    var path = _repoCachePath(ref);
+    if (_updatedRepos.contains(path)) return;
+
+    if (!entryExists(path)) await _createRepoCache(ref);
+
+    // Try to list the revision. If it doesn't exist, git will fail and we'll
+    // know we have to update the repository.
+    try {
+      await _firstRevision(path, revision);
+    } on git.GitException catch (_) {
+      await _updateRepoCache(ref);
+    }
+  }
+
+  /// Ensures that the canonical clone of the repository referred to by [ref]
+  /// exists and is up-to-date.
+  Future _ensureRepoCache(PackageRef ref) async {
+    var path = _repoCachePath(ref);
+    if (_updatedRepos.contains(path)) return;
+
+    if (!entryExists(path)) {
+      await _createRepoCache(ref);
+    } else {
+      await _updateRepoCache(ref);
+    }
+  }
+
+  /// Creates the canonical clone of the repository referred to by [ref].
   ///
-  /// Returns a future that completes to the hash of the revision identified by
-  /// [id].
-  Future<String> _ensureRevision(PackageId id) {
-    return new Future.sync(() {
-      var path = _repoCachePath(id);
-      if (!entryExists(path)) {
-        return _clone(_getUrl(id), path, mirror: true)
-            .then((_) => _getRev(id));
-      }
+  /// This assumes that the canonical clone doesn't yet exist.
+  Future _createRepoCache(PackageRef ref) async {
+    var path = _repoCachePath(ref);
+    assert(!_updatedRepos.contains(path));
 
-      // If [id] didn't come from a lockfile, it may be using a symbolic
-      // reference. We want to get the latest version of that reference.
-      var description = id.description;
-      if (description is! Map || !description.containsKey('resolved-ref')) {
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      }
-
-      // If [id] did come from a lockfile, then we want to avoid running "git
-      // fetch" if possible to avoid networking time and errors. See if the
-      // revision exists in the repo cache before updating it.
-      return _getRev(id).catchError((error) {
-        if (error is! git.GitException) throw error;
-        return _updateRepoCache(id).then((_) => _getRev(id));
-      });
-    });
+    await _clone(ref.description['url'], path, mirror: true);
+    _updatedRepos.add(path);
   }
 
   /// Runs "git fetch" in the canonical clone of the repository referred to by
-  /// [id].
+  /// [ref].
   ///
   /// This assumes that the canonical clone already exists.
-  Future _updateRepoCache(PackageId id) {
-    var path = _repoCachePath(id);
+  Future _updateRepoCache(PackageRef ref) async {
+    var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return new Future.value();
-    return git.run(["fetch"], workingDir: path).then((_) {
-      _updatedRepos.add(path);
-    });
+    await git.run(["fetch"], workingDir: path);
+    _updatedRepos.add(path);
   }
 
-  /// Runs "git rev-list" in the canonical clone of the repository referred to
-  /// by [id] on the effective ref of [id].
+  /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
   /// This assumes that the canonical clone already exists.
-  Future<String> _getRev(PackageId id) {
-    return git.run(["rev-list", "--max-count=1", _getEffectiveRef(id)],
-        workingDir: _repoCachePath(id)).then((result) => result.first);
+  Future<String> _firstRevision(String path, String reference) async {
+    var lines = await git.run(["rev-list", "--max-count=1", reference],
+        workingDir: path);
+    return lines.first;
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local
@@ -291,51 +358,8 @@ class GitSource extends CachedSource {
 
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).
-  String _repoCachePath(PackageId id) {
-    var repoCacheName = '${id.name}-${sha1(_getUrl(id))}';
+  String _repoCachePath(PackageRef ref) {
+    var repoCacheName = '${ref.name}-${sha1(ref.description['url'])}';
     return path.join(systemCacheRoot, 'cache', repoCacheName);
-  }
-
-  /// Returns the repository URL for [id].
-  ///
-  /// [description] may be a description or a [PackageId].
-  String _getUrl(description) {
-    description = _getDescription(description);
-    if (description is String) return description;
-    return description['url'];
-  }
-
-  /// Returns the commit ref that should be checked out for [description].
-  ///
-  /// This differs from [_getRef] in that it doesn't just return the ref in
-  /// [description]. It will return a sensible default if that ref doesn't
-  /// exist, and it will respect the "resolved-ref" parameter set by
-  /// [resolveId].
-  ///
-  /// [description] may be a description or a [PackageId].
-  String _getEffectiveRef(description) {
-    description = _getDescription(description);
-    if (description is Map && description.containsKey('resolved-ref')) {
-      return description['resolved-ref'];
-    }
-
-    var ref = _getRef(description);
-    return ref == null ? 'HEAD' : ref;
-  }
-
-  /// Returns the commit ref for [description], or null if none is given.
-  ///
-  /// [description] may be a description or a [PackageId].
-  String _getRef(description) {
-    description = _getDescription(description);
-    if (description is String) return null;
-    return description['ref'];
-  }
-
-  /// Returns [description] if it's a description, or [PackageId.description] if
-  /// it's a [PackageId].
-  _getDescription(description) {
-    if (description is PackageId) return description.description;
-    return description;
   }
 }

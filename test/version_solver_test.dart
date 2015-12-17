@@ -1387,8 +1387,11 @@ class MockSource extends CachedSource {
 
   MockSource(this.name);
 
-  dynamic parseDescription(String containingPath, description,
-                             {bool fromLockFile: false}) => description;
+  PackageRef parseRef(String name, description, {String containingPath}) =>
+      new PackageRef(name, this.name, description);
+
+  PackageId parseId(String name, Version version, description) =>
+      new PackageId(name, this.name, version, description);
 
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
@@ -1398,7 +1401,7 @@ class MockSource extends CachedSource {
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     // Make sure the solver doesn't request the same thing twice.
     if (_requestedVersions.contains(ref.description)) {
-      throw new Exception('Version list for $description was already '
+      throw new Exception('Version list for ${ref.description} was already '
           'requested.');
     }
 
@@ -1409,8 +1412,10 @@ class MockSource extends CachedSource {
           '"${ref.description}".');
     }
 
-    return _packages[ref.description].values
-        .map((package) => ref.atVersion(package.version)).toList();
+    return _packages[ref.description].values.map((package) {
+      return new PackageId(
+          ref.name, this.name, package.version, ref.description);
+    }).toList();
   }
 
   Future<Pubspec> describeUncached(PackageId id) {

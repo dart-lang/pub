@@ -19,6 +19,9 @@ import 'test_pub.dart';
 class MockSource extends Source {
   final String name = "mock";
 
+  Future<List<PackageId>> doGetVersions(PackageRef ref) =>
+      throw new UnsupportedError("Cannot get mock package versions.");
+
   Future<Pubspec> doDescribe(PackageId id) => throw new UnsupportedError(
       "Cannot describe mock packages.");
 
@@ -28,11 +31,13 @@ class MockSource extends Source {
   String getDirectory(PackageId id) => throw new UnsupportedError(
       "Cannot get the directory for mock packages.");
 
-  dynamic parseDescription(String filePath, description,
-                           {bool fromLockFile: false}) {
+  PackageRef parseRef(String name, description, {String containingPath}) {
     if (description != 'ok') throw new FormatException('Bad');
-    return description;
+    return new PackageRef(name, this.name, description);
   }
+
+  PackageId parseId(String name, Version version, description) =>
+      new PackageId(name, this.name, version, description);
 
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;

@@ -173,8 +173,8 @@ class Entrypoint {
       deleteEntry(packagesDir);
     }
 
-    var ids = await Future.wait(result.packages.map(_get));
-    _saveLockFile(ids);
+    await Future.wait(result.packages.map(_get));
+    _saveLockFile(result.packages);
 
     if (_packageSymlinks) _linkSelf();
     _linkOrDeleteSecondaryPackageDirs();
@@ -393,20 +393,18 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future<PackageId> _get(PackageId id) {
-    if (id.isRoot) return new Future.value(id);
+  Future _get(PackageId id) async {
+    if (id.isRoot) return;
 
     var source = cache.sources[id.source];
-    return new Future.sync(() {
-      if (!_packageSymlinks) {
-        if (source is! CachedSource) return null;
-        return source.downloadToSystemCache(id);
-      }
+    if (!_packageSymlinks) {
+      if (source is CachedSource) await source.downloadToSystemCache(id);
+      return;
+    }
 
-      var packageDir = p.join(packagesDir, id.name);
-      if (entryExists(packageDir)) deleteEntry(packageDir);
-      return source.get(id, packageDir);
-    }).then((_) => source.resolveId(id));
+    var packageDir = p.join(packagesDir, id.name);
+    if (entryExists(packageDir)) deleteEntry(packageDir);
+    await source.get(id, packageDir);
   }
 
   /// Throws a [DataError] if the `.packages` file doesn't exist or if it's

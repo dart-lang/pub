@@ -11,6 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
+import 'utils.dart';
 
 /// A source from which to get packages.
 ///
@@ -21,6 +22,28 @@ import 'system_cache.dart';
 /// Other sources are *cached* sources. These extend [CachedSource]. When a
 /// package needs a dependency from a cached source, it is first installed in
 /// the [SystemCache] and then acquired from there.
+///
+/// ## Subclassing
+///
+/// All sources should extend this class. In addition to defining the behavior
+/// of various methods, sources define the structure of package descriptions
+/// used in [PackageRef]s, [PackageDep]s, and [PackageId]s. There are three
+/// distinct types of description, although in practice most sources use the
+/// same format for one or more of these:
+///
+/// * User descriptions. These are included in pubspecs and usually written by
+///   hand. They're typically more flexible in the formats they allow to
+///   optimize for ease of authoring.
+///
+/// * Reference descriptions. These are the descriptions in [PackageRef]s and
+///   [PackageDep]. They're parsed directly from user descriptions using
+///   [parseRef], and so add no additional information.
+///
+/// * ID descriptions. These are the descriptions in [PackageId]s, which
+///   uniquely identify and provide the means to locate the concrete code of a
+///   package. They may contain additional expensive-to-compute information
+///   relative to the corresponding reference descriptions. These are the
+///   descriptions stored in lock files.
 abstract class Source {
   /// The name of the source.
   ///
@@ -94,16 +117,16 @@ abstract class Source {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    var pubspec = await describe(ref.atVersion(Version.none));
-    return [ref.atVersion(pubspec.version)];
-  }
+  Future<List<PackageId>> doGetVersions(PackageRef ref);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process. Its results are automatically memoized.
+  ///
+  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
+  /// version.
   ///
   /// Sources should not override this. Instead, they implement [doDescribe].
   Future<Pubspec> describe(PackageId id) async {
@@ -117,7 +140,11 @@ abstract class Source {
 
     // Delegate to the overridden one.
     pubspec = await doDescribe(id);
-    _pubspecs[id.atVersion(pubspec.version)] = pubspec;
+    if (pubspec.version != id.version) {
+      dataError("The pubspec for $id has version ${pubspec.version}.");
+    }
+
+    _pubspecs[id] = pubspec;
     return pubspec;
   }
 
@@ -138,31 +165,34 @@ abstract class Source {
   /// Returns the directory where this package can (or could) be found locally.
   ///
   /// If the source is cached, this will be a path in the system cache.
-  /// Depending on the source, this may throw an [ArgumentError] if [id] isn't
-  /// resolved using [resolveId].
   String getDirectory(PackageId id);
 
-  /// Gives the source a chance to interpret and validate the description for
-  /// a package coming from this source.
+  /// Parses a [PackageRef] from a name and a user-provided [description].
   ///
-  /// When a [Pubspec] or [LockFile] is parsed, it reads in the description for
-  /// each dependency. It is up to the dependency's [Source] to determine how
-  /// that should be interpreted. This will be called during parsing to validate
-  /// that the given [description] is well-formed according to this source, and
-  /// to give the source a chance to canonicalize the description.
+  /// When a [Pubspec] is parsed, it reads in the description for each
+  /// dependency. It is up to the dependency's [Source] to determine how that
+  /// should be interpreted. This will be called during parsing to validate that
+  /// the given [description] is well-formed according to this source, and to
+  /// give the source a chance to canonicalize the description.
   ///
   /// [containingPath] is the path to the local file (pubspec or lockfile)
   /// where this description appears. It may be `null` if the description is
   /// coming from some in-memory source (such as pulling down a pubspec from
   /// pub.dartlang.org).
   ///
-  /// It should return if a (possibly modified) valid description, or throw a
-  /// [FormatException] if not valid.
+  /// The description in the returned [PackageRef] need bear no resemblance to
+  /// the original user-provided description.
   ///
-  /// [fromLockFile] is true when the description comes from a [LockFile], to
-  /// allow the source to use lockfile-specific descriptions via [resolveId].
-  dynamic parseDescription(String containingPath, description,
-                           {bool fromLockFile: false});
+  /// Throws a [FormatException] if the description is not valid.
+  PackageRef parseRef(String name, description, {String containingPath});
+
+  /// Parses a [PackageId] from a name and a serialized description.
+  ///
+  /// This only accepts descriptions serialized using [serializeDescription]. It
+  /// should not be used with user-authored descriptions.
+  ///
+  /// Throws a [FormatException] if the description is not valid.
+  PackageId parseId(String name, Version version, description);
 
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.
@@ -187,33 +217,11 @@ abstract class Source {
   ///
   /// This method should be light-weight. It doesn't need to validate that
   /// either package exists.
+  ///
+  /// Note that either description may be a reference description or an ID
+  /// description; they need not be the same type. ID descriptions should be
+  /// considered equal to the reference descriptions that produced them.
   bool descriptionsEqual(description1, description2);
-
-  /// Resolves [id] to a more possibly more precise that will uniquely identify
-  /// a package regardless of when the package is requested.
-  ///
-  /// For some sources, [PackageId]s can point to different chunks of code at
-  /// different times. This takes such an [id] and returns a future that
-  /// completes to a [PackageId] that will uniquely specify a single chunk of
-  /// code forever.
-  ///
-  /// For example, [GitSource] might take an [id] with description
-  /// `http://github.com/dart-lang/some-lib.git` and return an id with a
-  /// description that includes the current commit of the Git repository.
-  ///
-  /// Pub calls this after getting a package, so the source can use the local
-  /// package to determine information about the resolved id.
-  ///
-  /// The returned [PackageId] may have a description field that's invalid
-  /// according to [parseDescription], although it must still be serializable
-  /// to JSON and YAML. It must also be equal to [id] according to
-  /// [descriptionsEqual].
-  ///
-  /// By default, this just returns [id].
-  Future<PackageId> resolveId(PackageId id) => new Future.value(id);
-
-  /// Returns whether [id] is fully-resolved, according to [resolveId].
-  bool isResolved(PackageId id) => true;
 
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
