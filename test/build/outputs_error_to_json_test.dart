@@ -27,35 +27,33 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("outputs error to JSON in a failed build", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp"]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", TRANSFORMER)
-        ]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+   integration("outputs error to JSON in a failed build", () {
+     d.dir(appPath, [
+       d.pubspec({
+         "name": "myapp",
+         "transformers": ["myapp"]
+       }),
+       d.dir("lib", [
+         d.file("transformer.dart", TRANSFORMER)
+       ]),
+       d.dir("web", [
+         d.file("foo.txt", "foo")
+       ])
+     ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+     createLockFile('myapp', pkg: ['barback']);
 
-      schedulePub(args: ["build", "--format", "json"],
-          outputJson: {
-            "buildResult": "failure",
-            "errors": [
-              {
-                "error": startsWith("Transform Rewrite on myapp|web/foo.txt "
-                    "threw error: oh no!")
-              }
-            ],
-            "log": []
-          },
-          exitCode: exit_codes.DATA);
-    });
-  });
+     schedulePub(args: ["build", "--format", "json"],
+         outputJson: {
+           "buildResult": "failure",
+           "errors": [
+             {
+               "error": startsWith("Transform Rewrite on myapp|web/foo.txt "
+                   "threw error: oh no!")
+             }
+           ],
+           "log": []
+         },
+         exitCode: exit_codes.DATA);
+   });
 }

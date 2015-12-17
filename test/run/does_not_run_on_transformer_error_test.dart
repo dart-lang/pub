@@ -30,32 +30,30 @@ class FailingTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration('does not run if a transformer has an error', () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [
-          d.dir("src", [
-            d.file("transformer.dart", TRANSFORMER)
-          ])
-        ]),
-        d.dir("bin", [
-          d.file("script.dart", SCRIPT)
-        ])
-      ]).create();
+   integration('does not run if a transformer has an error', () {
+     d.dir(appPath, [
+       d.pubspec({
+         "name": "myapp",
+         "transformers": ["myapp/src/transformer"]
+       }),
+       d.dir("lib", [
+         d.dir("src", [
+           d.file("transformer.dart", TRANSFORMER)
+         ])
+       ]),
+       d.dir("bin", [
+         d.file("script.dart", SCRIPT)
+       ])
+     ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+     createLockFile('myapp', pkg: ['barback']);
 
-      var pub = pubRun(args: ["bin/script"]);
+     var pub = pubRun(args: ["bin/script"]);
 
-      pub.stderr.expect("[Error from Failing]:");
-      pub.stderr.expect("myapp|bin/script.dart.");
+     pub.stderr.expect("[Error from Failing]:");
+     pub.stderr.expect("myapp|bin/script.dart.");
 
-      // Note: no output from the script.
-      pub.shouldExit();
-    });
-  });
+     // Note: no output from the script.
+     pub.shouldExit();
+   });
 }

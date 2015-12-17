@@ -16,42 +16,40 @@ import 'utils.dart';
 
 main() {
   // This is a regression test for http://dartbug.com/21402.
-  withBarbackVersions("any", () {
-    integration("picks up files replaced after serving started when using the "
-        "native watcher", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER)
-        ])]),
-        d.dir("web", [
-          d.file("file.txt", "before"),
-        ]),
-        d.file("other", "after")
-      ]).create();
+   integration("picks up files replaced after serving started when using the "
+       "native watcher", () {
+     d.dir(appPath, [
+       d.pubspec({
+         "name": "myapp",
+         "transformers": ["myapp/src/transformer"]
+       }),
+       d.dir("lib", [d.dir("src", [
+         d.file("transformer.dart", REWRITE_TRANSFORMER)
+       ])]),
+       d.dir("web", [
+         d.file("file.txt", "before"),
+       ]),
+       d.file("other", "after")
+     ]).create();
 
-      createLockFile("myapp", pkg: ["barback"]);
+     createLockFile("myapp", pkg: ["barback"]);
 
-      pubServe(args: ["--no-force-poll"]);
-      waitForBuildSuccess();
-      requestShouldSucceed("file.out", "before.out");
+     pubServe(args: ["--no-force-poll"]);
+     waitForBuildSuccess();
+     requestShouldSucceed("file.out", "before.out");
 
-      schedule(() {
-        // Replace file.txt by renaming other on top of it.
-        return new File(p.join(sandboxDir, appPath, "other"))
-            .rename(p.join(sandboxDir, appPath, "web", "file.txt"));
-      });
+     schedule(() {
+       // Replace file.txt by renaming other on top of it.
+       return new File(p.join(sandboxDir, appPath, "other"))
+           .rename(p.join(sandboxDir, appPath, "web", "file.txt"));
+     });
 
-      // Read the transformed file to ensure the change is actually noticed by
-      // pub and not that we just get the new file contents piped through
-      // without pub realizing they've changed.
-      waitForBuildSuccess();
-      requestShouldSucceed("file.out", "after.out");
+     // Read the transformed file to ensure the change is actually noticed by
+     // pub and not that we just get the new file contents piped through
+     // without pub realizing they've changed.
+     waitForBuildSuccess();
+     requestShouldSucceed("file.out", "after.out");
 
-      endPubServe();
-    });
-  });
+     endPubServe();
+   });
 }

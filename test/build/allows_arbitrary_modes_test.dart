@@ -28,32 +28,30 @@ class ModeTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("allows user-defined mode names", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER)
-        ])]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
+  integration("allows user-defined mode names", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", TRANSFORMER)
+      ])]),
+      d.dir("web", [
+        d.file("foo.txt", "foo")
+      ])
+    ]).create();
+
+    createLockFile('myapp', pkg: ['barback']);
+
+    schedulePub(args: ["build", "--mode", "depeche"]);
+
+    d.dir(appPath, [
+      d.dir('build', [
+        d.dir('web', [
+          d.file('foo.out', 'depeche')
         ])
-      ]).create();
-
-      createLockFile('myapp', pkg: ['barback']);
-
-      schedulePub(args: ["build", "--mode", "depeche"]);
-
-      d.dir(appPath, [
-        d.dir('build', [
-          d.dir('web', [
-            d.file('foo.out', 'depeche')
-          ])
-        ])
-      ]).validate();
-    });
+      ])
+    ]).validate();
   });
 }

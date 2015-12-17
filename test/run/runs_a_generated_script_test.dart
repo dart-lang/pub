@@ -24,25 +24,23 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration('runs a script generated from scratch by a transformer', () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER),
-          d.file("primary.in", "")
-        ])])
-      ]).create();
+  integration('runs a script generated from scratch by a transformer', () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", TRANSFORMER),
+        d.file("primary.in", "")
+      ])])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      var pub = pubRun(args: ["bin/script"]);
+    var pub = pubRun(args: ["bin/script"]);
 
-      pub.stdout.expect("generated");
-      pub.shouldExit();
-    });
+    pub.stdout.expect("generated");
+    pub.shouldExit();
   });
 }

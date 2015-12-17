@@ -9,30 +9,28 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("compiles a generated Dart file to JS", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "version": "0.0.1",
-          "transformers": ["myapp/transformer"]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", dartTransformer("munge"))
-        ]),
-        d.dir("web", [
-          d.file("main.dart", """
+  integration("compiles a generated Dart file to JS", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "version": "0.0.1",
+        "transformers": ["myapp/transformer"]
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", dartTransformer("munge"))
+      ]),
+      d.dir("web", [
+        d.file("main.dart", """
 const TOKEN = "before";
 void main() => print(TOKEN);
 """)
-        ])
-      ]).create();
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("main.dart.js", contains("(before, munge)"));
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("main.dart.js", contains("(before, munge)"));
+    endPubServe();
   });
 }

@@ -36,36 +36,34 @@ class ManyToOneTransformer extends AggregateTransformer {
 """;
 
 main() {
-  withBarbackVersions(">=0.14.1", () {
-    integration("works on an aggregate transformer", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [
-            {
-              "myapp": {
-                "\$include": ["web/a.txt", "web/b.txt", "web/c.txt"],
-                "\$exclude": "web/a.txt"
-              }
+  integration("works on an aggregate transformer", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp": {
+              "\$include": ["web/a.txt", "web/b.txt", "web/c.txt"],
+              "\$exclude": "web/a.txt"
             }
-          ]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", AGGREGATE_TRANSFORMER),
-        ]),
-        d.dir("web", [
-          d.file("a.txt", "a"),
-          d.file("b.txt", "b"),
-          d.file("c.txt", "c"),
-          d.file("d.txt", "d")
-        ])
-      ]).create();
+          }
+        ]
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", AGGREGATE_TRANSFORMER),
+      ]),
+      d.dir("web", [
+        d.file("a.txt", "a"),
+        d.file("b.txt", "b"),
+        d.file("c.txt", "c"),
+        d.file("d.txt", "d")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("out.txt", "b\nc");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("out.txt", "b\nc");
+    endPubServe();
   });
 }

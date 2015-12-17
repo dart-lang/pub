@@ -9,20 +9,18 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("fails to load a non-existent transform", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/transform"]
-        })
-      ]).create();
+  integration("fails to load a non-existent transform", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/transform"]
+      })
+    ]).create();
 
-      pubGet();
-      var pub = startPubServe();
-      pub.stderr.expect(
-          'Transformer library "package:myapp/transform.dart" not found.');
-      pub.shouldExit(1);
-    });
+    pubGet();
+    var pub = startPubServe();
+    pub.stderr.expect(
+        'Transformer library "package:myapp/transform.dart" not found.');
+    pub.shouldExit(1);
   });
 }

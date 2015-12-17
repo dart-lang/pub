@@ -10,29 +10,27 @@ import '../serve/utils.dart';
 
 // Regression test for issue 21726.
 main() {
-  withBarbackVersions("any", () {
-    integration("runs a dart2js transformer before a local transformer", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [
-            r"$dart2js",
-            "myapp/src/transformer"
-          ]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER)
-        ])]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+  integration("runs a dart2js transformer before a local transformer", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          r"$dart2js",
+          "myapp/src/transformer"
+        ]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", REWRITE_TRANSFORMER)
+      ])]),
+      d.dir("web", [
+        d.file("foo.txt", "foo")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("foo.out", "foo.out");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("foo.out", "foo.out");
+    endPubServe();
   });
 }

@@ -39,7 +39,7 @@ void loadTransformers(SendPort replyTo) {
 /// in it, instantiates them with [configuration] and [mode], and returns them.
 List _initialize(String uri, Map configuration, BarbackMode mode) {
   var transformerClass = reflectClass(Transformer);
-  var aggregateClass = _aggregateTransformerClass;
+  var aggregateClass = reflectClass(AggregateTransformer);
   var groupClass = reflectClass(TransformerGroup);
 
   var seen = new Set();
@@ -64,8 +64,7 @@ List _initialize(String uri, Map configuration, BarbackMode mode) {
       if (classMirror.isAbstract) return null;
       if (!classMirror.isSubtypeOf(transformerClass) &&
           !classMirror.isSubtypeOf(groupClass) &&
-          (aggregateClass == null ||
-              !classMirror.isSubtypeOf(aggregateClass))) {
+          !classMirror.isSubtypeOf(aggregateClass)) {
         return null;
       }
 
@@ -100,13 +99,3 @@ MethodMirror _getConstructor(ClassMirror classMirror, String constructor) {
   if (candidate is MethodMirror && candidate.isConstructor) return candidate;
   return null;
 }
-
-// Older barbacks don't support [AggregateTransformer], and calling
-// [reflectClass] on an undefined class will throw an error, so we just define a
-// null getter for them.
-//# if barback >=0.14.1
-ClassMirror get _aggregateTransformerClass =>
-    reflectClass(AggregateTransformer);
-//# else
-//>   ClassMirror get _aggregateTransformerClass => null;
-//# end

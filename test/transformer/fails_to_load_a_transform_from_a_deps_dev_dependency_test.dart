@@ -12,39 +12,37 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("fails to load a transform from a non-dependency", () {
-      d.dir("bar", [
-        d.pubspec({
-          "name": "bar",
-          "version": "1.0.0",
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", dartTransformer('bar')),
-        ])
-      ]).create();
+  integration("fails to load a transform from a non-dependency", () {
+    d.dir("bar", [
+      d.pubspec({
+        "name": "bar",
+        "version": "1.0.0",
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", dartTransformer('bar')),
+      ])
+    ]).create();
 
-      d.dir("foo", [
-        d.pubspec({
-          "name": "foo",
-          "version": "1.0.0",
-          "dev_dependencies": {"bar": {"path": "../bar"}},
-          "transformers": ["bar"]
-        })
-      ]).create();
+    d.dir("foo", [
+      d.pubspec({
+        "name": "foo",
+        "version": "1.0.0",
+        "dev_dependencies": {"bar": {"path": "../bar"}},
+        "transformers": ["bar"]
+      })
+    ]).create();
 
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "dependencies": {"foo": {"path": "../foo"}}
-        })
-      ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "dependencies": {"foo": {"path": "../foo"}}
+      })
+    ]).create();
 
-      pubGet();
-      var pub = startPubServe();
-      pub.stderr.expect(contains('Error loading transformer "bar": package '
-          '"bar" is not a dependency.'));
-      pub.shouldExit(exit_codes.DATA);
-    });
+    pubGet();
+    var pub = startPubServe();
+    pub.stderr.expect(contains('Error loading transformer "bar": package '
+        '"bar" is not a dependency.'));
+    pub.shouldExit(exit_codes.DATA);
   });
 }

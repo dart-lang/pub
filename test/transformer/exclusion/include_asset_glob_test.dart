@@ -9,38 +9,36 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("allows a glob to include", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [
-            {
-              "myapp/src/transformer": {
-                "\$include": "**/foo.txt"
-              }
+  integration("allows a glob to include", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp/src/transformer": {
+              "\$include": "**/foo.txt"
             }
-          ]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER)
-        ])]),
-        d.dir("web", [
+          }
+        ]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", REWRITE_TRANSFORMER)
+      ])]),
+      d.dir("web", [
+        d.file("foo.txt", "foo"),
+        d.file("bar.txt", "bar"),
+        d.dir("sub", [
           d.file("foo.txt", "foo"),
-          d.file("bar.txt", "bar"),
-          d.dir("sub", [
-            d.file("foo.txt", "foo"),
-          ])
         ])
-      ]).create();
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("foo.out", "foo.out");
-      requestShould404("bar.out");
-      requestShouldSucceed("sub/foo.out", "foo.out");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("foo.out", "foo.out");
+    requestShould404("bar.out");
+    requestShouldSucceed("sub/foo.out", "foo.out");
+    endPubServe();
   });
 }

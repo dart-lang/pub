@@ -45,45 +45,43 @@ class LoggingTransformer extends Transformer implements LazyTransformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration('displays transformer log messages', () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [
-          d.file("lib.dart", LIB),
-          d.dir("src", [
-            d.file("transformer.dart", TRANSFORMER)
-          ])
-        ]),
-        d.dir("bin", [
-          d.file("script.dart", SCRIPT)
+  integration('displays transformer log messages', () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [
+        d.file("lib.dart", LIB),
+        d.dir("src", [
+          d.file("transformer.dart", TRANSFORMER)
         ])
-      ]).create();
+      ]),
+      d.dir("bin", [
+        d.file("script.dart", SCRIPT)
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      var pub = pubRun(args: ["bin/script"]);
+    var pub = pubRun(args: ["bin/script"]);
 
-      // Note that the info log is only displayed here because the test
-      // harness runs pub in verbose mode. By default, only the warning would
-      // be shown.
-      pub.stdout.expect("[Info from Logging]:");
-      pub.stdout.expect("myapp|bin/script.dart.");
+    // Note that the info log is only displayed here because the test
+    // harness runs pub in verbose mode. By default, only the warning would
+    // be shown.
+    pub.stdout.expect("[Info from Logging]:");
+    pub.stdout.expect("myapp|bin/script.dart.");
 
-      pub.stderr.expect("[Warning from Logging]:");
-      pub.stderr.expect("myapp|bin/script.dart.");
+    pub.stderr.expect("[Warning from Logging]:");
+    pub.stderr.expect("myapp|bin/script.dart.");
 
-      pub.stdout.expect("[Info from Logging]:");
-      pub.stdout.expect("myapp|lib/lib.dart.");
+    pub.stdout.expect("[Info from Logging]:");
+    pub.stdout.expect("myapp|lib/lib.dart.");
 
-      pub.stderr.expect("[Warning from Logging]:");
-      pub.stderr.expect("myapp|lib/lib.dart.");
+    pub.stderr.expect("[Warning from Logging]:");
+    pub.stderr.expect("myapp|lib/lib.dart.");
 
-      pub.stdout.expect("lib");
-      pub.shouldExit();
-    });
+    pub.stdout.expect("lib");
+    pub.shouldExit();
   });
 }

@@ -9,32 +9,30 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("does not run a transform on an input in another package", () {
-      d.dir("foo", [
-        d.pubspec({
-          "name": "foo",
-          "version": "0.0.1",
-          "transformers": ["foo/transformer"]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER),
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+  integration("does not run a transform on an input in another package", () {
+    d.dir("foo", [
+      d.pubspec({
+        "name": "foo",
+        "version": "0.0.1",
+        "transformers": ["foo/transformer"]
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", REWRITE_TRANSFORMER),
+        d.file("foo.txt", "foo")
+      ])
+    ]).create();
 
-      d.dir(appPath, [
-        d.appPubspec({"foo": {"path": "../foo"}}),
-        d.dir("lib", [
-          d.file("bar.txt", "bar")
-        ])
-      ]).create();
+    d.dir(appPath, [
+      d.appPubspec({"foo": {"path": "../foo"}}),
+      d.dir("lib", [
+        d.file("bar.txt", "bar")
+      ])
+    ]).create();
 
-      createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
+    createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
 
-      pubServe();
-      requestShould404("packages/myapp/bar.out");
-      endPubServe();
-    });
+    pubServe();
+    requestShould404("packages/myapp/bar.out");
+    endPubServe();
   });
 }

@@ -11,34 +11,7 @@ import 'package:scheduled_test/scheduled_stream.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SOURCE_MAPS_TRANSFORMER = """
-import 'dart:async';
-
-import 'package:barback/barback.dart';
-import 'package:source_maps/source_maps.dart';
-
-class RewriteTransformer extends Transformer {
-  RewriteTransformer.asPlugin();
-
-  String get allowedExtensions => '.txt';
-
-  Future apply(Transform transform) {
-    transform.logger.info('info!');
-    transform.logger.warning('Warning!',
-        asset: transform.primaryInput.id.changeExtension('.foo'));
-    var sourceFile = new SourceFile.text(
-        'http://fake.com/not_real.dart',
-        'not a real\\ndart file');
-    transform.logger.error('ERROR!', span: new FileSpan(sourceFile, 11));
-    return transform.primaryInput.readAsString().then((contents) {
-      var id = transform.primaryInput.id.changeExtension(".out");
-      transform.addOutput(new Asset.fromString(id, "\$contents.out"));
-    });
-  }
-}
-""";
-
-const SOURCE_SPAN_TRANSFORMER = """
+const TRANSFORMER = """
 import 'dart:async';
 
 import 'package:barback/barback.dart';
@@ -65,13 +38,6 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  // This intentionally tests barback 0.14.2 with both transformers, since it
-  // supports both types of span.
-  withBarbackVersions("<0.15.0", () => runTest(SOURCE_MAPS_TRANSFORMER));
-  withBarbackVersions(">=0.14.2", () => runTest(SOURCE_SPAN_TRANSFORMER));
-}
-
-void runTest(String transformerText) {
   integration("can log messages", () {
     d.dir(appPath, [
       d.pubspec({
@@ -79,7 +45,7 @@ void runTest(String transformerText) {
         "transformers": ["myapp/src/transformer"]
       }),
       d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", transformerText)
+        d.file("transformer.dart", TRANSFORMER)
       ])]),
       d.dir("web", [
         d.file("foo.txt", "foo")

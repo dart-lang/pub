@@ -9,42 +9,40 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  withBarbackVersions("any", () {
-    integration("allows a directory prefix to include", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [
-            {
-              "myapp/src/transformer": {
-                "\$include": "web/sub"
-              }
+  integration("allows a directory prefix to include", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp/src/transformer": {
+              "\$include": "web/sub"
             }
-          ]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER)
-        ])]),
-        d.dir("web", [
+          }
+        ]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", REWRITE_TRANSFORMER)
+      ])]),
+      d.dir("web", [
+        d.file("foo.txt", "foo"),
+        d.file("bar.txt", "bar"),
+        d.dir("sub", [
           d.file("foo.txt", "foo"),
-          d.file("bar.txt", "bar"),
-          d.dir("sub", [
-            d.file("foo.txt", "foo"),
-          ]),
-          d.dir("subbub", [
-            d.file("foo.txt", "foo"),
-          ])
+        ]),
+        d.dir("subbub", [
+          d.file("foo.txt", "foo"),
         ])
-      ]).create();
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShould404("foo.out");
-      requestShould404("bar.out");
-      requestShouldSucceed("sub/foo.out", "foo.out");
-      requestShould404("subbub/foo.out");
-      endPubServe();
-    });
+    pubServe();
+    requestShould404("foo.out");
+    requestShould404("bar.out");
+    requestShouldSucceed("sub/foo.out", "foo.out");
+    requestShould404("subbub/foo.out");
+    endPubServe();
   });
 }

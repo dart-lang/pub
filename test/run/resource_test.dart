@@ -95,21 +95,20 @@ main() async {
     pub.shouldExit(0);
   });
 
-  withBarbackVersions("any", () {
-    integration('the spawned application can load a transformed resource', () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [
-          d.file("resource.in", "hello!"),
-          d.dir("src", [
-            d.file("transformer.dart", TRANSFORMER)
-          ])
-        ]),
-        d.dir("bin", [
-          d.file("script.dart", """
+  integration('the spawned application can load a transformed resource', () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [
+        d.file("resource.in", "hello!"),
+        d.dir("src", [
+          d.file("transformer.dart", TRANSFORMER)
+        ])
+      ]),
+      d.dir("bin", [
+        d.file("script.dart", """
 main() async {
   var resource = new Resource("package:myapp/resource.txt");
 
@@ -119,19 +118,18 @@ main() async {
   print(await resource.readAsString());
 }
 """)
-        ])
-      ]).create();
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      var pub = pubRun(args: ["bin/script"]);
+    var pub = pubRun(args: ["bin/script"]);
 
-      // TODO(nweiz): Enable this when sdk#23990 is fixed.
-      // pub.stdout.expect(p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")));
+    // TODO(nweiz): Enable this when sdk#23990 is fixed.
+    // pub.stdout.expect(p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")));
 
-      pub.stdout.expect("hello!");
-      pub.shouldExit(0);
-    });
+    pub.stdout.expect("hello!");
+    pub.shouldExit(0);
   });
 
   integration('a snapshotted application can load a resource', () {

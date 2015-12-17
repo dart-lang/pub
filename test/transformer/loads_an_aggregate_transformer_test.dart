@@ -36,27 +36,25 @@ class ManyToOneTransformer extends AggregateTransformer {
 """;
 
 main() {
-  withBarbackVersions(">=0.14.1", () {
-    integration("loads an aggregate transformer", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp"]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", AGGREGATE_TRANSFORMER),
-        ]),
-        d.dir("web", [
-          d.file("foo.txt", "foo"),
-          d.file("bar.txt", "bar")
-        ])
-      ]).create();
+  integration("loads an aggregate transformer", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp"]
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", AGGREGATE_TRANSFORMER),
+      ]),
+      d.dir("web", [
+        d.file("foo.txt", "foo"),
+        d.file("bar.txt", "bar")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("out.txt", "bar\nfoo");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("out.txt", "bar\nfoo");
+    endPubServe();
   });
 }

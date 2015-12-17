@@ -27,25 +27,23 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("output can be consumed by successive phases", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["\$dart2js", "myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", JS_REWRITE_TRANSFORMER)
-        ])]),
-        d.dir("web", [d.file("main.dart", "void main() {}")])
-      ]).create();
+  integration("output can be consumed by successive phases", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["\$dart2js", "myapp/src/transformer"]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", JS_REWRITE_TRANSFORMER)
+      ])]),
+      d.dir("web", [d.file("main.dart", "void main() {}")])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubGet();
-      pubServe();
-      requestShouldSucceed("main.dart.out", isUnminifiedDart2JSOutput);
-      endPubServe();
-    });
+    pubGet();
+    pubServe();
+    requestShouldSucceed("main.dart.out", isUnminifiedDart2JSOutput);
+    endPubServe();
   });
 }

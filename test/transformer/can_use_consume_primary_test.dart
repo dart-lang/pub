@@ -30,27 +30,25 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("a transform can use consumePrimary", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER)
-        ])]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+  integration("a transform can use consumePrimary", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", TRANSFORMER)
+      ])]),
+      d.dir("web", [
+        d.file("foo.txt", "foo")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("foo.out", "foo.out");
-      requestShould404("foo.txt");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("foo.out", "foo.out");
+    requestShould404("foo.txt");
+    endPubServe();
   });
 }

@@ -1,7 +1,4 @@
 {
-  "pre_test_hooks": {
-    "Update submodules": "git submodule update --init --force"
-  },
   "test_package": {
     "platforms": ["vm"]
   }

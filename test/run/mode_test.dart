@@ -26,58 +26,56 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration('runs a local script with customizable modes', () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER),
-          d.file("primary.in", "")
-        ])])
-      ]).create();
+   integration('runs a local script with customizable modes', () {
+     d.dir(appPath, [
+       d.pubspec({
+         "name": "myapp",
+         "transformers": ["myapp/src/transformer"]
+       }),
+       d.dir("lib", [d.dir("src", [
+         d.file("transformer.dart", TRANSFORMER),
+         d.file("primary.in", "")
+       ])])
+     ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+     createLockFile('myapp', pkg: ['barback']);
 
-      // By default it should run in debug mode.
-      var pub = pubRun(args: ["bin/script"]);
-      pub.stdout.expect("debug");
-      pub.shouldExit();
+     // By default it should run in debug mode.
+     var pub = pubRun(args: ["bin/script"]);
+     pub.stdout.expect("debug");
+     pub.shouldExit();
 
-      // A custom mode should be specifiable.
-      pub = pubRun(args: ["--mode", "custom-mode", "bin/script"]);
-      pub.stdout.expect("custom-mode");
-      pub.shouldExit();
-    });
+     // A custom mode should be specifiable.
+     pub = pubRun(args: ["--mode", "custom-mode", "bin/script"]);
+     pub.stdout.expect("custom-mode");
+     pub.shouldExit();
+   });
 
-    integration('runs a dependency script with customizable modes', () {
-      d.dir("foo", [
-        d.pubspec({
-          "name": "foo",
-          "version": "1.2.3",
-          "transformers": ["foo/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER),
-          d.file("primary.in", "")
-        ])])
-      ]).create();
+   integration('runs a dependency script with customizable modes', () {
+     d.dir("foo", [
+       d.pubspec({
+         "name": "foo",
+         "version": "1.2.3",
+         "transformers": ["foo/src/transformer"]
+       }),
+       d.dir("lib", [d.dir("src", [
+         d.file("transformer.dart", TRANSFORMER),
+         d.file("primary.in", "")
+       ])])
+     ]).create();
 
-      d.appDir({"foo": {"path": "../foo"}}).create();
+     d.appDir({"foo": {"path": "../foo"}}).create();
 
-      createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
+     createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
 
-      // By default it should run in release mode.
-      var pub = pubRun(args: ["foo:script"]);
-      pub.stdout.expect("release");
-      pub.shouldExit();
+     // By default it should run in release mode.
+     var pub = pubRun(args: ["foo:script"]);
+     pub.stdout.expect("release");
+     pub.shouldExit();
 
-      // A custom mode should be specifiable.
-      pub = pubRun(args: ["--mode", "custom-mode", "foo:script"]);
-      pub.stdout.expect("custom-mode");
-      pub.shouldExit();
-    });
-  });
+     // A custom mode should be specifiable.
+     pub = pubRun(args: ["--mode", "custom-mode", "foo:script"]);
+     pub.stdout.expect("custom-mode");
+     pub.shouldExit();
+   });
 }

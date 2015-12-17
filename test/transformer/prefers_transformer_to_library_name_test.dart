@@ -28,28 +28,26 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("prefers transformer.dart to <package name>.dart", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp"]
-        }),
-        d.dir("lib", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER),
-          d.file("myapp.dart", WRONG_TRANSFORMER)
-        ]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+  integration("prefers transformer.dart to <package name>.dart", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp"]
+      }),
+      d.dir("lib", [
+        d.file("transformer.dart", REWRITE_TRANSFORMER),
+        d.file("myapp.dart", WRONG_TRANSFORMER)
+      ]),
+      d.dir("web", [
+        d.file("foo.txt", "foo")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      pubServe();
-      requestShouldSucceed("foo.out", "foo.out");
-      requestShould404("foo.wrong");
-      endPubServe();
-    });
+    pubServe();
+    requestShouldSucceed("foo.out", "foo.out");
+    requestShould404("foo.wrong");
+    endPubServe();
   });
 }

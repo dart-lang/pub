@@ -34,26 +34,24 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-  withBarbackVersions("any", () {
-    integration("configuration defaults to an empty map", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", transformer)
-        ])]),
-        d.dir("web", [
-          d.file("foo.txt", "foo")
-        ])
-      ]).create();
+   integration("configuration defaults to an empty map", () {
+     d.dir(appPath, [
+       d.pubspec({
+         "name": "myapp",
+         "transformers": ["myapp/src/transformer"]
+       }),
+       d.dir("lib", [d.dir("src", [
+         d.file("transformer.dart", transformer)
+       ])]),
+       d.dir("web", [
+         d.file("foo.txt", "foo")
+       ])
+     ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+     createLockFile('myapp', pkg: ['barback']);
 
-      var server = pubServe();
-      requestShouldSucceed("foo.json", JSON.encode({}));
-      endPubServe();
-    });
-  });
+     var server = pubServe();
+     requestShouldSucceed("foo.json", JSON.encode({}));
+     endPubServe();
+   });
 }

@@ -42,31 +42,29 @@ class ManyToOneTransformer extends AggregateTransformer
 """;
 
 main() {
-  withBarbackVersions(">=0.14.1", () {
-    integration("loads a declaring aggregate transformer", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/lazy", "myapp/aggregate"]
-        }),
-        d.dir("lib", [
-          d.file("lazy.dart", LAZY_TRANSFORMER),
-          d.file("aggregate.dart", AGGREGATE_TRANSFORMER),
-        ]),
-        d.dir("web", [
-          d.file("foo.txt", "foo"),
-          d.file("bar.txt", "bar")
-        ])
-      ]).create();
+  integration("loads a declaring aggregate transformer", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/lazy", "myapp/aggregate"]
+      }),
+      d.dir("lib", [
+        d.file("lazy.dart", LAZY_TRANSFORMER),
+        d.file("aggregate.dart", AGGREGATE_TRANSFORMER),
+      ]),
+      d.dir("web", [
+        d.file("foo.txt", "foo"),
+        d.file("bar.txt", "bar")
+      ])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      var server = pubServe();
-      // The transformer should preserve laziness.
-      server.stdout.expect("Build completed successfully");
+    var server = pubServe();
+    // The transformer should preserve laziness.
+    server.stdout.expect("Build completed successfully");
 
-      requestShouldSucceed("out.final", "bar.out\nfoo.out");
-      endPubServe();
-    });
+    requestShouldSucceed("out.final", "bar.out\nfoo.out");
+    endPubServe();
   });
 }

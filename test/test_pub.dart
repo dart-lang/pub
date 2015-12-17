@@ -74,98 +74,6 @@ Matcher isUnminifiedDart2JSOutput =
 final _entrypoint = new Entrypoint(
     pubRoot, new SystemCache.withSources(isOffline: true));
 
-/// A map from package names to paths from which those packages should be loaded
-/// for [createLockFile].
-///
-/// This allows older versions of dependencies than those that exist in the repo
-/// to be used when testing pub.
-Map<String, String> _packageOverrides;
-
-/// A map from barback versions to the paths to directories containing them.
-///
-/// This includes the latest version of barback from pkg as well as all old
-/// versions of barback in third_party.
-final _barbackVersions = _findBarbackVersions();
-
-/// Some older barback versions require older versions of barback's dependencies
-/// than those that are in the repo.
-///
-/// This is a map from barback version ranges to the dependencies for those
-/// barback versions. Each dependency version listed here should be included in
-/// third_party/pkg.
-final _barbackDeps = {
-  new VersionConstraint.parse("<0.15.0"): {
-    "source_maps": "0.9.4"
-  }
-};
-
-/// Populates [_barbackVersions].
-Map<Version, String> _findBarbackVersions() {
-  var versions = {};
-
-  var currentBarback;
-  var pkgPath;
-  if (runningFromDartRepo) {
-    currentBarback = p.join(dartRepoRoot, 'third_party', 'pkg', 'barback');
-    pkgPath = p.join(dartRepoRoot, 'third_party', 'pkg');
-  } else {
-    // It would be nice if this could use HostedSource's logic, but it's
-    // asynchronous and this is a variable initializer.
-    currentBarback = packagePath('barback');
-    pkgPath = p.join(pubRoot, 'third_party');
-  }
-  versions[new Pubspec.load(currentBarback, new SourceRegistry()).version] =
-      currentBarback;
-
-  for (var dir in listDir(pkgPath)) {
-    var basename = p.basename(dir);
-    if (!basename.startsWith('barback-')) continue;
-    versions[new Version.parse(split1(basename, '-').last)] = dir;
-  }
-
-  return versions;
-}
-
-/// Runs the tests in [callback] against all versions of barback in the repo
-/// that match [versionConstraint].
-///
-/// This is used to test that pub doesn't accidentally break older versions of
-/// barback that it's committed to supporting. Only versions `0.13.0` and later
-/// will be tested.
-void withBarbackVersions(String versionConstraint, void callback()) {
-  var constraint = new VersionConstraint.parse(versionConstraint);
-
-  var validVersions = _barbackVersions.keys.where(constraint.allows);
-  if (validVersions.isEmpty) {
-    throw new ArgumentError(
-        'No available barback version matches "$versionConstraint".');
-  }
-
-  for (var version in validVersions) {
-    group("with barback $version", () {
-      setUp(() {
-        _packageOverrides = {};
-        _packageOverrides['barback'] = _barbackVersions[version];
-        _barbackDeps.forEach((constraint, deps) {
-          if (!constraint.allows(version)) return;
-
-          deps.forEach((packageName, version) {
-            _packageOverrides[packageName] = runningFromDartRepo
-                ? p.join(dartRepoRoot, 'third_party/pkg/$packageName-$version')
-                : p.join(pubRoot, 'third_party/$packageName-$version');
-          });
-        });
-
-        currentSchedule.onComplete.schedule(() {
-          _packageOverrides = null;
-        });
-      });
-
-      callback();
-    });
-  }
-}
-
 /// The completer for [port].
 Completer<int> get _portCompleter {
   if (_portCompleterCache != null) return _portCompleterCache;
@@ -768,19 +676,7 @@ LockFile _createLockFile(SourceRegistry sources, {Iterable<String> sandbox,
     _addPackage(String package) {
       if (dependencies.containsKey(package)) return;
 
-      var path;
-      if (package == 'barback' && _packageOverrides == null) {
-        throw new StateError("createLockFile() can only create a lock file "
-            "with a barback dependency within a withBarbackVersions() "
-            "block.");
-      }
-
-      if (_packageOverrides.containsKey(package)) {
-        path = _packageOverrides[package];
-      } else {
-        path = packagePath(package);
-      }
-
+      var path = packagePath(package);
       dependencies[package] = path;
       var pubspec = loadYaml(
           readTextFile(p.join(path, 'pubspec.yaml')));

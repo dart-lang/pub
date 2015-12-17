@@ -14,24 +14,22 @@ import '../serve/utils.dart';
 main() {
   // A syntax error will cause the analyzer to fail to parse the transformer
   // when attempting to rewrite its imports.
-  withBarbackVersions("any", () {
-    integration("fails to load a transform with a syntax error", () {
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": ["myapp/src/transformer"]
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", "syntax error")
-        ])])
-      ]).create();
+  integration("fails to load a transform with a syntax error", () {
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"]
+      }),
+      d.dir("lib", [d.dir("src", [
+        d.file("transformer.dart", "syntax error")
+      ])])
+    ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
+    createLockFile('myapp', pkg: ['barback']);
 
-      var pub = startPubServe();
-      pub.stderr.expect(contains("unexpected token 'syntax'"));
-      pub.shouldExit(1);
-      pub.stderr.expect(never(contains('This is an unexpected error')));
-    });
+    var pub = startPubServe();
+    pub.stderr.expect(contains("unexpected token 'syntax'"));
+    pub.shouldExit(1);
+    pub.stderr.expect(never(contains('This is an unexpected error')));
   });
 }
