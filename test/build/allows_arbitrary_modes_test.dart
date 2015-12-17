@@ -29,10 +29,13 @@ class ModeTransformer extends Transformer {
 
 main() {
   integration("allows user-defined mode names", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", TRANSFORMER)
@@ -42,8 +45,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     schedulePub(args: ["build", "--mode", "depeche"]);
 
     d.dir(appPath, [

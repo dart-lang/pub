@@ -10,8 +10,10 @@ import '../serve/utils.dart';
 
 main() {
   integration("runs a third-party transformer on a local transformer", () {
+    serveBarback();
+
     d.dir("foo", [
-      d.libPubspec("foo", '1.0.0'),
+      d.libPubspec("foo", '1.0.0', deps: {"barback": "any"}),
       d.dir("lib", [
         d.file("transformer.dart", dartTransformer('foo'))
       ])
@@ -21,7 +23,9 @@ main() {
       d.pubspec({
         "name": "myapp",
         "transformers": ["foo/transformer", "myapp/transformer"],
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       }),
       d.dir("lib", [
         d.file("transformer.dart", dartTransformer('myapp'))
@@ -31,8 +35,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("main.dart",
         'const TOKEN = "((main.dart, foo), (myapp, foo))";');

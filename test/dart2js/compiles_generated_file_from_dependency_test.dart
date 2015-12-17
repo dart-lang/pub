@@ -11,11 +11,14 @@ import '../serve/utils.dart';
 main() {
   integration("compiles a Dart file that imports a generated file in another "
               "package to JS", () {
+    serveBarback();
+
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "0.0.1",
-        "transformers": ["foo/transformer"]
+        "transformers": ["foo/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("foo.dart", """
@@ -41,8 +44,7 @@ main() => print(foo());
       ])
     ]).create();
 
-    createLockFile("myapp", sandbox: ["foo"], pkg: ["barback"]);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("main.dart.js", contains("(before, munge)"));
     endPubServe();

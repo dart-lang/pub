@@ -10,10 +10,13 @@ import 'utils.dart';
 
 main() {
   integration("supports a user-defined lazy transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", LAZY_TRANSFORMER)
@@ -23,8 +26,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     // The build should complete without the transformer logging anything.
     server.stdout.expect('Build completed successfully');

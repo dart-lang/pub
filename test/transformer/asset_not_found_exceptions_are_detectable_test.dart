@@ -39,10 +39,13 @@ class GetInputTransformer extends Transformer {
 
 main() {
   integration("AssetNotFoundExceptions are detectable", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", transformer)
@@ -52,8 +55,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     requestShouldSucceed("foo.txt", JSON.encode({
       "package": "myapp",

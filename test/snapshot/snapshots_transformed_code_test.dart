@@ -32,7 +32,7 @@ class ReplaceTransformer extends Transformer {
 main() {
   integration("snapshots the transformed version of an executable", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {"barback": "any"},

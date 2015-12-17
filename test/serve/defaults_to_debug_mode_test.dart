@@ -30,10 +30,13 @@ class ModeTransformer extends Transformer {
 
 main() {
   integration("defaults to debug mode", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", TRANSFORMER)
@@ -43,8 +46,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "debug");
     endPubServe();

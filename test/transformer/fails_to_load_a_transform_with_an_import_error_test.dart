@@ -14,17 +14,20 @@ main() {
   // An import error will cause the isolate API to fail synchronously while
   // loading the transformer.
   integration("fails to load a transform with an import error", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", "import 'does/not/exist.dart';")
       ])])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
+    pubGet();
     var pub = startPubServe();
     pub.stderr.expect("Unable to spawn isolate: Unhandled exception:");
     pub.stderr.expect(

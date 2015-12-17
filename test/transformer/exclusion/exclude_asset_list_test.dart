@@ -10,6 +10,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("excludes a list of assets", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -22,7 +24,8 @@ main() {
               ]
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -36,8 +39,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShould404("foo.out");
     requestShould404("sub/foo.out");

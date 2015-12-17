@@ -27,10 +27,13 @@ class DartTransformer extends Transformer {
 
 main() {
    integration('runs a local script with customizable modes', () {
+     serveBarback();
+
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": ["myapp/src/transformer"]
+         "transformers": ["myapp/src/transformer"],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", TRANSFORMER),
@@ -38,7 +41,7 @@ main() {
        ])])
      ]).create();
 
-     createLockFile('myapp', pkg: ['barback']);
+     pubGet();
 
      // By default it should run in debug mode.
      var pub = pubRun(args: ["bin/script"]);
@@ -52,11 +55,14 @@ main() {
    });
 
    integration('runs a dependency script with customizable modes', () {
+     serveBarback();
+
      d.dir("foo", [
        d.pubspec({
          "name": "foo",
          "version": "1.2.3",
-         "transformers": ["foo/src/transformer"]
+         "transformers": ["foo/src/transformer"],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", TRANSFORMER),
@@ -66,7 +72,7 @@ main() {
 
      d.appDir({"foo": {"path": "../foo"}}).create();
 
-     createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
+     pubGet();
 
      // By default it should run in release mode.
      var pub = pubRun(args: ["foo:script"]);

@@ -27,18 +27,20 @@ class RejectConfigTransformer extends Transformer {
 
 main() {
    integration("a transformer can reject is configuration", () {
+     serveBarback();
+
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": [{"myapp/src/transformer": {'foo': 'bar'}}]
+         "transformers": [{"myapp/src/transformer": {'foo': 'bar'}}],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)
        ])])
      ]).create();
 
-     createLockFile('myapp', pkg: ['barback']);
-
+     pubGet();
      var pub = startPubServe();
      pub.stderr.expect(endsWith('Error loading transformer: I hate these '
          'settings!'));

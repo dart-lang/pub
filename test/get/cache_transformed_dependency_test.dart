@@ -59,7 +59,7 @@ class HasInputTransformer extends Transformer {
 main() {
   integration("caches a transformed dependency", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -85,7 +85,7 @@ main() {
 
   integration("caches a dependency transformed by its dependency", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'bar': '1.2.3'},
@@ -118,7 +118,7 @@ main() {
 
   integration("doesn't cache an untransformed dependency", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           contents: [
@@ -137,7 +137,7 @@ main() {
 
   integration("recaches when the dependency is updated", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -184,7 +184,7 @@ main() {
 
   integration("recaches when a transitive dependency is updated", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {
@@ -211,7 +211,7 @@ main() {
 
   integration("doesn't recache when an unrelated dependency is updated", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -235,7 +235,7 @@ main() {
 
   integration("caches the dependency in debug mode", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -261,7 +261,7 @@ main() {
 
   integration("loads code from the cache", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -299,7 +299,7 @@ main() {
 
   integration("doesn't re-transform code loaded from the cache", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -340,7 +340,7 @@ main() {
   // Regression test for issue 21087.
   integration("hasInput works for static packages", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},
@@ -379,7 +379,7 @@ main() {
   integration("decaches when the dependency is updated to something "
       "untransformed", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {'barback': 'any'},

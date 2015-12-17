@@ -11,13 +11,16 @@ import '../serve/utils.dart';
 // Regression test for issue 21726.
 main() {
   integration("runs a dart2js transformer before a local transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
           r"$dart2js",
           "myapp/src/transformer"
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -27,8 +30,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();

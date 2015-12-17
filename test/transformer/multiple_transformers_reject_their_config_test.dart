@@ -29,6 +29,8 @@ class RejectConfigTransformer extends Transformer {
 main() {
     integration("multiple transformers in the same phase reject their "
         "configurations", () {
+      serveBarback();
+
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
@@ -36,15 +38,15 @@ main() {
             {"myapp/src/transformer": {'foo': 'bar'}},
             {"myapp/src/transformer": {'baz': 'bang'}},
             {"myapp/src/transformer": {'qux': 'fblthp'}}
-          ]]
+          ]],
+          "dependencies": {"barback": "any"}
         }),
         d.dir("lib", [d.dir("src", [
           d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)
         ])])
       ]).create();
 
-      createLockFile('myapp', pkg: ['barback']);
-
+      pubGet();
       // We should see three instances of the error message, once for each
       // use of the transformer.
       var pub = startPubServe();

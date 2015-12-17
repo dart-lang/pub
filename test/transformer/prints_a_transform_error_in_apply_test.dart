@@ -24,10 +24,13 @@ class RewriteTransformer extends Transformer {
 
 main() {
   integration("prints a transform error in apply", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", transformer)
@@ -37,8 +40,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     server.stderr.expect(emitsLines(
         'Build error:\n'

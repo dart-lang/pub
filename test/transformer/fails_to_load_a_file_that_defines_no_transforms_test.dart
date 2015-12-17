@@ -13,18 +13,20 @@ import '../serve/utils.dart';
 
 main() {
   integration("fails to load a file that defines no transforms", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/transformer"]
+        "transformers": ["myapp/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("transformer.dart", "library does_nothing;")
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var pub = startPubServe();
     pub.stderr.expect(startsWith('No transformers were defined in '));
     pub.stderr.expect(startsWith('required by myapp.'));

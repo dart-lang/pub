@@ -46,10 +46,13 @@ class LoggingTransformer extends Transformer implements LazyTransformer {
 
 main() {
   integration('displays transformer log messages', () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("lib.dart", LIB),
@@ -62,8 +65,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var pub = pubRun(args: ["bin/script"]);
 
     // Note that the info log is only displayed here because the test

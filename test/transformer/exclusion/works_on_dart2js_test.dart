@@ -13,6 +13,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("works on the dart2js transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -23,7 +25,8 @@ main() {
               "\$exclude": "web/a.dart"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("web", [
         d.file("a.dart", "void main() => print('hello');"),
@@ -32,8 +35,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     // Dart2js should remain lazy.
     server.stdout.expect("Build completed successfully");

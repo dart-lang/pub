@@ -9,6 +9,8 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:scheduled_test/scheduled_test.dart';
@@ -103,6 +105,14 @@ void servePackages(void callback(PackageServerBuilder builder),
 /// This will always replace a previous server.
 void serveNoPackages() => servePackages((_) {}, replace: true);
 
+/// A shortcut for [servePackages] that serves the version of barback used by
+/// pub.
+void serveBarback() {
+  servePackages((builder) {
+    builder.serveRealPackage('barback');
+  });
+}
+
 /// A builder for specifying which packages should be served by [servePackages].
 class PackageServerBuilder {
   /// A map from package names to a list of concrete packages to serve.
@@ -147,8 +157,8 @@ class PackageServerBuilder {
   }
 
   /// Serves the versions of [package] and all its dependencies that are
-  /// currently checked into the Dart repository.
-  void serveRepoPackage(String package) {
+  /// currently depended on by pub.
+  void serveRealPackage(String package) {
     _addPackage(name) {
       if (_packages.containsKey(name)) return;
       _packages[name] = [];

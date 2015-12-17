@@ -10,11 +10,14 @@ import '../serve/utils.dart';
 
 main() {
   integration("compiles a generated Dart file to JS", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "version": "0.0.1",
-        "transformers": ["myapp/transformer"]
+        "transformers": ["myapp/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("transformer.dart", dartTransformer("munge"))
@@ -27,8 +30,7 @@ void main() => print(TOKEN);
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("main.dart.js", contains("(before, munge)"));
     endPubServe();

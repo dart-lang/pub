@@ -22,10 +22,13 @@ class RewriteGroup implements TransformerGroup {
 
 main() {
   integration("runs a transformer group", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/group"]
+        "transformers": ["myapp/src/group"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER),
@@ -36,8 +39,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();

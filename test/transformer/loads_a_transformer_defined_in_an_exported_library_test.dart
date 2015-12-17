@@ -10,10 +10,13 @@ import '../serve/utils.dart';
 
 main() {
   integration("loads a transformer defined in an exported library", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp"]
+        "transformers": ["myapp"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("myapp.dart", "export 'src/transformer.dart';"),
@@ -26,8 +29,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();

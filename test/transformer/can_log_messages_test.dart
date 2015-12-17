@@ -39,10 +39,13 @@ class RewriteTransformer extends Transformer {
 
 main() {
   integration("can log messages", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", TRANSFORMER)
@@ -52,8 +55,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var pub = startPub(args: ["build"]);
     pub.stdout.expect(startsWith("Loading source assets..."));
     pub.stdout.expect(consumeWhile(matches("Loading .* transformers...")));

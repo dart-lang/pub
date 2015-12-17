@@ -10,6 +10,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("allows a directory prefix to exclude", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -19,7 +21,8 @@ main() {
               "\$exclude": "web/sub"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -36,8 +39,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     requestShouldSucceed("bar.out", "bar.out");

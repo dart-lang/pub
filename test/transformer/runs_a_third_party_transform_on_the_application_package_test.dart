@@ -10,8 +10,10 @@ import '../serve/utils.dart';
 
 main() {
   integration("runs a third-party transform on the application package", () {
+    serveBarback();
+
     d.dir("foo", [
-      d.libPubspec("foo", '1.0.0'),
+      d.libPubspec("foo", '1.0.0', deps: {"barback": "any"}),
       d.dir("lib", [
         d.file("foo.dart", REWRITE_TRANSFORMER)
       ])
@@ -20,16 +22,15 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
-        "transformers": ["foo"]
+        "transformers": ["foo"],
+        "dependencies": {"foo": {"path": "../foo"}}
       }),
       d.dir("web", [
         d.file("foo.txt", "foo")
       ])
     ]).create();
 
-    createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();

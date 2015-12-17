@@ -573,44 +573,6 @@ void ensureGit() {
   }
 }
 
-/// Schedules activating a global package [package] without running
-/// "pub global activate".
-///
-/// This is useful because global packages must be hosted, but the test hosted
-/// server doesn't serve barback. The other parameters here follow
-/// [createLockFile].
-void makeGlobalPackage(String package, String version,
-    Iterable<d.Descriptor> contents, {Iterable<String> pkg,
-    Map<String, String> hosted}) {
-  // Start the server so we know what port to use in the cache directory name.
-  serveNoPackages();
-
-  // Create the package in the hosted cache.
-  d.hostedCache([
-    d.dir("$package-$version", contents)
-  ]).create();
-
-  // Write the lockfile to the global cache.
-  var cache = new SystemCache.withSources(
-      rootDir: p.join(sandboxDir, cachePath));
-
-  var lockFile = _createLockFile(cache.sources, pkg: pkg, hosted: hosted);
-
-  // Add the root package to the lockfile.
-  var id = new PackageId(package, "hosted", new Version.parse(version),
-      package);
-  lockFile = lockFile.setPackage(id);
-
-  d.dir(cachePath, [
-    d.dir("global_packages", [
-      d.dir(package, [
-        d.file("pubspec.lock", lockFile.serialize(null)),
-        d.file(".packages", lockFile.packagesFile())
-      ])
-    ])
-  ]).create();
-}
-
 /// Creates a lock file for [package] without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
@@ -621,13 +583,13 @@ void makeGlobalPackage(String package, String version,
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 void createLockFile(String package, {Iterable<String> sandbox,
-    Iterable<String> pkg, Map<String, String> hosted}) {
+    Map<String, String> hosted}) {
   schedule(() async {
     var cache = new SystemCache.withSources(
         rootDir: p.join(sandboxDir, cachePath));
 
     var lockFile = _createLockFile(cache.sources,
-        sandbox: sandbox, pkg: pkg, hosted: hosted);
+        sandbox: sandbox, hosted: hosted);
 
     await d.dir(package, [
       d.file('pubspec.lock', lockFile.serialize(null)),
@@ -639,13 +601,13 @@ void createLockFile(String package, {Iterable<String> sandbox,
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
 void createPackagesFile(String package, {Iterable<String> sandbox,
-    Iterable<String> pkg, Map<String, String> hosted}) {
+    Map<String, String> hosted}) {
   schedule(() async {
     var cache = new SystemCache.withSources(
         rootDir: p.join(sandboxDir, cachePath));
 
     var lockFile = _createLockFile(cache.sources,
-        sandbox: sandbox, pkg: pkg, hosted: hosted);
+        sandbox: sandbox, hosted: hosted);
 
     await d.dir(package, [
       d.file('.packages', lockFile.packagesFile(package))
@@ -663,29 +625,13 @@ void createPackagesFile(String package, {Iterable<String> sandbox,
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 LockFile _createLockFile(SourceRegistry sources, {Iterable<String> sandbox,
-    Iterable<String> pkg, Map<String, String> hosted}) {
+    Map<String, String> hosted}) {
   var dependencies = {};
 
   if (sandbox != null) {
     for (var package in sandbox) {
       dependencies[package] = '../$package';
     }
-  }
-
-  if (pkg != null) {
-    _addPackage(String package) {
-      if (dependencies.containsKey(package)) return;
-
-      var path = packagePath(package);
-      dependencies[package] = path;
-      var pubspec = loadYaml(
-          readTextFile(p.join(path, 'pubspec.yaml')));
-      var packageDeps = pubspec['dependencies'];
-      if (packageDeps == null) return;
-      packageDeps.keys.forEach(_addPackage);
-    }
-
-    pkg.forEach(_addPackage);
   }
 
   var packages = dependencies.keys.map((name) {

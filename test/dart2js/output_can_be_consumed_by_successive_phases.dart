@@ -28,18 +28,19 @@ class RewriteTransformer extends Transformer {
 
 main() {
   integration("output can be consumed by successive phases", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["\$dart2js", "myapp/src/transformer"]
+        "transformers": ["\$dart2js", "myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", JS_REWRITE_TRANSFORMER)
       ])]),
       d.dir("web", [d.file("main.dart", "void main() {}")])
     ]).create();
-
-    createLockFile('myapp', pkg: ['barback']);
 
     pubGet();
     pubServe();

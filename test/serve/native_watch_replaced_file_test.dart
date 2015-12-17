@@ -18,10 +18,13 @@ main() {
   // This is a regression test for http://dartbug.com/21402.
    integration("picks up files replaced after serving started when using the "
        "native watcher", () {
+     serveBarback();
+
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": ["myapp/src/transformer"]
+         "transformers": ["myapp/src/transformer"],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -32,8 +35,7 @@ main() {
        d.file("other", "after")
      ]).create();
 
-     createLockFile("myapp", pkg: ["barback"]);
-
+     pubGet();
      pubServe(args: ["--no-force-poll"]);
      waitForBuildSuccess();
      requestShouldSucceed("file.out", "before.out");

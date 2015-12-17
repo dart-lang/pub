@@ -13,6 +13,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("works on a lazy transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -23,7 +25,8 @@ main() {
               "\$exclude": "web/a.txt"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.file("transformer.dart", LAZY_TRANSFORMER)]),
       d.dir("web", [
@@ -33,8 +36,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     // The transformer should remain lazy.
     server.stdout.expect("Build completed successfully");

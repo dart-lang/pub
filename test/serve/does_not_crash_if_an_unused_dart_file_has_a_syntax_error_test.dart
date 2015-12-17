@@ -10,10 +10,13 @@ import 'utils.dart';
 
 main() {
   integration("doesn't crash if an unused .dart file has a syntax error", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER),
@@ -24,8 +27,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();

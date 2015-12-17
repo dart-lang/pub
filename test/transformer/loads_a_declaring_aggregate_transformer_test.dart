@@ -43,10 +43,13 @@ class ManyToOneTransformer extends AggregateTransformer
 
 main() {
   integration("loads a declaring aggregate transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/lazy", "myapp/aggregate"]
+        "transformers": ["myapp/lazy", "myapp/aggregate"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("lazy.dart", LAZY_TRANSFORMER),
@@ -58,8 +61,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     // The transformer should preserve laziness.
     server.stdout.expect("Build completed successfully");

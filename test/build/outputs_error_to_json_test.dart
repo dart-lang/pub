@@ -28,10 +28,13 @@ class RewriteTransformer extends Transformer {
 
 main() {
    integration("outputs error to JSON in a failed build", () {
+     serveBarback();
+
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": ["myapp"]
+         "transformers": ["myapp"],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [
          d.file("transformer.dart", TRANSFORMER)
@@ -41,8 +44,7 @@ main() {
        ])
      ]).create();
 
-     createLockFile('myapp', pkg: ['barback']);
-
+     pubGet();
      schedulePub(args: ["build", "--format", "json"],
          outputJson: {
            "buildResult": "failure",

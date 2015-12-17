@@ -49,12 +49,15 @@ class RewriteTransformer extends Transformer {
 main() {
    integration("with configuration, only instantiates configurable "
        "transformers", () {
+     serveBarback();
+
      var configuration = {"param": ["list", "of", "values"]};
 
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": [{"myapp/src/transformer": configuration}]
+         "transformers": [{"myapp/src/transformer": configuration}],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", transformer)
@@ -64,8 +67,7 @@ main() {
        ])
      ]).create();
 
-     createLockFile('myapp', pkg: ['barback']);
-
+     pubGet();
      var server = pubServe();
      requestShouldSucceed("foo.json", JSON.encode(configuration));
      requestShould404("foo.out");

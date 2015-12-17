@@ -10,7 +10,7 @@ main() {
   // Regression test for issue 23480
   integration("ignores a transformer on test files in a dependency", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("bar", "1.2.3", contents: [
         d.dir("lib", [

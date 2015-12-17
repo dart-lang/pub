@@ -96,10 +96,13 @@ main() async {
   });
 
   integration('the spawned application can load a transformed resource', () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/transformer"]
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("resource.in", "hello!"),
@@ -121,8 +124,7 @@ main() async {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var pub = pubRun(args: ["bin/script"]);
 
     // TODO(nweiz): Enable this when sdk#23990 is fixed.

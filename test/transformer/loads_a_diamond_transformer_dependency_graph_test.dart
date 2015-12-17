@@ -10,6 +10,8 @@ import '../serve/utils.dart';
 
 main() {
    integration("loads a diamond transformer dependency graph", () {
+     serveBarback();
+
      d.dir("top", [
        d.pubspec({
          "name": "top",
@@ -25,7 +27,10 @@ main() {
          "name": "left",
          "version": "1.0.0",
          "transformers": ["top/transformer"],
-         "dependencies": {"top": {"path": "../top"}}
+         "dependencies": {
+           "top": {"path": "../top"},
+           "barback": "any"
+         }
        }),
        d.dir("lib", [
          d.file("transformer.dart", dartTransformer('left')),
@@ -37,7 +42,10 @@ main() {
          "name": "right",
          "version": "1.0.0",
          "transformers": ["top/transformer"],
-         "dependencies": {"top": {"path": "../top"}}
+         "dependencies": {
+           "top": {"path": "../top"},
+           "barback": "any"
+         }
        }),
        d.dir("lib", [
          d.file("transformer.dart", dartTransformer('right')),
@@ -55,6 +63,7 @@ main() {
          "dependencies": {
            'left': {'path': '../left'},
            'right': {'path': '../right'},
+           'barback': 'any'
          }
        }),
        d.dir("lib", [
@@ -65,10 +74,7 @@ main() {
        ])
      ]).create();
 
-     createLockFile('myapp',
-         sandbox: ['top', 'left', 'right'],
-         pkg: ['barback']);
-
+     pubGet();
      pubServe();
      requestShouldSucceed("main.dart",
          'const TOKEN = "(((main.dart, (left, top)), (right, top)), ((myapp, '

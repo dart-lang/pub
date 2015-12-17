@@ -26,7 +26,7 @@ main() {
   // Regression test for issue 20917.
   integration("snapshots the transformed version of an executable", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           contents: [

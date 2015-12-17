@@ -27,6 +27,8 @@ main() {
      // code than the previous instance. This tests asserts that that doesn't
      // happen.
 
+     serveBarback();
+
      d.dir("foo", [
        d.pubspec({
          "name": "foo",
@@ -34,7 +36,8 @@ main() {
          "transformers": [
            {"foo/first": {"addition": " in foo"}},
            "foo/second"
-         ]
+         ],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [
          d.file("first.dart", dartTransformer('foo/first')),
@@ -54,7 +57,10 @@ main() {
            },
            {"foo/second": {"\$include": "web/second.dart"}}
          ],
-         "dependencies": {'foo': {'path': '../foo'}}
+         "dependencies": {
+           'foo': {'path': '../foo'},
+           'barback': 'any'
+         }
        }),
        d.dir("web", [
          // This is transformed by foo/first. It's used to see which
@@ -67,8 +73,7 @@ main() {
        ])
      ]).create();
 
-     createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
-
+     pubGet();
      pubServe();
 
      // The version of foo/first used on myapp should have myapp's

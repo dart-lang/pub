@@ -29,7 +29,7 @@ main() {
   integration('runs a script in an activated package with customizable modes',
       () {
     servePackages((builder) {
-      builder.serveRepoPackage("barback");
+      builder.serveRealPackage("barback");
 
       builder.serve("foo", "1.0.0",
           deps: {"barback": "any"},

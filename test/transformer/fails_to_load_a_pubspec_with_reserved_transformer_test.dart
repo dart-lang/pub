@@ -13,18 +13,20 @@ import '../serve/utils.dart';
 
 main() {
   integration("fails to load a pubspec with reserved transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["\$nonexistent"]
+        "transformers": ["\$nonexistent"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
       ])])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var pub = startPubServe();
     pub.stderr.expect(contains('Invalid transformer config: Unsupported '
         'built-in transformer \$nonexistent.'));

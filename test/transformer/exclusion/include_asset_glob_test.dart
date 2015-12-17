@@ -10,6 +10,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("allows a glob to include", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -19,7 +21,8 @@ main() {
               "\$include": "**/foo.txt"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -33,8 +36,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     requestShould404("bar.out");

@@ -37,6 +37,8 @@ class ManyToOneTransformer extends AggregateTransformer {
 
 main() {
   integration("works on an aggregate transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -47,7 +49,8 @@ main() {
               "\$exclude": "web/a.txt"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("transformer.dart", AGGREGATE_TRANSFORMER),
@@ -60,8 +63,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShouldSucceed("out.txt", "b\nc");
     endPubServe();

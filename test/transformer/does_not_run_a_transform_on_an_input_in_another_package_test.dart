@@ -10,11 +10,14 @@ import '../serve/utils.dart';
 
 main() {
   integration("does not run a transform on an input in another package", () {
+    serveBarback();
+
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "0.0.1",
-        "transformers": ["foo/transformer"]
+        "transformers": ["foo/transformer"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
         d.file("transformer.dart", REWRITE_TRANSFORMER),
@@ -29,8 +32,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', sandbox: ['foo'], pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShould404("packages/myapp/bar.out");
     endPubServe();

@@ -37,7 +37,7 @@ class ReplaceTransformer extends Transformer {
 // run. Fix this and move this to a real setUp call.
 void setUp() {
   servePackages((builder) {
-    builder.serveRepoPackage('barback');
+    builder.serveRealPackage('barback');
 
     builder.serve("foo", "1.2.3",
         deps: {'barback': 'any'},
@@ -209,7 +209,7 @@ main() {
 
   integration("recaches if a transitive dependency version changes", () {
     servePackages((builder) {
-      builder.serveRepoPackage('barback');
+      builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3",
           deps: {

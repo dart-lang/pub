@@ -35,12 +35,15 @@ class ConfigTransformer extends Transformer {
 
 main() {
    integration("passes configuration to a transformer", () {
+     serveBarback();
+
      var configuration = {"param": ["list", "of", "values"]};
 
      d.dir(appPath, [
        d.pubspec({
          "name": "myapp",
-         "transformers": [{"myapp/src/transformer": configuration}]
+         "transformers": [{"myapp/src/transformer": configuration}],
+         "dependencies": {"barback": "any"}
        }),
        d.dir("lib", [d.dir("src", [
          d.file("transformer.dart", transformer)
@@ -50,8 +53,7 @@ main() {
        ])
      ]).create();
 
-     createLockFile('myapp', pkg: ['barback']);
-
+     pubGet();
      var server = pubServe();
      requestShouldSucceed("foo.json", JSON.encode(configuration));
      endPubServe();

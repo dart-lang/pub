@@ -10,6 +10,8 @@ import '../../serve/utils.dart';
 
 main() {
   integration("applies includes before excludes if both are present", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -20,7 +22,8 @@ main() {
               "\$exclude": "web/a.txt"
             }
           }
-        ]
+        ],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         d.file("transformer.dart", REWRITE_TRANSFORMER)
@@ -32,8 +35,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     pubServe();
     requestShould404("a.out");
     requestShouldSucceed("b.out", "b.txt.out");

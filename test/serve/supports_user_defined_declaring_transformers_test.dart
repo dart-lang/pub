@@ -36,10 +36,13 @@ class DeclaringRewriteTransformer extends Transformer
 
 main() {
   integration("supports a user-defined declaring transformer", () {
+    serveBarback();
+
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": ["myapp/src/lazy", "myapp/src/declaring"]
+        "transformers": ["myapp/src/lazy", "myapp/src/declaring"],
+        "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [d.dir("src", [
         // Include a lazy transformer before the declaring transformer,
@@ -53,8 +56,7 @@ main() {
       ])
     ]).create();
 
-    createLockFile('myapp', pkg: ['barback']);
-
+    pubGet();
     var server = pubServe();
     // The build should complete without either transformer logging anything.
     server.stdout.expect('Build completed successfully');
