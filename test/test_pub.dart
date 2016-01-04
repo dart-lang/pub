@@ -219,8 +219,8 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-void pubCommand(RunCommand command,
-    {Iterable<String> args, output, error, warning, int exitCode}) {
+void pubCommand(RunCommand command, {Iterable<String> args, output, error,
+    warning, int exitCode, Map<String, String> environment}) {
   if (error != null && warning != null) {
     throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -236,23 +236,26 @@ void pubCommand(RunCommand command,
   if (error != null) output = null;
   if (warning != null) error = warning;
 
-  schedulePub(args: allArgs, output: output, error: error, exitCode: exitCode);
+  schedulePub(args: allArgs, output: output, error: error, exitCode: exitCode,
+      environment: environment);
 }
 
-void pubGet({Iterable<String> args, output, error, warning, int exitCode}) {
+void pubGet({Iterable<String> args, output, error, warning, int exitCode,
+    Map<String, String> environment}) {
   pubCommand(RunCommand.get, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode);
+      warning: warning, exitCode: exitCode, environment: environment);
 }
 
-void pubUpgrade({Iterable<String> args, output, error, warning, int exitCode}) {
+void pubUpgrade({Iterable<String> args, output, error, warning, int exitCode,
+    Map<String, String> environment}) {
   pubCommand(RunCommand.upgrade, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode);
+      warning: warning, exitCode: exitCode, environment: environment);
 }
 
 void pubDowngrade({Iterable<String> args, output, error, warning,
-    int exitCode}) {
+    int exitCode, Map<String, String> environment}) {
   pubCommand(RunCommand.downgrade, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode);
+      warning: warning, exitCode: exitCode, environment: environment);
 }
 
 /// Schedules starting the "pub [global] run" process and validates the

@@ -75,6 +75,14 @@ class SolveResult {
   /// because it found an invalid solution.
   final int attemptedSolutions;
 
+  /// The [LockFile] representing the packages selected by this version
+  /// resolution.
+  LockFile get lockFile {
+    var sdkConstraint = new VersionConstraint.intersection(
+        pubspecs.values.map((pubspec) => pubspec.environment.sdkVersion));
+    return new LockFile(packages, _sources, sdkConstraint: sdkConstraint);
+  }
+
   final SourceRegistry _sources;
   final Package _root;
   final LockFile _previousLockFile;

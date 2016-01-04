@@ -53,10 +53,7 @@ class PackageGraph {
           entrypoint.cache.sources[id.source].getDirectory(id));
     });
 
-    return new PackageGraph(
-        entrypoint,
-        new LockFile(result.packages, entrypoint.cache.sources),
-        packages);
+    return new PackageGraph(entrypoint, result.lockFile, packages);
   }
 
   /// Loads the transformer cache for this graph.

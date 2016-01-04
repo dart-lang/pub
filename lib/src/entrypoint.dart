@@ -7,9 +7,10 @@ library pub.entrypoint;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:barback/barback.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
-import 'package:barback/barback.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
 import 'io.dart';
@@ -20,8 +21,12 @@ import 'package_graph.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
+import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
+
+/// A RegExp to match the SDK constraint in a lock file.
+final _sdkConstraint = new RegExp(r'^sdk: "?([^"]*)"?$', multiLine: true);
 
 /// The context surrounding the root package pub is operating on.
 ///
@@ -86,10 +91,7 @@ class Entrypoint {
     assertUpToDate();
     var packages = new Map.fromIterable(lockFile.packages.values,
         key: (id) => id.name,
-        value: (id) {
-      var dir = cache.sources[id.source].getDirectory(id);
-      return new Package.load(id.name, dir, cache.sources);
-    });
+        value: (id) => cache.sources.load(id));
     packages[root.name] = root;
 
     _packageGraph = new PackageGraph(this, lockFile, packages);
@@ -174,7 +176,7 @@ class Entrypoint {
     }
 
     await Future.wait(result.packages.map(_get));
-    _saveLockFile(result.packages);
+    _saveLockFile(result);
 
     if (_packageSymlinks) _linkSelf();
     _linkOrDeleteSecondaryPackageDirs();
@@ -420,11 +422,17 @@ class Entrypoint {
       dataError('No .packages file found, please run "pub get" first.');
     }
 
+    // Manually parse the lockfile because a full YAML parse is relatively slow
+    // and this is on the hot path for "pub run".
+    var lockFileText = readTextFile(lockFilePath);
+    var hasPathDependencies = lockFileText.contains("\n    source: path\n");
+
     var pubspecModified = new File(pubspecPath).lastModifiedSync();
     var lockFileModified = new File(lockFilePath).lastModifiedSync();
 
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified)) {
+    if (lockFileModified.isBefore(pubspecModified) ||
+        hasPathDependencies) {
       if (_isLockFileUpToDate() && _arePackagesAvailable()) {
         touchedLockFile = true;
         touch(lockFilePath);
@@ -445,41 +453,59 @@ class Entrypoint {
     } else if (touchedLockFile) {
       touch(packagesFile);
     }
+
+    var sdkConstraint = _sdkConstraint.firstMatch(lockFileText);
+    if (sdkConstraint != null) {
+      var parsedConstraint = new VersionConstraint.parse(sdkConstraint[1]);
+      if (!parsedConstraint.allows(sdk.version)) {
+        dataError("Dart ${sdk.version} is incompatible with your dependencies' "
+            "SDK constraints. Please run \"pub get\" again.");
+      }
+    }
   }
 
   /// Determines whether or not the lockfile is out of date with respect to the
   /// pubspec.
   ///
-  /// This will be `false` if the pubspec contains dependencies that are not in
-  /// the lockfile or that don't match what's in there.
+  /// This will be `false` if any mutable pubspec contains dependencies that are
+  /// not in the lockfile or that don't match what's in there.
   bool _isLockFileUpToDate() {
-    return root.immediateDependencies.every((package) {
-      var locked = lockFile.packages[package.name];
-      if (locked == null) return false;
+    if (!root.immediateDependencies.every(_isDependencyUpToDate)) return false;
 
-      if (package.source != locked.source) return false;
+    var overrides = root.dependencyOverrides.map((dep) => dep.name).toSet();
 
-      if (!package.constraint.allows(locked.version)) return false;
+    // Check that uncached dependencies' pubspecs are also still satisfied,
+    // since they're mutable and may have changed since the last get.
+    return lockFile.packages.values.every((id) {
+      var source = cache.sources[id.name];
+      if (source is! CachedSource) return true;
 
-      var source = cache.sources[package.source];
-      if (source == null) return false;
-
-      return source.descriptionsEqual(package.description, locked.description);
+      return cache.sources.load(id).dependencies.every((dep) =>
+          overrides.contains(dep.name) || _isDependencyUpToDate(dep));
     });
+  }
+
+  /// Returns whether the locked version of [dep] matches the dependency.
+  bool _isDependencyUpToDate(PackageDep dep) {
+    var locked = lockFile.packages[dep.name];
+    if (locked == null) return false;
+
+    if (dep.source != locked.source) return false;
+
+    if (!dep.constraint.allows(locked.version)) return false;
+
+    var source = cache.sources[dep.source];
+    if (source == null) return false;
+
+    return source.descriptionsEqual(dep.description, locked.description);
   }
 
   /// Determines whether all of the packages in the lockfile are already
   /// installed and available.
-  ///
-  /// Note: this assumes [_isLockFileUpToDate] has already been called and
-  /// returned `true`.
   bool _arePackagesAvailable() {
     return lockFile.packages.values.every((package) {
       var source = cache.sources[package.source];
-
-      // This should only be called after [_isLockFileUpToDate] has returned
-      // `true`, which ensures all of the sources in the lock file are valid.
-      assert(source != null);
+      if (source is UnknownSource) return false;
 
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
@@ -542,8 +568,8 @@ class Entrypoint {
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
-  void _saveLockFile(List<PackageId> packageIds) {
-    _lockFile = new LockFile(packageIds, cache.sources);
+  void _saveLockFile(SolveResult result) {
+    _lockFile = result.lockFile;
     var lockFilePath = root.path('pubspec.lock');
     writeTextFile(lockFilePath, _lockFile.serialize(root.dir));
   }

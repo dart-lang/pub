@@ -65,6 +65,17 @@ class SourceRegistry extends IterableBase<Source> {
     _sources[source.name] = source;
   }
 
+  /// Loads the package identified by [id].
+  ///
+  /// Throws an [ArgumentError] if [id] has an invalid source.
+  Package load(PackageId id) {
+    var source = this[id.source];
+    if (source == null) throw new ArgumentError("Unknown source ${id.source}.");
+
+    var dir = source.getDirectory(id);
+    return new Package.load(id.name, dir, this);
+  }
+
   /// Returns the source named [name].
   ///
   /// Returns an [UnknownSource] if no source with that name has been

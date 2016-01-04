@@ -265,6 +265,46 @@ foo:http://example.com/
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
           'file was generated, please run "pub get" again.');
     });
+
+    group("the lock file's SDK constraint doesn't match the current SDK", () {
+      setUp(() {
+        // Avoid using a path dependency because it triggers the full validation
+        // logic. We want to be sure SDK-validation works without that logic.
+        servePackages((builder) {
+          builder.serve("foo", "3.0.0", pubspec: {
+            "environment": {"sdk": ">=1.0.0 <2.0.0"}
+          });
+        });
+
+        d.dir(appPath, [
+          d.appPubspec({"foo": "3.0.0"})
+        ]).create();
+
+        pubGet(environment: {"_PUB_TEST_SDK_VERSION": "1.2.3+4"});
+      });
+
+      _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
+          "SDK constraints. Please run \"pub get\" again.");
+    });
+
+    group("a path dependency's dependency doesn't match the lockfile", () {
+      setUp(() {
+        d.dir("bar", [
+          d.libPubspec("bar", "1.0.0", deps: {"foo": "1.0.0"})
+        ]).create();
+
+        d.dir(appPath, [
+          d.appPubspec({"foo": {"path": "../foo"}})
+        ]);
+
+        pubGet();
+
+        // Update foo's pubspec without touching the app's.
+        d.dir("bar", [
+          d.libPubspec("bar", "1.0.0", deps: {"foo": "2.0.0"})
+        ]).create();
+      });
+    });
   });
 
   group("doesn't require the user to run pub get first if", () {

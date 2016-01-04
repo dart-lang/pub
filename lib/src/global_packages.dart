@@ -168,13 +168,14 @@ class GlobalPackages {
 
     // Make sure all of the dependencies are locally installed.
     await Future.wait(result.packages.map(_cacheDependency));
-    var lockFile = new LockFile(result.packages, cache.sources);
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     var entrypoint = new Entrypoint.fromSolveResult(root, cache, result,
         isGlobal: true);
     var snapshots = await _precompileExecutables(entrypoint, dep.name);
+
+    var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
     writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile());
 
@@ -309,10 +310,8 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      var dir = cache.sources[id.source].getDirectory(id);
-      var package = new Package.load(name, dir, cache.sources);
       entrypoint = new Entrypoint.inMemory(
-          package, lockFile, cache, isGlobal: true);
+          cache.sources.load(id), lockFile, cache, isGlobal: true);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
