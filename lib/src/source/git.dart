@@ -135,8 +135,7 @@ class GitSource extends CachedSource {
           "string.");
     }
 
-    // Ensure that it's a valid URL.
-    Uri.parse(description["url"]);
+    _validateUrl(description["url"]);
 
     var ref = description["ref"];
     if (ref != null && ref is! String) {
@@ -161,8 +160,7 @@ class GitSource extends CachedSource {
           "string.");
     }
 
-    // Ensure that it's a valid URL.
-    Uri.parse(description["url"]);
+    _validateUrl(description["url"]);
 
     var ref = description["ref"];
     if (ref != null && ref is! String) {
@@ -180,6 +178,16 @@ class GitSource extends CachedSource {
       "ref": description["ref"] ?? "HEAD",
       "resolved-ref": description["resolved-ref"]
     });
+  }
+
+  /// Throws a [FormatException] if [url] isn't a valid Git URL.
+  void _validateUrl(String url) {
+    // If the URL contains an @, it's probably an SSH hostname, which we don't
+    // know how to validate.
+    if (url.contains("@")) return;
+
+    // Otherwise, we use Dart's URL parser to validate the URL.
+    Uri.parse(url);
   }
 
   /// If [description] has a resolved ref, print it out in short-form.
