@@ -209,6 +209,7 @@ packages:
       ], sources);
 
       expect(loadYaml(lockfile.serialize(null)), equals({
+        'sdk': 'any',
         'packages': {
           'foo': {
             'version': '1.2.3',
