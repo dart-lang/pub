@@ -28,7 +28,7 @@ main() {
     ]).create();
 
     pubGet();
-    var server = pubServe();
+    pubServe();
     requestShouldSucceed("foo.out", "foo.out");
     endPubServe();
   });

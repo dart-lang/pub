@@ -7,8 +7,6 @@ library utils_test;
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
-
 main() {
   group('yamlToString()', () {
     test('null', () {

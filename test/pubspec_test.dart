@@ -14,8 +14,6 @@ import 'package:pub/src/source_registry.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
-
 class MockSource extends Source {
   final String name = "mock";
 

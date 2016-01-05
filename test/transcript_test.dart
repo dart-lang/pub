@@ -7,8 +7,6 @@ library version_test;
 import 'package:pub/src/transcript.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
-
 main() {
   test("discards from the middle once it reaches the maximum", () {
     var transcript = new Transcript<String>(4);

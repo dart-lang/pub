@@ -9,8 +9,6 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
-import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:scheduled_test/scheduled_test.dart';

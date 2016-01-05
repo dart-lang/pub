@@ -4,12 +4,10 @@
 
 library pub_tests;
 
-import 'package:scheduled_test/scheduled_stream.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import '../serve/utils.dart';
 
 const REPLACE_FROM_LIBRARY_TRANSFORMER = """
 import 'dart:async';

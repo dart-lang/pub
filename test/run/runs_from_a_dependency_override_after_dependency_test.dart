@@ -4,7 +4,6 @@
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import '../serve/utils.dart';
 
 main() {
   // Regression test for issue 23113

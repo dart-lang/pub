@@ -52,7 +52,7 @@ main() {
      ]).create();
 
      pubGet();
-     var server = pubServe();
+     pubServe();
      requestShouldSucceed("foo.json", JSON.encode({}));
      endPubServe();
    });

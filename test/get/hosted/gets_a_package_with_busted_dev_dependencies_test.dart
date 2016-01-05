@@ -4,8 +4,6 @@
 
 library pub_tests;
 
-import 'package:pub/src/exit_codes.dart' as exit_codes;
-
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 

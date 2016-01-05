@@ -8,8 +8,6 @@ import 'package:pub/src/preprocess.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
-
 main() {
   test("does nothing on a file without preprocessor directives", () {
     var text = '''

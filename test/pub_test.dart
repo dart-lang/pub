@@ -4,9 +4,6 @@
 
 library pub_tests;
 
-import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
-
 import 'test_pub.dart';
 
 main() {

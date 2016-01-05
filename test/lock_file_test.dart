@@ -15,8 +15,6 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
-import 'test_pub.dart';
-
 class MockSource extends Source {
   final String name = 'mock';
 
@@ -189,7 +187,7 @@ packages:
       });
 
       test("ignores extra stuff in file", () {
-        var lockFile = new LockFile.parse('''
+        new LockFile.parse('''
 extra:
   some: stuff
 packages:

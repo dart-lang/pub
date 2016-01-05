@@ -68,7 +68,7 @@ main() {
      ]).create();
 
      pubGet();
-     var server = pubServe();
+     pubServe();
      requestShouldSucceed("foo.json", JSON.encode(configuration));
      requestShould404("foo.out");
      endPubServe();

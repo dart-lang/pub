@@ -4,7 +4,6 @@
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import '../serve/utils.dart';
 
 const TRANSFORMER = """
 import 'dart:async';

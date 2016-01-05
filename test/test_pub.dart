@@ -14,10 +14,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:crypto/crypto.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
 // with the git descriptor method. Maybe we should try to clean up the top level
@@ -28,10 +28,6 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package.dart';
-import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart' as sdk;
-import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/source/path.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -43,10 +39,8 @@ import 'package:scheduled_test/scheduled_stream.dart';
 import 'package:scheduled_test/scheduled_test.dart' hide fail;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:yaml/yaml.dart';
 
 import 'descriptor.dart' as d;
-import 'serve_packages.dart';
 
 export 'serve_packages.dart';
 
@@ -281,15 +275,8 @@ ScheduledProcess pubRun({bool global: false, Iterable<String> args}) {
 ///
 /// The [body] should schedule a series of operations which will be run
 /// asynchronously.
-void integration(String description, void body()) =>
-  _integration(description, body, test);
-
-/// Like [integration], but causes only this test to run.
-void solo_integration(String description, void body()) =>
-  _integration(description, body, solo_test);
-
-void _integration(String description, void body(), [Function testFn]) {
-  testFn(description, () {
+void integration(String description, void body()) {
+  test(description, () {
     _sandboxDir = createSystemTempDir();
     d.defaultRoot = sandboxDir;
     currentSchedule.onComplete.schedule(() {
@@ -559,9 +546,6 @@ class PubProcess extends ScheduledProcess {
   }
 }
 
-/// The path to the `packages` directory from which pub loads its dependencies.
-String get _packageRoot => p.absolute(Platform.packageRoot);
-
 /// Fails the current test if Git is not installed.
 ///
 /// We require machines running these tests to have git installed. This
@@ -816,7 +800,7 @@ void _validateOutputJson(List<String> failures, String pipe,
   var actual;
   try {
     actual = JSON.decode(actualText);
-  } on FormatException catch(error) {
+  } on FormatException {
     failures.add('Expected $pipe JSON:');
     failures.add(expected);
     failures.add('Got invalid JSON:');

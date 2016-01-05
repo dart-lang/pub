@@ -18,8 +18,6 @@ import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
-
 MockSource source1;
 MockSource source2;
 
@@ -1110,27 +1108,9 @@ void downgrade() {
 testResolve(String description, Map packages, {
     Map lockfile, Map overrides, Map result, FailMatcherBuilder error,
     int maxTries, bool downgrade: false}) {
-  _testResolve(test, description, packages, lockfile: lockfile,
-      overrides: overrides, result: result, error: error, maxTries: maxTries,
-      downgrade: downgrade);
-}
-
-solo_testResolve(String description, Map packages, {
-    Map lockfile, Map overrides, Map result, FailMatcherBuilder error,
-    int maxTries, bool downgrade: false}) {
-  log.verbosity = log.Verbosity.SOLVER;
-  _testResolve(solo_test, description, packages, lockfile: lockfile,
-      overrides: overrides, result: result, error: error, maxTries: maxTries,
-      downgrade: downgrade);
-}
-
-_testResolve(void testFn(String description, Function body),
-    String description, Map packages, {
-    Map lockfile, Map overrides, Map result, FailMatcherBuilder error,
-    int maxTries, bool downgrade: false}) {
   if (maxTries == null) maxTries = 1;
 
-  testFn(description, () {
+  test(description, () {
     var cache = new SystemCache('.');
     source1 = new MockSource('mock1');
     source2 = new MockSource('mock2');
@@ -1439,7 +1419,7 @@ class MockSource extends CachedSource {
   List<Package> getCachedPackages() =>
       throw new UnsupportedError('Cannot get mock packages');
 
-  Future<Pair<List<Package>, List<Package>>> repairCachedPackages() =>
+  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() =>
       throw new UnsupportedError('Cannot repair mock packages');
 
   void addPackage(String description, Package package) {

@@ -5,16 +5,11 @@
 /// Pub-specific scheduled_test descriptors.
 library descriptor;
 
-import "dart:io" show File;
-
 import 'package:oauth2/oauth2.dart' as oauth2;
-import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/descriptor.dart';
 import 'package:scheduled_test/scheduled_server.dart';
-import 'package:package_config/packages_file.dart' as packages_file;
-import 'package:stack_trace/stack_trace.dart';
 
 import 'descriptor/git.dart';
 import 'descriptor/tar.dart';
