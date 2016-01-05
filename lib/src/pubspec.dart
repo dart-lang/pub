@@ -190,11 +190,8 @@ class Pubspec {
         });
 
         var package = config.id.package;
-        if (package != name &&
-            !config.id.isBuiltInTransformer &&
-            !dependencies.any((ref) => ref.name == package) &&
-            !devDependencies.any((ref) => ref.name == package) &&
-            !dependencyOverrides.any((ref) => ref.name == package)) {
+        if (package != name && !config.id.isBuiltInTransformer &&
+            !_hasDependency(package)) {
           _error('"$package" is not a dependency.',
               libraryNode.span);
         }
@@ -206,6 +203,26 @@ class Pubspec {
     return _transformers;
   }
   List<Set<TransformerConfig>> _transformers;
+
+  /// Returns whether this pubspec has any kind of dependency on [package].
+  ///
+  /// This explicitly avoids calling [_parseDependencies] because parsing dev
+  /// dependencies can fail for a hosted package's pubspec (e.g. if that package
+  /// has a relative path dev dependency).
+  bool _hasDependency(String package) {
+    return [
+      'dependencies', 'dev_dependencies', 'dependency_overrides'
+    ].any((field) {
+      var map = fields[field];
+      if (map == null) return false;
+
+      if (map is! Map) {
+        _error('"$field" field must be a map.', fields.nodes[field].span);
+      }
+
+      return map.containsKey(package);
+    });
+  }
 
   /// The environment-related metadata.
   PubspecEnvironment get environment {
