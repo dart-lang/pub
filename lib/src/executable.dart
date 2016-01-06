@@ -141,7 +141,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   process.stdout.listen(stdout.add);
   stdin.listen(process.stdin.add);
 
-  return process.exitCode;
+  // Work around dart-lang/sdk#25348.
+  process.stdin.done.catchError((_) {});
+
+  return await process.exitCode;
 }
 
 /// Returns the URL the VM should use to load the executable at [path].
