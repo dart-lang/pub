@@ -348,7 +348,7 @@ class Pubspec {
           // Make the package dir absolute because for the entrypoint it'll just
           // be ".", which may be confusing.
           'Could not find a file named "pubspec.yaml" in '
-              '"${path.normalize(path.absolute(packageDir))}".',
+              '"${canonicalize(packageDir)}".',
           pubspecPath);
     }
 
