@@ -347,6 +347,10 @@ void _attempt(String description, void operation()) {
       return "it was in use by another process";
     }
 
+    if (error.osError.errorCode == 145) {
+      return "of dart-lang/sdk#25353";
+    }
+
     return null;
   }
 
