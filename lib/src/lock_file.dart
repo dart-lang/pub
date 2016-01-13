@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library pub.lock_file;
-
 import 'dart:collection';
 
 import 'package:path/path.dart' as p;

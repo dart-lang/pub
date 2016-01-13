@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library pub.barback.cycle_exception;
-
 import '../exceptions.dart';
 
 /// An exception thrown when a transformer dependency cycle is detected.

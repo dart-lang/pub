@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Helper functionality to make working with IO easier.
-library pub.io;
-
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';

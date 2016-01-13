@@ -7,8 +7,6 @@
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
-library test_pub;
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

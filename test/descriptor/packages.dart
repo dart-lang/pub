@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Pub-specific scheduled_test descriptors.
-library descriptor.packages_file;
-
 import "dart:io" show File;
 import "dart:async" show Future;
 import "dart:convert" show UTF8;

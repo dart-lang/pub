@@ -26,14 +26,10 @@ void main() {
 """;
 
 const A = """
-library a;
-
 fn() => print("a");
 """;
 
 const B = """
-library b;
-
 fn() => print("b");
 """;
 

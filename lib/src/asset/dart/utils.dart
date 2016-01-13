@@ -4,8 +4,6 @@
 
 /// Functions go in this file as opposed to lib/src/utils.dart if they need to
 /// be accessible to the transformer-loading isolate.
-library pub.asset.utils;
-
 import 'dart:async';
 
 /// A regular expression to match the exception prefix that some exceptions'

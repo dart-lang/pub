@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library pub.package_graph;
-
 import 'barback/transformer_cache.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';

@@ -33,8 +33,6 @@
 /// doing this, traversing and then backtracking when it meets a failure until
 /// a valid solution has been found or until all possible options for all
 /// speculative choices have been exhausted.
-library pub.solver.backtracking_solver;
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';

@@ -22,8 +22,6 @@ main() {
       }),
       d.dir("lib", [
         d.file("foo.dart", """
-library foo;
-const TOKEN = "before";
 foo() => TOKEN;
 """),
         d.file("transformer.dart", dartTransformer("munge"))

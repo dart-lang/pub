@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library pub.command.version;
-
 import '../command.dart';
 import '../log.dart' as log;
 import '../sdk.dart' as sdk;

@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Helpers for dealing with HTTP.
-library pub.http;
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

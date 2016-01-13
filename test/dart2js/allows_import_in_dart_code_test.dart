@@ -14,8 +14,6 @@ main() {
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
         d.file("foo.dart", """
-library foo;
-foo() => 'footext';
 """)
       ])
     ]).create();
@@ -26,8 +24,6 @@ foo() => 'footext';
       }),
       d.dir("lib", [
         d.file("lib.dart", """
-library lib;
-lib() => 'libtext';
 """)
       ]),
       d.dir("web", [

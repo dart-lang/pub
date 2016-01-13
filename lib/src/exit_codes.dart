@@ -9,8 +9,6 @@
 /// encountered by pub.
 ///
 /// [manpage]: http://www.freebsd.org/cgi/man.cgi?query=sysexits
-library pub.exit_codes;
-
 /// The command completely successfully.
 const SUCCESS = 0;
 

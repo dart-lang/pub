@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Pub-specific scheduled_test descriptors.
-library descriptor;
-
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/utils.dart';

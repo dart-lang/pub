@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A simple library for rendering tree-like structures in ASCII.
-library pub.ascii_tree;
-
 import 'package:path/path.dart' as path;
 
 import 'log.dart' as log;
