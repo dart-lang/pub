@@ -30,6 +30,7 @@ import "other.dart";
 void main() => print(TOKEN);
 """),
         d.file("other.dart", """
+const TOKEN = "before";
 """)
       ])
     ]).create();
