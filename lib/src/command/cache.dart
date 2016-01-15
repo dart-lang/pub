@@ -5,6 +5,7 @@
 import '../command.dart';
 import 'cache_add.dart';
 import 'cache_list.dart';
+import 'cache_path.dart';
 import 'cache_repair.dart';
 
 /// Handles the `cache` pub command.
@@ -17,6 +18,7 @@ class CacheCommand extends PubCommand {
   CacheCommand() {
     addSubcommand(new CacheAddCommand());
     addSubcommand(new CacheListCommand());
+    addSubcommand(new CachePathCommand());
     addSubcommand(new CacheRepairCommand());
   }
 }
