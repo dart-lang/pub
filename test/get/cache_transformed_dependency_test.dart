@@ -203,7 +203,7 @@ main() {
     d.appDir({"foo": "1.2.3"}).create();
     pubGet(output: contains("Precompiled foo."));
 
-    servePackages((builder) => builder.serve("bar", "6.0.0"));
+    globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
     pubUpgrade(output: contains("Precompiled foo."));
   });
 
@@ -227,7 +227,7 @@ main() {
     d.appDir({"foo": "1.2.3"}).create();
     pubGet(output: contains("Precompiled foo."));
 
-    servePackages((builder) => builder.serve("bar", "6.0.0"));
+    globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
     pubUpgrade(output: isNot(contains("Precompiled foo.")));
   });
 

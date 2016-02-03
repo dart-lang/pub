@@ -1,4 +1,4 @@
-// Copyright (c) 2014, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -15,61 +15,84 @@ import 'package:yaml/yaml.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-/// The [d.DirectoryDescriptor] describing the server layout of `/api/packages`
-/// on the test server.
-///
-/// This contains metadata for packages that are being served via
-/// [servePackages]. It's `null` if [servePackages] has not yet been called for
-/// this test.
-d.DirectoryDescriptor _servedApiPackageDir;
+/// The current global [PackageServer].
+PackageServer get globalPackageServer => _globalPackageServer;
+PackageServer _globalPackageServer;
 
-/// The [d.DirectoryDescriptor] describing the server layout of `/packages` on
-/// the test server.
-///
-/// This contains the tarballs for packages that are being served via
-/// [servePackages]. It's `null` if [servePackages] has not yet been called for
-/// this test.
-d.DirectoryDescriptor _servedPackageDir;
-
-/// The current [PackageServerBuilder] that a user uses to specify which package
-/// to serve.
-///
-/// This is preserved over multiple calls to [servePackages] within the same
-/// test so that additional packages can be added.
-PackageServerBuilder _builder;
-
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org.
+/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
+/// makes it the current [globalServer].
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
+void servePackages(void callback(PackageServerBuilder builder)) {
+  _globalPackageServer = new PackageServer(callback);
+  globalServer = _globalPackageServer._inner;
+
+  currentSchedule.onComplete.schedule(() {
+    _globalPackageServer = null;
+  }, 'clearing the global package server');
+}
+
+/// Like [servePackages], but instead creates an empty server with no packages
+/// registered.
 ///
-/// If [replace] is false, subsequent calls to [servePackages] will add to the
-/// set of packages that are being served. Previous packages will continue to be
-/// served. Otherwise, the previous packages will no longer be served.
-void servePackages(void callback(PackageServerBuilder builder),
-    {bool replace: false}) {
-  if (_servedPackageDir == null) {
-    _builder = new PackageServerBuilder();
-    _servedApiPackageDir = d.dir('packages', []);
-    _servedPackageDir = d.dir('packages', []);
-    serve([
+/// This will always replace a previous server.
+void serveNoPackages() => servePackages((_) {}, replace: true);
+
+/// A shortcut for [servePackages] that serves the version of barback used by
+/// pub.
+void serveBarback() {
+  servePackages((builder) {
+    builder.serveRealPackage('barback');
+  });
+}
+
+class PackageServer {
+  /// The inner [DescriptorServer] that this uses to serve its descriptors.
+  DescriptorServer _inner;
+
+  /// The [d.DirectoryDescriptor] describing the server layout of
+  /// `/api/packages` on the test server.
+  ///
+  /// This contains metadata for packages that are being served via
+  /// [servePackages].
+  final _servedApiPackageDir = d.dir('packages', []);
+
+  /// The [d.DirectoryDescriptor] describing the server layout of `/packages` on
+  /// the test server.
+  ///
+  /// This contains the tarballs for packages that are being served via
+  /// [servePackages].
+  final _servedPackageDir = d.dir('packages', []);
+
+  /// The current [PackageServerBuilder] that a user uses to specify which
+  /// package to serve.
+  ///
+  /// This is preserved so that additional packages can be added.
+  var _builder = new PackageServerBuilder._();
+
+  /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
+  ///
+  /// Calls [callback] with a [PackageServerBuilder] that's used to specify
+  /// which packages to serve.
+  PackageServer(void callback(PackageServerBuilder builder)) {
+    _inner = new DescriptorServer([
       d.dir('api', [_servedApiPackageDir]),
       _servedPackageDir
     ]);
 
-    currentSchedule.onComplete.schedule(() {
-      _builder = null;
-      _servedApiPackageDir = null;
-      _servedPackageDir = null;
-    }, 'cleaning up served packages');
+    add(callback);
   }
 
-  schedule(() {
-    if (replace) _builder = new PackageServerBuilder();
-    callback(_builder);
-    return _builder._await().then((resolvedPubspecs) {
+  /// Add to the current set of packages that are being served.
+  void add(void callback(PackageServerBuilder builder)) {
+    schedule(() async {
+      callback(_builder);
+
+      await _builder._await();
       _servedApiPackageDir.contents.clear();
       _servedPackageDir.contents.clear();
+
       _builder._packages.forEach((name, versions) {
         _servedApiPackageDir.contents.addAll([
           d.file('$name', JSON.encode({
@@ -91,22 +114,14 @@ void servePackages(void callback(PackageServerBuilder builder),
               d.tar('${version.version}.tar.gz', version.contents)))
         ]));
       });
-    });
-  }, 'initializing the package server');
-}
+    }, 'adding packages to the package server');
+  }
 
-/// Like [servePackages], but instead creates an empty server with no packages
-/// registered.
-///
-/// This will always replace a previous server.
-void serveNoPackages() => servePackages((_) {}, replace: true);
-
-/// A shortcut for [servePackages] that serves the version of barback used by
-/// pub.
-void serveBarback() {
-  servePackages((builder) {
-    builder.serveRealPackage('barback');
-  });
+  /// Replace the current set of packages that are being served.
+  void replace(void callback(PackageServerBuilder builder)) {
+    schedule(() => _builder._clear(), "clearing builder");
+    add(callback);
+  }
 }
 
 /// A builder for specifying which packages should be served by [servePackages].
@@ -118,6 +133,8 @@ class PackageServerBuilder {
   ///
   /// This should be accessed by calling [_awair].
   var _futures = new FutureGroup();
+
+  PackageServerBuilder._();
 
   /// Specifies that a package named [name] with [version] should be served.
   ///
@@ -187,6 +204,11 @@ class PackageServerBuilder {
     return _futures.future.then((_) {
       _futures = new FutureGroup();
     });
+  }
+
+  /// Clears all existing packages from this builder.
+  void _clear() {
+    _packages.clear();
   }
 }
 

@@ -24,7 +24,7 @@ main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    getRequestedPaths();
+    globalServer.clearRequestedPaths();
 
     // Run the solver again now that it's cached.
     pubGet();
@@ -34,7 +34,7 @@ main() {
 
     // The get should not have done any network requests since the lock file is
     // up to date.
-    getRequestedPaths().then((paths) {
+    globalServer.requestedPaths.then((paths) {
       expect(paths, isEmpty);
     });
   });

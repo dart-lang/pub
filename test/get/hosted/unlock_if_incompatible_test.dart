@@ -15,7 +15,7 @@ main() {
     pubGet();
 
     d.packagesDir({"foo": "1.0.0"}).validate();
-    servePackages((builder) => builder.serve("foo", "1.0.1"));
+    globalPackageServer.add((builder) => builder.serve("foo", "1.0.1"));
     d.appDir({"foo": ">1.0.0"}).create();
 
     pubGet();

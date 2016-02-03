@@ -171,7 +171,7 @@ main() {
       ])
     ]).validate();
 
-    servePackages((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0",
           deps: {'barback': 'any'},
           contents: [
@@ -242,7 +242,7 @@ main() {
     process.stdout.expect("Goodbye!");
     process.shouldExit();
 
-    servePackages((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("bar", "2.0.0", contents: [
         d.dir("lib", [
           d.file("bar.dart", "final replacement = 'See ya';")

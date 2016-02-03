@@ -20,7 +20,7 @@ main() {
 
     schedule(() => deleteEntry(p.join(sandboxDir, cachePath)));
 
-    servePackages((builder) => builder.serve("foo", "1.0.1"), replace: true);
+    globalPackageServer.replace((builder) => builder.serve("foo", "1.0.1"));
     pubGet();
     d.packagesDir({"foo": "1.0.1"}).validate();
   });

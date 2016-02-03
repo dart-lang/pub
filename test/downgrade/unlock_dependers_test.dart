@@ -22,7 +22,7 @@ main() {
       "bar": "2.0.0"
     }).validate();
 
-    servePackages((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "any"});
       builder.serve("bar", "1.0.0");
     });

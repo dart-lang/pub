@@ -26,7 +26,7 @@ main() {
       "qux": "1.0.0"
     }).validate();
 
-    servePackages((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"bar": "<3.0.0"});
       builder.serve("bar", "2.0.0", deps: {"baz": "<3.0.0"});
       builder.serve("baz", "2.0.0", deps: {"qux": "<3.0.0"});

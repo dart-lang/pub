@@ -19,7 +19,7 @@ main() {
     // Set up a cache with some packages.
     d.dir(cachePath, [
       d.dir('hosted', [
-        d.async(port.then((p) => d.dir('localhost%58$p', [
+        d.async(globalServer.port.then((p) => d.dir('localhost%58$p', [
           d.dir("foo-1.2.3", [
             d.libPubspec("foo", "1.2.3"),
             d.file("broken.txt")

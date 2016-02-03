@@ -25,7 +25,7 @@ main() {
     schedule(() => deleteEntry(path.join(sandboxDir, packagesPath)));
 
     // Start serving a newer package as well.
-    servePackages((builder) => builder.serve("foo", "1.0.1"));
+    globalPackageServer.add((builder) => builder.serve("foo", "1.0.1"));
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     pubGet();

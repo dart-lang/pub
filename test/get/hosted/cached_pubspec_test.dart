@@ -18,7 +18,7 @@ main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    getRequestedPaths();
+    globalServer.clearRequestedPaths();
 
     d.cacheDir({"foo": "1.2.3"}).validate();
     d.packagesDir({"foo": "1.2.3"}).validate();
@@ -27,7 +27,7 @@ main() {
     pubGet();
 
     // The get should not have requested the pubspec since it's local already.
-    getRequestedPaths().then((paths) {
+    globalServer.requestedPaths.then((paths) {
       expect(paths, isNot(contains("packages/foo/versions/1.2.3.yaml")));
     });
   });

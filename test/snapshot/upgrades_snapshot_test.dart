@@ -26,7 +26,7 @@ main() {
       d.matcherFile('hello.dart.snapshot', contains('hello!'))
     ]).validate();
 
-    servePackages((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("foo", "1.2.4", contents: [
         d.dir("bin", [
           d.file("hello.dart", "void main() => print('hello 2!');")
