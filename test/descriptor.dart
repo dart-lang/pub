@@ -127,12 +127,15 @@ Descriptor packagesDir(Map<String, String> packages) {
 /// A package's value may also be a list of versions, in which case all
 /// versions are expected to be downloaded.
 ///
+/// If [port] is passed, it's used as the port number of the local hosted server
+/// that this cache represents. It may be either an `int` or a `Future<int>`.
+///
 /// If [includePubspecs] is `true`, then pubspecs will be created for each
 /// package. Defaults to `false` so that the contents of pubspecs are not
 /// validated since they will often lack the dependencies section that the
 /// real pubspec being compared against has. You usually only need to pass
 /// `true` for this if you plan to call [create] on the resulting descriptor.
-Descriptor cacheDir(Map packages, {bool includePubspecs: false}) {
+Descriptor cacheDir(Map packages, {port, bool includePubspecs: false}) {
   var contents = <Descriptor>[];
   packages.forEach((name, versions) {
     if (versions is! List) versions = [versions];
@@ -145,15 +148,19 @@ Descriptor cacheDir(Map packages, {bool includePubspecs: false}) {
     }
   });
 
-  return hostedCache(contents);
+  return hostedCache(contents, port: port);
 }
 
 /// Describes the main cache directory containing cached hosted packages
 /// downloaded from the mock package server.
-Descriptor hostedCache(Iterable<Descriptor> contents) {
+///
+/// If [port] is passed, it's used as the port number of the local hosted server
+/// that this cache represents. It may be either an `int` or a `Future<int>`.
+Descriptor hostedCache(Iterable<Descriptor> contents, {port}) {
   return dir(cachePath, [
     dir('hosted', [
-      async(globalServer.port.then((p) => dir('localhost%58$p', contents)))
+      async(awaitObject(port ?? globalServer.port)
+          .then((p) => dir('localhost%58$p', contents)))
     ])
   ]);
 }

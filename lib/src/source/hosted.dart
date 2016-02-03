@@ -80,7 +80,8 @@ class HostedSource extends CachedSource {
       var pubspec = new Pubspec.fromMap(
           map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
-      var id = idFor(ref.name, pubspec.version);
+      var id = idFor(ref.name, pubspec.version,
+          url: _serverFor(ref.description));
       memoizePubspec(id, pubspec);
 
       return id;
@@ -166,7 +167,7 @@ class HostedSource extends CachedSource {
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
-        var id = idFor(package.name, package.version);
+        var id = idFor(package.name, package.version, url: url);
 
         try {
           await _download(url, package.name, package.version, package.dir);
@@ -269,7 +270,9 @@ class OfflineHostedSource extends HostedSource {
       versions = await listDir(dir).map((entry) {
         var components = path.basename(entry).split("-");
         if (components.first != ref.name) return null;
-        return HostedSource.idFor(ref.name, new Version.parse(components.last));
+        return HostedSource.idFor(
+            ref.name, new Version.parse(components.last),
+            url: _serverFor(ref.description));
       }).where((id) => id != null).toList();
     } else {
       versions = [];
@@ -351,6 +354,9 @@ Uri _makeUrl(description, String pattern(String server, String package)) {
   var package = Uri.encodeComponent(parsed.first);
   return Uri.parse(pattern(server, package));
 }
+
+/// Returns the server URL for [description].
+Uri _serverFor(description) => Uri.parse(_parseDescription(description).last);
 
 /// Parses [id] into its server, package name, and version components, then
 /// converts that to a Uri given [pattern].

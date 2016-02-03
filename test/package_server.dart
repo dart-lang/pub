@@ -37,7 +37,7 @@ void servePackages(void callback(PackageServerBuilder builder)) {
 /// registered.
 ///
 /// This will always replace a previous server.
-void serveNoPackages() => servePackages((_) {}, replace: true);
+void serveNoPackages() => servePackages((_) {});
 
 /// A shortcut for [servePackages] that serves the version of barback used by
 /// pub.
@@ -70,6 +70,9 @@ class PackageServer {
   ///
   /// This is preserved so that additional packages can be added.
   var _builder = new PackageServerBuilder._();
+
+  /// A future that will complete to the port used for the server.
+  Future<int> get port => _inner.port;
 
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///

@@ -29,4 +29,29 @@ main() {
           r"Could not find package bad name! at http://localhost:\d+\."),
         exitCode: exit_codes.UNAVAILABLE);
   });
+
+  integration('gets a package from a non-default pub server', () {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    serveErrors();
+
+    var server = new PackageServer((builder) {
+      builder.serve("foo", "1.2.3");
+    });
+
+    d.appDir({
+      "foo": {
+        "version": "1.2.3",
+        "hosted": {
+          "name": "foo",
+          "url": server.port.then((port) => "http://localhost:$port")
+        }
+      }
+    }).create();
+
+    pubGet();
+
+    d.cacheDir({"foo": "1.2.3"}, port: server.port).validate();
+    d.packagesDir({"foo": "1.2.3"}).validate();
+  });
 }
