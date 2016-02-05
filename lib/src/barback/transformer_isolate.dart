@@ -91,9 +91,7 @@ class TransformerIsolate {
         // "package:" URI, so we have to be liberal in what we look for in the
         // error message.
         var missingTransformer = idsToUrls.keys.firstWhere((id) =>
-            firstErrorLine.startsWith(
-                "Load Error for") &&
-            firstErrorLine.contains(idsToUrls[id].path),
+            firstErrorLine.startsWith('Could not import "${idsToUrls[id]}"'),
             orElse: () => throw error);
         var packageUri = idToPackageUri(idsToAssetIds[missingTransformer]);
 

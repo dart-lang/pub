@@ -28,8 +28,7 @@ main() {
     pubGet();
     var pub = startPubServe();
     pub.stderr.expect("Unable to spawn isolate: Unhandled exception:");
-    pub.stderr.expect(
-        startsWith("Load Error for "));
+    pub.stderr.expect(startsWith('Could not import "'));
     pub.shouldExit(1);
   });
 }
