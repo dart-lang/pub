@@ -269,7 +269,7 @@ foo:http://example.com/
       setUp(() {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
-        servePackages((builder) {
+        globalPackageServer.add((builder) {
           builder.serve("foo", "3.0.0", pubspec: {
             "environment": {"sdk": ">=1.0.0 <2.0.0"}
           });
