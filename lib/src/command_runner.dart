@@ -144,7 +144,7 @@ This is an unexpected error. Please run
 
     pub --trace ${options.arguments.map(protectArgument).join(' ')}
 
-and include the results in a bug report on http://dartbug.com/new.
+and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);
       }
 
