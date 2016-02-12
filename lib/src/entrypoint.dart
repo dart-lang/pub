@@ -433,7 +433,7 @@ class Entrypoint {
         hasPathDependencies) {
       if (_isLockFileUpToDate() && _arePackagesAvailable()) {
         touchedLockFile = true;
-        touch(lockFilePath);
+        tryTouch(lockFilePath);
       } else {
         dataError('The pubspec.yaml file has changed since the pubspec.lock '
             'file was generated, please run "pub get" again.');
@@ -443,13 +443,13 @@ class Entrypoint {
     var packagesModified = new File(packagesFile).lastModifiedSync();
     if (packagesModified.isBefore(lockFileModified)) {
       if (_isPackagesFileUpToDate()) {
-        touch(packagesFile);
+        tryTouch(packagesFile);
       } else {
         dataError('The pubspec.lock file has changed since the .packages file '
             'was generated, please run "pub get" again.');
       }
     } else if (touchedLockFile) {
-      touch(packagesFile);
+      tryTouch(packagesFile);
     }
 
     var sdkConstraint = _sdkConstraint.firstMatch(lockFileText);

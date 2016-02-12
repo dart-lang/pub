@@ -831,13 +831,18 @@ _doProcess(Function fn, String executable, List<String> args,
       environment: environment);
 }
 
-/// Updates [path]'s modification time.
-void touch(String path) {
-  var file = new File(path).openSync(mode: FileMode.APPEND);
-  var originalLength = file.lengthSync();
-  file.writeByteSync(0);
-  file.truncateSync(originalLength);
-  file.closeSync();
+/// Updates [path]'s modification time if the file is writable.
+void tryTouch(String path) {
+  try {
+    var file = new File(path).openSync(mode: FileMode.APPEND);
+    var originalLength = file.lengthSync();
+    file.writeByteSync(0);
+    file.truncateSync(originalLength);
+    file.closeSync();
+  } on FileSystemException catch (e) {
+    // Suppress if permissions error (EACCES)
+    if (e.osError?.errorCode != 13) rethrow;
+  }
 }
 
 /// Creates a temporary directory and passes its path to [fn].
