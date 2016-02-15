@@ -74,7 +74,7 @@ class BacktrackingSolver {
   /// packages.
   final _forceLatest = new Set<String>();
 
-  /// The set of packages whose dependecy is being overridden by the root
+  /// The set of packages whose dependency is being overridden by the root
   /// package, keyed by the name of the package.
   ///
   /// Any dependency on a package that appears in this map will be overriden
@@ -360,7 +360,7 @@ class BacktrackingSolver {
   /// Backtracks from the current failed solution and determines the next
   /// solution to try.
   ///
-  /// This backjumps based on the cause of previous failures to minize
+  /// This backjumps based on the cause of previous failures to minimize
   /// backtracking.
   ///
   /// Returns `true` if there is a new solution to try.
