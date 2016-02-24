@@ -27,7 +27,7 @@ class WebSocketApi {
   /// Whether the application should exit when this connection closes.
   bool _exitOnClose = false;
 
-  WebSocketApi(CompatibleWebSocket socket, this._environment)
+  WebSocketApi(WebSocketChannel socket, this._environment)
       : _server = new json_rpc.Server(socket) {
     _server.registerMethod("urlToAssetId", _urlToAssetId);
     _server.registerMethod("pathToUrls", _pathToUrls);

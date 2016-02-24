@@ -20,7 +20,7 @@ import 'web_socket_api.dart';
 // See #16954.
 class AdminServer extends BaseServer {
   /// All currently open [WebSocket] connections.
-  final _webSockets = new Set<CompatibleWebSocket>();
+  final _webSockets = new Set<WebSocketChannel>();
 
   shelf.Handler _handler;
 
@@ -43,7 +43,7 @@ class AdminServer extends BaseServer {
   /// Closes the server and all Web Socket connections.
   Future close() {
     var futures = [super.close()];
-    futures.addAll(_webSockets.map((socket) => socket.close()));
+    futures.addAll(_webSockets.map((channel) => channel.sink.close()));
     return Future.wait(futures);
   }
 
@@ -59,11 +59,11 @@ class AdminServer extends BaseServer {
   }
 
   /// Creates a web socket for [request] which should be an upgrade request.
-  void _handleWebSocket(CompatibleWebSocket socket) {
-    _webSockets.add(socket);
-    var api = new WebSocketApi(socket, environment);
+  void _handleWebSocket(WebSocketChannel channel) {
+    _webSockets.add(channel);
+    var api = new WebSocketApi(channel, environment);
     api.listen()
-        .whenComplete(() => _webSockets.remove(api))
+        .whenComplete(() => _webSockets.remove(channel))
         .catchError(addError);
   }
 }
