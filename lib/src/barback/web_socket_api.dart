@@ -5,9 +5,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
