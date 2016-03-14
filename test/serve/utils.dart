@@ -231,9 +231,10 @@ void endPubServe() {
 /// invokes [callback] with the response.
 ///
 /// [root] indicates which server should be accessed, and defaults to "web".
-Future<http.Response> scheduleRequest(String urlPath, {String root}) {
+Future<http.Response> scheduleRequest(String urlPath,
+    {String root, Map<String, String> headers}) {
   return schedule(() {
-    return http.get(_getServerUrlSync(root, urlPath));
+    return http.get(_getServerUrlSync(root, urlPath), headers: headers);
   }, "request $urlPath");
 }
 

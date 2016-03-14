@@ -150,7 +150,12 @@ class ServeCommand extends BarbackCommand {
         padRight("[${server.rootDirectory}]", directoryLength + 2));
 
     server.results.listen((result) {
-      if (result.isSuccess) {
+      if (result.isCached) {
+        var prefix = "$directory ${log.green('GET')}";
+        log.collapsible(
+            "$prefix ${result.url.path} $_arrow (cached) ${result.id}",
+            "$prefix Served ## cached assets.");
+      } else if (result.isSuccess) {
         var prefix = "$directory ${log.green('GET')}";
         log.collapsible("$prefix ${result.url.path} $_arrow ${result.id}",
             "$prefix Served ## assets.");

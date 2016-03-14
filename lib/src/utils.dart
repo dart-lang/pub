@@ -521,7 +521,7 @@ Future<Stream> validateStream(Stream stream) {
     // Otherwise, the error came first and the stream is invalid.
     completer.completeError(error, stackTrace);
 
-    // We don't be returning the stream at all in this case, so unsubscribe
+    // We won't be returning the stream at all in this case, so unsubscribe
     // and swallow the error.
     subscription.cancel();
   }, onDone: () {

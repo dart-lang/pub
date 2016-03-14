@@ -3,9 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
+import "package:crypto/crypto.dart";
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
@@ -89,7 +91,7 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   }
 
   /// Handles an HTTP request.
-  handleRequest(shelf.Request request) {
+  Future<shelf.Response> handleRequest(shelf.Request request) async {
     if (request.method != "GET" && request.method != "HEAD") {
       return methodNotAllowed(request);
     }
@@ -154,14 +156,39 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   }
 
   /// Returns the body of [asset] as a response to [request].
-  Future<shelf.Response> _serveAsset(shelf.Request request, Asset asset) {
-    return validateStream(asset.read()).then((stream) {
-      addResult(new BarbackServerResult._success(request.url, asset.id));
-      var headers = {};
-      var mimeType = lookupMimeType(asset.id.path);
-      if (mimeType != null) headers['Content-Type'] = mimeType;
-      return new shelf.Response.ok(stream, headers: headers);
-    }).catchError((error, trace) {
+  Future<shelf.Response> _serveAsset(shelf.Request request, Asset asset) async {
+    try {
+      var pair = tee(await validateStream(asset.read()));
+      var responseStream = pair.first;
+      var hashStream = pair.last;
+
+      // Allow the asset to be cached based on its content hash.
+      var sha = new SHA1();
+      await hashStream.forEach((chunk) {
+        sha.add(chunk);
+      });
+
+      var assetSha = BASE64.encode(sha.close());
+      var previousSha = request.headers["if-none-match"];
+
+      var headers = {
+        // Enabled browser caching of the asset.
+        "Cache-Control": "max-age=3600",
+        "ETag": assetSha
+      };
+
+      if (assetSha == previousSha) {
+        // We're requesting an unchanged asset so don't push its body down the
+        // wire again.
+        addResult(new BarbackServerResult._cached(request.url, asset.id));
+        return new shelf.Response.notModified(headers: headers);
+      } else {
+        addResult(new BarbackServerResult._success(request.url, asset.id));
+        var mimeType = lookupMimeType(asset.id.path);
+        if (mimeType != null) headers['Content-Type'] = mimeType;
+        return new shelf.Response.ok(responseStream, headers: headers);
+      }
+    } catch (error, trace) {
       addResult(new BarbackServerResult._failure(request.url, asset.id, error));
 
       // If we couldn't read the asset, handle the error gracefully.
@@ -176,7 +203,7 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
 
       // Otherwise, it's some internal error.
       return new shelf.Response.internalServerError(body: error.toString());
-    });
+    }
   }
 }
 
@@ -199,11 +226,20 @@ class BarbackServerResult {
   /// Whether the request was served successfully.
   bool get isSuccess => error == null;
 
+  /// Whether the request was for a previously cached asset.
+  final bool isCached;
+
   /// Whether the request was served unsuccessfully.
   bool get isFailure => !isSuccess;
 
   BarbackServerResult._success(this.url, this.id)
-      : error = null;
+      : error = null,
+        isCached = false;
 
-  BarbackServerResult._failure(this.url, this.id, this.error);
+  BarbackServerResult._cached(this.url, this.id)
+      : error = null,
+        isCached = true;
+
+  BarbackServerResult._failure(this.url, this.id, this.error)
+      : isCached = false;
 }
