@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
@@ -416,6 +417,113 @@ main() {
     d.dir(appPath, [
       d.nothing(".pub/deps/debug/foo")
     ]).validate();
+  });
+
+  group("with --no-precompile", () {
+    integration("doesn't cache a transformed dependency", () {
+      servePackages((builder) {
+        builder.serveRealPackage('barback');
+
+        builder.serve("foo", "1.2.3",
+            deps: {'barback': 'any'},
+            pubspec: {'transformers': ['foo']},
+            contents: [
+          d.dir("lib", [
+            d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
+            d.file("foo.dart", "final message = 'Hello!';")
+          ])
+        ]);
+      });
+
+      d.appDir({"foo": "1.2.3"}).create();
+
+      pubGet(args: ["--no-precompile"], output: isNot(contains("Precompiled")));
+
+      d.nothing(p.join(appPath, ".pub")).validate();
+    });
+
+    integration("deletes the cache when the dependency is updated", () {
+      servePackages((builder) {
+        builder.serveRealPackage('barback');
+
+        builder.serve("foo", "1.2.3",
+            deps: {'barback': 'any'},
+            pubspec: {'transformers': ['foo']},
+            contents: [
+          d.dir("lib", [
+            d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
+            d.file("foo.dart", "final message = 'Hello!';")
+          ])
+        ]);
+
+        builder.serve("foo", "1.2.4",
+            deps: {'barback': 'any'},
+            pubspec: {'transformers': ['foo']},
+            contents: [
+          d.dir("lib", [
+            d.file("transformer.dart", replaceTransformer("Hello", "See ya")),
+            d.file("foo.dart", "final message = 'Hello!';")
+          ])
+        ]);
+      });
+
+      d.appDir({"foo": "1.2.3"}).create();
+
+      pubGet(output: contains("Precompiled foo."));
+
+      d.dir(appPath, [
+        d.dir(".pub/deps/debug/foo/lib", [
+          d.file("foo.dart", "final message = 'Goodbye!';")
+        ])
+      ]).validate();
+
+      // Upgrade to the new version of foo.
+      d.appDir({"foo": "1.2.4"}).create();
+
+      pubGet(args: ["--no-precompile"], output: isNot(contains("Precompiled")));
+
+      d.nothing(p.join(appPath, ".pub/deps/debug/foo")).validate();
+    });
+
+    integration("doesn't delete a cache when an unrelated dependency is "
+        "updated", () {
+      servePackages((builder) {
+        builder.serveRealPackage('barback');
+
+        builder.serve("foo", "1.2.3",
+            deps: {'barback': 'any'},
+            pubspec: {'transformers': ['foo']},
+            contents: [
+          d.dir("lib", [
+            d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
+            d.file("foo.dart", "final message = 'Hello!';")
+          ])
+        ]);
+
+        builder.serve("bar", "5.6.7");
+      });
+
+      d.appDir({"foo": "1.2.3"}).create();
+      pubGet(output: contains("Precompiled foo."));
+
+
+      d.dir(appPath, [
+        d.dir(".pub/deps/debug/foo/lib", [
+          d.file("foo.dart", "final message = 'Goodbye!';")
+        ])
+      ]).validate();
+
+      globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
+      pubUpgrade(
+          args: ["--no-precompile"],
+          output: isNot(contains("Precompiled")));
+
+      d.dir(appPath, [
+        d.dir(".pub/deps/debug/foo/lib", [
+          d.file("foo.dart", "final message = 'Goodbye!';")
+        ])
+      ]).validate();
+    });
   });
 }
 

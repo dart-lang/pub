@@ -25,12 +25,17 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('dry-run', abbr: 'n', negatable: false,
         help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('precompile', defaultsTo: true,
+        help: "Precompile executables and transformed dependencies.");
   }
 
   Future run() async {
-    var dryRun = argResults['dry-run'];
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest, dryRun: dryRun);
+        useLatest: argResults.rest,
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile']);
+
     if (isOffline) {
       log.warning("Warning: Upgrading when offline may not update you to the "
                   "latest versions of your dependencies.");

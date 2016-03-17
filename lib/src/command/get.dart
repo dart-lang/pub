@@ -22,10 +22,14 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('dry-run', abbr: 'n', negatable: false,
         help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('precompile', defaultsTo: true,
+        help: "Precompile executables and transformed dependencies.");
   }
 
   Future run() {
     return entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run']);
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile']);
   }
 }

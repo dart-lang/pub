@@ -109,6 +109,16 @@ class Entrypoint {
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => root.path('pubspec.lock');
 
+  /// The path to the directory containing precompiled dependencies.
+  ///
+  /// We just precompile the debug version of a package. We're mostly interested
+  /// in improving speed for development iteration loops, which usually use
+  /// debug mode.
+  String get _precompiledDepsPath => root.path('.pub', 'deps', 'debug');
+
+  /// The path to the directory containing dependency executable snapshots.
+  String get _snapshotPath => root.path('.pub', 'bin');
+
   /// Loads the entrypoint from a package at [rootDir].
   ///
   /// If [packageSymlinks] is `true`, this will create a "packages" directory
@@ -152,9 +162,12 @@ class Entrypoint {
   /// the report. Otherwise, only dependencies that were changed are shown. If
   /// [dryRun] is `true`, no physical changes are made.
   ///
+  /// If [precompile] is `true` (the default), this snapshots dependencies'
+  /// executables and runs transformers on transformed dependencies.
+  ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type, {List<String> useLatest,
-      bool dryRun: false}) async {
+      bool dryRun: false, bool precompile: true}) async {
     var result = await resolveVersions(type, cache.sources, root,
         lockFile: lockFile, useLatest: useLatest);
     if (!result.succeeded) throw result.error;
@@ -187,8 +200,16 @@ class Entrypoint {
     packageGraph.loadTransformerCache().clearIfOutdated(result.changedPackages);
 
     try {
-      await precompileDependencies(changed: result.changedPackages);
-      await precompileExecutables(changed: result.changedPackages);
+      if (precompile) {
+        await _precompileDependencies(changed: result.changedPackages);
+        await precompileExecutables(changed: result.changedPackages);
+      } else {
+        // If precompilation is disabled, delete any stale cached dependencies
+        // or snapshots.
+        _deletePrecompiledDependencies(
+            _dependenciesToPrecompile(changed: result.changedPackages));
+        _deleteExecutableSnapshots(changed: result.changedPackages);
+      }
     } catch (error, stackTrace) {
       // Just log exceptions here. Since the method is just about acquiring
       // dependencies, it shouldn't fail unless that fails.
@@ -202,46 +223,11 @@ class Entrypoint {
   ///
   /// If [changed] is passed, only dependencies whose contents might be changed
   /// if one of the given packages changes will be recompiled.
-  Future precompileDependencies({Iterable<String> changed}) async {
+  Future _precompileDependencies({Iterable<String> changed}) async {
     if (changed != null) changed = changed.toSet();
 
-    // Just precompile the debug version of a package. We're mostly interested
-    // in improving speed for development iteration loops, which usually use
-    // debug mode.
-    var depsDir = p.join('.pub', 'deps', 'debug');
-
-    var dependenciesToPrecompile = packageGraph.packages.values
-        .where((package) {
-      if (package.pubspec.transformers.isEmpty) return false;
-      if (packageGraph.isPackageMutable(package.name)) return false;
-      if (!dirExists(p.join(depsDir, package.name))) return true;
-      if (changed == null) return true;
-
-      /// Only recompile [package] if any of its transitive dependencies have
-      /// changed. We check all transitive dependencies because it's possible
-      /// that a transformer makes decisions based on their contents.
-      return overlaps(
-          packageGraph.transitiveDependencies(package.name)
-            .map((package) => package.name).toSet(),
-          changed);
-    }).map((package) => package.name).toSet();
-
-    if (dirExists(depsDir)) {
-      // Delete any cached dependencies that are going to be recached.
-      for (var package in dependenciesToPrecompile) {
-        deleteEntry(p.join(depsDir, package));
-      }
-
-      // Also delete any cached dependencies that should no longer be cached.
-      for (var subdir in listDir(depsDir)) {
-        var package = packageGraph.packages[p.basename(subdir)];
-        if (package == null || package.pubspec.transformers.isEmpty ||
-            packageGraph.isPackageMutable(package.name)) {
-          deleteEntry(subdir);
-        }
-      }
-    }
-
+    var dependenciesToPrecompile = _dependenciesToPrecompile(changed: changed);
+    _deletePrecompiledDependencies(dependenciesToPrecompile);
     if (dependenciesToPrecompile.isEmpty) return;
 
     try {
@@ -265,7 +251,7 @@ class Entrypoint {
           if (!dependenciesToPrecompile.contains(asset.id.package)) return;
 
           var destPath = p.join(
-              depsDir, asset.id.package, p.fromUri(asset.id.path));
+              _precompiledDepsPath, asset.id.package, p.fromUri(asset.id.path));
           ensureDir(p.dirname(destPath));
           await createFileFromStream(asset.read(), destPath);
         }));
@@ -278,57 +264,78 @@ class Entrypoint {
       // assets (issue 19491), catch and handle compilation errors on a
       // per-package basis.
       for (var package in dependenciesToPrecompile) {
-        deleteEntry(p.join(depsDir, package));
+        deleteEntry(p.join(_precompiledDepsPath, package));
       }
       rethrow;
+    }
+  }
+
+  /// Returns the set of dependencies that need to be precompiled.
+  ///
+  /// If [changed] is passed, only dependencies whose contents might be changed
+  /// if one of the given packages changes will be returned.
+  Set<String> _dependenciesToPrecompile({Iterable<String> changed}) {
+    return packageGraph.packages.values.where((package) {
+      if (package.pubspec.transformers.isEmpty) return false;
+      if (packageGraph.isPackageMutable(package.name)) return false;
+      if (!dirExists(p.join(_precompiledDepsPath, package.name))) return true;
+      if (changed == null) return true;
+
+      /// Only recompile [package] if any of its transitive dependencies have
+      /// changed. We check all transitive dependencies because it's possible
+      /// that a transformer makes decisions based on their contents.
+      return overlaps(
+          packageGraph.transitiveDependencies(package.name)
+              .map((package) => package.name).toSet(),
+          changed);
+    }).map((package) => package.name).toSet();
+  }
+
+  /// Deletes outdated precompiled dependencies.
+  ///
+  /// This deletes the precompilations of all packages in [packages], as well as
+  /// any packages that are now untransformed or mutable.
+  void _deletePrecompiledDependencies([Iterable<String> packages]) {
+    if (!dirExists(_precompiledDepsPath)) return;
+
+    // Delete any cached dependencies that are going to be recached.
+    packages ??= [];
+    for (var package in packages) {
+      var path = p.join(_precompiledDepsPath, package);
+      if (dirExists(path)) deleteEntry(path);
+    }
+
+    // Also delete any cached dependencies that should no longer be cached.
+    for (var subdir in listDir(_precompiledDepsPath)) {
+      var package = packageGraph.packages[p.basename(subdir)];
+      if (package == null || package.pubspec.transformers.isEmpty ||
+          packageGraph.isPackageMutable(package.name)) {
+        deleteEntry(subdir);
+      }
     }
   }
 
   /// Precompiles all executables from dependencies that don't transitively
   /// depend on [this] or on a path dependency.
   Future precompileExecutables({Iterable<String> changed}) async {
-    if (changed != null) changed = changed.toSet();
-
-    var binDir = p.join('.pub', 'bin');
-    var sdkVersionPath = p.join(binDir, 'sdk-version');
-
-    // If the existing executable was compiled with a different SDK, we need to
-    // recompile regardless of what changed.
-    // TODO(nweiz): Use the VM to check this when issue 20802 is fixed.
-    var sdkMatches = fileExists(sdkVersionPath) &&
-        readTextFile(sdkVersionPath) == "${sdk.version}\n";
-    if (!sdkMatches) changed = null;
-
-    // Clean out any outdated snapshots.
-    if (dirExists(binDir)) {
-      for (var entry in listDir(binDir)) {
-        if (!dirExists(entry)) continue;
-
-        var package = p.basename(entry);
-        if (!packageGraph.packages.containsKey(package) ||
-            packageGraph.isPackageMutable(package)) {
-          deleteEntry(entry);
-        }
-      }
-    }
+    _deleteExecutableSnapshots(changed: changed);
 
     var executables = new Map.fromIterable(root.immediateDependencies,
         key: (dep) => dep.name,
-        value: (dep) => _executablesForPackage(dep.name, changed));
+        value: (dep) => _executablesForPackage(dep.name));
 
     for (var package in executables.keys.toList()) {
       if (executables[package].isEmpty) executables.remove(package);
     }
 
-    if (!sdkMatches) deleteEntry(binDir);
     if (executables.isEmpty) return;
 
     await log.progress("Precompiling executables", () async {
-      ensureDir(binDir);
+      ensureDir(_snapshotPath);
 
       // Make sure there's a trailing newline so our version file matches the
       // SDK's.
-      writeTextFile(sdkVersionPath, "${sdk.version}\n");
+      writeTextFile(p.join(_snapshotPath, 'sdk-version'), "${sdk.version}\n");
 
       var packagesToLoad =
           unionAll(executables.keys.map(packageGraph.transitiveDependencies))
@@ -344,7 +351,7 @@ class Entrypoint {
       });
 
       await waitAndPrintErrors(executables.keys.map((package) async {
-        var dir = p.join(binDir, package);
+        var dir = p.join(_snapshotPath, package);
         cleanDir(dir);
         await environment.precompileExecutables(package, dir,
             executableIds: executables[package]);
@@ -352,13 +359,47 @@ class Entrypoint {
     });
   }
 
+  /// Deletes outdated cached executable snapshots.
+  ///
+  /// If [changed] is passed, only dependencies whose contents might be changed
+  /// if one of the given packages changes will have their executables deleted.
+  void _deleteExecutableSnapshots({Iterable<String> changed}) {
+    if (!dirExists(_snapshotPath)) return;
+
+    // If we don't know what changed, we can't safely re-use any snapshots.
+    if (changed == null) {
+      deleteEntry(_snapshotPath);
+      return;
+    }
+    changed = changed.toSet();
+
+    // If the existing executable was compiled with a different SDK, we need to
+    // recompile regardless of what changed.
+    // TODO(nweiz): Use the VM to check this when issue 20802 is fixed.
+    var sdkVersionPath = p.join(_snapshotPath, 'sdk-version');
+    if (!fileExists(sdkVersionPath) ||
+        readTextFile(sdkVersionPath) != "${sdk.version}\n") {
+      deleteEntry(_snapshotPath);
+      return;
+    }
+
+    // Clean out any outdated snapshots.
+    for (var entry in listDir(_snapshotPath)) {
+      if (!dirExists(entry)) continue;
+
+      var package = p.basename(entry);
+      if (!packageGraph.packages.containsKey(package) ||
+          packageGraph.isPackageMutable(package) ||
+          packageGraph.transitiveDependencies(package)
+              .any((dep) => changed.contains(dep.name))) {
+        deleteEntry(entry);
+      }
+    }
+  }
+
   /// Returns the list of all executable assets for [packageName] that should be
   /// precompiled.
-  ///
-  /// If [changed] isn't `null`, executables for [packageName] will only be
-  /// compiled if they might depend on a package in [changed].
-  List<AssetId> _executablesForPackage(String packageName,
-      Set<String> changed) {
+  List<AssetId> _executablesForPackage(String packageName) {
     var package = packageGraph.packages[packageName];
     var binDir = package.path('bin');
     if (!dirExists(binDir)) return [];
@@ -366,21 +407,15 @@ class Entrypoint {
 
     var executables = package.executableIds;
 
-    // If we don't know which packages were changed, always precompile the
-    // executables.
-    if (changed == null) return executables;
-
-    // If any of the package's dependencies changed, recompile the executables.
-    if (packageGraph.transitiveDependencies(packageName)
-        .any((package) => changed.contains(package.name))) {
-      return executables;
-    }
-
-    // If any executables don't exist, precompile them regardless of what
-    // changed. Since we delete the bin directory before recompiling, we need to
-    // recompile all executables.
+    // If any executables don't exist, recompile all executables.
+    //
+    // Normally, [_deleteExecutableSnapshots] will ensure that all the outdated
+    // executable directories will be deleted, any checking for any non-existent
+    // executable will save us a few IO operations over checking each one. If
+    // some executables do exist and some do not, the directory is corrupted and
+    // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) =>
-        fileExists(p.join('.pub', 'bin', packageName,
+        fileExists(p.join(_snapshotPath, packageName,
             "${p.url.basename(executable.path)}.snapshot")));
     if (!executablesExist) return executables;
 
