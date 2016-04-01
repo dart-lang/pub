@@ -58,6 +58,8 @@ class PubCommandRunner extends CommandRunner {
         help: 'Shortcut for "--verbosity=all".');
     argParser.addFlag('with-prejudice', hide: !isAprilFools,
         negatable: false, help: 'Execute commands with prejudice.');
+    argParser.addFlag('sparkle', hide: !isAprilFools,
+        negatable: false, help: 'A more sparkly experience.');
     argParser.addFlag('package-symlinks',
         negatable: true, defaultsTo: true, hide: true,
         help: "Generate packages/ directories when installing packages.");
@@ -90,6 +92,7 @@ class PubCommandRunner extends CommandRunner {
 
   Future runCommand(ArgResults options) async {
     log.withPrejudice = options['with-prejudice'];
+    log.sparkle = options['sparkle'];
 
     _checkDepsSynced();
 

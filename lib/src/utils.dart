@@ -6,6 +6,7 @@
 import 'dart:async';
 import "dart:convert";
 import 'dart:io';
+import 'dart:math' as math;
 
 import "package:crypto/crypto.dart";
 import 'package:path/path.dart' as path;
@@ -33,6 +34,9 @@ const reservedWords = const [
   "new", "null", "return", "super", "switch", "this", "throw", "true", "try",
   "var", "void", "while", "with"
 ];
+
+/// An cryptographically secure instance of [math.Random].
+final random = new math.Random.secure();
 
 /// A pair of values.
 class Pair<E, F> {
@@ -286,6 +290,10 @@ List flatten(Iterable nested) {
   helper(nested);
   return result;
 }
+
+/// Randomly chooses a single element in [elements].
+/*=T*/ choose/*<T>*/(List/*<T>*/ elements) =>
+    elements[random.nextInt(elements.length)];
 
 /// Returns a set containing all elements in [minuend] that are not in
 /// [subtrahend].
