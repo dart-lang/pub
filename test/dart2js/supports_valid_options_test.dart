@@ -21,7 +21,7 @@ main() {
             "minify": true,
             "verbose": true,
             "environment": {"name": "value"},
-            // TOOD(nweiz): Re-add these when sdk#24653 is fixed.
+            // TODO(nweiz): Re-add these when sdk#24653 is fixed.
             // "suppressWarnings": true,
             // "suppressHints": true,
             "suppressPackageWarnings": false,
