@@ -252,9 +252,14 @@ class Package {
       files = files.map((file) {
         if (Platform.operatingSystem != 'windows') return "$dir/$file";
         return "$dir\\${file.replaceAll("/", "\\")}";
-      }).where((file) {
-        // Filter out broken symlinks, since git doesn't do so automatically.
-        return fileExists(file);
+      }).expand((file) {
+        if (fileExists(file)) return [file];
+        if (!dirExists(file)) return [];
+
+        // `git ls-files` only returns files, except in the case of a symlink to
+        // a directory. So if we're here, [file] refers to a valid symlink to a
+        // directory.
+        return recursive ? _listSymlinkedDir(file) : [file];
       });
     } else {
       files = listDir(beneath, recursive: recursive, includeDirs: false,
@@ -277,6 +282,38 @@ class Package {
       return !_blacklistedFiles.any(file.endsWith) &&
           !_blacklistedDirs.any(file.contains);
     }).toList();
+  }
+
+  /// List all files recursively beneath [link], which should be a symlink to a
+  /// directory.
+  ///
+  /// This is used by [list] when listing a Git repository, since `git ls-files`
+  /// can't natively follow symlinks.
+  Iterable<String> _listSymlinkedDir(String link) {
+    assert(linkExists(link));
+    assert(dirExists(link));
+    assert(p.isWithin(dir, link));
+
+    var target = new Directory(link).resolveSymbolicLinksSync();
+
+    List<String> targetFiles;
+    if (p.isWithin(dir, target)) {
+      // If the link points within this repo, use git to list the target
+      // location so we respect .gitignore.
+      targetFiles = listFiles(
+          beneath: p.relative(target, from: dir),
+          recursive: true,
+          useGitIgnore: true);
+    } else {
+      // If the link points outside this repo, just use the default listing
+      // logic.
+      targetFiles = listDir(target, recursive: true, includeDirs: false,
+          whitelist: _WHITELISTED_FILES);
+    }
+
+    // Re-write the paths so they're underneath the symlink.
+    return targetFiles.map((targetFile) =>
+        p.join(link, p.relative(targetFile, from: target)));
   }
 
   /// Returns a debug string for the package.
