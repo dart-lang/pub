@@ -172,8 +172,7 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       var previousSha = request.headers["if-none-match"];
 
       var headers = {
-        // Enabled browser caching of the asset.
-        "Cache-Control": "max-age=3600",
+        // Enable browser caching of the asset.
         "ETag": assetSha
       };
 
