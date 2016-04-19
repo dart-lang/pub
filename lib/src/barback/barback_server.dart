@@ -135,10 +135,10 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       });
     }).catchError((error, trace) {
       if (error is! AssetNotFoundException) {
-        trace = new Chain.forTrace(trace);
-        logRequest(request, "$error\n$trace");
+        var chain = new Chain.forTrace(trace);
+        logRequest(request, "$error\n$chain");
 
-        addError(error, trace);
+        addError(error, chain);
         close();
         return new shelf.Response.internalServerError();
       }
@@ -197,8 +197,8 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
         return notFound(request, error: error.toString(), asset: asset.id);
       }
 
-      trace = new Chain.forTrace(trace);
-      logRequest(request, "$error\n$trace");
+      var chain = new Chain.forTrace(trace);
+      logRequest(request, "$error\n$chain");
 
       // Otherwise, it's some internal error.
       return new shelf.Response.internalServerError(body: error.toString());
