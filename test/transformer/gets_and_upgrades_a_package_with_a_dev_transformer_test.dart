@@ -6,7 +6,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import '../serve/utils.dart';
 
 // Regression test for #1369.
 main() {

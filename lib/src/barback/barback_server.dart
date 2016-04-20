@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
-import "package:crypto/crypto.dart";
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
@@ -163,12 +161,7 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       var hashStream = pair.last;
 
       // Allow the asset to be cached based on its content hash.
-      var sha = new SHA1();
-      await hashStream.forEach((chunk) {
-        sha.add(chunk);
-      });
-
-      var assetSha = BASE64.encode(sha.close());
+      var assetSha = await sha1Stream(hashStream);
       var previousSha = request.headers["if-none-match"];
 
       var headers = {

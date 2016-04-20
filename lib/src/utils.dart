@@ -8,7 +8,8 @@ import "dart:convert";
 import 'dart:io';
 import 'dart:math' as math;
 
-import "package:crypto/crypto.dart";
+import "package:convert/convert.dart";
+import "package:crypto/crypto.dart" as crypto;
 import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
 
@@ -486,10 +487,33 @@ bool endsWithPattern(String str, Pattern matcher) {
 }
 
 /// Returns the hex-encoded sha1 hash of [source].
-String sha1(String source) {
-  var sha = new SHA1();
-  sha.add(source.codeUnits);
-  return CryptoUtils.bytesToHex(sha.close());
+String sha1(String source) =>
+    hex.encode(crypto.sha1.convert(source.codeUnits).bytes);
+
+/// Returns the base64-encoded sha1 hash of [stream].
+Future<String> sha1Stream(Stream<List<int>> stream) async {
+  crypto.Digest digest;
+
+  var digestSink = new ChunkedConversionSink<crypto.Digest>.withCallback(
+      (digests) {
+    digest = digests.single;
+  });
+
+  var byteSink = crypto.sha1.startChunkedConversion(digestSink);
+
+  await stream.forEach((chunk) {
+    byteSink.add(chunk);
+  });
+
+  byteSink.close();
+
+  // TODO(rnystrom): this call to `close` should not be needed. Remove when
+  //   https://github.com/dart-lang/crypto/issues/33
+  // is fixed.
+  // Does not cause any problems in the mean time.
+  digestSink.close();
+
+  return BASE64.encode(digest.bytes);
 }
 
 /// Configures [future] so that its result (success or exception) is passed on
