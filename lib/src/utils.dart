@@ -8,7 +8,6 @@ import "dart:convert";
 import 'dart:io';
 import 'dart:math' as math;
 
-import "package:convert/convert.dart";
 import "package:crypto/crypto.dart" as crypto;
 import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
@@ -488,7 +487,7 @@ bool endsWithPattern(String str, Pattern matcher) {
 
 /// Returns the hex-encoded sha1 hash of [source].
 String sha1(String source) =>
-    hex.encode(crypto.sha1.convert(source.codeUnits).bytes);
+    crypto.sha1.convert(UTF8.encode(source)).toString();
 
 /// Returns the base64-encoded sha1 hash of [stream].
 Future<String> sha1Stream(Stream<List<int>> stream) async {
