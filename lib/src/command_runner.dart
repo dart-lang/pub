@@ -84,7 +84,7 @@ class PubCommandRunner extends CommandRunner {
     try {
       options = super.parse(arguments);
     } on UsageException catch (error) {
-      log.error(error.message);
+      log.exception(error);
       await flushThenExit(exit_codes.USAGE);
     }
     await runCommand(options);
