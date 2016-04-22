@@ -1004,6 +1004,9 @@ ByteStream createTarGz(List contents, {baseDir}) {
 
     if (Platform.operatingSystem != "windows") {
       var args = [
+        // ustar is the most recent tar format that's compatible across all
+        // OSes.
+        "--format=ustar",
         "--create",
         "--gzip",
         "--directory",
