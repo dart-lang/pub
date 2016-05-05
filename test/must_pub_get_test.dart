@@ -352,6 +352,29 @@ foo:http://example.com/
 
       _runsSuccessfully();
     });
+
+    group("an overridden dependency's SDK constraint is unmatched", () {
+      setUp(() {
+        globalPackageServer.add((builder) {
+          builder.serve("bar", "1.0.0", pubspec: {
+            "environment": {"sdk": "0.0.0-fake"}
+          });
+        });
+
+        d.dir(appPath, [
+          d.pubspec({
+            "name": "myapp",
+            "dependency_overrides": {"bar": "1.0.0"}
+          })
+        ]).create();
+
+        pubGet();
+
+        _touch("pubspec.lock");
+      });
+
+      _runsSuccessfully();
+    });
   });
 }
 

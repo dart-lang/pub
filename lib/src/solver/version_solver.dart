@@ -76,8 +76,12 @@ class SolveResult {
   /// The [LockFile] representing the packages selected by this version
   /// resolution.
   LockFile get lockFile {
-    var sdkConstraint = new VersionConstraint.intersection(
-        pubspecs.values.map((pubspec) => pubspec.environment.sdkVersion));
+    // Don't factor in overridden dependencies' SDK constraints, because we'll
+    // accept those packages even if their constraints don't match.
+    var sdkConstraint = new VersionConstraint.intersection(pubspecs.values
+        .where((pubspec) =>
+            !_root.dependencyOverrides.any((dep) => dep.name == pubspec.name))
+        .map((pubspec) => pubspec.environment.sdkVersion));
     return new LockFile(packages, _sources, sdkConstraint: sdkConstraint);
   }
 
