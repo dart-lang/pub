@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
@@ -466,7 +467,8 @@ class Entrypoint {
     var touchedLockFile = false;
     if (lockFileModified.isBefore(pubspecModified) ||
         hasPathDependencies) {
-      if (_isLockFileUpToDate() && _arePackagesAvailable()) {
+      _assertLockFileUpToDate();
+      if (_arePackagesAvailable()) {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
@@ -500,22 +502,36 @@ class Entrypoint {
   /// Determines whether or not the lockfile is out of date with respect to the
   /// pubspec.
   ///
-  /// This will be `false` if any mutable pubspec contains dependencies that are
-  /// not in the lockfile or that don't match what's in there.
-  bool _isLockFileUpToDate() {
-    if (!root.immediateDependencies.every(_isDependencyUpToDate)) return false;
+  /// If any mutable pubspec contains dependencies that are not in the lockfile
+  /// or that don't match what's in there, this will throw a [DataError]
+  /// describing the issue.
+  void _assertLockFileUpToDate() {
+    if (!root.immediateDependencies.every(_isDependencyUpToDate)) {
+      dataError('The pubspec.yaml file has changed since the pubspec.lock '
+          'file was generated, please run "pub get" again.');
+    }
 
     var overrides = root.dependencyOverrides.map((dep) => dep.name).toSet();
 
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
-    return lockFile.packages.values.every((id) {
-      var source = cache.sources[id.name];
-      if (source is! CachedSource) return true;
+    for (var id in lockFile.packages.values) {
+      var source = cache.sources[id.source];
+      if (source is CachedSource) continue;
 
-      return cache.sources.load(id).dependencies.every((dep) =>
-          overrides.contains(dep.name) || _isDependencyUpToDate(dep));
-    });
+      try {
+        if (cache.sources.load(id).dependencies.every((dep) =>
+            overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
+          continue;
+        }
+      } on FileException {
+        // If we can't load the pubpsec, the user needs to re-run "pub get".
+      }
+
+      dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+          'changed since the pubspec.lock file was generated, please run "pub '
+          'get" again.');
+    }
   }
 
   /// Returns whether the locked version of [dep] matches the dependency.

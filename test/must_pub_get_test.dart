@@ -293,16 +293,20 @@ foo:http://example.com/
         ]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../foo"}})
-        ]);
+          d.appPubspec({"bar": {"path": "../bar"}})
+        ]).create();
 
         pubGet();
 
-        // Update foo's pubspec without touching the app's.
+        // Update bar's pubspec without touching the app's.
         d.dir("bar", [
           d.libPubspec("bar", "1.0.0", deps: {"foo": "2.0.0"})
         ]).create();
       });
+
+      _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
+          'since the pubspec.lock file was generated, please run "pub get" '
+          'again.');
     });
   });
 

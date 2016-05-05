@@ -482,7 +482,7 @@ class PackageDep extends _PackageName {
     return "$name $constraint from $source ($description)";
   }
 
-  int get hashCode => name.hashCode ^ source.hashCode;
+  int get hashCode => name.hashCode ^ source.hashCode ^ constraint.hashCode;
 
   bool operator ==(other) {
     // TODO(rnystrom): We're assuming here that we don't need to delve into the
