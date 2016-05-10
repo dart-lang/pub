@@ -1,3 +1,11 @@
+// At times we are able to transform one type of fact into another. We do this
+// in a consistent direction to avoid circularity. The order of preferred types
+// is:
+//
+// 1. [Required]
+// 2. [Disallowed]
+// 3. [Dependency]
+// 4. [Incompatibility]
 class Deducer {
   final SourceRegistry _sources;
 
@@ -5,7 +13,8 @@ class Deducer {
 
   final _required = <String, Required>{};
 
-  final _disallowed = <PackageRef, Set<Disallowed>>{};
+  // TODO: these maps should hash description as well, somehow
+  final _disallowed = <PackageRef, Disallowed>{};
 
   final _dependenciesByDepender = <PackageRef, Set<Dependency>>{};
 
@@ -25,19 +34,20 @@ class Deducer {
     _toProcess.add(initial);
 
     while (!_toProcess.isEmpty) {
+      // Note: every fact needs to check against its own type first and bail
+      // early if it's redundant. This helps ensure that we don't get circular.
       var fact = _toProcess.removeFirst();
       if (fact is Required) {
-        fact = _intersectRequired(fact);
+        fact = _requiredIntoRequired(fact);
         if (fact == null) continue;
 
-        if (!_checkDisallowed(fact)) continue;
-
-        _trimDependencies(fact);
-        _trimIncompatibilities(fact);
+        if (!_requiredIntoDisallowed(fact)) continue;
+        _requiredIntoDependencies(fact);
+        _requiredIntoIncompatibilities(fact);
       } else if (fact is Disallowed) {
-        if (!_mergeDisallowed(fact)) continue;
-
-        _trimRequired(fact);
+        if (!_disallowedIntoDisallowed(fact)) continue;
+        if (!_disallowedIntoRequired(fact)) continue;
+        _disallowedIntoDependencies(fact);
       }
     }
   }
@@ -47,7 +57,7 @@ class Deducer {
   //
   // Returns the (potentially modified) fact, or `null` if no new information
   // was added.
-  Required _intersectRequired(Required fact) {
+  Required _requiredIntoRequired(Required fact) {
     var existing = _required[fact.name];
     if (existing == null) {
       _required[fact.name] = fact;
@@ -66,22 +76,24 @@ class Deducer {
   }
 
   // Returns whether [fact] should continue to be processed as-is.
-  bool _checkDisallowed(Required fact) {
+  bool _requiredIntoDisallowed(Required fact) {
     var disallowed = _disallowed[fact.dep.toRef()];
     if (disallowed == null) return true;
 
-    var newDep = _depMinus(fact.dep, disallowed);
-    if (newDep == null) throw "Incompatible constriants!";
+    // Remove [disallowed] since it's redundant with [fact]. We'll update [fact]
+    // to encode the relevant information.
+    _removeDisallowed(disallowed);
 
-    if (newDep.constraint == fact.dep.constraint) return true;
+    // TODO: delete Disalloweds with the same name but different source/desc
 
-    _toProcess.add(new Required(newDep, [fact, disallowed]));
-    return false;
+    // If the required version was trimmed, stop processing, since we'll just
+    // process the narrower version later on.
+    return !_requiredAndDisallowed(fact, disallowed);
   }
 
-  void _trimDependencies(Required fact) {
-    var factRef = fact.dep.toRef();
-    for (var dependency in _dependenciesByDepender[factRef].toList()) {
+  void _requiredIntoDependencies(Required fact) {
+    var ref = fact.dep.toRef();
+    for (var dependency in _dependenciesByDepender[ref].toList()) {
       // Remove any dependencies from versions incompatible with [fact.dep],
       // since they'll never be relevant anyway.
       if (!_depAllows(fact.dep, dependency.depender)) {
@@ -92,14 +104,16 @@ class Deducer {
       }
     }
 
-    for (var dependency in _dependenciesByAllowed[factRef].toList()) {
+    for (var dependency in _dependenciesByAllowed[ref].toList()) {
       // Remove any dependencies whose allowed versions are completely
       // incompatible with [fact.dep], since they'll never be relevant
       // anyway.
       var intersection = _intersectDeps(dependency.allowed, fact.dep);
       if (intersection == null) {
         _removeDependency(dependency);
-        _toProcess.add(new Disallowed(dependency.depender, [dependency, fact]));
+        _toProcess.add(new Disallowed(
+            dependency.depender.withConstraint(dependency.depender.version),
+            [dependency, fact]));
         continue;
       }
 
@@ -109,7 +123,7 @@ class Deducer {
     }
   }
 
-  void _trimIncompatibilities(Required fact) {
+  void _requiredIntoIncompatibilities(Required fact) {
     // Remove any incompatibilities that are no longer relevant.
     for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
       PackageDep same;
@@ -130,11 +144,9 @@ class Deducer {
       if (compatible.isEmpty) {
         // If [fact] only allows versions in [same], then [different] is totally
         // disallowed.
-
-        // TODO: make [Disallowed] take a PackageDep?
-        for (var id in _idsForDep(same.withConstraint(compatible))) {
-          _toProcess.add(new Disallowed(id, [incompatibility, fact]));
-        }
+        _toProcess.add(new Disallowed(
+            fact.dep.withConstraint(compatible),
+            [incompatibility, fact]));
       } else if (!fact.dep.allowsAll(compatible)) {
         // If [fact] allows versions outside of [same], then we can reframe this
         // incompatibility as a dependency from [different]. This is safe
@@ -154,21 +166,60 @@ class Deducer {
     }
   }
 
-  bool _mergeDisallowed(Disallowed fact) {
-    var set = _disallowed.putIfAbsent(fact.asRef(), () => new Set());
-    return set.add(fact);
+  bool _disallowedIntoDisallowed(Disallowed fact) {
+    var ref = fact.dep.asRef();
+    var existing = _disallowed[ref];
+    if (existing == null) {
+      _disallowed[ref] = fact;
+      return true;
+    }
+
+    _disallowed[ref] = new Disallowed(
+        _mergeDeps(fact.dep, existing.dep), [existing, fact]);
+    return false;
   }
 
-  /// Returns [dep] without matching of [ids], or `null` if this would produce
-  /// an empty constraint.
-  ///
-  /// This should use [_allIds] to carve out slices where possible. Algorithm
-  /// TBD.
-  PackageDep _depMinus(PackageDep dep, Iterable<PackageId> ids);
+  bool _disallowedIntoRequired(Disallowed fact) {
+    var required = _required[fact.dep.name];
+    if (required == null) return true;
 
-  /// Intersect two deps, return `null` if they aren't compatible (diff name, diff
-  /// source, diff desc, or non-overlapping).
+    // If there's a [Required] matching [fact], delete [fact] and modify the
+    // [Required] instead. We prefer [Required] because it's more specific.
+    _removeDisallowed(fact);
+    _requiredAndDisallowed(required, disallowed);
+    return false;
+  }
+
+  // Resolves [required] and [disallowed], which should refer to the same
+  // package. Returns whether any required versions were trimmed.
+  bool _requiredAndDisallowed(Required required, Disallowed disallowed) {
+    assert(required.dep.toRef() == disallowed.dep.toRef());
+
+    var difference = required.dep.constraint.difference(
+        disallowed.dep.constraint);
+    if (difference.isEmpty) throw "Incompatible constriants!";
+    if (difference == required.dep.constraint) return false;
+
+    _toProcess.add(new Required(
+        required.dep.withConstraint(difference), [required, disallowed]));
+    return true;
+  }
+
+  void _removeDependency(Dependency dependency);
+
+  void _removeDisallowed(Disallowed disallowed);
+
+  // Merge two deps, [_allIds] aware to reduce gaps. Algorithm TBD.
+  PackageDep _mergeDeps(PackageDep dep1, PackageDep dep2);
+
+  // Intersect two deps, return `null` if they aren't compatible (diff name, diff
+  // source, diff desc, or non-overlapping).
+  //
+  // Should this reduce gaps? Are gaps possible if the inputs are fully merged?
   PackageDep _intersectDeps(PackageDep dep1, PackageDep dep2);
+
+  // Returns packages allowed by [minuend] but not also [subtrahend].
+  // PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
 
   /// Returns whether [dep] allows [id] (name, source, description, constraint).
   bool _depAllowed(PackageDep dep, PackageId id);

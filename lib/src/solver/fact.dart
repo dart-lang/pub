@@ -31,13 +31,13 @@ class Required implements Fact {
       : causes = causes?.toList() ?? [Cause.rootDependency];
 }
 
-/// [package] can never be selected.
+/// No package versions covered by [dep] can ever be selected.
 class Disallowed implements Fact {
   final List<Cause> causes;
 
-  final PackageId package;
+  final PackageDep dep;
 
-  Disallowed(this.package, Iterable<Cause> causes)
+  Disallowed(this.dep, Iterable<Cause> causes)
       : causes = causes.toList();
 }
 
