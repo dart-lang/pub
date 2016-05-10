@@ -41,16 +41,18 @@ class Disallowed implements Fact {
       : causes = causes.toList();
 }
 
-/// [depender] a package version covered by [allowed].
+/// All versions covered by [depender] require a version covered by [allowed].
 class Dependency implements Fact {
   final List<Cause> causes;
 
-  final PackageId depender;
+  final PackageDep depender;
 
   final PackageDep allowed;
 
   Dependency(this.depender, this.allowed, [Iterable<Cause> causes])
-      : causes = causes?.toList() ?? [Cause.explicitDependency];
+      : causes = causes?.toList() ?? [Cause.explicitDependency] {
+    assert(depender.name != allowed.name);
+  }
 }
 
 /// No versions covered by [package1] may be selected along with any versions

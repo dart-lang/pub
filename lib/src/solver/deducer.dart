@@ -1,6 +1,6 @@
 // At times we are able to transform one type of fact into another. We do this
 // in a consistent direction to avoid circularity. The order of preferred types
-// is:
+// is generally in order of strength of claim:
 //
 // 1. [Required]
 // 2. [Disallowed]
@@ -94,32 +94,43 @@ class Deducer {
   void _requiredIntoDependencies(Required fact) {
     var ref = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[ref].toList()) {
-      // Remove any dependencies from versions incompatible with [fact.dep],
-      // since they'll never be relevant anyway.
-      if (!_depAllows(fact.dep, dependency.depender)) {
-        // TODO: should we keep some sort of first-class representation of the
-        // cause draft so that removing a dependency removes all its
-        // consequences?
+      if (!fact.dep.constraint.allowsAny(dependency.depender.constraint)) {
+        // If [fact] doesn't allow any of the depender versions, the dependency
+        // is irrelevant and we can remove it.
         _removeDependency(dependency);
+      } else if (
+          dependency.depender.constraint.allowsAll(fact.dep.constraint)) {
+        // If all versions in [fact] have this dependency, then it can be
+        // upgraded to a requirement.
+        _removeDependency(dependency);
+        _toProcess.add(new Requirement(dependency.allowed, [dependency, fact]));
       }
     }
 
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
-      // Remove any dependencies whose allowed versions are completely
-      // incompatible with [fact.dep], since they'll never be relevant
-      // anyway.
-      var intersection = _intersectDeps(dependency.allowed, fact.dep);
-      if (intersection == null) {
-        _removeDependency(dependency);
-        _toProcess.add(new Disallowed(
-            dependency.depender.withConstraint(dependency.depender.version),
-            [dependency, fact]));
-        continue;
-      }
+      var intersection = dependency.allowed.constraint.intersect(
+          fact.dep.constraint);
+      if (intersection == dependency.allowed.constraint) continue;
 
-      _toProcess.add(new Dependency(
-          dependency.depender, dependency.allowed.withConstraint(intersection),
-          [dependency, fact]);
+      _removeDependency(dependency);
+      if (intersection.isEmpty) {
+        // If there are no valid versions covered by both [dependency.allowed]
+        // and [fact], then this dependency can never be satisfied and the
+        // depender should be disallowed entirely.
+        _toProcess.add(new Disallowed(dependency.depender, [dependency, fact]));
+      } else if (intersection != fact.dep.constraint) {
+        // If some but not all packages covered by [dependency.allowed] are
+        // covered by [fact], replace [dependency] with one with a narrower
+        // constraint.
+        //
+        // If [intersection] is exactly [fact.dep.constraint], then this
+        // dependency adds no information in addition to [fact], so it can be
+        // discarded entirely.
+        _toProcess.add(new Dependency(
+            dependency.depender,
+            dependency.allowed.withConstraint(intersection),
+            [dependency, fact]));
+      }
     }
   }
 
@@ -155,12 +166,10 @@ class Deducer {
         // There's no need to do this if *all* the versions allowed by [fact]
         // are outside of [same], since one of those versions is already
         // required.
-
-        // TODO: make [Dependency] take a PackageDep?
-        var newAllowed = same.withConstraint(compatible);
-        for (var id in _idsForDep(newAllowed)) {
-          _toProcess.add(
-              new Dependency(id, newAllowed, [incompatibility, fact]));
+        _toProcess.add(new Dependency(
+            different,
+            same.withConstraint(compatible),
+            [incompatibility, fact]));
         }
       }
     }
@@ -222,5 +231,13 @@ class Deducer {
   // PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
 
   /// Returns whether [dep] allows [id] (name, source, description, constraint).
-  bool _depAllowed(PackageDep dep, PackageId id);
+  // bool _depAllows(PackageDep dep, PackageId id);
+
+  /// Returns whether [dep] allows any packages covered by [dep2] (name, source,
+  /// description, constraint).
+  // bool _depAllowsAny(PackageDep dep1, PackageDep dep2);
+
+  /// Returns whether [dep] allows all packages covered by [dep2] (name, source,
+  /// description, constraint).
+  // bool _depAllowsAll(PackageDep dep1, PackageDep dep2);
 }
