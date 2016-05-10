@@ -48,6 +48,7 @@ import '../source_registry.dart';
 import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../utils.dart';
+import 'deduction.dart';
 import 'version_queue.dart';
 import 'version_selection.dart';
 import 'version_solver.dart';
@@ -102,6 +103,8 @@ class BacktrackingSolver {
   /// selected version, that will cause the current solution to fail and
   /// trigger backtracking.
   final _versions = <VersionQueue>[];
+
+  final _deductions = new Set<Deduction>();
 
   /// The current set of package versions the solver has selected, along with
   /// metadata about those packages' dependencies.
@@ -164,6 +167,10 @@ class BacktrackingSolver {
       await _selection.select(rootID);
 
       _validateSdkConstraint(root.pubspec);
+
+      for (var dep in depsFor(rootID)) {
+        _deductions.add(new Required(dep));
+      }
 
       logSolve();
       var packages = await _solve();
@@ -269,27 +276,24 @@ class BacktrackingSolver {
   /// Selects matching versions of unselected packages, or backtracks if there
   /// are no such versions.
   Future<List<PackageId>> _solve() async {
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-    await Future.doWhile(() async {
+    // If there are no more packages to traverse, we've traversed the whole
+    // graph.
+    while (_selection.nextUnselected != null) {
       // Avoid starving the event queue by waiting for a timer-level event.
       await new Future(() {});
 
-      // If there are no more packages to traverse, we've traversed the whole
-      // graph.
-      var ref = _selection.nextUnselected;
-      if (ref == null) return false;
-
       var queue;
       try {
-        queue = await _versionQueueFor(ref);
+        queue = await _versionQueueFor(_selection.nextUnselected);
       } on SolveFailure catch (error) {
-        // TODO(nweiz): adjust the priority of [ref] in the unselected queue
-        // since we now know it's problematic. We should reselect it as soon as
-        // we've selected a different version of one of its dependers.
+        // TODO(nweiz): adjust the priority of the selected package in the
+        // unselected queue since we now know it's problematic. We should
+        // reselect it as soon as we've selected a different version of one of
+        // its dependers.
 
-        // There are no valid versions of [ref] to select, so we have to
+        // There are no valid versions of the package to select, so we have to
         // backtrack and unselect some previously-selected packages.
-        if (await _backtrack()) return true;
+        if (await _backtrack()) continue;
 
         // Backtracking failed, which means we're out of possible solutions.
         // Throw the error that caused us to try backtracking.
@@ -309,8 +313,7 @@ class BacktrackingSolver {
       _versions.add(queue);
 
       logSolve();
-      return true;
-    });
+    }
 
     // If we got here, we successfully found a solution.
     return _selection.ids.where((id) => !id.isMagic).toList();
@@ -343,6 +346,8 @@ class BacktrackingSolver {
     try {
       allowed = await cache.getVersions(ref);
     } on PackageNotFoundException catch (error) {
+      _deductions.add(new Disallowed(ref, [Cause.packageNotFound]));
+
       // Show the user why the package was being requested.
       throw new DependencyNotFoundException(
           ref.name, error, _selection.getDependenciesOn(ref.name).toList());
@@ -368,20 +373,16 @@ class BacktrackingSolver {
     // Bail if there is nothing to backtrack to.
     if (_versions.isEmpty) return false;
 
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-
     // Advance past the current version of the leaf-most package.
-    await Future.doWhile(() async {
+    while (true) {
       // Move past any packages that couldn't have led to the failure.
-      await Future.doWhile(() async {
-        if (_versions.isEmpty || _versions.last.hasFailed) return false;
+      while (!_versions.isEmpty && !_versions.last.hasFailed) {
         var queue = _versions.removeLast();
         assert(_selection.ids.last == queue.current);
         await _selection.unselectLast();
-        return true;
-      });
+      }
 
-      if (_versions.isEmpty) return false;
+      if (_versions.isEmpty) break;
 
       var queue = _versions.last;
       var name = queue.current.name;
@@ -405,13 +406,12 @@ class BacktrackingSolver {
       if (foundVersion) {
         await _selection.select(queue.current);
         logSolve();
-        return false;
-      } else {
-        logSolve('no more versions of $name, backtracking');
-        _versions.removeLast();
-        return true;
+        break;
       }
-    });
+
+      logSolve('no more versions of $name, backtracking');
+      _versions.removeLast();
+    }
 
     if (!_versions.isEmpty) _attemptedSolutions++;
     return !_versions.isEmpty;
@@ -422,15 +422,19 @@ class BacktrackingSolver {
   ///
   /// If the first version is valid, no rewinding will be done. If no version is
   /// valid, this throws a [SolveFailure] explaining why.
-  Future _findValidVersion(VersionQueue queue) {
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-    return Future.doWhile(() async {
+  Future _findValidVersion(VersionQueue queue) async {
+    var versions = <PackageId>[];
+    Cause cause;
+
+    while (true) {
       try {
         await _checkVersion(queue.current);
-        return false;
+        break;
       } on SolveFailure {
+        Cause newCause;
+
         var name = queue.current.name;
-        if (await queue.advance()) return true;
+        if (await queue.advance()) continue;
 
         // If we've run out of valid versions for this package, mark its oldest
         // depender as failing. This ensures that we look at graphs in which the
@@ -445,7 +449,7 @@ class BacktrackingSolver {
         // encountered while trying to find one.
         rethrow;
       }
-    });
+    }
   }
 
   /// Checks whether the package identified by [id] is valid relative to the
