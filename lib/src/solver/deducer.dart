@@ -54,12 +54,12 @@ class Deducer {
       return fact;
     }
 
-    var intersection = _intersectDeps(existing.allowed, fact.allowed);
+    var intersection = _intersectDeps(existing.dep, fact.dep);
     if (intersection == null) {
       throw "Incompatible constraints!";
     }
 
-    if (intersection.constraint == existing.allowed.constraint) return null;
+    if (intersection.constraint == existing.dep.constraint) return null;
 
     _required[fact.name] = new Required(intersection, [existing, fact]);
     return _required[fact.name];
@@ -67,24 +67,24 @@ class Deducer {
 
   // Returns whether [fact] should continue to be processed as-is.
   bool _checkDisallowed(Required fact) {
-    var disallowed = _disallowed[fact.allowed.toRef()];
+    var disallowed = _disallowed[fact.dep.toRef()];
     if (disallowed == null) return true;
 
-    var newDep = _depMinus(fact.allowed, disallowed);
+    var newDep = _depMinus(fact.dep, disallowed);
     if (newDep == null) throw "Incompatible constriants!";
 
-    if (newDep.constraint == fact.allowed.constraint) return true;
+    if (newDep.constraint == fact.dep.constraint) return true;
 
     _toProcess.add(new Required(newDep, [fact, disallowed]));
     return false;
   }
 
   void _trimDependencies(Required fact) {
-    var factRef = fact.allowed.toRef();
+    var factRef = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[factRef].toList()) {
-      // Remove any dependencies from versions incompatible with [fact.allowed],
+      // Remove any dependencies from versions incompatible with [fact.dep],
       // since they'll never be relevant anyway.
-      if (!_depAllows(fact.allowed, dependency.depender)) {
+      if (!_depAllows(fact.dep, dependency.depender)) {
         // TODO: should we keep some sort of first-class representation of the
         // cause draft so that removing a dependency removes all its
         // consequences?
@@ -94,9 +94,9 @@ class Deducer {
 
     for (var dependency in _dependenciesByAllowed[factRef].toList()) {
       // Remove any dependencies whose allowed versions are completely
-      // incompatible with [fact.allowed], since they'll never be relevant
+      // incompatible with [fact.dep], since they'll never be relevant
       // anyway.
-      var intersection = _intersectDeps(dependency.allowed, fact.allowed);
+      var intersection = _intersectDeps(dependency.allowed, fact.dep);
       if (intersection == null) {
         _removeDependency(dependency);
         _toProcess.add(new Disallowed(dependency.depender, [dependency, fact]));
@@ -111,21 +111,20 @@ class Deducer {
 
   void _trimIncompatibilities(Required fact) {
     // Remove any incompatibilities that are no longer relevant.
-    var relevant = _incompatibilities[fact.allowed.toRef()].toList();
-    for (var incompatibility in relevant) {
+    for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
       PackageDep same;
       PackageDep different;
-      if (incompatibility.package1.name == fact.allowed.name) {
-        same = incompatibility.package1;
-        different = incompatibility.package2;
+      if (incompatibility.dep1.name == fact.dep.name) {
+        same = incompatibility.dep1;
+        different = incompatibility.dep2;
       } else {
-        assert(incompatibility.package2.name == fact.allowed.name);
-        same = incompatibility.package2;
-        different = incompatibility.package1;
+        assert(incompatibility.dep2.name == fact.dep.name);
+        same = incompatibility.dep2;
+        different = incompatibility.dep1;
       }
 
-      // The versions of [fact.allowed] that are compatible with [different].
-      var compatible = fact.allowed.constraint.difference(same.constraint);
+      // The versions of [fact.dep] that are compatible with [different].
+      var compatible = fact.dep.constraint.difference(same.constraint);
       _removeIncompatibility(incompatibility);
 
       if (compatible.isEmpty) {
@@ -136,10 +135,10 @@ class Deducer {
         for (var id in _idsForDep(same.withConstraint(compatible))) {
           _toProcess.add(new Disallowed(id, [incompatibility, fact]));
         }
-      } else if (!fact.allowed.allowsAll(compatible)) {
+      } else if (!fact.dep.allowsAll(compatible)) {
         // If [fact] allows versions outside of [same], then we can reframe this
         // incompatibility as a dependency from [different]. This is safe
-        // because [fact.allowed] needs to be selected anyway.
+        // because [fact.dep] needs to be selected anyway.
         //
         // There's no need to do this if *all* the versions allowed by [fact]
         // are outside of [same], since one of those versions is already

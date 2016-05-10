@@ -25,9 +25,9 @@ abstract class Fact implements Cause {
 class Required implements Fact {
   final List<Cause> causes;
 
-  final PackageDep allowed;
+  final PackageDep dep;
 
-  Required(this.allowed, [Iterable<Cause> causes])
+  Required(this.dep, [Iterable<Cause> causes])
       : causes = causes?.toList() ?? [Cause.rootDependency];
 }
 
@@ -58,11 +58,11 @@ class Dependency implements Fact {
 class Incompatibility implements Fact {
   final List<Cause> causes;
 
-  final PackageDep package1;
-  final PackageDep package2;
+  final PackageDep dep1;
+  final PackageDep dep2;
 
-  Incompatible(this.package1, this.package2, Iterable<Cause> causes)
+  Incompatible(this.dep1, this.dep2, Iterable<Cause> causes)
       : causes = causes.toList() {
-    assert(package1.name != package2.name);
+    assert(dep1.name != dep2.name);
   }
 }
