@@ -37,6 +37,31 @@ main() {
       }).validate();
     });
 
+    integration('supports prerelease versions', () {
+      // Run the server so that we know what URL to use in the system cache.
+      serveErrors();
+
+      d.cacheDir({
+        "foo": ["1.2.3-alpha.1"]
+      }, includePubspecs: true).create();
+
+      d.appDir({
+        "foo": "any"
+      }).create();
+
+      var warning = null;
+      if (command == RunCommand.upgrade) {
+        warning = "Warning: Upgrading when offline may not update you "
+                  "to the latest versions of your dependencies.";
+      }
+
+      pubCommand(command, args: ['--offline'], warning: warning);
+
+      d.packagesDir({
+        "foo": "1.2.3-alpha.1"
+      }).validate();
+    });
+
     integration('fails gracefully if a dependency is not cached', () {
       // Run the server so that we know what URL to use in the system cache.
       serveErrors();

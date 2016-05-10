@@ -271,7 +271,7 @@ class OfflineHostedSource extends HostedSource {
         var components = path.basename(entry).split("-");
         if (components.first != ref.name) return null;
         return HostedSource.idFor(
-            ref.name, new Version.parse(components.last),
+            ref.name, new Version.parse(components.skip(1).join("-")),
             url: _serverFor(ref.description));
       }).where((id) => id != null).toList();
     } else {
