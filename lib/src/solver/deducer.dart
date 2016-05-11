@@ -148,20 +148,19 @@ class Deducer {
         different = incompatibility.dep1;
       }
 
-      // The versions of [fact.dep] that are compatible with [different].
+      // The versions of [fact.dep] that aren't in [same], and thus that are
+      // compatible with [different].
       var compatible = fact.dep.constraint.difference(same.constraint);
       _removeIncompatibility(incompatibility);
 
       if (compatible.isEmpty) {
-        // If [fact] only allows versions in [same], then [different] is totally
-        // disallowed.
-        _toProcess.add(new Disallowed(
-            fact.dep.withConstraint(compatible),
-            [incompatibility, fact]));
-      } else if (!fact.dep.allowsAll(compatible)) {
+        // If [fact] is incompatible with all versions of [different], then
+        // [different] must be disallowed entirely.
+        _toProcess.add(new Disallowed(different, [incompatibility, fact]));
+      } else if (compatible != fact.dep.constraint) {
         // If [fact] allows versions outside of [same], then we can reframe this
-        // incompatibility as a dependency from [different]. This is safe
-        // because [fact.dep] needs to be selected anyway.
+        // incompatibility as a dependency from [different] onto [fact.dep].
+        // This is safe because [fact.dep] needs to be selected anyway.
         //
         // There's no need to do this if *all* the versions allowed by [fact]
         // are outside of [same], since one of those versions is already
@@ -170,7 +169,6 @@ class Deducer {
             different,
             same.withConstraint(compatible),
             [incompatibility, fact]));
-        }
       }
     }
   }
