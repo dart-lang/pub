@@ -199,6 +199,46 @@ class Deducer {
     return false;
   }
 
+  void _disallowedIntoDependencies(Disallowed fact) {
+    var ref = fact.dep.toRef();
+    for (var dependency in _dependenciesByDepender[ref].toList()) {
+      var trimmed = dependency.depender.constraint
+          .difference(fact.dep.constraint);
+      if (trimmed == dependency.depender.constraint) continue;
+
+      // If [fact] covers some of [dependency.depender], trim the dependency so
+      // that its depender doesn't include disallowed versions. If this would
+      // produce an empty depender, remove it entirely.
+      _removeDependency(dependency);
+      if (trimmed.isEmpty) continue;
+
+      _toProcess.add(new Dependency(
+          dependency.depender.withConstraint(trimmed),
+          dependency.allowed,
+          [dependency, fact]));
+    }
+
+    for (var dependency in _dependenciesByAllowed[ref].toList()) {
+      var trimmed = dependency.allowed.constraint
+          .difference(fact.dep.constraint);
+      if (trimmed = dependency.allowed.constraint) continue;
+
+      // If [fact] covers some of [dependency.allowed], trim the dependency so
+      // that its constraint doesn't include disallowed versions. If this would
+      // produce an empty constraint, mark the depender as disallowed.
+      _removeDependency(dependency);
+
+      if (trimmed.isEmpty) {
+        _toProcess.add(new Disallowed(dependency.depender, [dependency, fact]));
+      } else {
+        _toProcess.add(new Dependency(
+            dependency.depender,
+            dependency.allowed.withConstraint(trimmed),
+            [dependency, fact]));
+      }
+    }
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package. Returns whether any required versions were trimmed.
   bool _requiredAndDisallowed(Required required, Disallowed disallowed) {
