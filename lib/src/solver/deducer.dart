@@ -93,6 +93,10 @@ class Deducer {
   }
 
   void _requiredIntoDependencies(Required fact) {
+    // Dependencies whose depender is [fact.dep], grouped by the names of
+    // packages they depend on.
+    var matchingByAllowed = <String, Set<Dependency>>{};
+
     var ref = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[ref].toList()) {
       var intersection = fact.dep.constraint
@@ -101,20 +105,44 @@ class Deducer {
       if (intersection.isEmpty) {
         // If no versions in [fact] have this dependencies, then it's irrelevant.
         _removeDependency(dependency);
-      } else if (intersection == fact.dep.constraint) {
-        // If all versions in [fact] have this dependency, then it can be
-        // upgraded to a requirement.
-        _removeDependency(dependency);
-        _toProcess.add(new Required(dependency.allowed, [dependency, fact]));
       } else if (intersection != dependency.depender.constraint) {
         // If only some versions [dependency.depender] are in [fact], we can
         // trim the ones that aren't.
-        _toProcess.add(new Dependency(
+        var newDependency = new Dependency(
             dependency.depender.withConstraint(intersection),
             dependency.allowed,
-            [dependency, fact]));
+            [dependency, fact]);
+        _toProcess.add(newDependency);
+        matchingByAllowed[newDependency.allowed.name] = newDependency;
+      } else {
+        matchingByAllowed[dependency.allowed.name] = dependency;
       }
     }
+
+    // Go through the dependencies from [fact]'s package onto each other package
+    // to see if we can create any new requirements from them.
+    for (var dependencies in matchingByAllowed.values) {
+      // Union all the dependencies dependers. If we have dependency information
+      // for all dependers in [fact.dep], we may be able to add a requirement.
+      var depender = _mergeDeps(
+          dependencies.map((dependency) => dependency.depender));
+      if (depender != fact.dep) continue;
+
+      // If the dependencies cover all of [fact.dep], try to union the allowed
+      // versions to get the narrowest possible constraint that covers all
+      // versions allowed by any selectable depender. There may be no such
+      // constraint if different dependers use [allowed] from different sources
+      // or with different descriptions.
+      var allowed = _mergeDeps(
+          dependencies.map((dependency) => dependency.allowed));
+      if (allowed == null) continue;
+
+      // If [fact] was covered by a single dependency, that dependency is now
+      // redundant and can be removed.
+      if (dependencies.length == 1) _removeDependency(dependencies.single);
+
+      _toProcess.add(new Required(allowed, [dependency, fact]));
+    });
 
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
       var intersection = dependency.allowed.constraint.intersect(
@@ -183,7 +211,7 @@ class Deducer {
     }
 
     _disallowed[ref] = new Disallowed(
-        _mergeDeps(fact.dep, existing.dep), [existing, fact]);
+        _mergeDeps([fact.dep, existing.dep]), [existing, fact]);
     return false;
   }
 
@@ -290,8 +318,9 @@ class Deducer {
           ? incompatibility.dep2
           : incompatibility.dep1;
 
-  // Merge two deps, [_allIds] aware to reduce gaps. Algorithm TBD.
-  PackageDep _mergeDeps(PackageDep dep1, PackageDep dep2);
+  // Merge [deps], [_allIds]-aware to reduce gaps. `null` if the deps are
+  // incompatible source/desc. Algorithm TBD.
+  PackageDep _mergeDeps(Iterable<PackageDep> deps);
 
   // Intersect two deps, return `null` if they aren't compatible (diff name, diff
   // source, diff desc, or non-overlapping).
