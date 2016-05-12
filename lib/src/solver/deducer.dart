@@ -48,6 +48,7 @@ class Deducer {
         if (!_disallowedIntoDisallowed(fact)) continue;
         if (!_disallowedIntoRequired(fact)) continue;
         _disallowedIntoDependencies(fact);
+        _disallowedIntoIncompatibilities(fact);
       }
     }
   }
@@ -137,16 +138,8 @@ class Deducer {
   void _requiredIntoIncompatibilities(Required fact) {
     // Remove any incompatibilities that are no longer relevant.
     for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
-      PackageDep same;
-      PackageDep different;
-      if (incompatibility.dep1.name == fact.dep.name) {
-        same = incompatibility.dep1;
-        different = incompatibility.dep2;
-      } else {
-        assert(incompatibility.dep2.name == fact.dep.name);
-        same = incompatibility.dep2;
-        different = incompatibility.dep1;
-      }
+      var same = _matching(incompatibility, fact.dep);
+      var different = _nonMatching(incompatibility, fact.dep);
 
       // The versions of [fact.dep] that aren't in [same], and thus that are
       // compatible with [different].
@@ -237,6 +230,26 @@ class Deducer {
     }
   }
 
+  void _disallowedIntoIncompatibilities(Disallowed fact) {
+    // Remove any incompatibilities that are no longer relevant.
+    for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
+      var same = _matching(incompatibility, fact.dep);
+      var different = _nonMatching(incompatibility, fact.dep);
+
+      var trimmed = same.constraint.difference(fact.dep.constraint);
+      if (trimmed = same.constraint) continue;
+
+      // If [fact] disallows some of the versions in [same], we create a new
+      // incompatibility with narrower versions. If it disallows all of them, we
+      // just delete the incompatibility, since it's now irrelevant.
+      _removeIncompatibility(incompatibility);
+      if (trimmed.isEmpty) continue;
+
+      _toProcess.add(new Incompatibility(
+          same.withConstraint(trimmed), different, [incompatibility, fact]));
+    }
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package. Returns whether any required versions were trimmed.
   bool _requiredAndDisallowed(Required required, Disallowed disallowed) {
@@ -255,6 +268,19 @@ class Deducer {
   void _removeDependency(Dependency dependency);
 
   void _removeDisallowed(Disallowed disallowed);
+
+  /// Returns the dependency in [incompatibility] whose name matches [dep].
+  PackageDep _matching(Incompatibility incompatibility, PackageDep dep) =>
+      incompatibility.dep1.name == dep.name
+          ? incompatibility.dep1
+          : incompatibility.dep2;
+
+  /// Returns the dependency in [incompatibility] whose name doesn't match
+  /// [dep].
+  PackageDep _nonMatching(Incompatibility incompatibility, PackageDep dep) =>
+      incompatibility.dep1.name == dep.name
+          ? incompatibility.dep2
+          : incompatibility.dep1;
 
   // Merge two deps, [_allIds] aware to reduce gaps. Algorithm TBD.
   PackageDep _mergeDeps(PackageDep dep1, PackageDep dep2);
