@@ -95,16 +95,24 @@ class Deducer {
   void _requiredIntoDependencies(Required fact) {
     var ref = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[ref].toList()) {
-      if (!fact.dep.constraint.allowsAny(dependency.depender.constraint)) {
-        // If [fact] doesn't allow any of the depender versions, the dependency
-        // is irrelevant and we can remove it.
+      var intersection = fact.dep.constraint
+          .intersect(dependency.depender.constraint);
+
+      if (intersection.isEmpty) {
+        // If no versions in [fact] have this dependencies, then it's irrelevant.
         _removeDependency(dependency);
-      } else if (
-          dependency.depender.constraint.allowsAll(fact.dep.constraint)) {
+      } else if (intersection == fact.dep.constraint) {
         // If all versions in [fact] have this dependency, then it can be
         // upgraded to a requirement.
         _removeDependency(dependency);
-        _toProcess.add(new Requirement(dependency.allowed, [dependency, fact]));
+        _toProcess.add(new Required(dependency.allowed, [dependency, fact]));
+      } else if (intersection != dependency.depender.constraint) {
+        // If only some versions [dependency.depender] are in [fact], we can
+        // trim the ones that aren't.
+        _toProcess.add(new Dependency(
+            dependency.depender.withConstraint(intersection),
+            dependency.allowed,
+            [dependency, fact]));
       }
     }
 
@@ -212,7 +220,7 @@ class Deducer {
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
       var trimmed = dependency.allowed.constraint
           .difference(fact.dep.constraint);
-      if (trimmed = dependency.allowed.constraint) continue;
+      if (trimmed == dependency.allowed.constraint) continue;
 
       // If [fact] covers some of [dependency.allowed], trim the dependency so
       // that its constraint doesn't include disallowed versions. If this would
@@ -237,7 +245,7 @@ class Deducer {
       var different = _nonMatching(incompatibility, fact.dep);
 
       var trimmed = same.constraint.difference(fact.dep.constraint);
-      if (trimmed = same.constraint) continue;
+      if (trimmed == same.constraint) continue;
 
       // If [fact] disallows some of the versions in [same], we create a new
       // incompatibility with narrower versions. If it disallows all of them, we
