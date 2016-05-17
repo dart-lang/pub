@@ -339,6 +339,25 @@ foo:http://example.com/
       _runsSuccessfully();
     });
 
+    // Regression test for #1416
+    group("a path dependency has a dependency on the root package", () {
+      setUp(() {
+        d.dir("foo", [
+          d.libPubspec("foo", "1.0.0", deps: {"myapp": "any"})
+        ]).create();
+
+        d.dir(appPath, [
+          d.appPubspec({"foo": {"path": "../foo"}})
+        ]).create();
+
+        pubGet();
+
+        _touch("pubspec.lock");
+      });
+
+      _runsSuccessfully();
+    });
+
     group("the lockfile is newer than .packages, but they're up-to-date", () {
       setUp(() {
         d.dir(appPath, [

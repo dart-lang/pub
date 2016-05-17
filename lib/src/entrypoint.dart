@@ -536,6 +536,8 @@ class Entrypoint {
 
   /// Returns whether the locked version of [dep] matches the dependency.
   bool _isDependencyUpToDate(PackageDep dep) {
+    if (dep.name == root.name) return true;
+
     var locked = lockFile.packages[dep.name];
     if (locked == null) return false;
 
