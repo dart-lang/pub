@@ -315,28 +315,21 @@ class Deducer {
         if (fact.allowed.constraint.allowsAll(dependency.allowed.constraint)) {
           // If [fact] allows strictly more versions than [dependency], remove
           // any overlap from [fact] because it's less specific.
-          var difference = fact.depender.constraint.difference(
-              dependency.depender.constraint);
-          if (difference.isEmpty) return null;
+          var difference = _depMinus(fact.depender, dependency.depender);
+          if (difference == null) return null;
 
-          fact = new Dependency(
-              fact.depender.withConstraint(difference), 
-              fact.allowed,
-              [dependency, fact]);
+          fact = new Dependency(difference, fact.allowed, [dependency, fact]);
         } else if (dependency.allowed.constraint
             .allowsAll(fact.allowed.constraint)) {
           _removeDependency(dependency);
 
           // If [dependency] allows strictly more versions than [fact], remove
           // any overlap from [dependency] because it's less specific.
-          var difference = dependency.depender.constraint.difference(
-              fact.depender.constraint);
-          if (difference.isEmpty) continue;
+          var difference = _depMinus(dependency.depender, fact.depender);
+          if (difference == null) continue;
 
           _toProcess.add(new Dependency(
-              dependency.depender.withConstraint(difference),
-              dependency.allowed,
-              [dependency, fact]));
+              difference, dependency.allowed, [dependency, fact]));
         } else {
           // If [fact] and [dependency]'s allowed targets overlap without one
           // being a subset of the other, we need to create a third dependency
@@ -349,30 +342,21 @@ class Deducer {
               _intersectDeps(dependency.allowed, fact.allowed),
               [dependency, fact]));
 
-          if (!intersection.constraint.allowsAll(
-              dependency.depender.constraint)) {
+          var dependencyDifference = _depMinus(dependency, intersection);
+          if (dependencyDifference != null) {
             // If [intersection] covers the entirety of [dependency], throw it
             // away; otherwise, trim it to exclude [intersection].
             _toProcess.add(new Dependency(
-                dependency.depender.withConstraint(
-                    dependency.depender.constraint.difference(
-                        intersection.constraint)),
-                dependency.allowed,
-                [dependency, fact]));
+                dependencyDifference, dependency.allowed, [dependency, fact]));
           }
 
-          if (!intersection.constraint.allowsAll(fact.depender.constraint)) {
-            // If [intersection] covers the entirety of [fact], throw it away;
-            // otherwise, trim it to exclude [intersection].
-            fact = new Dependency(
-                fact.depender.withConstraint(
-                    fact.depender.constraint.difference(
-                        intersection.constraint)),
-                fact.allowed,
-                [dependency, fact]);
-          } else {
-            return null;
-          }
+          var factDifference = _depMinus(fact, intersection);
+          if (factDifference == null) return null;
+
+          // If [intersection] covers the entirety of [fact], throw it away;
+          // otherwise, trim it to exclude [intersection].
+          fact = new Dependency(
+              factDifference, fact.allowed, [dependency, fact]);
         }
       }
     }
@@ -420,8 +404,9 @@ class Deducer {
   // Should this reduce gaps? Are gaps possible if the inputs are fully merged?
   PackageDep _intersectDeps(PackageDep dep1, PackageDep dep2);
 
-  // Returns packages allowed by [minuend] but not also [subtrahend].
-  // PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
+  // Returns packages allowed by [minuend] but not also [subtrahend]. `null` if
+  // the resulting constraint is empty.
+  PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
 
   /// Returns whether [dep] allows [id] (name, source, description, constraint).
   // bool _depAllows(PackageDep dep, PackageId id);
