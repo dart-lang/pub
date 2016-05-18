@@ -286,6 +286,98 @@ class Deducer {
     }
   }
 
+  Dependency _dependencyIntoDependency(Dependency fact) {
+    // Check whether [fact] can be merged with other dependencies with the same
+    // depender and allowed.
+    for (var dependency in _dependenciesByDepender(fact.depender.toRef())) {
+      if (dependency.allowed.toRef() != fact.allowed.toRef()) continue;
+
+      if (dependency.allowed.constraint == fact.allowed.constraint) {
+        // If [fact] has the same allowed constraint as [dependency], they can
+        // be merged.
+
+        var merged = _mergeDeps([dependency.depender, fact.depender]);
+        if (merged.constraint != dependency.depender.constraint) {
+          // If [fact] adds new information to [dependency], create a new
+          // dependency for it.
+          _removeDependency(dependency);
+          _dependenciesByDepender[fact.depender.toRef()] =
+              new Dependency(merged, fact.allowed, [dependency, fact]);
+        }
+
+        return null;
+      } else if (
+          dependency.depender.constraint.allowsAny(fact.depender.constraint)) {
+        // If [fact] has a different allowed constraint than [dependency] but
+        // their dependers overlap, remove the part that's overlapping and maybe
+        // create a new narrower constraint from the overlap.
+
+        if (fact.allowed.constraint.allowsAll(dependency.allowed.constraint)) {
+          // If [fact] allows strictly more versions than [dependency], remove
+          // any overlap from [fact] because it's less specific.
+          var difference = fact.depender.constraint.difference(
+              dependency.depender.constraint);
+          if (difference.isEmpty) return null;
+
+          fact = new Dependency(
+              fact.depender.withConstraint(difference), 
+              fact.allowed,
+              [dependency, fact]);
+        } else if (dependency.allowed.constraint
+            .allowsAll(fact.allowed.constraint)) {
+          _removeDependency(dependency);
+
+          // If [dependency] allows strictly more versions than [fact], remove
+          // any overlap from [dependency] because it's less specific.
+          var difference = dependency.depender.constraint.difference(
+              fact.depender.constraint);
+          if (difference.isEmpty) continue;
+
+          _toProcess.add(new Dependency(
+              dependency.depender.withConstraint(difference),
+              dependency.allowed,
+              [dependency, fact]));
+        } else {
+          // If [fact] and [dependency]'s allowed targets overlap without one
+          // being a subset of the other, we need to create a third dependency
+          // that represents the intersection.
+          _removeDependency(dependency);
+
+          var intersection = _intersectDeps(dependency.depender, fact.depender);
+          _toProcess.add(new Dependency(
+              intersection,
+              _intersectDeps(dependency.allowed, fact.allowed),
+              [dependency, fact]));
+
+          if (!intersection.constraint.allowsAll(
+              dependency.depender.constraint)) {
+            // If [intersection] covers the entirety of [dependency], throw it
+            // away; otherwise, trim it to exclude [intersection].
+            _toProcess.add(new Dependency(
+                dependency.depender.withConstraint(
+                    dependency.depender.constraint.difference(
+                        intersection.constraint)),
+                dependency.allowed,
+                [dependency, fact]));
+          }
+
+          if (!intersection.constraint.allowsAll(fact.depender.constraint)) {
+            // If [intersection] covers the entirety of [fact], throw it away;
+            // otherwise, trim it to exclude [intersection].
+            fact = new Dependency(
+                fact.depender.withConstraint(
+                    fact.depender.constraint.difference(
+                        intersection.constraint)),
+                fact.allowed,
+                [dependency, fact]);
+          } else {
+            return null;
+          }
+        }
+      }
+    }
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package. Returns whether any required versions were trimmed.
   bool _requiredAndDisallowed(Required required, Disallowed disallowed) {
