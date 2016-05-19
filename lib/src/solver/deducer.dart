@@ -122,27 +122,15 @@ class Deducer {
     // Go through the dependencies from [fact]'s package onto each other package
     // to see if we can create any new requirements from them.
     for (var dependencies in matchingByAllowed.values) {
-      // Union all the dependencies dependers. If we have dependency information
-      // for all dependers in [fact.dep], we may be able to add a requirement.
-      var depender = _mergeDeps(
-          dependencies.map((dependency) => dependency.depender));
-      if (depender != fact.dep) continue;
-
-      // If the dependencies cover all of [fact.dep], try to union the allowed
-      // versions to get the narrowest possible constraint that covers all
-      // versions allowed by any selectable depender. There may be no such
-      // constraint if different dependers use [allowed] from different sources
-      // or with different descriptions.
-      var allowed = _mergeDeps(
-          dependencies.map((dependency) => dependency.allowed));
+      var allowed = _transitiveAllowed(fact.dep, dependencies);
       if (allowed == null) continue;
+
+      _toProcess.add(new Required(allowed, dependencies.toList()..add(fact)));
 
       // If [fact] was covered by a single dependency, that dependency is now
       // redundant and can be removed.
       if (dependencies.length == 1) _removeDependency(dependencies.single);
-
-      _toProcess.add(new Required(allowed, [dependency, fact]));
-    });
+    }
 
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
       var intersection = dependency.allowed.constraint.intersect(
@@ -360,6 +348,20 @@ class Deducer {
         }
       }
     }
+
+    // Merge [fact] with dependencies *from* [fact.allowed] to see if we can
+    // deduce anything about transitive dependencies.
+    var byAllowed = groupBy(
+        _dependenciesByDepender[fact.allowed.toRef()].where((dependency) =>
+            fact.allowed.constraint.allowsAny(dependency.depender.constraint)),
+        (dependency) => dependency.allowed.toRef());
+    for (var dependencies in byAllowed.values) {
+      var allowed = _transitiveAllowed(fact.allowed, dependencies);
+      if (allowed == null) continue;
+
+      _toProcess.add(new Dependency(
+          fact.depender, allowed, dependencies.toList()..add(fact)));
+    }
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
@@ -380,6 +382,33 @@ class Deducer {
   void _removeDependency(Dependency dependency);
 
   void _removeDisallowed(Disallowed disallowed);
+
+  /// If [dependencies]' dependers cover all of [depender], returns the union of
+  /// their allowed constraints.
+  ///
+  /// Returns `null` if the dependencies don't cover all of [depender] of the
+  /// allowed constraints can't be merged.
+  ///
+  /// This assumes that [dependencies]' dependers are all on the same package as
+  /// [depender].
+  PackageDep _transitiveAllowed(PackageDep depender,
+      Iterable<Dependency> dependencies) {
+    // Union all the dependencies dependers. If we have dependency information
+    // for all versions covered by [depender], we may be able to deduce a new
+    // fact.
+    var mergedDepender = _mergeDeps(dependencies.map((dependency) {
+      assert(dependency.depender.toRef() == depender.toRef());
+      return dependency.depender;
+    }));
+    if (!mergedDepender.constraint.allowsAll(depender.constraint)) return null;
+
+    // If the dependencies cover all of [depender], try to union the allowed
+    // versions to get the narrowest possible constraint that covers all
+    // versions allowed by any selectable depender. There may be no such
+    // constraint if different dependers use [allowed] from different sources
+    // or with different descriptions.
+    return _mergeDeps(dependencies.map((dependency) => dependency.allowed));
+  }
 
   /// Returns the dependency in [incompatibility] whose name matches [dep].
   PackageDep _matching(Incompatibility incompatibility, PackageDep dep) =>
