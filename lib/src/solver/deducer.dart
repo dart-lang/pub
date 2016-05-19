@@ -275,6 +275,11 @@ class Deducer {
   }
 
   Dependency _dependencyIntoDependency(Dependency fact) {
+    // Other dependencies from the same package onto the same target. This is
+    // used later on to determine whether we can merge this with existing
+    // dependencies.
+    var siblings = <Dependency>[];
+
     // Check whether [fact] can be merged with other dependencies with the same
     // depender and allowed.
     for (var dependency in _dependenciesByDepender(fact.depender.toRef())) {
@@ -346,6 +351,8 @@ class Deducer {
           fact = new Dependency(
               factDifference, fact.allowed, [dependency, fact]);
         }
+      } else {
+        siblings.add(dependency);
       }
     }
 
@@ -362,6 +369,25 @@ class Deducer {
       _toProcess.add(new Dependency(
           fact.depender, allowed, dependencies.toList()..add(fact)));
     }
+
+    // Merge [fact] with dependencies *onto* [fact.depender].
+    for (var dependency in _dependenciesByAllowed[fact.depender.toRef()]) {
+      if (!dependency.allowed.constraint.allowsAny(fact.depender.constraint)) {
+        continue;
+      }
+
+      var relevant = siblings
+          .where((sibling) => dependency.allowed.constraint
+              .allowsAny(sibling.depender.constraint))
+          .toList()..add(fact);
+      var allowed = _transitiveAllowed(fact.allowed, relevant);
+      if (allowed == null) continue;
+
+      _toProcess.add(new Dependency(
+          dependency.depender, allowed, [dependency].addAll(relevant)));
+    }
+
+    return fact;
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
