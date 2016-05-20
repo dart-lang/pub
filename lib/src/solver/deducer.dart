@@ -49,6 +49,11 @@ class Deducer {
         if (!_disallowedIntoRequired(fact)) continue;
         _disallowedIntoDependencies(fact);
         _disallowedIntoIncompatibilities(fact);
+      } else if (fact is Dependency) {
+        fact = _dependencyIntoDependency(fact);
+        if (fact == null) continue;
+
+        if (!_dependencyIntoReqired(fact)) continue;
       }
     }
   }
@@ -97,17 +102,20 @@ class Deducer {
     // packages they depend on.
     var matchingByAllowed = <String, Set<Dependency>>{};
 
+    // Fill [matchingByAllowed] and trim any irrelevant dependencies while we're
+    // at it.
     var ref = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[ref].toList()) {
       var intersection = fact.dep.constraint
           .intersect(dependency.depender.constraint);
 
       if (intersection.isEmpty) {
-        // If no versions in [fact] have this dependencies, then it's irrelevant.
+        // If no versions in [fact] have this dependency, then it's irrelevant.
         _removeDependency(dependency);
       } else if (intersection != dependency.depender.constraint) {
         // If only some versions [dependency.depender] are in [fact], we can
         // trim the ones that aren't.
+        _removeDependency(dependency);
         var newDependency = new Dependency(
             dependency.depender.withConstraint(intersection),
             dependency.allowed,
@@ -132,9 +140,12 @@ class Deducer {
       if (dependencies.length == 1) _removeDependency(dependencies.single);
     }
 
+    // Trim any dependencies whose allowed versions aren't covered by [fact]. We
+    // can even create [Disallowed]s if the dependencies are entirely
+    // unsatisfiable.
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
-      var intersection = dependency.allowed.constraint.intersect(
-          fact.dep.constraint);
+      var intersection = fact.dep.constraint.intersect(
+          dependency.allowed.constraint);
       if (intersection == dependency.allowed.constraint) continue;
 
       _removeDependency(dependency);
@@ -387,7 +398,71 @@ class Deducer {
           dependency.depender, allowed, [dependency].addAll(relevant)));
     }
 
+    _dependenciesByDepender.putIfAbsent(fact.depender.toRef(), () => new Set())
+        .add(fact);
+    _dependenciesByAllowed.putIfAbsent(fact.allowed.toRef(), () => new Set())
+        .add(fact);
     return fact;
+  }
+
+  bool _dependencyIntoRequired(Dependency fact) {
+    var required = _required[fact.depender.name];
+    if (required != null) {
+      if (required.toRef() != fact.depender.toRef()) {
+        _removeDependency(fact);
+        return false;
+      }
+
+      // Trim [fact] or throw it away if it's irrelevant.
+      var intersection = required.dep.constraint
+          .intersect(fact.depender.constraint);
+      if (intersection.isEmpty) {
+        _removeDependency(fact);
+        return false;
+      } else if (intersection != fact.depender.constraint) {
+        _removeDependency(fact);
+        _toProcess.add(new Dependency(
+            fact.depender.withConstraint(intersection),
+            fact.allowed,
+            [required, fact]));
+        return false;
+      }
+
+      // If [fact]'s depender is required, see if we can come up with a merged
+      // requirement based on all its dependers' dependencies.
+      var allowedRef = fact.allowed.toRef();
+      var siblings = _dependenciesByDepender[fact.depender.toRef()]
+          .where((dependency) => dependency.allowed.toRef() == allowedRef)
+          .toList()..add(fact);
+      var allowed = _transitiveAllowed(fact.dep, sibilngs);
+      if (allowed != null) {
+        _toProcess.add(new Required(allowed, [required].addAll(siblings)));
+
+        // If [fact] entirely covered [required], [fact] is now redundant and
+        // can be discarded.
+        if (siblings.length == 1) {
+          _removeDependency(fact);
+          return false;
+        }
+      }
+    }
+
+    required = _required[fact.allowed.name];
+    if (required != null) {
+      if (required.toRef() != fact.allowed.toRef()) {
+        _removeDependency(fact);
+        return false;
+      }
+
+      var intersection = required.dep.constraint
+          .intersect(fact.allowed.constraint);
+      if (intersection == fact.allowed.constraint) {
+        _removeDependency(fact);
+        return true;
+      }
+
+      // TODO: stuff
+    }
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
