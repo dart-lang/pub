@@ -91,6 +91,15 @@ class Deducer {
       } else if (fact is Incompatibility) {
         fact = _incompatibilityIntoIncompatibilities(fact);
         if (fact == null) continue;
+
+        if (!_incompatibilityIntoRequired(fact)) continue;
+
+        _incompatibilities
+            .putIfAbsent(fact.dep1.toRef(), () => new Set())
+            .add(fact);
+        _incompatibilities
+            .putIfAbsent(fact.dep2.toRef(), () => new Set())
+            .add(fact);
       }
 
       _toProcess.addAll(_fromCurrent);
@@ -227,51 +236,9 @@ class Deducer {
   void _requiredIntoIncompatibilities(Required fact) {
     // Remove any incompatibilities that are no longer relevant.
     for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
-      var same = _matching(incompatibility, fact.dep);
-      var different = _nonMatching(incompatibility, fact.dep);
-
-      // The versions of [fact.dep] that aren't in [same], and thus that are
-      // compatible with [different].
-      var compatible = fact.dep.constraint.difference(same.constraint);
       _removeIncompatibility(incompatibility);
-
-      if (compatible.isEmpty) {
-        // If [fact] is incompatible with all versions of [different], then
-        // [different] must be disallowed entirely. For example, if
-        //
-        // * a [0, 1) is required (fact)
-        // * a [0, 1) is incompatible with b [0, 1) (incompatibility)
-        //
-        // we can remove [incompatibility] and add
-        //
-        // * b [0, 1) is disallowed
-        _fromCurrent.add(new Disallowed(different, [incompatibility, fact]));
-      } else if (compatible != fact.dep.constraint) {
-        // If [fact] allows versions outside of [same], then we can reframe this
-        // incompatibility as a dependency from [different] onto [fact.dep].
-        // This is safe because [fact.dep] needs to be selected anyway. For
-        // example, if
-        //
-        // * a [0, 2) is required (fact)
-        // * a [0, 1) is incompatible with b [0, 1) (incompatibility)
-        //
-        // we can remove [incompatibility] and add
-        //
-        // * b [0, 1) depends on a [1, 2)
-        _fromCurrent.add(new Dependency(
-            different,
-            same.withConstraint(compatible),
-            [incompatibility, fact]));
-      } else {
-        // There's no need to do anything else if *all* the versions allowed by
-        // [fact] are outside of [same], since one of those versions is already
-        // required. For example, if
-        //
-        // * a [0, 1) is required (fact)
-        // * a [1, 2) is incompatible with b [0, 1) (incompatibility)
-        //
-        // we can throw away [incompatibility].
-      }
+      var result = _requiredAndIncompatibility(required, incompatibility);
+      if (result != null) _fromCurrent.add(result);
     }
   }
 
@@ -683,6 +650,17 @@ class Deducer {
     return merge(fact.dep2);
   }
 
+  bool _incompatibilityIntoRequired(Incompatibility fact) {
+    var required = _required[fact.dep1.name] ?? _required[fact.dep2.name];
+    if (required == null) return true;
+    var result = _requiredAndIncompatibility(fact);
+
+    // Add to [_toProcess] because [_fromCurrent] will get discarded when we
+    // return `false`.
+    if (result != null) _toProcess.add(result);
+    return false;
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package.
   //
@@ -845,6 +823,59 @@ class Deducer {
       // * b [0, 1) depends on a [1, 2)
       return new Dependency(
           trimmed, dependency.allowed, [dependency, disallowed]);
+    }
+  }
+
+  /// Resolves [required] and [incompatibility].
+  ///
+  /// One of [incompatibility]'s packages should be the same as [required.dep].
+  ///
+  /// Returns a new fact to replace [incompatibility], or `null` if
+  /// [incompatibility] is irrelevant.
+  Fact _requiredAndIncompatibility(Required required,
+      Incompatibility incompatibility) {
+    assert(required.dep.name == incompatibility.dep1.name ||
+        required.dep.name == incompatibility.dep2.name);
+    var same = _matching(incompatibility, required.dep);
+    var different = _nonMatching(incompatibility, required.dep);
+
+    // The versions of [required.dep] that aren't in [same], and thus that are
+    // compatible with [different].
+    var compatible = _depMinus(required.dep, same);
+    if (compatible == null) {
+      // If [required] is incompatible with all versions of [different], then
+      // [different] must be disallowed entirely. For example, if
+      //
+      // * a [0, 1) is required (required)
+      // * a [0, 1) is incompatible with b [0, 1) (incompatibility)
+      //
+      // we can remove [incompatibility] and add
+      //
+      // * b [0, 1) is disallowed
+      return new Disallowed(different, [incompatibility, required]);
+    } else if (compatible.constraint != required.dep.constraint) {
+      // If [required] allows versions outside of [same], then we can reframe this
+      // incompatibility as a dependency from [different] onto [required.dep].
+      // This is safe because [required.dep] needs to be selected anyway. For
+      // example, if
+      //
+      // * a [0, 2) is required (required)
+      // * a [0, 1) is incompatible with b [0, 1) (incompatibility)
+      //
+      // we can remove [incompatibility] and add
+      //
+      // * b [0, 1) depends on a [1, 2)
+      return new Dependency(different, compatible, [incompatibility, required]);
+    } else {
+      // There's no need to do anything else if *all* the versions allowed by
+      // [required] are outside of [same], since one of those versions is already
+      // required. For example, if
+      //
+      // * a [0, 1) is required (required)
+      // * a [1, 2) is incompatible with b [0, 1) (incompatibility)
+      //
+      // we can throw away [incompatibility].
+      return null;
     }
   }
 
