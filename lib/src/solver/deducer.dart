@@ -751,7 +751,7 @@ class Deducer {
       // the dependency is irrelevant and can be discarded. For example, if
       //
       // * a [0, 2) is disallowed (disallowed)
-      // * a [0, 1) depends on b [0, 1) (depenency)
+      // * a [0, 1) depends on b [0, 1) (dependency)
       //
       // we can throw away [dependency].
       return null;
@@ -760,7 +760,7 @@ class Deducer {
       // the dependency is fine as-is. For example, if
       //
       // * a [0, 1) is disallowed (disallowed)
-      // * a [1, 2) depends on b [0, 1) (depenency)
+      // * a [1, 2) depends on b [0, 1) (dependency)
       //
       // there are no changes to be made.
       return dependency;
@@ -796,7 +796,7 @@ class Deducer {
       // disallowed entirely. For example, if
       //
       // * a [0, 1) is disallowed (disallowed)
-      // * b [0, 1) depends on a [0, 1) (depenency)
+      // * b [0, 1) depends on a [0, 1) (dependency)
       //
       // we can throw away [dependency] and add
       //
