@@ -76,6 +76,9 @@ class Deducer {
         fact = _dependencyIntoReqired(fact);
         if (fact == null) continue;
 
+        fact = _dependencyIntoDisallowed(fact);
+        if (fact == null) continue;
+
         _dependenciesByDepender
             .putIfAbsent(fact.depender.toRef(), () => new Set())
             .add(fact);
@@ -589,6 +592,24 @@ class Deducer {
     var result = _requiredAndAllowed(required, fact);
     if (result is! Disallowed) return result as Dependency;
 
+    _toProcess.add(result);
+    return null;
+  }
+
+  Dependency _dependencyIntoDisallowed(Dependency fact) {
+    // Trim [fact] if some of its depender is disallowed.
+    var disallowed = _disallowed[fact.depender.toRef()];
+    if (disallowed != null) fact = _disallowedAndDepender(disallowed, fact);
+    if (fact == null) return null;
+
+    // Trim [fact] if some of its allowed versions are disallowed.
+    disallowed = _disallowed[fact.allowed.toRef()];
+    if (disallowed == null) return fact;
+    var result = _disallowedAndAllowed(disallowed, fact);
+    if (result is Dependency) return result;
+
+    // Add to [_toProcess] because [_fromCurrent] will get discarded when we
+    // return `null`.
     _toProcess.add(result);
     return null;
   }
