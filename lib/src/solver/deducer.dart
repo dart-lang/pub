@@ -26,7 +26,7 @@ class Deducer {
 
   final _dependenciesByAllowed = <PackageRef, Set<Dependency>>{};
 
-  final _incompatibilities = <PackageId, Set<Incompatibility>>{};
+  final _incompatibilities = <PackageRef, Set<Incompatibility>>{};
 
   final _toProcess = new Queue<Fact>();
 
@@ -79,6 +79,9 @@ class Deducer {
         fact = _dependencyIntoDisallowed(fact);
         if (fact == null) continue;
 
+        fact = _dependencyIntoIncompatibilities(fact);
+        if (fact == null) continue;
+
         _dependenciesByDepender
             .putIfAbsent(fact.depender.toRef(), () => new Set())
             .add(fact);
@@ -109,7 +112,7 @@ class Deducer {
     // we can remove both [fact] and [existing] and add
     //
     // * a [1, 2) is required
-    var intersection = _intersectDeps(existing.dep, fact.dep);
+    var intersection = _intersectDeps([existing.dep, fact.dep]);
     if (intersection == null) {
       throw "Incompatible constraints!";
     }
@@ -444,10 +447,10 @@ class Deducer {
           // * a [3, 4) depends on b [1, 3)
           _removeDependency(dependency);
 
-          var intersection = _intersectDeps(dependency.depender, fact.depender);
+          var intersection = _intersectDeps([dependency.depender, fact.depender]);
           _fromCurrent.add(new Dependency(
               intersection,
-              _intersectDeps(dependency.allowed, fact.allowed),
+              _intersectDeps([dependency.allowed, fact.allowed]),
               [dependency, fact]));
 
           var dependencyDifference = _depMinus(dependency, intersection);
@@ -614,6 +617,38 @@ class Deducer {
     return null;
   }
 
+  void _dependencyIntoIncompatibilities(Dependency fact) {
+    var byNonMatching = groupBy(
+        _incompatibilities[fact.allowed.toRef()],
+        (incompatibility) =>
+            _nonMatching(incompatibility, fact.allowed).toRef());
+    for (var incompatibilities in byNonMatching.values) {
+      // If there are incompatibilities where one side covers a [fact.allowed]
+      // and the other side has a non-empty intersection, we can create a new
+      // incompatibility for [fact.depender]. For example, if
+      //
+      // * a [0, 1) depends on b [0, 2) (fact)
+      // * b [0, 1) is incompatible with c [0, 2) (in incompatibilities)
+      // * b [1, 2) is incompatible with c [1, 3) (in incompatibilities)
+      //
+      // we can add
+      //
+      // * a [0, 1) is incompatible with c [1, 2)
+      var mergedMatching = _mergeDeps(incompatibilities
+          .map((incompatibility) => _matching(incompatibility, fact.allowed)));
+      if (mergedMatching == null ||
+          !mergedMatching.constraint.allowsAll(fact.allowed.constraint)) {
+        continue;
+      }
+
+      var mergedNonMatching = _intersectDeps(incompatibilities.map(
+          (incompatibility) => _nonMatching(incompatibility, fact.allowed)));
+      if (mergedNonMatching == null) continue;
+      _forCurrent.add(new Incompatibility(fact.depender, mergedNonMatching,
+          incompatibilities.toList()..add(fact)));
+    }
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package.
   //
@@ -639,7 +674,7 @@ class Deducer {
   Fact _requiredAndAllowed(Required required, Dependency dependency) {
     assert(required.dep.name == dependency.allowed.name);
 
-    var intersection = _intersectDeps(required.dep, dependency.allowed);
+    var intersection = _intersectDeps([required.dep, dependency.allowed]);
     if (intersection == null) {
       // If there are no versions covered by both [dependency.allowed] and
       // [required], then this dependency can never be satisfied and the
@@ -798,7 +833,10 @@ class Deducer {
       assert(dependency.depender.toRef() == depender.toRef());
       return dependency.depender;
     }));
-    if (!mergedDepender.constraint.allowsAll(depender.constraint)) return null;
+    if (mergedDepender == null ||
+        !mergedDepender.constraint.allowsAll(depender.constraint)) {
+      return null;
+    }
 
     // If the dependencies cover all of [depender], try to union the allowed
     // versions to get the narrowest possible constraint that covers all
@@ -825,11 +863,11 @@ class Deducer {
   // incompatible source/desc. Algorithm TBD.
   PackageDep _mergeDeps(Iterable<PackageDep> deps);
 
-  // Intersect two deps, return `null` if they aren't compatible (diff name, diff
+  // Intersect [deps], return `null` if they aren't compatible (diff name, diff
   // source, diff desc, or non-overlapping).
   //
-  // Should this reduce gaps? Are gaps possible if the inputs are fully merged?
-  PackageDep _intersectDeps(PackageDep dep1, PackageDep dep2);
+  // Doesn't need to reduce gaps if everything's already maximized.
+  PackageDep _intersectDeps(Iterable<PackageDep> deps);
 
   // Returns packages allowed by [minuend] but not also [subtrahend]. `null` if
   // the resulting constraint is empty.
