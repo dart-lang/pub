@@ -89,6 +89,12 @@ class Deducer {
             .putIfAbsent(fact.allowed.toRef(), () => new Set())
             .add(fact);
       } else if (fact is Incompatibility) {
+        // Merge with [Disallowed]s first because they can narrow [fact]'s deps,
+        // which may allow it to merge with more [Incompatibility]s than it
+        // would otherwise be able to.
+        fact = _incompatibilityIntoDisallowed(fact);
+        if (fact == null) continue;
+
         fact = _incompatibilityIntoIncompatibilities(fact);
         if (fact == null) continue;
 
@@ -305,29 +311,10 @@ class Deducer {
   void _disallowedIntoIncompatibilities(Disallowed fact) {
     // Remove any incompatibilities that are no longer relevant.
     for (var incompatibility in _incompatibilities[fact.dep.toRef()].toList()) {
-      var same = _matching(incompatibility, fact.dep);
-      var different = _nonMatching(incompatibility, fact.dep);
-
-      var trimmed = same.constraint.difference(fact.dep.constraint);
-      if (trimmed == same.constraint) continue;
-
-      // If [fact] disallows some of the versions in [same], we create a new
-      // incompatibility with narrower versions. For example, if
-      //
-      // * a [1, 2) is disallowed (fact)
-      // * a [0, 2) is incompatible with b [0, 1) (incompatibility)
-      //
-      // we can remove [incompatibility] and add
-      //
-      // * a [0, 1) is incompatible with b [0, 1)
-      //
-      // If this would produce an empty constraint, we instead remove
-      // [incompatibility] entirely.
+      var result = _disallowedAndAllowed(fact, incompatibility);
+      if (result == incompatibility) continue;
       _removeIncompatibility(incompatibility);
-      if (trimmed.isEmpty) continue;
-
-      _fromCurrent.add(new Incompatibility(
-          same.withConstraint(trimmed), different, [incompatibility, fact]));
+      if (result != null) _fromCurrent.add(result);
     }
   }
 
@@ -651,6 +638,8 @@ class Deducer {
   }
 
   bool _incompatibilityIntoRequired(Incompatibility fact) {
+    // We only have to resolve one [Required], since it will always cause us to
+    // remove the incompatibility and add a new fact of a different type.
     var required = _required[fact.dep1.name] ?? _required[fact.dep2.name];
     if (required == null) return true;
     var result = _requiredAndIncompatibility(fact);
@@ -659,6 +648,18 @@ class Deducer {
     // return `false`.
     if (result != null) _toProcess.add(result);
     return false;
+  }
+
+  Incompatibility _incompatibilityIntoDisallowed(Incompatibility fact) {
+    var disallowed = _disallowed[fact.dep1.toRef()];
+    if (disallowed != null) {
+      fact = _disallowedAndIncompatibility(disallowed, fact);
+      if (fact == null) return null;
+    }
+
+    var disallowed = _disallowed[fact.dep2.toRef()];
+    if (disallowed == null) return fact;
+    return _disallowedAndIncompatibility(disallowed, fact);
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
@@ -876,6 +877,45 @@ class Deducer {
       //
       // we can throw away [incompatibility].
       return null;
+    }
+  }
+
+  Incompatibility _disallowedAndIncompatibility(Disallowed disallowed,
+      Incompatibility incompatibility) {
+    var same = _matching(incompatibility, disallowed.dep);
+    var different = _nonMatching(incompatibility, disallowed.dep);
+
+    var trimmed = _depMinus(same, disallowed.dep.constraint);
+    if (trimmed == null) {
+      // If [disallowed] disallows all of the versions in [same], the
+      // incompatibility is irrelevant and can be removed. For example, if
+      //
+      // * a [0, 1) is disallowed (disallowed)
+      // * b [0, 1) is incompatible with a [0, 1) (incompatibility)
+      //
+      // we can throw away [incompatibility].
+      return null;
+    } else if (trimmed == same.constraint) {
+      // If [disallowed] doesn't disallow any of the versions in [same], the
+      // incompatibility is fine as-is. For example, if
+      //
+      // * a [0, 1) is disallowed (disallowed)
+      // * a [1, 2) is incompatible with b [0, 1) (incompatibility)
+      //
+      // there are no changes to be made.
+      return incompatibility;
+    } else {
+      // If [disallowed] disallows some but not all of the versions in [same], we
+      // create a new incompatibility with narrower versions. For example, if
+      //
+      // * a [1, 2) is disallowed (disallowed)
+      // * a [0, 2) is incompatible with b [0, 1) (incompatibility)
+      //
+      // we can remove [incompatibility] and add
+      //
+      // * a [0, 1) is incompatible with b [0, 1)
+      return new Incompatibility(
+          trimmed, different, [incompatibility, disallowed]);
     }
   }
 
