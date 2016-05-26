@@ -664,16 +664,41 @@ class Deducer {
       }
     }
 
+    /// Trim [fact]'s allowed version if it's not covered by a requirement.
     required = _required[fact.allowed.name];
     if (required != null) {
-      if (required.toRef() != fact.allowed.toRef()) return null;
+      var intersection = _intersectDeps(required.dep, fact.allowed);
 
-      var intersection = required.dep.constraint
-          .intersect(fact.allowed.constraint);
-      if (intersection == fact.allowed.constraint) return null;
-
-      // TODO: stuff
+      if (intersection == null) {
+        // If the intersection is empty, then [fact] can never be satisfied and
+        // we should convert it into a [Disallowed]. For example, if
+        //
+        // * a [0, 1) depends on b [0, 1) (fact)
+        // * b [1, 2) is required (required)
+        //
+        // we can remove [fact] and add
+        //
+        // * a [0, 1) is disallowed
+        //
+        // Add to [_toProcess] because [_fromCurrent] will get discarded when we
+        // return `null`.
+        _toProcess.add(new Disallowed(fact.depender, [required, fact]));
+        return null;
+      } else if (intersection != fact.allowed.constraint) {
+        // If only a subset of [fact.allowed] is required, we can trim [fact].
+        // For example, if
+        //
+        // * a [0, 1) depends on b [0, 2) (fact)
+        // * b [1, 3) is required (required)
+        //
+        // we can remove [fact] and add
+        //
+        // * a [0, 1) depends on b [1, 2)
+        fact = new Dependency(fact.depender, intersection, [required, fact]);
+      }
     }
+
+    return fact;
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
