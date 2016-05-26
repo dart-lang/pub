@@ -132,6 +132,9 @@ class Deducer {
   }
 
   void _requiredIntoDependencies(Required fact) {
+    // TODO: remove dependencies from/onto packages with the same name but
+    // non-matching sources.
+
     // Dependencies whose depender is exactly [fact.dep], grouped by the names
     // of packages they depend on.
     var matchingByAllowed = <String, Set<Dependency>>{};
@@ -204,50 +207,13 @@ class Deducer {
 
     // Trim any dependencies whose allowed versions aren't covered by [fact]. We
     // can even create [Disallowed]s if the dependencies are entirely
-    // unsatisfiable.
+    // unsatisfiable. See [_requiredAndAllowed] for details.
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
-      var intersection = fact.dep.constraint.intersect(
-          dependency.allowed.constraint);
-      if (intersection == dependency.allowed.constraint) continue;
+      var result = _requiredAndAllowed(fact, dependency);
+      if (result == dependency) continue;
 
       _removeDependency(dependency);
-      if (intersection.isEmpty) {
-        // If there are no valid versions covered by both [dependency.allowed]
-        // and [fact], then this dependency can never be satisfied and the
-        // depender should be disallowed entirely. For example, if
-        //
-        // * a [0, 1) is required (fact)
-        // * b [0, 1) depends on a [1, 2) (dependency)
-        //
-        // we can remove [dependency] and add
-        //
-        // * b [0, 1) is disallowed
-        _fromCurrent.add(new Disallowed(dependency.depender, [dependency, fact]));
-      } else if (intersection != fact.dep.constraint) {
-        // If some but not all packages covered by [dependency.allowed] are
-        // covered by [fact], replace [dependency] with one with a narrower
-        // constraint. For example, if
-        //
-        // * a [0, 2) is required (fact)
-        // * b [0, 1) depends on a [1, 3) (dependency)
-        //
-        // we can remove [dependency] and add
-        //
-        // * b [0, 1) depends on a [1, 2)
-        _fromCurrent.add(new Dependency(
-            dependency.depender,
-            dependency.allowed.withConstraint(intersection),
-            [dependency, fact]));
-      } else {
-        // If [intersection] is exactly [fact.dep.constraint], then this
-        // dependency adds no information in addition to [fact], so it can be
-        // discarded entirely. For example, if
-        //
-        // * a [0, 1) is required (fact)
-        // * b [0, 1) depends on a [0, 1) (dependency)
-        //
-        // we can throw away [dependency].
-      }
+      if (result != null) _fromCurrent.add(result);
     }
   }
 
@@ -664,41 +630,16 @@ class Deducer {
       }
     }
 
-    /// Trim [fact]'s allowed version if it's not covered by a requirement.
+    /// Trim [fact]'s allowed version if it's not covered by a requirement. See
+    /// [_requiredAndAllowed] for details.
     required = _required[fact.allowed.name];
-    if (required != null) {
-      var intersection = _intersectDeps(required.dep, fact.allowed);
+    if (required == null) return fact;
 
-      if (intersection == null) {
-        // If the intersection is empty, then [fact] can never be satisfied and
-        // we should convert it into a [Disallowed]. For example, if
-        //
-        // * a [0, 1) depends on b [0, 1) (fact)
-        // * b [1, 2) is required (required)
-        //
-        // we can remove [fact] and add
-        //
-        // * a [0, 1) is disallowed
-        //
-        // Add to [_toProcess] because [_fromCurrent] will get discarded when we
-        // return `null`.
-        _toProcess.add(new Disallowed(fact.depender, [required, fact]));
-        return null;
-      } else if (intersection != fact.allowed.constraint) {
-        // If only a subset of [fact.allowed] is required, we can trim [fact].
-        // For example, if
-        //
-        // * a [0, 1) depends on b [0, 2) (fact)
-        // * b [1, 3) is required (required)
-        //
-        // we can remove [fact] and add
-        //
-        // * a [0, 1) depends on b [1, 2)
-        fact = new Dependency(fact.depender, intersection, [required, fact]);
-      }
-    }
+    var result = _requiredAndAllowed(required, fact);
+    if (result is! Disallowed) return result as Dependency;
 
-    return fact;
+    _toProcess.add(result);
+    return null;
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
@@ -718,9 +659,63 @@ class Deducer {
         required.dep.withConstraint(difference), [required, disallowed]);
   }
 
-  void _removeDependency(Dependency dependency);
+  /// Resolves [required] and [dependency.allowed], which should refer to the
+  /// same package.
+  ///
+  /// Returns a new fact to replace [dependency] (either a [Disallowed] or a
+  /// [Dependency]), or `null` if the dependency is irrelevant.
+  Fact _requiredAndAllowed(Required required, Dependency dependency) {
+    assert(required.dep.name == dependency.allowed.name);
 
-  void _removeDisallowed(Disallowed disallowed);
+    var intersection = _intersectDeps(required.dep, dependency.allowed);
+    if (intersection == null) {
+      // If there are no versions covered by both [dependency.allowed] and
+      // [required], then this dependency can never be satisfied and the
+      // depender should be disallowed entirely. For example, if
+      //
+      // * a [0, 1) is required (required)
+      // * b [0, 1) depends on a [1, 2) (dependency)
+      //
+      // we can remove [dependency] and add
+      //
+      // * b [0, 1) is disallowed
+      return new Disallowed(dependency.depender, [dependency, required]);
+    } else if (intersection.constraint == required.dep.constraint) {
+      // If [intersection] is exactly [required.dep], then this dependency adds
+      // no information in addition to [required], so it can be discarded
+      // entirely. For example, if
+      //
+      // * a [0, 1) is required (required)
+      // * b [0, 1) depends on a [0, 2) (dependency)
+      //
+      // we can throw away [dependency].
+      return null;
+    } else if (intersection.constraint == dependency.allowed.constraint) {
+      // If [intersection] is exactly [dependency.allowed.constraint], then
+      // [dependency] can be preserved as-is. For example, if
+      //
+      // * a [0, 2) is required (required)
+      // * b [0, 1) depends on a [0, 1) (dependency)
+      //
+      // there are no changes to be made.
+      return dependency;
+    } else {
+      // If some but not all packages covered by [dependency.allowed] are
+      // covered by [required], replace [dependency] with one with a narrower
+      // constraint. For example, if
+      //
+      // * a [0, 2) is required (required)
+      // * b [0, 1) depends on a [1, 3) (dependency)
+      //
+      // we can remove [dependency] and add
+      //
+      // * b [0, 1) depends on a [1, 2)
+      return new Dependency(
+          dependency.depender, intersection, [dependency, required]);
+    }
+  }
+
+  void _removeDependency(Dependency dependency);
 
   /// If [dependencies]' dependers cover all of [depender], returns the union of
   /// their allowed constraints.
