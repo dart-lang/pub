@@ -88,6 +88,9 @@ class Deducer {
         _dependenciesByAllowed
             .putIfAbsent(fact.allowed.toRef(), () => new Set())
             .add(fact);
+      } else if (fact is Incompatibility) {
+        fact = _incompatibilityIntoIncompatibilities(fact);
+        if (fact == null) continue;
       }
 
       _toProcess.addAll(_fromCurrent);
@@ -649,6 +652,37 @@ class Deducer {
     }
   }
 
+  Incompatibility _incompatibilityIntoIncompatibilities(Incompatibility fact) {
+    merge(PackageDep dep) {
+      assert(dep == fact.dep1 || dep == fact.dep2);
+      var otherDep = dep == fact.dep1 ? fact.dep2 : fact.dep1;
+
+      for (var incompatibility in _incompatibilities[dep.toRef()]) {
+        // Try to merge [fact] with adjacent incompatibilities. For example, if
+        //
+        // * a [0, 1) is incompatible with b [0, 1) (fact)
+        // * a [1, 2) is incompatible with b [0, 1) (incompatibility)
+        //
+        // we can remove [fact] and [incompatibility] and add
+        //
+        // * a [0, 2) is incompatible with b [0, 1)
+        var different = _nonMatching(incompatibility, dep);
+        if (different != otherDep) continue;
+
+        var same = _matching(incompatibility, dep);
+        var merged = _mergeDeps([dep, same]);
+        if (merged == null) continue;
+        _removeIncompatibility(incompatibility);
+        return new Incompatibility(merged, otherDep, [incompatibility, fact]);
+      }
+
+      return fact;
+    }
+
+    fact = merge(fact.dep1);
+    return merge(fact.dep2);
+  }
+
   // Resolves [required] and [disallowed], which should refer to the same
   // package.
   //
@@ -815,6 +849,8 @@ class Deducer {
   }
 
   void _removeDependency(Dependency dependency);
+
+  void _removeIncompatibility(Incompatibility incompatibility);
 
   /// If [dependencies]' dependers cover all of [depender], returns the union of
   /// their allowed constraints.
