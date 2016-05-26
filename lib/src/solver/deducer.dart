@@ -205,9 +205,7 @@ class Deducer {
       if (dependencies.length == 1) _removeDependency(dependencies.single);
     }
 
-    // Trim any dependencies whose allowed versions aren't covered by [fact]. We
-    // can even create [Disallowed]s if the dependencies are entirely
-    // unsatisfiable. See [_requiredAndAllowed] for details.
+    // Trim any dependencies whose allowed versions aren't covered by [fact].
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
       var result = _requiredAndAllowed(fact, dependency);
       if (result == dependency) continue;
@@ -310,67 +308,21 @@ class Deducer {
   }
 
   void _disallowedIntoDependencies(Disallowed fact) {
+    // Trim dependencies from [fact.dep].
     var ref = fact.dep.toRef();
     for (var dependency in _dependenciesByDepender[ref].toList()) {
-      var trimmed = dependency.depender.constraint
-          .difference(fact.dep.constraint);
-      if (trimmed == dependency.depender.constraint) continue;
-
-      // If [fact] covers some of [dependency.depender], trim the dependency so
-      // that its depender doesn't include disallowed versions. For example, if
-      //
-      // * a [0, 1) is disallowed (fact)
-      // * a [0, 2) depends on b [0, 1) (dependency)
-      //
-      // we can remove [dependency] and add
-      //
-      // * a [1, 2) depends on b [0, 1)
-      //
-      // If this would produce an empty depender, we instead remove [dependency]
-      // entirely.
+      var result = _disallowedAndDepender(fact, dependency);
+      if (result == dependency) continue;
       _removeDependency(dependency);
-      if (trimmed.isEmpty) continue;
-
-      _fromCurrent.add(new Dependency(
-          dependency.depender.withConstraint(trimmed),
-          dependency.allowed,
-          [dependency, fact]));
+      if (result != null) _forCurrent.add(dependency);
     }
 
+    // Trim dependencies onto [fact.dep].
     for (var dependency in _dependenciesByAllowed[ref].toList()) {
-      var trimmed = dependency.allowed.constraint
-          .difference(fact.dep.constraint);
-      if (trimmed == dependency.allowed.constraint) continue;
-
-      // If [fact] covers some of [dependency.allowed], trim the dependency so
-      // that its constraint doesn't include disallowed versions. For example,
-      // if
-      //
-      // * a [0, 1) is disallowed (fact)
-      // * b [0, 1) depends on a [0, 2) (dependency)
-      //
-      // we can remove [dependency] and add
-      //
-      // * b [0, 1) depends on a [0, 1)
+      var result = _disallowedAndAllowed(fact, dependency);
+      if (result == dependency) continue;
       _removeDependency(dependency);
-
-      if (trimmed.isEmpty) {
-        // If [trimmed] is an empty constraint, mark the depender as disallowed.
-        // For example, if
-        //
-        // * a [0, 1) is disallowed (fact)
-        // * b [0, 1) depends on a [0, 1) (dependency)
-        //
-        // we can remove [dependency] and add
-        //
-        // * b [0, 1) is disallowed
-        _fromCurrent.add(new Disallowed(dependency.depender, [dependency, fact]));
-      } else {
-        _fromCurrent.add(new Dependency(
-            dependency.depender,
-            dependency.allowed.withConstraint(trimmed),
-            [dependency, fact]));
-      }
+      _fromCurrent.add(result);
     }
   }
 
@@ -630,8 +582,7 @@ class Deducer {
       }
     }
 
-    /// Trim [fact]'s allowed version if it's not covered by a requirement. See
-    /// [_requiredAndAllowed] for details.
+    /// Trim [fact]'s allowed version if it's not covered by a requirement.
     required = _required[fact.allowed.name];
     if (required == null) return fact;
 
@@ -712,6 +663,98 @@ class Deducer {
       // * b [0, 1) depends on a [1, 2)
       return new Dependency(
           dependency.depender, intersection, [dependency, required]);
+    }
+  }
+
+  /// Resolves [disallowed] and [dependency.depender], which should refer to the
+  /// same package.
+  ///
+  /// Returns a new [Dependency] to replace [dependency], or `null` if the
+  /// dependency is irrelevant. This dependency may be identical to
+  /// [dependency].
+  Dependency _disallowedAndDepender(Disallowed disallowed,
+      Dependency dependency) {
+    assert(disallowed.dep.name == dependency.depender.name);
+
+    var trimmed = _depMinus(dependency.depender, disallowed.dep);
+    if (trimmed = null) {
+      // If all versions in [dependency.depender] are covered by [disallowed],
+      // the dependency is irrelevant and can be discarded. For example, if
+      //
+      // * a [0, 2) is disallowed (disallowed)
+      // * a [0, 1) depends on b [0, 1) (depenency)
+      //
+      // we can throw away [dependency].
+      return null;
+    } else if (trimmed == depenendency.depender.constraint) {
+      // If no versions in [dependency.depender] are covered by [disallowed],
+      // the dependency is fine as-is. For example, if
+      //
+      // * a [0, 1) is disallowed (disallowed)
+      // * a [1, 2) depends on b [0, 1) (depenency)
+      //
+      // there are no changes to be made.
+      return dependency;
+    } else {
+      // If [disallowed] covers some but not all of [dependency.depender], trim
+      // the dependency so that its depender doesn't include disallowed
+      // versions. For example, if
+      //
+      // * a [0, 1) is disallowed (fact)
+      // * a [0, 2) depends on b [0, 1) (dependency)
+      //
+      // we can remove [dependency] and add
+      //
+      // * a [1, 2) depends on b [0, 1)
+      return new Dependency(
+          trimmed, dependency.allowed, [dependency, disallowed]);
+    }
+  }
+
+  /// Resolves [disallowed] and [dependency.allowed], which should refer to the
+  /// same package.
+  ///
+  /// Returns a new fact to replace [dependency] (either a [Disallowed] or a
+  /// [Dependency]).
+  Fact _disallowedAndAllowed(Disallowed disallowed,
+      Dependency dependency) {
+    assert(disallowed.dep.name == dependency.allowed.name);
+
+    var trimmed = _depMinus(dependency.allowed, disallowed.dep);
+    if (trimmed = null) {
+      // If all versions in [dependency.allowed] are covered by [disallowed],
+      // then this dependency can never be satisfied and the depender should be
+      // disallowed entirely. For example, if
+      //
+      // * a [0, 1) is disallowed (disallowed)
+      // * b [0, 1) depends on a [0, 1) (depenency)
+      //
+      // we can throw away [dependency] and add
+      //
+      // * b [0, 1) is disallowed
+      return new Disallowed(dependency.depender, [dependency, disallowed]);
+    } else if (trimmed == depenendency.depender.constraint) {
+      // If no versions in [dependency.allowed] are covered by [disallowed],
+      // the dependency is fine as-is. For example, if
+      //
+      // * a [0, 1) is disallowed (disallowed)
+      // * b [0, 1) depends on a [1, 2) (dependency)
+      //
+      // there are no changes to be made.
+      return dependency;
+    } else {
+      // If [disallowed] covers some but not all of [dependency.allowed], trim
+      // the dependency so that it doesn't allow disallowed versions. For
+      // example, if
+      //
+      // * a [0, 1) is disallowed (fact)
+      // * b [0, 1) depends on a [0, 2) (dependency)
+      //
+      // we can remove [dependency] and add
+      //
+      // * b [0, 1) depends on a [1, 2)
+      return new Dependency(
+          trimmed, dependency.allowed, [dependency, disallowed]);
     }
   }
 
