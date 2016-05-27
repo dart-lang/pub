@@ -50,37 +50,24 @@ class Deducer {
 
       var fact = _toProcess.removeFirst();
       if (fact is Required) {
-        fact = _requiredIntoRequired(fact);
-        if (fact == null) continue;
-
-        fact = _requiredIntoDisallowed(fact);
-        if (fact == null) continue;
-
+        if (!_requiredIntoRequired(fact)) continue;
+        if (!_requiredIntoDisallowed(fact)) continue;
         _requiredIntoDependencies(fact);
         _requiredIntoIncompatibilities(fact);
 
         _required[fact.name] = fact;
       } else if (fact is Disallowed) {
-        fact = _disallowedIntoDisallowed(fact);
-        if (fact == null) continue;
-
+        if (!_disallowedIntoDisallowed(fact)) continue;
         if (!_disallowedIntoRequired(fact)) continue;
         _disallowedIntoDependencies(fact);
         _disallowedIntoIncompatibilities(fact);
 
         _disallowed[fact.dep.toRef()] = fact;
       } else if (fact is Dependency) {
-        fact = _dependencyIntoDependency(fact);
-        if (fact == null) continue;
-
-        fact = _dependencyIntoReqired(fact);
-        if (fact == null) continue;
-
-        fact = _dependencyIntoDisallowed(fact);
-        if (fact == null) continue;
-
-        fact = _dependencyIntoIncompatibilities(fact);
-        if (fact == null) continue;
+        if (!_dependencyIntoDependency(fact)) continue;
+        if (!_dependencyIntoReqired(fact)) continue;
+        if (!_dependencyIntoDisallowed(fact)) continue;
+        _dependencyIntoIncompatibilities(fact);
 
         _dependenciesByDepender
             .putIfAbsent(fact.depender.toRef(), () => new Set())
@@ -89,15 +76,8 @@ class Deducer {
             .putIfAbsent(fact.allowed.toRef(), () => new Set())
             .add(fact);
       } else if (fact is Incompatibility) {
-        // Merge with [Disallowed]s first because they can narrow [fact]'s deps,
-        // which may allow it to merge with more [Incompatibility]s than it
-        // would otherwise be able to.
-        fact = _incompatibilityIntoDisallowed(fact);
-        if (fact == null) continue;
-
-        fact = _incompatibilityIntoIncompatibilities(fact);
-        if (fact == null) continue;
-
+        if (!_incompatibilityIntoIncompatibilities(fact)) continue;
+        if (!_incompatibilityIntoDisallowed(fact)) continue;
         if (!_incompatibilityIntoRequired(fact)) continue;
 
         _incompatibilities
@@ -112,47 +92,61 @@ class Deducer {
     }
   }
 
-  // Merge [fact] with an existing requirement for the same package, if
-  // one exists.
-  //
-  // Returns the (potentially modified) fact, or `null` if no new information
-  // was added.
-  Required _requiredIntoRequired(Required fact) {
+  bool _requiredIntoRequired(Required fact) {
     var existing = _required[fact.name];
-    if (existing == null) return fact;
+    if (existing == null) return true;
 
-    // If there are two requirements on the same package, intersect them. For
-    // example, if
-    //
-    // * a [0, 2) is required (fact)
-    // * a [1, 3) is required (existing)
-    //
-    // we can remove both [fact] and [existing] and add
-    //
-    // * a [1, 2) is required
     var intersection = _intersectDeps([existing.dep, fact.dep]);
     if (intersection == null) {
       throw "Incompatible constraints!";
+    } else if (intersection == existing.dep) {
+      // If [existing] is a subset of [fact], then [fact] is redundant. For
+      // example, if
+      //
+      // * a [0, 2) is required (fact)
+      // * a [0, 1) is required (existing)
+      //
+      // we can throw away [fact].
+      return false;
+    } else if (intersection == existing.dep) {
+      // If [fact] is a subset of [existing], then [existing] is redundant. For
+      // example, if
+      //
+      // * a [0, 1) is required (fact)
+      // * a [0, 2) is required (existing)
+      //
+      // we can throw away [existing].
+      _required.remove(fact.name);
+      return true;
+    } else {
+      // Otherwise, create a new requirement from the intersection. For example,
+      // if
+      //
+      // * a [0, 2) is required (fact)
+      // * a [1, 3) is required (existing)
+      //
+      // we can remove both [fact] and [existing] and add
+      //
+      // * a [1, 2) is required
+      _required.remove(fact.name);
+      _replaceCurrent(new Required(intersection, [existing, fact]));
+      return false;
     }
-
-    if (intersection.constraint == existing.dep.constraint) return null;
-    _required.remove(fact.name);
-    return new Required(intersection, [existing, fact]);
   }
 
   // Returns whether [fact] should continue to be processed as-is.
-  Required _requiredIntoDisallowed(Required fact) {
+  bool _requiredIntoDisallowed(Required fact) {
     var ref = fact.dep.toRef();
     var disallowed = _disallowed[ref];
-    if (disallowed == null) return fact;
+    if (disallowed == null) return true;
 
     // Remove [disallowed] since it's redundant with [fact]. We'll update [fact]
     // to encode the relevant information.
     _disallowed.remove(ref);
 
-    // TODO: delete Disalloweds with the same name but different source/desc
-
-    return _requiredAndDisallowed(fact, disallowed);
+    var trimmed = _requiredAndDisallowed(fact, disallowed);
+    if (trimmed != null) _replaceCurrent(trimmed);
+    return false;
   }
 
   void _requiredIntoDependencies(Required fact) {
@@ -248,22 +242,44 @@ class Deducer {
     }
   }
 
-  Disallowed _disallowedIntoDisallowed(Disallowed fact) {
+  bool _disallowedIntoDisallowed(Disallowed fact) {
     var ref = fact.dep.asRef();
     var existing = _disallowed[ref];
     if (existing == null) return true;
 
-    /// Merge two disalloweds on the same package. For example, if:
-    ///
-    /// * a [0, 1) is disallowed (fact)
-    /// * a [1, 2) is disallowed (existing)
-    ///
-    /// we can remove both [fact] and [existing] and add
-    ///
-    /// * a [0, 2) is disallowed
-    _disallowed.remove(ref);
-    return new Disallowed(
-        _mergeDeps([fact.dep, existing.dep]), [existing, fact]);
+    var merged = _mergeDeps([fact.dep, existing.dep]);
+    if (merged == existing.dep) {
+      // If [existing] is a superset of [fact], then [fact] is redundant. For
+      // example, if
+      //
+      // * a [0, 1) is disallowed (fact)
+      // * a [0, 2) is disallowed (existing)
+      //
+      // we can throw away [fact].
+      return false;
+    } else if (merged == fact.dep) {
+      // If [fact] is a superset of [existing], then [existing] is redundant.
+      // For example, if
+      //
+      // * a [0, 2) is disallowed (fact)
+      // * a [0, 1) is disallowed (existing)
+      //
+      // we can throw away [existing].
+      _disallowed.remove(ref);
+      return true;
+    } else {
+      // Otherwise, we merge the two facts together. For example, if
+      //
+      // * a [0, 1) is disallowed (fact)
+      // * a [1, 2) is disallowed (existing)
+      //
+      // we can remove both [fact] and [existing] and add
+      //
+      // * a [0, 2) is disallowed
+      _disallowed.remove(ref);
+      _replaceCurrent(new Disallowed(merged, [existing, fact]));
+      return false;
+    }
   }
 
   bool _disallowedIntoRequired(Disallowed fact) {
@@ -282,10 +298,7 @@ class Deducer {
     // * a [1, 2) is required
     _required.remove(fact.dep.name);
     var trimmed = _requiredAndDisallowed(required, disallowed);
-
-    // Add to [_toProcess] because [_fromCurrent] will get discarded when we
-    // return `false`.
-    if (trimmed != null) _toProcess.add(trimmed);
+    if (trimmed != null) _replaceCurrent(trimmed);
     return false;
   }
 
@@ -318,7 +331,7 @@ class Deducer {
     }
   }
 
-  Dependency _dependencyIntoDependency(Dependency fact) {
+  bool _dependencyIntoDependency(Dependency fact) {
     // Other dependencies from the same package onto the same target. This is
     // used later on to determine whether we can merge this with existing
     // dependencies.
@@ -329,105 +342,129 @@ class Deducer {
     for (var dependency in _dependenciesByDepender(fact.depender.toRef())) {
       if (dependency.allowed.toRef() != fact.allowed.toRef()) continue;
 
-      if (dependency.allowed.constraint == fact.allowed.constraint) {
-        // If [fact] has the same allowed constraint as [dependency], they can
-        // be merged. For example, if
-        //
-        // * a [0, 1) depends on b [0, 1) (fact)
-        // * a [1, 2) depends on b [0, 1) (dependency)
-        //
-        // we can remove both [fact] and [dependency] and add
-        //
-        // * a [0, 2) depends on b [0, 1).
+      if (dependency.allowed == fact.allowed) {
         var merged = _mergeDeps([dependency.depender, fact.depender]);
-
-        // If [fact] adds no new information to [dependency], it's redundant.
-        if (merged.constraint == dependency.depender.constraint) return null;
-
-        // If [fact] adds new information to [dependency], create a new
-        // dependency for it.
-        _removeDependency(dependency);
-        fact = new Dependency(merged, fact.allowed, [dependency, fact]);
-      } else if (
-          dependency.depender.constraint.allowsAny(fact.depender.constraint)) {
-        // If [fact] has a different allowed constraint than [dependency] but
-        // their dependers overlap, remove the part that's overlapping. This
-        // ensures that, for a given depender/allowed pair, there will be only
-        // one dependency for each depender version.
-
-        if (fact.allowed.constraint.allowsAll(dependency.allowed.constraint)) {
-          // If [fact] allows strictly more versions than [dependency], remove
-          // any overlap from [fact] because it's less specific. For example,
-          // if
+        if (merged == dependency.depender) {
+          // If [fact.depender] is a subset of [dependency.depender], [fact] is
+          // redundant. For example, if
           //
-          // * a [1, 3) depends on b [0, 2) (fact)
-          // * a [2, 4) depends on b [1, 2) (dependency)
+          // * a [0, 1) depends on b [0, 1) (fact)
+          // * a [0, 2) depends on b [0, 1) (dependency)
           //
-          // we can remove [fact] and add
+          // we can throw away [fact].
+          return false;
+        } else if (merged == fact.depender) {
+          // If [dependency.depender] is a subset of [fact.depender],
+          // [dependency] is redundant. For example, if
           //
-          // * a [1, 2) depends on b [0, 2).
-          var difference = _depMinus(fact.depender, dependency.depender);
-          if (difference == null) return null;
-
-          fact = new Dependency(difference, fact.allowed, [dependency, fact]);
-        } else if (dependency.allowed.constraint
-            .allowsAll(fact.allowed.constraint)) {
+          // * a [0, 2) depends on b [0, 1) (fact)
+          // * a [0, 1) depends on b [0, 1) (dependency)
+          //
+          // we can throw away [dependency].
           _removeDependency(dependency);
-
-          // If [dependency] allows strictly more versions than [fact], remove
-          // any overlap from [dependency] because it's less specific. For
-          // example, if
-          //
-          // * a [1, 3) depends on b [1, 2) (fact)
-          // * a [2, 4) depends on b [0, 2) (dependency)
-          //
-          // we can remove [dependency] and add
-          //
-          // * a [3, 4) depends on b [0, 2).
-          var difference = _depMinus(dependency.depender, fact.depender);
-          if (difference == null) continue;
-
-          _fromCurrent.add(new Dependency(
-              difference, dependency.allowed, [dependency, fact]));
         } else {
-          // If [fact] and [dependency]'s allowed targets overlap without one
-          // being a subset of the other, we need to create a third dependency
-          // that represents the intersection. For example, if
+          // Otherwise, create a new requirement from the union. For example, if
           //
-          // * a [1, 3) depends on b [0, 2) (fact)
-          // * a [2, 4) depends on b [1, 3) (dependency)
+          // * a [0, 1) depends on b [0, 1) (fact)
+          // * a [1, 2) depends on b [0, 1) (dependency)
           //
           // we can remove both [fact] and [dependency] and add
           //
-          // * a [1, 2) depends on b [0, 2)
-          // * a [2, 3) depends on b [1, 2)
-          // * a [3, 4) depends on b [1, 3)
+          // * a [0, 2) depends on b [0, 1).
           _removeDependency(dependency);
+          _replaceCurrent(
+              new Dependency(merged, fact.allowed, [dependency, fact]));
+          return false;
+        }
+        continue;
+      }
 
-          var intersection = _intersectDeps([dependency.depender, fact.depender]);
-          _fromCurrent.add(new Dependency(
-              intersection,
-              _intersectDeps([dependency.allowed, fact.allowed]),
-              [dependency, fact]));
+      if (!dependency.depender.constraint.allowsAny(fact.depender.constraint)) {
+        // If the dependers don't overlap at all and the allowed versions are
+        // different, there's no useful merging we can do.
+        siblings.add(dependency);
+        continue;
+      }
 
-          var dependencyDifference = _depMinus(dependency, intersection);
-          if (dependencyDifference != null) {
-            // If [intersection] covers the entirety of [dependency], throw it
-            // away; otherwise, trim it to exclude [intersection].
-            _fromCurrent.add(new Dependency(
-                dependencyDifference, dependency.allowed, [dependency, fact]));
-          }
+      // If [fact] has a different allowed constraint than [dependency] but
+      // their dependers overlap, remove the part that's overlapping. This
+      // ensures that, for a given depender/allowed pair, there will be only
+      // one dependency for each depender version.
+      if (fact.allowed.constraint.allowsAll(dependency.allowed.constraint)) {
+        // If [fact] allows strictly more versions than [dependency], remove
+        // any overlap from [fact] because it's less specific. For example,
+        // if
+        //
+        // * a [1, 3) depends on b [0, 2) (fact)
+        // * a [2, 4) depends on b [1, 2) (dependency)
+        //
+        // we can remove [fact] and add
+        //
+        // * a [1, 2) depends on b [0, 2).
+        var difference = _depMinus(fact.depender, dependency.depender);
+        if (difference != null) {
+          _replaceCurrent(new Dependency(
+              difference, fact.allowed, [dependency, fact]));
+        }
+        return false;
+      } else if (dependency.allowed.constraint
+          .allowsAll(fact.allowed.constraint)) {
+        _removeDependency(dependency);
 
-          var factDifference = _depMinus(fact, intersection);
-          if (factDifference == null) return null;
+        // If [dependency] allows strictly more versions than [fact], remove
+        // any overlap from [dependency] because it's less specific. For
+        // example, if
+        //
+        // * a [1, 3) depends on b [1, 2) (fact)
+        // * a [2, 4) depends on b [0, 2) (dependency)
+        //
+        // we can remove [dependency] and add
+        //
+        // * a [3, 4) depends on b [0, 2).
+        var difference = _depMinus(dependency.depender, fact.depender);
+        if (difference == null) continue;
 
+        _fromCurrent.add(new Dependency(
+            difference, dependency.allowed, [dependency, fact]));
+      } else {
+        // If [fact] and [dependency]'s allowed targets overlap without one
+        // being a subset of the other, we need to create a third dependency
+        // that represents the intersection. For example, if
+        //
+        // * a [1, 3) depends on b [0, 2) (fact)
+        // * a [2, 4) depends on b [1, 3) (dependency)
+        //
+        // we can remove both [fact] and [dependency] and add
+        //
+        // * a [1, 2) depends on b [0, 2)
+        // * a [2, 3) depends on b [1, 2)
+        // * a [3, 4) depends on b [1, 3)
+        _removeDependency(dependency);
+
+        // Add the new dependencies to [_toProcess] so they don't get thrown
+        // away when we return `false`.
+        _toProcess.add(new Dependency(
+            _intersectDeps([dependency.depender, fact.depender]),
+            _intersectDeps([dependency.allowed, fact.allowed]),
+            [dependency, fact]));
+
+        var dependencyDifference = _depMinus(dependency, fact.depender);
+        if (dependencyDifference != null) {
+          // If [intersection] covers the entirety of [dependency], throw it
+          // away; otherwise, trim it to exclude [intersection].
+          _toProcess.add(new Dependency(
+              dependencyDifference, dependency.allowed, [dependency, fact]));
+        }
+
+        var factDifference = _depMinus(fact, dependency.depender);
+        if (factDifference != null) {
           // If [intersection] covers the entirety of [fact], throw it away;
           // otherwise, trim it to exclude [intersection].
-          fact = new Dependency(
-              factDifference, fact.allowed, [dependency, fact]);
+          _toProcess.add(new Dependency(
+              factDifference, fact.allowed, [dependency, fact]));
         }
-      } else {
-        siblings.add(dependency);
+
+        return false;
       }
     }
 
@@ -478,13 +515,13 @@ class Deducer {
           dependency.depender, allowed, [dependency].addAll(relevant)));
     }
 
-    return fact;
+    return true;
   }
 
-  Dependency _dependencyIntoRequired(Dependency fact) {
+  bool _dependencyIntoRequired(Dependency fact) {
     var required = _required[fact.depender.name];
     if (required != null) {
-      if (required.toRef() != fact.depender.toRef()) return null;
+      if (required.toRef() != fact.depender.toRef()) return false;
 
       // Trim [fact] or throw it away if it's irrelevant. For example, if
       //
@@ -499,12 +536,13 @@ class Deducer {
       // entirely.
       var intersection = required.dep.constraint
           .intersect(fact.depender.constraint);
-      if (intersection.isEmpty) return null;
+      if (intersection.isEmpty) return false;
       if (intersection != fact.depender.constraint) {
-        fact = new Dependency(
+        _replaceCurrent(new Dependency(
             fact.depender.withConstraint(intersection),
             fact.allowed,
-            [required, fact]);
+            [required, fact]));
+        return false;
       }
 
       // If [fact]'s depender is required, see if we can come up with a merged
@@ -535,10 +573,8 @@ class Deducer {
         //
         // * b [0, 1) is required
         if (siblings.length == 1) {
-          // Add to [_toProcess] because [_fromCurrent] will get discarded when
-          // we return `null`.
-          _toProcess.add(newRequired);
-          return null;
+          _replaceCurrent(newRequired);
+          return false;
         } else {
           _fromCurrent.add(newRequired);
         }
@@ -547,31 +583,36 @@ class Deducer {
 
     /// Trim [fact]'s allowed version if it's not covered by a requirement.
     required = _required[fact.allowed.name];
-    if (required == null) return fact;
+    if (required == null) return true;
 
     var result = _requiredAndAllowed(required, fact);
-    if (result is! Disallowed) return result as Dependency;
-
-    _toProcess.add(result);
-    return null;
+    if (result == fact) return true;
+    if (result != null) _replaceCurrent(result);
+    return false;
   }
 
-  Dependency _dependencyIntoDisallowed(Dependency fact) {
+  bool _dependencyIntoDisallowed(Dependency fact) {
     // Trim [fact] if some of its depender is disallowed.
     var disallowed = _disallowed[fact.depender.toRef()];
-    if (disallowed != null) fact = _disallowedAndDepender(disallowed, fact);
-    if (fact == null) return null;
+    if (disallowed != null) {
+      var result = _disallowedAndDepender(disallowed, fact);
+      if (result != fact) {
+        if (result != null) _replaceCurrent(result);
+        return false;
+      }
+    }
 
     // Trim [fact] if some of its allowed versions are disallowed.
     disallowed = _disallowed[fact.allowed.toRef()];
-    if (disallowed == null) return fact;
-    var result = _disallowedAndAllowed(disallowed, fact);
-    if (result is Dependency) return result;
+    if (disallowed != null) {
+      var result = _disallowedAndAllowed(disallowed, fact);
+      if (result != fact) {
+        if (result != null) _replaceCurrent(result);
+        return false;
+      }
+    }
 
-    // Add to [_toProcess] because [_fromCurrent] will get discarded when we
-    // return `null`.
-    _toProcess.add(result);
-    return null;
+    return true;
   }
 
   void _dependencyIntoIncompatibilities(Dependency fact) {
@@ -606,7 +647,7 @@ class Deducer {
     }
   }
 
-  Incompatibility _incompatibilityIntoIncompatibilities(Incompatibility fact) {
+  bool _incompatibilityIntoIncompatibilities(Incompatibility fact) {
     merge(PackageDep dep) {
       assert(dep == fact.dep1 || dep == fact.dep2);
       var otherDep = dep == fact.dep1 ? fact.dep2 : fact.dep1;
@@ -627,14 +668,15 @@ class Deducer {
         var merged = _mergeDeps([dep, same]);
         if (merged == null) continue;
         _removeIncompatibility(incompatibility);
-        return new Incompatibility(merged, otherDep, [incompatibility, fact]);
+        _replaceCurrent(
+            new Incompatibility(merged, otherDep, [incompatibility, fact]));
+        return false;
       }
 
-      return fact;
+      return true;
     }
 
-    fact = merge(fact.dep1);
-    return merge(fact.dep2);
+    return merge(fact.dep1) && merge(fact.dep2);
   }
 
   bool _incompatibilityIntoRequired(Incompatibility fact) {
@@ -644,22 +686,28 @@ class Deducer {
     if (required == null) return true;
     var result = _requiredAndIncompatibility(fact);
 
-    // Add to [_toProcess] because [_fromCurrent] will get discarded when we
-    // return `false`.
-    if (result != null) _toProcess.add(result);
+    if (result != null) _replaceCurrent(result);
     return false;
   }
 
-  Incompatibility _incompatibilityIntoDisallowed(Incompatibility fact) {
+  bool _incompatibilityIntoDisallowed(Incompatibility fact) {
     var disallowed = _disallowed[fact.dep1.toRef()];
     if (disallowed != null) {
-      fact = _disallowedAndIncompatibility(disallowed, fact);
-      if (fact == null) return null;
+      var result = _disallowedAndIncompatibility(disallowed, fact);
+      if (result != incompatibility) {
+        if (result != null) _replaceCurrent(result);
+        return false;
+      }
     }
 
-    var disallowed = _disallowed[fact.dep2.toRef()];
-    if (disallowed == null) return fact;
-    return _disallowedAndIncompatibility(disallowed, fact);
+    disallowed = _disallowed[fact.dep2.toRef()];
+    if (disallowed != null) {
+      var result = _disallowedAndIncompatibility(disallowed, fact);
+      if (result != incompatibility) {
+        if (result != null) _replaceCurrent(result);
+        return false;
+      }
+    }
   }
 
   // Resolves [required] and [disallowed], which should refer to the same
@@ -700,7 +748,7 @@ class Deducer {
       //
       // * b [0, 1) is disallowed
       return new Disallowed(dependency.depender, [dependency, required]);
-    } else if (intersection.constraint == required.dep.constraint) {
+    } else if (intersection == required.dep) {
       // If [intersection] is exactly [required.dep], then this dependency adds
       // no information in addition to [required], so it can be discarded
       // entirely. For example, if
@@ -710,7 +758,7 @@ class Deducer {
       //
       // we can throw away [dependency].
       return null;
-    } else if (intersection.constraint == dependency.allowed.constraint) {
+    } else if (intersection == dependency.allowed) {
       // If [intersection] is exactly [dependency.allowed.constraint], then
       // [dependency] can be preserved as-is. For example, if
       //
@@ -922,6 +970,15 @@ class Deducer {
   void _removeDependency(Dependency dependency);
 
   void _removeIncompatibility(Incompatibility incompatibility);
+
+  /// Enqueue [fact] to be procesed instead of the current fact.
+  ///
+  /// This adds [fact] to [_toProcess] rather than [_forCurrent] so that the
+  /// caller can discard all the processing for the current fact and still
+  /// process [fact] next.
+  void _replaceCurrent(Fact fact) {
+    _toProcess.add(fact);
+  }
 
   /// If [dependencies]' dependers cover all of [depender], returns the union of
   /// their allowed constraints.
