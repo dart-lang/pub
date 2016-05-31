@@ -7,7 +7,7 @@ import 'dart:io' as io;
 import "dart:convert";
 
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -114,7 +114,7 @@ class HostedSource extends CachedSource {
   Future<Package> downloadToSystemCache(PackageId id) async {
     if (!isInSystemCache(id)) {
       var packageDir = getDirectory(id);
-      ensureDir(path.dirname(packageDir));
+      ensureDir(p.dirname(packageDir));
       var parsed = _parseDescription(id.description);
       await _download(parsed.last, parsed.first, id.version, packageDir);
     }
@@ -130,7 +130,7 @@ class HostedSource extends CachedSource {
   String getDirectory(PackageId id) {
     var parsed = _parseDescription(id.description);
     var dir = _urlToDirectory(parsed.last);
-    return path.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");
+    return p.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");
   }
 
   String packageName(description) => _parseDescription(description).first;
@@ -162,8 +162,8 @@ class HostedSource extends CachedSource {
     var failures = [];
 
     for (var serverDir in listDir(systemCacheRoot)) {
-      var url = _directoryToUrl(path.basename(serverDir));
-      var packages = _getCachedPackagesInDirectory(path.basename(serverDir));
+      var url = _directoryToUrl(p.basename(serverDir));
+      var packages = _getCachedPackagesInDirectory(p.basename(serverDir));
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
@@ -197,7 +197,7 @@ class HostedSource extends CachedSource {
   /// Gets all of the packages that have been downloaded into the system cache
   /// into [dir].
   List<Package> _getCachedPackagesInDirectory(String dir) {
-    var cacheDir = path.join(systemCacheRoot, dir);
+    var cacheDir = p.join(systemCacheRoot, dir);
     if (!dirExists(cacheDir)) return [];
 
     return listDir(cacheDir)
@@ -263,12 +263,12 @@ class OfflineHostedSource extends HostedSource {
     log.io("Finding versions of ${ref.name} in "
         "$systemCacheRoot/${_urlToDirectory(server)}");
 
-    var dir = path.join(systemCacheRoot, _urlToDirectory(server));
+    var dir = p.join(systemCacheRoot, _urlToDirectory(server));
 
     var versions;
     if (dirExists(dir)) {
       versions = await listDir(dir).map((entry) {
-        var components = path.basename(entry).split("-");
+        var components = p.basename(entry).split("-");
         if (components.first != ref.name) return null;
         return HostedSource.idFor(
             ref.name, new Version.parse(components.skip(1).join("-")),
@@ -315,8 +315,16 @@ class OfflineHostedSource extends HostedSource {
 /// This behavior is a bug, but is being preserved for compatibility.
 String _urlToDirectory(String url) {
   // Normalize all loopback URLs to "localhost".
-  url = url.replaceAllMapped(new RegExp(r"^https?://(127\.0\.0\.1|\[::1\])?"),
-      (match) => match[1] == null ? '' : 'localhost');
+  url = url.replaceAllMapped(
+      new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"),
+      (match) {
+    // Don't include the scheme for HTTPS URLs. This makes the directory names
+    // nice for the default and most recommended scheme. We also don't include
+    // it for localhost URLs, since they're always known to be HTTP.
+    var localhost = match[2] == null ? '' : 'localhost';
+    var scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+    return "$scheme$localhost";
+  });
   return replace(url, new RegExp(r'[<>:"\\/|?*%]'),
       (match) => '%${match[0].codeUnitAt(0)}');
 }
@@ -336,11 +344,12 @@ String _directoryToUrl(String url) {
     url = url.replaceAll("%${c.codeUnitAt(0)}", c);
   }
 
-  // Figure out the scheme.
-  var scheme = "https";
+  // If the URL has an explicit scheme, use that.
+  if (url.contains("://")) return url;
 
-  // See if it's a loopback IP address.
-  if (isLoopback(url.replaceAll(new RegExp(":.*"), ""))) scheme = "http";
+  // Otherwise, default to http for localhost and https for everything else.
+  var scheme =
+      isLoopback(url.replaceAll(new RegExp(":.*"), "")) ? "http" : "https";
   return "$scheme://$url";
 }
 
