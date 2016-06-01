@@ -17,8 +17,6 @@
 //
 // [mathematical interval notation]: https://en.wikipedia.org/wiki/Interval_(mathematics)#Notations_for_intervals
 class Deducer {
-  final SourceRegistry _sources;
-
   final _maximizers = <PackageRef, ConstraintMaximizer>{};
 
   final _required = <String, Required>{};
