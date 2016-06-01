@@ -79,6 +79,7 @@ class Deducer {
         if (!_incompatibilityIntoIncompatibilities(fact)) continue;
         if (!_incompatibilityIntoDisallowed(fact)) continue;
         if (!_incompatibilityIntoRequired(fact)) continue;
+        if (!_incompatibilityIntoDependencies(fact)) continue;
 
         _incompatibilities
             .putIfAbsent(fact.dep1.toRef(), () => new Set())
@@ -631,18 +632,12 @@ class Deducer {
       //
       // we can add
       //
-      // * a [0, 1) is incompatible with c [1, 2)
-      var mergedMatching = _mergeDeps(incompatibilities
-          .map((incompatibility) => _matching(incompatibility, fact.allowed)));
-      if (mergedMatching == null ||
-          !mergedMatching.constraint.allowsAll(fact.allowed.constraint)) {
-        continue;
-      }
+      // * a [0, 1) is incompatible with c [1, 3)
+      var incompatible = _transitiveIncompatible(
+          fact.allowed, incompatibilities);
+      if (incompatible == null) continue;
 
-      var mergedNonMatching = _intersectDeps(incompatibilities.map(
-          (incompatibility) => _nonMatching(incompatibility, fact.allowed)));
-      if (mergedNonMatching == null) continue;
-      _forCurrent.add(new Incompatibility(fact.depender, mergedNonMatching,
+      _forCurrent.add(new Incompatibility(fact.depender, incompatible,
           incompatibilities.toList()..add(fact)));
     }
   }
@@ -707,6 +702,43 @@ class Deducer {
         if (result != null) _replaceCurrent(result);
         return false;
       }
+    }
+  }
+
+  bool _incompatibilityIntoDependencies(Incompatibility fact) {
+    // Get all the incompatibilities with the same pair of packages as [fact].
+    var ref1 = fact.dep1.toRef();
+    var ref2 = fact.dep2.toRef();
+    var siblings = _incompatibilities[ref1]
+        .where((incompatibility) =>
+            incompatibility.dep1.toRef() == ref2 ||
+            incompatibility.dep2.toRef() == ref2)
+        .toList()..add(fact);
+
+    // If there are dependencies whose allowed constraints are covered entirely
+    // by [siblings], we can probably create a new incompatibility for their
+    // dependers. For example, if
+    //
+    // * a [0, 1) is incompatible with b [0, 2) (fact)
+    // * a [1, 2) is incompatible with b [1, 3) (in siblings)
+    // * c [0, 1) depends on a [0, 2) (dependency)
+    //
+    // we can add
+    //
+    // * c [0, 1) is incompatible with b [1, 3)
+
+    for (var dependency in _dependenciesByAllowed[ref1]) {
+      var incompatible = _transitiveIncompatible(dependency.allowed, siblings);
+      if (incompatible == null) continue;
+      _forCurrent.add(new Incompatibility(dependency.depender, incompatible,
+          [dependency]..addAll(siblings)));
+    }
+
+    for (var dependency in _dependenciesByAllowed[ref2]) {
+      var incompatible = _transitiveIncompatible(dependency.allowed, siblings);
+      if (incompatible == null) continue;
+      _forCurrent.add(new Incompatibility(dependency.depender, incompatible,
+          [dependency]..addAll(siblings)));
     }
   }
 
@@ -1029,6 +1061,52 @@ class Deducer {
     return _mergeDeps(dependencies.map((dependency) => dependency.allowed));
   }
 
+  /// If [incompatibilities]' constraints that match [allowed] cover all of
+  /// [allowed], returns the union of their non-matching constraints.
+  ///
+  /// Returns `null` if the incompatibilities don't cover all of [allowed] or
+  /// the non-matching constraints can't be merged. Assumes that
+  /// [incompatibilities] all have one constraint that matches [allowed].
+  ///
+  /// For example, given:
+  ///
+  /// * a [0, 3) (allowed)
+  /// * a [0, 1) is incompatible with b [0, 1) (in incompatibilities)
+  /// * a [1, 2) is incompatible with b [1, 2) (in incompatibilities)
+  /// * a [2, 3) is incompatible with b [2, 3) (in incompatibilities)
+  /// * a [3, 4) is incompatible with b [3, 4) (in incompatibilities)
+  ///
+  /// This returns:
+  ///
+  /// * b [0, 3)
+  ///
+  /// Given:
+  ///
+  /// * a [0, 3) (allowed)
+  /// * a [0, 1) is incompatible with b [0, 2) (in incompatibilities)
+  /// * a [2, 3) is incompatible with b [2, 3) (in incompatibilities)
+  ///
+  /// This returns `null`, since [incompatibilities]' matching constraints don't
+  /// fully cover [allowed].
+  PackageDep _transitiveIncompatible(PackageDep allowed,
+      Iterable<Incompatibility> incompatibilities) {
+    var allMatching = <PackageDep>[];
+    var allNonMatching = <PackageDep>[];
+
+    for (var incompatibility in incompatibilities) {
+      var matching = _matching(incompatibility, allowed);
+      if (!allowed.allowsAny(matching)) continue;
+      allMatching.add(matching);
+      allNonMatching.add(_nonMatching(incompatibility, allowed));
+    }
+
+    var mergedMatching = _mergeDeps(allMatching);
+    if (mergedMatching == null) return null;
+    if (!mergedMatching.constraint.allowsAll(allowed)) return null;
+
+    return _mergeDeps(allNonMatching);
+  }
+
   /// Returns the dependency in [incompatibility] whose name matches [dep].
   PackageDep _matching(Incompatibility incompatibility, PackageDep dep) =>
       incompatibility.dep1.name == dep.name
@@ -1044,6 +1122,8 @@ class Deducer {
 
   // Merge [deps], [_allIds]-aware to reduce gaps. `null` if the deps are
   // incompatible source/desc. Algorithm TBD.
+  //
+  // TODO: [_transitiveIncompatible] needs this to return `null` for empty list.
   PackageDep _mergeDeps(Iterable<PackageDep> deps);
 
   // Intersect [deps], return `null` if they aren't compatible (diff name, diff
