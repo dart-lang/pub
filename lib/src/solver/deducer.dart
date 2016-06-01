@@ -1,3 +1,7 @@
+// Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 // At times we are able to transform one type of fact into another. We do this
 // in a consistent direction to avoid circularity. The order of preferred types
 // is generally in order of strength of claim:
