@@ -983,10 +983,29 @@ class Deducer {
   /// If [dependencies]' dependers cover all of [depender], returns the union of
   /// their allowed constraints.
   ///
-  /// Returns `null` if the dependencies don't cover all of [depender] of the
-  /// allowed constraints can't be merged.
+  /// Returns `null` if the dependencies don't cover all of [depender] or the
+  /// allowed constraints can't be merged. Assumes that [dependencies]'
+  /// dependers are all on the same package as [depender].
   ///
-  /// This assumes that [dependencies]' dependers are all on the same package as
+  /// For example, given:
+  ///
+  /// * a [0, 3) (depender)
+  /// * a [0, 1) depends on b [0, 1) (in dependencies)
+  /// * a [1, 2) depends on b [1, 2) (in dependencies)
+  /// * a [2, 3) depends on b [2, 3) (in dependencies)
+  /// * a [3, 4) depends on b [3, 4) (in dependencies)
+  ///
+  /// This returns:
+  ///
+  /// * b [0, 3)
+  ///
+  /// Given:
+  ///
+  /// * a [0, 3) (depender)
+  /// * a [0, 1) depends on b [0, 2) (in dependencies)
+  /// * a [2, 3) depends on b [2, 3) (in dependencies)
+  ///
+  /// This returns `null`, since [dependencies]' dependers don't fully cover
   /// [depender].
   PackageDep _transitiveAllowed(PackageDep depender,
       Iterable<Dependency> dependencies) {
