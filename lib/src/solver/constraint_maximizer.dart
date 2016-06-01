@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
+import 'package:pub_semver/pub_semver.dart';
+
 /// Merges constraints such that they fully cover actual available versions.
 ///
 /// See https://gist.github.com/nex3/f4d0e2a9267d1b8cfdb5132b760d0111.
@@ -44,7 +47,7 @@ class ConstraintMaximizer {
         result.add(previous);
         previous = range;
       } else {
-        previous = new VersionRange(previous.min, range.max,
+        previous = new VersionRange(min: previous.min, max: range.max,
             includeMin: previous.includeMin, includeMax: false);
       }
     }
@@ -64,15 +67,16 @@ class ConstraintMaximizer {
     // Convert the upper bound to `<V`, where V is in [_versions]. This makes
     // the range look more like a caret-style version range and implicitly
     // tracks the upper bound.
-    var result = new VersionRange(range.min, _strictLeastUpperBound(range),
+    var result = new VersionRange(
+        min: range.min, max: _strictLeastUpperBound(range),
         includeMin: range.includeMin, includeMax: false);
-    _maximal[result] = true;
+    _normalized[result] = true;
     return result;
   }
 
   // Strictly greater than
-  var _strictLeastUpperBound(VersionRange range) {
-    var index = _leastUpperBound(range.max);
+  Version _strictLeastUpperBound(VersionRange range) {
+    var index = _leastUpperBoundIndex(range.max);
     if (index == _versions.length) return null;
 
     var bound = _versions[index];

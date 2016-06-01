@@ -67,7 +67,7 @@ class Incompatibility implements Fact {
   final PackageDep dep1;
   final PackageDep dep2;
 
-  Incompatible(this.dep1, this.dep2, Iterable<Cause> causes)
+  Incompatibility(this.dep1, this.dep2, Iterable<Cause> causes)
       : causes = causes.toList() {
     assert(dep1.name != dep2.name);
   }
