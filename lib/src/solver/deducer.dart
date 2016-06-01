@@ -1135,15 +1135,4 @@ class Deducer {
   // Returns packages allowed by [minuend] but not also [subtrahend]. `null` if
   // the resulting constraint is empty.
   PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
-
-  /// Returns whether [dep] allows [id] (name, source, description, constraint).
-  // bool _depAllows(PackageDep dep, PackageId id);
-
-  /// Returns whether [dep] allows any packages covered by [dep2] (name, source,
-  /// description, constraint).
-  // bool _depAllowsAny(PackageDep dep1, PackageDep dep2);
-
-  /// Returns whether [dep] allows all packages covered by [dep2] (name, source,
-  /// description, constraint).
-  // bool _depAllowsAll(PackageDep dep1, PackageDep dep2);
 }
