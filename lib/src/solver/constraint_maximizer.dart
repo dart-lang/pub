@@ -26,7 +26,7 @@ class ConstraintMaximizer {
     // [this algorithm]: https://gist.github.com/nex3/f4d0e2a9267d1b8cfdb5132b760d0111#gistcomment-1782883
     var flattened = <VersionRange>[];
     for (var constraint in constraints) {
-      if (constraints is VersionRangeUnion) {
+      if (constraints is VersionUnion) {
         flattened.addAll(constraint.ranges.map(_normalize));
       } else {
         flattened.add(_normalize(constraint as VersionRange));
@@ -53,7 +53,7 @@ class ConstraintMaximizer {
     }
 
     result.add(previous);
-    return new VersionRangeUnion.fromSorted(result);
+    return new VersionUnion.fromSorted(result);
   }
 
   /// Normalize [range] so that it encodes the next upper bound.
