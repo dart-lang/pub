@@ -101,7 +101,7 @@ class Deducer {
     var existing = _required[fact.name];
     if (existing == null) return true;
 
-    var intersection = _intersectDeps([existing.dep, fact.dep]);
+    var intersection = _intersectDeps(existing.dep, fact.dep);
     if (intersection == null) {
       throw "Incompatible constraints!";
     } else if (intersection == existing.dep) {
@@ -449,8 +449,8 @@ class Deducer {
         // Add the new dependencies to [_toProcess] so they don't get thrown
         // away when we return `false`.
         _toProcess.add(new Dependency(
-            _intersectDeps([dependency.depender, fact.depender]),
-            _intersectDeps([dependency.allowed, fact.allowed]),
+            _intersectDeps(dependency.depender, fact.depender),
+            _intersectDeps(dependency.allowed, fact.allowed),
             [dependency, fact]));
 
         var dependencyDifference = _depMinus(dependency, fact.depender);
@@ -771,7 +771,7 @@ class Deducer {
   Fact _requiredAndAllowed(Required required, Dependency dependency) {
     assert(required.dep.name == dependency.allowed.name);
 
-    var intersection = _intersectDeps([required.dep, dependency.allowed]);
+    var intersection = _intersectDeps(required.dep, dependency.allowed);
     if (intersection == null) {
       // If there are no versions covered by both [dependency.allowed] and
       // [required], then this dependency can never be satisfied and the
@@ -1003,9 +1003,19 @@ class Deducer {
     }
   }
 
-  void _removeDependency(Dependency dependency);
+  void _removeDependency(Dependency dependency) {
+    assert(_dependenciesByDepender[dependency.depender.toRef()]
+        .remove(dependency));
+    assert(_dependenciesByAllowed[dependency.allowed.toRef()]
+        .remove(dependency));
+  }
 
-  void _removeIncompatibility(Incompatibility incompatibility);
+  void _removeIncompatibility(Incompatibility incompatibility) {
+    assert(_incompatibilities[incompatibility.dep1.toRef()]
+        .remove(incompatibility));
+    assert(_incompatibilities[incompatibility.dep2.toRef()]
+        .remove(incompatibility));
+  }
 
   /// Enqueue [fact] to be procesed instead of the current fact.
   ///
@@ -1134,9 +1144,17 @@ class Deducer {
   // source, diff desc, or non-overlapping).
   //
   // Doesn't need to reduce gaps if everything's already maximized.
-  PackageDep _intersectDeps(Iterable<PackageDep> deps);
+  PackageDep _intersectDeps(PackageDep dep1, PackageDep dep2) {
+    if (dep1.toRef() != dep2.toRef()) return null;
+    var intersection = dep1.constraint.intersect(dep2.constraint);
+    return intersection.isEmpty ? null : dep1.withConstraint(intersection);
+  }
 
   // Returns packages allowed by [minuend] but not also [subtrahend]. `null` if
   // the resulting constraint is empty.
-  PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend);
+  PackageDep _depMinus(PackageDep minuend, PackageDep subtrahend) {
+    if (minuend.toRef() != subtrahend.toRef()) return minuend;
+    var difference = minuend.constraint.difference(subtrahend.constraint);
+    return difference.isEmpty ? null : minuend.withConstraint(difference);
+  }
 }
