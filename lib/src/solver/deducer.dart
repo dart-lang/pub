@@ -19,7 +19,7 @@
 class Deducer {
   final SourceRegistry _sources;
 
-  final _allIds = <PackageRef, List<PackageId>>{};
+  final _maximizers = <PackageRef, ConstraintMaximizer>{};
 
   final _required = <String, Required>{};
 
@@ -40,10 +40,10 @@ class Deducer {
   /// current fact ends up being determined to be redundant.
   final _fromCurrent = <Fact>[];
 
-  void setAllIds(List<PackageId> ids) {
+  void setAllIds(Iterable<PackageId> ids) {
     var ref = ids.first.toRef();
     assert(ids.every((id) => id.toRef() == ref));
-    _allIds[ref] = ids;
+    _allIds[ref] = new ConstraintMaximizer(ids.map((id) => id.version));
   }
 
   void add(Fact initial) {
@@ -1135,10 +1135,20 @@ class Deducer {
           : incompatibility.dep1;
 
   // Merge [deps], [_allIds]-aware to reduce gaps. `null` if the deps are
-  // incompatible source/desc. Algorithm TBD.
+  // incompatible source/desc.
   //
   // TODO: [_transitiveIncompatible] needs this to return `null` for empty list.
-  PackageDep _mergeDeps(Iterable<PackageDep> deps);
+  PackageDep _mergeDeps(Iterable<PackageDep> deps) {
+    var list = deps.toList();
+    if (list.isEmpty) return null;
+
+    var ref = list.first.toRef();
+    for (var dep in list.skip(1)) {
+      if (dep.toRef() != ref) return null;
+    }
+
+    _maximizers[ref].maximize(list.map((dep) => dep.constraint));
+  }
 
   // Intersect [deps], return `null` if they aren't compatible (diff name, diff
   // source, diff desc, or non-overlapping).
