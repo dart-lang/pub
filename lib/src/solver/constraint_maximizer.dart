@@ -32,28 +32,8 @@ class ConstraintMaximizer {
         flattened.add(_normalize(constraint as VersionRange));
       }
     }
-    flattened.sort(_compareRanges);
 
-    var result = <VersionRange>[];
-    var previous = flattened.first;
-    for (var range in flattened.skip(1)) {
-      assert(!range.includeMax);
-
-      if (previous.max == null) {
-        // If the last range has no upper bound, we don't have to add any more
-        // ranges.
-        break;
-      } else if (_lessThanRange(previous.max, range.min)) {
-        result.add(previous);
-        previous = range;
-      } else {
-        previous = new VersionRange(min: previous.min, max: range.max,
-            includeMin: previous.includeMin, includeMax: false);
-      }
-    }
-
-    result.add(previous);
-    return new VersionUnion.fromSorted(result);
+    return new VersionConstraint.unionOf(flattened);
   }
 
   /// Normalize [range] so that it encodes the next upper bound.
@@ -91,21 +71,5 @@ class ConstraintMaximizer {
     // [_versions]?
     return _leastUpperBounds.putIfAbsent(version,
         () => lowerBound(_versions, version));
-  }
-
-  int _compareRanges(VersionRange range1, VersionRange range2) {
-    if (range1.min == range2.min) {
-      if (range1.includeMin == range2.includeMin) return 0;
-      return range1.includeMin ? -1 : 1;
-    }
-
-    if (range1.min == null) return -1;
-    if (range2.min == null) return 1;
-    return range1.min.compareTo(range2.min);
-  }
-
-  bool _lessThanRange(Version version, VersionRange range) {
-    if (range.min == null) return false;
-    return range.includeMin ? version < range.min : version <= range.min;
   }
 }
