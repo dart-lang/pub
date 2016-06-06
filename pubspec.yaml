@@ -10,7 +10,7 @@ dependencies:
   args: "^0.13.0"
   barback: "^0.15.2"
   compiler_unsupported: "^1.13.0-dev"
-  crypto: "^1.0.0"
+  crypto: ">=1.0.0 <3.0.0"
   glob: "^1.0.0"
   http: "^0.11.0"
   http_multi_server: ">=1.0.0 <3.0.0"
