@@ -12,112 +12,27 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
+import '../source.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'cached.dart';
 
 /// A package source that gets packages from Git repos.
-class GitSource extends CachedSource {
+class GitSource extends Source {
+  final name = "git";
+
+  BoundGitSource bind(SystemCache systemCache) =>
+      new BoundGitSource(this, systemCache);
+
   /// Returns a reference to a git package with the given [name] and [url].
   ///
   /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
-  static PackageRef refFor(String name, String url, {String reference}) =>
+  PackageRef refFor(String name, String url, {String reference}) =>
       new PackageRef(name, "git", {'url': url, 'ref': reference ?? 'HEAD'});
 
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
-  static String urlFromDescription(description) => description["url"];
-
-  final name = "git";
-
-  /// The paths to the canonical clones of repositories for which "git fetch"
-  /// has already been run during this run of pub.
-  final _updatedRepos = new Set<String>();
-
-  /// Given a Git repo that contains a pub package, gets the name of the pub
-  /// package.
-  Future<String> getPackageNameFromRepo(String repo) {
-    // Clone the repo to a temp directory.
-    return withTempDir((tempDir) {
-      return _clone(repo, tempDir, shallow: true).then((_) {
-        var pubspec = new Pubspec.load(tempDir, systemCache.sources);
-        return pubspec.name;
-      });
-    });
-  }
-
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    await _ensureRepoCache(ref);
-    var path = _repoCachePath(ref);
-    var revision = await _firstRevision(path, ref.description['ref']);
-    var pubspec = await _describeUncached(ref, revision);
-
-    return [
-      new PackageId(ref.name, name, pubspec.version, {
-        'url': ref.description['url'],
-        'ref': ref.description['ref'],
-        'resolved-ref': revision
-      })
-    ];
-  }
-
-  /// Since we don't have an easy way to read from a remote Git repo, this
-  /// just installs [id] into the system cache, then describes it from there.
-  Future<Pubspec> describeUncached(PackageId id) =>
-      _describeUncached(id.toRef(), id.description['resolved-ref']);
-
-  /// Like [describeUncached], but takes a separate [ref] and Git [revision]
-  /// rather than a single ID.
-  Future<Pubspec> _describeUncached(PackageRef ref, String revision) async {
-    await _ensureRevision(ref, revision);
-    var path = _repoCachePath(ref);
-
-    var lines;
-    try {
-      lines = await git.run(["show", "$revision:pubspec.yaml"],
-          workingDir: path);
-    } on git.GitException catch (_) {
-      fail('Could not find a file named "pubspec.yaml" in '
-          '${ref.description['url']} $revision.');
-    }
-
-    return new Pubspec.parse(lines.join("\n"), systemCache.sources,
-        expectedName: ref.name);
-  }
-
-  /// Clones a Git repo to the local filesystem.
-  ///
-  /// The Git cache directory is a little idiosyncratic. At the top level, it
-  /// contains a directory for each commit of each repository, named `<package
-  /// name>-<commit hash>`. These are the canonical package directories that are
-  /// linked to from the `packages/` directory.
-  ///
-  /// In addition, the Git system cache contains a subdirectory named `cache/`
-  /// which contains a directory for each separate repository URL, named
-  /// `<package name>-<url hash>`. These are used to check out the repository
-  /// itself; each of the commit-specific directories are clones of a directory
-  /// in `cache/`.
-  Future<Package> downloadToSystemCache(PackageId id) async {
-    var ref = id.toRef();
-    if (!git.isInstalled) {
-      fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
-          "Please ensure Git is correctly installed.");
-    }
-
-    ensureDir(path.join(systemCacheRoot, 'cache'));
-    await _ensureRevision(ref, id.description['resolved-ref']);
-
-    var revisionCachePath = getDirectory(id);
-    if (!entryExists(revisionCachePath)) {
-      await _clone(_repoCachePath(ref), revisionCachePath);
-      await _checkOut(revisionCachePath, id.description['resolved-ref']);
-    }
-
-    return new Package.load(id.name, revisionCachePath, systemCache.sources);
-  }
-
-  /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) => path.join(
-      systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
+  String urlFromDescription(description) => description["url"];
 
   PackageRef parseRef(String name, description, {String containingPath}) {
     // TODO(rnystrom): Handle git URLs that are relative file paths (#8570).
@@ -217,6 +132,105 @@ class GitSource extends CachedSource {
 
     return true;
   }
+}
+
+/// The [BoundSource] for [GitSource].
+class BoundGitSource extends CachedSource {
+  final GitSource source;
+
+  final SystemCache systemCache;
+
+  BoundGitSource(this.source, this.systemCache);
+
+  /// The paths to the canonical clones of repositories for which "git fetch"
+  /// has already been run during this run of pub.
+  final _updatedRepos = new Set<String>();
+
+  /// Given a Git repo that contains a pub package, gets the name of the pub
+  /// package.
+  Future<String> getPackageNameFromRepo(String repo) {
+    // Clone the repo to a temp directory.
+    return withTempDir((tempDir) {
+      return _clone(repo, tempDir, shallow: true).then((_) {
+        var pubspec = new Pubspec.load(tempDir, systemCache.sources);
+        return pubspec.name;
+      });
+    });
+  }
+
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    await _ensureRepoCache(ref);
+    var path = _repoCachePath(ref);
+    var revision = await _firstRevision(path, ref.description['ref']);
+    var pubspec = await _describeUncached(ref, revision);
+
+    return [
+      new PackageId(ref.name, source.name, pubspec.version, {
+        'url': ref.description['url'],
+        'ref': ref.description['ref'],
+        'resolved-ref': revision
+      })
+    ];
+  }
+
+  /// Since we don't have an easy way to read from a remote Git repo, this
+  /// just installs [id] into the system cache, then describes it from there.
+  Future<Pubspec> describeUncached(PackageId id) =>
+      _describeUncached(id.toRef(), id.description['resolved-ref']);
+
+  /// Like [describeUncached], but takes a separate [ref] and Git [revision]
+  /// rather than a single ID.
+  Future<Pubspec> _describeUncached(PackageRef ref, String revision) async {
+    await _ensureRevision(ref, revision);
+    var path = _repoCachePath(ref);
+
+    var lines;
+    try {
+      lines = await git.run(["show", "$revision:pubspec.yaml"],
+          workingDir: path);
+    } on git.GitException catch (_) {
+      fail('Could not find a file named "pubspec.yaml" in '
+          '${ref.description['url']} $revision.');
+    }
+
+    return new Pubspec.parse(lines.join("\n"), systemCache.sources,
+        expectedName: ref.name);
+  }
+
+  /// Clones a Git repo to the local filesystem.
+  ///
+  /// The Git cache directory is a little idiosyncratic. At the top level, it
+  /// contains a directory for each commit of each repository, named `<package
+  /// name>-<commit hash>`. These are the canonical package directories that are
+  /// linked to from the `packages/` directory.
+  ///
+  /// In addition, the Git system cache contains a subdirectory named `cache/`
+  /// which contains a directory for each separate repository URL, named
+  /// `<package name>-<url hash>`. These are used to check out the repository
+  /// itself; each of the commit-specific directories are clones of a directory
+  /// in `cache/`.
+  Future<Package> downloadToSystemCache(PackageId id) async {
+    var ref = id.toRef();
+    if (!git.isInstalled) {
+      fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
+          "Please ensure Git is correctly installed.");
+    }
+
+    ensureDir(path.join(systemCacheRoot, 'cache'));
+    await _ensureRevision(ref, id.description['resolved-ref']);
+
+    var revisionCachePath = getDirectory(id);
+    if (!entryExists(revisionCachePath)) {
+      await _clone(_repoCachePath(ref), revisionCachePath);
+      await _checkOut(revisionCachePath, id.description['resolved-ref']);
+    }
+
+    return new Package.load(id.name, revisionCachePath, systemCache.sources);
+  }
+
+  /// Returns the path to the revision-specific cache of [id].
+  String getDirectory(PackageId id) => path.join(
+      systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
 
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
@@ -234,8 +248,8 @@ class GitSource extends CachedSource {
 
     var packages = listDir(systemCacheRoot)
         .where((entry) => dirExists(path.join(entry, ".git")))
-        .map((packageDir) => new Package.load(null, packageDir,
-            systemCache.sources))
+        .map((packageDir) => new Package.load(
+            null, packageDir, systemCache.sources))
         .toList();
 
     // Note that there may be multiple packages with the same name and version
@@ -243,7 +257,7 @@ class GitSource extends CachedSource {
     packages.sort(Package.orderByNameAndVersion);
 
     for (var package in packages) {
-      var id = new PackageId(package.name, this.name, package.version, null);
+      var id = new PackageId(package.name, source.name, package.version, null);
 
       log.message("Resetting Git repository for "
           "${log.bold(package.name)} ${package.version}...");

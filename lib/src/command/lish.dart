@@ -13,7 +13,6 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
-import '../source/hosted.dart';
 import '../utils.dart';
 import '../validator.dart';
 
@@ -39,7 +38,7 @@ class LishCommand extends PubCommand {
     }
 
     // Otherwise, use the default.
-    return Uri.parse(HostedSource.defaultUrl);
+    return Uri.parse(cache.sources.hosted.defaultUrl);
   }
 
   /// Whether the publish is just a preview.
@@ -53,7 +52,7 @@ class LishCommand extends PubCommand {
         help: 'Validate but do not publish the package.');
     argParser.addFlag('force', abbr: 'f', negatable: false,
         help: 'Publish without confirmation if there are no errors.');
-    argParser.addOption('server', defaultsTo: HostedSource.defaultUrl,
+    argParser.addOption('server', defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server to which to upload this package.');
   }
 

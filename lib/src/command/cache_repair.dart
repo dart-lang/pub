@@ -24,7 +24,8 @@ class CacheRepairCommand extends PubCommand {
     var failures = [];
 
     // Repair every cached source.
-    for (var source in cache.sources) {
+    for (var source in cache.sources.all
+       .map((source) => cache.source(source.name))) {
       if (source is! CachedSource) continue;
 
       var results = await source.repairCachedPackages();

@@ -8,7 +8,6 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../log.dart' as log;
-import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `cache add` pub command.
@@ -54,10 +53,10 @@ class CacheAddCommand extends PubCommand {
     }
 
     // TODO(rnystrom): Support installing from git too.
-    var source = cache.sources["hosted"];
+    var source = cache.source("hosted");
 
     // TODO(rnystrom): Allow specifying the server.
-    var ids = (await source.getVersions(HostedSource.refFor(package)))
+    var ids = (await source.getVersions(cache.sources.hosted.refFor(package)))
         .where((id) => constraint.allows(id.version))
         .toList();
 

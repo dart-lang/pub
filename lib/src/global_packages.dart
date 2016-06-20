@@ -21,9 +21,6 @@ import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
-import 'source/git.dart';
-import 'source/hosted.dart';
-import 'source/path.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -80,8 +77,7 @@ class GlobalPackages {
   /// Otherwise, the previous ones will be preserved.
   Future activateGit(String repo, List<String> executables,
       {bool overwriteBinStubs}) async {
-    var source = cache.sources["git"] as GitSource;
-    var name = await source.getPackageNameFromRepo(repo);
+    var name = await cache.git.getPackageNameFromRepo(repo);
     // Call this just to log what the current active package is, if any.
     _describeActive(name);
 
@@ -90,7 +86,8 @@ class GlobalPackages {
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
     await _installInCache(
-        GitSource.refFor(name, repo).withConstraint(VersionConstraint.any),
+        cache.git.source.refFor(name, repo)
+            .withConstraint(VersionConstraint.any),
         executables, overwriteBinStubs: overwriteBinStubs);
   }
 
@@ -107,8 +104,10 @@ class GlobalPackages {
   Future activateHosted(String name, VersionConstraint constraint,
       List<String> executables, {bool overwriteBinStubs}) async {
     _describeActive(name);
-    await _installInCache(HostedSource.refFor(name).withConstraint(constraint),
-        executables, overwriteBinStubs: overwriteBinStubs);
+    await _installInCache(
+        cache.hosted.source.refFor(name).withConstraint(constraint),
+        executables,
+        overwriteBinStubs: overwriteBinStubs);
   }
 
   /// Makes the local package at [path] globally active.
@@ -133,7 +132,7 @@ class GlobalPackages {
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
-    var id = PathSource.idFor(name, entrypoint.root.version, fullPath);
+    var id = cache.path.source.idFor(name, entrypoint.root.version, fullPath);
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
@@ -154,7 +153,7 @@ class GlobalPackages {
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
-    var result = await resolveVersions(SolveType.GET, cache.sources, root);
+    var result = await resolveVersions(SolveType.GET, cache, root);
     if (!result.succeeded) {
       // If the package specified by the user doesn't exist, we want to
       // surface that as a [DataError] with the associated exit code.
@@ -175,7 +174,7 @@ class GlobalPackages {
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
-    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile());
+    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile(cache));
 
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
@@ -208,7 +207,7 @@ class GlobalPackages {
   Future _cacheDependency(PackageId id) async {
     if (id.isRoot) return;
 
-    var source = cache.sources[id.source];
+    var source = cache.source(id.source);
     if (source is! CachedSource) return;
 
     await source.downloadToSystemCache(id);
@@ -237,11 +236,11 @@ class GlobalPackages {
       var id = lockFile.packages[name];
 
       if (id.source == 'git') {
-        var url = GitSource.urlFromDescription(id.description);
+        var url = cache.git.source.urlFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active from Git '
             'repository "${url}".');
       } else if (id.source == 'path') {
-        var path = PathSource.pathFromDescription(id.description);
+        var path = cache.path.source.pathFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active at path '
             '"$path".');
       } else {
@@ -303,19 +302,19 @@ class GlobalPackages {
     var id = lockFile.packages[name];
     lockFile = lockFile.removePackage(name);
 
-    var source = cache.sources[id.source];
+    var source = cache.source(id.source);
     var entrypoint;
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       entrypoint = new Entrypoint.inMemory(
-          cache.sources.load(id), lockFile, cache, isGlobal: true);
+          cache.load(id), lockFile, cache, isGlobal: true);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
       assert(id.source == "path");
       entrypoint = new Entrypoint(
-          PathSource.pathFromDescription(id.description), cache,
+          cache.path.source.pathFromDescription(id.description), cache,
           isGlobal: true);
     }
 
@@ -408,10 +407,10 @@ class GlobalPackages {
   /// Returns formatted string representing the package [id].
   String _formatPackage(PackageId id) {
     if (id.source == 'git') {
-      var url = GitSource.urlFromDescription(id.description);
+      var url = cache.sources.git.urlFromDescription(id.description);
       return '${log.bold(id.name)} ${id.version} from Git repository "$url"';
     } else if (id.source == 'path') {
-      var path = PathSource.pathFromDescription(id.description);
+      var path = cache.sources.path.pathFromDescription(id.description);
       return '${log.bold(id.name)} ${id.version} at path "$path"';
     } else {
       return '${log.bold(id.name)} ${id.version}';

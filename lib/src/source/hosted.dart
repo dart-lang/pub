@@ -16,29 +16,47 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
+import '../source.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'cached.dart';
 
 /// A package source that gets packages from a package hosting site that uses
 /// the same API as pub.dartlang.org.
-class HostedSource extends CachedSource {
+class HostedSource extends Source {
+  final name = "hosted";
+  final hasMultipleVersions = true;
+
+  BoundHostedSource bind(SystemCache systemCache, {bool isOffline: false}) =>
+      isOffline
+          ? new _OfflineHostedSource(this, systemCache)
+          : new BoundHostedSource(this, systemCache);
+
+  /// Gets the default URL for the package server for hosted dependencies.
+  String get defaultUrl {
+    var url = io.Platform.environment["PUB_HOSTED_URL"];
+    if (url != null) return url;
+
+    return "https://pub.dartlang.org";
+  }
+
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  static PackageRef refFor(String name, {url}) =>
+  PackageRef refFor(String name, {url}) =>
       new PackageRef(name, 'hosted', _descriptionFor(name, url));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  static PackageId idFor(String name, Version version, {url}) =>
+  PackageId idFor(String name, Version version, {url}) =>
       new PackageId(name, 'hosted', version, _descriptionFor(name, url));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  static _descriptionFor(String name, [url]) {
+  _descriptionFor(String name, [url]) {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
@@ -47,93 +65,6 @@ class HostedSource extends CachedSource {
 
     return {'name': name, 'url': url.toString()};
   }
-
-  final name = "hosted";
-  final hasMultipleVersions = true;
-
-  /// Gets the default URL for the package server for hosted dependencies.
-  static String get defaultUrl {
-    var url = io.Platform.environment["PUB_HOSTED_URL"];
-    if (url != null) return url;
-
-    return "https://pub.dartlang.org";
-  }
-
-  /// Downloads a list of all versions of a package that are available from the
-  /// site.
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    var url = _makeUrl(ref.description,
-        (server, package) => "$server/api/packages/$package");
-
-    log.io("Get versions from $url.");
-
-    var body;
-    try {
-      body = await httpClient.read(url, headers: PUB_API_HEADERS);
-    } catch (error, stackTrace) {
-      var parsed = _parseDescription(ref.description);
-      _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
-    }
-
-    var doc = JSON.decode(body);
-    return doc['versions'].map((map) {
-      var pubspec = new Pubspec.fromMap(
-          map['pubspec'], systemCache.sources,
-          expectedName: ref.name, location: url);
-      var id = idFor(ref.name, pubspec.version,
-          url: _serverFor(ref.description));
-      memoizePubspec(id, pubspec);
-
-      return id;
-    }).toList();
-  }
-
-  /// Downloads and parses the pubspec for a specific version of a package that
-  /// is available from the site.
-  Future<Pubspec> describeUncached(PackageId id) async {
-    // Request it from the server.
-    var url = _makeVersionUrl(id, (server, package, version) =>
-        "$server/api/packages/$package/versions/$version");
-
-    log.io("Describe package at $url.");
-    var version;
-    try {
-      version = JSON.decode(
-          await httpClient.read(url, headers: PUB_API_HEADERS));
-    } catch (error, stackTrace) {
-      var parsed = _parseDescription(id.description);
-      _throwFriendlyError(error, stackTrace, id.name, parsed.last);
-    }
-
-    return new Pubspec.fromMap(
-        version['pubspec'], systemCache.sources,
-        expectedName: id.name, location: url);
-  }
-
-  /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId id) async {
-    if (!isInSystemCache(id)) {
-      var packageDir = getDirectory(id);
-      ensureDir(p.dirname(packageDir));
-      var parsed = _parseDescription(id.description);
-      await _download(parsed.last, parsed.first, id.version, packageDir);
-    }
-
-    return new Package.load(id.name, getDirectory(id), systemCache.sources);
-  }
-
-  /// The system cache directory for the hosted source contains subdirectories
-  /// for each separate repository URL that's used on the system.
-  ///
-  /// Each of these subdirectories then contains a subdirectory for each
-  /// package downloaded from that site.
-  String getDirectory(PackageId id) {
-    var parsed = _parseDescription(id.description);
-    var dir = _urlToDirectory(parsed.last);
-    return p.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");
-  }
-
-  String packageName(description) => _parseDescription(description).first;
 
   bool descriptionsEqual(description1, description2) =>
       _parseDescription(description1) == _parseDescription(description2);
@@ -153,6 +84,127 @@ class HostedSource extends CachedSource {
     return new PackageId(name, this.name, version, description);
   }
 
+  /// Parses the description for a package.
+  ///
+  /// If the package parses correctly, this returns a (name, url) pair. If not,
+  /// this throws a descriptive FormatException.
+  Pair<String, String> _parseDescription(description) {
+    if (description is String) {
+      return new Pair<String, String>(description, defaultUrl);
+    }
+
+    if (description is! Map) {
+      throw new FormatException(
+          "The description must be a package name or map.");
+    }
+
+    if (!description.containsKey("name")) {
+      throw new FormatException(
+      "The description map must contain a 'name' key.");
+    }
+
+    var name = description["name"];
+    if (name is! String) {
+      throw new FormatException("The 'name' key must have a string value.");
+    }
+
+    return new Pair<String, String>(name, description["url"] ?? defaultUrl);
+  }
+}
+
+/// The [BoundSource] for [HostedSource].
+class BoundHostedSource extends CachedSource {
+  final HostedSource source;
+
+  final SystemCache systemCache;
+
+  BoundHostedSource(this.source, this.systemCache);
+
+  /// Downloads a list of all versions of a package that are available from the
+  /// site.
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    var url = _makeUrl(ref.description,
+        (server, package) => "$server/api/packages/$package");
+
+    log.io("Get versions from $url.");
+
+    var body;
+    try {
+      body = await httpClient.read(url, headers: PUB_API_HEADERS);
+    } catch (error, stackTrace) {
+      var parsed = source._parseDescription(ref.description);
+      _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
+    }
+
+    var doc = JSON.decode(body);
+    return doc['versions'].map((map) {
+      var pubspec = new Pubspec.fromMap(
+          map['pubspec'], systemCache.sources,
+          expectedName: ref.name, location: url);
+      var id = source.idFor(ref.name, pubspec.version,
+          url: _serverFor(ref.description));
+      memoizePubspec(id, pubspec);
+
+      return id;
+    }).toList();
+  }
+
+  /// Parses [description] into its server and package name components, then
+  /// converts that to a Uri given [pattern].
+  ///
+  /// Ensures the package name is properly URL encoded.
+  Uri _makeUrl(description, String pattern(String server, String package)) {
+    var parsed = source._parseDescription(description);
+    var server = parsed.last;
+    var package = Uri.encodeComponent(parsed.first);
+    return Uri.parse(pattern(server, package));
+  }
+
+  /// Downloads and parses the pubspec for a specific version of a package that
+  /// is available from the site.
+  Future<Pubspec> describeUncached(PackageId id) async {
+    // Request it from the server.
+    var url = _makeVersionUrl(id, (server, package, version) =>
+        "$server/api/packages/$package/versions/$version");
+
+    log.io("Describe package at $url.");
+    var version;
+    try {
+      version = JSON.decode(
+          await httpClient.read(url, headers: PUB_API_HEADERS));
+    } catch (error, stackTrace) {
+      var parsed = source._parseDescription(id.description);
+      _throwFriendlyError(error, stackTrace, id.name, parsed.last);
+    }
+
+    return new Pubspec.fromMap(
+        version['pubspec'], systemCache.sources,
+        expectedName: id.name, location: url);
+  }
+
+  /// Downloads the package identified by [id] to the system cache.
+  Future<Package> downloadToSystemCache(PackageId id) async {
+    if (!isInSystemCache(id)) {
+      var packageDir = getDirectory(id);
+      ensureDir(p.dirname(packageDir));
+      var parsed = source._parseDescription(id.description);
+      await _download(parsed.last, parsed.first, id.version, packageDir);
+    }
+
+    return new Package.load(id.name, getDirectory(id), systemCache.sources);
+  }
+
+  /// The system cache directory for the hosted source contains subdirectories
+  /// for each separate repository URL that's used on the system.
+  ///
+  /// Each of these subdirectories then contains a subdirectory for each
+  /// package downloaded from that site.
+  String getDirectory(PackageId id) {
+    var parsed = source._parseDescription(id.description);
+    var dir = _urlToDirectory(parsed.last);
+    return p.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");
+  }
+
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
@@ -167,7 +219,7 @@ class HostedSource extends CachedSource {
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
-        var id = idFor(package.name, package.version, url: url);
+        var id = source.idFor(package.name, package.version, url: url);
 
         try {
           await _download(url, package.name, package.version, package.dir);
@@ -176,7 +228,7 @@ class HostedSource extends CachedSource {
           failures.add(id);
           var message = "Failed to repair ${log.bold(package.name)} "
               "${package.version}";
-          if (url != defaultUrl) message += " from $url";
+          if (url != source.defaultUrl) message += " from $url";
           log.error("$message. Error:\n$error");
           log.fine(stackTrace);
 
@@ -190,9 +242,8 @@ class HostedSource extends CachedSource {
 
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
-  List<Package> getCachedPackages() {
-    return _getCachedPackagesInDirectory(_urlToDirectory(defaultUrl));
-  }
+  List<Package> getCachedPackages() =>
+      _getCachedPackagesInDirectory(_urlToDirectory(source.defaultUrl));
 
   /// Gets all of the packages that have been downloaded into the system cache
   /// into [dir].
@@ -248,6 +299,77 @@ class HostedSource extends CachedSource {
     // Otherwise re-throw the original exception.
     throw error;
   }
+
+  /// Given a URL, returns a "normalized" string to be used as a directory name
+  /// for packages downloaded from the server at that URL.
+  ///
+  /// This normalization strips off the scheme (which is presumed to be HTTP or
+  /// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
+  /// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
+  ///
+  /// This could cause an ambiguity since some characters get encoded as three
+  /// digits and others two. It's possible for one to be a prefix of the other.
+  /// In practice, the set of characters that are encoded don't happen to have
+  /// any collisions, so the encoding is reversible.
+  ///
+  /// This behavior is a bug, but is being preserved for compatibility.
+  String _urlToDirectory(String url) {
+    // Normalize all loopback URLs to "localhost".
+    url = url.replaceAllMapped(
+        new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"),
+        (match) {
+      // Don't include the scheme for HTTPS URLs. This makes the directory names
+      // nice for the default and most recommended scheme. We also don't include
+      // it for localhost URLs, since they're always known to be HTTP.
+      var localhost = match[2] == null ? '' : 'localhost';
+      var scheme =
+          match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+      return "$scheme$localhost";
+    });
+    return replace(url, new RegExp(r'[<>:"\\/|?*%]'),
+        (match) => '%${match[0].codeUnitAt(0)}');
+  }
+
+  /// Given a directory name in the system cache, returns the URL of the server
+  /// whose packages it contains.
+  ///
+  /// See [_urlToDirectory] for details on the mapping. Note that because the
+  /// directory name does not preserve the scheme, this has to guess at it. It
+  /// chooses "http" for loopback URLs (mainly to support the pub tests) and
+  /// "https" for all others.
+  String _directoryToUrl(String url) {
+    // Decode the pseudo-URL-encoded characters.
+    var chars = '<>:"\\/|?*%';
+    for (var i = 0; i < chars.length; i++) {
+      var c = chars.substring(i, i + 1);
+      url = url.replaceAll("%${c.codeUnitAt(0)}", c);
+    }
+
+    // If the URL has an explicit scheme, use that.
+    if (url.contains("://")) return url;
+
+    // Otherwise, default to http for localhost and https for everything else.
+    var scheme =
+        isLoopback(url.replaceAll(new RegExp(":.*"), "")) ? "http" : "https";
+    return "$scheme://$url";
+  }
+
+  /// Returns the server URL for [description].
+  Uri _serverFor(description) =>
+      Uri.parse(source._parseDescription(description).last);
+
+  /// Parses [id] into its server, package name, and version components, then
+  /// converts that to a Uri given [pattern].
+  ///
+  /// Ensures the package name is properly URL encoded.
+  Uri _makeVersionUrl(PackageId id,
+      String pattern(String server, String package, String version)) {
+    var parsed = source._parseDescription(id.description);
+    var server = parsed.last;
+    var package = Uri.encodeComponent(parsed.first);
+    var version = Uri.encodeComponent(id.version.toString());
+    return Uri.parse(pattern(server, package, version));
+  }
 }
 
 /// This is the modified hosted source used when pub get or upgrade are run
@@ -255,10 +377,13 @@ class HostedSource extends CachedSource {
 ///
 /// This uses the system cache to get the list of available packages and does
 /// no network access.
-class OfflineHostedSource extends HostedSource {
+class _OfflineHostedSource extends BoundHostedSource {
+  _OfflineHostedSource(HostedSource source, SystemCache systemCache)
+      : super(source, systemCache);
+
   /// Gets the list of all versions of [ref] that are in the system cache.
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    var parsed = _parseDescription(ref.description);
+    var parsed = source._parseDescription(ref.description);
     var server = parsed.last;
     log.io("Finding versions of ${ref.name} in "
         "$systemCacheRoot/${_urlToDirectory(server)}");
@@ -270,7 +395,7 @@ class OfflineHostedSource extends HostedSource {
       versions = await listDir(dir).map((entry) {
         var components = p.basename(entry).split("-");
         if (components.first != ref.name) return null;
-        return HostedSource.idFor(
+        return source.idFor(
             ref.name, new Version.parse(components.skip(1).join("-")),
             url: _serverFor(ref.description));
       }).where((id) => id != null).toList();
@@ -298,114 +423,4 @@ class OfflineHostedSource extends HostedSource {
     throw new PackageNotFoundException(
         "${id.name} ${id.version} is not available in your system cache.");
   }
-}
-
-/// Given a URL, returns a "normalized" string to be used as a directory name
-/// for packages downloaded from the server at that URL.
-///
-/// This normalization strips off the scheme (which is presumed to be HTTP or
-/// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
-/// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
-///
-/// This could cause an ambiguity since some characters get encoded as three
-/// digits and others two. It's possible for one to be a prefix of the other.
-/// In practice, the set of characters that are encoded don't happen to have
-/// any collisions, so the encoding is reversible.
-///
-/// This behavior is a bug, but is being preserved for compatibility.
-String _urlToDirectory(String url) {
-  // Normalize all loopback URLs to "localhost".
-  url = url.replaceAllMapped(
-      new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"),
-      (match) {
-    // Don't include the scheme for HTTPS URLs. This makes the directory names
-    // nice for the default and most recommended scheme. We also don't include
-    // it for localhost URLs, since they're always known to be HTTP.
-    var localhost = match[2] == null ? '' : 'localhost';
-    var scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
-    return "$scheme$localhost";
-  });
-  return replace(url, new RegExp(r'[<>:"\\/|?*%]'),
-      (match) => '%${match[0].codeUnitAt(0)}');
-}
-
-/// Given a directory name in the system cache, returns the URL of the server
-/// whose packages it contains.
-///
-/// See [_urlToDirectory] for details on the mapping. Note that because the
-/// directory name does not preserve the scheme, this has to guess at it. It
-/// chooses "http" for loopback URLs (mainly to support the pub tests) and
-/// "https" for all others.
-String _directoryToUrl(String url) {
-  // Decode the pseudo-URL-encoded characters.
-  var chars = '<>:"\\/|?*%';
-  for (var i = 0; i < chars.length; i++) {
-    var c = chars.substring(i, i + 1);
-    url = url.replaceAll("%${c.codeUnitAt(0)}", c);
-  }
-
-  // If the URL has an explicit scheme, use that.
-  if (url.contains("://")) return url;
-
-  // Otherwise, default to http for localhost and https for everything else.
-  var scheme =
-      isLoopback(url.replaceAll(new RegExp(":.*"), "")) ? "http" : "https";
-  return "$scheme://$url";
-}
-
-/// Parses [description] into its server and package name components, then
-/// converts that to a Uri given [pattern].
-///
-/// Ensures the package name is properly URL encoded.
-Uri _makeUrl(description, String pattern(String server, String package)) {
-  var parsed = _parseDescription(description);
-  var server = parsed.last;
-  var package = Uri.encodeComponent(parsed.first);
-  return Uri.parse(pattern(server, package));
-}
-
-/// Returns the server URL for [description].
-Uri _serverFor(description) => Uri.parse(_parseDescription(description).last);
-
-/// Parses [id] into its server, package name, and version components, then
-/// converts that to a Uri given [pattern].
-///
-/// Ensures the package name is properly URL encoded.
-Uri _makeVersionUrl(PackageId id,
-    String pattern(String server, String package, String version)) {
-  var parsed = _parseDescription(id.description);
-  var server = parsed.last;
-  var package = Uri.encodeComponent(parsed.first);
-  var version = Uri.encodeComponent(id.version.toString());
-  return Uri.parse(pattern(server, package, version));
-}
-
-/// Parses the description for a package.
-///
-/// If the package parses correctly, this returns a (name, url) pair. If not,
-/// this throws a descriptive FormatException.
-Pair<String, String> _parseDescription(description) {
-  if (description is String) {
-    return new Pair<String, String>(description, HostedSource.defaultUrl);
-  }
-
-  if (description is! Map) {
-    throw new FormatException(
-        "The description must be a package name or map.");
-  }
-
-  if (!description.containsKey("name")) {
-    throw new FormatException(
-    "The description map must contain a 'name' key.");
-  }
-
-  var name = description["name"];
-  if (name is! String) {
-    throw new FormatException("The 'name' key must have a string value.");
-  }
-
-  var url = description["url"];
-  if (url == null) url = HostedSource.defaultUrl;
-
-  return new Pair<String, String>(name, url);
 }

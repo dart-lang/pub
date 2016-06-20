@@ -2,25 +2,48 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection';
-
 import 'package.dart';
 import 'source.dart';
+import 'source/git.dart';
+import 'source/hosted.dart';
+import 'source/path.dart';
 import 'source/unknown.dart';
 
 /// A class that keeps track of [Source]s used for getting packages.
-class SourceRegistry extends IterableBase<Source> {
-  final _sources = new Map<String, Source>();
+class SourceRegistry {
+  /// The registered sources.
+  ///
+  /// This is initialized with the three built-in sources.
+  final _sources = {
+    "git": new GitSource(),
+    "hosted": new HostedSource(),
+    "path": new PathSource()
+  };
+
+  /// The default source, which is used when no source is specified.
+  ///
+  /// This defaults to [hosted].
+  Source get defaultSource => _default;
   Source _default;
 
-  /// Returns the default source, which is used when no source is specified.
-  Source get defaultSource => _default;
-
-  /// Iterates over the registered sources in name order.
-  Iterator<Source> get iterator {
+  /// The registered sources, in name order.
+  List<Source> get all {
     var sources = _sources.values.toList();
     sources.sort((a, b) => a.name.compareTo(b.name));
-    return sources.iterator;
+    return sources;
+  }
+
+  /// The built-in [GitSource].
+  GitSource get git => _sources["git"] as GitSource;
+
+  /// The built-in [HostedSource].
+  HostedSource get hosted => _sources["hosted"] as HostedSource;
+
+  /// The built-in [PathSource].
+  PathSource get path => _sources["path"] as PathSource;
+
+  SourceRegistry() {
+    _default = hosted;
   }
 
   /// Returns whether [id1] and [id2] refer to the same package, including
@@ -63,27 +86,12 @@ class SourceRegistry extends IterableBase<Source> {
     _sources[source.name] = source;
   }
 
-  /// Loads the package identified by [id].
-  ///
-  /// Throws an [ArgumentError] if [id] has an invalid source.
-  Package load(PackageId id) {
-    var source = this[id.source];
-    if (source == null) throw new ArgumentError("Unknown source ${id.source}.");
-
-    var dir = source.getDirectory(id);
-    return new Package.load(id.name, dir, this);
-  }
-
   /// Returns the source named [name].
   ///
   /// Returns an [UnknownSource] if no source with that name has been
   /// registered. If [name] is null, returns the default source.
   Source operator[](String name) {
-    if (name == null) {
-      if (defaultSource != null) return defaultSource;
-      throw new StateError('No default source has been registered');
-    }
-
+    if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
     return new UnknownSource(name);
   }

@@ -12,12 +12,25 @@ import '../io.dart';
 import '../package.dart';
 import '../pubspec.dart';
 import '../source.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 
 /// A package [Source] that gets packages from a given local file path.
 class PathSource extends Source {
+  final name = 'path';
+
+  BoundSource bind(SystemCache systemCache) =>
+      new BoundPathSource(this, systemCache);
+
+  /// Given a valid path reference description, returns the file path it
+  /// describes.
+  ///
+  /// This returned path may be relative or absolute and it is up to the caller
+  /// to know how to interpret a relative path.
+  String pathFromDescription(description) => description["path"];
+
   /// Returns a reference to a path package named [name] at [path].
-  static PackageRef refFor(String name, String path) {
+  PackageRef refFor(String name, String path) {
     return new PackageRef(name, 'path', {
       "path": path,
       "relative": p.isRelative(path)
@@ -26,37 +39,11 @@ class PathSource extends Source {
 
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
-  static PackageId idFor(String name, Version version, String path) {
+  PackageId idFor(String name, Version version, String path) {
     return new PackageId(name, 'path', version, {
       "path": path,
       "relative": p.isRelative(path)
     });
-  }
-
-  /// Given a valid path reference description, returns the file path it
-  /// describes.
-  ///
-  /// This returned path may be relative or absolute and it is up to the caller
-  /// to know how to interpret a relative path.
-  static String pathFromDescription(description) => description["path"];
-
-  final name = 'path';
-
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    // There's only one package ID for a given path. We just need to find the
-    // version.
-    var pubspec = _loadPubspec(ref);
-    var id = new PackageId(ref.name, name, pubspec.version, ref.description);
-    memoizePubspec(id, pubspec);
-    return [id];
-  }
-
-  Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id.toRef());
-
-  Pubspec _loadPubspec(PackageRef ref) {
-    var dir = _validatePath(ref.name, ref.description);
-    return new Pubspec.load(dir, systemCache.sources,
-        expectedName: ref.name);
   }
 
   bool descriptionsEqual(description1, description2) {
@@ -65,16 +52,6 @@ class PathSource extends Source {
     var path2 = canonicalize(description2["path"]);
     return path1 == path2;
   }
-
-  Future get(PackageId id, String symlink) {
-    return new Future.sync(() {
-      var dir = _validatePath(id.name, id.description);
-      createPackageSymlink(id.name, dir, symlink,
-          relative: id.description["relative"]);
-    });
-  }
-
-  String getDirectory(PackageId id) => id.description["path"];
 
   /// Parses a path dependency.
   ///
@@ -149,6 +126,42 @@ class PathSource extends Source {
 
     return sourcePath;
   }
+}
+
+/// The [BoundSource] for [PathSource].
+class BoundPathSource extends BoundSource {
+  final PathSource source;
+
+  final SystemCache systemCache;
+
+  BoundPathSource(this.source, this.systemCache);
+
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    // There's only one package ID for a given path. We just need to find the
+    // version.
+    var pubspec = _loadPubspec(ref);
+    var id = new PackageId(
+        ref.name, source.name, pubspec.version, ref.description);
+    memoizePubspec(id, pubspec);
+    return [id];
+  }
+
+  Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id.toRef());
+
+  Pubspec _loadPubspec(PackageRef ref) {
+    var dir = _validatePath(ref.name, ref.description);
+    return new Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
+  }
+
+  Future get(PackageId id, String symlink) {
+    return new Future.sync(() {
+      var dir = _validatePath(id.name, id.description);
+      createPackageSymlink(id.name, dir, symlink,
+          relative: id.description["relative"]);
+    });
+  }
+
+  String getDirectory(PackageId id) => id.description["path"];
 
   /// Ensures that [description] is a valid path description and returns a
   /// normalized path to the package.

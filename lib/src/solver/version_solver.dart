@@ -13,6 +13,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
+import '../system_cache.dart';
 import '../source_registry.dart';
 import '../utils.dart';
 import 'backtracking_solver.dart';
@@ -28,13 +29,13 @@ import 'solve_report.dart';
 /// packages.
 ///
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
-Future<SolveResult> resolveVersions(SolveType type, SourceRegistry sources,
+Future<SolveResult> resolveVersions(SolveType type, SystemCache cache,
     Package root, {LockFile lockFile, List<String> useLatest}) {
-  if (lockFile == null) lockFile = new LockFile.empty(sources);
+  if (lockFile == null) lockFile = new LockFile.empty(cache.sources);
   if (useLatest == null) useLatest = [];
 
   return log.progress('Resolving dependencies', () {
-    return new BacktrackingSolver(type, sources, root, lockFile, useLatest)
+    return new BacktrackingSolver(type, cache, root, lockFile, useLatest)
         .solve();
   });
 }
@@ -145,7 +146,7 @@ class SolveResult {
 
 /// Maintains a cache of previously-requested version lists.
 class SolverCache {
-  final SourceRegistry _sources;
+  final SystemCache _cache;
 
   /// The already-requested cached version lists.
   final _versions = new Map<PackageRef, List<PackageId>>();
@@ -164,7 +165,7 @@ class SolverCache {
   /// was returned.
   int _versionCacheHits = 0;
 
-  SolverCache(this._type, this._sources);
+  SolverCache(this._type, this._cache);
 
   /// Gets the list of versions for [package].
   ///
@@ -195,7 +196,7 @@ class SolverCache {
 
     _versionCacheMisses++;
 
-    var source = _sources[package.source];
+    var source = _cache.source(package.source);
     var ids;
     try {
       ids = await source.getVersions(package);

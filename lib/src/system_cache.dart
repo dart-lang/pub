@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
@@ -14,6 +14,7 @@ import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
+import 'source/unknown.dart';
 import 'source.dart';
 import 'source_registry.dart';
 
@@ -26,58 +27,78 @@ class SystemCache {
   /// The root directory where this package cache is located.
   final String rootDir;
 
-  String get tempDir => path.join(rootDir, '_temp');
-
-  /// The sources from which to get packages.
-  final sources = new SourceRegistry();
+  String get tempDir => p.join(rootDir, '_temp');
 
   static String defaultDir = (() {
     if (Platform.environment.containsKey('PUB_CACHE')) {
       return Platform.environment['PUB_CACHE'];
     } else if (Platform.operatingSystem == 'windows') {
       var appData = Platform.environment['APPDATA'];
-      return path.join(appData, 'Pub', 'Cache');
+      return p.join(appData, 'Pub', 'Cache');
     } else {
       return '${Platform.environment['HOME']}/.pub-cache';
     }
   })();
 
-  /// Creates a new package cache which is backed by the given directory on the
-  /// user's file system.
-  SystemCache([String rootDir])
-      : rootDir = rootDir == null ? SystemCache.defaultDir : rootDir;
+  /// The registry for sources used by this system cache.
+  ///
+  /// New sources registered here will be available through the [source]
+  /// function.
+  final sources = new SourceRegistry();
 
-  /// Creates a system cache and registers the standard set of sources.
+  /// The sources bound to this cache.
+  final _boundSources = <String, BoundSource>{};
+
+  /// The built-in Git source bound to this cache.
+  BoundGitSource get git => _boundSources["git"] as BoundGitSource;
+
+  /// The built-in hosted source bound to this cache.
+  BoundHostedSource get hosted => _boundSources["hosted"] as BoundHostedSource;
+
+  /// The built-in path source bound to this cache.
+  BoundPathSource get path => _boundSources["path"] as BoundPathSource;
+
+  /// The default source bound to this cache.
+  BoundSource get defaultSource => source(null);
+
+  /// Creates a system cache and registers all sources in [sources].
   ///
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
-  factory SystemCache.withSources({String rootDir, bool isOffline: false}) {
-    var cache = new SystemCache(rootDir);
-    cache.register(new GitSource());
-
-    if (isOffline) {
-      cache.register(new OfflineHostedSource());
-    } else {
-      cache.register(new HostedSource());
+  SystemCache({String rootDir, bool isOffline: false})
+      : rootDir = rootDir == null ? SystemCache.defaultDir : rootDir {
+    for (var source in sources.all) {
+      if (source is HostedSource) {
+        _boundSources[source.name] = source.bind(this, isOffline: isOffline);
+      } else {
+        _boundSources[source.name] = source.bind(this);
+      }
     }
-
-    cache.register(new PathSource());
-    cache.sources.setDefault('hosted');
-    return cache;
   }
 
-  /// Registers a new source.
+  /// Returns the source named [name] bound to this cache.
   ///
-  /// This source must not have the same name as a source that's already been
-  /// registered.
-  void register(Source source) {
-    source.bind(this);
-    sources.register(source);
+  /// Returns a bound version of [UnknownSource] if no source with that name has
+  /// been registered. If [name] is null, returns the default source.
+  BoundSource source(String name) =>
+      _boundSources.putIfAbsent(name, () => sources[name].bind(this));
+
+  /// Loads the package identified by [id].
+  ///
+  /// Throws an [ArgumentError] if [id] has an invalid source.
+  Package load(PackageId id) {
+    var source = this.source(id.source);
+    if (source.source is UnknownSource) {
+      throw new ArgumentError("Unknown source ${id.source}.");
+    }
+
+    var dir = source.getDirectory(id);
+    return new Package.load(id.name, dir, sources);
   }
 
   /// Determines if the system cache contains the package identified by [id].
   bool contains(PackageId id) {
-    var source = sources[id.source];
+    var source = this.source(id.source);
 
     if (source is! CachedSource) {
       throw new ArgumentError("Package $id is not cacheable.");

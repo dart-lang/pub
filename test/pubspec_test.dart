@@ -2,30 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:pub/src/package.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source/path.dart';
 import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
 class MockSource extends Source {
   final String name = "mock";
 
-  Future<List<PackageId>> doGetVersions(PackageRef ref) =>
-      throw new UnsupportedError("Cannot get mock package versions.");
-
-  Future<Pubspec> doDescribe(PackageId id) => throw new UnsupportedError(
-      "Cannot describe mock packages.");
-
-  Future get(PackageId id, String symlink) => throw new UnsupportedError(
-      "Cannot get a mock package.");
-
-  String getDirectory(PackageId id) => throw new UnsupportedError(
-      "Cannot get the directory for mock packages.");
+  BoundSource bind(SystemCache cache) =>
+      throw new UnsupportedError("Cannot download mock packages.");
 
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (description != 'ok') throw new FormatException('Bad');
@@ -45,7 +35,6 @@ main() {
   group('parse()', () {
     var sources = new SourceRegistry();
     sources.register(new MockSource());
-    sources.register(new PathSource());
 
     var throwsPubspecException =
         throwsA(new isInstanceOf<PubspecException>());

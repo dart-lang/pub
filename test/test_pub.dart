@@ -53,8 +53,7 @@ Matcher isUnminifiedDart2JSOutput =
     contains("// The code supports the following hooks");
 
 /// The entrypoint for pub itself.
-final _entrypoint = new Entrypoint(
-    pubRoot, new SystemCache.withSources(isOffline: true));
+final _entrypoint = new Entrypoint(pubRoot, new SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
 String yaml(value) => JSON.encode(value);
@@ -476,15 +475,14 @@ void ensureGit() {
 void createLockFile(String package, {Iterable<String> sandbox,
     Map<String, String> hosted}) {
   schedule(() async {
-    var cache = new SystemCache.withSources(
-        rootDir: p.join(sandboxDir, cachePath));
+    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
 
     var lockFile = _createLockFile(cache.sources,
         sandbox: sandbox, hosted: hosted);
 
     await d.dir(package, [
       d.file('pubspec.lock', lockFile.serialize(null)),
-      d.file('.packages', lockFile.packagesFile(package))
+      d.file('.packages', lockFile.packagesFile(cache, package))
     ]).create();
   }, "creating lockfile for $package");
 }
@@ -494,14 +492,12 @@ void createLockFile(String package, {Iterable<String> sandbox,
 void createPackagesFile(String package, {Iterable<String> sandbox,
     Map<String, String> hosted}) {
   schedule(() async {
-    var cache = new SystemCache.withSources(
-        rootDir: p.join(sandboxDir, cachePath));
-
+    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
     var lockFile = _createLockFile(cache.sources,
         sandbox: sandbox, hosted: hosted);
 
     await d.dir(package, [
-      d.file('.packages', lockFile.packagesFile(package))
+      d.file('.packages', lockFile.packagesFile(cache, package))
     ]).create();
   }, "creating .packages for $package");
 }
@@ -725,9 +721,7 @@ typedef Validator ValidatorCreator(Entrypoint entrypoint);
 Future<Pair<List<String>, List<String>>> schedulePackageValidation(
     ValidatorCreator fn) {
   return schedule(() {
-    var cache = new SystemCache.withSources(
-        rootDir: p.join(sandboxDir, cachePath));
-
+    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
     return new Future.sync(() {
       var validator = fn(new Entrypoint(p.join(sandboxDir, appPath), cache));
       return validator.validate().then((_) {

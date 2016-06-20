@@ -17,9 +17,7 @@ import 'system_cache.dart';
 /// has subcommands, then one of those must always be chosen.
 abstract class PubCommand extends Command {
   SystemCache get cache {
-    if (_cache == null) {
-      _cache = new SystemCache.withSources(isOffline: isOffline);
-    }
+    if (_cache == null) _cache = new SystemCache(isOffline: isOffline);
     return _cache;
   }
   SystemCache _cache;

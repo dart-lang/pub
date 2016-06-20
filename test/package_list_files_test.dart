@@ -149,8 +149,7 @@ void scheduleEntrypoint([String path]) {
   if (path == null) path = appPath;
   schedule(() {
     root = p.join(sandboxDir, path);
-    entrypoint = new Entrypoint(root,
-        new SystemCache.withSources(rootDir: root));
+    entrypoint = new Entrypoint(root, new SystemCache(rootDir: root));
   }, 'initializing entrypoint at $path');
 
   currentSchedule.onComplete.schedule(() {

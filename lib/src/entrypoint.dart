@@ -90,7 +90,7 @@ class Entrypoint {
     assertUpToDate();
     var packages = new Map.fromIterable(lockFile.packages.values,
         key: (id) => id.name,
-        value: (id) => cache.sources.load(id));
+        value: (id) => cache.load(id));
     packages[root.name] = root;
 
     _packageGraph = new PackageGraph(this, lockFile, packages);
@@ -169,7 +169,7 @@ class Entrypoint {
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type, {List<String> useLatest,
       bool dryRun: false, bool precompile: true}) async {
-    var result = await resolveVersions(type, cache.sources, root,
+    var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
     if (!result.succeeded) throw result.error;
 
@@ -217,7 +217,7 @@ class Entrypoint {
       log.exception(error, stackTrace);
     }
 
-    writeTextFile(packagesFile, lockFile.packagesFile(root.name));
+    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
   }
 
   /// Precompile any transformed dependencies of the entrypoint.
@@ -432,7 +432,7 @@ class Entrypoint {
   Future _get(PackageId id) async {
     if (id.isRoot) return;
 
-    var source = cache.sources[id.source];
+    var source = cache.source(id.source);
     if (!_packageSymlinks) {
       if (source is CachedSource) await source.downloadToSystemCache(id);
       return;
@@ -516,11 +516,11 @@ class Entrypoint {
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
     for (var id in lockFile.packages.values) {
-      var source = cache.sources[id.source];
+      var source = cache.source(id.source);
       if (source is CachedSource) continue;
 
       try {
-        if (cache.sources.load(id).dependencies.every((dep) =>
+        if (cache.load(id).dependencies.every((dep) =>
             overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
           continue;
         }
@@ -561,10 +561,11 @@ class Entrypoint {
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
       // found error later since installing won't accomplish anything.
-      if (source is! CachedSource) return true;
+      var boundSource = cache.source(package.source);
+      if (boundSource is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package);
+      var dir = boundSource.getDirectory(package);
       // See if the directory is there and looks like a package.
       return dirExists(dir) && fileExists(p.join(dir, "pubspec.yaml"));
     });
@@ -581,13 +582,13 @@ class Entrypoint {
         p.toUri(packagesFile));
 
     return lockFile.packages.values.every((lockFileId) {
-      var source = cache.sources[lockFileId.source];
+      var source = cache.source(lockFileId.source);
 
       // It's very unlikely that the lockfile is invalid here, but it's not
       // impossible—for example, the user may have a very old application
       // package with a checked-in lockfile that's newer than the pubspec, but
       // that contains sdk dependencies.
-      if (source == null) return false;
+      if (source.source is UnknownSource) return false;
 
       var packagesFileUri = packages[lockFileId.name];
       if (packagesFileUri == null) return false;

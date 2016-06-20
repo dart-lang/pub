@@ -21,13 +21,20 @@ import 'utils.dart';
 /// package needs a dependency from a cached source, it is first installed in
 /// the [SystemCache] and then acquired from there.
 ///
+/// Each user-visible source has two classes: a [Source] that knows how to do
+/// filesystem-independent operations like parsing and comparing descriptions,
+/// and a [BoundSource] that knows how to actually install (and potentially
+/// download) those packages. Only the [BoundSource] has access to the
+/// [SystemCache].
+///
 /// ## Subclassing
 ///
-/// All sources should extend this class. In addition to defining the behavior
-/// of various methods, sources define the structure of package descriptions
-/// used in [PackageRef]s, [PackageDep]s, and [PackageId]s. There are three
-/// distinct types of description, although in practice most sources use the
-/// same format for one or more of these:
+/// All [Source]s should extend this class and all [BoundSource]s should extend
+/// [BoundSource]. In addition to defining the behavior of various methods,
+/// sources define the structure of package descriptions used in [PackageRef]s,
+/// [PackageDep]s, and [PackageId]s. There are three distinct types of
+/// description, although in practice most sources use the same format for one
+/// or more of these:
 ///
 /// * User descriptions. These are included in pubspecs and usually written by
 ///   hand. They're typically more flexible in the formats they allow to
@@ -55,115 +62,11 @@ abstract class Source {
   /// Defaults to `false`.
   final bool hasMultipleVersions = false;
 
-  /// Whether or not this source is the default source.
-  bool get isDefault => systemCache.sources.defaultSource == this;
-
-  /// A cache of pubspecs described by [describe].
-  final _pubspecs = <PackageId, Pubspec>{};
-
-  /// The system cache with which this source is registered.
-  SystemCache get systemCache {
-    assert(_systemCache != null);
-    return _systemCache;
-  }
-
-  /// The system cache variable.
-  ///
-  /// Set by [_bind].
-  SystemCache _systemCache;
-
   /// Records the system cache to which this source belongs.
   ///
   /// This should only be called once for each source, by
   /// [SystemCache.register]. It should not be overridden by base classes.
-  void bind(SystemCache systemCache) {
-    assert(_systemCache == null);
-    this._systemCache = systemCache;
-  }
-
-  /// Get the IDs of all versions that match [ref].
-  ///
-  /// Note that this does *not* require the packages to be downloaded locally,
-  /// which is the point. This is used during version resolution to determine
-  /// which package versions are available to be downloaded (or already
-  /// downloaded).
-  ///
-  /// By default, this assumes that each description has a single version and
-  /// uses [describe] to get that version.
-  ///
-  /// Sources should not override this. Instead, they implement [doGetVersions].
-  Future<List<PackageId>> getVersions(PackageRef ref) {
-    if (ref.isRoot) {
-      throw new ArgumentError("Cannot get versions for the root package.");
-    }
-    if (ref.source != name) {
-      throw new ArgumentError("Package $ref does not use source $name.");
-    }
-
-    return doGetVersions(ref);
-  }
-
-  /// Get the IDs of all versions that match [ref].
-  ///
-  /// Note that this does *not* require the packages to be downloaded locally,
-  /// which is the point. This is used during version resolution to determine
-  /// which package versions are available to be downloaded (or already
-  /// downloaded).
-  ///
-  /// By default, this assumes that each description has a single version and
-  /// uses [describe] to get that version.
-  ///
-  /// This method is effectively protected: subclasses must implement it, but
-  /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref);
-
-  /// Loads the (possibly remote) pubspec for the package version identified by
-  /// [id].
-  ///
-  /// This may be called for packages that have not yet been downloaded during
-  /// the version resolution process. Its results are automatically memoized.
-  ///
-  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
-  /// version.
-  ///
-  /// Sources should not override this. Instead, they implement [doDescribe].
-  Future<Pubspec> describe(PackageId id) async {
-    if (id.isRoot) throw new ArgumentError("Cannot describe the root package.");
-    if (id.source != name) {
-      throw new ArgumentError("Package $id does not use source $name.");
-    }
-
-    var pubspec = _pubspecs[id];
-    if (pubspec != null) return pubspec;
-
-    // Delegate to the overridden one.
-    pubspec = await doDescribe(id);
-    if (pubspec.version != id.version) {
-      dataError("The pubspec for $id has version ${pubspec.version}.");
-    }
-
-    _pubspecs[id] = pubspec;
-    return pubspec;
-  }
-
-  /// Loads the (possibly remote) pubspec for the package version identified by
-  /// [id].
-  ///
-  /// This may be called for packages that have not yet been downloaded during
-  /// the version resolution process.
-  ///
-  /// This method is effectively protected: subclasses must implement it, but
-  /// external code should not call this. Instead, call [describe].
-  Future<Pubspec> doDescribe(PackageId id);
-
-  /// Ensures [id] is available locally and creates a symlink at [symlink]
-  /// pointing it.
-  Future get(PackageId id, String symlink);
-
-  /// Returns the directory where this package can (or could) be found locally.
-  ///
-  /// If the source is cached, this will be a path in the system cache.
-  String getDirectory(PackageId id);
+  BoundSource bind(SystemCache systemCache);
 
   /// Parses a [PackageRef] from a name and a user-provided [description].
   ///
@@ -221,13 +124,109 @@ abstract class Source {
   /// considered equal to the reference descriptions that produced them.
   bool descriptionsEqual(description1, description2);
 
+  /// Returns the source's name.
+  String toString() => name;
+}
+
+/// A source bound to a [SystemCache].
+abstract class BoundSource {
+  /// The unbound source that produced [this]. 
+  Source get source;
+
+  /// The system cache to which [this] is bound.
+  SystemCache get systemCache;
+
+  /// Get the IDs of all versions that match [ref].
+  ///
+  /// Note that this does *not* require the packages to be downloaded locally,
+  /// which is the point. This is used during version resolution to determine
+  /// which package versions are available to be downloaded (or already
+  /// downloaded).
+  ///
+  /// By default, this assumes that each description has a single version and
+  /// uses [describe] to get that version.
+  ///
+  /// Sources should not override this. Instead, they implement [doGetVersions].
+  Future<List<PackageId>> getVersions(PackageRef ref) {
+    if (ref.isRoot) {
+      throw new ArgumentError("Cannot get versions for the root package.");
+    }
+    if (ref.source != source.name) {
+      throw new ArgumentError("Package $ref does not use source ${source.name}.");
+    }
+
+    return doGetVersions(ref);
+  }
+
+  /// Get the IDs of all versions that match [ref].
+  ///
+  /// Note that this does *not* require the packages to be downloaded locally,
+  /// which is the point. This is used during version resolution to determine
+  /// which package versions are available to be downloaded (or already
+  /// downloaded).
+  ///
+  /// By default, this assumes that each description has a single version and
+  /// uses [describe] to get that version.
+  ///
+  /// This method is effectively protected: subclasses must implement it, but
+  /// external code should not call this. Instead, call [getVersions].
+  Future<List<PackageId>> doGetVersions(PackageRef ref);
+
+  /// A cache of pubspecs described by [describe].
+  final _pubspecs = <PackageId, Pubspec>{};
+
+  /// Loads the (possibly remote) pubspec for the package version identified by
+  /// [id].
+  ///
+  /// This may be called for packages that have not yet been downloaded during
+  /// the version resolution process. Its results are automatically memoized.
+  ///
+  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
+  /// version.
+  ///
+  /// Sources should not override this. Instead, they implement [doDescribe].
+  Future<Pubspec> describe(PackageId id) async {
+    if (id.isRoot) throw new ArgumentError("Cannot describe the root package.");
+    if (id.source != source.name) {
+      throw new ArgumentError("Package $id does not use source ${source.name}.");
+    }
+
+    var pubspec = _pubspecs[id];
+    if (pubspec != null) return pubspec;
+
+    // Delegate to the overridden one.
+    pubspec = await doDescribe(id);
+    if (pubspec.version != id.version) {
+      dataError("The pubspec for $id has version ${pubspec.version}.");
+    }
+
+    _pubspecs[id] = pubspec;
+    return pubspec;
+  }
+
+  /// Loads the (possibly remote) pubspec for the package version identified by
+  /// [id].
+  ///
+  /// This may be called for packages that have not yet been downloaded during
+  /// the version resolution process.
+  ///
+  /// This method is effectively protected: subclasses must implement it, but
+  /// external code should not call this. Instead, call [describe].
+  Future<Pubspec> doDescribe(PackageId id);
+
+  /// Ensures [id] is available locally and creates a symlink at [symlink]
+  /// pointing it.
+  Future get(PackageId id, String symlink);
+
+  /// Returns the directory where this package can (or could) be found locally.
+  ///
+  /// If the source is cached, this will be a path in the system cache.
+  String getDirectory(PackageId id);
+
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
   /// This is notionally protected; it should only be called by subclasses.
   void memoizePubspec(PackageId id, Pubspec pubspec) {
     _pubspecs[id] = pubspec;
   }
-
-  /// Returns the source's name.
-  String toString() => name;
 }

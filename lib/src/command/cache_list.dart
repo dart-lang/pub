@@ -20,7 +20,7 @@ class CacheListCommand extends PubCommand {
     // TODO(keertip): Add flag to list packages from non default sources.
     var packagesObj = <String, Map>{};
 
-    var source = cache.sources.defaultSource as CachedSource;
+    var source = cache.defaultSource as CachedSource;
     for (var package in source.getCachedPackages()) {
       var packageInfo = packagesObj.putIfAbsent(package.name, () => {});
       packageInfo[package.version.toString()] = {'location': package.dir};

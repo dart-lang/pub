@@ -44,9 +44,8 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
 import '../sdk.dart' as sdk;
-import '../source_registry.dart';
-import '../source/hosted.dart';
 import '../source/unknown.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'version_queue.dart';
 import 'version_selection.dart';
@@ -59,7 +58,7 @@ import 'version_solver.dart';
 /// next potential solution in the case of a failure.
 class BacktrackingSolver {
   final SolveType type;
-  final SourceRegistry sources;
+  final SystemCache systemCache;
   final Package root;
 
   /// The lockfile that was present before solving.
@@ -118,20 +117,14 @@ class BacktrackingSolver {
   var _attemptedSolutions = 1;
 
   /// A pubspec for pub's implicit dependencies on barback and related packages.
-  final Pubspec _implicitPubspec = () {
-    var dependencies = [];
-    barback.pubConstraints.forEach((name, constraint) {
-      dependencies.add(HostedSource.refFor(name).withConstraint(constraint));
-    });
+  final Pubspec _implicitPubspec;
 
-    return new Pubspec("pub itself", dependencies: dependencies);
-  }();
-
-  BacktrackingSolver(SolveType type, SourceRegistry sources, this.root,
+  BacktrackingSolver(SolveType type, SystemCache systemCache, this.root,
           this.lockFile, List<String> useLatest)
       : type = type,
-        sources = sources,
-        cache = new SolverCache(type, sources) {
+        systemCache = systemCache,
+        cache = new SolverCache(type, systemCache),
+        _implicitPubspec = _makeImplicitPubspec(systemCache) {
     _selection = new VersionSelection(this);
 
     for (var package in useLatest) {
@@ -141,6 +134,18 @@ class BacktrackingSolver {
     for (var override in root.dependencyOverrides) {
       _overrides[override.name] = override;
     }
+  }
+
+  /// Creates [_implicitPubspec].
+  static Pubspec _makeImplicitPubspec(SystemCache systemCache) {
+    var dependencies = [];
+    barback.pubConstraints.forEach((name, constraint) {
+      dependencies.add(
+          systemCache.sources.hosted.refFor(name)
+              .withConstraint(constraint));
+    });
+
+    return new Pubspec("pub itself", dependencies: dependencies);
   }
 
   /// Run the solver.
@@ -173,13 +178,13 @@ class BacktrackingSolver {
         pubspecs[id.name] = await _getPubspec(id);
       }
 
-      return new SolveResult.success(sources, root, lockFile, packages,
-          overrides, pubspecs, _getAvailableVersions(packages),
+      return new SolveResult.success(systemCache.sources, root, lockFile,
+          packages, overrides, pubspecs, _getAvailableVersions(packages),
           _attemptedSolutions);
     } on SolveFailure catch (error) {
       // Wrap a failure in a result so we can attach some other data.
-      return new SolveResult.failure(sources, root, lockFile, overrides,
-          error, _attemptedSolutions);
+      return new SolveResult.failure(systemCache.sources, root, lockFile,
+          overrides, error, _attemptedSolutions);
     } finally {
       // Gather some solving metrics.
       var buffer = new StringBuffer();
@@ -226,7 +231,8 @@ class BacktrackingSolver {
     // can't be downgraded.
     if (type == SolveType.DOWNGRADE) {
       var locked = lockFile.packages[package];
-      if (locked != null && !sources[locked.source].hasMultipleVersions) {
+      if (locked != null &&
+          !systemCache.sources[locked.source].hasMultipleVersions) {
         return locked;
       }
     }
@@ -256,7 +262,7 @@ class BacktrackingSolver {
     if (required != null) {
       if (package.source != required.dep.source) return null;
 
-      var source = sources[package.source];
+      var source = systemCache.sources[package.source];
       if (!source.descriptionsEqual(
           package.description, required.dep.description)) return null;
     }
@@ -530,7 +536,7 @@ class BacktrackingSolver {
         throw new SourceMismatchException(dep.name, allDeps);
       }
 
-      var source = sources[dep.source];
+      var source = systemCache.sources[dep.source];
       if (!source.descriptionsEqual(
           dep.description, required.dep.description)) {
         // Mark the dependers as failing rather than the package itself, because
@@ -589,7 +595,7 @@ class BacktrackingSolver {
 
     // Make sure the package doesn't have any bad dependencies.
     for (var dep in deps.toSet()) {
-      if (!dep.isRoot && sources[dep.source] is UnknownSource) {
+      if (!dep.isRoot && systemCache.sources[dep.source] is UnknownSource) {
         throw new UnknownSourceException(id.name, [new Dependency(id, dep)]);
       }
 
@@ -605,9 +611,7 @@ class BacktrackingSolver {
   Future<Pubspec> _getPubspec(PackageId id) async {
     if (id.isRoot) return root.pubspec;
     if (id.isMagic && id.name == 'pub itself') return _implicitPubspec;
-
-    var source = sources[id.source];
-    return await source.describe(id);
+    return await systemCache.source(id.source).describe(id);
   }
 
   /// Logs the initial parameters to the solver.

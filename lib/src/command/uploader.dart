@@ -13,7 +13,6 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
-import '../source/hosted.dart';
 
 /// Handles the `uploader` pub command.
 class UploaderCommand extends PubCommand {
@@ -27,7 +26,7 @@ class UploaderCommand extends PubCommand {
   Uri get server => Uri.parse(argResults['server']);
 
   UploaderCommand() {
-    argParser.addOption('server', defaultsTo: HostedSource.defaultUrl,
+    argParser.addOption('server', defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server on which the package is hosted.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
