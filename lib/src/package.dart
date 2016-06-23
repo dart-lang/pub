@@ -13,6 +13,7 @@ import 'io.dart';
 import 'git.dart' as git;
 import 'pubspec.dart';
 import 'source_registry.dart';
+import 'source.dart';
 import 'utils.dart';
 
 final _README_REGEXP = new RegExp(r"^README($|\.)", caseSensitive: false);
@@ -320,29 +321,15 @@ class Package {
   String toString() => '$name $version ($dir)';
 }
 
-/// This is the private base class of [PackageRef], [PackageID], and
-/// [PackageDep].
-///
-/// It contains functionality and state that those classes share but is private
-/// so that from outside of this library, there is no type relationship between
-/// those three types.
-class _PackageName {
-  _PackageName(this.name, this.source, this.description)
-      : isMagic = false;
-
-  _PackageName.magic(this.name)
-      : source = null,
-        description = null,
-        isMagic = true;
-
+/// The base class of [PackageRef], [PackageId], and [PackageDep].
+abstract class PackageName {
   /// The name of the package being identified.
   final String name;
 
-  /// The name of the [Source] used to look up this package given its
-  /// [description].
+  /// The [Source] used to look up this package.
   ///
   /// If this is a root package, this will be `null`.
-  final String source;
+  final Source source;
 
   /// The metadata used by the package's [source] to identify and locate it.
   ///
@@ -363,6 +350,14 @@ class _PackageName {
   /// Whether this package is the root package.
   bool get isRoot => source == null && !isMagic;
 
+  PackageName._(this.name, this.source, this.description)
+      : isMagic = false;
+
+  PackageName._magic(this.name)
+      : source = null,
+        description = null,
+        isMagic = true;
+
   String toString() {
     if (isRoot) return "$name (root)";
     if (isMagic) return name;
@@ -378,32 +373,43 @@ class _PackageName {
   /// Returns a [PackageDep] for this package with the given version constraint.
   PackageDep withConstraint(VersionConstraint constraint) =>
     new PackageDep(name, source, constraint, description);
+
+  /// Returns whether this refers to the same package as [other].
+  ///
+  /// This doesn't compare any constraint information; it's equivalent to
+  /// `this.toRef() == other.toRef()`.
+  bool samePackage(PackageName other) {
+    if (other.name != name) return false;
+    if (source == null) return other.source == null;
+
+    return other.source == source &&
+        source.descriptionsEqual(description, other.description);
+  }
+
+  int get hashCode {
+    if (source == null) return name.hashCode;
+    return name.hashCode ^
+        source.hashCode ^
+        source.hashDescription(description);
+  }
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
-class PackageRef extends _PackageName {
+class PackageRef extends PackageName {
   /// Creates a reference to a package with the given [name], [source], and
   /// [description].
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses. A reference
   /// can be obtained from a user-supplied description using [Source.parseRef].
-  PackageRef(String name, String source, description)
-      : super(name, source, description);
+  PackageRef(String name, Source source, description)
+      : super._(name, source, description);
 
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name)
-      : super.magic(name);
+      : super._magic(name);
 
-  int get hashCode => name.hashCode ^ source.hashCode;
-
-  bool operator ==(other) {
-    // TODO(rnystrom): We're assuming here that we don't need to delve into the
-    // description.
-    return other is PackageRef &&
-           other.name == name &&
-           other.source == source;
-  }
+  bool operator ==(other) => other is PackageRef && samePackage(other);
 }
 
 /// A reference to a specific version of a package.
@@ -419,7 +425,7 @@ class PackageRef extends _PackageName {
 /// the [PackageRef.description] or [PackageDep.description] fields for some
 /// sources. For example, the `git` source adds revision information to the
 /// description to ensure that the same ID always points to the same source.
-class PackageId extends _PackageName {
+class PackageId extends PackageName {
   /// The package's version.
   final Version version;
 
@@ -428,29 +434,23 @@ class PackageId extends _PackageName {
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageId(String name, String source, this.version, description)
-      : super(name, source, description);
+  PackageId(String name, Source source, this.version, description)
+      : super._(name, source, description);
 
   /// Creates an ID for a magic package (see [isMagic]).
   PackageId.magic(String name)
-      : super.magic(name),
+      : super._magic(name),
         version = Version.none;
 
   /// Creates an ID for the given root package.
   PackageId.root(Package package)
       : version = package.version,
-        super(package.name, null, package.name);
+        super._(package.name, null, package.name);
 
-  int get hashCode => name.hashCode ^ source.hashCode ^ version.hashCode;
+  int get hashCode => super.hashCode ^ version.hashCode;
 
-  bool operator ==(other) {
-    // TODO(rnystrom): We're assuming here that we don't need to delve into the
-    // description.
-    return other is PackageId &&
-           other.name == name &&
-           other.source == source &&
-           other.version == version;
-  }
+  bool operator ==(other) =>
+      other is PackageId && samePackage(other) && other.version == version;
 
   String toString() {
     if (isRoot) return "$name $version (root)";
@@ -460,7 +460,7 @@ class PackageId extends _PackageName {
 }
 
 /// A reference to a constrained range of versions of one package.
-class PackageDep extends _PackageName {
+class PackageDep extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
@@ -469,11 +469,11 @@ class PackageDep extends _PackageName {
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageDep(String name, String source, this.constraint, description)
-      : super(name, source, description);
+  PackageDep(String name, Source source, this.constraint, description)
+      : super._(name, source, description);
 
   PackageDep.magic(String name)
-      : super.magic(name),
+      : super._magic(name),
         constraint = Version.none;
 
   String toString() {
@@ -482,14 +482,17 @@ class PackageDep extends _PackageName {
     return "$name $constraint from $source ($description)";
   }
 
-  int get hashCode => name.hashCode ^ source.hashCode ^ constraint.hashCode;
+  /// Whether [id] satisfies this dependency.
+  ///
+  /// Specifically, whether [id] refers to the same package as [this] *and*
+  /// [constraint] allows `id.version`.
+  bool allows(PackageId id) =>
+      samePackage(id) && constraint.allows(id.version);
 
-  bool operator ==(other) {
-    // TODO(rnystrom): We're assuming here that we don't need to delve into the
-    // description.
-    return other is PackageDep &&
-           other.name == name &&
-           other.source == source &&
-           other.constraint == constraint;
-  }
+  int get hashCode => super.hashCode ^ constraint.hashCode;
+
+  bool operator ==(other) =>
+      other is PackageDep &&
+      samePackage(other) &&
+      other.constraint == constraint;
 }

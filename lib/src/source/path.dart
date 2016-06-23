@@ -31,7 +31,7 @@ class PathSource extends Source {
 
   /// Returns a reference to a path package named [name] at [path].
   PackageRef refFor(String name, String path) {
-    return new PackageRef(name, 'path', {
+    return new PackageRef(name, this, {
       "path": path,
       "relative": p.isRelative(path)
     });
@@ -40,7 +40,7 @@ class PathSource extends Source {
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
   PackageId idFor(String name, Version version, String path) {
-    return new PackageId(name, 'path', version, {
+    return new PackageId(name, this, version, {
       "path": path,
       "relative": p.isRelative(path)
     });
@@ -52,6 +52,9 @@ class PathSource extends Source {
     var path2 = canonicalize(description2["path"]);
     return path1 == path2;
   }
+
+  int hashDescription(description) =>
+      canonicalize(description["path"]).hashCode;
 
   /// Parses a path dependency.
   ///
@@ -79,7 +82,7 @@ class PathSource extends Source {
           p.join(p.dirname(containingPath), description));
     }
 
-    return new PackageRef(name, this.name, {
+    return new PackageRef(name, this, {
       "path": description,
       "relative": isRelative
     });
@@ -100,7 +103,7 @@ class PathSource extends Source {
           "must be a boolean.");
     }
 
-    return new PackageId(name, this.name, version, description);
+    return new PackageId(name, this, version, description);
   }
 
   /// Serializes path dependency's [description].
@@ -140,8 +143,7 @@ class BoundPathSource extends BoundSource {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);
-    var id = new PackageId(
-        ref.name, source.name, pubspec.version, ref.description);
+    var id = new PackageId(ref.name, source, pubspec.version, ref.description);
     memoizePubspec(id, pubspec);
     return [id];
   }

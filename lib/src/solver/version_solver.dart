@@ -31,7 +31,7 @@ import 'solve_report.dart';
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> resolveVersions(SolveType type, SystemCache cache,
     Package root, {LockFile lockFile, List<String> useLatest}) {
-  if (lockFile == null) lockFile = new LockFile.empty(cache.sources);
+  if (lockFile == null) lockFile = new LockFile.empty();
   if (useLatest == null) useLatest = [];
 
   return log.progress('Resolving dependencies', () {
@@ -83,7 +83,7 @@ class SolveResult {
         .where((pubspec) =>
             !_root.dependencyOverrides.any((dep) => dep.name == pubspec.name))
         .map((pubspec) => pubspec.environment.sdkVersion));
-    return new LockFile(packages, _sources, sdkConstraint: sdkConstraint);
+    return new LockFile(packages, sdkConstraint: sdkConstraint);
   }
 
   final SourceRegistry _sources;
@@ -97,8 +97,7 @@ class SolveResult {
     if (packages == null) return null;
 
     var changed = packages
-        .where((id) =>
-            !_sources.idsEqual(_previousLockFile.packages[id.name], id))
+        .where((id) => _previousLockFile.packages[id.name] != id)
         .map((id) => id.name).toSet();
 
     return changed.union(_previousLockFile.packages.keys

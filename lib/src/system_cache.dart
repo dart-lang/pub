@@ -47,19 +47,20 @@ class SystemCache {
   final sources = new SourceRegistry();
 
   /// The sources bound to this cache.
-  final _boundSources = <String, BoundSource>{};
+  final _boundSources = <Source, BoundSource>{};
 
   /// The built-in Git source bound to this cache.
-  BoundGitSource get git => _boundSources["git"] as BoundGitSource;
+  BoundGitSource get git => _boundSources[sources.git] as BoundGitSource;
 
   /// The built-in hosted source bound to this cache.
-  BoundHostedSource get hosted => _boundSources["hosted"] as BoundHostedSource;
+  BoundHostedSource get hosted =>
+      _boundSources[sources.hosted] as BoundHostedSource;
 
   /// The built-in path source bound to this cache.
-  BoundPathSource get path => _boundSources["path"] as BoundPathSource;
+  BoundPathSource get path => _boundSources[sources.path] as BoundPathSource;
 
   /// The default source bound to this cache.
-  BoundSource get defaultSource => source(null);
+  BoundSource get defaultSource => source(sources[null]);
 
   /// Creates a system cache and registers all sources in [sources].
   ///
@@ -69,31 +70,27 @@ class SystemCache {
       : rootDir = rootDir == null ? SystemCache.defaultDir : rootDir {
     for (var source in sources.all) {
       if (source is HostedSource) {
-        _boundSources[source.name] = source.bind(this, isOffline: isOffline);
+        _boundSources[source] = source.bind(this, isOffline: isOffline);
       } else {
-        _boundSources[source.name] = source.bind(this);
+        _boundSources[source] = source.bind(this);
       }
     }
   }
 
-  /// Returns the source named [name] bound to this cache.
-  ///
-  /// Returns a bound version of [UnknownSource] if no source with that name has
-  /// been registered. If [name] is null, returns the default source.
-  BoundSource source(String name) =>
-      _boundSources.putIfAbsent(name, () => sources[name].bind(this));
+  /// Returns the version of [source] bound to this cache.
+  BoundSource source(Source source) =>
+      _boundSources.putIfAbsent(source, () => source.bind(this));
 
   /// Loads the package identified by [id].
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    var source = this.source(id.source);
-    if (source.source is UnknownSource) {
+    if (id.source is UnknownSource) {
       throw new ArgumentError("Unknown source ${id.source}.");
     }
 
-    var dir = source.getDirectory(id);
-    return new Package.load(id.name, dir, sources);
+    return new Package.load(
+        id.name, source(id.source).getDirectory(id), sources);
   }
 
   /// Determines if the system cache contains the package identified by [id].

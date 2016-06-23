@@ -19,14 +19,16 @@ class MockSource extends Source {
 
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (description != 'ok') throw new FormatException('Bad');
-    return new PackageRef(name, this.name, description);
+    return new PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description) =>
-      new PackageId(name, this.name, version, description);
+      new PackageId(name, this, version, description);
 
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
+
+  int hashDescription(description) => description.hashCode;
 
   String packageName(description) => 'foo';
 }
@@ -147,7 +149,7 @@ dependencies:
 
       var foo = pubspec.dependencies[0];
       expect(foo.name, equals('foo'));
-      expect(foo.source, equals('unknown'));
+      expect(foo.source, equals(sources['unknown']));
     });
 
     test("throws if a package is in dependencies and dev_dependencies", () {

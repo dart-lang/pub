@@ -18,9 +18,6 @@ import 'utils.dart';
 
 /// A parsed and validated `pubspec.lock` file.
 class LockFile {
-  /// The source registry with which the lock file's IDs are interpreted.
-  final SourceRegistry _sources;
-
   /// The packages this lockfile pins.
   final Map<String, PackageId> packages;
 
@@ -32,19 +29,17 @@ class LockFile {
   /// If passed, [sdkConstraint] represents the intersection of all SKD
   /// constraints for all locked packages. It defaults to
   /// [VersionConstraint.any].
-  LockFile(Iterable<PackageId> ids, SourceRegistry sources,
-          {VersionConstraint sdkConstraint})
+  LockFile(Iterable<PackageId> ids, {VersionConstraint sdkConstraint})
       : this._(
           new Map.fromIterable(
               ids.where((id) => !id.isRoot),
               key: (id) => id.name),
-          sdkConstraint ?? VersionConstraint.any,
-          sources);
+          sdkConstraint ?? VersionConstraint.any);
 
-  LockFile._(Map<String, PackageId> packages, this.sdkConstraint, this._sources)
+  LockFile._(Map<String, PackageId> packages, this.sdkConstraint)
       : packages = new UnmodifiableMapView(packages);
 
-  LockFile.empty(this._sources)
+  LockFile.empty()
       : packages = const {},
         sdkConstraint = VersionConstraint.any;
 
@@ -64,7 +59,7 @@ class LockFile {
   /// `null`.
   static LockFile _parse(String filePath, String contents,
       SourceRegistry sources) {
-    if (contents.trim() == '') return new LockFile.empty(sources);
+    if (contents.trim() == '') return new LockFile.empty();
 
     var sourceUrl;
     if (filePath != null) sourceUrl = p.toUri(filePath);
@@ -125,7 +120,7 @@ class LockFile {
       });
     }
 
-    return new LockFile._(packages, sdkConstraint, sources);
+    return new LockFile._(packages, sdkConstraint);
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
@@ -158,7 +153,7 @@ class LockFile {
 
     var packages = new Map.from(this.packages);
     packages[id.name] = id;
-    return new LockFile._(packages, sdkConstraint, _sources);
+    return new LockFile._(packages, sdkConstraint);
   }
 
   /// Returns a copy of this LockFile with a package named [name] removed.
@@ -169,7 +164,7 @@ class LockFile {
 
     var packages = new Map.from(this.packages);
     packages.remove(name);
-    return new LockFile._(packages, sdkConstraint, _sources);
+    return new LockFile._(packages, sdkConstraint);
   }
 
   /// Returns the contents of the `.packages` file generated from this lockfile.
@@ -200,12 +195,12 @@ class LockFile {
     // Convert the dependencies to a simple object.
     var packageMap = {};
     packages.forEach((name, package) {
-      var description = _sources[package.source]
+      var description = package.source
           .serializeDescription(packageDir, package.description);
 
       packageMap[name] = {
         'version': package.version.toString(),
-        'source': package.source,
+        'source': package.source.name,
         'description': description
       };
     });

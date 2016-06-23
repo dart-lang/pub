@@ -25,7 +25,6 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/package.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -523,20 +522,17 @@ LockFile _createLockFile(SourceRegistry sources, {Iterable<String> sandbox,
 
   var packages = dependencies.keys.map((name) {
     var dependencyPath = dependencies[name];
-    return new PackageId(name, 'path', new Version(0, 0, 0), {
-      'path': dependencyPath,
-      'relative': p.isRelative(dependencyPath)
-    });
+    return sources.path.idFor(name, new Version(0, 0, 0), dependencyPath);
   }).toList();
 
   if (hosted != null) {
     hosted.forEach((name, version) {
-      var id = new PackageId(name, 'hosted', new Version.parse(version), name);
+      var id = sources.hosted.idFor(name, new Version.parse(version));
       packages.add(id);
     });
   }
 
-  return new LockFile(packages, sources);
+  return new LockFile(packages);
 }
 
 /// Returns the path to the version of [package] used by pub.

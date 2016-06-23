@@ -24,8 +24,7 @@ class CacheRepairCommand extends PubCommand {
     var failures = [];
 
     // Repair every cached source.
-    for (var source in cache.sources.all
-       .map((source) => cache.source(source.name))) {
+    for (var source in cache.sources.all.map(cache.source)) {
       if (source is! CachedSource) continue;
 
       var results = await source.repairCachedPackages();
@@ -45,7 +44,7 @@ class CacheRepairCommand extends PubCommand {
 
       for (var id in failures) {
         buffer.write("- ${log.bold(id.name)} ${id.version}");
-        if (cache.sources[id.source] != cache.sources.defaultSource) {
+        if (id.source != cache.sources.defaultSource) {
           buffer.write(" from ${id.source}");
         }
         buffer.writeln();

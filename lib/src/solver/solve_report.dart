@@ -62,7 +62,7 @@ class SolveReport {
       if (newId == null) return true;
 
       // The dependency existed before, so see if it was modified.
-      return !_sources.idsEqual(oldId, newId);
+      return oldId != newId;
     }).length;
 
     if (dryRun) {
@@ -167,7 +167,7 @@ class SolveReport {
     } else if (oldId == null) {
       icon = log.green("+ ");
       addedOrRemoved = true;
-    } else if (!_sources.idDescriptionsEqual(oldId, newId)) {
+    } else if (!oldId.samePackage(newId)) {
       icon = log.cyan("* ");
       changed = true;
     } else if (oldId.version < newId.version) {
@@ -238,9 +238,8 @@ class SolveReport {
   void _writeId(PackageId id) {
     _output.write(id.version);
 
-    var source = _sources[id.source];
-    if (source != _sources.defaultSource) {
-      var description = source.formatDescription(_root.dir, id.description);
+    if (id.source != _sources.defaultSource) {
+      var description = id.source.formatDescription(_root.dir, id.description);
       _output.write(" from ${id.source} $description");
     }
   }

@@ -35,11 +35,13 @@ class UnknownSource extends Source {
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
+  int hashDescription(description) => description.hashCode;
+
   PackageRef parseRef(String name, description, {String containingPath}) =>
-      new PackageRef(name, this.name, description);
+      new PackageRef(name, this, description);
 
   PackageId parseId(String name, Version version, description) =>
-      new PackageId(name, this.name, version, description);
+      new PackageId(name, this, version, description);
 }
 
 class _BoundUnknownSource extends BoundSource {

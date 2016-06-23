@@ -70,7 +70,7 @@ class Entrypoint {
     if (_lockFile != null) return _lockFile;
 
     if (!fileExists(lockFilePath)) {
-      _lockFile = new LockFile.empty(cache.sources);
+      _lockFile = new LockFile.empty();
     } else {
       _lockFile = new LockFile.load(lockFilePath, cache.sources);
     }
@@ -539,33 +539,23 @@ class Entrypoint {
     if (dep.name == root.name) return true;
 
     var locked = lockFile.packages[dep.name];
-    if (locked == null) return false;
-
-    if (dep.source != locked.source) return false;
-
-    if (!dep.constraint.allows(locked.version)) return false;
-
-    var source = cache.sources[dep.source];
-    if (source == null) return false;
-
-    return source.descriptionsEqual(dep.description, locked.description);
+    return locked != null && dep.allows(locked);
   }
 
   /// Determines whether all of the packages in the lockfile are already
   /// installed and available.
   bool _arePackagesAvailable() {
     return lockFile.packages.values.every((package) {
-      var source = cache.sources[package.source];
-      if (source is UnknownSource) return false;
+      if (package.source is UnknownSource) return false;
 
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
       // found error later since installing won't accomplish anything.
-      var boundSource = cache.source(package.source);
-      if (boundSource is! CachedSource) return true;
+      var source = cache.source(package.source);
+      if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = boundSource.getDirectory(package);
+      var dir = source.getDirectory(package);
       // See if the directory is there and looks like a package.
       return dirExists(dir) && fileExists(p.join(dir, "pubspec.yaml"));
     });
@@ -582,13 +572,11 @@ class Entrypoint {
         p.toUri(packagesFile));
 
     return lockFile.packages.values.every((lockFileId) {
-      var source = cache.source(lockFileId.source);
-
       // It's very unlikely that the lockfile is invalid here, but it's not
       // impossible—for example, the user may have a very old application
       // package with a checked-in lockfile that's newer than the pubspec, but
       // that contains sdk dependencies.
-      if (source.source is UnknownSource) return false;
+      if (lockFileId.source is UnknownSource) return false;
 
       var packagesFileUri = packages[lockFileId.name];
       if (packagesFileUri == null) return false;
@@ -598,6 +586,8 @@ class Entrypoint {
           packagesFileUri.scheme.isNotEmpty) {
         return false;
       }
+
+      var source = cache.source(lockFileId.source);
 
       // Get the dirname of the .packages path, since it's pointing to lib/.
       var packagesFilePath = p.dirname(

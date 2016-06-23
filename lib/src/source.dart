@@ -124,6 +124,12 @@ abstract class Source {
   /// considered equal to the reference descriptions that produced them.
   bool descriptionsEqual(description1, description2);
 
+  /// Returns a hash code for [description].
+  ///
+  /// Descriptions that compare equal using [descriptionsEqual] should return
+  /// the same hash code.
+  int hashDescription(description);
+
   /// Returns the source's name.
   String toString() => name;
 }
@@ -151,7 +157,7 @@ abstract class BoundSource {
     if (ref.isRoot) {
       throw new ArgumentError("Cannot get versions for the root package.");
     }
-    if (ref.source != source.name) {
+    if (ref.source != source) {
       throw new ArgumentError("Package $ref does not use source ${source.name}.");
     }
 
@@ -187,8 +193,9 @@ abstract class BoundSource {
   /// Sources should not override this. Instead, they implement [doDescribe].
   Future<Pubspec> describe(PackageId id) async {
     if (id.isRoot) throw new ArgumentError("Cannot describe the root package.");
-    if (id.source != source.name) {
-      throw new ArgumentError("Package $id does not use source ${source.name}.");
+    if (id.source != source) {
+      throw new ArgumentError(
+          "Package $id does not use source ${source.name}.");
     }
 
     var pubspec = _pubspecs[id];

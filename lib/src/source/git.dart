@@ -28,7 +28,7 @@ class GitSource extends Source {
   ///
   /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
   PackageRef refFor(String name, String url, {String reference}) =>
-      new PackageRef(name, "git", {'url': url, 'ref': reference ?? 'HEAD'});
+      new PackageRef(name, this, {'url': url, 'ref': reference ?? 'HEAD'});
 
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
@@ -56,7 +56,7 @@ class GitSource extends Source {
           "string.");
     }
 
-    return new PackageRef(name, this.name, {
+    return new PackageRef(name, this, {
       "url": description["url"],
       "ref": description["ref"] ?? "HEAD"
     });
@@ -86,7 +86,7 @@ class GitSource extends Source {
           "must be a string.");
     }
 
-    return new PackageId(name, this.name, version, {
+    return new PackageId(name, this, version, {
       "url": description["url"],
       "ref": description["ref"] ?? "HEAD",
       "resolved-ref": description["resolved-ref"]
@@ -132,6 +132,12 @@ class GitSource extends Source {
 
     return true;
   }
+
+  int hashDescription(description) {
+    // Don't include the resolved ref in the hash code because we ignore it in
+    // [descriptionsEqual] if only one description defines it.
+    return description['url'].hashCode ^ description['ref'].hashCode;
+  }
 }
 
 /// The [BoundSource] for [GitSource].
@@ -165,7 +171,7 @@ class BoundGitSource extends CachedSource {
     var pubspec = await _describeUncached(ref, revision);
 
     return [
-      new PackageId(ref.name, source.name, pubspec.version, {
+      new PackageId(ref.name, source, pubspec.version, {
         'url': ref.description['url'],
         'ref': ref.description['ref'],
         'resolved-ref': revision
@@ -257,7 +263,7 @@ class BoundGitSource extends CachedSource {
     packages.sort(Package.orderByNameAndVersion);
 
     for (var package in packages) {
-      var id = new PackageId(package.name, source.name, package.version, null);
+      var id = new PackageId(package.name, source, package.version, null);
 
       log.message("Resetting Git repository for "
           "${log.bold(package.name)} ${package.version}...");

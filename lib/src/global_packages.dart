@@ -21,6 +21,9 @@ import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
+import 'source/git.dart';
+import 'source/hosted.dart';
+import 'source/path.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -136,7 +139,7 @@ class GlobalPackages {
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(name, new LockFile([id], cache.sources));
+    _writeLockFile(name, new LockFile([id]));
 
     var binDir = p.join(_directory, name, 'bin');
     if (dirExists(binDir)) deleteEntry(binDir);
@@ -235,12 +238,13 @@ class GlobalPackages {
       var lockFile = new LockFile.load(_getLockFilePath(name), cache.sources);
       var id = lockFile.packages[name];
 
-      if (id.source == 'git') {
-        var url = cache.git.source.urlFromDescription(id.description);
+      var source = id.source;
+      if (source is GitSource) {
+        var url = source.urlFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active from Git '
             'repository "${url}".');
-      } else if (id.source == 'path') {
-        var path = cache.path.source.pathFromDescription(id.description);
+      } else if (source is PathSource) {
+        var path = source.pathFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active at path '
             '"$path".');
       } else {
@@ -312,9 +316,8 @@ class GlobalPackages {
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
-      assert(id.source == "path");
       entrypoint = new Entrypoint(
-          cache.path.source.pathFromDescription(id.description), cache,
+          (id.source as PathSource).pathFromDescription(id.description), cache,
           isGlobal: true);
     }
 
@@ -406,11 +409,12 @@ class GlobalPackages {
 
   /// Returns formatted string representing the package [id].
   String _formatPackage(PackageId id) {
-    if (id.source == 'git') {
-      var url = cache.sources.git.urlFromDescription(id.description);
+    var source = id.source;
+    if (source is GitSource) {
+      var url = source.urlFromDescription(id.description);
       return '${log.bold(id.name)} ${id.version} from Git repository "$url"';
-    } else if (id.source == 'path') {
-      var path = cache.sources.path.pathFromDescription(id.description);
+    } else if (source is PathSource) {
+      var path = source.pathFromDescription(id.description);
       return '${log.bold(id.name)} ${id.version} at path "$path"';
     } else {
       return '${log.bold(id.name)} ${id.version}';
@@ -475,7 +479,7 @@ class GlobalPackages {
               "${log.bold(p.basenameWithoutExtension(entry))}";
           if (id != null) {
             message += " ${id.version}";
-            if (id.source != "hosted") message += " from ${id.source}";
+            if (id.source is! HostedSource) message += " from ${id.source}";
           }
 
           log.error(message, error, stackTrace);

@@ -11,6 +11,7 @@ import '../barback/asset_environment.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
 import '../log.dart' as log;
+import '../source/hosted.dart';
 import '../utils.dart';
 import 'barback.dart';
 
@@ -202,7 +203,7 @@ class BuildCommand extends BarbackCommand {
   Future _copyBrowserJsFiles(Iterable<AssetId> entrypoints, AssetSet assets) {
     // Must depend on the browser package.
     if (!entrypoint.root.immediateDependencies.any(
-        (dep) => dep.name == 'browser' && dep.source == 'hosted')) {
+        (dep) => dep.name == 'browser' && dep.source is HostedSource)) {
       return new Future.value();
     }
 

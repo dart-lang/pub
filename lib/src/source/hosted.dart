@@ -45,14 +45,14 @@ class HostedSource extends Source {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
   PackageRef refFor(String name, {url}) =>
-      new PackageRef(name, 'hosted', _descriptionFor(name, url));
+      new PackageRef(name, this, _descriptionFor(name, url));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
   PackageId idFor(String name, Version version, {url}) =>
-      new PackageId(name, 'hosted', version, _descriptionFor(name, url));
+      new PackageId(name, this, version, _descriptionFor(name, url));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
@@ -69,6 +69,8 @@ class HostedSource extends Source {
   bool descriptionsEqual(description1, description2) =>
       _parseDescription(description1) == _parseDescription(description2);
 
+  int hashDescription(description) => _parseDescription.hashCode;
+
   /// Ensures that [description] is a valid hosted package description.
   ///
   /// There are two valid formats. A plain string refers to a package with the
@@ -76,12 +78,12 @@ class HostedSource extends Source {
   /// refers to a package with the given name from the host at the given URL.
   PackageRef parseRef(String name, description, {String containingPath}) {
     _parseDescription(description);
-    return new PackageRef(name, this.name, description);
+    return new PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description) {
     _parseDescription(description);
-    return new PackageId(name, this.name, version, description);
+    return new PackageId(name, this, version, description);
   }
 
   /// Parses the description for a package.
