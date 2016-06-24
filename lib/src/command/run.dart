@@ -10,6 +10,8 @@ import 'package:path/path.dart' as p;
 import '../command.dart';
 import '../executable.dart';
 import '../io.dart';
+import '../log.dart' as log;
+import '../package.dart';
 import '../utils.dart';
 
 /// Handles the `run` pub command.
@@ -22,6 +24,8 @@ class RunCommand extends PubCommand {
   RunCommand() {
     argParser.addFlag("checked", abbr: "c",
         help: "Enable runtime type checks and assertions.");
+    argParser.addFlag('list', negatable: false,
+        help: 'List all available executables.');
     argParser.addOption("mode",
         help: 'Mode to run transformers in.\n'
               '(defaults to "release" for dependencies, "debug" for '
@@ -29,6 +33,11 @@ class RunCommand extends PubCommand {
   }
 
   Future run() async {
+    if (argResults['list']) {
+      _listExecutables();
+      return;
+    }
+
     if (argResults.rest.isEmpty) {
       usageException("Must specify an executable to run.");
     }
@@ -68,5 +77,59 @@ class RunCommand extends PubCommand {
     var exitCode = await runExecutable(entrypoint, package, executable, args,
         checked: argResults['checked'], mode: mode);
     await flushThenExit(exitCode);
+  }
+
+  /// Lists all executables reachable from [entrypoint].
+  void _listExecutables() {
+    var packages = []
+      ..add(entrypoint.root)
+      ..addAll(entrypoint.root.immediateDependencies
+          .map((dep) => entrypoint.packageGraph.packages[dep.name]));
+
+    packages.forEach((Package package) {
+      var executables = _listExecutablesFor(package);
+      if (executables.isNotEmpty) {
+        log.message(_formatExecutables(package.name, executables.toList()));
+      }
+    });
+  }
+
+  /// Lists all Dart files in the `bin` directory of the [package].
+  ///
+  /// Returns file names without extensions.
+  List<String> _listExecutablesFor(Package package) {
+    return package
+        .listFiles(beneath: 'bin', recursive: false)
+        .where((executable) => p.extension(executable) == '.dart')
+        .map(p.basenameWithoutExtension);
+  }
+
+  /// Returns formatted string that lists [executables] for the [packageName].
+  /// Examples:
+  ///
+  ///     _formatExecutables('foo', ['foo'])        // -> 'foo'
+  ///     _formatExecutables('foo', ['bar'])        // -> 'foo:bar'
+  ///     _formatExecutables('foo', ['bar', 'foo']) // -> 'foo: foo, bar'
+  ///
+  /// Note the leading space before first executable and sorting order in the
+  /// last example.
+  String _formatExecutables(String packageName, List<String> executables) {
+    if (executables.length == 1) {
+      // If executable matches the package name omit the name of executable in
+      // the output.
+      return executables.first != packageName
+          ? '${log.bold(packageName)}:${executables.first}'
+          : log.bold(packageName);
+    } else {
+      // Sort executables to make executable that matches the package name to be
+      // the first in the list.
+      executables.sort((e1, e2) {
+        if (e1 == packageName) return -1;
+        else if (e2 == packageName) return 1;
+        else return e1.compareTo(e2);
+      });
+
+      return '${log.bold(packageName)}: ${executables.join(', ')}';
+    }
   }
 }
