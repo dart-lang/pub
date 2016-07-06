@@ -82,5 +82,24 @@ true: bool"""));
 a: {}
 b: {}"""));
     });
+
+  });
+
+  group('niceDuration()', () {
+    test('formats duration longer than a minute correctly', () {
+      expect(
+          niceDuration(new Duration(minutes: 3, seconds: 1, milliseconds: 337)),
+          equals("3:01.3s"));
+    });
+
+    test('does not display extra zero when duration is less than a minute', () {
+      expect(
+          niceDuration(new Duration(minutes: 0, seconds: 0, milliseconds: 400)),
+          equals("0.4s"));
+    });
+
+    test('has reasonable output on minute boundary', () {
+      expect(niceDuration(new Duration(minutes: 1)), equals("1:00.0s"));
+    });
   });
 }

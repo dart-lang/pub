@@ -787,9 +787,10 @@ String nicePath(String inputPath) {
 
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
-  var result = duration.inMinutes > 0 ? "${duration.inMinutes}:" : "";
+  var hasMinutes = duration.inMinutes > 0;
+  var result = hasMinutes ? "${duration.inMinutes}:" : "";
 
-  var s = duration.inSeconds % 59;
+  var s = duration.inSeconds % 60;
   var ms = duration.inMilliseconds % 1000;
 
   // If we're using verbose logging, be more verbose but more accurate when
@@ -800,7 +801,7 @@ String niceDuration(Duration duration) {
     ms ~/= 100;
   }
 
-  return "$result$s.${ms}s";
+  return "$result${hasMinutes ? padLeft(s.toString(), 2, '0') : s}.${ms}s";
 }
 
 /// Decodes a URL-encoded string.
