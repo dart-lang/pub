@@ -189,6 +189,7 @@ class BacktrackingSolver {
       // Gather some solving metrics.
       var buffer = new StringBuffer();
       buffer.writeln('${runtimeType} took ${stopwatch.elapsed} seconds.');
+      buffer.writeln('- Tried $_attemptedSolutions solutions');
       buffer.writeln(cache.describeResults());
       log.solver(buffer);
     }

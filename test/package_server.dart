@@ -74,6 +74,9 @@ class PackageServer {
   /// A future that will complete to the port used for the server.
   Future<int> get port => _inner.port;
 
+  /// A future that will complete to the URL for the server.
+  Future<String> get url async => 'http://localhost:${await port}';
+
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///
   /// Calls [callback] with a [PackageServerBuilder] that's used to specify

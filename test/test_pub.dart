@@ -219,9 +219,10 @@ void scheduleSymlink(String target, String symlink) {
 /// Schedules a call to the Pub command-line utility.
 ///
 /// Runs Pub with [args] and validates that its results match [output] (or
-/// [outputJson]), [error], and [exitCode].
+/// [outputJson]), [error], [silent] (for logs that are silent by default), and
+/// [exitCode].
 ///
-/// [output] and [error] can be [String]s, [RegExp]s, or [Matcher]s.
+/// [output], [error], and [silent] can be [String]s, [RegExp]s, or [Matcher]s.
 ///
 /// If [outputJson] is given, validates that pub outputs stringified JSON
 /// matching that object, which can be a literal JSON object or any other
@@ -229,7 +230,7 @@ void scheduleSymlink(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-void schedulePub({List args, output, error, outputJson,
+void schedulePub({List args, output, error, outputJson, silent,
     int exitCode: exit_codes.SUCCESS, Map<String, String> environment}) {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
@@ -237,30 +238,24 @@ void schedulePub({List args, output, error, outputJson,
   var pub = startPub(args: args, environment: environment);
   pub.shouldExit(exitCode);
 
-  var failures = [];
-  var stderr;
+  expect(() async {
+    var actualOutput = (await pub.stdoutStream().toList()).join("\n");
+    var actualError = (await pub.stderrStream().toList()).join("\n");
+    var actualSilent = (await pub.silentStream().toList()).join("\n");
 
-  expect(Future.wait([
-    pub.stdoutStream().toList(),
-    pub.stderrStream().toList()
-  ]).then((results) {
-    var stdout = results[0].join("\n");
-    stderr = results[1].join("\n");
-
+    var failures = [];
     if (outputJson == null) {
-      _validateOutput(failures, 'stdout', output, stdout);
-      return null;
+      _validateOutput(failures, 'stdout', output, actualOutput);
+    } else {
+      _validateOutputJson(
+          failures, 'stdout', await awaitObject(outputJson), actualOutput);
     }
 
-    // Allow the expected JSON to contain futures.
-    return awaitObject(outputJson).then((resolved) {
-      _validateOutputJson(failures, 'stdout', resolved, stdout);
-    });
-  }).then((_) {
-    _validateOutput(failures, 'stderr', error, stderr);
+    _validateOutput(failures, 'stderr', error, actualError);
+    _validateOutput(failures, 'silent', silent, actualSilent);
 
     if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
-  }), completes);
+  }(), completes);
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
@@ -373,6 +368,7 @@ class PubProcess extends ScheduledProcess {
   Stream<Pair<log.Level, String>> _log;
   Stream<String> _stdout;
   Stream<String> _stderr;
+  Stream<String> _silent;
 
   PubProcess.start(executable, arguments,
       {workingDirectory, environment, String description,
@@ -444,6 +440,22 @@ class PubProcess extends ScheduledProcess {
 
     var pair = tee(_stderr);
     _stderr = pair.first;
+    return pair.last;
+  }
+
+  /// A stream of log messages that are silent by default.
+  Stream<String> silentStream() {
+    if (_silent == null) {
+      _silent = _logStream().expand((entry) {
+        if (entry.first == log.Level.MESSAGE) return [];
+        if (entry.first == log.Level.ERROR) return [];
+        if (entry.first == log.Level.WARNING) return [];
+        return [entry.last];
+      });
+    }
+
+    var pair = tee(_silent);
+    _silent = pair.first;
     return pair.last;
   }
 }

@@ -29,7 +29,7 @@ final String rootDirectory = (() {
 ///
 /// This can be set so that the version solver tests can artificially select
 /// different SDK versions.
-Version version = _getVersion();
+final version = _getVersion();
 
 /// Determine the SDK's version number.
 Version _getVersion() {
