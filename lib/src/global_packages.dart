@@ -321,12 +321,17 @@ class GlobalPackages {
           isGlobal: true);
     }
 
-    if (entrypoint.root.pubspec.environment.sdkVersion.allows(sdk.version)) {
-      return entrypoint;
+    if (entrypoint.root.pubspec.flutterSdkConstraint != null) {
+      dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
+          "Flutter SDK, which is unsupported for global executables.");
     }
 
-    dataError("${log.bold(name)} ${entrypoint.root.version} doesn't support "
-        "Dart ${sdk.version}.");
+    if (!entrypoint.root.pubspec.dartSdkConstraint.allows(sdk.version)) {
+      dataError("${log.bold(name)} ${entrypoint.root.version} doesn't support "
+          "Dart ${sdk.version}.");
+    }
+
+    return entrypoint;
   }
 
   /// Runs [package]'s [executable] with [args].

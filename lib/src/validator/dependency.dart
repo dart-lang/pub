@@ -29,7 +29,7 @@ final _postCaretPubVersions = new VersionConstraint.parse("^1.8.0");
 class DependencyValidator extends Validator {
   /// Whether the SDK constraint guarantees that `^` version constraints are
   /// safe.
-  bool get _caretAllowed => entrypoint.root.pubspec.environment.sdkVersion
+  bool get _caretAllowed => entrypoint.root.pubspec.dartSdkConstraint
       .intersect(_preCaretPubVersions).isEmpty;
 
   DependencyValidator(Entrypoint entrypoint)
@@ -174,7 +174,7 @@ class DependencyValidator extends Validator {
   /// Emits an error for any version constraints that use `^` without an
   /// appropriate SDK constraint.
   void _errorAboutCaretConstraints(List<PackageDep> caretDeps) {
-    var newSdkConstraint = entrypoint.root.pubspec.environment.sdkVersion
+    var newSdkConstraint = entrypoint.root.pubspec.dartSdkConstraint
         .intersect(_postCaretPubVersions);
 
     if (newSdkConstraint.isEmpty) newSdkConstraint = _postCaretPubVersions;

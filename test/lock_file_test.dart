@@ -102,6 +102,25 @@ packages:
         expect(lockFile.packages, isEmpty);
       });
 
+      test("allows an old-style SDK constraint", () {
+        var lockFile = new LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
+        expect(lockFile.dartSdkConstraint,
+            equals(new VersionConstraint.parse('>=1.2.3 <4.0.0')));
+        expect(lockFile.flutterSdkConstraint, isNull);
+      });
+
+      test("allows new-style SDK constraints", () {
+        var lockFile = new LockFile.parse('''
+sdks:
+  dart: ">=1.2.3 <4.0.0"
+  flutter: ^0.1.2
+''', sources);
+        expect(lockFile.dartSdkConstraint,
+            equals(new VersionConstraint.parse('>=1.2.3 <4.0.0')));
+        expect(lockFile.flutterSdkConstraint,
+            equals(new VersionConstraint.parse('^0.1.2')));
+      });
+
       test("throws if the top level is not a map", () {
         expect(() {
           new LockFile.parse('''
@@ -175,6 +194,37 @@ packages:
         }, throwsFormatException);
       });
 
+      test("throws if the old-style SDK constraint isn't a string", () {
+        expect(() => new LockFile.parse('sdk: 1.0', sources),
+            throwsFormatException);
+      });
+
+      test("throws if the old-style SDK constraint is invalid", () {
+        expect(() => new LockFile.parse('sdk: oops', sources),
+            throwsFormatException);
+      });
+
+      test("throws if the sdks field isn't a map", () {
+        expect(() => new LockFile.parse('sdks: oops', sources),
+            throwsFormatException);
+      });
+
+      test("throws if an sdk constraint isn't a string", () {
+        expect(() => new LockFile.parse('sdks: {dart: 1.0}', sources),
+            throwsFormatException);
+        expect(() {
+          new LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
+        }, throwsFormatException);
+      });
+
+      test("throws if an sdk constraint is invalid", () {
+        expect(() => new LockFile.parse('sdks: {dart: oops}', sources),
+            throwsFormatException);
+        expect(() {
+          new LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
+        }, throwsFormatException);
+      });
+
       test("ignores extra stuff in file", () {
         new LockFile.parse('''
 extra:
@@ -197,7 +247,7 @@ packages:
       ]);
 
       expect(loadYaml(lockfile.serialize(null)), equals({
-        'sdk': 'any',
+        'sdks': {'dart': 'any'},
         'packages': {
           'foo': {
             'version': '1.2.3',

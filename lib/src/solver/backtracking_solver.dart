@@ -39,6 +39,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../barback.dart' as barback;
 import '../exceptions.dart';
+import '../flutter.dart' as flutter;
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -647,11 +648,27 @@ class BacktrackingSolver {
   /// Throws a [SolveFailure] if not.
   void _validateSdkConstraint(Pubspec pubspec) {
     if (_overrides.containsKey(pubspec.name)) return;
-    if (pubspec.environment.sdkVersion.allows(sdk.version)) return;
 
-    throw new BadSdkVersionException(pubspec.name,
-        'Package ${pubspec.name} requires SDK version '
-        '${pubspec.environment.sdkVersion} but the current SDK is '
-        '${sdk.version}.');
+    if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
+      throw new BadSdkVersionException(pubspec.name,
+          'Package ${pubspec.name} requires SDK version '
+          '${pubspec.dartSdkConstraint} but the current SDK is '
+          '${sdk.version}.');
+    }
+
+    if (pubspec.flutterSdkConstraint != null) {
+      if (!flutter.isAvailable) {
+        throw new BadSdkVersionException(pubspec.name,
+            'Package ${pubspec.name} requires the Flutter SDK, which is not '
+            'available.');
+      }
+
+      if (!pubspec.flutterSdkConstraint.allows(flutter.version)) {
+        throw new BadSdkVersionException(pubspec.name,
+            'Package ${pubspec.name} requires Flutter SDK version '
+            '${pubspec.flutterSdkConstraint} but the current SDK is '
+            '${flutter.version}.');
+      }
+    }
   }
 }

@@ -71,7 +71,8 @@ class _CachedPubspec implements Pubspec {
   List<PackageDep> get dependencies => _inner.dependencies;
   List<PackageDep> get devDependencies => _inner.devDependencies;
   List<PackageDep> get dependencyOverrides => _inner.dependencyOverrides;
-  PubspecEnvironment get environment => _inner.environment;
+  VersionConstraint get dartSdkConstraint => _inner.dartSdkConstraint;
+  VersionConstraint get flutterSdkConstraint => _inner.flutterSdkConstraint;
   String get publishTo => _inner.publishTo;
   Map<String, String> get executables => _inner.executables;
   bool get isPrivate => _inner.isPrivate;

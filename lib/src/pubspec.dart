@@ -222,14 +222,30 @@ class Pubspec {
     });
   }
 
-  /// The environment-related metadata.
-  PubspecEnvironment get environment {
-    if (_environment != null) return _environment;
+  /// The constraint on the Dart SDK, or [VersionConstraint.any] if none is
+  /// specified.
+  VersionConstraint get dartSdkConstraint {
+    _parseEnvironment();
+    return _dartSdkConstraint;
+  }
+  VersionConstraint _dartSdkConstraint;
+
+  /// The constraint on the Flutter SDK, or `null` if none is specified.
+  VersionConstraint get flutterSdkConstraint {
+    _parseEnvironment();
+    return _flutterSdkConstraint;
+  }
+  VersionConstraint _flutterSdkConstraint;
+
+  /// Parses the "environment" field and sets [_dartSdkConstraint] and
+  /// [_flutterSdkConstraint] accordingly.
+  void _parseEnvironment() {
+    if (_dartSdkConstraint != null) return;
 
     var yaml = fields['environment'];
     if (yaml == null) {
-      _environment = new PubspecEnvironment(VersionConstraint.any);
-      return _environment;
+      _dartSdkConstraint = VersionConstraint.any;
+      return;
     }
 
     if (yaml is! Map) {
@@ -237,11 +253,11 @@ class Pubspec {
              fields.nodes['environment'].span);
     }
 
-    _environment = new PubspecEnvironment(
-        _parseVersionConstraint(yaml.nodes['sdk']));
-    return _environment;
+    _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk']);
+    _flutterSdkConstraint = yaml.containsKey('flutter')
+        ? _parseVersionConstraint(yaml.nodes['flutter'])
+        : null;
   }
-  PubspecEnvironment _environment;
 
   /// The URL of the server that the package should default to being published
   /// to, "none" if the package should not be published, or `null` if it should
@@ -357,7 +373,8 @@ class Pubspec {
   Pubspec(this._name, {Version version, Iterable<PackageDep> dependencies,
           Iterable<PackageDep> devDependencies,
           Iterable<PackageDep> dependencyOverrides,
-          VersionConstraint sdkConstraint,
+          VersionConstraint dartSdkConstraint,
+          VersionConstraint flutterSdkConstraint,
           Iterable<Iterable<TransformerConfig>> transformers,
           Map fields, SourceRegistry sources})
       : _version = version,
@@ -366,7 +383,8 @@ class Pubspec {
             devDependencies.toList(),
         _dependencyOverrides = dependencyOverrides == null ? null :
             dependencyOverrides.toList(),
-        _environment = new PubspecEnvironment(sdkConstraint),
+        _dartSdkConstraint = dartSdkConstraint ?? VersionConstraint.any,
+        _flutterSdkConstraint = flutterSdkConstraint,
         _transformers = transformers == null ? [] :
             transformers.map((phase) => phase.toSet()).toList(),
         fields = fields == null ? new YamlMap() : new YamlMap.wrap(fields),
@@ -378,7 +396,8 @@ class Pubspec {
       _version = Version.none,
       _dependencies = <PackageDep>[],
       _devDependencies = <PackageDep>[],
-      _environment = new PubspecEnvironment(),
+      _dartSdkConstraint = VersionConstraint.any,
+      _flutterSdkConstraint = null,
       _transformers = <Set<TransformerConfig>>[],
       fields = new YamlMap();
 
@@ -438,8 +457,8 @@ class Pubspec {
     _getError(() => this.dependencies);
     _getError(() => this.devDependencies);
     _getError(() => this.transformers);
-    _getError(() => this.environment);
     _getError(() => this.publishTo);
+    _getError(() => this._parseEnvironment());
     return errors;
   }
 
@@ -529,7 +548,7 @@ class Pubspec {
 
   /// Parses [node] to a [VersionConstraint].
   VersionConstraint _parseVersionConstraint(YamlNode node) {
-    if (node.value == null) return VersionConstraint.any;
+    if (node?.value == null) return VersionConstraint.any;
     if (node.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }
@@ -587,18 +606,6 @@ class Pubspec {
   void _error(String message, SourceSpan span) {
     throw new PubspecException(message, span);
   }
-}
-
-/// The environment-related metadata in the pubspec.
-///
-/// Corresponds to the data under the "environment:" key in the pubspec.
-class PubspecEnvironment {
-  /// The version constraint specifying which SDK versions this package works
-  /// with.
-  final VersionConstraint sdkVersion;
-
-  PubspecEnvironment([VersionConstraint sdk])
-      : sdkVersion = sdk != null ? sdk : VersionConstraint.any;
 }
 
 /// An exception thrown when parsing a pubspec.

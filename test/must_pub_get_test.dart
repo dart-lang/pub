@@ -286,6 +286,40 @@ foo:http://example.com/
           "SDK constraints. Please run \"pub get\" again.");
     });
 
+    integration("the lock file's Flutter SDK constraint doesn't match the "
+        "current Flutter SDK", () {
+      // Avoid using a path dependency because it triggers the full validation
+      // logic. We want to be sure SDK-validation works without that logic.
+      globalPackageServer.add((builder) {
+        builder.serve("foo", "3.0.0", pubspec: {
+          "environment": {"flutter": ">=1.0.0 <2.0.0"}
+        });
+      });
+
+      d.dir('flutter', [
+        d.file('version', '1.2.3')
+      ]).create();
+
+      d.dir(appPath, [
+        d.appPubspec({"foo": "3.0.0"})
+      ]).create();
+
+      pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
+
+      d.dir('flutter', [
+        d.file('version', '2.4.6')
+      ]).create();
+
+      // Run pub manually here because otherwise we don't have access to
+      // sandboxDir.
+      schedulePub(
+          args: ["run", "script"],
+          environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')},
+          error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
+                   "constraints. Please run \"pub get\" again.",
+          exitCode: exit_codes.DATA);
+    });
+
     group("a path dependency's dependency doesn't match the lockfile", () {
       setUp(() {
         d.dir("bar", [
@@ -394,11 +428,43 @@ foo:http://example.com/
 
       _runsSuccessfully();
     });
+
+    integration("the lock file has a Flutter SDK but Flutter is unavailable",
+        () {
+      // Avoid using a path dependency because it triggers the full validation
+      // logic. We want to be sure SDK-validation works without that logic.
+      globalPackageServer.add((builder) {
+        builder.serve("foo", "3.0.0", pubspec: {
+          "environment": {"flutter": ">=1.0.0 <2.0.0"}
+        });
+      });
+
+      d.dir('flutter', [
+        d.file('version', '1.2.3')
+      ]).create();
+
+      d.dir(appPath, [
+        d.appPubspec({"foo": "3.0.0"})
+      ]).create();
+
+      pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
+
+      d.dir('flutter', [
+        d.file('version', '2.4.6')
+      ]).create();
+
+      // Run pub manually here because otherwise we don't have access to
+      // sandboxDir.
+      schedulePub(args: ["run", "bin/script.dart"]);
+    });
   });
 }
 
 /// Runs every command that care about the world being up-to-date, and asserts
 /// that it prints [message] as part of its error.
+///
+/// If [environment] is passed, it's called to produce a map that's merged into
+/// the OS environment for the pub commands.
 void _requiresPubGet(String message) {
   for (var command in ["build", "serve", "run", "deps"]) {
     integration("for pub $command", () {

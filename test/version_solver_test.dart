@@ -32,7 +32,8 @@ main() {
   group('unsolvable', unsolvable);
   group('bad source', badSource);
   group('backtracking', backtracking);
-  group('SDK constraint', sdkConstraint);
+  group('Dart SDK constraint', dartSdkConstraint);
+  group('Flutter SDK constraint', flutterSdkConstraint);
   group('pre-release', prerelease);
   group('override', override);
   group('downgrade', downgrade);
@@ -769,7 +770,7 @@ void backtracking() {
   });
 }
 
-void sdkConstraint() {
+void dartSdkConstraint() {
   integration('root matches SDK', () {
     d.dir(appPath, [
       d.pubspec({
@@ -863,6 +864,164 @@ void sdkConstraint() {
 
     d.appDir({'foo': 'any'}).create();
     expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
+  });
+}
+
+void flutterSdkConstraint() {
+  group('without a Flutter SDK', () {
+    integration('fails for the root package', () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {'flutter': '1.2.3'}
+        })
+      ]).create();
+
+      expectResolves(
+          error: 'Package myapp requires the Flutter SDK, which is not '
+                    'available.');
+    });
+
+    integration('fails for a dependency', () {
+      servePackages((builder) {
+        builder.serve('foo', '1.0.0',
+            pubspec: {'environment': {'flutter': '0.0.0'}});
+      });
+
+      d.appDir({'foo': 'any'}).create();
+      expectResolves(
+          error: 'Package foo requires the Flutter SDK, which is not '
+                    'available.');
+    });
+
+    integration("chooses a version that doesn't need Flutter", () {
+      servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+        builder.serve('foo', '2.0.0');
+        builder.serve('foo', '3.0.0',
+            pubspec: {'environment': {'flutter': '0.0.0'}});
+      });
+
+      d.appDir({'foo': 'any'}).create();
+      expectResolves(result: {'foo': '2.0.0'});
+    });
+
+    integration('fails even with a matching Dart SDK constraint', () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {
+            'dart': '0.1.2+3',
+            'flutter': '1.2.3'
+          }
+        })
+      ]).create();
+
+      expectResolves(
+          error: 'Package myapp requires the Flutter SDK, which is not '
+                    'available.');
+    });
+  });
+
+  group('with a Flutter SDK', () {
+    setUp(() {
+      d.dir('flutter', [
+        d.file('version', '1.2.3')
+      ]).create();
+    });
+
+    integration('succeeds with a matching constraint', () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {'flutter': 'any'}
+        })
+      ]).create();
+
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          result: {});
+    });
+
+    integration('fails with a non-matching constraint', () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {'flutter': '>1.2.3'}
+        })
+      ]).create();
+
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
+                    'current SDK is 1.2.3.');
+    });
+
+    integration('succeeds if both Flutter and Dart SDKs match', () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {
+            'sdk': '0.1.2+3',
+            'flutter': '1.2.3'
+          }
+        })
+      ]).create();
+
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          result: {});
+    });
+
+    integration("fails if Flutter SDK doesn't match but Dart does", () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {
+            'sdk': '0.1.2+3',
+            'flutter': '>1.2.3'
+          }
+        })
+      ]).create();
+
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
+                    'current SDK is 1.2.3.');
+    });
+
+    integration("fails if Dart SDK doesn't match but Flutter does", () {
+      d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {
+            'sdk': '>0.1.2+3',
+            'flutter': '1.2.3'
+          }
+        })
+      ]).create();
+
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          error: 'Package myapp requires SDK version >0.1.2+3 but the current '
+                   'SDK is 0.1.2+3.');
+    });
+
+    integration('selects the latest dependency with a matching constraint', () {
+      servePackages((builder) {
+        builder.serve('foo', '1.0.0',
+            pubspec: {'environment': {'flutter': '^0.0.0'}});
+        builder.serve('foo', '2.0.0',
+            pubspec: {'environment': {'flutter': '^1.0.0'}});
+        builder.serve('foo', '3.0.0',
+            pubspec: {'environment': {'flutter': '^2.0.0'}});
+      });
+
+      d.appDir({'foo': 'any'}).create();
+      expectResolves(
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
+          result: {'foo': '2.0.0'});
+    });
   });
 }
 
@@ -1116,10 +1275,15 @@ void downgrade() {
 /// Asserts that version solving looks at exactly [tries] solutions. It defaults
 /// to allowing only a single solution.
 ///
+/// If [environment] is passed, it's added to the OS environment when running
+/// pub.
+///
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
-void expectResolves({Map result, error, int tries, bool downgrade: false}) {
+void expectResolves({Map result, error, int tries,
+    Map<String, String> environment, bool downgrade: false}) {
   schedulePub(
       args: [downgrade ? 'downgrade' : 'get'],
+      environment: environment,
       output: error == null
           ? anyOf(
               contains('Got dependencies!'),
