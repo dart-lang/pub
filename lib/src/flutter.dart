@@ -23,3 +23,10 @@ final version = () {
   return new Version.parse(
       readTextFile(p.join(rootDirectory, "version")).trim());
 }();
+
+/// Returns the path to the package [name] within Flutter.
+String packagePath(String name) {
+  if (!isAvailable) throw new StateError("Flutter is not available.");
+
+  return p.join(rootDirectory, 'packages', name);
+}

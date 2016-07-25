@@ -14,6 +14,7 @@ import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
+import 'source/sdk.dart';
 import 'source/unknown.dart';
 import 'source.dart';
 import 'source_registry.dart';
@@ -58,6 +59,9 @@ class SystemCache {
 
   /// The built-in path source bound to this cache.
   BoundPathSource get path => _boundSources[sources.path] as BoundPathSource;
+
+  /// The built-in SDK source bound to this cache.
+  BoundSdkSource get sdk => _boundSources[sources.sdk] as BoundSdkSource;
 
   /// The default source bound to this cache.
   BoundSource get defaultSource => source(sources[null]);
