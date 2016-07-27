@@ -681,15 +681,17 @@ Future store(Stream stream, EventSink sink,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment}) {
-  return _descriptorPool.withResource(() {
-    return _doProcess(Process.run, executable, args, workingDir, environment)
-        .then((result) {
-      var pubResult = new PubProcessResult(
-          result.stdout, result.stderr, result.exitCode);
-      log.processResult(executable, pubResult);
-      return pubResult;
-    });
+    {workingDir, Map<String, String> environment, bool runInShell: false}) {
+  return _descriptorPool.withResource(() async {
+    var result = await _doProcess(Process.run, executable, args,
+        workingDir: workingDir,
+        environment: environment,
+        runInShell: runInShell);
+
+    var pubResult = new PubProcessResult(
+        result.stdout, result.stderr, result.exitCode);
+    log.processResult(executable, pubResult);
+    return pubResult;
   });
 }
 
@@ -702,22 +704,28 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 Future<PubProcess> startProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment}) {
-  return _descriptorPool.request().then((resource) {
-    return _doProcess(Process.start, executable, args, workingDir, environment)
-        .then((ioProcess) {
-      var process = new PubProcess(ioProcess);
-      process.exitCode.whenComplete(resource.release);
-      return process;
-    });
+    {workingDir, Map<String, String> environment, bool runInShell: false}) {
+  return _descriptorPool.request().then((resource) async {
+    var ioProcess = await _doProcess(Process.start, executable, args,
+        workingDir: workingDir,
+        environment: environment,
+        runInShell: runInShell);
+
+    var process = new PubProcess(ioProcess);
+    process.exitCode.whenComplete(resource.release);
+    return process;
   });
 }
 
 /// Like [runProcess], but synchronous.
 PubProcessResult runProcessSync(String executable, List<String> args,
-        {String workingDir, Map<String, String> environment}) {
+    {String workingDir, Map<String, String> environment,
+    bool runInShell: false}) {
   var result = _doProcess(
-      Process.runSync, executable, args, workingDir, environment);
+      Process.runSync, executable, args,
+      workingDir: workingDir,
+      environment: environment,
+      runInShell: runInShell);
   var pubResult = new PubProcessResult(
       result.stdout, result.stderr, result.exitCode);
   log.processResult(executable, pubResult);
@@ -813,7 +821,8 @@ class PubProcess {
 /// [fn] should have the same signature as [Process.start], except that the
 /// returned value may have any return type.
 _doProcess(Function fn, String executable, List<String> args,
-    String workingDir, Map<String, String> environment) {
+    {String workingDir, Map<String, String> environment,
+    bool runInShell: false}) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
@@ -828,7 +837,8 @@ _doProcess(Function fn, String executable, List<String> args,
 
   return fn(executable, args,
       workingDirectory: workingDir,
-      environment: environment);
+      environment: environment,
+      runInShell: runInShell);
 }
 
 /// Updates [path]'s modification time.

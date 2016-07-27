@@ -775,7 +775,11 @@ pub global run ${package.name}:$script "\$@"
           'A web search for "configure windows path" will show you how.');
     } else {
       // See if the shell can find one of the binstubs.
-      var result = runProcessSync("which", [installed]);
+      //
+      // The "command" builtin is more reliable than the "which" executable. See
+      // http://unix.stackexchange.com/questions/85249/why-not-use-which-what-to-use-then
+      var result = runProcessSync("command", ["-v", installed],
+          runInShell: true);
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
