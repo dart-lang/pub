@@ -60,12 +60,13 @@ import 'utils.dart';
 /// will have their contents truncated. Defaults to `false`.
 String fromFiles(List<String> files, {String baseDir, bool showAllChildren}) {
   // Parse out the files into a tree of nested maps.
-  var root = {};
+  var root = <String, Map>{};
   for (var file in files) {
     if (baseDir != null) file = path.relative(file, from: baseDir);
     var directory = root;
     for (var part in path.split(file)) {
-      directory = directory.putIfAbsent(part, () => {});
+      directory = directory.putIfAbsent(part, () => <String, Map>{})
+          as Map<String, Map>;
     }
   }
 
@@ -97,7 +98,7 @@ String fromFiles(List<String> files, {String baseDir, bool showAllChildren}) {
 ///
 /// If [showAllChildren] is `false`, then directories with more than ten items
 /// will have their contents truncated. Defaults to `false`.
-String fromMap(Map map, {bool showAllChildren}) {
+String fromMap(Map<String, Map> map, {bool showAllChildren}) {
   var buffer = new StringBuffer();
   _draw(buffer, "", null, map, showAllChildren: showAllChildren);
   return buffer.toString();
@@ -125,8 +126,9 @@ String _getPrefix(bool isRoot, bool isLast) {
   return log.gray("|   ");
 }
 
-void _draw(StringBuffer buffer, String prefix, String name, Map children,
-           {bool showAllChildren, bool isLast: false}) {
+void _draw(
+    StringBuffer buffer, String prefix, String name, Map<String, Map> children,
+    {bool showAllChildren, bool isLast: false}) {
   if (showAllChildren == null) showAllChildren = false;
 
   // Don't draw a line for the root node.
@@ -137,8 +139,13 @@ void _draw(StringBuffer buffer, String prefix, String name, Map children,
 
   drawChild(bool isLastChild, String child) {
     var childPrefix = _getPrefix(name == null, isLast);
-    _draw(buffer, '$prefix$childPrefix', child, children[child],
-        showAllChildren: showAllChildren, isLast: isLastChild);
+    _draw(
+        buffer,
+        '$prefix$childPrefix',
+        child,
+        children[child] as Map<String, Map>,
+        showAllChildren: showAllChildren,
+        isLast: isLastChild);
   }
 
   if (name == null || showAllChildren || childNames.length <= 10) {

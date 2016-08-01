@@ -55,47 +55,6 @@ class Pair<E, F> {
   int get hashCode => first.hashCode ^ last.hashCode;
 }
 
-/// A completer that waits until all added [Future]s complete.
-// TODO(rnystrom): Copied from web_components. Remove from here when it gets
-// added to dart:core. (See #6626.)
-class FutureGroup<T> {
-  int _pending = 0;
-  Completer<List<T>> _completer = new Completer<List<T>>();
-  final List<Future<T>> futures = <Future<T>>[];
-  bool completed = false;
-
-  final List<T> _values = <T>[];
-
-  /// Wait for [task] to complete.
-  Future<T> add(Future<T> task) {
-    if (completed) {
-      throw new StateError("The FutureGroup has already completed.");
-    }
-
-    _pending++;
-    futures.add(task.then((value) {
-      if (completed) return;
-
-      _pending--;
-      _values.add(value);
-
-      if (_pending <= 0) {
-        completed = true;
-        _completer.complete(_values);
-      }
-    }).catchError((e, stackTrace) {
-      if (completed) return;
-
-      completed = true;
-      _completer.completeError(e, stackTrace);
-    }));
-
-    return task;
-  }
-
-  Future<List> get future => _completer.future;
-}
-
 /// Like [new Future], but avoids around issue 11911 by using [new Future.value]
 /// under the covers.
 Future newFuture(callback()) => new Future.value().then((_) => callback());
@@ -145,7 +104,7 @@ Future captureErrors(Future callback(), {bool captureStackChains: false}) {
 /// only returns once all Futures have completed, successfully or not.
 ///
 /// This will wrap the first error thrown in a [SilentException] and rethrow it.
-Future waitAndPrintErrors(Iterable<Future> futures) {
+Future<List/*<T>*/> waitAndPrintErrors/*<T>*/(Iterable<Future/*<T>*/> futures) {
   return Future.wait(futures.map((future) {
     return future.catchError((error, stackTrace) {
       log.exception(error, stackTrace);
@@ -160,8 +119,8 @@ Future waitAndPrintErrors(Iterable<Future> futures) {
 /// completes.
 ///
 /// The stream will be passed through unchanged.
-StreamTransformer onDoneTransformer(void onDone()) {
-  return new StreamTransformer.fromHandlers(handleDone: (sink) {
+StreamTransformer/*<T, T>*/ onDoneTransformer/*<T>*/(void onDone()) {
+  return new StreamTransformer/*<T, T>*/.fromHandlers(handleDone: (sink) {
     onDone();
     sink.close();
   });
@@ -274,23 +233,6 @@ bool isLoopback(String host) {
   }
 }
 
-/// Flattens nested lists inside an iterable into a single list containing only
-/// non-list elements.
-List flatten(Iterable nested) {
-  var result = [];
-  helper(list) {
-    for (var element in list) {
-      if (element is List) {
-        helper(element);
-      } else {
-        result.add(element);
-      }
-    }
-  }
-  helper(nested);
-  return result;
-}
-
 /// Randomly chooses a single element in [elements].
 /*=T*/ choose/*<T>*/(List/*<T>*/ elements) =>
     elements[random.nextInt(elements.length)];
@@ -312,7 +254,7 @@ bool overlaps(Set set1, Set set2) {
 }
 
 /// Returns a list containing the sorted elements of [iter].
-List ordered(Iterable<Comparable> iter) {
+List/*<T>*/ ordered/*<T extends Comparable<T>>*/(Iterable/*<T>*/ iter) {
   var list = iter.toList();
   list.sort();
   return list;
@@ -346,84 +288,13 @@ Iterable<Pair> pairs(Iterable iter) {
   });
 }
 
-/// Creates a new map from [map] with new keys and values.
-///
-/// The return values of [key] are used as the keys and the return values of
-/// [value] are used as the values for the new map.
-///
-/// [key] defaults to returning the original key and [value] defaults to
-/// returning the original value.
-Map mapMap(Map map, {key(key, value), value(key, value)}) {
-  if (key == null) key = (key, _) => key;
-  if (value == null) value = (_, value) => value;
-
-  var result = {};
-  map.forEach((mapKey, mapValue) {
-    result[key(mapKey, mapValue)] = value(mapKey, mapValue);
-  });
-  return result;
-}
-
-/// Like [Map.fromIterable], but [key] and [value] may return [Future]s.
-Future<Map> mapFromIterableAsync(Iterable iter, {key(element),
-    value(element)}) {
-  if (key == null) key = (element) => element;
-  if (value == null) value = (element) => element;
-
-  var map = new Map();
-  return Future.wait(iter.map((element) {
-    return Future.wait([
-      new Future.sync(() => key(element)),
-      new Future.sync(() => value(element))
-    ]).then((results) {
-      map[results[0]] = results[1];
-    });
-  })).then((_) => map);
-}
-
-/// Returns a new map with all entries in both [map1] and [map2].
-///
-/// If there are overlapping keys, [map2]'s value wins.
-Map mergeMaps(Map map1, Map map2) {
-  var result = {};
-  result.addAll(map1);
-  result.addAll(map2);
-  return result;
-}
-
-/// Returns the transitive closure of [graph].
-///
-/// This assumes [graph] represents a graph with a vertex for each key and an
-/// edge betweek each key and the values for that key.
-Map<dynamic, Set> transitiveClosure(Map<dynamic, Iterable> graph) {
-  // This uses the Floyd-Warshall algorithm
-  // (https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm).
-  var result = {};
-  graph.forEach((vertex, edges) {
-    result[vertex] = new Set.from(edges)..add(vertex);
-  });
-
-  for (var vertex1 in graph.keys) {
-    for (var vertex2 in graph.keys) {
-      for (var vertex3 in graph.keys) {
-        if (result[vertex2].contains(vertex1) &&
-            result[vertex1].contains(vertex3)) {
-          result[vertex2].add(vertex3);
-        }
-      }
-    }
-  }
-
-  return result;
-}
-
 /// Given a list of filenames, returns a set of patterns that can be used to
 /// filter for those filenames.
 ///
 /// For a given path, that path ends with some string in the returned set if
 /// and only if that path's basename is in [files].
 Set<String> createFileFilter(Iterable<String> files) {
-  return files.expand((file) {
+  return files.expand/*<String>*/((file) {
     var result = ["/$file"];
     if (Platform.operatingSystem == 'windows') result.add("\\$file");
     return result;
@@ -436,7 +307,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 /// For a given path, that path contains some string in the returned set if
 /// and only if one of that path's components is in [dirs].
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
-  return dirs.expand((dir) {
+  return dirs.expand/*<String>*/((dir) {
     var result = ["/$dir/"];
     if (Platform.operatingSystem == 'windows') {
       result..add("/$dir\\")..add("\\$dir/")..add("\\$dir\\");
@@ -533,7 +404,7 @@ void chainToCompleter(Future future, Completer completer) {
 /// emitting the same values and errors as [stream], but only if at least one
 /// value can be read successfully. If an error occurs before any values are
 /// emitted, the returned Future completes to that error.
-Future<Stream> validateStream(Stream stream) {
+Future<Stream/*<T>*/> validateStream/*<T>*/(Stream/*<T>*/ stream) {
   var completer = new Completer<Stream>();
   var controller = new StreamController(sync: true);
 
@@ -592,66 +463,6 @@ Pair<Stream, StreamSubscription> streamWithSubscription(Stream stream) {
       onError: controller.addError,
       onDone: controller.close);
   return new Pair<Stream, StreamSubscription>(controller.stream, subscription);
-}
-
-// TODO(nweiz): remove this when issue 7787 is fixed.
-/// Creates two single-subscription [Stream]s that each emit all values and
-/// errors from [stream].
-///
-/// This is useful if [stream] is single-subscription but multiple subscribers
-/// are necessary.
-Pair<Stream, Stream> tee(Stream stream) {
-  var controller1 = new StreamController(sync: true);
-  var controller2 = new StreamController(sync: true);
-  stream.listen((value) {
-    controller1.add(value);
-    controller2.add(value);
-  }, onError: (error, [stackTrace]) {
-    controller1.addError(error, stackTrace);
-    controller2.addError(error, stackTrace);
-  }, onDone: () {
-    controller1.close();
-    controller2.close();
-  });
-  return new Pair<Stream, Stream>(controller1.stream, controller2.stream);
-}
-
-/// Merges [stream1] and [stream2] into a single stream that emits events from
-/// both sources.
-Stream mergeStreams(Stream stream1, Stream stream2) {
-  var doneCount = 0;
-  var controller = new StreamController(sync: true);
-
-  for (var stream in [stream1, stream2]) {
-    stream.listen(
-        controller.add,
-        onError: controller.addError,
-        onDone: () {
-      doneCount++;
-      if (doneCount == 2) controller.close();
-    });
-  }
-
-  return controller.stream;
-}
-
-/// Returns a [Stream] that will emit the same values as the stream returned by
-/// [callback].
-///
-/// [callback] will only be called when the returned [Stream] gets a subscriber.
-Stream callbackStream(Stream callback()) {
-  var subscription;
-  var controller;
-  controller = new StreamController(onListen: () {
-    subscription = callback().listen(controller.add,
-        onError: controller.addError,
-        onDone: controller.close);
-  },
-      onCancel: () => subscription.cancel(),
-      onPause: () => subscription.pause(),
-      onResume: () => subscription.resume(),
-      sync: true);
-  return controller.stream;
 }
 
 /// A regular expression matching a trailing CR character.
@@ -728,7 +539,7 @@ Uri addQueryParameters(Uri url, Map<String, String> parameters) {
 /// Convert a URL query string (or `application/x-www-form-urlencoded` body)
 /// into a [Map] from parameter names to values.
 Map<String, String> queryToMap(String queryList) {
-  var map = {};
+  var map = <String, String>{};
   for (var pair in queryList.split("&")) {
     var split = split1(pair, "=");
     if (split.isEmpty) continue;
@@ -755,7 +566,7 @@ String mapToQuery(Map<String, String> map) {
 }
 
 /// Returns the union of all elements in each set in [sets].
-Set unionAll(Iterable<Set> sets) =>
+Set/*<T>*/ unionAll/*<T>*/(Iterable<Set/*<T>*/> sets) =>
   sets.fold(new Set(), (union, set) => union.union(set));
 
 // TODO(nweiz): remove this when issue 9068 has been fixed.
@@ -795,13 +606,12 @@ String niceDuration(Duration duration) {
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  if (log.verbosity.isLevelVisible(log.Level.FINE)) {
-    ms = padLeft(ms.toString(), 3, '0');
-  } else {
-    ms ~/= 100;
-  }
+  var msString = log.verbosity.isLevelVisible(log.Level.FINE)
+      ? padLeft(ms.toString(), 3, '0')
+      : (ms ~/ 100).toString();
 
-  return "$result${hasMinutes ? padLeft(s.toString(), 2, '0') : s}.${ms}s";
+  return "$result${hasMinutes ? padLeft(s.toString(), 2, '0') : s}"
+      ".${msString}s";
 }
 
 /// Decodes a URL-encoded string.
@@ -815,26 +625,27 @@ String urlDecode(String encoded) =>
 /// within.
 ///
 /// Completes with the fully resolved structure.
-Future awaitObject(object) {
+Future/*<T>*/ awaitObject/*<T>*/(/*=T*/ object) async {
   // Unroll nested futures.
-  if (object is Future) return object.then(awaitObject);
-  if (object is Iterable) {
-    return Future.wait(object.map(awaitObject).toList());
-  }
-  if (object is! Map) return new Future.value(object);
+  if (object is Future) return await awaitObject(await object);
 
-  var pairs = <Future<Pair>>[];
-  object.forEach((key, value) {
-    pairs.add(awaitObject(value)
-        .then((resolved) => new Pair(key, resolved)));
-  });
-  return Future.wait(pairs).then((resolvedPairs) {
-    var map = {};
-    for (var pair in resolvedPairs) {
-      map[pair.first] = pair.last;
-    }
-    return map;
-  });
+  if (object is Iterable) {
+    // TODO(nweiz): Remove the unnecessary as check when sdk#26965 is fixed.
+    return await Future.wait((object as Iterable).map(awaitObject))
+        as List/*=T*/;
+  }
+
+  if (object is Map) {
+    // TODO(nweiz): Remove the unnecessary as check when sdk#26965 is fixed.
+    var oldMap = object as Map;
+    var newMap = {};
+    await Future.wait(oldMap.keys.map((key) async {
+      newMap[key] = await awaitObject(await oldMap[key]);
+    }));
+    return newMap as Map/*=T*/;
+  }
+
+  return object;
 }
 
 /// Whether "special" strings such as Unicode characters or color escapes are

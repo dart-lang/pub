@@ -65,7 +65,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to register a new [Future].
-  Future registerFuture(Future future) {
+  Future/*<T>*/ registerFuture/*<T>*/(Future/*<T>*/ future) {
     if (_isDone) {
       throw new StateError("Can't register new members on a complete "
           "ErrorGroup.");
@@ -88,7 +88,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to register a new [Stream].
-  Stream registerStream(Stream stream) {
+  Stream/*<T>*/ registerStream/*<T>*/(Stream/*<T>*/ stream) {
     if (_isDone) {
       throw new StateError("Can't register new members on a complete "
           "ErrorGroup.");
@@ -161,7 +161,7 @@ class ErrorGroup {
 ///
 /// It also notifies its parent [ErrorGroup] when it completes successfully or
 /// receives an error.
-class _ErrorGroupFuture implements Future {
+class _ErrorGroupFuture<T> implements Future<T> {
   /// The parent [ErrorGroup].
   final ErrorGroup _group;
 
@@ -169,14 +169,14 @@ class _ErrorGroupFuture implements Future {
   var _isDone = false;
 
   /// The underlying [Completer] for [this].
-  final _completer = new Completer();
+  final _completer = new Completer<T>();
 
   /// Whether [this] has any listeners.
   bool _hasListeners = false;
 
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
-  _ErrorGroupFuture(this._group, Future inner) {
+  _ErrorGroupFuture(this._group, Future<T> inner) {
     inner.then((value) {
       if (!_isDone) _completer.complete(value);
       _isDone = true;
@@ -188,27 +188,27 @@ class _ErrorGroupFuture implements Future {
     _completer.future.catchError((_) {});
   }
 
-  Future then(onValue(value), {Function onError}) {
+  Future/*<S>*/ then/*<S>*/(/*=S*/ onValue(/*=T*/ value), {Function onError}) {
     _hasListeners = true;
     return _completer.future.then(onValue, onError: onError);
   }
 
-  Future catchError(Function onError, {bool test(Object error)}) {
+  Future<T> catchError(Function onError, {bool test(Object error)}) {
     _hasListeners = true;
     return _completer.future.catchError(onError, test: test);
   }
 
-  Future whenComplete(void action()) {
+  Future<T> whenComplete(void action()) {
     _hasListeners = true;
     return _completer.future.whenComplete(action);
   }
 
-  Future timeout(Duration timeLimit, {void onTimeout()}) {
+  Future<T> timeout(Duration timeLimit, {onTimeout()}) {
     _hasListeners = true;
     return _completer.future.timeout(timeLimit, onTimeout: onTimeout);
   }
 
-  Stream asStream() {
+  Stream<T> asStream() {
     _hasListeners = true;
     return _completer.future.asStream();
   }
@@ -229,7 +229,7 @@ class _ErrorGroupFuture implements Future {
 ///
 /// It also notifies its parent [ErrorGroup] when it completes successfully or
 /// receives an error.
-class _ErrorGroupStream extends Stream {
+class _ErrorGroupStream<T> extends Stream<T> {
   /// The parent [ErrorGroup].
   final ErrorGroup _group;
 
@@ -237,24 +237,24 @@ class _ErrorGroupStream extends Stream {
   var _isDone = false;
 
   /// The underlying [StreamController] for [this].
-  final StreamController _controller;
+  final StreamController<T> _controller;
 
   /// The controller's [Stream].
   ///
   /// May be different than `_controller.stream` if the wrapped stream is a
   /// broadcasting stream.
-  Stream _stream;
+  Stream<T> _stream;
 
   /// The [StreamSubscription] that connects the wrapped [Stream] to
   /// [_controller].
-  StreamSubscription _subscription;
+  StreamSubscription<T> _subscription;
 
   /// Whether [this] has any listeners.
   bool get _hasListeners => _controller.hasListener;
 
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
-  _ErrorGroupStream(this._group, Stream inner)
+  _ErrorGroupStream(this._group, Stream<T> inner)
     : _controller = new StreamController(sync: true) {
     // Use old-style asBroadcastStream behavior - cancel source _subscription
     // the first time the stream has no listeners.
@@ -272,7 +272,7 @@ class _ErrorGroupStream extends Stream {
     });
   }
 
-  StreamSubscription listen(void onData(value),
+  StreamSubscription<T> listen(void onData(T value),
       {Function onError, void onDone(),
        bool cancelOnError}) {
     return _stream.listen(onData,

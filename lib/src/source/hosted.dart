@@ -212,8 +212,8 @@ class BoundHostedSource extends CachedSource {
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
     if (!dirExists(systemCacheRoot)) return new Pair([], []);
 
-    var successes = [];
-    var failures = [];
+    var successes = <PackageId>[];
+    var failures = <PackageId>[];
 
     for (var serverDir in listDir(systemCacheRoot)) {
       var url = _directoryToUrl(p.basename(serverDir));

@@ -139,7 +139,7 @@ class BacktrackingSolver {
 
   /// Creates [_implicitPubspec].
   static Pubspec _makeImplicitPubspec(SystemCache systemCache) {
-    var dependencies = [];
+    var dependencies = <PackageDep>[];
     barback.pubConstraints.forEach((name, constraint) {
       dependencies.add(
           systemCache.sources.hosted.refFor(name)
@@ -174,7 +174,7 @@ class BacktrackingSolver {
       logSolve();
       var packages = await _solve();
 
-      var pubspecs = {};
+      var pubspecs = <String, Pubspec>{};
       for (var id in packages) {
         pubspecs[id.name] = await _getPubspec(id);
       }
@@ -204,17 +204,14 @@ class BacktrackingSolver {
   /// because we weren't trying to upgrade it, we will just know the current
   /// version.
   Map<String, List<Version>> _getAvailableVersions(List<PackageId> packages) {
-    var availableVersions = new Map<String, List<Version>>();
+    var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       var cached = cache.getCachedVersions(package.toRef());
-      var versions;
-      if (cached != null) {
-        versions = cached.map((id) => id.version).toList();
-      } else {
-        // If the version list was never requested, just use the one known
-        // version.
-        versions = [package.version];
-      }
+      // If the version list was never requested, just use the one known
+      // version.
+      var versions = cached == null
+          ? [package.version]
+          : cached.map((id) => id.version).toList();
 
       availableVersions[package.name] = versions;
     }

@@ -8,6 +8,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:path/path.dart' as path;
 import 'package:pool/pool.dart';
 import 'package:http/http.dart' show ByteStream;
@@ -194,11 +195,10 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
-  return _descriptorPool.withResource(() {
-    return stream.pipe(new File(file).openWrite()).then((_) {
-      log.fine("Created $file from stream.");
-      return file;
-    });
+  return _descriptorPool.withResource/*<Future<String>>*/(() async {
+    await stream.pipe(new File(file).openWrite());
+    log.fine("Created $file from stream.");
+    return file;
   });
 }
 
@@ -639,10 +639,11 @@ Future flushThenExit(int status) {
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
-Pair<EventSink, Future> consumerToSink(StreamConsumer consumer) {
-  var controller = new StreamController(sync: true);
+Pair<EventSink/*<T>*/, Future> consumerToSink/*<T>*/(
+    StreamConsumer/*<T>*/ consumer) {
+  var controller = new StreamController/*<T>*/(sync: true);
   var done = controller.stream.pipe(consumer);
-  return new Pair<EventSink, Future>(controller.sink, done);
+  return new Pair(controller.sink, done);
 }
 
 // TODO(nweiz): remove this when issue 7786 is fixed.
@@ -801,12 +802,10 @@ class PubProcess {
     _stdin = pair.first;
     _stdinClosed = errorGroup.registerFuture(pair.last);
 
-    _stdout = new ByteStream(
-        errorGroup.registerStream(process.stdout));
-    _stderr = new ByteStream(
-        errorGroup.registerStream(process.stderr));
+    _stdout = new ByteStream(errorGroup.registerStream(process.stdout));
+    _stderr = new ByteStream(errorGroup.registerStream(process.stderr));
 
-    var exitCodeCompleter = new Completer();
+    var exitCodeCompleter = new Completer<int>();
     _exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
     _process.exitCode.then((code) => exitCodeCompleter.complete(code));
   }
@@ -829,7 +828,7 @@ _doProcess(Function fn, String executable, List<String> args,
   // have any path separators in it), then spawn it through a shell.
   if ((Platform.operatingSystem == "windows") &&
       (executable.indexOf('\\') == -1)) {
-    args = flatten(["/c", executable, args]);
+    args = ["/c", executable]..addAll(args);
     executable = "cmd";
   }
 
@@ -858,12 +857,13 @@ void touch(String path) {
 ///
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
-Future withTempDir(Future fn(String path)) {
-  return new Future.sync(() {
-    var tempDir = createSystemTempDir();
-    return new Future.sync(() => fn(tempDir))
-        .whenComplete(() => deleteEntry(tempDir));
-  });
+Future/*<T>*/ withTempDir/*<T>*/(Future/*<T>*/ fn(String path)) async {
+  var tempDir = createSystemTempDir();
+  try {
+    return await fn(tempDir);
+  } finally {
+    deleteEntry(tempDir);
+  }
 }
 
 /// Binds an [HttpServer] to [host] and [port].
@@ -995,8 +995,8 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
 /// working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(List contents, {baseDir}) {
-  return new ByteStream(futureStream(new Future.sync(() async {
+ByteStream createTarGz(List contents, {String baseDir}) {
+  return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
     var buffer = new StringBuffer();
     buffer.write('Creating .tag.gz stream containing:\n');
     contents.forEach((file) => buffer.write('$file\n'));

@@ -2,13 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
+
 import 'barback/transformer_cache.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
-import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
 class PackageGraph {
@@ -42,7 +43,7 @@ class PackageGraph {
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(Entrypoint entrypoint,
       SolveResult result) {
-    var packages = new Map.fromIterable(result.packages,
+    var packages = new Map<String, Package>.fromIterable(result.packages,
         key: (id) => id.name,
         value: (id) {
       if (id.name == entrypoint.root.name) return entrypoint.root;
@@ -78,10 +79,19 @@ class PackageGraph {
     if (package == entrypoint.root.name) return packages.values.toSet();
 
     if (_transitiveDependencies == null) {
-      var closure = transitiveClosure(mapMap(packages,
-          value: (_, package) => package.dependencies.map((dep) => dep.name)));
-      _transitiveDependencies = mapMap(closure,
-          value: (_, names) => names.map((name) => packages[name]).toSet());
+      var closure = transitiveClosure(
+          mapMap/*<String, Package, String, Iterable<String>>*/(
+              packages,
+              value: (_, package) =>
+                  package.dependencies.map((dep) => dep.name)));
+      _transitiveDependencies =
+          mapMap/*<String, Set<String>, String, Set<Package>>*/(
+              closure,
+              value: (depender, names) {
+                var set = names.map((name) => packages[name]).toSet();
+                set.add(packages[depender]);
+                return set;
+              });
     }
 
     return _transitiveDependencies[package];

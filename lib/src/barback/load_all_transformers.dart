@@ -32,7 +32,7 @@ Future loadAllTransformers(AssetEnvironment environment,
 
   // If we only need to load transformers for a specific set of entrypoints,
   // remove any other transformers from [transformersNeededByTransformers].
-  var necessaryTransformers;
+  Set<TransformerId> necessaryTransformers;
   if (entrypoints != null) {
     if (entrypoints.isEmpty) return;
 
@@ -126,10 +126,10 @@ List<Set<TransformerId>> _stageTransformers(
     Map<TransformerId, Set<TransformerId>> transformerDependencies) {
   // A map from transformer ids to the indices of the stages that those
   // transformer ids should end up in. Populated by [stageNumberFor].
-  var stageNumbers = {};
-  var stages = [];
+  var stageNumbers = <TransformerId, int>{};
+  var stages = <Set<TransformerId>>[];
 
-  stageNumberFor(id) {
+  stageNumberFor(TransformerId id) {
     // Built-in transformers don't have to be loaded in stages, since they're
     // run from pub's source. Return -1 so that the "next stage" is 0.
     if (id.isBuiltInTransformer) return -1;
@@ -155,7 +155,7 @@ List<Set<TransformerId>> _stageTransformers(
 /// transformer.
 Map<TransformerId, Set<String>> _packagesThatUseTransformers(
     PackageGraph graph) {
-  var results = {};
+  var results = <TransformerId, Set<String>>{};
   for (var package in graph.packages.values) {
     for (var phase in package.pubspec.transformers) {
       for (var config in phase) {

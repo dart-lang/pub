@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
@@ -93,7 +94,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var vmArgs = [];
+  var vmArgs = <String>[];
 
   // Run in checked mode.
   if (checked) vmArgs.add("--checked");
@@ -218,7 +219,7 @@ Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
     String packagesFile, bool checked: false}) async {
   // TODO(nweiz): pass a flag to silence the "Wrong full snapshot version"
   // message when issue 20784 is fixed.
-  var vmArgs = [];
+  var vmArgs = <String>[];
   if (checked) vmArgs.add("--checked");
 
   if (packagesFile != null) {
@@ -239,9 +240,9 @@ Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
   if (recompile == null) {
     stdin1 = stdin;
   } else {
-    var pair = tee(stdin);
-    stdin1 = pair.first;
-    stdin2 = pair.last;
+    var stdins = StreamSplitter.splitFrom(stdin);
+    stdin1 = stdins.first;
+    stdin2 = stdins.last;
   }
 
   runProcess(input) async {

@@ -60,8 +60,8 @@ class Package {
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
-  Set<PackageDep> get immediateDependencies {
-    var deps = {};
+  List<PackageDep> get immediateDependencies {
+    var deps = <String, PackageDep>{};
 
     addToMap(dep) {
       deps[dep.name] = dep;
@@ -73,7 +73,7 @@ class Package {
     // Make sure to add these last so they replace normal dependencies.
     dependencyOverrides.forEach(addToMap);
 
-    return deps.values.toSet();
+    return deps.values.toList();
   }
 
   /// Returns a list of asset ids for all Dart executables in this package's bin
@@ -223,7 +223,7 @@ class Package {
     // readability than most code in pub. In particular, it avoids using the
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
-    var files;
+    Iterable<String> files;
     if (useGitIgnore && _inGitRepo) {
       // Later versions of git do not allow a path for ls-files that appears to
       // be outside of the repo, so make sure we give it a relative path.
@@ -439,8 +439,8 @@ class PackageId extends PackageName {
 
   /// Creates an ID for a magic package (see [isMagic]).
   PackageId.magic(String name)
-      : super._magic(name),
-        version = Version.none;
+    : version = Version.none,
+      super._magic(name);
 
   /// Creates an ID for the given root package.
   PackageId.root(Package package)
@@ -473,8 +473,8 @@ class PackageDep extends PackageName {
       : super._(name, source, description);
 
   PackageDep.magic(String name)
-      : super._magic(name),
-        constraint = Version.none;
+      : constraint = Version.none,
+        super._magic(name);
 
   String toString() {
     if (isRoot) return "$name $constraint (root)";

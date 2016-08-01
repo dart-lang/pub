@@ -84,6 +84,7 @@ abstract class PubCommand extends Command {
       return int.parse(intString);
     } on FormatException catch (_) {
       usageException('Could not parse $name "$intString".');
+      return null;
     }
   }
 }

@@ -7,8 +7,10 @@ dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
   analyzer: ">=0.25.0 <0.28.0"
-  args: "^0.13.0"
+  args: "^0.13.5"
+  async: "^1.5.0"
   barback: "^0.15.2"
+  collection: "^1.8.0"
   compiler_unsupported: "^1.13.0-dev"
   crypto: ">=1.0.0 <3.0.0"
   glob: "^1.0.0"

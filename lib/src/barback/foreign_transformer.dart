@@ -123,9 +123,11 @@ class _ForeignGroup implements TransformerGroup {
   final String _toString;
 
   _ForeignGroup(TransformerConfig config, Map map)
-      : phases = map['phases'].map((phase) {
-          return phase.map((transformer) => deserializeTransformerLike(
-              transformer, config)).toList();
+      : phases = (map['phases'] as List).map((phase) {
+          return (phase as List)
+              .map((transformer) =>
+                  deserializeTransformerLike(transformer, config))
+              .toList();
         }).toList(),
         _toString = map['toString'];
 

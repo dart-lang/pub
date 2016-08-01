@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
@@ -156,9 +157,10 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// Returns the body of [asset] as a response to [request].
   Future<shelf.Response> _serveAsset(shelf.Request request, Asset asset) async {
     try {
-      var pair = tee(await validateStream(asset.read()));
-      var responseStream = pair.first;
-      var hashStream = pair.last;
+      var streams = StreamSplitter.splitFrom(
+          await validateStream(asset.read()));
+      var responseStream = streams.first;
+      var hashStream = streams.last;
 
       // Allow the asset to be cached based on its content hash.
       var assetSha = await sha1Stream(hashStream);

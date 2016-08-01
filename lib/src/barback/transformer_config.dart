@@ -79,7 +79,7 @@ class TransformerConfig {
           configuration);
 
   factory TransformerConfig(TransformerId id, YamlMap configurationNode) {
-    parseField(key) {
+    Set<Glob> parseField(String key) {
       if (!configurationNode.containsKey(key)) return null;
       var fieldNode = configurationNode.nodes[key];
       var field = fieldNode.value;
@@ -103,11 +103,10 @@ class TransformerConfig {
       }));
     }
 
-    var includes = null;
-    var excludes = null;
-
-    var configuration;
-    var span;
+    Set<Glob> includes;
+    Set<Glob> excludes;
+    Map configuration;
+    SourceSpan span;
     if (configurationNode == null) {
       configuration = {};
       span = id.span;

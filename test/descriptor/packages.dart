@@ -35,7 +35,7 @@ class PackagesFileDescriptor extends Descriptor {
     if (parent == null) parent = defaultRoot;
     var contents = const <int>[];
     if (_dependencies != null) {
-      var mapping = {};
+      var mapping = <String, Uri>{};
       _dependencies.forEach((package, version) {
         var packagePath;
         if (_semverRE.hasMatch(version)) {

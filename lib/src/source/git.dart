@@ -156,11 +156,10 @@ class BoundGitSource extends CachedSource {
   /// package.
   Future<String> getPackageNameFromRepo(String repo) {
     // Clone the repo to a temp directory.
-    return withTempDir((tempDir) {
-      return _clone(repo, tempDir, shallow: true).then((_) {
-        var pubspec = new Pubspec.load(tempDir, systemCache.sources);
-        return pubspec.name;
-      });
+    return withTempDir((tempDir) async {
+      await _clone(repo, tempDir, shallow: true);
+      var pubspec = new Pubspec.load(tempDir, systemCache.sources);
+      return pubspec.name;
     });
   }
 
@@ -249,8 +248,8 @@ class BoundGitSource extends CachedSource {
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
     if (!dirExists(systemCacheRoot)) return new Pair([], []);
 
-    var successes = [];
-    var failures = [];
+    var successes = <PackageId>[];
+    var failures = <PackageId>[];
 
     var packages = listDir(systemCacheRoot)
         .where((entry) => dirExists(path.join(entry, ".git")))

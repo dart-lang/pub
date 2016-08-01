@@ -79,7 +79,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(new VersionCommand());
   }
 
-  Future run(List<String> arguments) async {
+  Future run(Iterable<String> arguments) async {
     var options;
     try {
       options = super.parse(arguments);

@@ -101,11 +101,8 @@ class SystemCache {
   bool contains(PackageId id) {
     var source = this.source(id.source);
 
-    if (source is! CachedSource) {
-      throw new ArgumentError("Package $id is not cacheable.");
-    }
-
-    return source.isInSystemCache(id);
+    if (source is CachedSource) return source.isInSystemCache(id);
+    throw new ArgumentError("Package $id is not cacheable.");
   }
 
   /// Create a new temporary directory within the system cache.

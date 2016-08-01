@@ -28,7 +28,7 @@ class WebSocketApi {
   bool _exitOnClose = false;
 
   WebSocketApi(WebSocketChannel socket, this._environment)
-      : _server = new json_rpc.Server(socket) {
+      : _server = new json_rpc.Server(socket.cast()) {
     _server.registerMethod("urlToAssetId", _urlToAssetId);
     _server.registerMethod("pathToUrls", _pathToUrls);
     _server.registerMethod("serveDirectory", _serveDirectory);
@@ -116,7 +116,7 @@ class WebSocketApi {
       // see if assets exist, consider supporting implicit index.html at that
       // point.
 
-      var result = {"package": id.package, "path": id.path};
+      var result = <String, Object>{"package": id.package, "path": id.path};
 
       // Map the line.
       // TODO(rnystrom): Right now, source maps are not supported and it just
@@ -188,7 +188,9 @@ class WebSocketApi {
             'Asset path "$assetPath" is not currently being served.');
       }
 
-      var result = {"urls": urls.map((url) => url.toString()).toList()};
+      var result = <String, Object>{
+        "urls": urls.map((url) => url.toString()).toList()
+      };
 
       // Map the line.
       // TODO(rnystrom): Right now, source maps are not supported and it just

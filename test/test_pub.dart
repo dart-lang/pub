@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
@@ -160,7 +161,7 @@ void pubDowngrade({Iterable<String> args, output, error, warning,
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-ScheduledProcess pubRun({bool global: false, Iterable<String> args}) {
+PubProcess pubRun({bool global: false, Iterable<String> args}) {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
   var pub = startPub(args: pubArgs);
@@ -243,7 +244,7 @@ void schedulePub({List args, output, error, outputJson, silent,
     var actualError = (await pub.stderrStream().toList()).join("\n");
     var actualSilent = (await pub.silentStream().toList()).join("\n");
 
-    var failures = [];
+    var failures = <String>[];
     if (outputJson == null) {
       _validateOutput(failures, 'stdout', output, actualOutput);
     } else {
@@ -263,11 +264,11 @@ void schedulePub({List args, output, error, outputJson, silent,
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-ScheduledProcess startPublish(ScheduledServer server, {List args}) {
+PubProcess startPublish(ScheduledServer server, {List args}) {
   var tokenEndpoint = server.url.then((url) =>
       url.resolve('/token').toString());
   if (args == null) args = [];
-  args = flatten(['lish', '--server', tokenEndpoint, args]);
+  args = ['lish', '--server', tokenEndpoint]..addAll(args);
   return startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
@@ -311,15 +312,17 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
   return environment;
 }
 
-/// Starts a Pub process and returns a [ScheduledProcess] that supports
-/// interaction with that process.
+/// Starts a Pub process and returns a [PubProcess] that supports interaction
+/// with that process.
 ///
 /// Any futures in [args] will be resolved before the process is started.
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
+PubProcess startPub({List args, Future<String> tokenEndpoint,
     Map<String, String> environment}) {
+  args ??= [];
+
   schedule(() {
     ensureDir(_pathInSandbox(appPath));
   }, "ensuring $appPath exists");
@@ -342,7 +345,7 @@ ScheduledProcess startPub({List args, Future<String> tokenEndpoint,
   var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
   if (fileExists('$pubPath.snapshot')) pubPath += '.snapshot';
 
-  var dartArgs = [
+  var dartArgs = <dynamic>[
     '--package-root=${p.toUri(p.absolute(p.fromUri(Platform.packageRoot)))}',
     pubPath,
     '--verbose'
@@ -381,14 +384,15 @@ class PubProcess extends ScheduledProcess {
 
   Stream<Pair<log.Level, String>> _logStream() {
     if (_log == null) {
-      _log = mergeStreams(
+      _log = StreamGroup.merge([
         _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
-        _outputToLog(super.stderrStream(), log.Level.ERROR));
+        _outputToLog(super.stderrStream(), log.Level.ERROR)
+      ]);
     }
 
-    var pair = tee(_log);
-    _log = pair.first;
-    return pair.last;
+    var logs = StreamSplitter.splitFrom(_log);
+    _log = logs.first;
+    return logs.last;
   }
 
   final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
@@ -422,9 +426,9 @@ class PubProcess extends ScheduledProcess {
       });
     }
 
-    var pair = tee(_stdout);
-    _stdout = pair.first;
-    return pair.last;
+    var stdouts = StreamSplitter.splitFrom(_stdout);
+    _stdout = stdouts.first;
+    return stdouts.last;
   }
 
   Stream<String> stderrStream() {
@@ -438,9 +442,9 @@ class PubProcess extends ScheduledProcess {
       });
     }
 
-    var pair = tee(_stderr);
-    _stderr = pair.first;
-    return pair.last;
+    var stderrs = StreamSplitter.splitFrom(_stderr);
+    _stderr = stderrs.first;
+    return stderrs.last;
   }
 
   /// A stream of log messages that are silent by default.
@@ -454,9 +458,9 @@ class PubProcess extends ScheduledProcess {
       });
     }
 
-    var pair = tee(_silent);
-    _silent = pair.first;
-    return pair.last;
+    var silents = StreamSplitter.splitFrom(_silent);
+    _silent = silents.first;
+    return silents.last;
   }
 }
 
@@ -581,7 +585,7 @@ void useMockClient(MockClient client) {
 /// Describes a map representing a library package with the given [name],
 /// [version], and [dependencies].
 Map packageMap(String name, String version, [Map dependencies]) {
-  var package = {
+  var package = <String, dynamic>{
     "name": name,
     "version": version,
     "author": "Natalie Weizenbaum <nweiz@google.com>",
@@ -663,7 +667,7 @@ void _validateOutputString(List<String> failures, String pipe,
     expectedLines.removeLast();
   }
 
-  var results = [];
+  var results = <String>[];
   var failed = false;
 
   // Compare them line by line to see which ones match.
@@ -728,14 +732,11 @@ typedef Validator ValidatorCreator(Entrypoint entrypoint);
 /// by that validator.
 Future<Pair<List<String>, List<String>>> schedulePackageValidation(
     ValidatorCreator fn) {
-  return schedule(() {
+  return schedule/*<Future<Pair<List<String>, List<String>>>>*/(() async {
     var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
-    return new Future.sync(() {
-      var validator = fn(new Entrypoint(p.join(sandboxDir, appPath), cache));
-      return validator.validate().then((_) {
-        return new Pair(validator.errors, validator.warnings);
-      });
-    });
+    var validator = fn(new Entrypoint(p.join(sandboxDir, appPath), cache));
+    await validator.validate();
+    return new Pair(validator.errors, validator.warnings);
   }, "validating package");
 }
 

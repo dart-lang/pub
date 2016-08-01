@@ -111,7 +111,7 @@ abstract class BarbackCommand extends PubCommand {
 
     // Make sure the directories don't overlap.
     var sources = sourceDirectories.toList();
-    var overlapping = new Set();
+    var overlapping = new Set<String>();
     for (var i = 0; i < sources.length; i++) {
       for (var j = i + 1; j < sources.length; j++) {
         if (path.isWithin(sources[i], sources[j]) ||

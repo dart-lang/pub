@@ -60,7 +60,7 @@ abstract class Source {
   /// package during version solving.
   ///
   /// Defaults to `false`.
-  final bool hasMultipleVersions = false;
+  bool get hasMultipleVersions => false;
 
   /// Records the system cache to which this source belongs.
   ///

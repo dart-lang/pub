@@ -18,6 +18,7 @@ main() {
         builder.serve("stack_trace", nextPatch("stack_trace"));
         builder.serve("stack_trace", max("stack_trace"));
         builder.serve("source_span", current("source_span"));
+        builder.serve("async", current("async"));
       });
 
       d.appDir({
@@ -35,6 +36,7 @@ main() {
         builder.serve("barback", current("barback"));
         builder.serve("stack_trace", nextPatch("stack_trace"));
         builder.serve("source_span", current("source_span"));
+        builder.serve("async", current("async"));
       });
 
       d.dir("stack_trace", [
@@ -69,6 +71,7 @@ main() {
         builder.serve("stack_trace", nextPatch("stack_trace"));
         builder.serve("stack_trace", max("stack_trace"));
         builder.serve("source_span", current("source_span"));
+        builder.serve("async", current("async"));
       });
 
       d.appDir({
@@ -88,6 +91,7 @@ main() {
       builder.serve("stack_trace", previous("stack_trace"));
       builder.serve("stack_trace", current("stack_trace"));
       builder.serve("source_span", current("source_span"));
+      builder.serve("async", current("async"));
     });
 
     d.appDir({"barback": "any"}).create();

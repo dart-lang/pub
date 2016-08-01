@@ -5,14 +5,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
+import '../package.dart';
 import '../package_graph.dart';
 import '../preprocess.dart';
 import '../sdk.dart' as sdk;
-import '../utils.dart';
 
 /// The path to the lib directory of the compiler_unsupported package used by
 /// pub.
@@ -63,7 +66,8 @@ class PubPackageProvider implements StaticPackageProvider {
         return new Asset.fromPath(id, file);
       }
 
-      var versions = mapMap(_graph.packages,
+      var versions = mapMap/*<String, Package, String, Version>*/(
+          _graph.packages,
           value: (_, package) => package.version);
       var contents = readTextFile(file);
       contents = preprocess(contents, versions, path.toUri(file));
@@ -95,7 +99,7 @@ class PubPackageProvider implements StaticPackageProvider {
       var file = path.join(_compilerUnsupportedLib, 'sdk',
           path.joinAll(parts.skip(1))) + "_";
       _assertExists(file, id);
-      return new Asset.fromStream(id, callbackStream(() =>
+      return new Asset.fromStream(id, new LazyStream(() =>
           _zlib.decoder.bind(new File(file).openRead())));
     }
 

@@ -107,7 +107,8 @@ class Entrypoint {
     if (_packageGraph != null) return _packageGraph;
 
     assertUpToDate();
-    var packages = new Map.fromIterable(lockFile.packages.values,
+    var packages = new Map<String, Package>.fromIterable(
+        lockFile.packages.values,
         key: (id) => id.name,
         value: (id) => cache.load(id));
     packages[root.name] = root;
@@ -294,7 +295,7 @@ class Entrypoint {
   ///
   /// If [changed] is passed, only dependencies whose contents might be changed
   /// if one of the given packages changes will be returned.
-  Set<String> _dependenciesToPrecompile({Iterable<String> changed}) {
+  Set<String> _dependenciesToPrecompile({Set<String> changed}) {
     return packageGraph.packages.values.where((package) {
       if (package.pubspec.transformers.isEmpty) return false;
       if (packageGraph.isPackageMutable(package.name)) return false;
@@ -695,13 +696,13 @@ class Entrypoint {
   /// Recursively lists the contents of [dir], excluding hidden `.DS_Store`
   /// files and `package` files.
   List<String> _listDirWithoutPackages(dir) {
-    return flatten(listDir(dir).map((file) {
+    return listDir(dir).expand/*<String>*/((file) {
       if (p.basename(file) == 'packages') return [];
       if (!dirExists(file)) return [];
       var fileAndSubfiles = [file];
       fileAndSubfiles.addAll(_listDirWithoutPackages(file));
       return fileAndSubfiles;
-    }));
+    });
   }
 
   /// If [packageSymlinks] is true, creates a symlink to the "packages"

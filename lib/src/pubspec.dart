@@ -151,7 +151,7 @@ class Pubspec {
           fields.nodes['transformers'].span);
     }
 
-    _transformers = transformers.nodes.map((phase) {
+    _transformers = (transformers as YamlList).nodes.map((phase) {
       var phaseNodes = phase is YamlList ? phase.nodes : [phase];
       return phaseNodes.map((transformerNode) {
         var transformer = transformerNode.value;
@@ -428,14 +428,17 @@ class Pubspec {
   factory Pubspec.parse(String contents, SourceRegistry sources,
       {String expectedName, Uri location}) {
     var pubspecNode = loadYamlNode(contents, sourceUrl: location);
+    Map pubspecMap;
     if (pubspecNode is YamlScalar && pubspecNode.value == null) {
-      pubspecNode = new YamlMap(sourceUrl: location);
-    } else if (pubspecNode is! YamlMap) {
+      pubspecMap = new YamlMap(sourceUrl: location);
+    } else if (pubspecNode is YamlMap) {
+      pubspecMap = pubspecNode;
+    } else {
       throw new PubspecException(
           'The pubspec must be a YAML mapping.', pubspecNode.span);
     }
 
-    return new Pubspec.fromMap(pubspecNode, sources,
+    return new Pubspec.fromMap(pubspecMap, sources,
         expectedName: expectedName, location: location);
   }
 

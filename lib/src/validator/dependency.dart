@@ -36,23 +36,24 @@ class DependencyValidator extends Validator {
     : super(entrypoint);
 
   Future validate() async {
-    var caretDeps = [];
+    var caretDeps = <PackageDep>[];
 
     for (var dependency in entrypoint.root.pubspec.dependencies) {
+      var constraint = dependency.constraint;
       if (dependency.source is! HostedSource) {
         await _warnAboutSource(dependency);
-      } else if (dependency.constraint.isAny) {
+      } else if (constraint.isAny) {
         _warnAboutNoConstraint(dependency);
-      } else if (dependency.constraint is Version) {
+      } else if (constraint is Version) {
         _warnAboutSingleVersionConstraint(dependency);
-      } else if (dependency.constraint is VersionRange) {
-        if (dependency.constraint.min == null) {
+      } else if (constraint is VersionRange) {
+        if (constraint.min == null) {
           _warnAboutNoConstraintLowerBound(dependency);
-        } else if (dependency.constraint.max == null) {
+        } else if (constraint.max == null) {
           _warnAboutNoConstraintUpperBound(dependency);
         }
 
-        if (dependency.constraint.toString().startsWith("^")) {
+        if (constraint.toString().startsWith("^")) {
           caretDeps.add(dependency);
         }
       }
@@ -65,7 +66,7 @@ class DependencyValidator extends Validator {
 
   /// Warn that dependencies should use the hosted source.
   Future _warnAboutSource(PackageDep dep) async {
-    var versions;
+    List<Version> versions;
     try {
       var ids = await entrypoint.cache.hosted
           .getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));

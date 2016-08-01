@@ -3,7 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:barback/barback.dart';
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
+import 'package:scheduled_test/scheduled_test.dart';
+
 import 'package:pub/src/barback/cycle_exception.dart';
 import 'package:pub/src/barback/dependency_computer.dart';
 import 'package:pub/src/entrypoint.dart';
@@ -12,7 +15,6 @@ import 'package:pub/src/package.dart';
 import 'package:pub/src/package_graph.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../test_pub.dart';
 

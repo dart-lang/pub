@@ -42,9 +42,12 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// referred to by [ref] at the current point in the scheduled test run.
   ///
   /// [parent] defaults to [defaultRoot].
-  Future<String> revParse(String ref, [String parent]) => schedule(() {
-    return _runGit(['rev-parse', ref], parent).then((output) => output[0]);
-  }, 'parsing revision $ref for Git repo:\n${describe()}');
+  Future<String> revParse(String ref, [String parent]) {
+    return schedule/*<Future<String>>*/(() async {
+      var output = await _runGit(['rev-parse', ref], parent);
+      return output[0];
+    }, 'parsing revision $ref for Git repo:\n${describe()}');
+  }
 
   /// Schedule a Git command to run in this repository.
   ///
@@ -53,8 +56,11 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     return _runGit(args, parent);
   }, "running 'git ${args.join(' ')}' in Git repo:\n${describe()}");
 
-  Future _runGitCommands(String parent, List<List<String>> commands) =>
-      Future.forEach(commands, (command) => _runGit(command, parent));
+  Future _runGitCommands(String parent, List<List<String>> commands) async {
+    for (var command in commands) {
+      await _runGit(command, parent);
+    }
+  }
 
   Future<List<String>> _runGit(List<String> args, String parent) {
     // Explicitly specify the committer information. Git needs this to commit

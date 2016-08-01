@@ -49,59 +49,59 @@ class TransformerIsolate {
   /// path once the isolate is loaded.
   static Future<TransformerIsolate> spawn(AssetEnvironment environment,
       BarbackServer transformerServer, List<TransformerId> ids,
-      {String snapshot}) {
-    return mapFromIterableAsync(ids, value: (id) {
-      return id.getAssetId(environment.barback);
-    }).then((idsToAssetIds) {
-      var baseUrl = transformerServer.url;
-      var idsToUrls = mapMap(idsToAssetIds, value: (id, assetId) {
-        var path = assetId.path.replaceFirst('lib/', '');
-        return Uri.parse('package:${id.package}/$path');
-      });
+      {String snapshot}) async {
+    var idsToAssetIds = <TransformerId, AssetId>{};
+    var idsToUrls = <TransformerId, Uri>{};
+    await Future.wait(ids.map((id) async {
+      var assetId = await id.getAssetId(environment.barback);
+      idsToAssetIds[id] = assetId;
 
-      var code = new StringBuffer();
-      code.writeln("import 'dart:isolate';");
+      var path = assetId.path.replaceFirst('lib/', '');
+      idsToUrls[id] = Uri.parse('package:${id.package}/$path');
+    }));
 
-      for (var url in idsToUrls.values) {
-        code.writeln("import '$url';");
-      }
+    var code = new StringBuffer();
+    code.writeln("import 'dart:isolate';");
 
-      code.writeln("import r'package:\$pub/transformer_isolate.dart';");
-      code.writeln(
-          "void main(_, SendPort replyTo) => loadTransformers(replyTo);");
+    for (var url in idsToUrls.values) {
+      code.writeln("import '$url';");
+    }
 
-      log.fine("Loading transformers from $ids");
+    code.writeln("import r'package:\$pub/transformer_isolate.dart';");
+    code.writeln(
+        "void main(_, SendPort replyTo) => loadTransformers(replyTo);");
 
-      var port = new ReceivePort();
-      return dart.runInIsolate(code.toString(), port.sendPort,
-              packageRoot: baseUrl.resolve('packages'),
-              snapshot: snapshot)
-          .then((_) => port.first)
-          .then((sendPort) {
-        return new TransformerIsolate._(sendPort, environment.mode, idsToUrls);
-      }).catchError((error, stackTrace) {
-        if (error is! CrossIsolateException) throw error;
-        if (error.type != 'IsolateSpawnException') throw error;
+    log.fine("Loading transformers from $ids");
 
-        // TODO(nweiz): don't parse this as a string once issues 12617 and 12689
-        // are fixed.
-        var firstErrorLine = error.message.split('\n')[1];
+    var port = new ReceivePort();
+    try {
+      await dart.runInIsolate(code.toString(), port.sendPort,
+          packageRoot: transformerServer.url.resolve('packages'),
+          snapshot: snapshot);
+      return new TransformerIsolate._(
+          await port.first, environment.mode, idsToUrls);
+    } on CrossIsolateException catch (error, stackTrace) {
+      if (error.type != 'IsolateSpawnException') throw error;
 
-        // The isolate error message contains the fully expanded path, not the
-        // "package:" URI, so we have to be liberal in what we look for in the
-        // error message.
-        var missingTransformer = idsToUrls.keys.firstWhere((id) =>
-            firstErrorLine.startsWith('Could not import "${idsToUrls[id]}"'),
-            orElse: () => throw error);
-        var packageUri = idToPackageUri(idsToAssetIds[missingTransformer]);
+      // TODO(nweiz): don't parse this as a string once issues 12617 and 12689
+      // are fixed.
+      var firstErrorLine = error.message.split('\n')[1];
 
-        // If there was an IsolateSpawnException and the import that actually
-        // failed was the one we were loading transformers from, throw an
-        // application exception with a more user-friendly message.
-        fail('Transformer library "$packageUri" not found.',
-            error, stackTrace);
-      });
-    });
+      // The isolate error message contains the fully expanded path, not the
+      // "package:" URI, so we have to be liberal in what we look for in the
+      // error message.
+      var missingTransformer = idsToUrls.keys.firstWhere((id) =>
+          firstErrorLine.startsWith('Could not import "${idsToUrls[id]}"'),
+          orElse: () => throw error);
+      var packageUri = idToPackageUri(idsToAssetIds[missingTransformer]);
+
+      // If there was an IsolateSpawnException and the import that actually
+      // failed was the one we were loading transformers from, throw an
+      // application exception with a more user-friendly message.
+      fail('Transformer library "$packageUri" not found.',
+          error, stackTrace);
+      return null;
+    }
   }
 
   TransformerIsolate._(this._port, this._mode, this._idsToUrls);
@@ -111,20 +111,20 @@ class TransformerIsolate {
   ///
   /// If there are no transformers defined in the given library, this will
   /// return an empty set.
-  Future<Set<Transformer>> create(TransformerConfig config) {
-    return call(_port, {
-      'library': _idsToUrls[config.id].toString(),
-      'mode': _mode.name,
-      'configuration': JSON.encode(config.configuration)
-    }).then((transformers) {
-      transformers = transformers.map(
-          (transformer) => deserializeTransformerLike(transformer, config))
+  Future<Set<Transformer>> create(TransformerConfig config) async {
+    try {
+      var transformers = (await call/*<List>*/(_port, {
+        'library': _idsToUrls[config.id].toString(),
+        'mode': _mode.name,
+        'configuration': JSON.encode(config.configuration)
+      }))
+          .map((transformer) => deserializeTransformerLike(transformer, config))
           .toSet();
       log.fine("Transformers from $config: $transformers");
       return transformers;
-    }).catchError((error, stackTrace) {
+    } catch (error) {
       throw new TransformerLoadError(error, config.span);
-    });
+    }
   }
 }
 

@@ -27,7 +27,7 @@ class CycleException implements ApplicationException {
     if (_step == null) return [];
 
     var exception = this;
-    var steps = [];
+    var steps = <String>[];
     while (exception != null) {
       steps.add(exception._step);
       exception = exception._next;

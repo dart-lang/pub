@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 
@@ -154,7 +155,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
 
     var options = _settings.configuration['commandLineOptions'];
     if (options is List && options.every((option) => option is String)) {
-      return options;
+      return DelegatingList.typed(options);
     }
 
     throw new FormatException('Invalid value for '
@@ -172,7 +173,9 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
     if (environment is Map &&
         environment.keys.every((key) => key is String) &&
         environment.values.every((key) => key is String)) {
-      return mergeMaps(environment, _environment.environmentConstants);
+      return mergeMaps(
+          DelegatingMap.typed(environment),
+          _environment.environmentConstants);
     }
 
     throw new FormatException('Invalid value for \$dart2js.environment: '

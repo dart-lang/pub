@@ -56,7 +56,7 @@ class LishCommand extends PubCommand {
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(packageBytes) async {
+  Future _publish(List<int> packageBytes) async {
     var cloudStorageUrl;
     try {
       await oauth2.withClient(cache, (client) {

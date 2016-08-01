@@ -37,7 +37,8 @@ import 'package:pub_semver/pub_semver.dart';
 final pubConstraints = {
   "barback": new VersionConstraint.parse(">=0.15.0 <0.15.3"),
   "source_span": new VersionConstraint.parse(">=1.0.0 <2.0.0"),
-  "stack_trace": new VersionConstraint.parse(">=0.9.1 <2.0.0")
+  "stack_trace": new VersionConstraint.parse(">=0.9.1 <2.0.0"),
+  "async": new VersionConstraint.parse(">=1.8.0 <2.0.0")
 };
 
 /// Converts [id] to a "package:" URI.

@@ -18,6 +18,7 @@ main() {
 
   var sourceSpanVersion = barback.pubConstraints["source_span"].min.toString();
   var stackTraceVersion = barback.pubConstraints["stack_trace"].min.toString();
+  var asyncVersion = barback.pubConstraints["async"].min.toString();
 
   forBothPubGetAndUpgrade((command) {
     integration("implicitly constrains barback to versions pub supports", () {
@@ -28,6 +29,7 @@ main() {
         builder.serve("barback", max);
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
       d.appDir({
@@ -49,6 +51,7 @@ main() {
         builder.serve("barback", max);
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
       d.dir("foo", [
@@ -75,6 +78,7 @@ main() {
       servePackages((builder) {
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
       d.dir('barback', [
@@ -105,6 +109,7 @@ main() {
       builder.serve("barback", current);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
     d.appDir({"barback": "any"}).create();
@@ -128,6 +133,7 @@ main() {
       builder.serve("barback", previous);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
     d.appDir({"barback": "any"}).create();
@@ -145,6 +151,7 @@ Package barback has no versions that match >=$current <$max derived from:
       builder.serve("barback", current);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
     d.appDir({"barback": previous}).create();

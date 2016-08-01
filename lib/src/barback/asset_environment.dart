@@ -196,7 +196,7 @@ class AssetEnvironment {
   /// that completes to the bound server.
   ///
   /// If [rootDirectory] is already being served, returns that existing server.
-  Future<BarbackServer> serveDirectory(String rootDirectory) {
+  Future<BarbackServer> serveDirectory(String rootDirectory) async {
     // See if there is already a server bound to the directory.
     var directory = _directories[rootDirectory];
     if (directory != null) {
@@ -231,11 +231,9 @@ class AssetEnvironment {
         this, rootDirectory, _hostname, port);
     _directories[rootDirectory] = sourceDirectory;
 
-    return _provideDirectorySources(rootPackage, rootDirectory)
-        .then((subscription) {
-      sourceDirectory.watchSubscription = subscription;
-      return sourceDirectory.serve();
-    });
+    sourceDirectory.watchSubscription =
+        await _provideDirectorySources(rootPackage, rootDirectory);
+    return await sourceDirectory.serve();
   }
 
   /// Binds a new port to serve assets from within the "bin" directory of
@@ -308,18 +306,15 @@ class AssetEnvironment {
   /// Also removes any source files within that directory from barback. Returns
   /// the URL of the unbound server, of `null` if [rootDirectory] was not
   /// bound to a server.
-  Future<Uri> unserveDirectory(String rootDirectory) {
+  Future<Uri> unserveDirectory(String rootDirectory) async {
     log.fine("Unserving $rootDirectory.");
     var directory = _directories.remove(rootDirectory);
     if (directory == null) return new Future.value();
 
-    return directory.server.then((server) {
-      var url = server.url;
-      return directory.close().then((_) {
-        _removeDirectorySources(rootDirectory);
-        return url;
-      });
-    });
+    var url = (await directory.server).url;
+    await directory.close();
+    _removeDirectorySources(rootDirectory);
+    return url;
   }
 
   /// Gets the source directory that contains [assetPath] within the entrypoint
@@ -333,15 +328,12 @@ class AssetEnvironment {
           .directory;
 
   /// Return all URLs serving [assetPath] in this environment.
-  Future<List<Uri>> getUrlsForAssetPath(String assetPath) {
+  Future<List<Uri>> getUrlsForAssetPath(String assetPath) async {
     // Check the three (mutually-exclusive) places the path could be pointing.
-    return _lookUpPathInServerRoot(assetPath).then((urls) {
-      if (urls.isNotEmpty) return urls;
-      return _lookUpPathInPackagesDirectory(assetPath);
-    }).then((urls) {
-      if (urls.isNotEmpty) return urls;
-      return _lookUpPathInDependency(assetPath);
-    });
+    var urls = await _lookUpPathInServerRoot(assetPath);
+    if (urls.isEmpty) urls = await _lookUpPathInPackagesDirectory(assetPath);
+    if (urls.isEmpty) urls = await _lookUpPathInDependency(assetPath);
+    return urls;
   }
 
   /// Look up [assetPath] in the root directories of servers running in the

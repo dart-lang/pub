@@ -210,7 +210,7 @@ class SolverCache {
     _versionCacheMisses++;
 
     var source = _cache.source(package.source);
-    var ids;
+    List<PackageId> ids;
     try {
       ids = await source.getVersions(package);
     } catch (error, stackTrace) {
@@ -344,8 +344,8 @@ class BadSdkVersionException extends SolveFailure {
   final String _message;
 
   BadSdkVersionException(String package, String message)
-      : super(package, null),
-        _message = message;
+      : _message = message,
+        super(package, null);
 }
 
 /// Exception thrown when the [VersionConstraint] used to match a package is

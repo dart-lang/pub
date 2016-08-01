@@ -34,7 +34,7 @@ abstract class CompilerProvider {
   /// the input file at that URI.
   ///
   /// The future can complete to a string or a list of bytes.
-  Future/*<String | List<int>>*/ provideInput(Uri uri);
+  Future provideInput(Uri uri);
 
   /// Reports a diagnostic message from dart2js to the user.
   void handleDiagnostic(Uri uri, int begin, int end, String message,
@@ -192,7 +192,7 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     if (snapshot == null) return;
 
     ensureDir(p.dirname(snapshot));
-    var snapshotArgs = [];
+    var snapshotArgs = <String>[];
     if (packageRoot != null) snapshotArgs.add('--package-root=$packageRoot');
     snapshotArgs.addAll(['--snapshot=$snapshot', dartPath]);
     var result = await runProcess(Platform.executable, snapshotArgs);

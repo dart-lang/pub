@@ -86,7 +86,8 @@ class ServeCommand extends BarbackCommand {
     var watcherType = argResults['force-poll'] ?
         WatcherType.POLLING : WatcherType.AUTO;
 
-    var environmentConstants = new Map.fromIterable(argResults["define"],
+    var environmentConstants = new Map<String, String>.fromIterable(
+        argResults["define"],
         key: (pair) => pair.split("=").first,
         value: (pair) => pair.split("=").last);
 

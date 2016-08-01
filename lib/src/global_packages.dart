@@ -211,9 +211,7 @@ class GlobalPackages {
     if (id.isRoot) return;
 
     var source = cache.source(id.source);
-    if (source is! CachedSource) return;
-
-    await source.downloadToSystemCache(id);
+    if (source is CachedSource) await source.downloadToSystemCache(id);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -432,7 +430,7 @@ class GlobalPackages {
   /// were successfully re-activated; the second indicates which failed.
   Future<Pair<List<String>, List<String>>> repairActivatedPackages()
       async {
-    var executables = {};
+    var executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
         try {
@@ -459,8 +457,8 @@ class GlobalPackages {
       }
     }
 
-    var successes = [];
-    var failures = [];
+    var successes = <String>[];
+    var failures = <String>[];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
         var id;
@@ -551,8 +549,8 @@ class GlobalPackages {
 
     ensureDir(_binStubDir);
 
-    var installed = [];
-    var collided = {};
+    var installed = <String>[];
+    var collided = <String, String>{};
     var allExecutables = ordered(package.pubspec.executables.keys);
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;

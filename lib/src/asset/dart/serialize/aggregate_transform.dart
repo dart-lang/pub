@@ -19,7 +19,8 @@ import 'get_input_transform.dart';
 /// serialized transform. [methodHandlers] is a set of additional methods. Each
 /// value should take a JSON message and return the response (which may be a
 /// Future).
-Map _serializeBaseAggregateTransform(transform, Map additionalFields,
+Map _serializeBaseAggregateTransform(transform,
+    Map<String, dynamic> additionalFields,
     Map<String, Function> methodHandlers) {
   var receivePort = new ReceivePort();
   receivePort.listen((wrappedMessage) {

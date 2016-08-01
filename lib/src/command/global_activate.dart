@@ -35,13 +35,13 @@ class GlobalActivateCommand extends PubCommand {
 
   Future run() {
     // Default to `null`, which means all executables.
-    var executables;
+    List<String> executables;
     if (argResults.wasParsed("executable")) {
       if (argResults.wasParsed("no-executables")) {
         usageException("Cannot pass both --no-executables and --executable.");
       }
 
-      executables = argResults["executable"];
+      executables = argResults["executable"] as List<String>;
     } else if (argResults["no-executables"]) {
       // An empty list means no executables.
       executables = [];

@@ -32,7 +32,7 @@ See http://dartlang.org/tools/pub/cmd/pub-uploader.html for detailed documentati
 ScheduledProcess startPubUploader(ScheduledServer server, List<String> args) {
   var tokenEndpoint = server.url.then((url) =>
       url.resolve('/token').toString());
-  args = flatten(['uploader', '--server', tokenEndpoint, args]);
+  args = ['uploader', '--server', tokenEndpoint]..addAll(args);
   return startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 

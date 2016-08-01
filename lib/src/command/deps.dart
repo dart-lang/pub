@@ -144,11 +144,11 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = new Queue<Pair<Package, Map>>();
+    var toWalk = new Queue<Pair<Package, Map<String, Map>>>();
     var visited = new Set<String>.from([entrypoint.root.name]);
 
     // Start with the root dependencies.
-    var packageTree = {};
+    var packageTree = <String, Map>{};
     var immediateDependencies = entrypoint.root.immediateDependencies.toSet();
     if (!_includeDev) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies);
@@ -171,7 +171,7 @@ class DepsCommand extends PubCommand {
       visited.add(package.name);
 
       // Populate the map with this package's dependencies.
-      var childMap = {};
+      var childMap = <String, Map>{};
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies) {
@@ -221,5 +221,6 @@ class DepsCommand extends PubCommand {
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "pub get" again.');
+    return null;
   }
 }

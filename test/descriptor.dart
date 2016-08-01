@@ -56,7 +56,7 @@ Descriptor pubspec(Map contents) {
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
 Descriptor appPubspec([Map dependencies]) {
-  var map = {"name": "myapp"};
+  var map = <String, dynamic>{"name": "myapp"};
   if (dependencies != null) map["dependencies"] = dependencies;
   return pubspec(map);
 }
@@ -201,5 +201,5 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 /// entries (one per key in [dependencies]), each with a path that contains
 /// either the version string (for a reference to the pub cache) or a
 /// path to a path dependency, relative to the application directory.
-Descriptor packagesFile([Map dependencies]) =>
+Descriptor packagesFile([Map<String, String> dependencies]) =>
   new PackagesFileDescriptor(dependencies);

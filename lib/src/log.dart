@@ -399,7 +399,8 @@ void dumpTranscript() {
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.FINE].
-Future progress(String message, Future callback(), {bool fine: false}) {
+Future/*<T>*/ progress/*<T>*/(String message, Future/*<T>*/ callback(),
+    {bool fine: false}) {
   _stopProgress();
 
   var progress = new Progress(message, fine: fine);

@@ -69,7 +69,7 @@ class DependencyComputer {
   /// `T1` to `T2`.
   Map<TransformerId, Set<TransformerId>> transformersNeededByTransformers(
       [Iterable<TransformerId> transformers]) {
-    var result = {};
+    var result = <TransformerId, Set<TransformerId>>{};
 
     if (transformers == null) {
       transformers = ordered(_graph.packages.keys).expand((packageName) {
@@ -162,8 +162,8 @@ class DependencyComputer {
       return _transformersNeededByPackages[rootPackage];
     }
 
-    var results = new Set();
-    var seen = new Set();
+    var results = new Set<TransformerId>();
+    var seen = new Set<String>();
 
     traversePackage(packageName) {
       if (seen.contains(packageName)) return;
@@ -389,10 +389,10 @@ class _PackageDependencyComputer {
       return _transitiveExternalDirectives[rootLibrary];
     }
 
-    var results = new Set();
-    var seen = new Set();
+    var results = new Set<Uri>();
+    var seen = new Set<String>();
 
-    traverseLibrary(library) {
+    traverseLibrary(String library) {
       library = p.normalize(library);
       if (seen.contains(library)) return true;
       seen.add(library);

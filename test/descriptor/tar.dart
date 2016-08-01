@@ -18,23 +18,24 @@ class TarFileDescriptor extends DirectoryDescriptor
 
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
-  Future<String> create([String parent]) => schedule(() {
-    if (parent == null) parent = defaultRoot;
-    return withTempDir((tempDir) {
-      return Future.wait(contents.map((entry) {
-        return entry.create(tempDir);
-      })).then((_) {
+  Future<String> create([String parent]) {
+    return schedule/*<Future<String>>*/(() async {
+      if (parent == null) parent = defaultRoot;
+      return await withTempDir((tempDir) async {
+        await Future.wait(contents.map((entry) => entry.create(tempDir)));
+
         var createdContents = listDir(tempDir,
             recursive: true,
             includeHidden: true);
-        return createTarGz(createdContents, baseDir: tempDir).toBytes();
-      }).then((bytes) {
+        var bytes = await createTarGz(createdContents, baseDir: tempDir)
+            .toBytes();
+
         var file = path.join(parent, name);
         writeBinaryFile(file, bytes);
         return file;
       });
-    });
-  }, 'creating tar file:\n${describe()}');
+    }, 'creating tar file:\n${describe()}');
+  }
 
   /// Validates that the `.tar.gz` file at [path] contains the expected
   /// contents.

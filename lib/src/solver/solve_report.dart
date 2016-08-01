@@ -104,9 +104,9 @@ class SolveReport {
     removed.removeAll(names);
     if (removed.isNotEmpty) {
       _output.writeln("These packages are no longer being depended on:");
-      removed = removed.toList();
-      removed.sort();
-      removed.forEach((name) => _reportPackage(name, alwaysShow: true));
+      for (var name in ordered(removed)) {
+        _reportPackage(name, alwaysShow: true);
+      }
     }
 
     log.message(_output);

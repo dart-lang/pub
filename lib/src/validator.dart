@@ -75,10 +75,8 @@ abstract class Validator {
 
     return Future.wait(validators.map((validator) => validator.validate()))
       .then((_) {
-      var errors =
-          flatten(validators.map((validator) => validator.errors));
-      var warnings =
-          flatten(validators.map((validator) => validator.warnings));
+      var errors = validators.expand((validator) => validator.errors);
+      var warnings = validators.expand((validator) => validator.warnings);
 
       if (!errors.isEmpty) {
         log.error("Missing requirements:");

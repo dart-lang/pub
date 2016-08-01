@@ -21,7 +21,8 @@ class SdkConstraintValidator extends Validator {
 
   Future validate() async {
     var dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
-    if (dartConstraint.toString().startsWith("^")) {
+    if (dartConstraint is VersionRange &&
+        dartConstraint.toString().startsWith("^")) {
       errors.add(
           "^ version constraints aren't allowed for SDK constraints since "
             "older versions of pub don't support them.\n"

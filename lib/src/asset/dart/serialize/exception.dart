@@ -20,7 +20,8 @@ class CrossIsolateException implements Exception {
 
   /// The exception's message, or its [toString] if it didn't expose a `message`
   /// property.
-  final String message;
+  String get message => _message;
+  final String _message;
 
   /// The exception's stack chain, or `null` if no stack chain was available.
   final Chain stackTrace;
@@ -30,7 +31,7 @@ class CrossIsolateException implements Exception {
   /// [error] should be the result of [CrossIsolateException.serialize].
   CrossIsolateException.deserialize(Map error)
       : type = error['type'],
-        message = error['message'],
+        _message = error['message'],
         stackTrace = error['stack'] == null ? null :
             new Chain.parse(error['stack']);
 
