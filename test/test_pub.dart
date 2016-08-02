@@ -14,6 +14,7 @@ import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
+import 'package:package_resolver/package_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exceptions.dart';
@@ -346,7 +347,7 @@ PubProcess startPub({List args, Future<String> tokenEndpoint,
   if (fileExists('$pubPath.snapshot')) pubPath += '.snapshot';
 
   var dartArgs = <dynamic>[
-    '--package-root=${p.toUri(p.absolute(p.fromUri(Platform.packageRoot)))}',
+    PackageResolver.current.processArgument,
     pubPath,
     '--verbose'
   ]..addAll(args);

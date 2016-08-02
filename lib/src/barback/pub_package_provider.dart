@@ -8,7 +8,8 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
+import 'package:package_resolver/package_resolver.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
@@ -23,13 +24,12 @@ import '../sdk.dart' as sdk;
 /// This is used to make sure dart2js is running against its own version of its
 /// internal libraries when running from the pub repo. It's `null` if we're
 /// running from the Dart repo or from the built SDK.
-final _compilerUnsupportedLib = (() {
+final Future<String> _compilerUnsupportedLib = (() async {
   if (runningFromSdk) return null;
   if (runningFromDartRepo) return null;
 
-  // TODO(nweiz): When we switch over to ".packages", read the path from there
-  // instead, or from the resource API if it's usable by that point.
-  return path.join(pubRoot, 'packages', 'compiler_unsupported');
+  return p.fromUri(
+      await PackageResolver.current.urlFor('compiler_unsupported'));
 })();
 
 final _zlib = new ZLibCodec();
@@ -52,11 +52,11 @@ class PubPackageProvider implements StaticPackageProvider {
     // "$pub" is a psuedo-package that allows pub's transformer-loading
     // infrastructure to share code with pub proper.
     if (id.package == r'$pub') {
-      var components = path.url.split(id.path);
+      var components = p.url.split(id.path);
       assert(components.isNotEmpty);
       assert(components.first == 'lib');
       components[0] = 'dart';
-      var file = assetPath(path.joinAll(components));
+      var file = assetPath(p.joinAll(components));
       _assertExists(file, id);
 
       // Barback may not be in the package graph if there are no user-defined
@@ -70,7 +70,7 @@ class PubPackageProvider implements StaticPackageProvider {
           _graph.packages,
           value: (_, package) => package.version);
       var contents = readTextFile(file);
-      contents = preprocess(contents, versions, path.toUri(file));
+      contents = preprocess(contents, versions, p.toUri(file));
       return new Asset.fromString(id, contents);
     }
 
@@ -82,12 +82,13 @@ class PubPackageProvider implements StaticPackageProvider {
       // concept that all public assets are in "lib". The second comes from the
       // organization of the SDK itself. Strip off the first. Leave the second
       // since dart2js adds it and expects it to be there.
-      var parts = path.split(path.fromUri(id.path));
+      var parts = p.split(p.fromUri(id.path));
       assert(parts.isNotEmpty && parts[0] == 'lib');
       parts = parts.skip(1).toList();
 
-      if (_compilerUnsupportedLib == null) {
-        var file = path.join(sdk.rootDirectory, path.joinAll(parts));
+      var compilerUnsupportedLib = await _compilerUnsupportedLib;
+      if (compilerUnsupportedLib == null) {
+        var file = p.join(sdk.rootDirectory, p.joinAll(parts));
         _assertExists(file, id);
         return new Asset.fromPath(id, file);
       }
@@ -96,14 +97,14 @@ class PubPackageProvider implements StaticPackageProvider {
       // compiler_unsupported and may expect different SDK sources than the
       // actual SDK we're using. Handily, compiler_unsupported contains a full
       // (ZLib-encoded) copy of the SDK, so we load sources from that instead.
-      var file = path.join(_compilerUnsupportedLib, 'sdk',
-          path.joinAll(parts.skip(1))) + "_";
+      var file = p.join(compilerUnsupportedLib, 'sdk',
+          p.joinAll(parts.skip(1))) + "_";
       _assertExists(file, id);
       return new Asset.fromStream(id, new LazyStream(() =>
           _zlib.decoder.bind(new File(file).openRead())));
     }
 
-    var nativePath = path.fromUri(id.path);
+    var nativePath = p.fromUri(id.path);
     var file = _graph.packages[id.package].path(nativePath);
     _assertExists(file, id);
     return new Asset.fromPath(id, file);
@@ -122,41 +123,44 @@ class PubPackageProvider implements StaticPackageProvider {
       var dartPath = assetPath('dart');
       return new Stream.fromIterable(listDir(dartPath, recursive: true)
           // Don't include directories.
-          .where((file) => path.extension(file) == ".dart")
+          .where((file) => p.extension(file) == ".dart")
           .map((library) {
-        var idPath = path.join('lib', path.relative(library, from: dartPath));
-        return new AssetId('\$pub', path.toUri(idPath).toString());
+        var idPath = p.join('lib', p.relative(library, from: dartPath));
+        return new AssetId('\$pub', p.toUri(idPath).toString());
       }));
     } else if (packageName == r'$sdk') {
-      // "$sdk" is a pseudo-package that allows the dart2js transformer to find
-      // the Dart core libraries without hitting the file system directly. This
-      // ensures they work with source maps.
-      var libPath = _compilerUnsupportedLib == null
-          ? path.join(sdk.rootDirectory, "lib")
-          : path.join(_compilerUnsupportedLib, "sdk");
-      var files = listDir(libPath, recursive: true);
+      return StreamCompleter.fromFuture(() async {
+        var compilerUnsupportedLib = await _compilerUnsupportedLib;
+        // "$sdk" is a pseudo-package that allows the dart2js transformer to
+        // find the Dart core libraries without hitting the file system
+        // directly. This ensures they work with source maps.
+        var libPath = compilerUnsupportedLib == null
+            ? p.join(sdk.rootDirectory, "lib")
+            : p.join(compilerUnsupportedLib, "sdk");
+        var files = listDir(libPath, recursive: true);
 
-      if (_compilerUnsupportedLib != null) {
-        // compiler_unsupported's SDK sources are ZLib-encoded; to indicate
-        // this, they end in "_". We serve them decoded, though, so we strip the
-        // underscore to get the asset paths.
-        var trailingUnderscore = new RegExp(r"_$");
-        files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
-      }
+        if (compilerUnsupportedLib != null) {
+          // compiler_unsupported's SDK sources are ZLib-encoded; to indicate
+          // this, they end in "_". We serve them decoded, though, so we strip
+          // the underscore to get the asset paths.
+          var trailingUnderscore = new RegExp(r"_$");
+          files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
+        }
 
-      return new Stream.fromIterable(files
-          .where((file) => path.extension(file) == ".dart")
-          .map((file) {
-        var idPath = path.join("lib", "lib",
-            path.relative(file, from: libPath));
-        return new AssetId('\$sdk', path.toUri(idPath).toString());
-      }));
+        return new Stream.fromIterable(files
+            .where((file) => p.extension(file) == ".dart")
+            .map((file) {
+          var idPath = p.join("lib", "lib",
+              p.relative(file, from: libPath));
+          return new AssetId('\$sdk', p.toUri(idPath).toString());
+        }));
+      }());
     } else {
       var package = _graph.packages[packageName];
       return new Stream.fromIterable(
           package.listFiles(beneath: 'lib').map((file) {
         return new AssetId(packageName,
-            path.toUri(package.relative(file)).toString());
+            p.toUri(package.relative(file)).toString());
       }));
     }
   }
