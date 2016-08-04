@@ -49,6 +49,17 @@ class ServeCommand extends BarbackCommand {
 
   List<String> get defaultSourceDirectories => ["web", "test"];
 
+  RegExp get rewriteFilterRegExp {
+    String pathFilterRegExpArg = argResults['rewrite-to-index'];
+    if (pathFilterRegExpArg == null) return null;
+    try {
+      return new RegExp(pathFilterRegExpArg);
+    } catch (FormatException) {
+      log.error(log.red('Invalid regexp: $pathFilterRegExpArg'));
+      return null;
+    }
+  }
+
   /// This completer is used to keep pub running (by not completing) and to
   /// pipe fatal errors to pub's top-level error-handling machinery.
   final _completer = new Completer();
@@ -76,6 +87,8 @@ class ServeCommand extends BarbackCommand {
         help: 'Compile Dart to JavaScript.');
     argParser.addFlag('force-poll', defaultsTo: false,
         help: 'Force the use of a polling filesystem watcher.');
+    argParser.addOption('rewrite-to-index',
+        help: 'Redirected to "index.html" 404 requests with paths matching the given regexp.');
   }
 
   Future onRunTransformerCommand() async {
@@ -144,6 +157,9 @@ class ServeCommand extends BarbackCommand {
     // been compiled to JavaScript already.
     if (mode == BarbackMode.RELEASE) {
       server.allowAsset = (url) => !url.path.endsWith(".dart");
+    }
+    if (rewriteFilterRegExp != null) {
+      server.rewriteFilter = (url) => rewriteFilterRegExp.hasMatch(url.path);
     }
 
     // Add two characters to account for "[" and "]".

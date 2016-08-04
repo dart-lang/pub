@@ -22,6 +22,8 @@ import 'asset_environment.dart';
 /// Callback for determining if an asset with [id] should be served or not.
 typedef bool AllowAsset(AssetId id);
 
+typedef bool Filter(Uri uri);
+
 /// A server that serves assets transformed by barback.
 class BarbackServer extends BaseServer<BarbackServerResult> {
   /// The package whose assets are being served.
@@ -42,6 +44,10 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   ///
   /// If this is `null`, all assets may be served.
   AllowAsset allowAsset;
+
+  /// When a response is Not Found (404) and the original request url satisfies
+  /// this filter, then the response to GET index.html will be returned instead.
+  Filter rewriteFilter;
 
   /// Creates a new server and binds it to [port] of [host].
   ///
@@ -130,7 +136,16 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       }).catchError((newError, newTrace) {
         // If we find neither the original file or the index, we should report
         // the error about the original to the user.
-        throw newError is AssetNotFoundException ? error : newError;
+        // Unless the original URL was a target for a rewrite to index.html.
+        if (rewriteFilter == null || !rewriteFilter(request.url))
+          throw newError is AssetNotFoundException ? error : newError;
+        var indexId = urlToId(new Uri.file('index.html'));
+        return environment.barback
+            .getAssetById(indexId)
+            .then((asset) => _serveAsset(request, asset))
+            .catchError((newError, newTrace) {
+          throw newError is AssetNotFoundException ? error : newError;
+        });
       });
     }).catchError((error, trace) {
       if (error is! AssetNotFoundException) {
