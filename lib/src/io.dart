@@ -1012,7 +1012,7 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       return path.relative(entry, from: baseDir);
     }).toList();
 
-    if (Platform.operatingSystem != "windows") {
+    if (!Platform.isWindows) {
       var args = [
         // ustar is the most recent tar format that's compatible across all
         // OSes.
@@ -1024,6 +1024,12 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "--files-from",
         "/dev/stdin"
       ];
+
+      // The ustar format doesn't support large UIDs, which can happen if
+      // someone's using Active Directory on Linux. We don't care about
+      // preserving ownership anyway, so we just set them to 0. Note that BSD
+      // tar doesn't support the `--owner` or `--group` arguments.
+      if (Platform.isLinux) args.addAll(["--owner=0", "--group=0"]);
 
       var process = await startProcess("tar", args);
       process.stdin.add(UTF8.encode(contents.join("\n")));
