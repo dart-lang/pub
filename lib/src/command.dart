@@ -37,8 +37,7 @@ abstract class PubCommand extends Command {
   Entrypoint get entrypoint {
     // Lazy load it.
     if (_entrypoint == null) {
-      _entrypoint = new Entrypoint('.', cache,
-          packageSymlinks: globalResults['package-symlinks']);
+      _entrypoint = new Entrypoint('.', cache);
     }
     return _entrypoint;
   }

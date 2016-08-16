@@ -9,7 +9,7 @@ import 'test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    group("with --no-package-symlinks", () {
+    group("with --no-packages-dir", () {
       integration("installs hosted dependencies to the cache", () {
         servePackages((builder) {
           builder.serve("foo", "1.0.0");
@@ -18,7 +18,7 @@ main() {
 
         d.appDir({"foo": "any", "bar": "any"}).create();
 
-        pubCommand(command, args: ["--no-package-symlinks"]);
+        pubCommand(command, args: ["--no-packages-dir"]);
 
         d.nothing("$appPath/packages").validate();
 
@@ -42,7 +42,7 @@ main() {
 
         d.appDir({"foo": {"git": "../foo.git"}}).create();
 
-        pubCommand(command, args: ["--no-package-symlinks"]);
+        pubCommand(command, args: ["--no-packages-dir"]);
 
         d.nothing("$appPath/packages").validate();
 
@@ -66,7 +66,7 @@ main() {
           })
         ]).create();
 
-        pubCommand(command, args: ["--no-package-symlinks"]);
+        pubCommand(command, args: ["--no-packages-dir"]);
 
         d.nothing("$appPath/packages").validate();
         d.matcherFile("$appPath/pubspec.lock", contains("foo"));
@@ -81,7 +81,7 @@ main() {
           d.dir("web/subdir/packages")
         ]).create();
 
-        pubCommand(command, args: ["--no-package-symlinks"]);
+        pubCommand(command, args: ["--no-packages-dir"]);
 
         d.dir(appPath, [
           d.nothing("packages"),
@@ -100,7 +100,7 @@ main() {
           d.dir("lib/packages")
         ]).create();
 
-        pubCommand(command, args: ["--no-package-symlinks"]);
+        pubCommand(command, args: ["--no-packages-dir"]);
 
         d.dir(appPath, [
           d.nothing("packages"),

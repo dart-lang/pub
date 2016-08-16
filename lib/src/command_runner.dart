@@ -60,9 +60,6 @@ class PubCommandRunner extends CommandRunner {
         negatable: false, help: 'Execute commands with prejudice.');
     argParser.addFlag('sparkle', hide: !isAprilFools,
         negatable: false, help: 'A more sparkly experience.');
-    argParser.addFlag('package-symlinks',
-        negatable: true, defaultsTo: true, hide: true,
-        help: "Generate packages/ directories when installing packages.");
 
     addCommand(new BuildCommand());
     addCommand(new CacheCommand());

@@ -71,10 +71,6 @@ class Entrypoint {
   /// the network.
   final SystemCache cache;
 
-  /// Whether to create and symlink a "packages" directory containing links to
-  /// the installed packages.
-  final bool _packageSymlinks;
-
   /// Whether this entrypoint is in memory only, as opposed to representing a
   /// real directory on disk.
   final bool _inMemory;
@@ -119,7 +115,7 @@ class Entrypoint {
   PackageGraph _packageGraph;
 
   /// The path to the entrypoint's "packages" directory.
-  String get packagesDir => root.path('packages');
+  String get packagesPath => root.path('packages');
 
   /// The path to the entrypoint's ".packages" file.
   String get packagesFile => root.path('.packages');
@@ -141,29 +137,21 @@ class Entrypoint {
   String get _snapshotPath => root.path('.pub', 'bin');
 
   /// Loads the entrypoint from a package at [rootDir].
-  ///
-  /// If [packageSymlinks] is `true`, this will create a "packages" directory
-  /// with symlinks to the installed packages. This directory will be symlinked
-  /// into any directory that might contain an entrypoint.
-  Entrypoint(String rootDir, SystemCache cache, {bool packageSymlinks: true,
-          this.isGlobal: false})
+  Entrypoint(String rootDir, SystemCache cache, {this.isGlobal: false})
       : root = new Package.load(null, rootDir, cache.sources),
         cache = cache,
-        _packageSymlinks = packageSymlinks,
         _inMemory = false;
 
   /// Creates an entrypoint given package and lockfile objects.
   Entrypoint.inMemory(this.root, this._lockFile, this.cache,
           {this.isGlobal: false})
-      : _packageSymlinks = false,
-        _inMemory = true;
+      : _inMemory = true;
 
   /// Creates an entrypoint given a package and a [solveResult], from which the
   /// package graph and lockfile will be computed.
   Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult,
           {this.isGlobal: false})
-      : _packageSymlinks = false,
-        _inMemory = true {
+      : _inMemory = true {
     _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
     _lockFile = _packageGraph.lockFile;
   }
@@ -186,9 +174,14 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables and runs transformers on transformed dependencies.
   ///
+  /// If [packagesDir] is `true`, this will create "packages" directory with
+  /// symlinks to the installed packages. This directory will be symlinked into
+  /// any directory that might contain an entrypoint.
+  ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type, {List<String> useLatest,
-      bool dryRun: false, bool precompile: true}) async {
+      bool dryRun: false, bool precompile: true, bool packagesDir: false})
+      async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
     if (!result.succeeded) throw result.error;
@@ -201,17 +194,18 @@ class Entrypoint {
     }
 
     // Install the packages and maybe link them into the entrypoint.
-    if (_packageSymlinks) {
-      cleanDir(packagesDir);
+    if (packagesDir) {
+      cleanDir(packagesPath);
     } else {
-      deleteEntry(packagesDir);
+      deleteEntry(packagesPath);
     }
 
-    await Future.wait(result.packages.map(_get));
+    await Future.wait(result.packages
+        .map((id) => _get(id, packagesDir: packagesDir)));
     _saveLockFile(result);
 
-    if (_packageSymlinks) _linkSelf();
-    _linkOrDeleteSecondaryPackageDirs();
+    if (packagesDir) _linkSelf();
+    _linkOrDeleteSecondaryPackageDirs(packagesDir: packagesDir);
 
     result.summarizeChanges(type, dryRun: dryRun);
 
@@ -449,18 +443,18 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id) async {
+  Future _get(PackageId id, {bool packagesDir: false}) async {
     if (id.isRoot) return;
 
     var source = cache.source(id.source);
-    if (!_packageSymlinks) {
+    if (!packagesDir) {
       if (source is CachedSource) await source.downloadToSystemCache(id);
       return;
     }
 
-    var packageDir = p.join(packagesDir, id.name);
-    if (entryExists(packageDir)) deleteEntry(packageDir);
-    await source.get(id, packageDir);
+    var packagePath = p.join(packagesPath, id.name);
+    if (entryExists(packagePath)) deleteEntry(packagePath);
+    await source.get(id, packagePath);
   }
 
   /// Throws a [DataError] if the `.packages` file doesn't exist or if it's
@@ -654,42 +648,47 @@ class Entrypoint {
   /// Creates a self-referential symlink in the `packages` directory that allows
   /// a package to import its own files using `package:`.
   void _linkSelf() {
-    var linkPath = p.join(packagesDir, root.name);
+    var linkPath = p.join(packagesPath, root.name);
     // Create the symlink if it doesn't exist.
     if (entryExists(linkPath)) return;
-    ensureDir(packagesDir);
+    ensureDir(packagesPath);
     createPackageSymlink(root.name, root.dir, linkPath,
         isSelfLink: true, relative: true);
   }
 
-  /// If [packageSymlinks] is true, add "packages" directories to the whitelist
-  /// of directories that may contain Dart entrypoints.
+  /// If [packagesDir] is true, add "packages" directories to the whitelist of
+  /// directories that may contain Dart entrypoints.
   ///
   /// Otherwise, delete any "packages" directories in the whitelist of
   /// directories that may contain Dart entrypoints.
-  void _linkOrDeleteSecondaryPackageDirs() {
+  void _linkOrDeleteSecondaryPackageDirs({bool packagesDir: false}) {
     // Only the main "bin" directory gets a "packages" directory, not its
     // subdirectories.
     var binDir = root.path('bin');
-    if (dirExists(binDir)) _linkOrDeleteSecondaryPackageDir(binDir);
+    if (dirExists(binDir)) {
+      _linkOrDeleteSecondaryPackageDir(binDir, packagesDir: packagesDir);
+    }
 
     // The others get "packages" directories in subdirectories too.
     for (var dir in ['benchmark', 'example', 'test', 'tool', 'web']) {
-      _linkOrDeleteSecondaryPackageDirsRecursively(root.path(dir));
+      _linkOrDeleteSecondaryPackageDirsRecursively(root.path(dir),
+          packagesDir: packagesDir);
     }
  }
 
-  /// If [packageSymlinks] is true, creates a symlink to the "packages"
-  /// directory in [dir] and all its subdirectories.
+  /// If [packagesDir] is true, creates a symlink to the "packages" directory in
+  /// [dir] and all its subdirectories.
   ///
   /// Otherwise, deletes any "packages" directories in [dir] and all its
   /// subdirectories.
-  void _linkOrDeleteSecondaryPackageDirsRecursively(String dir) {
+  void _linkOrDeleteSecondaryPackageDirsRecursively(String dir,
+      {bool packagesDir: false}) {
     if (!dirExists(dir)) return;
-    _linkOrDeleteSecondaryPackageDir(dir);
-    _listDirWithoutPackages(dir)
-        .where(dirExists)
-        .forEach(_linkOrDeleteSecondaryPackageDir);
+    _linkOrDeleteSecondaryPackageDir(dir, packagesDir: packagesDir);
+    for (var subdir in _listDirWithoutPackages(dir)) {
+      if (!dirExists(subdir)) continue;
+      _linkOrDeleteSecondaryPackageDir(subdir, packagesDir: packagesDir);
+    }
   }
 
   // TODO(nweiz): roll this into [listDir] in io.dart once issue 4775 is fixed.
@@ -705,13 +704,13 @@ class Entrypoint {
     });
   }
 
-  /// If [packageSymlinks] is true, creates a symlink to the "packages"
-  /// directory in [dir].
+  /// If [packagesDir] is true, creates a symlink to the "packages" directory in
+  /// [dir].
   ///
   /// Otherwise, deletes a "packages" directories in [dir] if one exists.
-  void _linkOrDeleteSecondaryPackageDir(String dir) {
+  void _linkOrDeleteSecondaryPackageDir(String dir, {bool packagesDir: false}) {
     var symlink = p.join(dir, 'packages');
     if (entryExists(symlink)) deleteEntry(symlink);
-    if (_packageSymlinks) createSymlink(packagesDir, symlink, relative: true);
+    if (packagesDir) createSymlink(packagesPath, symlink, relative: true);
   }
 }

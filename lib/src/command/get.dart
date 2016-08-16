@@ -25,11 +25,16 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('precompile', defaultsTo: true,
         help: "Precompile executables and transformed dependencies.");
+
+    argParser.addFlag('packages-dir',
+        negatable: true, defaultsTo: true,
+        help: "Generate a packages/ directory when installing packages.");
   }
 
   Future run() {
     return entrypoint.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'],
-        precompile: argResults['precompile']);
+        precompile: argResults['precompile'],
+        packagesDir: argResults['packages-dir']);
   }
 }
