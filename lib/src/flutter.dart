@@ -17,7 +17,7 @@ final String rootDirectory = Platform.environment["FLUTTER_ROOT"];
 
 /// The Flutter SDK's version number, or `null` if the Flutter SDK is
 /// unavailable.
-final version = () {
+final Version version = () {
   if (!isAvailable) return null;
 
   return new Version.parse(

@@ -630,17 +630,13 @@ Future/*<T>*/ awaitObject/*<T>*/(/*=T*/ object) async {
   if (object is Future) return await awaitObject(await object);
 
   if (object is Iterable) {
-    // TODO(nweiz): Remove the unnecessary as check when sdk#26965 is fixed.
-    return await Future.wait((object as Iterable).map(awaitObject))
-        as List/*=T*/;
+    return await Future.wait(object.map(awaitObject)) as List/*=T*/;
   }
 
   if (object is Map) {
-    // TODO(nweiz): Remove the unnecessary as check when sdk#26965 is fixed.
-    var oldMap = object as Map;
     var newMap = {};
-    await Future.wait(oldMap.keys.map((key) async {
-      newMap[key] = await awaitObject(await oldMap[key]);
+    await Future.wait(object.keys.map((key) async {
+      newMap[key] = await awaitObject(await object[key]);
     }));
     return newMap as Map/*=T*/;
   }

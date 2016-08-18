@@ -87,8 +87,8 @@ class BuildCommand extends BarbackCommand {
             (entry) => logJson.add(_logEntryToJson(entry)));
       }
 
-      var assets = await log.progress("Building ${entrypoint.root.name}",
-          () async {
+      var assets = await log.progress/*<AssetSet>*/(
+          "Building ${entrypoint.root.name}", () async {
         // Register all of the build directories.
         // TODO(rnystrom): We don't actually need to bind servers for these, we
         // just need to add them to barback's sources. Add support to

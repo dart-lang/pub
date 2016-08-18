@@ -683,7 +683,7 @@ Future store(Stream stream, EventSink sink,
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell: false}) {
-  return _descriptorPool.withResource(() async {
+  return _descriptorPool.withResource/*<Future<PubProcessResult>>*/(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
         environment: environment,

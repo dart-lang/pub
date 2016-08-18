@@ -22,10 +22,13 @@ abstract class GetInputTransform {
   Stream<List<int>> readInput(AssetId id) =>
       StreamCompleter.fromFuture(getInput(id).then((input) => input.read()));
 
-  Future<bool> hasInput(AssetId id) {
-    return getInput(id).then((_) => true).catchError((error) {
-      if (error is AssetNotFoundException && error.id == id) return false;
-      throw error;
-    });
+  Future<bool> hasInput(AssetId id) async {
+    try {
+      await getInput(id);
+      return true;
+    } on AssetNotFoundException catch (error) {
+      if (error.id == id) return false;
+      rethrow;
+    }
   }
 }

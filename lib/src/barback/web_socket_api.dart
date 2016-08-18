@@ -221,15 +221,14 @@ class WebSocketApi {
   ///     }
   ///
   /// If the directory is already being served, returns the previous URL.
-  Future<Map> _serveDirectory(json_rpc.Parameters params) {
+  Future<Map> _serveDirectory(json_rpc.Parameters params) async {
     var rootDirectory = _validateRelativePath(params, "path");
-    return _environment.serveDirectory(rootDirectory).then((server) {
+    try {
+      var server = await _environment.serveDirectory(rootDirectory);
       return {
         "url": server.url.toString()
       };
-    }).catchError((error) {
-      if (error is! OverlappingSourceDirectoryException) throw error;
-
+    } on OverlappingSourceDirectoryException catch (error) {
       var dir = pluralize("directory", error.overlappingDirectories.length,
           plural: "directories");
       var overlapping = toSentence(error.overlappingDirectories.map(
@@ -240,7 +239,7 @@ class WebSocketApi {
           data: {
             "directories": error.overlappingDirectories
           });
-    });
+    }
   }
 
   /// Given a relative directory path within the entrypoint package, unbinds

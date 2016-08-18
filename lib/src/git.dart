@@ -42,21 +42,21 @@ bool _isInstalledCache;
 /// Returns the stdout as a list of strings if it succeeded. Completes to an
 /// exception if it failed.
 Future<List<String>> run(List<String> args,
-    {String workingDir, Map<String, String> environment}) {
+    {String workingDir, Map<String, String> environment}) async {
   if (!isInstalled) {
     fail("Cannot find a Git executable.\n"
         "Please ensure Git is correctly installed.");
   }
 
   log.muteProgress();
-  return runProcess(command, args, workingDir: workingDir,
-      environment: environment).then((result) {
+  try {
+    var result = await runProcess(command, args, workingDir: workingDir,
+        environment: environment);
     if (!result.success) throw new GitException(args, result.stderr.join("\n"));
-
     return result.stdout;
-  }).whenComplete(() {
+  } finally {
     log.unmuteProgress();
-  });
+  }
 }
 
 /// Like [run], but synchronous.
