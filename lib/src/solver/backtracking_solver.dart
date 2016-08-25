@@ -579,6 +579,13 @@ class BacktrackingSolver {
     } else {
       // Ignore any overridden dependencies.
       deps.removeWhere((dep) => _overrides.containsKey(dep.name));
+
+      // If an overridden dependency depends on the root package, ignore that
+      // dependency. This ensures that users can work on the next version of one
+      // side of a circular dependency easily.
+      if (_overrides.containsKey(id.name)) {
+        deps.removeWhere((dep) => dep.name == root.name);
+      }
     }
 
     // Make sure the package doesn't have any bad dependencies.

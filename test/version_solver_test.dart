@@ -1216,7 +1216,7 @@ void override() {
                '- myapp depends on version >=1.0.0 <2.0.0');
   });
 
-  integration('override a bad source without error', () {
+  integration('overrides a bad source without error', () {
     servePackages((builder) {
       builder.serve('foo', '0.0.0');
     });
@@ -1225,6 +1225,22 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': {'bad': 'any'}},
+        'dependency_overrides': {'foo': 'any'}
+      })
+    ]).create();
+
+    expectResolves(result: {'foo': '0.0.0'});
+  });
+
+  integration('overrides an unmatched root dependency', () {
+    servePackages((builder) {
+      builder.serve('foo', '0.0.0', deps: {'myapp': '1.0.0'});
+    });
+
+    d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'version': '2.0.0',
         'dependency_overrides': {'foo': 'any'}
       })
     ]).create();
