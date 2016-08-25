@@ -5,6 +5,7 @@
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency_override.dart';
+import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,16 +15,52 @@ Validator dependencyOverride(Entrypoint entrypoint) =>
     new DependencyOverrideValidator(entrypoint);
 
 main() {
-  integration('invalidates a package if it has dependency overrides', () {
+  integration('should consider a package valid if it has dev dependency '
+      'overrides', () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
+        "dev_dependencies": {
+          "foo": "1.0.0"
+        },
         "dependency_overrides": {
           "foo": "<3.0.0"
         }
       })
     ]).create();
 
-    expectValidationError(dependencyOverride);
+    expectNoValidationError(dependencyOverride);
+  });
+
+  group('should consider a package invalid if', () {
+    integration('it has only non-dev dependency overrides', () {
+      d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "dependency_overrides": {
+            "foo": "<3.0.0"
+          }
+        })
+      ]).create();
+
+      expectValidationError(dependencyOverride);
+    });
+
+    integration('it has any non-dev dependency overrides', () {
+      d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "dev_dependencies": {
+            "foo": "1.0.0"
+          },
+          "dependency_overrides": {
+            "foo": "<3.0.0",
+            "bar": ">3.0.0",
+          }
+        })
+      ]).create();
+
+      expectValidationError(dependencyOverride);
+    });
   });
 }

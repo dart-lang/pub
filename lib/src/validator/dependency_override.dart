@@ -14,9 +14,12 @@ class DependencyOverrideValidator extends Validator {
     : super(entrypoint);
 
   Future validate() {
-    if (entrypoint.root.dependencyOverrides.isNotEmpty) {
+    var overridden =
+        entrypoint.root.dependencyOverrides.map((dep) => dep.name).toSet();
+    var dev = entrypoint.root.devDependencies.map((dep) => dep.name).toSet();
+    if (overridden.difference(dev).isNotEmpty) {
       errors.add(
-          'Your pubspec.yaml must not have a "dependency_overrides" field.\n'
+          'Your pubspec.yaml must not override non-dev dependencies.\n'
           'This ensures you test your package against the same versions of '
               'its dependencies\n'
           'that users will have when they use it.');
