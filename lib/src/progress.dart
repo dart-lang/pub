@@ -24,6 +24,9 @@ class Progress {
   /// Gets the current progress time as a parenthesized, formatted string.
   String get _time => "(${niceDuration(_stopwatch.elapsed)})";
 
+  /// Last printed time length
+  int _timeLength = 0;
+
   /// Creates a new progress indicator.
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.FINE]
@@ -50,7 +53,7 @@ class Progress {
       _update();
     });
 
-    _update();
+    stdout.write(log.format("$_message... "));
   }
 
   /// Stops the progress indicator.
@@ -80,7 +83,9 @@ class Progress {
 
     // Print a final message without a time indicator so that we don't leave a
     // misleading half-complete time indicator on the console.
-    stdout.writeln(log.format("\r$_message..."));
+    String backspace = "\b" * _timeLength;
+    _timeLength = 0;
+    stdout.writeln(backspace);
     _timer.cancel();
     _timer = null;
   }
@@ -89,9 +94,12 @@ class Progress {
   void _update() {
     if (log.isMuted) return;
 
-    stdout.write(log.format("\r$_message... "));
-
     // Show the time only once it gets noticeably long.
-    if (_stopwatch.elapsed.inSeconds > 0) stdout.write("${log.gray(_time)} ");
+    if (_stopwatch.elapsed.inSeconds > 0) {
+      String backspace = "\b" * _timeLength;
+      String time = "${log.gray(_time)} ";
+      _timeLength = time.length;
+      stdout.write("$backspace$time");
+    }
   }
 }
