@@ -54,7 +54,8 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 
   integration("the spawned application can load a dependency's resource", () {
     d.dir("foo", [
@@ -90,7 +91,8 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 
   integration('the spawned application can load a transformed resource', () {
     serveBarback();
@@ -129,7 +131,8 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 
   integration('a snapshotted application can load a resource', () {
     servePackages((builder) {
@@ -167,5 +170,6 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 }

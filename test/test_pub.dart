@@ -178,7 +178,12 @@ PubProcess pubRun({bool global: false, Iterable<String> args}) {
 ///
 /// The [body] should schedule a series of operations which will be run
 /// asynchronously.
-void integration(String description, void body()) {
+void integration(String description, void body(),
+    {String testOn,
+    Timeout timeout,
+    skip,
+    tags,
+    Map<String, dynamic> onPlatform}) {
   test(description, () {
     _sandboxDir = createSystemTempDir();
     d.defaultRoot = sandboxDir;
@@ -195,7 +200,12 @@ void integration(String description, void body()) {
 
     // Schedule the test.
     body();
-  });
+  },
+      testOn: testOn,
+      timeout: timeout,
+      skip: skip,
+      onPlatform: onPlatform,
+      tags: tags);
 }
 
 /// Schedules renaming (moving) the directory at [from] to [to], both of which

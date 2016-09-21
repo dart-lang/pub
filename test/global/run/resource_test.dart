@@ -36,7 +36,8 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 
   integration("the spawned application can load a dependency's resource", () {
     servePackages((builder) {
@@ -73,7 +74,8 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 
   integration('a mutable application can load its own resource', () {
     d.dir("foo", [
@@ -104,5 +106,6 @@ main() async {
 
     pub.stdout.expect("hello!");
     pub.shouldExit(0);
-  });
+  },
+      skip: "Issue https://github.com/dart-lang/pub/issues/1446");
 }
