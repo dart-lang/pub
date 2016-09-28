@@ -24,8 +24,8 @@ class Progress {
   /// Gets the current progress time as a parenthesized, formatted string.
   String get _time => "(${niceDuration(_stopwatch.elapsed)})";
 
-  /// Last printed time length
-  int _timeLength = 0;
+  /// The length of the most recently-printed [_time] string.
+  var _timeLength = 0;
 
   /// Creates a new progress indicator.
   ///
@@ -81,11 +81,10 @@ class Progress {
   void stopAnimating() {
     if (_timer == null) return;
 
-    // Print a final message without a time indicator so that we don't leave a
-    // misleading half-complete time indicator on the console.
-    String backspace = "\b" * _timeLength;
+    // Erase the time indicator so that we don't leave a misleading
+    // half-complete time indicator on the console.
+    stdout.writeln("\b" * _timeLength);
     _timeLength = 0;
-    stdout.writeln(backspace);
     _timer.cancel();
     _timer = null;
   }
@@ -95,11 +94,14 @@ class Progress {
     if (log.isMuted) return;
 
     // Show the time only once it gets noticeably long.
-    if (_stopwatch.elapsed.inSeconds > 0) {
-      String backspace = "\b" * _timeLength;
-      String time = "${log.gray(_time)} ";
-      _timeLength = time.length;
-      stdout.write("$backspace$time");
-    }
+    if (_stopwatch.elapsed.inSeconds == 0) return;
+
+    // Erase the last time that was printed. Erasing just the time using `\b`
+    // rather than using `\r` to erase the entire line ensures that we don't
+    // spam progress lines if they're wider than the terminal width.
+    stdout.write("\b" * _timeLength);
+    var time = _time;
+    _timeLength = time.length;
+    stdout.write(log.gray(time));
   }
 }
