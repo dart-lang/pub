@@ -1,4 +1,4 @@
-// Copyright (c) 2014, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -10,22 +10,35 @@ import 'package:pub/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const TRANSFORMER = """
-import 'dart:async';
+final _transformer = """
+  import 'dart:async';
 
-import 'package:barback/barback.dart';
+  import 'package:barback/barback.dart';
 
-class MyTransformer extends Transformer {
-  MyTransformer.asPlugin();
+  class MyTransformer extends Transformer {
+    MyTransformer.asPlugin();
 
-  String get allowedExtensions => '.in';
+    String get allowedExtensions => '.in';
 
-  Future apply(Transform transform) async {
-    transform.addOutput(new Asset.fromString(
-        transform.primaryInput.id.changeExtension('.txt'),
-        await transform.primaryInput.readAsString()));
+    Future apply(Transform transform) async {
+      transform.addOutput(new Asset.fromString(
+          transform.primaryInput.id.changeExtension('.txt'),
+          await transform.primaryInput.readAsString()));
+    }
   }
-}
+""";
+
+final _script = """
+  import 'dart:isolate';
+
+  main() async {
+    print(await Isolate.packageRoot);
+    print(await Isolate.packageConfig);
+    print(await Isolate.resolvePackageUri(
+        Uri.parse('package:myapp/resource.txt')));
+    print(await Isolate.resolvePackageUri(
+        Uri.parse('package:foo/resource.txt')));
+  }
 """;
 
 main() {
@@ -37,18 +50,7 @@ main() {
     d.dir(appPath, [
       d.appPubspec({"foo": {"path": "../foo"}}),
       d.dir("bin", [
-        d.file("script.dart", """
-import 'dart:isolate';
-
-main() async {
-  print(await Isolate.packageRoot);
-  print(await Isolate.packageConfig);
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:myapp/resource.txt')));
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:foo/resource.txt')));
-}
-""")
+        d.file("script.dart", _script)
       ])
     ]).create();
 
@@ -81,22 +83,11 @@ main() async {
       d.dir("lib", [
         d.file("resource.in", "hello!"),
         d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER)
+          d.file("transformer.dart", _transformer)
         ])
       ]),
       d.dir("bin", [
-        d.file("script.dart", """
-import 'dart:isolate';
-
-main() async {
-  print(await Isolate.packageRoot);
-  print(await Isolate.packageConfig);
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:myapp/resource.txt')));
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:foo/resource.txt')));
-}
-""")
+        d.file("script.dart", _script)
       ])
     ]).create();
 
@@ -120,18 +111,7 @@ main() async {
       builder.serve("foo", "1.0.0",
           contents: [
         d.dir("bin", [
-          d.file("script.dart", """
-import 'dart:isolate';
-
-main() async {
-  print(await Isolate.packageRoot);
-  print(await Isolate.packageConfig);
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:myapp/resource.txt')));
-  print(await Isolate.resolvePackageUri(
-      Uri.parse('package:foo/resource.txt')));
-}
-""")
+          d.file("script.dart", _script)
         ])
       ]);
     });
@@ -152,12 +132,10 @@ main() async {
     pub.stdout.expect(
         p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")).toString());
     schedule(() async {
-      pub.stdout.expect(p.toUri(p.join(
-              sandboxDir,
-              cachePath,
-              "hosted/localhost%58${await globalPackageServer.port}/foo-1.0.0/"
-                "lib/resource.txt"))
-          .toString());
+      var fooResourcePath = p.join(
+          await globalPackageServer.pathInCache('foo', '1.0.0'),
+          "lib/resource.txt");
+      pub.stdout.expect(p.toUri(fooResourcePath).toString());
     });
     pub.shouldExit(0);
   });

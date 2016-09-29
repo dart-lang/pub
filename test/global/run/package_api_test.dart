@@ -1,4 +1,4 @@
-// Copyright (c) 2014, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -37,23 +37,24 @@ main() async {
 
     var pub = pubRun(global: true, args: ["foo:script"]);
 
+    pub.stdout.expect("null");
+
+    var packageConfigPath =
+        p.join(sandboxDir, cachePath, "global_packages/foo/.packages");
+    pub.stdout.expect(p.toUri(packageConfigPath).toString());
+
     schedule(() async {
-      pub.stdout.expect("null");
-      pub.stdout.expect(p.toUri(
-              p.join(sandboxDir, cachePath, "global_packages/foo/.packages"))
-          .toString());
-      pub.stdout.expect(p.toUri(p.join(
-              sandboxDir,
-              cachePath,
-              "hosted/localhost%58${await globalPackageServer.port}/foo-1.0.0/"
-                "lib/resource.txt"))
-          .toString());
-      pub.stdout.expect(p.toUri(p.join(
-              sandboxDir,
-              cachePath,
-              "hosted/localhost%58${await globalPackageServer.port}/bar-1.0.0/"
-                "lib/resource.txt"))
-          .toString());
+      var fooResourcePath = p.join(
+          await globalPackageServer.pathInCache('foo', '1.0.0'),
+          "lib/resource.txt");
+      pub.stdout.expect(p.toUri(fooResourcePath).toString());
+    });
+
+    schedule(() async {
+      var barResourcePath = p.join(
+          await globalPackageServer.pathInCache('bar', '1.0.0'),
+          "lib/resource.txt");
+      pub.stdout.expect(p.toUri(barResourcePath).toString());
     });
     pub.shouldExit(0);
   });
