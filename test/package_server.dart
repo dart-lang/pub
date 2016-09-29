@@ -124,6 +124,13 @@ class PackageServer {
     }, 'adding packages to the package server');
   }
 
+  /// Returns the path of [package] at [version], installed from this server, in
+  /// the pub cache.
+  Future<String> pathInCache(String package, String version) async => p.join(
+      sandboxDir,
+      cachePath,
+      "hosted/localhost%58${await port}/$package-$version");
+
   /// Replace the current set of packages that are being served.
   void replace(void callback(PackageServerBuilder builder)) {
     schedule(() => _builder._clear(), "clearing builder");
