@@ -25,14 +25,12 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo"
+    }).validate();
   });
 
-  integration("path is relative to containing d.pubspec", () {
+  integration("path is relative to containing pubspec", () {
     d.dir("relative", [
       d.dir("foo", [
         d.libDir("foo"),
@@ -54,14 +52,10 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ]),
-      d.dir("bar", [
-        d.file("bar.dart", 'main() => "bar";')
-      ])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../relative/foo",
+      "bar": "../relative/bar"
+    }).validate();
   });
 
   integration("relative path preserved in the lockfile", () {

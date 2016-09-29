@@ -27,7 +27,12 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({"stack_trace": nextPatch("stack_trace")}).validate();
+      d.appPackagesFile({
+        "async": current("async"),
+        "barback": current("barback"),
+        "source_span": current("source_span"),
+        "stack_trace": nextPatch("stack_trace")
+      }).validate();
     });
 
     integration("pub's implicit constraint uses the same source and "
@@ -58,8 +63,11 @@ main() {
 
       // Validate that we're using the path dependency version of stack_trace
       // rather than the hosted version.
-      d.packagesDir({
-        "stack_trace": current("stack_trace")
+      d.appPackagesFile({
+        "async": current("async"),
+        "barback": current("barback"),
+        "source_span": current("source_span"),
+        "stack_trace": "../stack_trace"
       }).validate();
     });
 
@@ -80,7 +88,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({"stack_trace": max("stack_trace")}).validate();
+      d.appPackagesFile({"stack_trace": max("stack_trace")}).validate();
     });
   });
 
@@ -105,7 +113,10 @@ main() {
     pubGet();
 
     // It should be upgraded.
-    d.packagesDir({
+    d.appPackagesFile({
+      "async": current("async"),
+      "barback": current("barback"),
+      "source_span": current("source_span"),
       "stack_trace": current("stack_trace")
     }).validate();
   });

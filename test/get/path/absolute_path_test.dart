@@ -20,23 +20,10 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ])
-    ]).validate();
-
-    // Move the packages directory and ensure the symlink still works. That
-    // will validate that we actually created an absolute symlink.
-    d.dir("moved").create();
-    scheduleRename(packagesPath, "moved/packages");
-
-    d.dir("moved/packages", [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": path.join(sandboxDir, "foo")
+    }).validate();
   });
 }

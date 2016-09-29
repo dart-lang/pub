@@ -24,7 +24,9 @@ main() {
 
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [
@@ -47,7 +49,9 @@ main() {
       d.libPubspec('foo_dep', '1.0.0')
     ]).commit();
 
-    pubUpgrade(args: ['foo']);
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubUpgrade(args: ["--packages-dir", 'foo']);
 
     d.dir(packagesPath, [
       d.dir('foo', [

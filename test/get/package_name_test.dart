@@ -65,6 +65,10 @@ main() {
 
     pubGet();
 
-    d.packagesDir({"foo.bar.baz": "1.0.0"}).validate();
+    d.dir(appPath, [
+      d.packagesFile({
+        "foo.bar.baz": "."
+      })
+    ]).validate();
   });
 }

@@ -29,14 +29,10 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ]),
-      d.dir("bar", [
-        d.file("bar.dart", 'main() => "bar";')
-      ])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo",
+      "bar": "../bar"
+    }).validate();
   });
 
   integration("includes dev dependency's transitive dependencies", () {
@@ -63,14 +59,10 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ]),
-      d.dir("bar", [
-        d.file("bar.dart", 'main() => "bar";')
-      ])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo",
+      "bar": "../bar"
+    }).validate();
   });
 
   integration("ignores transitive dependency's dev dependencies", () {
@@ -98,11 +90,8 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [
-        d.file("foo.dart", 'main() => "foo";')
-      ]),
-      d.nothing("bar")
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo"
+    }).validate();
   });
 }

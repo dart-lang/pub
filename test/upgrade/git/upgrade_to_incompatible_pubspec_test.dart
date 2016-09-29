@@ -19,7 +19,9 @@ main() {
 
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [
@@ -32,8 +34,12 @@ main() {
       d.libPubspec('zoo', '1.0.0')
     ]).commit();
 
-    pubUpgrade(error: contains('"name" field doesn\'t match expected name '
-        '"foo".'), exitCode: exit_codes.DATA);
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubUpgrade(
+        args: ['--packages-dir'],
+        error: contains('"name" field doesn\'t match expected name "foo".'),
+        exitCode: exit_codes.DATA);
 
     d.dir(packagesPath, [
       d.dir('foo', [

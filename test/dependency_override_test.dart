@@ -30,7 +30,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "2.0.0"
       }).validate();
     });
@@ -51,7 +51,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.0.0"
       }).validate();
     });
@@ -80,7 +80,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "2.0.0",
         "bar": "1.0.0"
       }).validate();
@@ -106,7 +106,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.0.0"
       }).validate();
     });

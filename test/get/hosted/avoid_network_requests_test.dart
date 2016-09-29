@@ -38,7 +38,7 @@ main() {
     // Run the solver again.
     pubGet();
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "1.2.0",
       "bar": "1.2.0"
     }).validate();

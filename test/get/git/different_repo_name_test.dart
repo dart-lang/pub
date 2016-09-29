@@ -21,7 +21,9 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('weirdname', [

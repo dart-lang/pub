@@ -16,7 +16,7 @@ main() {
     pubGet();
 
     d.cacheDir({"foo": "1.2.3"}).validate();
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 
   integration('URL encodes the package name', () {
@@ -52,6 +52,6 @@ main() {
     pubGet();
 
     d.cacheDir({"foo": "1.2.3"}, port: server.port).validate();
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 }

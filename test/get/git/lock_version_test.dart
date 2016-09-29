@@ -21,7 +21,9 @@ main() {
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
     // This get should lock the foo.git dependency to the current revision.
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [
@@ -38,7 +40,9 @@ main() {
     ]).commit();
 
     // This get shouldn't upgrade the foo.git dependency due to the lockfile.
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [

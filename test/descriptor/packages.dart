@@ -9,6 +9,7 @@ import "dart:convert" show UTF8;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:scheduled_test/descriptor.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
@@ -16,11 +17,6 @@ import '../test_pub.dart';
 
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {
-  // RegExp recognizing semantic version numbers.
-  static final _semverRE =
-      new RegExp(r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-                r"(?:-[a-zA-Z\d-]+)?(?:\+[a-zA-Z\d-]+)?$");
-
   /// A map from package names to strings describing where the packages are
   /// located on disk.
   final Map<String, String> _dependencies;
@@ -38,8 +34,8 @@ class PackagesFileDescriptor extends Descriptor {
       var mapping = <String, Uri>{};
       _dependencies.forEach((package, version) {
         var packagePath;
-        if (_semverRE.hasMatch(version)) {
-          // If it's a semver, it's a cache reference.
+        if (_isSemver(version)) {
+          // It's a cache reference.
           packagePath = p.join(cachePath, "$package-$version");
         } else {
           // Otherwise it's a path relative to the pubspec file,
@@ -84,7 +80,7 @@ class PackagesFileDescriptor extends Descriptor {
       }
 
       var description = _dependencies[package];
-      if (_semverRE.hasMatch(description)) {
+      if (_isSemver(description)) {
         if (!map[package].path.contains(description)) {
           fail(".packages of $package has incorrect version. "
                "Expected $description, found location: ${map[package]}.");
@@ -107,6 +103,18 @@ class PackagesFileDescriptor extends Descriptor {
         }
       }
     }
+  }
+
+  /// Returns `true` if [text] is a valid semantic version number string.
+  bool _isSemver(String text) {
+    try {
+      // See if it's a semver.
+      new Version.parse(text);
+      return true;
+    } on FormatException catch (_) {
+      // Do nothing.
+    }
+    return false;
   }
 
   String describe() => name;

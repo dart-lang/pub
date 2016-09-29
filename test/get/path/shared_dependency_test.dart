@@ -37,11 +37,11 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [d.file("foo.dart", 'main() => "foo";')]),
-      d.dir("bar", [d.file("bar.dart", 'main() => "bar";')]),
-      d.dir("shared", [d.file("shared.dart", 'main() => "shared";')])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo",
+      "bar": "../bar",
+      "shared": "../shared"
+    }).validate();
   });
 
   integration("shared dependency with paths that normalize the same", () {
@@ -73,11 +73,11 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [d.file("foo.dart", 'main() => "foo";')]),
-      d.dir("bar", [d.file("bar.dart", 'main() => "bar";')]),
-      d.dir("shared", [d.file("shared.dart", 'main() => "shared";')])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo",
+      "bar": "../bar",
+      "shared": "../shared"
+    }).validate();
   });
 
   integration("shared dependency with absolute and relative path", () {
@@ -109,10 +109,10 @@ main() {
 
     pubGet();
 
-    d.dir(packagesPath, [
-      d.dir("foo", [d.file("foo.dart", 'main() => "foo";')]),
-      d.dir("bar", [d.file("bar.dart", 'main() => "bar";')]),
-      d.dir("shared", [d.file("shared.dart", 'main() => "shared";')])
-    ]).validate();
+    d.appPackagesFile({
+      "foo": "../foo",
+      "bar": "../bar",
+      "shared": path.join(sandboxDir, "shared")
+    }).validate();
   });
 }

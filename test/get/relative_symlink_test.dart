@@ -20,7 +20,7 @@ main() {
       d.libDir('foo')
     ]).create();
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     scheduleRename(appPath, "moved");
 
@@ -40,7 +40,7 @@ main() {
       d.dir("bin")
     ]).create();
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     scheduleRename(appPath, "moved");
 

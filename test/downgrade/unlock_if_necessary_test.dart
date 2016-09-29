@@ -17,7 +17,7 @@ main() {
 
     pubGet();
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "2.0.0",
       "foo_dep": "2.0.0"
     }).validate();
@@ -29,7 +29,7 @@ main() {
 
     pubDowngrade(args: ['foo']);
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "1.0.0",
       "foo_dep": "1.0.0"
     }).validate();

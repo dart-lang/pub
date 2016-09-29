@@ -21,7 +21,7 @@ main() {
     globalServer.clearRequestedPaths();
 
     d.cacheDir({"foo": "1.2.3"}).validate();
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    d.appPackagesFile({"foo": "1.2.3"}).validate();
 
     // Run the solver again now that it's cached.
     pubGet();

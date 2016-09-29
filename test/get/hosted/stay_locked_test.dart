@@ -10,7 +10,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('keeps a pub server package locked to the version in the '
+  integration('keeps a hosted package locked to the version in the '
       'lockfile', () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));
 
@@ -19,10 +19,10 @@ main() {
     // This should lock the foo dependency to version 1.0.0.
     pubGet();
 
-    d.packagesDir({"foo": "1.0.0"}).validate();
+    d.appPackagesFile({"foo": "1.0.0"}).validate();
 
-    // Delete the packages path to simulate a new checkout of the application.
-    schedule(() => deleteEntry(path.join(sandboxDir, packagesPath)));
+    // Delete the .packages file to simulate a new checkout of the application.
+    schedule(() => deleteEntry(path.join(sandboxDir, packagesFilePath)));
 
     // Start serving a newer package as well.
     globalPackageServer.add((builder) => builder.serve("foo", "1.0.1"));
@@ -30,6 +30,6 @@ main() {
     // This shouldn't upgrade the foo dependency due to the lockfile.
     pubGet();
 
-    d.packagesDir({"foo": "1.0.0"}).validate();
+    d.appPackagesFile({"foo": "1.0.0"}).validate();
   });
 }

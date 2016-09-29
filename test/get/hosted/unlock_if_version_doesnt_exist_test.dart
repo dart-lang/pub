@@ -16,12 +16,12 @@ main() {
 
     d.appDir({"foo": "any"}).create();
     pubGet();
-    d.packagesDir({"foo": "1.0.0"}).validate();
+    d.appPackagesFile({"foo": "1.0.0"}).validate();
 
     schedule(() => deleteEntry(p.join(sandboxDir, cachePath)));
 
     globalPackageServer.replace((builder) => builder.serve("foo", "1.0.1"));
     pubGet();
-    d.packagesDir({"foo": "1.0.1"}).validate();
+    d.appPackagesFile({"foo": "1.0.1"}).validate();
   });
 }

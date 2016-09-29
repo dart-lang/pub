@@ -29,7 +29,7 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     d.dir("moved").create();
 

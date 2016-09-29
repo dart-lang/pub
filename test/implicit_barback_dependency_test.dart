@@ -38,8 +38,11 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
-        "barback": nextPatch
+      d.appPackagesFile({
+        "async": asyncVersion,
+        "barback": nextPatch,
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion
       }).validate();
     });
 
@@ -67,9 +70,12 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
+        "async": asyncVersion,
         "barback": nextPatch,
-        "foo": "0.0.1"
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion,
+        "foo": "../foo"
       }).validate();
     });
 
@@ -97,8 +103,11 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
-        "barback": current
+      d.appPackagesFile({
+        "async": asyncVersion,
+        "barback": "../barback",
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion,
       }).validate();
     });
   });
@@ -122,8 +131,11 @@ main() {
     pubGet();
 
     // It should be upgraded.
-    d.packagesDir({
-      "barback": current
+    d.appPackagesFile({
+      "async": asyncVersion,
+      "barback": current,
+      "source_span": sourceSpanVersion,
+      "stack_trace": stackTraceVersion,
     }).validate();
   });
 

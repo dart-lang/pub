@@ -30,20 +30,26 @@ main() {
       });
     });
 
-    integration('adds itself to the packages', () {
-      // The symlink should use the name in the pubspec, not the name of the
+    integration('adds itself to the packages directory and .packages file', () {
+      // The package should use the name in the pubspec, not the name of the
       // directory.
       d.dir(appPath, [
         d.pubspec({"name": "myapp_name"}),
         d.libDir('myapp_name')
       ]).create();
 
-      pubCommand(command);
+      pubCommand(command, args: ["--packages-dir"]);
 
       d.dir(packagesPath, [
         d.dir("myapp_name", [
           d.file('myapp_name.dart', 'main() => "myapp_name";')
         ])
+       ]).validate();
+
+      d.dir("myapp", [
+        d.packagesFile({
+          "myapp_name": "."
+        })
       ]).validate();
     });
 
@@ -55,7 +61,7 @@ main() {
         d.pubspec({"name": "myapp_name"}),
       ]).create();
 
-      pubCommand(command);
+      pubCommand(command, args: ["--packages-dir"]);
 
       d.dir(packagesPath, [
         d.nothing("myapp_name")
@@ -73,7 +79,7 @@ main() {
         d.appPubspec({"foo": {"path": "../foo"}})
       ]).create();
 
-      pubCommand(command);
+      pubCommand(command, args: ["--packages-dir"]);
 
       d.packagesDir({"foo": null}).validate();
     });

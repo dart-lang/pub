@@ -75,6 +75,10 @@ final String appPath = "myapp";
 /// to the sandbox directory.
 final String packagesPath = "$appPath/packages";
 
+/// The path of the ".packages" file in the mock app used for tests, relative
+/// to the sandbox directory.
+final String packagesFilePath = "$appPath/.packages";
+
 /// Set to true when the current batch of scheduled events should be aborted.
 bool _abortScheduled = false;
 

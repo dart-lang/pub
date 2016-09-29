@@ -47,7 +47,9 @@ main() {
     });
 
     // Get the updated version of the git dependency based on the lockfile.
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(cachePath, [
       d.dir('git', [

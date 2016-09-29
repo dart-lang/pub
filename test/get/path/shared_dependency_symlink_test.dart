@@ -38,7 +38,7 @@ main() {
     d.dir("link").create();
     scheduleSymlink("shared", path.join("link", "shared"));
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir("foo", [d.file("foo.dart", 'main() => "foo";')]),

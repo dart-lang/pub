@@ -18,7 +18,9 @@ main() {
 
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(cachePath, [
       d.dir('git', [
@@ -38,7 +40,11 @@ main() {
       d.libPubspec('foo', '1.0.0')
     ]).commit();
 
-    pubUpgrade(output: contains("Changed 1 dependency!"));
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubUpgrade(
+        args: ["--packages-dir"],
+        output: contains("Changed 1 dependency!"));
 
     // When we download a new version of the git package, we should re-use the
     // git/cache directory but create a new git/ directory.

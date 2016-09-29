@@ -203,3 +203,11 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 /// path to a path dependency, relative to the application directory.
 Descriptor packagesFile([Map<String, String> dependencies]) =>
   new PackagesFileDescriptor(dependencies);
+
+/// Describes a `.packages` file in the application directory, including the
+/// implicit entry for the app itself.
+Descriptor appPackagesFile(Map<String, String> dependencies) {
+  var copied = new Map.from(dependencies);
+  copied["myapp"] = ".";
+  return dir(appPath, [packagesFile(copied)]);
+}

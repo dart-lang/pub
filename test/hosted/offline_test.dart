@@ -31,7 +31,7 @@ main() {
 
       pubCommand(command, args: ['--offline'], warning: warning);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.2.3",
         "bar": "1.2.3"
       }).validate();
@@ -57,7 +57,7 @@ main() {
 
       pubCommand(command, args: ['--offline'], warning: warning);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.2.3-alpha.1"
       }).validate();
     });
@@ -120,7 +120,7 @@ main() {
 
       pubCommand(command, args: ['--offline']);
 
-      d.packagesDir({"foo": "1.2.3"}).validate();
+      d.appPackagesFile({"foo": "1.2.3"}).validate();
     });
   });
 }

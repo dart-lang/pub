@@ -19,7 +19,7 @@ main() {
 
     pubGet();
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "1.0.0",
       "bar": "1.0.0",
       "baz": "1.0.0",
@@ -38,7 +38,7 @@ main() {
 
     pubGet();
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "2.0.0",
       "bar": "2.0.0",
       "baz": "2.0.0",

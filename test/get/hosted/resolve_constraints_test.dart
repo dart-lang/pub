@@ -25,7 +25,7 @@ main() {
       "baz": "2.0.4"
     }).validate();
 
-    d.packagesDir({
+    d.appPackagesFile({
       "foo": "1.2.3",
       "bar": "2.3.4",
       "baz": "2.0.4"

@@ -40,8 +40,6 @@ main() {
           'bar': '1.0.0'
         })
       ]).validate();
-
-      d.packagesDir({'foo': '0.0.1', 'bar': '1.0.0'}).validate();
     });
 
     group("fails if", () {
@@ -71,7 +69,7 @@ main() {
                    '- myapp',
             exitCode: exit_codes.UNAVAILABLE);
       });
- 
+
       integration("the SDK doesn't contain the package", () {
         d.appDir({"bar": {"sdk": "flutter"}}).create();
         pubCommand(command,

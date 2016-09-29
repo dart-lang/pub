@@ -18,11 +18,11 @@ main() {
 
     pubGet();
 
-    d.packagesDir({"foo": "0.0.1"}).validate();
+    d.appPackagesFile({"foo": "../foo"}).validate();
     d.appDir({"foo": "any"}).create();
 
     pubGet();
 
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 }

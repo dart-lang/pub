@@ -27,7 +27,7 @@ class GetCommand extends PubCommand {
         help: "Precompile executables and transformed dependencies.");
 
     argParser.addFlag('packages-dir',
-        negatable: true, defaultsTo: true,
+        negatable: true,
         help: "Generate a packages/ directory when installing packages.");
   }
 

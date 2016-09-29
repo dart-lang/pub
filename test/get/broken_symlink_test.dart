@@ -18,7 +18,7 @@ main() {
     // Create a broken "packages" symlink in "bin".
     scheduleSymlink("nonexistent", path.join(appPath, "packages"));
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(appPath, [
       d.dir("bin", [
@@ -41,7 +41,7 @@ main() {
     // Create a broken "packages" symlink in "bin".
     scheduleSymlink("nonexistent", path.join(appPath, "bin", "packages"));
 
-    pubGet();
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(appPath, [
       d.dir("bin", [

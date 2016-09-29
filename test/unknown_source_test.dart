@@ -60,11 +60,9 @@ main() {
       pubCommand(command);
 
       // Should upgrade to the new one.
-      d.dir(packagesPath, [
-        d.dir("foo", [
-          d.file("foo.dart", 'main() => "foo";')
-        ])
-      ]).validate();
+      d.appPackagesFile({
+        "foo": "../foo"
+      }).validate();
     });
   });
 }

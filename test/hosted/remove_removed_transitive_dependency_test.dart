@@ -28,7 +28,7 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.0.0",
         "bar": "1.0.0",
         "shared_dep": "1.0.0",
@@ -39,11 +39,9 @@ main() {
 
       pubCommand(command);
 
-      d.packagesDir({
+      d.appPackagesFile({
         "foo": "1.0.0",
-        "bar": null,
-        "shared_dep": "1.0.0",
-        "bar_dep": null,
+        "shared_dep": "1.0.0"
       }).validate();
     });
   });

@@ -26,7 +26,7 @@ class DowngradeCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('packages-dir',
-        negatable: true, defaultsTo: true,
+        negatable: true,
         help: "Generate a packages/ directory when installing packages.");
   }
 

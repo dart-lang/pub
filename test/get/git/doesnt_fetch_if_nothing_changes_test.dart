@@ -23,7 +23,9 @@ main() {
       "foo": {"git": {"url": "../foo.git"}}
     }).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [
@@ -35,7 +37,9 @@ main() {
     // re-fetch.
     schedule(() => deleteEntry(p.join(sandboxDir, 'foo.git')));
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [

@@ -14,7 +14,7 @@ main() {
 
     pubGet();
 
-    d.packagesDir({"foo": "1.0.0"}).validate();
+    d.appPackagesFile({"foo": "1.0.0"}).validate();
 
     globalPackageServer.add((builder) => builder.serve("foo", "1.0.1"));
 
@@ -22,6 +22,6 @@ main() {
 
     pubGet();
 
-    d.packagesDir({"foo": "1.0.0"}).validate();
+    d.appPackagesFile({"foo": "1.0.0"}).validate();
   });
 }

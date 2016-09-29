@@ -17,7 +17,9 @@ main() {
 
     d.appDir({"foo": {"git": "../foo.git"}}).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
       d.dir('foo', [
@@ -28,8 +30,12 @@ main() {
     repo.runGit(['rm', 'pubspec.yaml']);
     repo.runGit(['commit', '-m', 'delete']);
 
-    pubUpgrade(error: new RegExp(r'Could not find a file named "pubspec.yaml" '
-        r'in [^\n]*\.'));
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    pubUpgrade(
+        args: ["--packages-dir"],
+        error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+            r'in [^\n]*\.'));
 
     d.dir(packagesPath, [
       d.dir('foo', [

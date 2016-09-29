@@ -30,7 +30,7 @@ main() {
     pubGet();
 
     d.cacheDir({"foo": "1.2.0"}).validate();
-    d.packagesDir({"foo": "1.2.0"}).validate();
+    d.appPackagesFile({"foo": "1.2.0"}).validate();
 
     // The get should not have done any network requests since the lock file is
     // up to date.
