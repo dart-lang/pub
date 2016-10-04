@@ -207,7 +207,7 @@ Descriptor packagesFile([Map<String, String> dependencies]) =>
 /// Describes a `.packages` file in the application directory, including the
 /// implicit entry for the app itself.
 Descriptor appPackagesFile(Map<String, String> dependencies) {
-  var copied = new Map.from(dependencies);
+  var copied = new Map<String, String>.from(dependencies);
   copied["myapp"] = ".";
   return dir(appPath, [packagesFile(copied)]);
 }

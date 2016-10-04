@@ -76,7 +76,7 @@ void expectLibraryDependencies(String id, Iterable<String> expected) {
 /// the repo.
 PackageGraph _loadPackageGraph() {
   // Load the sandbox packages.
-  var packages = {};
+  var packages = <String, Package>{};
 
   var systemCache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
   systemCache.sources.setDefault('path');

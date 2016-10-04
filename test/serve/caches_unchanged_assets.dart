@@ -20,7 +20,7 @@ main() {
     pubGet();
     pubServe();
 
-    var etag;
+    String etag;
     schedule(() async {
       var response = await scheduleRequest("file.txt");
       expect(response.statusCode, equals(200));
