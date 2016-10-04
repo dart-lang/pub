@@ -251,7 +251,7 @@ String createTempDir(String base, String prefix) {
 String createSystemTempDir() {
   var tempDir = Directory.systemTemp.createTempSync('pub_');
   log.io("Created temp directory ${tempDir.path}");
-  return tempDir.path;
+  return tempDir.resolveSymbolicLinksSync();
 }
 
 /// Lists the contents of [dir].
