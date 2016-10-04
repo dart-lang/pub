@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/scheduled_process.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 import 'package:scheduled_test/scheduled_test.dart';

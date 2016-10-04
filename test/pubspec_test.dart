@@ -5,7 +5,6 @@
 import 'package:pub/src/package.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source.dart';
-import 'package:pub/src/source/path.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
