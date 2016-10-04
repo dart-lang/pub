@@ -14,7 +14,6 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/package.dart';
 import 'package:pub/src/package_graph.dart';
 import 'package:pub/src/system_cache.dart';
-import 'package:pub/src/utils.dart';
 
 import '../test_pub.dart';
 

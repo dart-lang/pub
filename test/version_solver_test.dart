@@ -2,24 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:path/path.dart' as p;
 import 'package:scheduled_test/scheduled_test.dart';
 
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/package.dart';
 import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart' as sdk;
-import 'package:pub/src/solver/version_solver.dart';
-import 'package:pub/src/source.dart';
-import 'package:pub/src/source/cached.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
-import 'package:pub/src/system_cache.dart';
-import 'package:pub/src/utils.dart';
-import 'package:pub_semver/pub_semver.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
