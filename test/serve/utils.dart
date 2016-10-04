@@ -347,7 +347,7 @@ void closeWebSocket() {
 /// This schedules the request, but doesn't block the schedule on the response.
 /// It returns the response as a [Future].
 Future<Map> webSocketRequest(String method, [Map params]) {
-  var completer = new Completer();
+  var completer = new Completer<Map>();
   schedule(() {
     return Future.wait([
       _ensureWebSocket(),

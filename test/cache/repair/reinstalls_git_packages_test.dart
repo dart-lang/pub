@@ -28,7 +28,7 @@ main() {
     pubUpgrade();
 
     // Break them.
-    var fooDirs;
+    List fooDirs;
     schedule(() {
       // Find the cached foo packages for each revision.
       var gitCacheDir = path.join(sandboxDir, cachePath, "git");
