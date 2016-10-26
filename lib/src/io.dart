@@ -998,7 +998,7 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
 ByteStream createTarGz(List contents, {String baseDir}) {
   return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
     var buffer = new StringBuffer();
-    buffer.write('Creating .tag.gz stream containing:\n');
+    buffer.write('Creating .tar.gz stream containing:\n');
     contents.forEach((file) => buffer.write('$file\n'));
     log.fine(buffer.toString());
 
