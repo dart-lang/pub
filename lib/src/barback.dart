@@ -34,11 +34,11 @@ import 'package:pub_semver/pub_semver.dart';
 /// constraint and barback's version.
 ///
 /// [compat]: https://gist.github.com/nex3/10942218
-final pubConstraints = <String, VersionRange>{
-  "barback": new VersionConstraint.parse(">=0.15.0 <0.15.3"),
-  "source_span": new VersionConstraint.parse(">=1.0.0 <2.0.0"),
-  "stack_trace": new VersionConstraint.parse(">=0.9.1 <2.0.0"),
-  "async": new VersionConstraint.parse(">=1.8.0 <2.0.0")
+final pubConstraints = {
+  "barback": new VersionConstraint.parse(">=0.15.0 <0.15.3") as VersionRange,
+  "source_span": new VersionConstraint.parse(">=1.0.0 <2.0.0") as VersionRange,
+  "stack_trace": new VersionConstraint.parse(">=0.9.1 <2.0.0") as VersionRange,
+  "async": new VersionConstraint.parse(">=1.8.0 <2.0.0") as VersionRange
 };
 
 /// Converts [id] to a "package:" URI.
