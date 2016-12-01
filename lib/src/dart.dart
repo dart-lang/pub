@@ -8,12 +8,14 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:analyzer/analyzer.dart';
+import 'package:barback/barback.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
 import 'package:compiler_unsupported/src/filenames.dart'
     show appendSlash;
 import 'package:path/path.dart' as p;
 
 import 'asset/dart/serialize.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
@@ -225,4 +227,35 @@ void _isolateBuffer(message) {
       'error': CrossIsolateException.serialize(e, stack)
     });
   });
+}
+
+/// Snapshots the Dart executable at [executableUrl] to a snapshot at
+/// [snapshotPath].
+///
+/// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
+/// executable. Otherwise, a `packages/` directory or a package spec is inferred
+/// from the executable's location.
+///
+/// If [id] is passed, it's used to describe the executable in logs and error
+/// messages.
+Future snapshot(Uri executableUrl, String snapshotPath, {Uri packagesFile,
+    AssetId id}) async {
+  var name = log.bold(id == null
+      ? executableUrl.toString()
+      : "${id.package}:${p.url.basenameWithoutExtension(id.path)}");
+
+  var args = [
+    '--snapshot=$snapshotPath',
+    executableUrl.toString()
+  ];
+  if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
+  var result = await runProcess(Platform.executable, args);
+
+  if (result.success) {
+    log.message("Precompiled $name.");
+  } else {
+    throw new ApplicationException(
+        log.yellow("Failed to precompile $name:\n") +
+        result.stderr.join('\n'));
+  }
 }

@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'flutter.dart' as flutter;
 import 'io.dart';
@@ -214,6 +215,8 @@ class Entrypoint {
     _packageGraph = new PackageGraph.fromSolveResult(this, result);
     packageGraph.loadTransformerCache().clearIfOutdated(result.changedPackages);
 
+    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+
     try {
       if (precompile) {
         await _precompileDependencies(changed: result.changedPackages);
@@ -230,8 +233,6 @@ class Entrypoint {
       // dependencies, it shouldn't fail unless that fails.
       log.exception(error, stackTrace);
     }
-
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
   }
 
   /// Precompile any transformed dependencies of the entrypoint.
@@ -335,7 +336,8 @@ class Entrypoint {
   Future precompileExecutables({Iterable<String> changed}) async {
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = new Map.fromIterable(root.immediateDependencies,
+    var executables = new Map<String, List<AssetId>>.fromIterable(
+        root.immediateDependencies,
         key: (dep) => dep.name,
         value: (dep) => _executablesForPackage(dep.name));
 
@@ -354,25 +356,60 @@ class Entrypoint {
 
       var packagesToLoad =
           unionAll(executables.keys.map(packageGraph.transitiveDependencies))
-          .map((package) => package.name).toSet();
-      var executableIds = unionAll(
-          executables.values.map((ids) => ids.toSet()));
-      var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
-          packages: packagesToLoad,
-          entrypoints: executableIds,
-          useDart2JS: false);
-      environment.barback.errors.listen((error) {
-        log.error(log.red("Build error:\n$error"));
-      });
+              .toSet();
 
-      await waitAndPrintErrors(executables.keys.map((package) async {
-        var dir = p.join(_snapshotPath, package);
-        cleanDir(dir);
-        await environment.precompileExecutables(package, dir,
-            executableIds: executables[package]);
-      }));
+      // Try to avoid starting up an asset server to precompile packages if
+      // possible. This is faster and produces better error messages.
+      if (packagesToLoad.every(
+          (package) => package.pubspec.transformers.isEmpty)) {
+        await _precompileExecutablesWithoutBarback(executables);
+      } else {
+        await _precompileExecutablesWithBarback(executables, packagesToLoad);
+      }
     });
   }
+
+  //// Precompiles [executables] to snapshots from the filesystem.
+  Future _precompileExecutablesWithoutBarback(
+      Map<String, List<AssetId>> executables) {
+    return waitAndPrintErrors(executables.keys.map((package) {
+      var dir = p.join(_snapshotPath, package);
+      cleanDir(dir);
+      return waitAndPrintErrors(executables[package].map((id) {
+        var url = p.toUri(packageGraph.packages[id.package].dir);
+        url = url.replace(path: p.url.join(url.path, id.path));
+        return dart.snapshot(
+            url, p.join(dir, p.url.basename(id.path) + '.snapshot'),
+            packagesFile: p.toUri(packagesFile),
+            id: id);
+      }));
+    }));
+  }
+
+  //// Precompiles [executables] to snapshots from a barback asset environment.
+  ////
+  //// The [packagesToLoad] set should include all packages that are
+  //// transitively imported by [executables].
+  Future _precompileExecutablesWithBarback(
+      Map<String, List<AssetId>> executables, Set<Package> packagesToLoad) async {
+    var executableIds = unionAll(
+        executables.values.map((ids) => ids.toSet()));
+    var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
+        packages: packagesToLoad.map((package) => package.name),
+        entrypoints: executableIds,
+        useDart2JS: false);
+    environment.barback.errors.listen((error) {
+      log.error(log.red("Build error:\n$error"));
+    });
+
+    await waitAndPrintErrors(executables.keys.map((package) async {
+      var dir = p.join(_snapshotPath, package);
+      cleanDir(dir);
+      await environment.precompileExecutables(package, dir,
+          executableIds: executables[package]);
+    }));
+  }
+      
 
   /// Deletes outdated cached executable snapshots.
   ///
