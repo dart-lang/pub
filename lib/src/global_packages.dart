@@ -10,6 +10,7 @@ import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exe;
@@ -146,6 +147,7 @@ class GlobalPackages {
 
     _updateBinStubs(entrypoint.root, executables,
         overwriteBinStubs: overwriteBinStubs);
+    log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
@@ -169,41 +171,88 @@ class GlobalPackages {
     // Make sure all of the dependencies are locally installed.
     await Future.wait(result.packages.map(_cacheDependency));
 
+    var lockFile = result.lockFile;
+    _writeLockFile(dep.name, lockFile);
+    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile(cache));
+
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     var entrypoint = new Entrypoint.fromSolveResult(root, cache, result,
         isGlobal: true);
     var snapshots = await _precompileExecutables(entrypoint, dep.name);
 
-    var lockFile = result.lockFile;
-    _writeLockFile(dep.name, lockFile);
-    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile(cache));
-
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
+
+    var id = lockFile.packages[dep.name];
+    log.message('Activated ${_formatPackage(id)}.');
   }
 
-  /// Precompiles the executables for [package] and saves them in the global
+  /// Precompiles the executables for [packageName] and saves them in the global
   /// cache.
   ///
   /// Returns a map from executable name to path for the snapshots that were
   /// successfully precompiled.
   Future<Map<String, String>> _precompileExecutables(Entrypoint entrypoint,
-      String package) {
-    return log.progress("Precompiling executables", () async {
-      var binDir = p.join(_directory, package, 'bin');
+      String packageName) {
+    return log.progress("Precompiling executables", () {
+      var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
-      var environment = await AssetEnvironment.create(
-          entrypoint, BarbackMode.RELEASE,
-          entrypoints: entrypoint.packageGraph.packages[package].executableIds,
-          useDart2JS: false);
-      environment.barback.errors.listen((error) {
-        log.error(log.red("Build error:\n$error"));
-      });
-
-      return environment.precompileExecutables(package, binDir);
+      // Try to avoid starting up an asset server to precompile packages if
+      // possible. This is faster and produces better error messages.
+      var package = entrypoint.packageGraph.packages[packageName];
+      if (entrypoint.packageGraph.transitiveDependencies(packageName)
+          .every((package) => package.pubspec.transformers.isEmpty)) {
+        return _precompileExecutablesWithoutBarback(package, binDir);
+      } else {
+        return _precompileExecutablesWithBarback(entrypoint, package, binDir);
+      }
     });
+  }
+
+  //// Precompiles all executables in [package] to snapshots from the
+  //// filesystem.
+  ////
+  //// The snapshots are placed in [dir].
+  ////
+  //// Returns a map from executable basenames without extensions to the paths
+  //// to those executables.
+  Future<Map<String, String>> _precompileExecutablesWithoutBarback(
+      Package package, String dir) async {
+    var precompiled = {};
+    await waitAndPrintErrors(package.executableIds.map((id) async {
+      var url = p.toUri(package.dir);
+      url = url.replace(path: p.url.join(url.path, id.path));
+      var basename = p.url.basename(id.path);
+      var snapshotPath = p.join(dir, '$basename.snapshot');
+      await dart.snapshot(
+          url, snapshotPath,
+          packagesFile: p.toUri(_getPackagesFilePath(package.name)),
+          id: id);
+      precompiled[p.withoutExtension(basename)] = snapshotPath;
+    }));
+    return precompiled;
+  }
+
+  //// Precompiles all executables in [package] to snapshots from a barback
+  //// asset environment.
+  ////
+  //// The snapshots are placed in [dir].
+  ////
+  //// Returns a map from executable basenames without extensions to the paths
+  //// to those executables.
+  Future<Map<String, String>> _precompileExecutablesWithBarback(
+      Entrypoint entrypoint, Package package, String dir) async {
+    var environment = await AssetEnvironment.create(
+        entrypoint, BarbackMode.RELEASE,
+        entrypoints: package.executableIds,
+        useDart2JS: false);
+    environment.barback.errors.listen((error) {
+      log.error(log.red("Build error:\n$error"));
+    });
+
+    return environment.precompileExecutables(package.name, dir);
   }
 
   /// Downloads [id] into the system cache if it's a cached package.
@@ -225,9 +274,6 @@ class GlobalPackages {
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
     writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
-
-    var id = lockFile.packages[package];
-    log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Shows the user the currently active package with [name], if any.
