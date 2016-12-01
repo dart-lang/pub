@@ -694,7 +694,7 @@ class Entrypoint {
   // TODO(nweiz): roll this into [listDir] in io.dart once issue 4775 is fixed.
   /// Recursively lists the contents of [dir], excluding hidden `.DS_Store`
   /// files and `package` files.
-  List<String> _listDirWithoutPackages(dir) {
+  Iterable<String> _listDirWithoutPackages(dir) {
     return listDir(dir).expand/*<String>*/((file) {
       if (p.basename(file) == 'packages') return [];
       if (!dirExists(file)) return [];
