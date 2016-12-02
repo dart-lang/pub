@@ -10,8 +10,8 @@ import 'package:path/path.dart' as path;
 import 'package:watcher/watcher.dart';
 
 import '../cached_package.dart';
+import '../dart.dart' as dart;
 import '../entrypoint.dart';
-import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -272,18 +272,8 @@ class AssetEnvironment {
       await waitAndPrintErrors(executableIds.map((id) async {
         var basename = path.url.basename(id.path);
         var snapshotPath = path.join(directory, "$basename.snapshot");
-        var result = await runProcess(Platform.executable, [
-          '--snapshot=$snapshotPath',
-          server.url.resolve(basename).toString()
-        ]);
-        if (result.success) {
-          log.message("Precompiled ${_formatExecutable(id)}.");
-          precompiled[path.withoutExtension(basename)] = snapshotPath;
-        } else {
-          throw new ApplicationException(
-              log.yellow("Failed to precompile ${_formatExecutable(id)}:\n") +
-              result.stderr.join('\n'));
-        }
+        await dart.snapshot(server.url.resolve(basename), snapshotPath, id: id);
+        precompiled[path.withoutExtension(basename)] = snapshotPath;
       }));
 
       return precompiled;
@@ -293,13 +283,6 @@ class AssetEnvironment {
       server.close();
     }
   }
-
-  /// Returns the executable name for [id].
-  ///
-  /// [id] is assumed to be an executable in a bin directory. The return value
-  /// is intended for log output and may contain formatting.
-  String _formatExecutable(AssetId id) =>
-      log.bold("${id.package}:${path.basenameWithoutExtension(id.path)}");
 
   /// Stops the server bound to [rootDirectory].
   ///
