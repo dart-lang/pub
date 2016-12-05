@@ -114,12 +114,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // If we're running an executable directly from the filesystem, make sure that
   // it knows where to load the packages. If it's a dependency's executable, for
   // example, it may not have the right packages directory itself.
-  //
-  // We don't do this for global executables because older ones may not have a
-  // `.packages` file generated. If they do, the VM's logic will find it
-  // automatically.
-  if (!isGlobal &&
-      (executableUrl.scheme == 'file' || executableUrl.scheme == '')) {
+  if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
     // We use an absolute path here not because the VM insists but because it's
     // helpful for the subprocess to be able to spawn Dart with
     // Platform.executableArguments and have that work regardless of the working
@@ -157,11 +152,8 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   // If neither the executable nor any of its dependencies are transformed,
   // there's no need to spin up a barback server. Just run the VM directly
   // against the filesystem.
-  //
-  // TODO(nweiz): Once sdk#23369 is fixed, allow global executables to be run
-  // (and snapshotted) from the filesystem using package specs. A spec can by
-  // saved when activating the package.
-  if (!isGlobal && !entrypoint.packageGraph.isPackageTransformed(package)) {
+  if (!entrypoint.packageGraph.isPackageTransformed(package) &&
+      fileExists(entrypoint.packagesFile)) {
     var fullPath = entrypoint.packageGraph.packages[package].path(path);
     if (!fileExists(fullPath)) return null;
     return p.toUri(fullPath);
