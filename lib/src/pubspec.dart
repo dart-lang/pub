@@ -427,7 +427,13 @@ class Pubspec {
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
       {String expectedName, Uri location}) {
-    var pubspecNode = loadYamlNode(contents, sourceUrl: location);
+    YamlNode pubspecNode;
+    try {
+      pubspecNode = loadYamlNode(contents, sourceUrl: location);
+    } on YamlException catch (error) {
+      throw new PubspecException(error.message, error.span);
+    }
+
     Map pubspecMap;
     if (pubspecNode is YamlScalar && pubspecNode.value == null) {
       pubspecMap = new YamlMap(sourceUrl: location);
