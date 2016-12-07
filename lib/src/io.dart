@@ -886,7 +886,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     return await _extractTarGzWindows(stream, destination);
   }
 
-  var args = ["--extract", "--gunzip", "--directory", destination];
+  var args = ["--extract", "--gunzip", "--directory", "--no-same-owner",
+              "--no-same-permissions", destination];
   if (_noUnknownKeyword) {
     // BSD tar (the default on OS X) can insert strange headers to a tarfile
     // that GNU tar (the default on Linux) is unable to understand. This will
