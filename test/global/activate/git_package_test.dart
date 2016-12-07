@@ -26,7 +26,6 @@ main() {
             // Specific revision number goes here.
             endsWith(
                 'Precompiling executables...\n'
-                'Loading source assets...\n'
                 'Precompiled foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
   });
