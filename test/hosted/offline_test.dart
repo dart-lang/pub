@@ -122,5 +122,45 @@ main() {
 
       d.appPackagesFile({"foo": "1.2.3"}).validate();
     });
+
+    integration('skips invalid cached versions', () {
+      // Run the server so that we know what URL to use in the system cache.
+      serveErrors();
+
+      d.cacheDir({
+        "foo": ["1.2.2", "1.2.3"]
+      }, includePubspecs: true).create();
+
+      d.hostedCache([
+        d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")])
+      ]).create();
+
+      d.appDir({"foo": "any"}).create();
+
+      pubCommand(command, args: ['--offline']);
+
+      d.appPackagesFile({"foo": "1.2.2"}).validate();
+    });
+
+    integration('skips invalid locked versions', () {
+      // Run the server so that we know what URL to use in the system cache.
+      serveErrors();
+
+      d.cacheDir({
+        "foo": ["1.2.2", "1.2.3"]
+      }, includePubspecs: true).create();
+
+      d.hostedCache([
+        d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")])
+      ]).create();
+
+      d.appDir({"foo": "any"}).create();
+
+      createLockFile('myapp', hosted: {'foo': '1.2.3'});
+
+      pubCommand(command, args: ['--offline']);
+
+      d.appPackagesFile({"foo": "1.2.2"}).validate();
+    });
   });
 }

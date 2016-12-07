@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
@@ -221,7 +221,7 @@ class BoundGitSource extends CachedSource {
           "Please ensure Git is correctly installed.");
     }
 
-    ensureDir(path.join(systemCacheRoot, 'cache'));
+    ensureDir(p.join(systemCacheRoot, 'cache'));
     await _ensureRevision(ref, id.description['resolved-ref']);
 
     var revisionCachePath = getDirectory(id);
@@ -234,7 +234,7 @@ class BoundGitSource extends CachedSource {
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) => path.join(
+  String getDirectory(PackageId id) => p.join(
       systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
 
   List<Package> getCachedPackages() {
@@ -252,9 +252,19 @@ class BoundGitSource extends CachedSource {
     var failures = <PackageId>[];
 
     var packages = listDir(systemCacheRoot)
-        .where((entry) => dirExists(path.join(entry, ".git")))
-        .map((packageDir) => new Package.load(
-            null, packageDir, systemCache.sources))
+        .where((entry) => dirExists(p.join(entry, ".git")))
+        .map((packageDir) {
+          try {
+            return new Package.load(null, packageDir, systemCache.sources);
+          } catch (error, stackTrace) {
+            log.error("Failed to load package", error, stackTrace);
+            var name = p.basename(packageDir).split('-').first;
+            failures.add(new PackageId(name, source, Version.none, '???'));
+            tryDeleteEntry(packageDir);
+            return null;
+          }
+        })
+        .where((package) => package != null)
         .toList();
 
     // Note that there may be multiple packages with the same name and version
@@ -385,6 +395,6 @@ class BoundGitSource extends CachedSource {
   /// [id] (the one in `<system cache>/git/cache`).
   String _repoCachePath(PackageRef ref) {
     var repoCacheName = '${ref.name}-${sha1(ref.description['url'])}';
-    return path.join(systemCacheRoot, 'cache', repoCacheName);
+    return p.join(systemCacheRoot, 'cache', repoCacheName);
   }
 }

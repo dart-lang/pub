@@ -468,6 +468,10 @@ class BacktrackingSolver {
     var pubspec;
     try {
       pubspec = await _getPubspec(id);
+    } on PubspecException catch (error) {
+      // The lockfile for the pubspec couldn't be parsed,
+      log.fine("Failed to parse pubspec for $id:\n$error");
+      throw new NoVersionException(id.name, null, id.version, []);
     } on PackageNotFoundException {
       // We can only get here if the lockfile refers to a specific package
       // version that doesn't exist (probably because it was yanked).

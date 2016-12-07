@@ -9,6 +9,7 @@ import "dart:convert";
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 import '../exceptions.dart';
 import '../http.dart';
@@ -217,7 +218,18 @@ class BoundHostedSource extends CachedSource {
 
     for (var serverDir in listDir(systemCacheRoot)) {
       var url = _directoryToUrl(p.basename(serverDir));
-      var packages = _getCachedPackagesInDirectory(p.basename(serverDir));
+
+      var packages = [];
+      for (var entry in listDir(serverDir)) {
+        try {
+          packages.add(new Package.load(null, entry, systemCache.sources));
+        } catch (error, stackTrace) {
+          log.error("Failed to load package", error, stackTrace);
+          failures.add(_idForBasename(p.basename(entry)));
+          tryDeleteEntry(entry);
+        }
+      }
+
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
@@ -242,20 +254,37 @@ class BoundHostedSource extends CachedSource {
     return new Pair(successes, failures);
   }
 
+  /// Returns the best-guess package ID for [basename], which should be a
+  /// subdirectory in a hosted cache.
+  PackageId _idForBasename(String basename) {
+    var components = split1(basename, '-');
+    var version = Version.none;
+    if (components.length > 1) {
+      try {
+        version = new Version.parse(components.last);
+      } catch (_) {
+        // Default to Version.none.
+      }
+    }
+    return new PackageId(components.first, source, version, components.first);
+  }
+
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
-  List<Package> getCachedPackages() =>
-      _getCachedPackagesInDirectory(_urlToDirectory(source.defaultUrl));
-
-  /// Gets all of the packages that have been downloaded into the system cache
-  /// into [dir].
-  List<Package> _getCachedPackagesInDirectory(String dir) {
-    var cacheDir = p.join(systemCacheRoot, dir);
+  List<Package> getCachedPackages() {
+    var cacheDir = p.join(systemCacheRoot, _urlToDirectory(source.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
-    return listDir(cacheDir)
-        .map((entry) => new Package.load(null, entry, systemCache.sources))
-        .toList();
+    return listDir(cacheDir).map((entry) {
+      try {
+        return new Package.load(null, entry, systemCache.sources);
+      } catch (error, stackTrace) {
+        log.fine(
+            "Failed to load package from $entry:\n"
+            "$error\n"
+            "${new Chain.forTrace(stackTrace)}");
+      }
+    }).toList();
   }
 
   /// Downloads package [package] at [version] from [server], and unpacks it
