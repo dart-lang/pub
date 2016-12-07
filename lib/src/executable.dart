@@ -133,7 +133,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // that prevents pub from also writing to the output streams.
   process.stderr.listen(stderr.add);
   process.stdout.listen(stdout.add);
-  stdin.listen(process.stdin.add);
+  stdin.listen(process.stdin.add, onDone: process.stdin.close);
 
   // Work around dart-lang/sdk#25348.
   process.stdin.done.catchError((_) {});
