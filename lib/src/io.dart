@@ -1026,11 +1026,17 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "/dev/stdin"
       ];
 
-      // The ustar format doesn't support large UIDs, which can happen if
-      // someone's using Active Directory on Linux. We don't care about
-      // preserving ownership anyway, so we just set them to 0. Note that BSD
-      // tar doesn't support the `--owner` or `--group` arguments.
-      if (Platform.isLinux) args.addAll(["--owner=0", "--group=0"]);
+      // The ustar format doesn't support large UIDs. We don't care about
+      // preserving ownership anyway, so we just set them to "pub".
+      if (Platform.isLinux) {
+        // GNU tar flags.
+        // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
+        args.addAll(["--owner=pub", "--group=pub"]);
+      } else {
+        // BSD tar flags.
+        // https://www.freebsd.org/cgi/man.cgi?query=bsdtar&sektion=1
+        args.addAll(["--uname=pub", "--gname=pub"]);
+      }
 
       var process = await startProcess("tar", args);
       process.stdin.add(UTF8.encode(contents.join("\n")));
