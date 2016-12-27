@@ -42,6 +42,14 @@ To run pub from the Git repository, run:
 
 ## Testing pub
 
+Before you run the tests, you will need some specific versions of other packages.
+These packages are included in the repository as [Git submodules][].
+To get them, run:
+
+[Git submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+    git submodule update --init
+
 Before any change is made to pub, all tests should pass. To run a pub test, run:
 
     dart test/path/to/pub_test.dart
@@ -49,13 +57,6 @@ Before any change is made to pub, all tests should pass. To run a pub test, run:
 To run all tests at once, run:
 
     pub run test
-
-Some pub tests require specific versions of other packages. These packages are
-included in the repository as [Git submodules][]. To get them, run:
-
-[Git submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
-
-    git submodule update --init
 
 Changes to pub should be accompanied by one or more tests that exercise the new
 functionality. When adding a test, the best strategy is to find a similar test
