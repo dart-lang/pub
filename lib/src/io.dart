@@ -173,6 +173,7 @@ String writeTextFile(String file, String contents,
     log.fine("Contents:\n$contents");
   }
 
+  _deleteIfLink(file);
   new File(file).writeAsStringSync(contents, encoding: encoding);
   return file;
 }
@@ -180,6 +181,7 @@ String writeTextFile(String file, String contents,
 /// Creates [file] and writes [contents] to it.
 String writeBinaryFile(String file, List<int> contents) {
   log.io("Writing ${contents.length} bytes to binary file $file.");
+  _deleteIfLink(file);
   new File(file).openSync(mode: FileMode.WRITE)
       ..writeFromSync(contents)
       ..closeSync();
@@ -196,10 +198,21 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   log.io("Creating $file from stream.");
 
   return _descriptorPool.withResource/*<Future<String>>*/(() async {
+    _deleteIfLink(file);
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
     return file;
   });
+}
+
+/// Deletes [file] if it's a symlink.
+///
+/// The [File] class overwrites the symlink targets when writing to a file,
+/// which is never what we want, so this delete the symlink first if necessary.
+void _deleteIfLink(String file) {
+  if (!linkExists(file)) return;
+  log.io("Deleting symlink at $file.");
+  new Link(file).deleteSync();
 }
 
 /// Copies all files in [files] to the directory [destination].
