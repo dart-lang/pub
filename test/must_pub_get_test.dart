@@ -284,7 +284,7 @@ foo:http://example.com/
 
       _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
           "SDK constraints. Please run \"pub get\" again.");
-    });
+    }, skip: "Times out. Issue https://github.com/dart-lang/pub/issues/1389");
 
     integration("the lock file's Flutter SDK constraint doesn't match the "
         "current Flutter SDK", () {
