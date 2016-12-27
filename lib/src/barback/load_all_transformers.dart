@@ -136,6 +136,9 @@ List<Set<TransformerId>> _stageTransformers(
 
     if (stageNumbers.containsKey(id)) return stageNumbers[id];
     var dependencies = transformerDependencies[id];
+    if (dependencies == null){
+        dependencies = [];
+    }
     stageNumbers[id] = dependencies.isEmpty ?
         0 : maxAll(dependencies.map(stageNumberFor)) + 1;
     return stageNumbers[id];
