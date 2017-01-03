@@ -80,9 +80,7 @@ class TransformerIsolate {
           snapshot: snapshot);
       return new TransformerIsolate._(
           await port.first, environment.mode, idsToUrls);
-    } on CrossIsolateException catch (error, stackTrace) {
-      if (error.type != 'IsolateSpawnException') throw error;
-
+    } on IsolateSpawnException catch (error, stackTrace) {
       // TODO(nweiz): don't parse this as a string once issues 12617 and 12689
       // are fixed.
       var firstErrorLine = error.message.split('\n')[1];

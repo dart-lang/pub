@@ -14,7 +14,6 @@ import 'package:compiler_unsupported/src/filenames.dart'
     show appendSlash;
 import 'package:path/path.dart' as p;
 
-import 'asset/dart/serialize.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -177,19 +176,8 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
   await withTempDir((dir) async {
     var dartPath = p.join(dir, 'runInIsolate.dart');
     writeTextFile(dartPath, code, dontLogContents: true);
-    var port = new ReceivePort();
-    await Isolate.spawn(_isolateBuffer, {
-      'replyTo': port.sendPort,
-      // Make the snapshot URI absolute to work around sdk#8440.
-      'uri': p.toUri(p.absolute(dartPath)).toString(),
-      'packageRoot': packageRoot == null ? null : packageRoot.toString(),
-      'message': message
-    });
-
-    var response = await port.first;
-    if (response['type'] == 'error') {
-      throw new CrossIsolateException.deserialize(response['error']);
-    }
+    await Isolate.spawnUri(p.toUri(p.absolute(dartPath)), [], message,
+        packageRoot: packageRoot);
 
     if (snapshot == null) return;
 
@@ -205,27 +193,6 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     // otherwise successful isolate load.
     log.warning("Failed to compile a snapshot to "
         "${p.relative(snapshot)}:\n" + result.stderr.join("\n"));
-  });
-}
-
-// TODO(nweiz): remove this when issue 12617 is fixed.
-/// A function used as a buffer between the host isolate and [spawnUri].
-///
-/// [spawnUri] synchronously loads the file and its imports, which can deadlock
-/// the host isolate if there's an HTTP import pointing at a server in the host.
-/// Adding an additional isolate in the middle works around this.
-void _isolateBuffer(message) {
-  var replyTo = message['replyTo'];
-  var packageRoot = message['packageRoot'];
-  if (packageRoot != null) packageRoot = Uri.parse(packageRoot);
-  Isolate.spawnUri(Uri.parse(message['uri']), [], message['message'],
-          packageRoot: packageRoot)
-      .then((_) => replyTo.send({'type': 'success'}))
-      .catchError((e, stack) {
-    replyTo.send({
-      'type': 'error',
-      'error': CrossIsolateException.serialize(e, stack)
-    });
   });
 }
 

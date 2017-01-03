@@ -4,8 +4,8 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
-import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
@@ -13,25 +13,9 @@ import 'barback/asset_environment.dart';
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
+import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'utils.dart';
-
-/// All signals that can be caught by a Dart process.
-///
-/// This intentionally omits SIGINT. SIGINT usually comes from a user pressing
-/// Control+C on the terminal, and the terminal automatically passes the signal
-/// to all processes in the process tree. If we forwarded it manually, the
-/// subprocess would see two instances, which could cause problems. Instead, we
-/// just ignore it and let the terminal pass it to the subprocess.
-final _catchableSignals = Platform.isWindows
-    ? [ProcessSignal.SIGHUP]
-    : [
-        ProcessSignal.SIGHUP,
-        ProcessSignal.SIGTERM,
-        ProcessSignal.SIGUSR1,
-        ProcessSignal.SIGUSR2,
-        ProcessSignal.SIGWINCH,
-      ];
 
 /// Runs [executable] from [package] reachable from [entrypoint].
 ///
@@ -94,11 +78,6 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var vmArgs = <String>[];
-
-  // Run in checked mode.
-  if (checked) vmArgs.add("--checked");
-
   var executableUrl = await _executableUrl(
       entrypoint, package, executable, isGlobal: isGlobal, mode: mode);
 
@@ -113,32 +92,23 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   // If we're running an executable directly from the filesystem, make sure that
   // it knows where to load the packages. If it's a dependency's executable, for
-  // example, it may not have the right packages directory itself.
+  // example, it may not have the right packages directory itself. Otherwise,
+  // default to Dart's automatic package: logic.
+  Uri packageConfig;
   if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
     // We use an absolute path here not because the VM insists but because it's
     // helpful for the subprocess to be able to spawn Dart with
     // Platform.executableArguments and have that work regardless of the working
     // directory.
-    vmArgs.add('--packages=${p.toUri(p.absolute(entrypoint.packagesFile))}');
+    packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
   }
 
-  vmArgs.add(executableUrl.toString());
-  vmArgs.addAll(args);
-
-  var process = await Process.start(Platform.executable, vmArgs);
-
-  _forwardSignals(process);
-
-  // Note: we're not using process.std___.pipe(std___) here because
-  // that prevents pub from also writing to the output streams.
-  process.stderr.listen(stderr.add);
-  process.stdout.listen(stdout.add);
-  stdin.listen(process.stdin.add, onDone: process.stdin.close);
-
-  // Work around dart-lang/sdk#25348.
-  process.stdin.done.catchError((_) {});
-
-  return await process.exitCode;
+  await isolate.runUri(executableUrl, args.toList(), null,
+      buffered: executableUrl.scheme == 'http',
+      checked: checked,
+      automaticPackageResolution: packageConfig == null,
+      packageConfig: packageConfig);
+  return exitCode;
 }
 
 /// Returns the URL the VM should use to load the executable at [path].
@@ -156,7 +126,7 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
       fileExists(entrypoint.packagesFile)) {
     var fullPath = entrypoint.packageGraph.packages[package].path(path);
     if (!fileExists(fullPath)) return null;
-    return p.toUri(fullPath);
+    return p.toUri(p.absolute(fullPath));
   }
 
   var assetPath = p.url.joinAll(p.split(path));
@@ -209,69 +179,32 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
 /// This doesn't do any validation of the snapshot's SDK version.
 Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
     String packagesFile, bool checked: false}) async {
-  // TODO(nweiz): pass a flag to silence the "Wrong full snapshot version"
-  // message when issue 20784 is fixed.
-  var vmArgs = <String>[];
-  if (checked) vmArgs.add("--checked");
-
+  Uri packageConfig;
   if (packagesFile != null) {
     // We use an absolute path here not because the VM insists but because it's
     // helpful for the subprocess to be able to spawn Dart with
     // Platform.executableArguments and have that work regardless of the working
     // directory.
-    vmArgs.add("--packages=${p.toUri(p.absolute(packagesFile))}");
+    packageConfig = p.toUri(p.absolute(packagesFile));
   }
 
-  vmArgs.add(path);
-  vmArgs.addAll(args);
-
-  // We need to split stdin so that we can send the same input both to the
-  // first and second process, if we start more than one.
-  var stdin1;
-  var stdin2;
-  if (recompile == null) {
-    stdin1 = stdin;
-  } else {
-    var stdins = StreamSplitter.splitFrom(stdin);
-    stdin1 = stdins.first;
-    stdin2 = stdins.last;
+  var url = p.toUri(p.absolute(path));
+  var argList = args.toList();
+  try {
+    await isolate.runUri(url, argList, null,
+        checked: checked,
+        automaticPackageResolution: packageConfig == null,
+        packageConfig: packageConfig);
+  } on IsolateSpawnException catch (error) {
+    if (recompile == null) rethrow;
+    if (!error.message.contains("Wrong script snapshot version")) rethrow;
+    await recompile();
+    await isolate.runUri(url, argList, null,
+        checked: checked,
+        packageConfig: packageConfig);
   }
 
-  runProcess(input) async {
-    var process = await Process.start(Platform.executable, vmArgs);
-
-    _forwardSignals(process);
-
-    // Note: we're not using process.std___.pipe(std___) here because
-    // that prevents pub from also writing to the output streams.
-    process.stderr.listen(stderr.add);
-    process.stdout.listen(stdout.add);
-    input.listen(process.stdin.add);
-
-    return process.exitCode;
-  }
-
-  var exitCode = await runProcess(stdin1);
-  if (recompile == null || exitCode != 253) return exitCode;
-
-  // Exit code 253 indicates that the snapshot version was out-of-date. If we
-  // can recompile, do so.
-  await recompile();
-  return runProcess(stdin2);
-}
-
-/// Forwards all catchable signals to [process].
-void _forwardSignals(Process process) {
-  // See [_catchableSignals].
-  ProcessSignal.SIGINT.watch().listen(
-      (_) => log.fine("Ignoring SIGINT in pub."));
-
-  for (var signal in _catchableSignals) {
-    signal.watch().listen((_) {
-      log.fine("Forwarding $signal to running process.");
-      process.kill(signal);
-    });
-  }
+  return exitCode;
 }
 
 /// Runs the executable snapshot at [snapshotPath].
