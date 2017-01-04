@@ -29,8 +29,8 @@ void pubBuildAndServeShouldFail(String description, {List<String> args,
   }
 
   // Usage errors also print the usage, so validate that.
-  var buildExpectation = buildError;
-  var serveExpectation = serveError;
+  Object buildExpectation = buildError;
+  Object serveExpectation = serveError;
   if (exitCode == exit_codes.USAGE) {
     buildExpectation = allOf(
         startsWith(buildExpectation), contains("Usage: pub build"));

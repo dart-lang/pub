@@ -12,7 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Function size(int size) {
+ValidatorCreator size(int size) {
   return (entrypoint) =>
       new SizeValidator(entrypoint, new Future.value(size));
 }
