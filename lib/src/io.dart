@@ -1048,7 +1048,12 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       } else {
         // BSD tar flags.
         // https://www.freebsd.org/cgi/man.cgi?query=bsdtar&sektion=1
-        args.addAll(["--uname=pub", "--gname=pub"]);
+        // TODO(rnystrom): These flags are, alas, not supported by the version
+        // of tar on OS X. Passing them causes tar to exit with an error. For
+        // now, we'll just not handle large UIDs on Mac until we can come up
+        // with something.
+        // See: https://github.com/dart-lang/pub/issues/1442
+        // args.addAll(["--uname=pub", "--gname=pub"]);
       }
 
       var process = await startProcess("tar", args);
