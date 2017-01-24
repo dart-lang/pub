@@ -233,7 +233,7 @@ void endPubServe() {
 /// [root] indicates which server should be accessed, and defaults to "web".
 Future<http.Response> scheduleRequest(String urlPath,
     {String root, Map<String, String> headers}) {
-  return schedule(() {
+  return schedule/*<Future<http.Response>>*/(() {
     return http.get(_getServerUrlSync(root, urlPath), headers: headers);
   }, "request $urlPath");
 }
@@ -375,10 +375,10 @@ Future<Map> webSocketRequest(String method, [Map params]) {
 ///
 /// Returns a [Future] that completes to the call's result.
 Future<Map> expectWebSocketResult(String method, Map params, result) {
-  return schedule(() {
+  return schedule/*<Future<Map>>*/(() {
     return Future.wait([
       webSocketRequest(method, params),
-      awaitObject(result)
+      awaitObject(result),
     ]).then((results) {
       var response = results[0];
       var resolvedResult = results[1];
