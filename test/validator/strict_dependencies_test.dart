@@ -17,7 +17,7 @@ Validator strictDeps(Entrypoint entrypoint) {
 }
 
 main() {
-  group('should consider a package valid if', () {
+  group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
     integration('looks normal', () => expectNoValidationError(strictDeps));
@@ -25,22 +25,80 @@ main() {
     integration('declares an "import" as a dependency', () {
       d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {
-          "not_declared": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0")
+          "silly_monkey": "^1.2.3"
+        }, sdk: ">=1.8.0 <2.0.0"),
+        d.file(path.join('lib', 'library.dart'), r'''
+          import 'package:silly_monkey/silly_monkey.dart';
+        '''),
       ]).create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('declares an "import" as a dev dependency', () {
+      d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", devDeps: {
+          "silly_monkey": "^1.2.3"
+        }, sdk: ">=1.8.0 <2.0.0"),
+        d.file(path.join('lib', 'library.dart'), r'''
+          import 'package:silly_monkey/silly_monkey.dart';
+        '''),
+      ]).create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('only uses dart: dependencies (not pub packages)', () {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
-        import 'package:not_declared/not_declared.dart';
+        import 'dart:async';
+        import 'dart:collection';
+        import 'dart:typed_data';
+      ''').create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('imports itself', () {
+      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import 'package:test_pkg/test_pkg.dart';
+      ''').create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('has a relative import', () {
+      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import 'some/relative/path.dart';
+      ''').create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('has an absolute import', () {
+      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import 'file://shared/some/library.dart';
       ''').create();
       expectNoValidationError(strictDeps);
     });
   });
 
-  group('should consider a package invalid if', () {
+  group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
 
     integration('does not declare an "import" as a dependency', () {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
-        import 'package:not_declared/not_declared.dart';
+        import 'package:silly_monkey/silly_monkey.dart';
+      ''').create();
+
+      expectValidationWarning(strictDeps);
+    });
+
+    integration('has a parse error preventing reading directives', () {
+      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import not_supported_keyword 'dart:async';
+      ''').create();
+
+      expectValidationWarning(strictDeps);
+    });
+
+    integration('does not declare an "export" as a dependency', () {
+      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
       expectValidationWarning(strictDeps);

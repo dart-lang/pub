@@ -2,49 +2,76 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import '../entrypoint.dart';
 import 'dart:async';
-import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
-import 'package:pub/src/solver/version_solver.dart';
+import 'package:path/path.dart' as path;
+import 'package:pub/src/dart.dart';
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
-
-/// Returns a map of files -> package names imported or exported within [files].
-Map<String, Iterable<String>> _findUsedPackages(Iterable<String> files) {
-  var packageNames = <String, Iterable<String>>{};
-  for (var file in files) {
-    var usedPackages = <String>[];
-    var compilationUnit = parseDirectives(new File(file).readAsStringSync());
-    for (final directive in compilationUnit.directives) {
-      if (directive is UriBasedDirective) {
-        usedPackages
-            .add(Uri.parse(directive.uri.stringValue).pathSegments.first);
-      }
-    }
-    packageNames[file] = usedPackages.toSet();
-  }
-  return packageNames;
-}
+import 'package:source_span/source_span.dart';
 
 class StrictDependenciesValidator extends Validator {
+  static bool _isDartFile(String file) => path.extension(file) == '.dart';
+
   StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint);
 
-  @override
-  Future validate() {
-    return new Future.sync(() async {
-      var declared = new Set<String>()
-        ..addAll(entrypoint.root.dependencies.map((d) => d.name))
-        ..addAll(entrypoint.root.devDependencies.map((d) => d.name));
-      var allUsed = _findUsedPackages(entrypoint.root.listFiles());
-      allUsed.forEach((file, packageNames) {
-        for (var package in packageNames) {
-          if (!declared.contains(package)) {
-            warnings.add(
-                'Referenced "$package" in $file, but no dependency declared');
+  /// Returns all pub packages imported or exported within [files].
+  List<_DependencyUse> _findPackages(Iterable<String> files) {
+    var allUses = <_DependencyUse>[];
+    for (var file in files) {
+      var dependencies = new List<_DependencyUse>();
+      try {
+        var contents = readTextFile(file);
+        var directives = parseImportsAndExports(contents, name: file);
+        for (var directive in directives) {
+          var usage = new _DependencyUse(directive, file, contents);
+          if (usage.isPubPackage) {
+            dependencies.add(usage);
           }
         }
-      });
-    });
+        allUses.addAll(dependencies);
+      } on AnalyzerErrorGroup catch (e) {
+        warnings.add('Failed parsing "$file": $e');
+      }
+    }
+    return allUses;
+  }
+
+  Future validate() async {
+    var declared = new Set<String>()
+      ..addAll(entrypoint.root.dependencies.map((d) => d.name))
+      ..addAll(entrypoint.root.devDependencies.map((d) => d.name))
+      ..add(entrypoint.root.name);
+    var allUsed = _findPackages(entrypoint.root.listFiles().where(_isDartFile));
+    for (var usage in allUsed) {
+      if (!declared.contains(usage.package)) {
+        warnings.add(usage.toErrorMessage());
+      }
+    }
+  }
+}
+
+class _DependencyUse {
+  final String _contents;
+  final UriBasedDirective _directive;
+  final String _file;
+  final Uri _parsedUri;
+
+  _DependencyUse(UriBasedDirective directive, this._file, this._contents)
+      : _parsedUri = Uri.parse(directive.uri.stringValue),
+        _directive = directive;
+
+  bool get isPubPackage => _parsedUri.scheme == 'package';
+
+  String get package => _parsedUri.pathSegments.first;
+
+  String toErrorMessage() {
+    return new SourceFile(_contents, url: _file)
+        .span(_directive.offset, _directive.length)
+        .message(
+            '$_file imports $package, but this package doesn\'t depend '
+            'on $package');
   }
 }

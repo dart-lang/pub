@@ -64,8 +64,11 @@ Descriptor appPubspec([Map dependencies]) {
 /// Describes a file named `pubspec.yaml` for a library package with the given
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
 /// constraint on that version.
-Descriptor libPubspec(String name, String version, {Map deps, String sdk}) {
-  var map = packageMap(name, version, deps);
+Descriptor libPubspec(String name, String version, {
+    Map deps,
+    Map devDeps,
+    String sdk}) {
+  var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) map["environment"] = {"sdk": sdk};
   return pubspec(map);
 }
