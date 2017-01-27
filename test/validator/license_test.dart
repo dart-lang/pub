@@ -27,6 +27,12 @@ main() {
       expectNoValidationError(license);
     });
 
+    integration('has an UNLICENSE file', () {
+      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
+      d.file(path.join(appPath, 'UNLICENSE'), '').create();
+      expectNoValidationError(license);
+    });
+
     integration('has a prefixed LICENSE file', () {
       schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
       d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
