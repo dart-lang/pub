@@ -125,6 +125,14 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
 
     var entrypoint = _environment.graph.packages[id.package].path(id.path);
 
+    // We define the packageRoot in terms of the entrypoint directory, and not
+    // the rootPackage, to ensure that the generated source-maps are valid.
+    // Source-maps contain relative URLs to package sources and these relative
+    // URLs should be self-contained within the paths served by pub-serve.
+    // See #1511 for details.
+    var buildDir = _environment.getSourceDirectoryContaining(id.path);
+    var packageRoot = _environment.rootPackage.path(buildDir, "packages");
+
     // TODO(rnystrom): Should have more sophisticated error-handling here. Need
     // to report compile errors to the user in an easily visible way. Need to
     // make sure paths in errors are mapped to the original source path so they
@@ -138,7 +146,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
             'minify', defaultsTo: _settings.mode == BarbackMode.RELEASE),
         verbose: _configBool('verbose'),
         environment: _configEnvironment,
-        packageRoot: _environment.rootPackage.path("packages"),
+        packageRoot: packageRoot,
         analyzeAll: _configBool('analyzeAll'),
         preserveUris: _configBool('preserveUris'),
         suppressWarnings: _configBool('suppressWarnings'),
