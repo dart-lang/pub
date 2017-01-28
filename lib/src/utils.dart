@@ -786,3 +786,7 @@ void fail(String message, [innerError, StackTrace innerTrace]) {
 ///
 /// This will report the error and cause pub to exit with [exit_codes.DATA].
 void dataError(String message) => throw new DataException(message);
+
+/// Returns an iterable combining [a] and [b].
+Iterable/*<T>*/ combineIterables/*<T>*/(Iterable/*<T>*/ a, Iterable/*<T>*/ b) =>
+  a.toList()..addAll(b);

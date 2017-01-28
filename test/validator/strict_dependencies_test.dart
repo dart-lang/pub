@@ -36,6 +36,20 @@ main() {
       expectNoValidationError(strictDeps);
     });
 
+    integration('declares an "export" as a dependency in lib/', () {
+      d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {
+          "silly_monkey": "^1.2.3"
+        }, sdk: ">=1.8.0 <2.0.0"),
+        d.dir('lib', [
+          d.file('library.dart', r'''
+            export 'package:silly_monkey/silly_monkey.dart';
+          '''),
+        ]),
+      ]).create();
+      expectNoValidationError(strictDeps);
+    });
+
     integration('declares an "import" as a dependency in bin/', () {
       d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {
@@ -113,7 +127,20 @@ main() {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import not_supported_keyword 'dart:async';
       ''').create();
+      expectNoValidationError(strictDeps);
+    });
 
+    integration('has a top-level Dart file with an invalid dependency', () {
+      d.file(path.join(appPath, 'top_level.dart'), r'''
+        import 'package:';
+      ''').create();
+      expectNoValidationError(strictDeps);
+    });
+
+    integration('has a Dart-like file with an invalid dependency', () {
+      d.file(path.join(appPath, 'lib', 'generator.dart.template'), r'''
+        import 'package:';
+      ''').create();
       expectNoValidationError(strictDeps);
     });
   });
@@ -171,6 +198,44 @@ main() {
         ]),
       ]).create();
       expectValidationWarning(strictDeps);
+    });
+
+    group('declares an import with an invalid package URL: ', () {
+      integration('"package:"', () {
+        d.dir(appPath, [
+          d.dir('lib', [
+            d.file('library.dart', r'''
+            import 'package:';
+          '''),
+          ]),
+        ]).create();
+        expectValidationWarning(strictDeps);
+      });
+
+      integration('"package:silly_monkey"', () {
+        d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0", deps: {
+            "silly_monkey": "^1.2.3"
+          }, sdk: ">=1.8.0 <2.0.0"),
+          d.dir('lib', [
+            d.file('library.dart', r'''
+            import 'package:silly_monkey';
+          '''),
+          ]),
+        ]).create();
+        expectValidationWarning(strictDeps);
+      });
+
+      integration('"package:/"', () {
+        d.dir(appPath, [
+          d.dir('lib', [
+            d.file('library.dart', r'''
+            import 'package:/';
+          '''),
+          ]),
+        ]).create();
+        expectValidationWarning(strictDeps);
+      });
     });
   });
 }
