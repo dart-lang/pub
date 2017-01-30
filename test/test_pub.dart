@@ -599,7 +599,9 @@ void useMockClient(MockClient client) {
 
 /// Describes a map representing a library package with the given [name],
 /// [version], and [dependencies].
-Map packageMap(String name, String version, [Map dependencies]) {
+Map packageMap(String name, String version, [
+    Map dependencies,
+    Map devDependencies,]) {
   var package = <String, dynamic>{
     "name": name,
     "version": version,
@@ -609,7 +611,7 @@ Map packageMap(String name, String version, [Map dependencies]) {
   };
 
   if (dependencies != null) package["dependencies"] = dependencies;
-
+  if (devDependencies != null) package["dev_dependencies"] = devDependencies;
   return package;
 }
 
