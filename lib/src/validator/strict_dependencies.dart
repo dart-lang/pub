@@ -21,9 +21,8 @@ class StrictDependenciesValidator extends Validator {
 
   /// Lazily returns all dependency uses in [files].
   ///
-  /// Files that do not parse are skipped.
-  ///
-  /// Directives that do not import package: URIs are skipped.
+  /// Files that do not parse and directives that don't import or export
+  /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
     for (var file in files) {
       List<UriBasedDirective> directives;
@@ -36,27 +35,26 @@ class StrictDependenciesValidator extends Validator {
         log.fine(new Chain.forTrace(s).terse);
         continue;
       }
+
       for (var directive in directives) {
-        Uri uri;
+        Uri url;
         try {
-          uri = Uri.parse(directive.uri.stringValue);
-        } on FormatException catch (_){}
-        // If the URL could not be parsed or it is a *package* AND
-        // there are no segments OR
-        // any segment are empty
-        if (uri == null ||
-            (uri.scheme == 'package' &&
-            (uri.pathSegments.length < 2 ||
-            uri.pathSegments.any((s) => s.isEmpty)))) {
+          url = Uri.parse(directive.uri.stringValue);
+        } on FormatException catch (_) {
+          // Ignore a format exception. [url] will be null, and we'll emit an
+          // "Invalid URL" warning below.
+        }
+
+        // If the URL could not be parsed or it is a `package:` URL AND there
+        // are no segments OR any segment are empty, it's invalid.
+        if (url == null ||
+            (url.scheme == 'package' &&
+            (url.pathSegments.length < 2 ||
+            url.pathSegments.any((s) => s.isEmpty)))) {
           warnings.add(_Usage.errorMessage(
-            'Invalid URL',
-            file,
-            contents,
-            directive
-          ));
-        } else if (uri.scheme == 'package') {
-          var usage = new _Usage(file, contents, directive, uri);
-          yield usage;
+              'Invalid URL.', file, contents, directive));
+        } else if (url.scheme == 'package') {
+          yield new _Usage(file, contents, directive, url);
         }
       }
     }
@@ -74,8 +72,11 @@ class StrictDependenciesValidator extends Validator {
     _validateTestTool(dependencies, devDependencies);
   }
 
-  static bool _isDart(String file) => p.extension(file) == '.dart';
-
+  /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
+  /// aren't in [deps].
+  ///
+  /// The [devDeps] are used to generate special warnings for files that import
+  /// dev dependencies.
   void _validateLibBin(Set<String> deps, Set<String> devDeps) {
     var libFiles = entrypoint.root.listFiles(beneath: 'lib').where(_isDart);
     var binFiles = entrypoint.root.listFiles(beneath: 'bin').where(_isDart);
@@ -90,19 +91,23 @@ class StrictDependenciesValidator extends Validator {
     }
   }
 
+  /// Validates that no Dart files in `test/` or `tool/` have dependencies that
+  /// aren't in [deps] or [devDeps].
   void _validateTestTool(Set<String> deps, Set<String> devDeps) {
     var testFiles = entrypoint.root.listFiles(beneath: 'test').where(_isDart);
     var toolFiles = entrypoint.root.listFiles(beneath: 'tool').where(_isDart);
     for (var usage in _findPackages(combineIterables(testFiles, toolFiles))) {
-      if (!deps.contains(usage.package) &&
-          !devDeps.contains(usage.package)) {
+      if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependencyMissingMessage());
       }
     }
   }
+
+  /// Returns whether [file] is a Dart file.
+  bool _isDart(String file) => p.extension(file) == '.dart';
 }
 
-/// Represents a parsed import or export directive in a dart source file.
+/// A parsed import or export directive in a D source file.
 class _Usage {
   /// Returns a formatted error message highlighting [directive] in [file].
   static String errorMessage(
@@ -115,33 +120,40 @@ class _Usage {
         .message(message);
   }
 
-  final String _contents;
+  /// The path to the file from which [_directive] was parsed.
   final String _file;
-  final Uri _uri;
+
+  /// The contents of [_file].
+  final String _contents;
+
+  /// The URI parsed from [_directive].
+  final Uri _url;
+
+  /// The directive that uses [_url].
   final UriBasedDirective _directive;
 
-  _Usage(this._file, this._contents, this._directive, this._uri);
+  _Usage(this._file, this._contents, this._directive, this._url);
 
-  /// Returns the package name.
-  String get package => _uri.pathSegments.first;
+  /// The name of the package referred to by this usage..
+  String get package => _url.pathSegments.first;
 
-  // Assumption is that normally all directives are valid and we won't see
-  // an error message - so a SourceFile is created lazily (on demand) to avoid
-  // parsing line endings in the case of only valid directives.
+  /// Returns a message associated with [_directive].
+  ///
+  /// We assume that normally all directives are valid and we won't see an error
+  /// message, so we create the SourceFile lazily to avoid parsing line endings
+  /// in the case of only valid directives.
   String _toMessage(String message) =>
       errorMessage(message, _file, _contents, _directive);
 
   /// Returns an error message saying the package is not listed in dependencies.
-  String dependencyMissingMessage() {
-    return _toMessage('This packagee doesn\'t depend on $package.');
-  }
+  String dependencyMissingMessage() =>
+      _toMessage("This package doesn't depend on $package.");
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
     var shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
-      '$package is a dev dependency. Packages used in $shortFile/ must be '
-      'declared as normal dependencies.'
-    );
+        '$package is a dev dependency. Packages used in $shortFile/ must be '
+          'declared as normal dependencies.');
   }
 }

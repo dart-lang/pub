@@ -12,9 +12,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator strictDeps(Entrypoint entrypoint) {
-  return new StrictDependenciesValidator(entrypoint);
-}
+Validator strictDeps(Entrypoint entrypoint) =>
+    new StrictDependenciesValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {
@@ -33,6 +32,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -47,6 +47,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -61,6 +62,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -75,6 +77,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -89,6 +92,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -98,6 +102,7 @@ main() {
         import 'dart:collection';
         import 'dart:typed_data';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -105,6 +110,7 @@ main() {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:test_pkg/test_pkg.dart';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -112,6 +118,7 @@ main() {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'some/relative/path.dart';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -119,6 +126,7 @@ main() {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'file://shared/some/library.dart';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -127,6 +135,7 @@ main() {
       d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import not_supported_keyword 'dart:async';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -134,6 +143,7 @@ main() {
       d.file(path.join(appPath, 'top_level.dart'), r'''
         import 'package:';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
 
@@ -141,6 +151,7 @@ main() {
       d.file(path.join(appPath, 'lib', 'generator.dart.template'), r'''
         import 'package:';
       ''').create();
+
       expectNoValidationError(strictDeps);
     });
   });
@@ -183,6 +194,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectValidationWarning(strictDeps);
     });
 
@@ -197,6 +209,7 @@ main() {
           '''),
         ]),
       ]).create();
+
       expectValidationWarning(strictDeps);
     });
 
@@ -209,6 +222,7 @@ main() {
           '''),
           ]),
         ]).create();
+
         expectValidationWarning(strictDeps);
       });
 
@@ -223,6 +237,7 @@ main() {
           '''),
           ]),
         ]).create();
+
         expectValidationWarning(strictDeps);
       });
 
@@ -234,6 +249,7 @@ main() {
           '''),
           ]),
         ]).create();
+
         expectValidationWarning(strictDeps);
       });
 
@@ -245,6 +261,7 @@ main() {
           '''),
           ]),
         ]).create();
+
         expectValidationWarning(strictDeps);
       });
     });
