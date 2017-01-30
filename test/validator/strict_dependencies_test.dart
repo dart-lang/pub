@@ -236,6 +236,17 @@ main() {
         ]).create();
         expectValidationWarning(strictDeps);
       });
+
+      integration('"package:/]"', () {
+        d.dir(appPath, [
+          d.dir('lib', [
+            d.file('library.dart', r'''
+            import 'package:/]';
+          '''),
+          ]),
+        ]).create();
+        expectValidationWarning(strictDeps);
+      });
     });
   });
 }

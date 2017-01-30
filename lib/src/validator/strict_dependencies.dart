@@ -45,10 +45,15 @@ class StrictDependenciesValidator extends Validator {
         // there are no segments OR
         // any segment are empty
         if (uri == null ||
-            uri.scheme == 'package' &&
-            uri.pathSegments.length < 2 ||
-            uri.pathSegments.any((s) => s.isEmpty)) {
-          warnings.add('Invalid URL');
+            (uri.scheme == 'package' &&
+            (uri.pathSegments.length < 2 ||
+            uri.pathSegments.any((s) => s.isEmpty)))) {
+          warnings.add(_Usage.errorMessage(
+            'Invalid URL',
+            file,
+            contents,
+            directive
+          ));
         } else if (uri.scheme == 'package') {
           var usage = new _Usage(file, contents, directive, uri);
           yield usage;
@@ -99,6 +104,17 @@ class StrictDependenciesValidator extends Validator {
 
 /// Represents a parsed import or export directive in a dart source file.
 class _Usage {
+  /// Returns a formatted error message highlighting [directive] in [file].
+  static String errorMessage(
+      String message,
+      String file,
+      String contents,
+      UriBasedDirective directive) {
+    return new SourceFile(contents, url: file)
+        .span(directive.offset, directive.offset + directive.length)
+        .message(message);
+  }
+
   final String _contents;
   final String _file;
   final Uri _uri;
@@ -112,9 +128,8 @@ class _Usage {
   // Assumption is that normally all directives are valid and we won't see
   // an error message - so a SourceFile is created lazily (on demand) to avoid
   // parsing line endings in the case of only valid directives.
-  String _toMessage(String message) => new SourceFile(_contents, url: _file)
-      .span(_directive.offset, _directive.offset + _directive.length)
-      .message(message);
+  String _toMessage(String message) =>
+      errorMessage(message, _file, _contents, _directive);
 
   /// Returns an error message saying the package is not listed in dependencies.
   String dependencyMissingMessage() {
