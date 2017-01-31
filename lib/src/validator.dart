@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
-import 'package:pub/src/validator/strict_dependencies.dart';
 import 'utils.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -19,6 +18,7 @@ import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
+import 'validator/strict_dependencies.dart';
 import 'validator/utf8_readme.dart';
 
 /// The base class for validators that check whether a package is fit for
