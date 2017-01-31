@@ -528,6 +528,6 @@ void _touch(String path) {
     await new Future.delayed(new Duration(seconds: 1));
 
     path = p.join(sandboxDir, "myapp", path);
-    touch(path);
+    tryTouch(path);
   }, "touching $path");
 }
