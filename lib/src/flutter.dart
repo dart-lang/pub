@@ -26,7 +26,12 @@ final Version version = () {
 
 /// Returns the path to the package [name] within Flutter.
 String packagePath(String name) {
-  if (!isAvailable) throw new StateError("Flutter is not available.");
+  if (!isAvailable) {
+    throw new ApplicationError(
+        'Flutter is not available. If this is a Flutter project, make sure to '
+          'always run\n'
+        'pub through the "flutter" executable.');
+  }
 
   return p.join(rootDirectory, 'packages', name);
 }
