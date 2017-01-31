@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
+import 'package:pub/src/validator/strict_dependencies.dart';
 import 'utils.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -67,7 +68,8 @@ abstract class Validator {
       new ExecutableValidator(entrypoint),
       new CompiledDartdocValidator(entrypoint),
       new Utf8ReadmeValidator(entrypoint),
-      new SdkConstraintValidator(entrypoint)
+      new SdkConstraintValidator(entrypoint),
+      new StrictDependenciesValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(new SizeValidator(entrypoint, packageSize));
