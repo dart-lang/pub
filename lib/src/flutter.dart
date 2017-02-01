@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'exceptions.dart';
 import 'io.dart';
 
 /// Whether the Flutter SDK is available.
@@ -27,7 +28,7 @@ final Version version = () {
 /// Returns the path to the package [name] within Flutter.
 String packagePath(String name) {
   if (!isAvailable) {
-    throw new ApplicationError(
+    throw new ApplicationException(
         'Flutter is not available. If this is a Flutter project, make sure to '
           'always run\n'
         'pub through the "flutter" executable.');
