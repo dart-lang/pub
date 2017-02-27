@@ -10,9 +10,13 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:uuid/uuid.dart';
 
+import 'command_runner.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
+import 'package.dart';
 import 'sdk.dart' as sdk;
 import 'utils.dart';
 
@@ -26,6 +30,9 @@ final _CENSORED_FIELDS = const ['refresh_token', 'authorization'];
 /// it's not supported.
 final PUB_API_HEADERS = const {'Accept': 'application/vnd.pub.v2+json'};
 
+/// A unique ID to identify this particular invocation of pub.
+final _sessionId = new Uuid().v4() as String;
+
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
 class _PubHttpClient extends http.BaseClient {
@@ -37,6 +44,20 @@ class _PubHttpClient extends http.BaseClient {
       : this._inner = inner == null ? new http.Client() : inner;
 
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (_shouldAddMetadata(request)) {
+      request.headers["X-Pub-OS"] = Platform.operatingSystem;
+      request.headers["X-Pub-Command"] = PubCommandRunner.command.join(" ");
+      request.headers["X-Pub-Session-ID"] = _sessionId;
+
+      var environment = Platform.environment["PUB_ENVIRONMENT"];
+      if (environment != null) {
+        request.headers["X-Pub-Environment"] = environment;
+      }
+
+      var type = Zone.current[#_dependencyType];
+      if (type != null) request.headers["X-Pub-Reason"] = type.toString();
+    }
+
     _requestStopwatches[request] = new Stopwatch()..start();
     request.headers[HttpHeaders.USER_AGENT] = "Dart pub ${sdk.version}";
     _logRequest(request);
@@ -102,6 +123,29 @@ class _PubHttpClient extends http.BaseClient {
 
     throw new PubHttpException(
         await http.Response.fromStream(streamedResponse));
+  }
+
+  /// Whether extra metadata headers should be added to [request].
+  bool _shouldAddMetadata(http.BaseRequest request) {
+    if (runningFromTest && Platform.environment.containsKey("PUB_HOSTED_URL")) {
+      if (request.url.origin != Platform.environment["PUB_HOSTED_URL"]) {
+        return false;
+      }
+    } else {
+      if (request.url.origin != "https://pub.dartlang.org") return false;
+    }
+
+    var command = PubCommandRunner.command;
+    if (command.length > 2) return false;
+    if (command.length == 1) {
+      return ["downgrade", "get", "upgrade"].contains(command.first);
+    }
+
+    switch (command[0]) {
+      case "cache": return ["add", "repair"].contains(command[1]);
+      case "global": return command[1] == "activate";
+      default: return false;
+    }
   }
 
   /// Logs the fact that [request] was sent, and information about it.
@@ -175,6 +219,16 @@ final httpClient = new ThrottleClient(16, _pubClient);
 /// The underlying HTTP client wrapped by [httpClient].
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
+
+/// Runs [callback] in a zone where all HTTP requests sent to `pub.dartlang.org`
+/// will indicate the [type] of the relationship between the root package and
+/// the package being requested.
+///
+/// If [type] is [DependencyType.none], no extra metadata is added.
+Future<T> withDependencyType<T>(DependencyType type, Future<T> callback()) {
+  if (type == DependencyType.none) return callback();
+  return runZoned(callback, zoneValues: {#_dependencyType: type});
+}
 
 /// Handles a successful JSON-formatted response from pub.dartlang.org.
 ///

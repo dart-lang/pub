@@ -113,15 +113,15 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
 ///
 /// By default, this validates that the command completes successfully and
 /// understands the normal output of a successful pub command. If [warning] is
-/// given, it expects the command to complete successfully *and* print
-/// [warning] to stderr. If [error] is given, it expects the command to *only*
-/// print [error] to stderr. [output], [error], and [warning] may be strings,
-/// [RegExp]s, or [Matcher]s.
+/// given, it expects the command to complete successfully *and* print [warning]
+/// to stderr. If [error] is given, it expects the command to *only* print
+/// [error] to stderr. [output], [error], [silent], and [warning] may be
+/// strings, [RegExp]s, or [Matcher]s.
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
 void pubCommand(RunCommand command, {Iterable<String> args, output, error,
-    warning, int exitCode, Map<String, String> environment}) {
+    silent, warning, int exitCode, Map<String, String> environment}) {
   if (error != null && warning != null) {
     throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -137,8 +137,8 @@ void pubCommand(RunCommand command, {Iterable<String> args, output, error,
   if (error != null) output = null;
   if (warning != null) error = warning;
 
-  schedulePub(args: allArgs, output: output, error: error, exitCode: exitCode,
-      environment: environment);
+  schedulePub(args: allArgs, output: output, error: error, silent: silent,
+      exitCode: exitCode, environment: environment);
 }
 
 void pubGet({Iterable<String> args, output, error, warning, int exitCode,
@@ -247,7 +247,7 @@ void scheduleSymlink(String target, String symlink) {
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
 void schedulePub({List args, output, error, outputJson, silent,
-    int exitCode: exit_codes.SUCCESS, Map<String, String> environment}) {
+    int exitCode: exit_codes.SUCCESS, environment}) {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
@@ -334,8 +334,7 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-PubProcess startPub({List args, Future<String> tokenEndpoint,
-    Map<String, String> environment}) {
+PubProcess startPub({List args, Future<String> tokenEndpoint, environment}) {
   args ??= [];
 
   schedule(() {
@@ -367,12 +366,13 @@ PubProcess startPub({List args, Future<String> tokenEndpoint,
   ]..addAll(args);
 
   if (tokenEndpoint == null) tokenEndpoint = new Future.value();
-  var environmentFuture = tokenEndpoint
-      .then((tokenEndpoint) => getPubTestEnvironment(tokenEndpoint))
-      .then((pubEnvironment) {
-    if (environment != null) pubEnvironment.addAll(environment);
+  var environmentFuture = () async {
+    var pubEnvironment = await getPubTestEnvironment(await tokenEndpoint);
+    if (environment != null) {
+      pubEnvironment.addAll(await awaitObject(environment));
+    }
     return pubEnvironment;
-  });
+  }();
 
   return new PubProcess.start(dartBin, dartArgs, environment: environmentFuture,
       workingDirectory: schedule(() => _pathInSandbox(appPath)),

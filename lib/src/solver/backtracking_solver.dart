@@ -40,6 +40,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../barback.dart' as barback;
 import '../exceptions.dart';
 import '../flutter.dart' as flutter;
+import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -120,11 +121,12 @@ class BacktrackingSolver {
   /// A pubspec for pub's implicit dependencies on barback and related packages.
   final Pubspec _implicitPubspec;
 
-  BacktrackingSolver(SolveType type, SystemCache systemCache, this.root,
+  BacktrackingSolver(SolveType type, SystemCache systemCache, Package root,
           this.lockFile, List<String> useLatest)
       : type = type,
         systemCache = systemCache,
-        cache = new SolverCache(type, systemCache),
+        root = root,
+        cache = new SolverCache(type, systemCache, root),
         _implicitPubspec = _makeImplicitPubspec(systemCache) {
     _selection = new VersionSelection(this);
 
@@ -610,7 +612,10 @@ class BacktrackingSolver {
   Future<Pubspec> _getPubspec(PackageId id) async {
     if (id.isRoot) return root.pubspec;
     if (id.isMagic && id.name == 'pub itself') return _implicitPubspec;
-    return await systemCache.source(id.source).describe(id);
+
+    return await withDependencyType(
+        root.dependencyType(id.name),
+        () => systemCache.source(id.source).describe(id));
   }
 
   /// Logs the initial parameters to the solver.

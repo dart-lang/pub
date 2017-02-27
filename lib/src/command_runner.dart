@@ -34,6 +34,26 @@ import 'solver/version_solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
+  /// Returns the nested name of the command that's currently being run.
+  static List<String> get command {
+    if (_options == null) {
+      throw new StateError(
+          "PubCommandRunner.command is only available after "
+          "PubCommandRunner.run() is called.");
+    }
+
+    var list = <String>[];
+    for (var command = _options.command;
+         command != null;
+         command = command.command) {
+      list.add(command.name);
+    }
+    return list;
+  }
+
+  /// The top-level options parsed by the command runner.
+  static ArgResults _options;
+
   String get usageFooter => "See http://dartlang.org/tools/pub for detailed "
       "documentation.";
 
@@ -77,13 +97,14 @@ class PubCommandRunner extends CommandRunner {
   }
 
   Future run(Iterable<String> arguments) async {
-    var options;
+    ArgResults options;
     try {
       options = super.parse(arguments);
     } on UsageException catch (error) {
       log.exception(error);
       await flushThenExit(exit_codes.USAGE);
     }
+    _options = options;
     await runCommand(options);
   }
 

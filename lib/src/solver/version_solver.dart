@@ -9,6 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../exceptions.dart';
+import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -170,6 +171,12 @@ class SolverCache {
   /// The type of version resolution that was run.
   final SolveType _type;
 
+  /// The root package being solved.
+  ///
+  /// This is used to send metadata about the relationship between the packages
+  /// being requested and the root package.
+  final Package _root;
+
   /// The number of times a version list was requested and it wasn't cached and
   /// had to be requested from the source.
   int _versionCacheMisses = 0;
@@ -178,7 +185,7 @@ class SolverCache {
   /// was returned.
   int _versionCacheHits = 0;
 
-  SolverCache(this._type, this._cache);
+  SolverCache(this._type, this._cache, this._root);
 
   /// Gets the list of versions for [package].
   ///
@@ -212,7 +219,9 @@ class SolverCache {
     var source = _cache.source(package.source);
     List<PackageId> ids;
     try {
-      ids = await source.getVersions(package);
+      ids = await withDependencyType(
+          _root.dependencyType(package.name),
+          () => source.getVersions(package));
     } catch (error, stackTrace) {
       // If an error occurs, cache that too. We only want to do one request
       // for any given package, successful or not.
