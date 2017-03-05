@@ -1034,32 +1034,48 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "--create",
         "--gzip",
         "--directory",
-        baseDir,
-        "--files-from",
-        "/dev/stdin"
+        baseDir
       ];
 
-      // The ustar format doesn't support large UIDs. We don't care about
-      // preserving ownership anyway, so we just set them to "pub".
       if (Platform.isLinux) {
         // GNU tar flags.
         // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
-        args.addAll(["--owner=pub", "--group=pub"]);
-      } else {
-        // BSD tar flags.
-        // https://www.freebsd.org/cgi/man.cgi?query=bsdtar&sektion=1
-        // TODO(rnystrom): These flags are, alas, not supported by the version
-        // of tar on OS X. Passing them causes tar to exit with an error. For
-        // now, we'll just not handle large UIDs on Mac until we can come up
-        // with something.
-        // See: https://github.com/dart-lang/pub/issues/1442
-        // args.addAll(["--uname=pub", "--gname=pub"]);
-      }
 
-      var process = await startProcess("tar", args);
-      process.stdin.add(UTF8.encode(contents.join("\n")));
-      process.stdin.close();
-      return process.stdout;
+        args.addAll(["--files-from", "/dev/stdin"]);
+
+        // The ustar format doesn't support large UIDs. We don't care about
+        // preserving ownership anyway, so we just set them to "pub".
+        args.addAll(["--owner=pub", "--group=pub"]);
+
+        var process = await startProcess("tar", args);
+        process.stdin.add(UTF8.encode(contents.join("\n")));
+        process.stdin.close();
+        return process.stdout;
+      } else {
+        // OSX tar flags, applicable since at least OSX 10.9 (bsdtar 2.8.3)
+        // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
+
+        // Create the file containing the list of files to compress.
+        var tempDir = createSystemTempDir();
+
+        try {
+          // Create the file containing the list of files to compress.
+          var contentsPath = path.join(tempDir, "files.mtree");
+
+          // The ustar format doesn't support large UIDs, so we set
+          // UIDs and GIDs to 0 via an mtree input file.
+          var uidGid = " uid=0 gid=0 type=file";
+          writeTextFile(contentsPath, "#mtree\n" + contents.join("$uidGid\n") + uidGid + "\n");
+          args.add("@${contentsPath}");
+
+          return (await startProcess("tar", args, workingDir: baseDir))
+              .stdout
+              .transform(onDoneTransformer(() => deleteEntry(tempDir)));
+        } catch (_) {
+          deleteEntry(tempDir);
+          rethrow;
+        }
+      }
     }
 
     // Don't use [withTempDir] here because we don't want to delete the temp
