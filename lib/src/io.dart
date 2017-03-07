@@ -1036,46 +1036,33 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "--directory",
         baseDir
       ];
+      var stdin = "";
 
       if (Platform.isLinux) {
         // GNU tar flags.
         // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
 
         args.addAll(["--files-from", "/dev/stdin"]);
+        stdin = contents.join("\n");
 
         // The ustar format doesn't support large UIDs. We don't care about
         // preserving ownership anyway, so we just set them to "pub".
         args.addAll(["--owner=pub", "--group=pub"]);
-
-        var process = await startProcess("tar", args);
-        process.stdin.add(UTF8.encode(contents.join("\n")));
-        process.stdin.close();
-        return process.stdout;
       } else {
         // OSX tar flags, applicable since at least OSX 10.9 (bsdtar 2.8.3)
         // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
 
-        // Create the file containing the list of files to compress.
-        var tempDir = createSystemTempDir();
-
-        try {
-          // Create the file containing the list of files to compress.
-          var contentsPath = path.join(tempDir, "files.mtree");
-
-          // The ustar format doesn't support large UIDs, so we set
-          // UIDs and GIDs to 0 via an mtree input file.
-          var uidGid = " uid=0 gid=0 type=file";
-          writeTextFile(contentsPath, "#mtree\n" + contents.join("$uidGid\n") + uidGid + "\n");
-          args.add("@${contentsPath}");
-
-          return (await startProcess("tar", args, workingDir: baseDir))
-              .stdout
-              .transform(onDoneTransformer(() => deleteEntry(tempDir)));
-        } catch (_) {
-          deleteEntry(tempDir);
-          rethrow;
-        }
+        // The ustar format doesn't support large UIDs, so we set
+        // UIDs and GIDs to 0 via an mtree input file.
+        args.add("@/dev/stdin");
+        var uidGid = " uid=0 gid=0 type=file\n";
+        stdin = "#mtree\n" + contents.join(uidGid) + uidGid;
       }
+
+      var process = await startProcess("tar", args);
+      process.stdin.add(UTF8.encode(stdin));
+      process.stdin.close();
+      return process.stdout;
     }
 
     // Don't use [withTempDir] here because we don't want to delete the temp
