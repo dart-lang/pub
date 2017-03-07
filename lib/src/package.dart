@@ -225,42 +225,31 @@ class Package {
     // string operations.
     Iterable<String> files;
     if (useGitIgnore && _inGitRepo) {
-      // Later versions of git do not allow a path for ls-files that appears to
-      // be outside of the repo, so make sure we give it a relative path.
-      var relativeBeneath = p.relative(beneath, from: dir);
-
       // List all files that aren't gitignored, including those not checked in
-      // to Git.
+      // to Git. Use [beneath] as the working dir rather than passing it as a
+      // parameter so that we list a submodule using its own git logic.
       files = git.runSync(
-          ["ls-files", "--cached", "--others", "--exclude-standard",
-           relativeBeneath],
-          workingDir: dir);
+          ["ls-files", "--cached", "--others", "--exclude-standard"],
+          workingDir: beneath);
 
       // If we're not listing recursively, strip out paths that contain
       // separators. Since git always prints forward slashes, we always detect
       // them.
-      if (!recursive) {
-        // If we're listing a subdirectory, we only want to look for slashes
-        // after the subdirectory prefix.
-        var relativeStart = relativeBeneath == '.' ? 0 :
-            relativeBeneath.length + 1;
-        files = files.where((file) => !file.contains('/', relativeStart));
-      }
+      if (!recursive) files = files.where((file) => !file.contains('/'));
 
-      // Git always prints files relative to the repository root, but we want
-      // them relative to the working directory. It also prints forward slashes
-      // on Windows which we normalize away for easier testing.
+      // Git prints files relative to [beneath], but we want them relative to
+      // the pub's working directory. It also prints forward slashes on Windows
+      // which we normalize away for easier testing.
       files = files.map((file) {
-        if (Platform.operatingSystem != 'windows') return "$dir/$file";
-        return "$dir\\${file.replaceAll("/", "\\")}";
+        if (Platform.operatingSystem != 'windows') return "$beneath/$file";
+        return "$beneath\\${file.replaceAll("/", "\\")}";
       }).expand((file) {
         if (fileExists(file)) return [file];
         if (!dirExists(file)) return [];
 
-        // `git ls-files` only returns files, except in the case of a symlink to
-        // a directory. So if we're here, [file] refers to a valid symlink to a
-        // directory.
-        return recursive ? _listSymlinkedDir(file) : [file];
+        // `git ls-files` only returns files, except in the case of a submodule
+        // or a symlink to a directory.
+        return recursive ? _listWithinDir(file) : [file];
       });
     } else {
       files = listDir(beneath, recursive: recursive, includeDirs: false,
@@ -285,17 +274,17 @@ class Package {
     }).toList();
   }
 
-  /// List all files recursively beneath [link], which should be a symlink to a
-  /// directory.
+  /// List all files recursively beneath [dir], which should be either a symlink
+  /// to a directory or a git submodule.
   ///
   /// This is used by [list] when listing a Git repository, since `git ls-files`
-  /// can't natively follow symlinks.
-  Iterable<String> _listSymlinkedDir(String link) {
-    assert(linkExists(link));
-    assert(dirExists(link));
-    assert(p.isWithin(dir, link));
+  /// can't natively follow symlinks and (as of Git 2.12.0-rc1) can't use
+  /// `--recurse-submodules` in conjunction with `--other`.
+  Iterable<String> _listWithinDir(String subdir) {
+    assert(dirExists(subdir));
+    assert(p.isWithin(dir, subdir));
 
-    var target = new Directory(link).resolveSymbolicLinksSync();
+    var target = new Directory(subdir).resolveSymbolicLinksSync();
 
     List<String> targetFiles;
     if (p.isWithin(dir, target)) {
@@ -314,7 +303,7 @@ class Package {
 
     // Re-write the paths so they're underneath the symlink.
     return targetFiles.map((targetFile) =>
-        p.join(link, p.relative(targetFile, from: target)));
+        p.join(subdir, p.relative(targetFile, from: target)));
   }
 
   /// Returns a debug string for the package.
