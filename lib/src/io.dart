@@ -1052,11 +1052,14 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         // OSX tar flags, applicable since at least OSX 10.9 (bsdtar 2.8.3)
         // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
 
-        // The ustar format doesn't support large UIDs, so we set
-        // UIDs and GIDs to 0 via an mtree input file.
         args.add("@/dev/stdin");
-        var uidGid = " uid=0 gid=0 type=file\n";
-        stdin = "#mtree\n" + contents.join(uidGid) + uidGid;
+
+        // The ustar format doesn't support large UIDs. We don't care about
+        // preserving ownership anyway, so we just set them to "pub".
+        var mtreeHeader = "#mtree\n/set uname=pub gname=pub type=file\n";
+
+        // We need a newline at the end, otherwise the last file would get ignored
+        stdin = mtreeHeader + contents.join("\n") + "\n";
       }
 
       var process = await startProcess("tar", args);
