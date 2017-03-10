@@ -46,9 +46,11 @@ main() {
   });
 
   group('with git', () {
+    d.GitRepoDescriptor repo;
     setUp(() {
       ensureGit();
-      d.git(appPath, [d.appPubspec()]).create();
+      repo = d.git(appPath, [d.appPubspec()]);
+      repo.create();
       scheduleEntrypoint();
     });
 
@@ -138,6 +140,42 @@ main() {
           p.join(root, 'subdir', 'subfile1.txt'),
           p.join(root, 'subdir', 'subfile2.text')
         ]));
+      });
+    });
+
+    group("with a submodule", () {
+      setUp(() {
+        d.git("submodule", [
+          d.file(".gitignore", "*.txt"),
+          d.file('file2.text', 'contents')
+        ]).create();
+
+        repo.runGit(["submodule", "add", "../submodule"]);
+
+        d.file('$appPath/submodule/file1.txt', 'contents').create();
+
+        scheduleEntrypoint();
+      });
+
+      integration("ignores its .gitignore without useGitIgnore", () {
+        schedule(() {
+          expect(entrypoint.root.listFiles(), unorderedEquals([
+            p.join(root, 'pubspec.yaml'),
+            p.join(root, 'submodule', 'file1.txt'),
+            p.join(root, 'submodule', 'file2.text'),
+          ]));
+        });
+      });
+
+      integration("respects its .gitignore with useGitIgnore", () {
+        schedule(() {
+          expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
+            p.join(root, '.gitmodules'),
+            p.join(root, 'pubspec.yaml'),
+            p.join(root, 'submodule', '.gitignore'),
+            p.join(root, 'submodule', 'file2.text'),
+          ]));
+        });
       });
     });
 
