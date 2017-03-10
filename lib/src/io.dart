@@ -1036,8 +1036,8 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "--directory",
         baseDir
       ];
-      var stdin = "";
 
+      String stdin;
       if (Platform.isLinux) {
         // GNU tar flags.
         // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
@@ -1049,16 +1049,19 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         // preserving ownership anyway, so we just set them to "pub".
         args.addAll(["--owner=pub", "--group=pub"]);
       } else {
-        // OSX tar flags, applicable since at least OSX 10.9 (bsdtar 2.8.3)
+        // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
+        // 2.8.3). We use this to set the uname and gname, since it doesn't have
+        // flags for those.
+        //
         // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
-
         args.add("@/dev/stdin");
 
         // The ustar format doesn't support large UIDs. We don't care about
         // preserving ownership anyway, so we just set them to "pub".
         var mtreeHeader = "#mtree\n/set uname=pub gname=pub type=file\n";
 
-        // We need a newline at the end, otherwise the last file would get ignored
+        // We need a newline at the end, otherwise the last file would get
+        // ignored.
         stdin = mtreeHeader + contents.join("\n") + "\n";
       }
 
