@@ -6,10 +6,10 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
+import 'exceptions.dart';
 import 'package.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
-import 'utils.dart';
 
 /// A source from which to get packages.
 ///
@@ -204,7 +204,8 @@ abstract class BoundSource {
     // Delegate to the overridden one.
     pubspec = await doDescribe(id);
     if (pubspec.version != id.version) {
-      dataError("The pubspec for $id has version ${pubspec.version}.");
+      throw new PackageNotFoundException(
+          "The pubspec for $id has version ${pubspec.version}.");
     }
 
     _pubspecs[id] = pubspec;
@@ -213,6 +214,10 @@ abstract class BoundSource {
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
+  ///
+  /// For sources that have only one version for a given [PackageRef], this may
+  /// return a pubspec with a different version than that specified by [id]. If
+  /// they do, [describe] will throw a [PackageNotFoundException].
   ///
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.

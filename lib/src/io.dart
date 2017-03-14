@@ -1034,30 +1034,39 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         "--create",
         "--gzip",
         "--directory",
-        baseDir,
-        "--files-from",
-        "/dev/stdin"
+        baseDir
       ];
 
-      // The ustar format doesn't support large UIDs. We don't care about
-      // preserving ownership anyway, so we just set them to "pub".
+      String stdin;
       if (Platform.isLinux) {
         // GNU tar flags.
         // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
+
+        args.addAll(["--files-from", "/dev/stdin"]);
+        stdin = contents.join("\n");
+
+        // The ustar format doesn't support large UIDs. We don't care about
+        // preserving ownership anyway, so we just set them to "pub".
         args.addAll(["--owner=pub", "--group=pub"]);
       } else {
-        // BSD tar flags.
-        // https://www.freebsd.org/cgi/man.cgi?query=bsdtar&sektion=1
-        // TODO(rnystrom): These flags are, alas, not supported by the version
-        // of tar on OS X. Passing them causes tar to exit with an error. For
-        // now, we'll just not handle large UIDs on Mac until we can come up
-        // with something.
-        // See: https://github.com/dart-lang/pub/issues/1442
-        // args.addAll(["--uname=pub", "--gname=pub"]);
+        // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
+        // 2.8.3). We use this to set the uname and gname, since it doesn't have
+        // flags for those.
+        //
+        // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
+        args.add("@/dev/stdin");
+
+        // The ustar format doesn't support large UIDs. We don't care about
+        // preserving ownership anyway, so we just set them to "pub".
+        var mtreeHeader = "#mtree\n/set uname=pub gname=pub type=file\n";
+
+        // We need a newline at the end, otherwise the last file would get
+        // ignored.
+        stdin = mtreeHeader + contents.join("\n") + "\n";
       }
 
       var process = await startProcess("tar", args);
-      process.stdin.add(UTF8.encode(contents.join("\n")));
+      process.stdin.add(UTF8.encode(stdin));
       process.stdin.close();
       return process.stdout;
     }

@@ -188,7 +188,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
     _completer.future.catchError((_) {});
   }
 
-  Future/*<S>*/ then/*<S>*/(onValue(/*=T*/ value), {Function onError}) {
+  Future<S> then<S>(FutureOr<S> onValue(T value), { Function onError }) {
     _hasListeners = true;
     return _completer.future.then(onValue, onError: onError);
   }

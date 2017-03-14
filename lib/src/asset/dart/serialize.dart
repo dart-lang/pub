@@ -108,7 +108,7 @@ Stream/*<T>*/ deserializeStream/*<T>*/(Map stream,
     var receivePort = new ReceivePort();
     stream['replyTo'].send({'replyTo': receivePort.sendPort});
 
-    var controller = new StreamController(sync: true);
+    var controller = new StreamController<T>(sync: true);
     receivePort.listen((event) {
       switch (event['type']) {
         case 'event':

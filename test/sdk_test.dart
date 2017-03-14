@@ -42,6 +42,26 @@ main() {
       ]).validate();
     });
 
+    integration("unlocks an SDK dependency when the version changes", () {
+      d.appDir({"foo": {"sdk": "flutter"}}).create();
+      pubCommand(command,
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')});
+
+      d.matcherFile("$appPath/pubspec.lock", allOf([
+        contains("0.0.1"),
+        isNot(contains("0.0.2"))
+      ])).validate();
+
+      d.dir('flutter/packages/foo', [d.libPubspec('foo', '0.0.2')]).create();
+      pubCommand(command,
+          environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')});
+
+      d.matcherFile("$appPath/pubspec.lock", allOf([
+        isNot(contains("0.0.1")),
+        contains("0.0.2")
+      ])).validate();
+    });
+
     group("fails if", () {
       integration("the version constraint doesn't match", () {
         d.appDir({"foo": {"sdk": "flutter", "version": "^1.0.0"}}).create();
