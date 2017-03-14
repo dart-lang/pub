@@ -10,7 +10,6 @@ import 'exceptions.dart';
 import 'package.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
-import 'utils.dart';
 
 /// A source from which to get packages.
 ///
