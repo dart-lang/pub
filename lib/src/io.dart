@@ -1060,6 +1060,8 @@ ByteStream createTarGz(List contents, {String baseDir}) {
 
         // The ustar format doesn't support large UIDs. We don't care about
         // preserving ownership anyway, so we just set them to "pub".
+        // TODO(rnystrom): This assumes contents does not contain any
+        // directories.
         var mtreeHeader = "#mtree\n/set uname=pub gname=pub type=file\n";
 
         // We need a newline at the end, otherwise the last file would get
@@ -1067,7 +1069,12 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         stdin = mtreeHeader + contents.join("\n") + "\n";
       }
 
-      var process = await startProcess("tar", args);
+      // Setting the working directory should be unnecessary since we pass an
+      // explicit base directory to tar. However, on Mac when using an mtree
+      // input file, relative paths in the mtree file are interpreted as
+      // relative to the current working directory, not the "--directory"
+      // argument.
+      var process = await startProcess("tar", args, workingDir: baseDir);
       process.stdin.add(UTF8.encode(stdin));
       process.stdin.close();
       return process.stdout;
