@@ -23,8 +23,8 @@ class TarFileDescriptor extends DirectoryDescriptor
       return await withTempDir((tempDir) async {
         await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-        var createdContents =
-            listDir(tempDir, recursive: true, includeHidden: true);
+        var createdContents = listDir(tempDir,
+            recursive: true, includeHidden: true, includeDirs: false);
         var bytes =
             await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
