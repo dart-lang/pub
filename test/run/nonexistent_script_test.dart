@@ -10,9 +10,7 @@ import '../test_pub.dart';
 
 main() {
   integration('Errors if the script does not exist.', () {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
 
     pubGet();
     var pub = pubRun(args: [p.join("bin", "script")]);

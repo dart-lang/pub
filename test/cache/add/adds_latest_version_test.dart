@@ -13,8 +13,8 @@ main() {
       builder.serve("foo", "1.2.4-dev");
     });
 
-    schedulePub(args: ["cache", "add", "foo"],
-        output: 'Downloading foo 1.2.3...');
+    schedulePub(
+        args: ["cache", "add", "foo"], output: 'Downloading foo 1.2.3...');
 
     d.cacheDir({"foo": "1.2.3"}).validate();
   });

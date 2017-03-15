@@ -11,7 +11,8 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration('with no credentials.json, authenticates and saves '
+  integration(
+      'with no credentials.json, authenticates and saves '
       'credentials.json', () {
     d.validPackage.create();
 

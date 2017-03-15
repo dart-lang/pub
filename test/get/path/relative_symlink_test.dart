@@ -16,12 +16,10 @@ main() {
   // So just skip it.
   if (Platform.operatingSystem == "windows") return;
 
-  integration("generates a symlink with a relative path if the dependency "
-              "path was relative", () {
-    d.dir("foo", [
-      d.libDir("foo"),
-      d.libPubspec("foo", "0.0.1")
-    ]).create();
+  integration(
+      "generates a symlink with a relative path if the dependency "
+      "path was relative", () {
+    d.dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -40,9 +38,7 @@ main() {
 
     d.dir("moved", [
       d.dir(packagesPath, [
-        d.dir("foo", [
-          d.file("foo.dart", 'main() => "foo";')
-        ])
+        d.dir("foo", [d.file("foo.dart", 'main() => "foo";')])
       ])
     ]).validate();
   });

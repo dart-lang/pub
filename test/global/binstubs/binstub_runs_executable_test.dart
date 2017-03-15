@@ -13,13 +13,10 @@ main() {
   integration("the generated binstub runs a snapshotted executable", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
@@ -38,13 +35,9 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }),
-      d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-      ])
+      d.dir("bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
     ]).create();
 
     schedulePub(args: ["global", "activate", "-spath", "../foo"]);

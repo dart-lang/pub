@@ -13,27 +13,21 @@ main() {
     ensureGit();
 
     d.git('foo.git', [
-      d.pubspec({
-        "name": "foo",
-        "version": "0.0.1"
-      }),
-      d.dir("bin", [
-        d.file("hello.dart", "void main() => print('Hello!');")
-      ])
+      d.pubspec({"name": "foo", "version": "0.0.1"}),
+      d.dir("bin", [d.file("hello.dart", "void main() => print('Hello!');")])
     ]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin', 'foo'), [
-      d.matcherFile('hello.dart.snapshot', contains('Hello!'))
-    ]).validate();
+    d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        [d.matcherFile('hello.dart.snapshot', contains('Hello!'))]).validate();
 
     d.git('foo.git', [
-      d.dir("bin", [
-        d.file("hello.dart", "void main() => print('Goodbye!');")
-      ])
+      d.dir("bin", [d.file("hello.dart", "void main() => print('Goodbye!');")])
     ]).commit();
 
     pubUpgrade(output: contains("Precompiled foo:hello."));

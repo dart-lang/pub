@@ -15,7 +15,9 @@ main() {
 
     d.dir(cachePath, [
       d.dir('global_packages', [
-        d.file('foo.lock', 'packages: {foo: {description: foo, source: hosted, '
+        d.file(
+            'foo.lock',
+            'packages: {foo: {description: foo, source: hosted, '
             'version: "1.0.0"}}}')
       ])
     ]).create();

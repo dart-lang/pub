@@ -31,8 +31,8 @@ import 'utils.dart';
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
-    String executable, Iterable<String> args, {bool isGlobal: false,
-    bool checked: false, BarbackMode mode}) async {
+    String executable, Iterable<String> args,
+    {bool isGlobal: false, bool checked: false, BarbackMode mode}) async {
   if (mode == null) mode = BarbackMode.RELEASE;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
@@ -58,9 +58,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // Ensure that there's a trailing extension.
   if (p.extension(executable) != ".dart") executable += ".dart";
 
-  var localSnapshotPath = p.join(".pub", "bin", package,
-      "$executable.snapshot");
-  if (!isGlobal && fileExists(localSnapshotPath) &&
+  var localSnapshotPath =
+      p.join(".pub", "bin", package, "$executable.snapshot");
+  if (!isGlobal &&
+      fileExists(localSnapshotPath) &&
       // Dependencies are only snapshotted in release mode, since that's the
       // default mode for them to run. We can't run them in a different mode
       // using the snapshot.
@@ -78,8 +79,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var executableUrl = await _executableUrl(
-      entrypoint, package, executable, isGlobal: isGlobal, mode: mode);
+  var executableUrl = await _executableUrl(entrypoint, package, executable,
+      isGlobal: isGlobal, mode: mode);
 
   if (executableUrl == null) {
     var message = "Could not find ${log.bold(executable)}";
@@ -134,8 +135,8 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
 
   // TODO(nweiz): Use [packages] to only load assets from packages that the
   // executable might load.
-  var environment = await AssetEnvironment.create(entrypoint, mode,
-      useDart2JS: false, entrypoints: [id]);
+  var environment = await AssetEnvironment
+      .create(entrypoint, mode, useDart2JS: false, entrypoints: [id]);
   environment.barback.errors.listen((error) {
     log.error(log.red("Build error:\n$error"));
   });
@@ -160,8 +161,8 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   }
 
   // Get the URL of the executable, relative to the server's root directory.
-  var relativePath = p.url.relative(assetPath,
-      from: p.url.joinAll(p.split(server.rootDirectory)));
+  var relativePath = p.url
+      .relative(assetPath, from: p.url.joinAll(p.split(server.rootDirectory)));
   return server.url.resolve(relativePath);
 }
 
@@ -177,8 +178,8 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
 /// Returns the snapshot's exit code.
 ///
 /// This doesn't do any validation of the snapshot's SDK version.
-Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
-    String packagesFile, bool checked: false}) async {
+Future<int> runSnapshot(String path, Iterable<String> args,
+    {recompile(), String packagesFile, bool checked: false}) async {
   Uri packageConfig;
   if (packagesFile != null) {
     // We use an absolute path here not because the VM insists but because it's
@@ -200,20 +201,18 @@ Future<int> runSnapshot(String path, Iterable<String> args, {recompile(),
     if (!error.message.contains("Wrong script snapshot version")) rethrow;
     await recompile();
     await isolate.runUri(url, argList, null,
-        checked: checked,
-        packageConfig: packageConfig);
+        checked: checked, packageConfig: packageConfig);
   }
 
   return exitCode;
 }
 
 /// Runs the executable snapshot at [snapshotPath].
-Future<int> _runCachedExecutable(Entrypoint entrypoint, String snapshotPath,
-    List<String> args, {bool checked: false}) {
+Future<int> _runCachedExecutable(
+    Entrypoint entrypoint, String snapshotPath, List<String> args,
+    {bool checked: false}) {
   return runSnapshot(snapshotPath, args,
-      packagesFile: entrypoint.packagesFile,
-      checked: checked,
-      recompile: () {
+      packagesFile: entrypoint.packagesFile, checked: checked, recompile: () {
     log.fine("Precompiled executable is out of date.");
     return entrypoint.precompileExecutables();
   });

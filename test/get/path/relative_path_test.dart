@@ -12,10 +12,7 @@ import '../../test_pub.dart';
 
 main() {
   integration("can use relative path", () {
-    d.dir("foo", [
-      d.libDir("foo"),
-      d.libPubspec("foo", "0.0.1")
-    ]).create();
+    d.dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -25,9 +22,7 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo"
-    }).validate();
+    d.appPackagesFile({"foo": "../foo"}).validate();
   });
 
   integration("path is relative to containing pubspec", () {
@@ -38,10 +33,7 @@ main() {
           "bar": {"path": "../bar"}
         })
       ]),
-      d.dir("bar", [
-        d.libDir("bar"),
-        d.libPubspec("bar", "0.0.1")
-      ])
+      d.dir("bar", [d.libDir("bar"), d.libPubspec("bar", "0.0.1")])
     ]).create();
 
     d.dir(appPath, [
@@ -52,17 +44,12 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../relative/foo",
-      "bar": "../relative/bar"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "../relative/foo", "bar": "../relative/bar"}).validate();
   });
 
   integration("relative path preserved in the lockfile", () {
-    d.dir("foo", [
-      d.libDir("foo"),
-      d.libPubspec("foo", "0.0.1")
-    ]).create();
+    d.dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
 
     d.dir(appPath, [
       d.appPubspec({

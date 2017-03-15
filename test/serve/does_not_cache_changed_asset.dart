@@ -29,16 +29,14 @@ main() {
     });
 
     d.dir(appPath, [
-      d.dir("web", [
-        d.file("file.txt", "new stuff")
-      ])
+      d.dir("web", [d.file("file.txt", "new stuff")])
     ]).create();
 
     waitForBuildSuccess();
 
     schedule(() async {
-      var response = await scheduleRequest("file.txt",
-          headers: {"if-none-match": etag});
+      var response =
+          await scheduleRequest("file.txt", headers: {"if-none-match": etag});
       expect(response.statusCode, equals(200));
       expect(response.body, equals("new stuff"));
     });

@@ -24,7 +24,9 @@ main() {
     ]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
     ]).create();
 
     pubGet();

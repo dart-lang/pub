@@ -110,72 +110,72 @@ typedef _LogFn(Entry entry);
 class Verbosity {
   /// Silence all logging.
   static const NONE = const Verbosity._("none", const {
-    Level.ERROR:   null,
+    Level.ERROR: null,
     Level.WARNING: null,
     Level.MESSAGE: null,
-    Level.IO:      null,
-    Level.SOLVER:  null,
-    Level.FINE:    null
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows only errors.
   static const ERROR = const Verbosity._("error", const {
-    Level.ERROR:   _logToStderr,
+    Level.ERROR: _logToStderr,
     Level.WARNING: null,
     Level.MESSAGE: null,
-    Level.IO:      null,
-    Level.SOLVER:  null,
-    Level.FINE:    null
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows only errors and warnings.
   static const WARNING = const Verbosity._("warning", const {
-    Level.ERROR:   _logToStderr,
+    Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: null,
-    Level.IO:      null,
-    Level.SOLVER:  null,
-    Level.FINE:    null
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// The default verbosity which shows errors, warnings, and messages.
   static const NORMAL = const Verbosity._("normal", const {
-    Level.ERROR:   _logToStderr,
+    Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
-    Level.IO:      null,
-    Level.SOLVER:  null,
-    Level.FINE:    null
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows errors, warnings, messages, and IO event logs.
   static const IO = const Verbosity._("io", const {
-    Level.ERROR:   _logToStderrWithLabel,
+    Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
-    Level.IO:      _logToStderrWithLabel,
-    Level.SOLVER:  null,
-    Level.FINE:    null
+    Level.IO: _logToStderrWithLabel,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows errors, warnings, messages, and version solver logs.
   static const SOLVER = const Verbosity._("solver", const {
-    Level.ERROR:   _logToStderr,
+    Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
-    Level.IO:      null,
-    Level.SOLVER:  _logToStdout,
-    Level.FINE:    null
+    Level.IO: null,
+    Level.SOLVER: _logToStdout,
+    Level.FINE: null
   });
 
   /// Shows all logs.
   static const ALL = const Verbosity._("all", const {
-    Level.ERROR:   _logToStderrWithLabel,
+    Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
-    Level.IO:      _logToStderrWithLabel,
-    Level.SOLVER:  _logToStderrWithLabel,
-    Level.FINE:    _logToStderrWithLabel
+    Level.IO: _logToStderrWithLabel,
+    Level.SOLVER: _logToStderrWithLabel,
+    Level.FINE: _logToStderrWithLabel
   });
 
   const Verbosity._(this.name, this._loggers);
@@ -260,8 +260,8 @@ String format(String string) {
   if (withPrejudice) {
     // [toUpperCase] can corrupt terminal colorings, so fix them up using
     // [replaceAllMapped].
-    string = string.toUpperCase().replaceAllMapped(_capitalizedAnsiEscape,
-        (match) => match[0].toLowerCase());
+    string = string.toUpperCase().replaceAllMapped(
+        _capitalizedAnsiEscape, (match) => match[0].toLowerCase());
 
     // Don't use [bold] because it's disabled under [withPrejudice].
     string = "$_bold$string$_none";
@@ -279,7 +279,7 @@ String format(String string) {
 /// If [endMessage] is omitted, then logs "Begin [startMessage]" before the
 /// operation and "End [startMessage]" after it.
 Future ioAsync(String startMessage, Future operation,
-               [String endMessage(value)]) {
+    [String endMessage(value)]) {
   if (endMessage == null) {
     io("Begin $startMessage.");
   } else {
@@ -298,8 +298,8 @@ Future ioAsync(String startMessage, Future operation,
 
 /// Logs the spawning of an [executable] process with [arguments] at [IO]
 /// level.
-void process(String executable, List<String> arguments,
-    String workingDirectory) {
+void process(
+    String executable, List<String> arguments, String workingDirectory) {
   io("Spawning \"$executable ${arguments.join(' ')}\" in "
       "${p.absolute(workingDirectory)}");
 }
@@ -588,8 +588,8 @@ class _JsonLogger {
     if (error is SourceSpanException && error.span.sourceUrl != null) {
       // Normalize paths and make them absolute for backwards compatibility with
       // the protocol used by the analyzer.
-      errorJson["path"] = p.normalize(p.absolute(
-          p.fromUri(error.span.sourceUrl)));
+      errorJson["path"] =
+          p.normalize(p.absolute(p.fromUri(error.span.sourceUrl)));
     }
 
     if (error is FileException) {

@@ -9,9 +9,7 @@ import '../test_pub.dart';
 
 main() {
   integration('Errors if the script is in an unknown package.', () {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
 
     pubGet();
     var pub = pubRun(args: ["foo:script"]);

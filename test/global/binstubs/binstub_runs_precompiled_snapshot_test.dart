@@ -11,13 +11,9 @@ main() {
   integration("the binstubs runs a precompiled snapshot if present", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
@@ -25,8 +21,8 @@ main() {
 
     d.dir(cachePath, [
       d.dir("bin", [
-        d.matcherFile(binStubName("foo-script"),
-            contains("script.dart.snapshot"))
+        d.matcherFile(
+            binStubName("foo-script"), contains("script.dart.snapshot"))
       ])
     ]).validate();
   });

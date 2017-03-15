@@ -10,30 +10,34 @@ import 'test_pub.dart';
 main() {
   forBothPubGetAndUpgrade((command) {
     integration('fails gracefully on a dependency from an unknown source', () {
-      d.appDir({"foo": {"bad": "foo"}}).create();
+      d.appDir({
+        "foo": {"bad": "foo"}
+      }).create();
 
-      pubCommand(command, error:
-          'Package myapp depends on foo from unknown source "bad".');
+      pubCommand(command,
+          error: 'Package myapp depends on foo from unknown source "bad".');
     });
 
-    integration('fails gracefully on transitive dependency from an unknown '
-                'source', () {
+    integration(
+        'fails gracefully on transitive dependency from an unknown '
+        'source', () {
       d.dir('foo', [
         d.libDir('foo', 'foo 0.0.1'),
-        d.libPubspec('foo', '0.0.1', deps: {"bar": {"bad": "bar"}})
+        d.libPubspec('foo', '0.0.1', deps: {
+          "bar": {"bad": "bar"}
+        })
       ]).create();
 
-      d.appDir({"foo": {"path": "../foo"}}).create();
+      d.appDir({
+        "foo": {"path": "../foo"}
+      }).create();
 
-      pubCommand(command, error:
-          'Package foo depends on bar from unknown source "bad".');
+      pubCommand(command,
+          error: 'Package foo depends on bar from unknown source "bad".');
     });
 
     integration('ignores unknown source in lockfile', () {
-      d.dir('foo', [
-        d.libDir('foo'),
-        d.libPubspec('foo', '0.0.1')
-      ]).create();
+      d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
       // Depend on "foo" from a valid source.
       d.dir(appPath, [
@@ -44,25 +48,23 @@ main() {
 
       // But lock it to a bad one.
       d.dir(appPath, [
-        d.file("pubspec.lock", JSON.encode({
-          'packages': {
-            'foo': {
-              'version': '0.0.0',
-              'source': 'bad',
-              'description': {
-                'name': 'foo'
+        d.file(
+            "pubspec.lock",
+            JSON.encode({
+              'packages': {
+                'foo': {
+                  'version': '0.0.0',
+                  'source': 'bad',
+                  'description': {'name': 'foo'}
+                }
               }
-            }
-          }
-        }))
+            }))
       ]).create();
 
       pubCommand(command);
 
       // Should upgrade to the new one.
-      d.appPackagesFile({
-        "foo": "../foo"
-      }).validate();
+      d.appPackagesFile({"foo": "../foo"}).validate();
     });
   });
 }

@@ -16,7 +16,8 @@ main() {
 """;
 
 main() {
-  integration('allows assets in parent directories of the entrypoint to be'
+  integration(
+      'allows assets in parent directories of the entrypoint to be'
       'accessed', () {
     d.dir(appPath, [
       d.appPubspec(),
@@ -24,9 +25,7 @@ main() {
         d.file("a.dart", "var a = 'a';"),
         d.dir("a", [
           d.file("b.dart", "var b = 'b';"),
-          d.dir("b", [
-            d.file("app.dart", SCRIPT)
-          ])
+          d.dir("b", [d.file("app.dart", SCRIPT)])
         ])
       ])
     ]).create();

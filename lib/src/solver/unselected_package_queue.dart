@@ -134,7 +134,8 @@ class UnselectedPackageQueue {
     // it.
     for (var rootDep in _solver.root.immediateDependencies) {
       if (rootDep.name != ref.name) continue;
-      return versions.where((id) => rootDep.constraint.allows(id.version))
+      return versions
+          .where((id) => rootDep.constraint.allows(id.version))
           .length;
     }
 

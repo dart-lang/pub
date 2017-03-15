@@ -4,10 +4,7 @@
 
 import 'dart:io';
 
-import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:scheduled_test/scheduled_test.dart';
-import 'package:shelf/shelf.dart' as shelf;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -22,14 +19,14 @@ main() {
       d.appDir({"foo": "1.0.0"}).create();
 
       pubCommand(command,
-        silent: allOf([
-          contains("X-Pub-OS: ${Platform.operatingSystem}"),
-          contains("X-Pub-Command: ${command.name}"),
-          contains("X-Pub-Session-ID:"),
-          isNot(contains("X-Pub-Environment")),
-          contains("X-Pub-Reason: direct"),
-          isNot(contains("X-Pub-Reason: dev")),
-        ]));
+          silent: allOf([
+            contains("X-Pub-OS: ${Platform.operatingSystem}"),
+            contains("X-Pub-Command: ${command.name}"),
+            contains("X-Pub-Session-ID:"),
+            isNot(contains("X-Pub-Environment")),
+            contains("X-Pub-Reason: direct"),
+            isNot(contains("X-Pub-Reason: dev")),
+          ]));
     });
 
     integration('sends metadata headers for a dev dependency', () {
@@ -45,14 +42,14 @@ main() {
       ]).create();
 
       pubCommand(command,
-        silent: allOf([
-          contains("X-Pub-OS: ${Platform.operatingSystem}"),
-          contains("X-Pub-Command: ${command.name}"),
-          contains("X-Pub-Session-ID:"),
-          isNot(contains("X-Pub-Environment")),
-          contains("X-Pub-Reason: dev"),
-          isNot(contains("X-Pub-Reason: direct")),
-        ]));
+          silent: allOf([
+            contains("X-Pub-OS: ${Platform.operatingSystem}"),
+            contains("X-Pub-Command: ${command.name}"),
+            contains("X-Pub-Session-ID:"),
+            isNot(contains("X-Pub-Environment")),
+            contains("X-Pub-Reason: dev"),
+            isNot(contains("X-Pub-Reason: direct")),
+          ]));
     });
 
     integration('sends metadata headers for a transitive dependency', () {
@@ -60,20 +57,22 @@ main() {
         builder.serve("bar", "1.0.0");
       });
 
-      d.appDir({"foo": {"path": "../foo"}}).create();
+      d.appDir({
+        "foo": {"path": "../foo"}
+      }).create();
 
       d.dir("foo", [
         d.libPubspec("foo", "1.0.0", deps: {"bar": "1.0.0"})
       ]).create();
 
       pubCommand(command,
-        silent: allOf([
-          contains("X-Pub-OS: ${Platform.operatingSystem}"),
-          contains("X-Pub-Command: ${command.name}"),
-          contains("X-Pub-Session-ID:"),
-          isNot(contains("X-Pub-Environment")),
-          isNot(contains("X-Pub-Reason:")),
-        ]));
+          silent: allOf([
+            contains("X-Pub-OS: ${Platform.operatingSystem}"),
+            contains("X-Pub-Command: ${command.name}"),
+            contains("X-Pub-Session-ID:"),
+            isNot(contains("X-Pub-Environment")),
+            isNot(contains("X-Pub-Reason:")),
+          ]));
     });
 
     integration("doesn't send metadata headers to a foreign server", () {

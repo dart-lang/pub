@@ -14,31 +14,27 @@ main() {
   integration("pathToUrls converts asset ids to matching URL paths", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("lib", [
-        d.file("foo.dart", "foo() => null;")
-      ])
+      d.dir("lib", [d.file("foo.dart", "foo() => null;")])
     ]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
       d.dir("test", [
         d.file("index.html", "<body>"),
         d.dir("sub", [
           d.file("bar.html", "bar"),
         ])
       ]),
-      d.dir("lib", [
-        d.file("app.dart", "app() => null;")
-      ]),
+      d.dir("lib", [d.file("app.dart", "app() => null;")]),
       d.dir("web", [
         d.file("index.html", "<body>"),
         d.dir("sub", [
           d.file("bar.html", "bar"),
         ])
       ]),
-      d.dir("randomdir", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("randomdir", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
@@ -80,38 +76,46 @@ main() {
     // A path in lib/.
     expectWebSocketResult("pathToUrls", {
       "path": p.join("lib", "app.dart")
-    }, {"urls": [
-      getServerUrl("test", "packages/myapp/app.dart"),
-      getServerUrl("web", "packages/myapp/app.dart"),
-      getServerUrl("randomdir", "packages/myapp/app.dart")
-    ]});
+    }, {
+      "urls": [
+        getServerUrl("test", "packages/myapp/app.dart"),
+        getServerUrl("web", "packages/myapp/app.dart"),
+        getServerUrl("randomdir", "packages/myapp/app.dart")
+      ]
+    });
 
     // A path to this package in packages/.
     expectWebSocketResult("pathToUrls", {
       "path": p.join("packages", "myapp", "app.dart")
-    }, {"urls": [
-      getServerUrl("test", "packages/myapp/app.dart"),
-      getServerUrl("web", "packages/myapp/app.dart"),
-      getServerUrl("randomdir", "packages/myapp/app.dart")
-    ]});
+    }, {
+      "urls": [
+        getServerUrl("test", "packages/myapp/app.dart"),
+        getServerUrl("web", "packages/myapp/app.dart"),
+        getServerUrl("randomdir", "packages/myapp/app.dart")
+      ]
+    });
 
     // A path to another package in packages/.
     expectWebSocketResult("pathToUrls", {
       "path": p.join("packages", "foo", "foo.dart")
-    }, {"urls": [
-      getServerUrl("test", "packages/foo/foo.dart"),
-      getServerUrl("web", "packages/foo/foo.dart"),
-      getServerUrl("randomdir", "packages/foo/foo.dart")
-    ]});
+    }, {
+      "urls": [
+        getServerUrl("test", "packages/foo/foo.dart"),
+        getServerUrl("web", "packages/foo/foo.dart"),
+        getServerUrl("randomdir", "packages/foo/foo.dart")
+      ]
+    });
 
     // A relative path to another package's lib/ directory.
     expectWebSocketResult("pathToUrls", {
       "path": p.join("..", "foo", "lib", "foo.dart")
-    }, {"urls": [
-      getServerUrl("test", "packages/foo/foo.dart"),
-      getServerUrl("web", "packages/foo/foo.dart"),
-      getServerUrl("randomdir", "packages/foo/foo.dart")
-    ]});
+    }, {
+      "urls": [
+        getServerUrl("test", "packages/foo/foo.dart"),
+        getServerUrl("web", "packages/foo/foo.dart"),
+        getServerUrl("randomdir", "packages/foo/foo.dart")
+      ]
+    });
 
     // Note: Using canonicalize here because pub gets the path to the
     // entrypoint package from the working directory, which has had symlinks
@@ -121,11 +125,13 @@ main() {
     // An absolute path to another package's lib/ directory.
     expectWebSocketResult("pathToUrls", {
       "path": canonicalize(p.join(sandboxDir, "foo", "lib", "foo.dart"))
-    }, {"urls": [
-      getServerUrl("test", "packages/foo/foo.dart"),
-      getServerUrl("web", "packages/foo/foo.dart"),
-      getServerUrl("randomdir", "packages/foo/foo.dart")
-    ]});
+    }, {
+      "urls": [
+        getServerUrl("test", "packages/foo/foo.dart"),
+        getServerUrl("web", "packages/foo/foo.dart"),
+        getServerUrl("randomdir", "packages/foo/foo.dart")
+      ]
+    });
 
     endPubServe();
   });

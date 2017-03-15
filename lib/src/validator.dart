@@ -55,8 +55,8 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<Pair<List<String>, List<String>>> runAll(
-      Entrypoint entrypoint, [Future<int> packageSize]) {
+  static Future<Pair<List<String>, List<String>>> runAll(Entrypoint entrypoint,
+      [Future<int> packageSize]) {
     var validators = [
       new PubspecValidator(entrypoint),
       new LicenseValidator(entrypoint),
@@ -75,11 +75,12 @@ abstract class Validator {
       validators.add(new SizeValidator(entrypoint, packageSize));
     }
 
-    return Future.wait(validators.map((validator) => validator.validate()))
-      .then((_) {
+    return Future
+        .wait(validators.map((validator) => validator.validate()))
+        .then((_) {
       var errors = validators.expand((validator) => validator.errors).toList();
-      var warnings = validators.expand((validator) => validator.warnings)
-          .toList();
+      var warnings =
+          validators.expand((validator) => validator.warnings).toList();
 
       if (!errors.isEmpty) {
         log.error("Missing requirements:");

@@ -36,7 +36,9 @@ main() {
     }).create();
 
     // Upgrade everything.
-    pubUpgrade(output: new RegExp(r"""
+    pubUpgrade(
+        output: new RegExp(
+            r"""
 Resolving dependencies\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
 . multiple_newer_stable 1\.0\.0 \(1\.0\.2\ available\)
@@ -44,6 +46,7 @@ Resolving dependencies\.\.\..*
 . no_newer 1\.0\.0
 . one_newer_stable 1\.0\.0 \(1\.0\.1 available\)
 . one_newer_unstable 1\.0\.0 \(1\.0\.1-unstable\.1 available\)
-""", multiLine: true));
+""",
+            multiLine: true));
   });
 }

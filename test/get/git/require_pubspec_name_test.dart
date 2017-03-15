@@ -9,18 +9,19 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('requires the dependency to have a pubspec with a name '
+  integration(
+      'requires the dependency to have a pubspec with a name '
       'field', () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.pubspec({})
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.pubspec({})]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
-    pubGet(error: contains('Missing the required "name" field.'),
+    pubGet(
+        error: contains('Missing the required "name" field.'),
         exitCode: exit_codes.DATA);
   });
 }

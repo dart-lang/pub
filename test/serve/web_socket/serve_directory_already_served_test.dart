@@ -10,17 +10,14 @@ main() {
   integration("returns the old URL if the directory is already served", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
     pubServe();
 
-    expectWebSocketResult("serveDirectory", {"path": "web"}, {
-      "url": getServerUrl("web")
-    });
+    expectWebSocketResult(
+        "serveDirectory", {"path": "web"}, {"url": getServerUrl("web")});
 
     endPubServe();
   });

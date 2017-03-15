@@ -9,10 +9,7 @@ main() {
   integration("removes binstubs when the package is deactivated", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "one": null,
-          "two": null
-        }
+        "executables": {"one": null, "two": null}
       }, contents: [
         d.dir("bin", [
           d.file("one.dart", "main(args) => print('one');"),
@@ -25,10 +22,8 @@ main() {
     schedulePub(args: ["global", "deactivate", "foo"]);
 
     d.dir(cachePath, [
-      d.dir("bin", [
-        d.nothing(binStubName("one")),
-        d.nothing(binStubName("two"))
-      ])
+      d.dir(
+          "bin", [d.nothing(binStubName("one")), d.nothing(binStubName("two"))])
     ]).validate();
   });
 }

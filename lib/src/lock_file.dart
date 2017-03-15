@@ -35,14 +35,14 @@ class LockFile {
   /// [VersionConstraint.any]. Similarly, [flutterSdkConstraint] represents the
   /// intersection of all Flutter SDK constraints; however, it defaults to
   /// `null`.
-  LockFile(Iterable<PackageId> ids, {VersionConstraint dartSdkConstraint,
+  LockFile(Iterable<PackageId> ids,
+      {VersionConstraint dartSdkConstraint,
       VersionConstraint flutterSdkConstraint})
       : this._(
-          new Map.fromIterable(
-              ids.where((id) => !id.isRoot),
-              key: (id) => id.name),
-          dartSdkConstraint ?? VersionConstraint.any,
-          flutterSdkConstraint);
+            new Map.fromIterable(ids.where((id) => !id.isRoot),
+                key: (id) => id.name),
+            dartSdkConstraint ?? VersionConstraint.any,
+            flutterSdkConstraint);
 
   LockFile._(Map<String, PackageId> packages, this.dartSdkConstraint,
       this.flutterSdkConstraint)
@@ -67,8 +67,8 @@ class LockFile {
   ///
   /// [filePath] is the system-native path to the lockfile on disc. It may be
   /// `null`.
-  static LockFile _parse(String filePath, String contents,
-      SourceRegistry sources) {
+  static LockFile _parse(
+      String filePath, String contents, SourceRegistry sources) {
     if (contents.trim() == '') return new LockFile.empty();
 
     var sourceUrl;
@@ -88,9 +88,7 @@ class LockFile {
       dartSdkConstraint = _parseVersionConstraint(sdkNode);
     } else if (parsedMap.containsKey('sdks')) {
       var sdksField = parsedMap['sdks'];
-      _validate(
-          sdksField is Map,
-          'The "sdks" field must be a mapping.',
+      _validate(sdksField is Map, 'The "sdks" field must be a mapping.',
           parsedMap.nodes['sdks']);
 
       dartSdkConstraint = _parseVersionConstraint(sdksField.nodes['dart']);
@@ -125,8 +123,8 @@ class LockFile {
         try {
           id = source.parseId(name, version, description);
         } on FormatException catch (ex) {
-          throw new SourceSpanFormatException(ex.message,
-              spec.nodes['description'].span);
+          throw new SourceSpanFormatException(
+              ex.message, spec.nodes['description'].span);
         }
 
         // Validate the name.
@@ -144,14 +142,10 @@ class LockFile {
   static VersionConstraint _parseVersionConstraint(YamlNode node) {
     if (node == null) return null;
 
-    _validate(
-        node.value is String,
-        'Invalid version constraint: must be a string.',
-        node);
+    _validate(node.value is String,
+        'Invalid version constraint: must be a string.', node);
 
-    return _wrapFormatException(
-        'version constraint',
-        node.span,
+    return _wrapFormatException('version constraint', node.span,
         () => new VersionConstraint.parse(node.value));
   }
 
@@ -228,8 +222,8 @@ class LockFile {
     // Convert the dependencies to a simple object.
     var packageMap = {};
     packages.forEach((name, package) {
-      var description = package.source
-          .serializeDescription(packageDir, package.description);
+      var description =
+          package.source.serializeDescription(packageDir, package.description);
 
       packageMap[name] = {
         'version': package.version.toString(),
@@ -238,9 +232,7 @@ class LockFile {
       };
     });
 
-    var sdks = {
-      'dart': dartSdkConstraint.toString()
-    };
+    var sdks = {'dart': dartSdkConstraint.toString()};
     if (flutterSdkConstraint != null) {
       sdks['flutter'] = flutterSdkConstraint.toString();
     }

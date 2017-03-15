@@ -32,13 +32,16 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {"barback": "any"},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        "barback": "any"
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [d.file("foo.dart", REPLACE_TRANSFORMER)]),
         d.dir("bin", [
-          d.file("hello.dart", """
+          d.file(
+              "hello.dart",
+              """
 final message = 'REPLACE ME';
 
 void main() => print(message);

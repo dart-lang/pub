@@ -32,28 +32,30 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-   integration("passes configuration to a transformer", () {
-     serveBarback();
+  integration("passes configuration to a transformer", () {
+    serveBarback();
 
-     var configuration = {"param": ["list", "of", "values"]};
+    var configuration = {
+      "param": ["list", "of", "values"]
+    };
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": [{"myapp/src/transformer": configuration}],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", transformer)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {"myapp/src/transformer": configuration}
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", transformer)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShouldSucceed("foo.json", JSON.encode(configuration));
-     endPubServe();
-   });
+    pubGet();
+    pubServe();
+    requestShouldSucceed("foo.json", JSON.encode(configuration));
+    endPubServe();
+  });
 }

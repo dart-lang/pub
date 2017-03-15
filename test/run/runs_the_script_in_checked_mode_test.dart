@@ -11,13 +11,12 @@ main() {
   integration('runs the script in checked mode with "--checked"', () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", "main() { int a = true; }")
-      ])
+      d.dir("bin", [d.file("script.dart", "main() { int a = true; }")])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["run", "--checked", "bin/script"],
+    schedulePub(
+        args: ["run", "--checked", "bin/script"],
         error: contains("'bool' is not a subtype of type 'int' of 'a'"),
         exitCode: 255);
   });

@@ -12,9 +12,13 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}},
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          },
           "myapp"
         ]
       }),
@@ -30,7 +34,10 @@ void main() {
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
   integration("reports a dependency if a transformed foreign file is imported",
@@ -38,7 +45,9 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -51,23 +60,31 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed external package file is "
+  integration(
+      "reports a dependency if a transformed external package file is "
       "imported from an export", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -81,23 +98,31 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed foreign file is "
+  integration(
+      "reports a dependency if a transformed foreign file is "
       "transitively imported", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -111,7 +136,11 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
       d.dir("lib", [
         d.file("foo.dart", ""),
@@ -120,15 +149,21 @@ void main() {
       ])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed foreign file is "
+  integration(
+      "reports a dependency if a transformed foreign file is "
       "transitively imported across packages", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -141,7 +176,9 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "dependencies": {"bar": {"path": "../bar"}}
+        "dependencies": {
+          "bar": {"path": "../bar"}
+        }
       }),
       d.dir("lib", [d.file("foo.dart", "import 'package:bar/bar.dart';")])
     ]).create();
@@ -150,25 +187,35 @@ void main() {
       d.pubspec({
         "name": "bar",
         "version": "1.0.0",
-        "transformers": [{"bar": {"\$include": "lib/bar.dart"}}]
+        "transformers": [
+          {
+            "bar": {"\$include": "lib/bar.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("bar.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("bar.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['bar'], 'bar': []});
+    expectDependencies({
+      'myapp': ['bar'],
+      'bar': []
+    });
   });
 
-  integration("reports a dependency if an imported file is transformed by a "
+  integration(
+      "reports a dependency if an imported file is transformed by a "
       "different package", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {'\$include': 'lib/local.dart'}},
+          {
+            "foo": {'\$include': 'lib/local.dart'}
+          },
           "myapp"
         ]
       }),
@@ -184,6 +231,9 @@ void main() {
       d.dir("lib", [d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 }

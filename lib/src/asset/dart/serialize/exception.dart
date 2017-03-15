@@ -32,8 +32,8 @@ class CrossIsolateException implements Exception {
   CrossIsolateException.deserialize(Map error)
       : type = error['type'],
         _message = error['message'],
-        stackTrace = error['stack'] == null ? null :
-            new Chain.parse(error['stack']);
+        stackTrace =
+            error['stack'] == null ? null : new Chain.parse(error['stack']);
 
   /// Serializes [error] to an object that can safely be passed across isolate
   /// boundaries.
@@ -49,7 +49,7 @@ class CrossIsolateException implements Exception {
   String toString() => "$message\n$stackTrace";
 }
 
-/// An [AssetNotFoundException] that was originally raised in another isolate. 
+/// An [AssetNotFoundException] that was originally raised in another isolate.
 class _CrossIsolateAssetNotFoundException extends CrossIsolateException
     implements AssetNotFoundException {
   final AssetId id;

@@ -13,7 +13,9 @@ main() {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
-        d.file("foo.dart", """
+        d.file(
+            "foo.dart",
+            """
 foo() => 'footext';
 """)
       ])
@@ -24,12 +26,16 @@ foo() => 'footext';
         "foo": {"path": "../foo"}
       }),
       d.dir("lib", [
-        d.file("lib.dart", """
+        d.file(
+            "lib.dart",
+            """
 lib() => 'libtext';
 """)
       ]),
       d.dir("web", [
-        d.file("main.dart", """
+        d.file(
+            "main.dart",
+            """
 import 'package:foo/foo.dart';
 import 'package:myapp/lib.dart';
 void main() {

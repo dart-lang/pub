@@ -33,10 +33,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", TRANSFORMER),
-        d.file("primary.in", "")
-      ])])
+      d.dir("lib", [
+        d.dir("src",
+            [d.file("transformer.dart", TRANSFORMER), d.file("primary.in", "")])
+      ])
     ]).create();
 
     pubGet();

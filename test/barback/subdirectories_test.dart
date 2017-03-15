@@ -33,7 +33,8 @@ main() {
   var webTwoInner = p.join("web", "two", "inner");
 
   integration("builds subdirectories", () {
-    schedulePub(args: ["build", webOne, webTwoInner],
+    schedulePub(
+        args: ["build", webOne, webTwoInner],
         output: new RegExp(r'Built 2 files to "build".'));
 
     d.dir(appPath, [

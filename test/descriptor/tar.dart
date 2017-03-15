@@ -9,7 +9,6 @@ import 'package:pub/src/io.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/descriptor.dart';
 
-
 /// Describes a tar file and its contents.
 class TarFileDescriptor extends DirectoryDescriptor
     implements ReadableDescriptor {
@@ -24,11 +23,10 @@ class TarFileDescriptor extends DirectoryDescriptor
       return await withTempDir((tempDir) async {
         await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-        var createdContents = listDir(tempDir,
-            recursive: true,
-            includeHidden: true);
-        var bytes = await createTarGz(createdContents, baseDir: tempDir)
-            .toBytes();
+        var createdContents =
+            listDir(tempDir, recursive: true, includeHidden: true);
+        var bytes =
+            await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
         var file = path.join(parent, name);
         writeBinaryFile(file, bytes);
@@ -45,8 +43,8 @@ class TarFileDescriptor extends DirectoryDescriptor
 
   Stream<List<int>> read() {
     return new Stream<List<int>>.fromFuture(withTempDir((tempDir) {
-      return create(tempDir).then((_) =>
-          readBinaryFile(path.join(tempDir, name)));
+      return create(tempDir)
+          .then((_) => readBinaryFile(path.join(tempDir, name)));
     }));
   }
 }

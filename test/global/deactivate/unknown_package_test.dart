@@ -10,7 +10,8 @@ main() {
   integration('errors if the package is not activated', () {
     serveNoPackages();
 
-    schedulePub(args: ["global", "deactivate", "foo"],
+    schedulePub(
+        args: ["global", "deactivate", "foo"],
         error: "No active package foo.",
         exitCode: exit_codes.DATA);
   });

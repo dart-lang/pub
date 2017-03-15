@@ -122,7 +122,7 @@ class BacktrackingSolver {
   final Pubspec _implicitPubspec;
 
   BacktrackingSolver(SolveType type, SystemCache systemCache, Package root,
-          this.lockFile, List<String> useLatest)
+      this.lockFile, List<String> useLatest)
       : type = type,
         systemCache = systemCache,
         root = root,
@@ -144,8 +144,7 @@ class BacktrackingSolver {
     var dependencies = <PackageDep>[];
     barback.pubConstraints.forEach((name, constraint) {
       dependencies.add(
-          systemCache.sources.hosted.refFor(name)
-              .withConstraint(constraint));
+          systemCache.sources.hosted.refFor(name).withConstraint(constraint));
     });
 
     return new Pubspec("pub itself", dependencies: dependencies);
@@ -181,8 +180,14 @@ class BacktrackingSolver {
         pubspecs[id.name] = await _getPubspec(id);
       }
 
-      return new SolveResult.success(systemCache.sources, root, lockFile,
-          packages, overrides, pubspecs, _getAvailableVersions(packages),
+      return new SolveResult.success(
+          systemCache.sources,
+          root,
+          lockFile,
+          packages,
+          overrides,
+          pubspecs,
+          _getAvailableVersions(packages),
           _attemptedSolutions);
     } on SolveFailure catch (error) {
       // Wrap a failure in a result so we can attach some other data.
@@ -296,11 +301,8 @@ class BacktrackingSolver {
         // If we got a NoVersionException, convert it to a
         // non-version-specific one so that it's clear that there aren't *any*
         // acceptable versions that satisfy the constraint.
-        throw new NoVersionException(
-            error.package,
-            null,
-            (error as NoVersionException).constraint,
-            error.dependencies);
+        throw new NoVersionException(error.package, null,
+            (error as NoVersionException).constraint, error.dependencies);
       }
 
       await _selection.select(queue.current);
@@ -326,8 +328,8 @@ class BacktrackingSolver {
     }
 
     var locked = _getValidLocked(ref.name);
-    var queue = await VersionQueue.create(locked,
-        () => _getAllowedVersions(ref, locked));
+    var queue = await VersionQueue.create(
+        locked, () => _getAllowedVersions(ref, locked));
 
     await _findValidVersion(queue);
 
@@ -335,8 +337,8 @@ class BacktrackingSolver {
   }
 
   /// Gets all versions of [ref] that could be selected, other than [locked].
-  Future<Iterable<PackageId>> _getAllowedVersions(PackageRef ref,
-      PackageId locked) async {
+  Future<Iterable<PackageId>> _getAllowedVersions(
+      PackageRef ref, PackageId locked) async {
     var allowed;
     try {
       allowed = await cache.getVersions(ref);
@@ -496,10 +498,9 @@ class BacktrackingSolver {
           _fail(otherDep.depender.name);
         }
 
-        logSolve(
-            'inconsistent constraints on ${dep.name}:\n'
+        logSolve('inconsistent constraints on ${dep.name}:\n'
             '  $dependency\n' +
-                _selection.describeDependencies(dep.name));
+            _selection.describeDependencies(dep.name));
         throw new DisjointConstraintException(dep.name, allDeps);
       }
 
@@ -509,10 +510,10 @@ class BacktrackingSolver {
 
         logSolve(
             "constraint doesn't match selected version ${selected.version} of "
-                "${dep.name}:\n"
+            "${dep.name}:\n"
             "  $dependency");
-        throw new NoVersionException(dep.name, selected.version, dep.constraint,
-            allDeps);
+        throw new NoVersionException(
+            dep.name, selected.version, dep.constraint, allDeps);
       }
 
       var required = _selection.getRequiredDependency(dep.name);
@@ -525,10 +526,9 @@ class BacktrackingSolver {
           _fail(otherDep.depender.name);
         }
 
-        logSolve(
-            'inconsistent source "${dep.source}" for ${dep.name}:\n'
+        logSolve('inconsistent source "${dep.source}" for ${dep.name}:\n'
             '  $dependency\n' +
-                _selection.describeDependencies(dep.name));
+            _selection.describeDependencies(dep.name));
         throw new SourceMismatchException(dep.name, allDeps);
       }
 
@@ -541,7 +541,7 @@ class BacktrackingSolver {
 
         logSolve(
             'inconsistent description "${dep.description}" for ${dep.name}:\n'
-            '  $dependency\n' +
+                '  $dependency\n' +
                 _selection.describeDependencies(dep.name));
         throw new DescriptionMismatchException(dep.name, allDeps);
       }
@@ -613,8 +613,7 @@ class BacktrackingSolver {
     if (id.isRoot) return root.pubspec;
     if (id.isMagic && id.name == 'pub itself') return _implicitPubspec;
 
-    return await withDependencyType(
-        root.dependencyType(id.name),
+    return await withDependencyType(root.dependencyType(id.name),
         () => systemCache.source(id.source).describe(id));
   }
 
@@ -663,7 +662,8 @@ class BacktrackingSolver {
     if (_overrides.containsKey(pubspec.name)) return;
 
     if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
-      throw new BadSdkVersionException(pubspec.name,
+      throw new BadSdkVersionException(
+          pubspec.name,
           'Package ${pubspec.name} requires SDK version '
           '${pubspec.dartSdkConstraint} but the current SDK is '
           '${sdk.version}.');
@@ -671,13 +671,15 @@ class BacktrackingSolver {
 
     if (pubspec.flutterSdkConstraint != null) {
       if (!flutter.isAvailable) {
-        throw new BadSdkVersionException(pubspec.name,
+        throw new BadSdkVersionException(
+            pubspec.name,
             'Package ${pubspec.name} requires the Flutter SDK, which is not '
             'available.');
       }
 
       if (!pubspec.flutterSdkConstraint.allows(flutter.version)) {
-        throw new BadSdkVersionException(pubspec.name,
+        throw new BadSdkVersionException(
+            pubspec.name,
             'Package ${pubspec.name} requires Flutter SDK version '
             '${pubspec.flutterSdkConstraint} but the current SDK is '
             '${flutter.version}.');

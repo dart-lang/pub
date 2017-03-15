@@ -11,9 +11,7 @@ main() {
   integration('Errors if the script is in a non-immediate dependency.', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("bar.dart", "main() => print('foobar');")
-      ])
+      d.dir("bin", [d.file("bar.dart", "main() => print('foobar');")])
     ]).create();
 
     d.dir("bar", [

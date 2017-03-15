@@ -12,14 +12,16 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('with an expired credentials.json, refreshes and saves the '
+  integration(
+      'with an expired credentials.json, refreshes and saves the '
       'refreshed access token to credentials.json', () {
     d.validPackage.create();
 
     var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token',
-        refreshToken: 'refresh token',
-        expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+    d
+        .credentialsFile(server, 'access token',
+            refreshToken: 'refresh token',
+            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
         .create();
 
     var pub = startPublish(server);
@@ -27,13 +29,13 @@ main() {
 
     server.handle('POST', '/token', (request) {
       return request.readAsString().then((body) {
-        expect(body, matches(
-            new RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
+        expect(body,
+            matches(new RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
 
-        return new shelf.Response.ok(JSON.encode({
-          "access_token": "new access token",
-          "token_type": "bearer"
-        }), headers: {'content-type': 'application/json'});
+        return new shelf.Response.ok(
+            JSON.encode(
+                {"access_token": "new access token", "token_type": "bearer"}),
+            headers: {'content-type': 'application/json'});
       });
     });
 
@@ -46,7 +48,9 @@ main() {
 
     pub.shouldExit();
 
-    d.credentialsFile(server, 'new access token', refreshToken: 'refresh token')
+    d
+        .credentialsFile(server, 'new access token',
+            refreshToken: 'refresh token')
         .validate();
   });
 }

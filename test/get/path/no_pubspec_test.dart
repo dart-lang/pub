@@ -19,7 +19,8 @@ main() {
       })
     ]).create();
 
-    pubGet(error: new RegExp(r'Could not find a file named "pubspec.yaml" '
-        r'in "[^\n]*"\.'));
+    pubGet(
+        error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+            r'in "[^\n]*"\.'));
   });
 }

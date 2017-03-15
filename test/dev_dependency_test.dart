@@ -7,15 +7,9 @@ import 'test_pub.dart';
 
 main() {
   integration("includes root package's dev dependencies", () {
-    d.dir('foo', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '0.0.1')
-    ]).create();
+    d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    d.dir('bar', [
-      d.libDir('bar'),
-      d.libPubspec('bar', '0.0.1')
-    ]).create();
+    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
     d.dir(appPath, [
       d.pubspec({
@@ -29,10 +23,7 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo",
-      "bar": "../bar"
-    }).validate();
+    d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
   });
 
   integration("includes dev dependency's transitive dependencies", () {
@@ -43,10 +34,7 @@ main() {
       })
     ]).create();
 
-    d.dir('bar', [
-      d.libDir('bar'),
-      d.libPubspec('bar', '0.0.1')
-    ]).create();
+    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
     d.dir(appPath, [
       d.pubspec({
@@ -59,10 +47,7 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo",
-      "bar": "../bar"
-    }).validate();
+    d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
   });
 
   integration("ignores transitive dependency's dev dependencies", () {
@@ -77,10 +62,7 @@ main() {
       })
     ]).create();
 
-    d.dir('bar', [
-      d.libDir('bar'),
-      d.libPubspec('bar', '0.0.1')
-    ]).create();
+    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -90,8 +72,6 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo"
-    }).validate();
+    d.appPackagesFile({"foo": "../foo"}).validate();
   });
 }

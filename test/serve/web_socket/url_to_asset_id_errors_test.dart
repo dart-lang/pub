@@ -10,25 +10,27 @@ import '../utils.dart';
 
 main() {
   setUp(() {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
     pubGet();
   });
 
   integration("responds with NOT_SERVED for an unknown domain", () {
     pubServe();
-    expectWebSocketError("urlToAssetId", {
-      "url": "http://example.com:80/index.html"
-    }, NOT_SERVED, '"example.com:80" is not being served by pub.');
+    expectWebSocketError(
+        "urlToAssetId",
+        {"url": "http://example.com:80/index.html"},
+        NOT_SERVED,
+        '"example.com:80" is not being served by pub.');
     endPubServe();
   });
 
   integration("responds with NOT_SERVED for an unknown port", () {
     pubServe();
-    expectWebSocketError("urlToAssetId", {
-      "url": "http://localhost:80/index.html"
-    }, NOT_SERVED, '"localhost:80" is not being served by pub.');
+    expectWebSocketError(
+        "urlToAssetId",
+        {"url": "http://localhost:80/index.html"},
+        NOT_SERVED,
+        '"localhost:80" is not being served by pub.');
     endPubServe();
   });
 }

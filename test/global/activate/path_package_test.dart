@@ -13,13 +13,12 @@ main() {
   integration('activates a package at a local path', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
     var path = canonicalize(p.join(sandboxDir, "foo"));
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"],
+    schedulePub(
+        args: ["global", "activate", "--source", "path", "../foo"],
         output: endsWith('Activated foo 1.0.0 at path "$path".'));
   });
 }

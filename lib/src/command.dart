@@ -20,6 +20,7 @@ abstract class PubCommand extends Command {
     if (_cache == null) _cache = new SystemCache(isOffline: isOffline);
     return _cache;
   }
+
   SystemCache _cache;
 
   GlobalPackages get globals {
@@ -28,6 +29,7 @@ abstract class PubCommand extends Command {
     }
     return _globals;
   }
+
   GlobalPackages _globals;
 
   /// Gets the [Entrypoint] package for the current working directory.
@@ -41,6 +43,7 @@ abstract class PubCommand extends Command {
     }
     return _entrypoint;
   }
+
   Entrypoint _entrypoint;
 
   /// The URL for web documentation for this command.
@@ -58,6 +61,7 @@ abstract class PubCommand extends Command {
     }
     return _argParser;
   }
+
   ArgParser _argParser;
 
   /// Override this to use offline-only sources instead of hitting the network.

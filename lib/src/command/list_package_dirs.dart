@@ -20,8 +20,7 @@ class ListPackageDirsCommand extends PubCommand {
 
   ListPackageDirsCommand() {
     argParser.addOption("format",
-        help: "How output should be displayed.",
-        allowed: ["json"]);
+        help: "How output should be displayed.", allowed: ["json"]);
   }
 
   void run() {
@@ -58,4 +57,3 @@ class ListPackageDirsCommand extends PubCommand {
     log.json.message(output);
   }
 }
-

@@ -16,9 +16,8 @@ final _arrow = getSpecial('\u2192', '=>');
 
 /// The set of top level directories in the entrypoint package that are built
 /// when the user does "--all".
-final _allSourceDirectories = new Set<String>.from([
-  "benchmark", "bin", "example", "test", "web"
-]);
+final _allSourceDirectories =
+    new Set<String>.from(["benchmark", "bin", "example", "test", "web"]);
 
 /// Shared base class for [BuildCommand] and [ServeCommand].
 abstract class BarbackCommand extends PubCommand {
@@ -37,20 +36,22 @@ abstract class BarbackCommand extends PubCommand {
   List<String> get defaultSourceDirectories;
 
   BarbackCommand() {
-    argParser.addOption("mode", defaultsTo: defaultMode.toString(),
+    argParser.addOption("mode",
+        defaultsTo: defaultMode.toString(),
         help: "Mode to run transformers in.");
 
     argParser.addFlag("all",
         help: "Use all default source directories.",
-        defaultsTo: false, negatable: false);
+        defaultsTo: false,
+        negatable: false);
   }
 
   Future run() {
     // Switch to JSON output if specified. We need to do this before parsing
     // the source directories so an error will be correctly reported in JSON
     // format.
-    log.json.enabled = argResults.options.contains("format") &&
-        argResults["format"] == "json";
+    log.json.enabled =
+        argResults.options.contains("format") && argResults["format"] == "json";
 
     _parseSourceDirectories();
     return onRunTransformerCommand();
@@ -91,19 +92,20 @@ abstract class BarbackCommand extends PubCommand {
     });
 
     if (disallowed.isNotEmpty) {
-      usageException(_directorySentence(disallowed, "is", "are", "not allowed"));
+      usageException(
+          _directorySentence(disallowed, "is", "are", "not allowed"));
     }
 
     // Make sure the source directories don't reach out of the package.
     var invalid = sourceDirectories.where((dir) => !path.isWithin('.', dir));
     if (invalid.isNotEmpty) {
-      usageException(_directorySentence(invalid, "isn't", "aren't",
-          "in this package"));
+      usageException(
+          _directorySentence(invalid, "isn't", "aren't", "in this package"));
     }
 
     // Make sure all of the source directories exist.
-    var missing = sourceDirectories.where(
-        (dir) => !dirExists(entrypoint.root.path(dir)));
+    var missing =
+        sourceDirectories.where((dir) => !dirExists(entrypoint.root.path(dir)));
 
     if (missing.isNotEmpty) {
       dataError(_directorySentence(missing, "does", "do", "not exist"));
@@ -123,8 +125,8 @@ abstract class BarbackCommand extends PubCommand {
     }
 
     if (overlapping.isNotEmpty) {
-      usageException(_directorySentence(overlapping, "cannot", "cannot",
-          "overlap"));
+      usageException(
+          _directorySentence(overlapping, "cannot", "cannot", "overlap"));
     }
   }
 
@@ -132,17 +134,16 @@ abstract class BarbackCommand extends PubCommand {
   /// present.
   void _addAllDefaultSources() {
     if (argResults.rest.isNotEmpty) {
-      usageException(
-          'Directory names are not allowed if "--all" is passed.');
+      usageException('Directory names are not allowed if "--all" is passed.');
     }
 
     // Include every build directory that exists in the package.
-    var dirs = _allSourceDirectories.where(
-        (dir) => dirExists(entrypoint.root.path(dir)));
+    var dirs = _allSourceDirectories
+        .where((dir) => dirExists(entrypoint.root.path(dir)));
 
     if (dirs.isEmpty) {
-      var defaultDirs = toSentence(_allSourceDirectories.map(
-          (name) => '"$name"'));
+      var defaultDirs =
+          toSentence(_allSourceDirectories.map((name) => '"$name"'));
       dataError('There are no source directories present.\n'
           'The default directories are $defaultDirs.');
     }
@@ -153,8 +154,8 @@ abstract class BarbackCommand extends PubCommand {
   /// Adds the default sources that should be used if no directories are passed
   /// on the command line.
   void _addDefaultSources() {
-    sourceDirectories.addAll(defaultSourceDirectories.where(
-        (dir) => dirExists(entrypoint.root.path(dir))));
+    sourceDirectories.addAll(defaultSourceDirectories
+        .where((dir) => dirExists(entrypoint.root.path(dir))));
 
     // TODO(rnystrom): Hackish. Assumes there will only be one or two
     // default sources. That's true for pub build and serve, but isn't as
@@ -181,11 +182,11 @@ abstract class BarbackCommand extends PubCommand {
   /// period is added.
   String _directorySentence(Iterable<String> directoryNames,
       String singularVerb, String pluralVerb, String suffix) {
-    var directories = pluralize('Directory', directoryNames.length,
-        plural: 'Directories');
+    var directories =
+        pluralize('Directory', directoryNames.length, plural: 'Directories');
     var names = toSentence(directoryNames.map((dir) => '"$dir"'));
-    var verb = pluralize(singularVerb, directoryNames.length,
-        plural: pluralVerb);
+    var verb =
+        pluralize(singularVerb, directoryNames.length, plural: pluralVerb);
 
     var result = "$directories $names $verb";
     if (suffix != null) result += " $suffix";

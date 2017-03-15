@@ -10,12 +10,8 @@ main() {
   integration("unbinds a directory from a port", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("test", [
-        d.file("index.html", "<test body>")
-      ]),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("test", [d.file("index.html", "<test body>")]),
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
@@ -25,9 +21,8 @@ main() {
     requestShouldSucceed("index.html", "<test body>", root: "test");
 
     // Unbind the directory.
-    expectWebSocketResult("unserveDirectory", {"path": "test"}, {
-      "url": getServerUrl("test")
-    });
+    expectWebSocketResult(
+        "unserveDirectory", {"path": "test"}, {"url": getServerUrl("test")});
 
     // "test" should not be served now.
     requestShouldNotConnect("index.html", root: "test");

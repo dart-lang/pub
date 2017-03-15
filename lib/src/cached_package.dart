@@ -29,8 +29,13 @@ class CachedPackage extends Package {
   CachedPackage(Package inner, this._cacheDir)
       : super(new _CachedPubspec(inner.pubspec), inner.dir);
 
-  String path(String part1, [String part2, String part3, String part4,
-      String part5, String part6, String part7]) {
+  String path(String part1,
+      [String part2,
+      String part3,
+      String part4,
+      String part5,
+      String part6,
+      String part7]) {
     if (_pathInCache(part1)) {
       return p.join(_cacheDir, part1, part2, part3, part4, part5, part6, part7);
     } else {
@@ -45,15 +50,15 @@ class CachedPackage extends Package {
 
   /// This will include the cached, transformed versions of files if [beneath]
   /// is within a cached directory, but not otherwise.
-  List<String> listFiles({String beneath, recursive: true,
-      bool useGitIgnore: false}) {
+  List<String> listFiles(
+      {String beneath, recursive: true, bool useGitIgnore: false}) {
     if (beneath == null) {
       return super.listFiles(recursive: recursive, useGitIgnore: useGitIgnore);
     }
 
     if (_pathInCache(beneath)) return listDir(p.join(_cacheDir, beneath));
-    return super.listFiles(beneath: beneath, recursive: recursive,
-        useGitIgnore: useGitIgnore);
+    return super.listFiles(
+        beneath: beneath, recursive: recursive, useGitIgnore: useGitIgnore);
   }
 
   /// Returns whether [relativePath], a path relative to the package's root,

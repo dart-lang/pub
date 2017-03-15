@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:scheduled_test/scheduled_test.dart';
 
 import 'package:path/path.dart' as path;
@@ -31,15 +30,12 @@ main() {
   integration("handles long relative paths", () {
     d.dir("some_long_dependency_name", [
       d.libPubspec("foo", "0.0.1"),
-      d.dir("lib", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [d.file("foo.txt", "foo")])
     ]).create();
 
     // Build a 2,800 character (non-canonicalized) path.
     var longPath = "";
-    for (var i = 0; i < 100; i++)
-    {
+    for (var i = 0; i < 100; i++) {
       longPath = path.join(longPath, "..", "some_long_dependency_name");
     }
 
@@ -53,17 +49,15 @@ main() {
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build"],
-        output: new RegExp(r'Built 2 files to "build".'));
+    schedulePub(
+        args: ["build"], output: new RegExp(r'Built 2 files to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [
         d.dir('web', [
           d.file("index.html", "html"),
           d.dir('packages', [
-            d.dir('foo', [
-              d.file('foo.txt', 'foo')
-            ])
+            d.dir('foo', [d.file('foo.txt', 'foo')])
           ])
         ])
       ])

@@ -8,11 +8,10 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('Errors if the executable is in a subdirectory in a '
+  integration(
+      'Errors if the executable is in a subdirectory in a '
       'dependency.', () {
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -20,7 +19,8 @@ main() {
       })
     ]).create();
 
-    schedulePub(args: ["run", "foo:sub/dir"],
+    schedulePub(
+        args: ["run", "foo:sub/dir"],
         error: """
 Cannot run an executable in a subdirectory of a dependency.
 

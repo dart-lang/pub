@@ -15,8 +15,8 @@ class ExcludingAggregateTransformer extends AggregateTransformer {
   /// [ExcludingAggregateTransformer] that handles those.
   ///
   /// Otherwise, just returns [inner] unmodified.
-  static AggregateTransformer wrap(AggregateTransformer inner,
-      TransformerConfig config) {
+  static AggregateTransformer wrap(
+      AggregateTransformer inner, TransformerConfig config) {
     if (!config.hasExclusions) return inner;
 
     if (inner is LazyAggregateTransformer) {
@@ -50,8 +50,8 @@ class ExcludingAggregateTransformer extends AggregateTransformer {
 class _DeclaringExcludingAggregateTransformer
     extends ExcludingAggregateTransformer
     implements DeclaringAggregateTransformer {
-  _DeclaringExcludingAggregateTransformer(DeclaringAggregateTransformer inner,
-        TransformerConfig config)
+  _DeclaringExcludingAggregateTransformer(
+      DeclaringAggregateTransformer inner, TransformerConfig config)
       : super._(inner as AggregateTransformer, config);
 
   Future declareOutputs(DeclaringAggregateTransform transform) =>
@@ -61,7 +61,7 @@ class _DeclaringExcludingAggregateTransformer
 class _LazyExcludingAggregateTransformer
     extends _DeclaringExcludingAggregateTransformer
     implements LazyAggregateTransformer {
-  _LazyExcludingAggregateTransformer(DeclaringAggregateTransformer inner,
-        TransformerConfig config)
+  _LazyExcludingAggregateTransformer(
+      DeclaringAggregateTransformer inner, TransformerConfig config)
       : super(inner, config);
 }

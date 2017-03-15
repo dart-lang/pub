@@ -11,8 +11,7 @@ import '../validator.dart';
 
 /// Validates that a package's README is valid utf-8.
 class Utf8ReadmeValidator extends Validator {
-  Utf8ReadmeValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  Utf8ReadmeValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
@@ -25,9 +24,8 @@ class Utf8ReadmeValidator extends Validator {
       } on FormatException catch (_) {
         warnings.add("$readme contains invalid UTF-8.\n"
             "This will cause it to be displayed incorrectly on "
-                "pub.dartlang.org.");
+            "pub.dartlang.org.");
       }
     });
   }
 }
-

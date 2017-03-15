@@ -8,9 +8,7 @@ import 'utils.dart';
 
 main() {
   integration("responds with a 404 for a missing files in dependencies", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "0.0.1")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "0.0.1")]).create();
 
     d.dir(appPath, [
       d.appPubspec({

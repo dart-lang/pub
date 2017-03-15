@@ -30,10 +30,10 @@ class DependencyValidator extends Validator {
   /// Whether the SDK constraint guarantees that `^` version constraints are
   /// safe.
   bool get _caretAllowed => entrypoint.root.pubspec.dartSdkConstraint
-      .intersect(_preCaretPubVersions).isEmpty;
+      .intersect(_preCaretPubVersions)
+      .isEmpty;
 
-  DependencyValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
     var caretDeps = <PackageDep>[];
@@ -90,13 +90,13 @@ class DependencyValidator extends Validator {
     var messages = dep.source is PathSource ? errors : warnings;
 
     messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
-            'source. Use the hosted source instead. For example:\n'
+        'source. Use the hosted source instead. For example:\n'
         '\n'
         'dependencies:\n'
         '  ${dep.name}: $constraint\n'
         '\n'
         'Using the hosted source ensures that everyone can download your '
-            'package\'s dependencies along with your package.');
+        'package\'s dependencies along with your package.');
   }
 
   /// Warn that dependencies should have version constraints.
@@ -106,26 +106,26 @@ class DependencyValidator extends Validator {
     var locked = entrypoint.lockFile.packages[dep.name];
     if (locked != null) {
       message = '$message For example:\n'
-        '\n'
-        'dependencies:\n'
-        '  ${dep.name}: ${_constraintForVersion(locked.version)}\n';
+          '\n'
+          'dependencies:\n'
+          '  ${dep.name}: ${_constraintForVersion(locked.version)}\n';
     }
     warnings.add("$message\n"
         'Without a constraint, you\'re promising to support ${log.bold("all")} '
-            'future versions of "${dep.name}".');
+        'future versions of "${dep.name}".');
   }
 
   /// Warn that dependencies should allow more than a single version.
   void _warnAboutSingleVersionConstraint(PackageDep dep) {
     warnings.add(
         'Your dependency on "${dep.name}" should allow more than one version. '
-            'For example:\n'
+        'For example:\n'
         '\n'
         'dependencies:\n'
         '  ${dep.name}: ${_constraintForVersion(dep.constraint)}\n'
         '\n'
         'Constraints that are too tight will make it difficult for people to '
-            'use your package\n'
+        'use your package\n'
         'along with other packages that also depend on "${dep.name}".');
   }
 
@@ -142,13 +142,13 @@ class DependencyValidator extends Validator {
       }
 
       message = '$message For example:\n'
-        '\n'
-        'dependencies:\n'
-        '  ${dep.name}: $constraint\n';
+          '\n'
+          'dependencies:\n'
+          '  ${dep.name}: $constraint\n';
     }
     warnings.add("$message\n"
         'Without a constraint, you\'re promising to support ${log.bold("all")} '
-            'previous versions of "${dep.name}".');
+        'previous versions of "${dep.name}".');
   }
 
   /// Warn that dependencies should have upper bounds on their constraints.
@@ -161,14 +161,14 @@ class DependencyValidator extends Validator {
           '<${(dep.constraint as VersionRange).min.nextBreaking}"';
     }
 
-    warnings.add(
-        'Your dependency on "${dep.name}" should have an upper bound. For '
+    warnings
+        .add('Your dependency on "${dep.name}" should have an upper bound. For '
             'example:\n'
-        '\n'
-        'dependencies:\n'
-        '  ${dep.name}: $constraint\n'
-        '\n'
-        'Without an upper bound, you\'re promising to support '
+            '\n'
+            'dependencies:\n'
+            '  ${dep.name}: $constraint\n'
+            '\n'
+            'Without an upper bound, you\'re promising to support '
             '${log.bold("all")} future versions of ${dep.name}.');
   }
 
@@ -199,8 +199,8 @@ class DependencyValidator extends Validator {
 
     caretDeps.forEach((dep) {
       VersionRange constraint = dep.constraint;
-      buffer.writeln(
-          "  ${dep.name}: \">=${constraint.min} <${constraint.max}\"");
+      buffer
+          .writeln("  ${dep.name}: \">=${constraint.min} <${constraint.max}\"");
     });
 
     errors.add(buffer.toString().trim());

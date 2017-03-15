@@ -146,8 +146,8 @@ class DartTransformer extends Transformer {
 /// so may be used to test for errors in the initialization process.
 ///
 /// Returns the `pub serve` process.
-ScheduledProcess startPubServe({Iterable<String> args,
-    bool createWebDir: true}) {
+ScheduledProcess startPubServe(
+    {Iterable<String> args, bool createWebDir: true}) {
   var pubArgs = [
     "serve",
     "--port=0", // Use port 0 to get an ephemeral port.
@@ -190,8 +190,8 @@ ScheduledProcess pubServe({bool createWebDir: true, Iterable<String> args}) {
   _pubServer.stdout.expect(predicate(_parseAdminPort));
 
   // The server should emit one or more ports.
-  _pubServer.stdout.expect(
-      consumeWhile(predicate(_parsePort, 'emits server url')));
+  _pubServer.stdout
+      .expect(consumeWhile(predicate(_parsePort, 'emits server url')));
   schedule(() {
     expect(_ports, isNot(isEmpty));
     _portsCompleter.complete();
@@ -270,8 +270,8 @@ void requestShould404(String urlPath, {String root}) {
 /// "web".
 void requestShouldRedirect(String urlPath, redirectTarget, {String root}) {
   schedule(() {
-    var request = new http.Request("GET",
-        Uri.parse(_getServerUrlSync(root, urlPath)));
+    var request =
+        new http.Request("GET", Uri.parse(_getServerUrlSync(root, urlPath)));
     request.followRedirects = false;
     return request.send().then((response) {
       expect(response.statusCode ~/ 100, equals(3));
@@ -309,7 +309,7 @@ void requestShouldNotConnect(String urlPath, {String root}) {
 /// The schedule will not proceed until the output is found. If not found, it
 /// will eventually time out.
 void waitForBuildSuccess() =>
-  _pubServer.stdout.expect(consumeThrough(contains("successfully")));
+    _pubServer.stdout.expect(consumeThrough(contains("successfully")));
 
 /// Schedules opening a web socket connection to the currently running pub
 /// serve.
@@ -332,7 +332,8 @@ Future _ensureWebSocket() {
 /// serve.
 void closeWebSocket() {
   schedule(() {
-    return _ensureWebSocket().then((_) => _webSocket.close())
+    return _ensureWebSocket()
+        .then((_) => _webSocket.close())
         .then((_) => _webSocket = null);
   }, "closing web socket");
 }
@@ -354,9 +355,7 @@ Future<Map> webSocketRequest(String method, [Map params]) {
       awaitObject(params),
     ]).then((results) {
       var resolvedParams = results[1];
-      chainToCompleter(
-          _jsonRpcRequest(method, resolvedParams),
-          completer);
+      chainToCompleter(_jsonRpcRequest(method, resolvedParams), completer);
     });
   }, "send $method with $params to web socket");
   return completer.future;
@@ -404,8 +403,8 @@ Future<Map> expectWebSocketResult(String method, Map params, result) {
 /// "data" value of the error response.
 ///
 /// Returns a [Future] that completes to the error's [data] field.
-Future expectWebSocketError(String method, Map params, errorCode,
-    errorMessage, {data}) {
+Future expectWebSocketError(String method, Map params, errorCode, errorMessage,
+    {data}) {
   return schedule(() {
     return webSocketRequest(method, params).then((response) {
       expect(response["error"]["code"], errorCode);
@@ -435,19 +434,16 @@ var _rpcId = 0;
 /// Returns the response object.
 Future<Map> _jsonRpcRequest(String method, [Map params]) {
   var id = _rpcId++;
-  var message = {
-    "jsonrpc": "2.0",
-    "method": method,
-    "id": id
-  };
+  var message = {"jsonrpc": "2.0", "method": method, "id": id};
   if (params != null) message["params"] = params;
   _webSocket.add(JSON.encode(message));
 
   return _webSocketBroadcastStream
-      .firstWhere((response) => response["id"] == id).then((value) {
-    currentSchedule.addDebugInfo(
-        "Web Socket request $method with params $params\n"
-        "Result: $value");
+      .firstWhere((response) => response["id"] == id)
+      .then((value) {
+    currentSchedule
+        .addDebugInfo("Web Socket request $method with params $params\n"
+            "Result: $value");
 
     expect(value["id"], equals(id));
     return value;
@@ -483,4 +479,3 @@ String _getServerUrlSync([String root, String path]) {
   if (path != null) url = "$url/$path";
   return url;
 }
-

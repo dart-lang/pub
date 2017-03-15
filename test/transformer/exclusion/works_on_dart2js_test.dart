@@ -40,8 +40,7 @@ main() {
 
     requestShould404("a.dart.js");
     requestShouldSucceed("b.dart.js", isNot(isEmpty));
-    server.stdout.expect(consumeThrough(emitsLines(
-        "[Info from Dart2JS]:\n"
+    server.stdout.expect(consumeThrough(emitsLines("[Info from Dart2JS]:\n"
         "Compiling myapp|web/b.dart...")));
     server.stdout.expect(consumeThrough("Build completed successfully"));
 

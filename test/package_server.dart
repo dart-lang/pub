@@ -102,23 +102,30 @@ class PackageServer {
 
       _builder._packages.forEach((name, versions) {
         _servedApiPackageDir.contents.addAll([
-          d.file('$name', JSON.encode({
-            'name': name,
-            'uploaders': ['nweiz@google.com'],
-            'versions': versions.map((version) =>
-                packageVersionApiMap(version.pubspec)).toList()
-          })),
+          d.file(
+              '$name',
+              JSON.encode({
+                'name': name,
+                'uploaders': ['nweiz@google.com'],
+                'versions': versions
+                    .map((version) => packageVersionApiMap(version.pubspec))
+                    .toList()
+              })),
           d.dir(name, [
             d.dir('versions', versions.map((version) {
-              return d.file(version.version.toString(), JSON.encode(
-                  packageVersionApiMap(version.pubspec, full: true)));
+              return d.file(
+                  version.version.toString(),
+                  JSON.encode(
+                      packageVersionApiMap(version.pubspec, full: true)));
             }))
           ])
         ]);
 
         _servedPackageDir.contents.add(d.dir(name, [
-          d.dir('versions', versions.map((version) =>
-              d.tar('${version.version}.tar.gz', version.contents)))
+          d.dir(
+              'versions',
+              versions.map((version) =>
+                  d.tar('${version.version}.tar.gz', version.contents)))
         ]));
       });
     }, 'adding packages to the package server');
@@ -158,22 +165,21 @@ class PackageServerBuilder {
   ///
   /// If [contents] is passed, it's used as the contents of the package. By
   /// default, a package just contains a dummy lib directory.
-  void serve(String name, String version, {Map<String, dynamic> deps,
-      Map<String, dynamic> pubspec, Iterable<d.Descriptor> contents}) {
+  void serve(String name, String version,
+      {Map<String, dynamic> deps,
+      Map<String, dynamic> pubspec,
+      Iterable<d.Descriptor> contents}) {
     _futures.add(new Future.sync(() async {
       var resolvedDeps = await awaitObject(deps);
       var resolvedPubspec = await awaitObject(pubspec);
 
-      var pubspecFields = <String, dynamic>{
-        "name": name,
-        "version": version
-      };
+      var pubspecFields = <String, dynamic>{"name": name, "version": version};
       if (resolvedPubspec != null) pubspecFields.addAll(resolvedPubspec);
       if (resolvedDeps != null) pubspecFields["dependencies"] = resolvedDeps;
 
       if (contents == null) contents = [d.libDir(name, "$name $version")];
       contents = [d.file("pubspec.yaml", yaml(pubspecFields))]
-          ..addAll(contents);
+        ..addAll(contents);
 
       var packages = _packages.putIfAbsent(name, () => []);
       packages.add(new _ServedPackage(pubspecFields, contents));
@@ -188,8 +194,8 @@ class PackageServerBuilder {
       _packages[name] = [];
 
       var root = packagePath(name);
-      var pubspec = new Map.from(loadYaml(
-          readTextFile(p.join(root, 'pubspec.yaml'))));
+      var pubspec =
+          new Map.from(loadYaml(readTextFile(p.join(root, 'pubspec.yaml'))));
 
       // Remove any SDK constraints since we don't have a valid SDK version
       // while testing.

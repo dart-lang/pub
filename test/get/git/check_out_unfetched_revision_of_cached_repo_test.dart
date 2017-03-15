@@ -11,19 +11,19 @@ import '../../test_pub.dart';
 
 main() {
   // Regression test for issue 20947.
-  integration('checks out an unfetched and locked revision of a cached '
+  integration(
+      'checks out an unfetched and locked revision of a cached '
       'repository', () {
     ensureGit();
 
     // In order to get a lockfile that refers to a newer revision than is in the
     // cache, we'll switch between two caches. First we ensure that the repo is
     // in the first cache.
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     pubGet();
 
@@ -32,10 +32,8 @@ main() {
         p.join(sandboxDir, cachePath), p.join(sandboxDir, "$cachePath.old")));
 
     // Make the lockfile point to a new revision of the git repository.
-    d.git('foo.git', [
-      d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    d.git('foo.git',
+        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
     pubUpgrade(output: contains("Changed 1 dependency!"));
 
@@ -60,9 +58,7 @@ main() {
     ]).validate();
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo 2";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')])
     ]).validate();
   });
 }

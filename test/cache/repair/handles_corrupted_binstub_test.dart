@@ -11,21 +11,18 @@ main() {
   integration('handles a corrupted binstub script', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     d.dir(cachePath, [
-      d.dir('bin', [
-        d.file(binStubName('script'), 'junk')
-      ])
+      d.dir('bin', [d.file(binStubName('script'), 'junk')])
     ]).create();
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: contains('Error reading binstub for "script":'));
   });
 }

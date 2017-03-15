@@ -12,7 +12,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator pubspecField(Entrypoint entrypoint) =>
-  new PubspecFieldValidator(entrypoint);
+    new PubspecFieldValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {

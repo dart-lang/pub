@@ -9,7 +9,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("creates a snapshot for an immediate dependency that's also a "
+  integration(
+      "creates a snapshot for an immediate dependency that's also a "
       "transitive dependency", () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", contents: [
@@ -17,9 +18,7 @@ main() {
           d.file("hello.dart", "void main() => print('hello!');"),
           d.file("goodbye.dart", "void main() => print('goodbye!');"),
           d.file("shell.sh", "echo shell"),
-          d.dir("subdir", [
-            d.file("sub.dart", "void main() => print('sub!');")
-          ])
+          d.dir("subdir", [d.file("sub.dart", "void main() => print('sub!');")])
         ])
       ]);
       builder.serve("bar", "1.2.3", deps: {"foo": "1.2.3"});
@@ -27,7 +26,8 @@ main() {
 
     d.appDir({"foo": "1.2.3"}).create();
 
-    pubGet(output: allOf([
+    pubGet(
+        output: allOf([
       contains("Precompiled foo:hello."),
       contains("Precompiled foo:goodbye.")
     ]));

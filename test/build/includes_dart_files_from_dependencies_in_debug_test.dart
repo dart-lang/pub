@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
@@ -29,14 +28,14 @@ main() {
       }),
       d.dir("example", [
         d.file("main.dart", 'myapp() => print("not entrypoint");'),
-        d.dir("sub", [
-          d.file("main.dart", 'myapp() => print("not entrypoint");')
-        ])
+        d.dir(
+            "sub", [d.file("main.dart", 'myapp() => print("not entrypoint");')])
       ])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build", "--mode", "debug", "example"],
+    schedulePub(
+        args: ["build", "--mode", "debug", "example"],
         output: new RegExp(r'Built \d+ files to "build".'));
 
     d.dir(appPath, [

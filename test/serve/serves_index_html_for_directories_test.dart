@@ -12,9 +12,7 @@ main() {
       d.appPubspec(),
       d.dir("web", [
         d.file("index.html", "<body>super"),
-        d.dir("sub", [
-          d.file("index.html", "<body>sub")
-        ])
+        d.dir("sub", [d.file("index.html", "<body>sub")])
       ])
     ]).create();
 

@@ -41,10 +41,8 @@ Map serializeSpan(span) {
 
 /// Converts a serializable map into a [SourceSpan].
 SourceSpan deserializeSpan(Map span) {
-  return new SourceSpan(
-      deserializeLocation(span['start']),
-      deserializeLocation(span['end']),
-      span['text']);
+  return new SourceSpan(deserializeLocation(span['start']),
+      deserializeLocation(span['end']), span['text']);
 }
 
 /// Converts [location] into a serializable map.
@@ -84,15 +82,10 @@ Map serializeStream/*<T>*/(Stream/*<T>*/ stream, serializeEvent(/*=T*/ event)) {
   receivePort.first.then((message) {
     var sendPort = message['replyTo'];
     stream.listen((event) {
-      sendPort.send({
-        'type': 'event',
-        'value': serializeEvent(event)
-      });
+      sendPort.send({'type': 'event', 'value': serializeEvent(event)});
     }, onError: (error, stackTrace) {
-      sendPort.send({
-        'type': 'error',
-        'error': serializeException(error, stackTrace)
-      });
+      sendPort.send(
+          {'type': 'error', 'error': serializeException(error, stackTrace)});
     }, onDone: () => sendPort.send({'type': 'done'}));
   });
 
@@ -102,7 +95,8 @@ Map serializeStream/*<T>*/(Stream/*<T>*/ stream, serializeEvent(/*=T*/ event)) {
 /// Converts a serializable map into a [Stream].
 ///
 /// [deserializeEvent] is used to deserialize each event from the stream.
-Stream/*<T>*/ deserializeStream/*<T>*/(Map stream,
+Stream/*<T>*/ deserializeStream/*<T>*/(
+    Map stream,
     /*=T*/ deserializeEvent(event)) {
   return new LazyStream(() {
     var receivePort = new ReceivePort();
@@ -136,10 +130,7 @@ Stream/*<T>*/ deserializeStream/*<T>*/(Map stream,
 /// [respond].
 Future/*<T>*/ call/*<T>*/(SendPort port, message) {
   var receivePort = new ReceivePort();
-  port.send({
-    'message': message,
-    'replyTo': receivePort.sendPort
-  });
+  port.send({'message': message, 'replyTo': receivePort.sendPort});
 
   return new Future.sync(() async {
     var response = await receivePort.first;
@@ -163,9 +154,7 @@ void respond(wrappedMessage, callback(message)) {
   new Future.sync(() => callback(wrappedMessage['message']))
       .then((result) => replyTo.send({'type': 'success', 'value': result}))
       .catchError((error, stackTrace) {
-    replyTo.send({
-      'type': 'error',
-      'error': serializeException(error, stackTrace)
-    });
+    replyTo.send(
+        {'type': 'error', 'error': serializeException(error, stackTrace)});
   });
 }

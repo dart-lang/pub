@@ -11,8 +11,8 @@ import 'test_pub.dart';
 main() {
   var constraint = barback.pubConstraints["barback"];
   var current = constraint.min.toString();
-  var previous = new Version(constraint.min.major, constraint.min.minor - 1, 0)
-      .toString();
+  var previous =
+      new Version(constraint.min.major, constraint.min.minor - 1, 0).toString();
   var nextPatch = constraint.min.nextPatch.toString();
   var max = constraint.max.toString();
 
@@ -32,9 +32,7 @@ main() {
         builder.serve("async", asyncVersion);
       });
 
-      d.appDir({
-        "barback": "any"
-      }).create();
+      d.appDir({"barback": "any"}).create();
 
       pubCommand(command);
 
@@ -59,9 +57,7 @@ main() {
 
       d.dir("foo", [
         d.libDir("foo", "foo 0.0.1"),
-        d.libPubspec("foo", "0.0.1", deps: {
-          "barback": "any"
-        })
+        d.libPubspec("foo", "0.0.1", deps: {"barback": "any"})
       ]).create();
 
       d.appDir({
@@ -79,7 +75,8 @@ main() {
       }).validate();
     });
 
-    integration("pub's implicit constraint uses the same source and "
+    integration(
+        "pub's implicit constraint uses the same source and "
         "description as a dependency override", () {
       servePackages((builder) {
         builder.serve("source_span", sourceSpanVersion);
@@ -124,9 +121,7 @@ main() {
     d.appDir({"barback": "any"}).create();
 
     // Hand-create a lockfile to pin barback to an older version.
-    createLockFile("myapp", hosted: {
-      "barback": previous
-    });
+    createLockFile("myapp", hosted: {"barback": previous});
 
     pubGet();
 
@@ -139,7 +134,8 @@ main() {
     }).validate();
   });
 
-  integration("includes pub in the error if a solve failed because there "
+  integration(
+      "includes pub in the error if a solve failed because there "
       "is no version available", () {
     servePackages((builder) {
       builder.serve("barback", previous);
@@ -150,13 +146,15 @@ main() {
 
     d.appDir({"barback": "any"}).create();
 
-    pubGet(error: """
+    pubGet(
+        error: """
 Package barback has no versions that match >=$current <$max derived from:
 - myapp depends on version any
 - pub itself depends on version >=$current <$max""");
   });
 
-  integration("includes pub in the error if a solve failed because there "
+  integration(
+      "includes pub in the error if a solve failed because there "
       "is a disjoint constraint", () {
     servePackages((builder) {
       builder.serve("barback", previous);
@@ -168,7 +166,8 @@ Package barback has no versions that match >=$current <$max derived from:
 
     d.appDir({"barback": previous}).create();
 
-    pubGet(error: """
+    pubGet(
+        error: """
 Incompatible version constraints on barback:
 - myapp depends on version $previous
 - pub itself depends on version >=$current <$max""");

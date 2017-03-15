@@ -50,7 +50,8 @@ Uri idToPackageUri(AssetId id) {
     throw new ArgumentError("Asset id $id doesn't identify a library.");
   }
 
-  return new Uri(scheme: 'package',
+  return new Uri(
+      scheme: 'package',
       path: p.url.join(id.package, id.path.replaceFirst('lib/', '')));
 }
 

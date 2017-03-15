@@ -6,7 +6,9 @@ import 'test_pub.dart';
 
 main() {
   integration('running pub with no command displays usage', () {
-    schedulePub(args: [], output: """
+    schedulePub(
+        args: [],
+        output: """
         Pub is a package manager for Dart.
 
         Usage: pub <command> [arguments]

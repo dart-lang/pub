@@ -11,11 +11,13 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {
-            "commandLineOptions": "foo",
+        "transformers": [
+          {
+            "\$dart2js": {
+              "commandLineOptions": "foo",
+            }
           }
-        }]
+        ]
       }),
       d.dir("web", [d.file("main.dart", "void main() {}")])
     ]).create();
@@ -24,11 +26,10 @@ main() {
     var server = pubServe();
     // Make a request first to trigger compilation.
     requestShould404("main.dart.js");
-    server.stderr.expect(emitsLines(
-        'Build error:\n'
+    server.stderr.expect(emitsLines('Build error:\n'
         'Transform Dart2JS on myapp|web/main.dart threw error: '
-            'Invalid value for \$dart2js.commandLineOptions: '
-            '"foo" (expected list of strings).'));
+        'Invalid value for \$dart2js.commandLineOptions: '
+        '"foo" (expected list of strings).'));
     endPubServe();
   });
 }

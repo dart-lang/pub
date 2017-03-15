@@ -10,9 +10,7 @@ main() {
   integration("ignores a Dart entrypoint in a dependency", () {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
-      d.dir("lib", [
-        d.file("lib.dart", "main() => print('foo');")
-      ])
+      d.dir("lib", [d.file("lib.dart", "main() => print('foo');")])
     ]).create();
 
     d.dir(appPath, [

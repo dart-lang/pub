@@ -13,7 +13,8 @@ main() {
       builder.serve("foo", "1.0.1");
     });
 
-    schedulePub(args: ["global", "activate", "foo", ">1.1.0"],
+    schedulePub(
+        args: ["global", "activate", "foo", ">1.1.0"],
         error: """
             Package foo has no versions that match >1.1.0 derived from:
             - pub global activate depends on version >1.1.0""",

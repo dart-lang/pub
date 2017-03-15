@@ -9,10 +9,8 @@ import '../../test_pub.dart';
 
 main() {
   integration("shared dependency with same path", () {
-    d.dir("shared", [
-      d.libDir("shared"),
-      d.libPubspec("shared", "0.0.1")
-    ]).create();
+    d.dir("shared",
+        [d.libDir("shared"), d.libPubspec("shared", "0.0.1")]).create();
 
     d.dir("foo", [
       d.libDir("foo"),
@@ -37,18 +35,13 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo",
-      "bar": "../bar",
-      "shared": "../shared"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "../foo", "bar": "../bar", "shared": "../shared"}).validate();
   });
 
   integration("shared dependency with paths that normalize the same", () {
-    d.dir("shared", [
-      d.libDir("shared"),
-      d.libPubspec("shared", "0.0.1")
-    ]).create();
+    d.dir("shared",
+        [d.libDir("shared"), d.libPubspec("shared", "0.0.1")]).create();
 
     d.dir("foo", [
       d.libDir("foo"),
@@ -73,18 +66,13 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "../foo",
-      "bar": "../bar",
-      "shared": "../shared"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "../foo", "bar": "../bar", "shared": "../shared"}).validate();
   });
 
   integration("shared dependency with absolute and relative path", () {
-    d.dir("shared", [
-      d.libDir("shared"),
-      d.libPubspec("shared", "0.0.1")
-    ]).create();
+    d.dir("shared",
+        [d.libDir("shared"), d.libPubspec("shared", "0.0.1")]).create();
 
     d.dir("foo", [
       d.libDir("foo"),

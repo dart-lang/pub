@@ -8,11 +8,11 @@ import 'utils.dart';
 
 main() {
   integration("does not serve .dart files in release mode", () {
-
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
-        d.file("foo.dart",
+        d.file(
+            "foo.dart",
             """
             library foo;
             foo() => 'foo';
@@ -28,7 +28,8 @@ main() {
         d.file("lib.dart", "lib() => print('hello');"),
       ]),
       d.dir("web", [
-        d.file("file.dart",
+        d.file(
+            "file.dart",
             """
             import 'package:foo/foo.dart';
             main() => print('hello');

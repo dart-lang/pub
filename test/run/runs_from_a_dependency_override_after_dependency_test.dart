@@ -13,9 +13,7 @@ main() {
         'name': 'foo',
         'version': '1.0.0'
       }, contents: [
-        d.dir("bin", [
-          d.file("bar.dart", "main() => print('foobar');")
-        ])
+        d.dir("bin", [d.file("bar.dart", "main() => print('foobar');")])
       ]);
     });
 
@@ -31,15 +29,15 @@ main() {
 
     d.dir("foo", [
       d.libPubspec("foo", "2.0.0"),
-      d.dir("bin", [
-        d.file("bar.dart", "main() => print('different');")
-      ])
+      d.dir("bin", [d.file("bar.dart", "main() => print('different');")])
     ]).create();
 
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 

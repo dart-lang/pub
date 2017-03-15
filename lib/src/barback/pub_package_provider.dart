@@ -28,8 +28,8 @@ final Future<String> _compilerUnsupportedLib = (() async {
   if (runningFromSdk) return null;
   if (runningFromDartRepo) return null;
 
-  return p.fromUri(
-      await PackageResolver.current.urlFor('compiler_unsupported'));
+  return p
+      .fromUri(await PackageResolver.current.urlFor('compiler_unsupported'));
 })();
 
 final _zlib = new ZLibCodec();
@@ -45,8 +45,8 @@ class PubPackageProvider implements StaticPackageProvider {
 
   PubPackageProvider(PackageGraph graph)
       : _graph = graph,
-        staticPackages = [r"$pub", r"$sdk"]..addAll(
-            graph.packages.keys.where(graph.isPackageStatic));
+        staticPackages = [r"$pub", r"$sdk"]
+          ..addAll(graph.packages.keys.where(graph.isPackageStatic));
 
   Future<Asset> getAsset(AssetId id) async {
     // "$pub" is a psuedo-package that allows pub's transformer-loading
@@ -97,11 +97,11 @@ class PubPackageProvider implements StaticPackageProvider {
       // compiler_unsupported and may expect different SDK sources than the
       // actual SDK we're using. Handily, compiler_unsupported contains a full
       // (ZLib-encoded) copy of the SDK, so we load sources from that instead.
-      var file = p.join(compilerUnsupportedLib, 'sdk',
-          p.joinAll(parts.skip(1))) + "_";
+      var file =
+          p.join(compilerUnsupportedLib, 'sdk', p.joinAll(parts.skip(1))) + "_";
       _assertExists(file, id);
-      return new Asset.fromStream(id, new LazyStream(() =>
-          _zlib.decoder.bind(new File(file).openRead())));
+      return new Asset.fromStream(id,
+          new LazyStream(() => _zlib.decoder.bind(new File(file).openRead())));
     }
 
     var nativePath = p.fromUri(id.path);
@@ -147,11 +147,9 @@ class PubPackageProvider implements StaticPackageProvider {
           files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
         }
 
-        return new Stream.fromIterable(files
-            .where((file) => p.extension(file) == ".dart")
-            .map((file) {
-          var idPath = p.join("lib", "lib",
-              p.relative(file, from: libPath));
+        return new Stream.fromIterable(
+            files.where((file) => p.extension(file) == ".dart").map((file) {
+          var idPath = p.join("lib", "lib", p.relative(file, from: libPath));
           return new AssetId('\$sdk', p.toUri(idPath).toString());
         }));
       }());
@@ -159,8 +157,8 @@ class PubPackageProvider implements StaticPackageProvider {
       var package = _graph.packages[packageName];
       return new Stream.fromIterable(
           package.listFiles(beneath: 'lib').map((file) {
-        return new AssetId(packageName,
-            p.toUri(package.relative(file)).toString());
+        return new AssetId(
+            packageName, p.toUri(package.relative(file)).toString());
       }));
     }
   }

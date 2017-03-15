@@ -12,9 +12,7 @@ main() {
   integration('recompiles a script if the snapshot is out-of-date', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
@@ -38,9 +36,7 @@ main() {
     d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [
-            d.matcherFile('script.dart.snapshot', contains('ok'))
-          ])
+          d.dir('bin', [d.matcherFile('script.dart.snapshot', contains('ok'))])
         ])
       ])
     ]).validate();

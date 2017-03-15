@@ -49,10 +49,10 @@ class StrictDependenciesValidator extends Validator {
         // are no segments OR any segment are empty, it's invalid.
         if (url == null ||
             (url.scheme == 'package' &&
-            (url.pathSegments.length < 2 ||
-            url.pathSegments.any((s) => s.isEmpty)))) {
-          warnings.add(_Usage.errorMessage(
-              'Invalid URL.', file, contents, directive));
+                (url.pathSegments.length < 2 ||
+                    url.pathSegments.any((s) => s.isEmpty)))) {
+          warnings.add(
+              _Usage.errorMessage('Invalid URL.', file, contents, directive));
         } else if (url.scheme == 'package') {
           yield new _Usage(file, contents, directive, url);
         }
@@ -61,13 +61,10 @@ class StrictDependenciesValidator extends Validator {
   }
 
   Future validate() async {
-    var dependencies = entrypoint.root.dependencies
-        .map((d) => d.name)
-        .toSet()
-        ..add(entrypoint.root.name);
-    var devDependencies = entrypoint.root.devDependencies
-        .map((d) => d.name)
-        .toSet();
+    var dependencies = entrypoint.root.dependencies.map((d) => d.name).toSet()
+      ..add(entrypoint.root.name);
+    var devDependencies =
+        entrypoint.root.devDependencies.map((d) => d.name).toSet();
     _validateLibBin(dependencies, devDependencies);
     _validateTestTool(dependencies, devDependencies);
   }
@@ -110,10 +107,7 @@ class StrictDependenciesValidator extends Validator {
 /// A parsed import or export directive in a D source file.
 class _Usage {
   /// Returns a formatted error message highlighting [directive] in [file].
-  static String errorMessage(
-      String message,
-      String file,
-      String contents,
+  static String errorMessage(String message, String file, String contents,
       UriBasedDirective directive) {
     return new SourceFile(contents, url: file)
         .span(directive.offset, directive.offset + directive.length)
@@ -154,6 +148,6 @@ class _Usage {
     var shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
         '$package is a dev dependency. Packages used in $shortFile/ must be '
-          'declared as normal dependencies.');
+        'declared as normal dependencies.');
   }
 }

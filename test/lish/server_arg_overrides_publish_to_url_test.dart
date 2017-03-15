@@ -14,7 +14,8 @@ main() {
     pkg["publish_to"] = "http://pubspec.com";
     d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    schedulePub(args: ["lish", "--dry-run", "--server", "http://arg.com"],
+    schedulePub(
+        args: ["lish", "--dry-run", "--server", "http://arg.com"],
         output: contains("http://arg.com"),
         exitCode: exit_codes.DATA);
   });

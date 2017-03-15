@@ -13,11 +13,13 @@ main() {
     servePackages((builder) {
       builder.serve("bar", "1.0.0");
 
-      builder.serve("foo", "1.0.0",
-          deps: {"bar": "1.0.0"},
-          contents: [
+      builder.serve("foo", "1.0.0", deps: {
+        "bar": "1.0.0"
+      }, contents: [
         d.dir("bin", [
-          d.file("script.dart", """
+          d.file(
+              "script.dart",
+              """
 import 'dart:isolate';
 
 main() async {
@@ -61,14 +63,16 @@ main() async {
 
   integration('a mutable untransformed application sees a file: package root',
       () {
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
       d.dir("bin", [
-        d.file("script.dart", """
+        d.file(
+            "script.dart",
+            """
 import 'dart:isolate';
 
 main() async {
@@ -108,9 +112,7 @@ main() async {
       () {
     serveBarback();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
       d.pubspec({
@@ -121,9 +123,10 @@ main() async {
         },
         "transformers": ["myapp/src/transformer"]
       }),
-
       d.dir("lib/src", [
-        d.file("transformer.dart", """
+        d.file(
+            "transformer.dart",
+            """
           import 'dart:async';
 
           import 'package:barback/barback.dart';
@@ -141,9 +144,10 @@ main() async {
           }
         """)
       ]),
-
       d.dir("bin", [
-        d.file("script.dart", """
+        d.file(
+            "script.dart",
+            """
           import 'dart:isolate';
 
           main() async {
@@ -162,14 +166,12 @@ main() async {
 
     var pub = pubRun(global: true, args: ["myapp:script"]);
 
-    pub.stdout.expect(
-        allOf(startsWith("http://localhost:"), endsWith("/packages/")));
+    pub.stdout
+        .expect(allOf(startsWith("http://localhost:"), endsWith("/packages/")));
     pub.stdout.expect("null");
-    pub.stdout.expect(allOf(
-        startsWith("http://localhost:"),
+    pub.stdout.expect(allOf(startsWith("http://localhost:"),
         endsWith("/packages/myapp/resource.txt")));
-    pub.stdout.expect(allOf(
-        startsWith("http://localhost:"),
+    pub.stdout.expect(allOf(startsWith("http://localhost:"),
         endsWith("/packages/foo/resource.txt")));
     pub.shouldExit(0);
   });

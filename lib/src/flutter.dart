@@ -30,7 +30,7 @@ String packagePath(String name) {
   if (!isAvailable) {
     throw new ApplicationException(
         'Flutter is not available. If this is a Flutter project, make sure to '
-          'always run\n'
+        'always run\n'
         'pub through the "flutter" executable.');
   }
 

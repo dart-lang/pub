@@ -12,7 +12,8 @@ main() {
   setUp(d.validPackage.create);
 
   integration('--force cannot be combined with --dry-run', () {
-    schedulePub(args: ['lish', '--force', '--dry-run'],
+    schedulePub(
+        args: ['lish', '--force', '--dry-run'],
         error: """
           Cannot use both --force and --dry-run.
           

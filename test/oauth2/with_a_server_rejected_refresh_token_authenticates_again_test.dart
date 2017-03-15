@@ -15,14 +15,16 @@ import 'utils.dart';
 
 main() {
   // Regression test for issue 8849.
-  integration('with a server-rejected refresh token, authenticates again and '
+  integration(
+      'with a server-rejected refresh token, authenticates again and '
       'saves credentials.json', () {
     d.validPackage.create();
 
     var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token',
-        refreshToken: 'bad refresh token',
-        expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+    d
+        .credentialsFile(server, 'access token',
+            refreshToken: 'bad refresh token',
+            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
         .create();
 
     var pub = startPublish(server);

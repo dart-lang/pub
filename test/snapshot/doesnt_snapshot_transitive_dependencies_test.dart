@@ -8,7 +8,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("doesn't create a snapshot for transitive dependencies' "
+  integration(
+      "doesn't create a snapshot for transitive dependencies' "
       "executables", () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", deps: {'bar': '1.2.3'});

@@ -9,11 +9,7 @@ import '../test_pub.dart';
 
 main() {
   integration('replaces a broken "packages" symlink', () {
-    d.dir(appPath, [
-      d.appPubspec(),
-      d.libDir('foo'),
-      d.dir("bin")
-    ]).create();
+    d.dir(appPath, [d.appPubspec(), d.libDir('foo'), d.dir("bin")]).create();
 
     // Create a broken "packages" symlink in "bin".
     scheduleSymlink("nonexistent", path.join(appPath, "packages"));
@@ -23,20 +19,14 @@ main() {
     d.dir(appPath, [
       d.dir("bin", [
         d.dir("packages", [
-          d.dir("myapp", [
-            d.file('foo.dart', 'main() => "foo";')
-          ])
+          d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])
         ])
       ])
     ]).validate();
   });
 
   integration('replaces a broken secondary "packages" symlink', () {
-    d.dir(appPath, [
-      d.appPubspec(),
-      d.libDir('foo'),
-      d.dir("bin")
-    ]).create();
+    d.dir(appPath, [d.appPubspec(), d.libDir('foo'), d.dir("bin")]).create();
 
     // Create a broken "packages" symlink in "bin".
     scheduleSymlink("nonexistent", path.join(appPath, "bin", "packages"));
@@ -46,9 +36,7 @@ main() {
     d.dir(appPath, [
       d.dir("bin", [
         d.dir("packages", [
-          d.dir("myapp", [
-            d.file('foo.dart', 'main() => "foo";')
-          ])
+          d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])
         ])
       ])
     ]).validate();

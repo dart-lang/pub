@@ -9,10 +9,7 @@ import '../../test_pub.dart';
 
 main() {
   integration('path dependency with absolute path', () {
-    d.dir('foo', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '0.0.1')
-    ]).create();
+    d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -22,8 +19,6 @@ main() {
 
     pubGet(args: ["--packages-dir"]);
 
-    d.appPackagesFile({
-      "foo": path.join(sandboxDir, "foo")
-    }).validate();
+    d.appPackagesFile({"foo": path.join(sandboxDir, "foo")}).validate();
   });
 }

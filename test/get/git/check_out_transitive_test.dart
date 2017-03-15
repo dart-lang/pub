@@ -16,12 +16,11 @@ main() {
       })
     ]).create();
 
-    d.git('bar.git', [
-      d.libDir('bar'),
-      d.libPubspec('bar', '1.0.0')
-    ]).create();
+    d.git('bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
@@ -29,22 +28,16 @@ main() {
 
     d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache', [
-          d.gitPackageRepoCacheDir('foo'),
-          d.gitPackageRepoCacheDir('bar')
-        ]),
+        d.dir('cache',
+            [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')]),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar')
       ])
     ]).validate();
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ]),
-      d.dir('bar', [
-        d.file('bar.dart', 'main() => "bar";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')]),
+      d.dir('bar', [d.file('bar.dart', 'main() => "bar";')])
     ]).validate();
   });
 }

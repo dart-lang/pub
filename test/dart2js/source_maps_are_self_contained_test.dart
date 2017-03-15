@@ -16,7 +16,8 @@ main() {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
-        d.file("foo.dart",
+        d.file(
+            "foo.dart",
             """
             library foo;
             foo() {
@@ -33,14 +34,16 @@ main() {
         "foo": {"path": "../foo"}
       }),
       d.dir("web", [
-        d.file("main.dart",
+        d.file(
+            "main.dart",
             """
             import 'package:foo/foo.dart';
             main() => foo();
             """),
         d.dir("sub", [
-          d.file("main2.dart",
-            """
+          d.file(
+              "main2.dart",
+              """
             import 'package:foo/foo.dart';
             main() => foo();
             """),
@@ -48,28 +51,26 @@ main() {
       ])
     ]).create();
 
-
     pubGet();
-    schedulePub(args: ["build", "--mode", "debug"],
+    schedulePub(
+        args: ["build", "--mode", "debug"],
         output: new RegExp(r'Built \d+ files to "build".'),
         exitCode: 0);
 
     d.dir(appPath, [
       d.dir("build", [
         d.dir("web", [
-          d.matcherFile("main.dart.js.map",
+          d.matcherFile(
+              "main.dart.js.map",
               // Note: we include the quotes to ensure this is the full URL path
               // in the source map
               contains(r'"packages/foo/foo.dart"')),
           d.dir("sub", [
-            d.matcherFile("main2.dart.js.map",
-                contains(r'"../packages/foo/foo.dart"'))
+            d.matcherFile(
+                "main2.dart.js.map", contains(r'"../packages/foo/foo.dart"'))
           ]),
           d.dir("packages", [
-            d.dir(r"foo", [
-              d.matcherFile("foo.dart",
-                contains("foo() {"))
-            ])
+            d.dir(r"foo", [d.matcherFile("foo.dart", contains("foo() {"))])
           ])
         ])
       ])

@@ -15,7 +15,9 @@ main() {
 
       builder.serve('foo', '1.0.0', pubspec: {
         'transformers': [
-          {'bar': {r'$include': 'test/**'}}
+          {
+            'bar': {r'$include': 'test/**'}
+          }
         ],
         'dev_dependencies': {
           'bar': {'path': '../bar'}

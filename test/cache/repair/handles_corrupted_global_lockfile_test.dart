@@ -11,15 +11,14 @@ import '../../test_pub.dart';
 main() {
   integration('handles a corrupted global lockfile', () {
     d.dir(cachePath, [
-      d.dir('global_packages/foo', [
-        d.file('pubspec.lock', 'junk')
-      ])
+      d.dir('global_packages/foo', [d.file('pubspec.lock', 'junk')])
     ]).create();
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: contains('Failed to reactivate foo:'),
         output: contains('Failed to reactivate 1 package:\n'
-                         '- foo'),
+            '- foo'),
         exitCode: exit_codes.UNAVAILABLE);
   });
 }

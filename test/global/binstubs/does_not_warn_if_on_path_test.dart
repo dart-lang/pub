@@ -14,13 +14,10 @@ main() {
   integration("does not warn if the binstub directory is on the path", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "script": null
-        }
+        "executables": {"script": null}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
@@ -29,7 +26,8 @@ main() {
     var separator = Platform.operatingSystem == "windows" ? ";" : ":";
     var path = "${Platform.environment["PATH"]}$separator$binDir";
 
-    schedulePub(args: ["global", "activate", "foo"],
+    schedulePub(
+        args: ["global", "activate", "foo"],
         output: isNot(contains("is not on your path")),
         environment: {"PATH": path});
   });

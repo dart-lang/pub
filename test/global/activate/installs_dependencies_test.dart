@@ -14,9 +14,11 @@ main() {
       builder.serve("baz", "1.0.0");
     });
 
-    schedulePub(args: ["global", "activate", "foo"], output: allOf([
-      contains("Downloading bar 1.0.0..."),
-      contains("Downloading baz 1.0.0...")
-    ]));
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: allOf([
+          contains("Downloading bar 1.0.0..."),
+          contains("Downloading baz 1.0.0...")
+        ]));
   });
 }

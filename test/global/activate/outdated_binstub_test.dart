@@ -21,22 +21,17 @@ main() {
   integration("an outdated binstub is replaced", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     d.dir(cachePath, [
-      d.dir('bin', [
-        d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)
-      ])
+      d.dir('bin', [d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)])
     ]).create();
 
     schedulePub(args: ["global", "activate", "foo"]);

@@ -5,8 +5,7 @@
 import '../../test_pub.dart';
 
 main() {
-  integration('ignores previously activated version',
-        () {
+  integration('ignores previously activated version', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3");
       builder.serve("foo", "1.3.0");
@@ -16,7 +15,9 @@ main() {
     schedulePub(args: ["global", "activate", "foo", "1.2.3"]);
 
     // Activating it again resolves to the new best version.
-    schedulePub(args: ["global", "activate", "foo", ">1.0.0"], output: """
+    schedulePub(
+        args: ["global", "activate", "foo", ">1.0.0"],
+        output: """
         Package foo is currently active at version 1.2.3.
         Resolving dependencies...
         + foo 1.3.0

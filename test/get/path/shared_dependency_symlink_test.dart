@@ -9,10 +9,8 @@ import '../../test_pub.dart';
 
 main() {
   integration("shared dependency with symlink", () {
-    d.dir("shared", [
-      d.libDir("shared"),
-      d.libPubspec("shared", "0.0.1")
-    ]).create();
+    d.dir("shared",
+        [d.libDir("shared"), d.libPubspec("shared", "0.0.1")]).create();
 
     d.dir("foo", [
       d.libDir("foo"),

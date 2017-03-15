@@ -11,9 +11,13 @@ main() {
   integration('uses the 1.6-style lockfile if necessary', () {
     servePackages((builder) {
       builder.serve("bar", "1.0.0");
-      builder.serve("foo", "1.0.0", deps: {"bar": "any"}, contents: [
+      builder.serve("foo", "1.0.0", deps: {
+        "bar": "any"
+      }, contents: [
         d.dir("bin", [
-          d.file("script.dart", """
+          d.file(
+              "script.dart",
+              """
               import 'package:bar/bar.dart' as bar;
 
               main(args) => print(bar.main());""")
@@ -26,7 +30,9 @@ main() {
 
     d.dir(cachePath, [
       d.dir('global_packages', [
-        d.file('foo.lock', '''
+        d.file(
+            'foo.lock',
+            '''
 packages:
   foo:
     description: foo

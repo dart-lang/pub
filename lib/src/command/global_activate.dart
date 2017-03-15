@@ -22,14 +22,16 @@ class GlobalActivateCommand extends PubCommand {
         allowed: ["git", "hosted", "path"],
         defaultsTo: "hosted");
 
-    argParser.addFlag("no-executables", negatable: false,
-        help: "Do not put executables on PATH.");
+    argParser.addFlag("no-executables",
+        negatable: false, help: "Do not put executables on PATH.");
 
-    argParser.addOption("executable", abbr: "x",
+    argParser.addOption("executable",
+        abbr: "x",
         help: "Executable(s) to place on PATH.",
         allowMultiple: true);
 
-    argParser.addFlag("overwrite", negatable: false,
+    argParser.addFlag("overwrite",
+        negatable: false,
         help: "Overwrite executables from other packages with the same name.");
   }
 

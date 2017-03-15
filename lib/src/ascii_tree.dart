@@ -104,8 +104,8 @@ String fromMap(Map<String, Map> map, {bool showAllChildren}) {
   return buffer.toString();
 }
 
-void _drawLine(StringBuffer buffer, String prefix, bool isLastChild,
-               String name) {
+void _drawLine(
+    StringBuffer buffer, String prefix, bool isLastChild, String name) {
   // Print lines.
   buffer.write(prefix);
   if (name != null) {
@@ -139,13 +139,9 @@ void _draw(
 
   drawChild(bool isLastChild, String child) {
     var childPrefix = _getPrefix(name == null, isLast);
-    _draw(
-        buffer,
-        '$prefix$childPrefix',
-        child,
+    _draw(buffer, '$prefix$childPrefix', child,
         children[child] as Map<String, Map>,
-        showAllChildren: showAllChildren,
-        isLast: isLastChild);
+        showAllChildren: showAllChildren, isLast: isLastChild);
   }
 
   if (name == null || showAllChildren || childNames.length <= 10) {

@@ -12,9 +12,7 @@ main() {
   integration("upgrades a snapshot when its package is upgraded", () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", contents: [
-        d.dir("bin", [
-          d.file("hello.dart", "void main() => print('hello!');")
-        ])
+        d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
       ]);
     });
 
@@ -22,15 +20,13 @@ main() {
 
     pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin', 'foo'), [
-      d.matcherFile('hello.dart.snapshot', contains('hello!'))
-    ]).validate();
+    d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        [d.matcherFile('hello.dart.snapshot', contains('hello!'))]).validate();
 
     globalPackageServer.add((builder) {
       builder.serve("foo", "1.2.4", contents: [
-        d.dir("bin", [
-          d.file("hello.dart", "void main() => print('hello 2!');")
-        ])
+        d.dir(
+            "bin", [d.file("hello.dart", "void main() => print('hello 2!');")])
       ]);
     });
 

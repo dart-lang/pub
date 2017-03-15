@@ -8,7 +8,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if no executable was given', () {
-    schedulePub(args: ["global", "run"],
+    schedulePub(
+        args: ["global", "run"],
         error: """
             Must specify an executable to run.
 

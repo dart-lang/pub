@@ -19,9 +19,7 @@ main() {
   integration('allows a ".dart" extension on the argument', () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", SCRIPT)
-      ])
+      d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
     pubGet();

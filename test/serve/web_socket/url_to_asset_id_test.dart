@@ -12,9 +12,7 @@ main() {
   setUp(() {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
-      d.dir("lib", [
-        d.file("foo.dart", "foo")
-      ])
+      d.dir("lib", [d.file("foo.dart", "foo")])
     ]).create();
 
     d.dir(appPath, [
@@ -43,35 +41,39 @@ main() {
 
   integration("converts URLs to matching asset ids in web/", () {
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "index.html")
-    }, {"package": "myapp", "path": "web/index.html"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "index.html")},
+        {"package": "myapp", "path": "web/index.html"});
     endPubServe();
   });
 
   integration("converts URLs to matching asset ids in subdirectories of web/",
       () {
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "sub/bar.html")
-    }, {"package": "myapp", "path": "web/sub/bar.html"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "sub/bar.html")},
+        {"package": "myapp", "path": "web/sub/bar.html"});
     endPubServe();
   });
 
   integration("converts URLs to matching asset ids in test/", () {
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("test", "index.html")
-    }, {"package": "myapp", "path": "test/index.html"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("test", "index.html")},
+        {"package": "myapp", "path": "test/index.html"});
     endPubServe();
   });
 
   integration("converts URLs to matching asset ids in subdirectories of test/",
       () {
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("test", "sub/bar.html")
-    }, {"package": "myapp", "path": "test/sub/bar.html"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("test", "sub/bar.html")},
+        {"package": "myapp", "path": "test/sub/bar.html"});
     endPubServe();
   });
 
@@ -79,18 +81,20 @@ main() {
       () {
     // Path in root package's lib/.
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "packages/myapp/myapp.dart")
-    }, {"package": "myapp", "path": "lib/myapp.dart"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "packages/myapp/myapp.dart")},
+        {"package": "myapp", "path": "lib/myapp.dart"});
     endPubServe();
   });
 
   integration("converts URLs to matching asset ids in a dependency's lib/", () {
     // Path in lib/.
     pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "packages/foo/foo.dart")
-    }, {"package": "foo", "path": "lib/foo.dart"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "packages/foo/foo.dart")},
+        {"package": "foo", "path": "lib/foo.dart"});
     endPubServe();
   });
 }

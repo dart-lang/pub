@@ -12,12 +12,8 @@ main() {
   integration("binds a directory to a new port", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("test", [
-        d.file("index.html", "<test body>")
-      ]),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("test", [d.file("index.html", "<test body>")]),
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
@@ -25,9 +21,8 @@ main() {
 
     // Bind the new directory.
     schedule(() async {
-      var response = await expectWebSocketResult(
-          "serveDirectory", {"path": "test"},
-          {"url": matches(r"http://localhost:\d+")});
+      var response = await expectWebSocketResult("serveDirectory",
+          {"path": "test"}, {"url": matches(r"http://localhost:\d+")});
 
       var url = Uri.parse(response["url"]);
       registerServerPort("test", url.port);
@@ -38,9 +33,7 @@ main() {
 
     // And watched.
     d.dir(appPath, [
-      d.dir("test", [
-        d.file("index.html", "after")
-      ])
+      d.dir("test", [d.file("index.html", "after")])
     ]).create();
 
     waitForBuildSuccess();

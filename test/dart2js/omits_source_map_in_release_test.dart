@@ -9,21 +9,18 @@ main() {
   integration("omits source maps from a release build", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('hello');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build"],
+    schedulePub(
+        args: ["build"],
         output: new RegExp(r'Built 1 file to "build".'),
         exitCode: 0);
 
     d.dir(appPath, [
       d.dir('build', [
-        d.dir('web', [
-          d.nothing('main.dart.js.map')
-        ])
+        d.dir('web', [d.nothing('main.dart.js.map')])
       ])
     ]).validate();
   });

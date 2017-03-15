@@ -18,13 +18,9 @@ main() {
       }),
       d.dir("lib", [
         d.file("myapp.dart", "export 'src/transformer.dart';"),
-        d.dir("src", [
-          d.file("transformer.dart", REWRITE_TRANSFORMER)
-        ])
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
       ]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();

@@ -12,18 +12,14 @@ main() {
   integration("fails if the current SDK doesn't match the constraint", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     d.hostedCache([
-      d.dir("foo-1.0.0", [
-        d.libPubspec("foo", "1.0.0", sdk: "0.5.6")
-      ])
+      d.dir("foo-1.0.0", [d.libPubspec("foo", "1.0.0", sdk: "0.5.6")])
     ]).create();
 
     // Make the snapshot out-of-date, too, so that we load the pubspec with the
@@ -38,7 +34,8 @@ main() {
       ])
     ]).create();
 
-    schedulePub(args: ["global", "run", "foo:script"],
+    schedulePub(
+        args: ["global", "run", "foo:script"],
         error: contains("foo 1.0.0 doesn't support Dart 0.1.2+3."),
         exitCode: exit_codes.DATA);
   });

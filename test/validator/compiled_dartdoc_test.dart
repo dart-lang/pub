@@ -12,7 +12,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator compiledDartdoc(Entrypoint entrypoint) =>
-  new CompiledDartdocValidator(entrypoint);
+    new CompiledDartdocValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {
@@ -81,7 +81,8 @@ main() {
       expectValidationWarning(compiledDartdoc);
     });
 
-    integration('contains compiled dartdoc in a non-gitignored hidden '
+    integration(
+        'contains compiled dartdoc in a non-gitignored hidden '
         'directory', () {
       ensureGit();
 

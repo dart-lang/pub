@@ -23,9 +23,9 @@ main() {
         ],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER)
-      ])]),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
+      ]),
       d.dir("web", [
         d.file("a.txt", "a.txt"),
         d.file("b.txt", "b.txt"),

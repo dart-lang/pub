@@ -29,12 +29,14 @@ main() {
 
     // This should still have a 0 exit code, since installation succeeded even
     // if precompilation didn't.
-    pubGet(error: allOf([
-      contains("Failed to precompile foo:hello"),
-      contains("Failed to precompile foo:goodbye"),
-      contains("Failed to precompile bar:hello"),
-      contains("Failed to precompile bar:goodbye")
-    ]), exitCode: 0);
+    pubGet(
+        error: allOf([
+          contains("Failed to precompile foo:hello"),
+          contains("Failed to precompile foo:goodbye"),
+          contains("Failed to precompile bar:hello"),
+          contains("Failed to precompile bar:goodbye")
+        ]),
+        exitCode: 0);
 
     d.dir(p.join(appPath, '.pub', 'bin'), [
       d.file('sdk-version', '0.1.2+3\n'),

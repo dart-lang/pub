@@ -14,4 +14,4 @@ final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 /// Many exceptions include the exception class name at the beginning of their
 /// [toString], so we remove that if it exists.
 String getErrorMessage(error) =>
-  error.toString().replaceFirst(_exceptionPrefix, '');
+    error.toString().replaceFirst(_exceptionPrefix, '');

@@ -10,8 +10,7 @@ import 'dart:isolate';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
-import 'package:compiler_unsupported/src/filenames.dart'
-    show appendSlash;
+import 'package:compiler_unsupported/src/filenames.dart' show appendSlash;
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -38,8 +37,8 @@ abstract class CompilerProvider {
   Future provideInput(Uri uri);
 
   /// Reports a diagnostic message from dart2js to the user.
-  void handleDiagnostic(Uri uri, int begin, int end, String message,
-                        compiler.Diagnostic kind);
+  void handleDiagnostic(
+      Uri uri, int begin, int end, String message, compiler.Diagnostic kind);
 
   /// Given a [name] (which will be "" for the entrypoint) and a file extension,
   /// returns an [EventSink] that dart2js can write to to emit an output file.
@@ -54,8 +53,8 @@ abstract class CompilerProvider {
 ///
 /// By default, the package root is assumed to be adjacent to [entrypoint], but
 /// if [packageRoot] is passed that will be used instead.
-Future compile(String entrypoint, CompilerProvider provider, {
-    Iterable<String> commandLineOptions,
+Future compile(String entrypoint, CompilerProvider provider,
+    {Iterable<String> commandLineOptions,
     bool checked: false,
     bool csp: false,
     bool minify: true,
@@ -123,7 +122,8 @@ bool isEntrypoint(CompilationUnit dart) {
   // TODO(nweiz): this misses the case where a Dart file doesn't contain main(),
   // but it parts in another file that does.
   return dart.declarations.any((node) {
-    return node is FunctionDeclaration && node.name.name == "main" &&
+    return node is FunctionDeclaration &&
+        node.name.name == "main" &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
 }
@@ -157,8 +157,8 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 /// If [snapshot] is passed, the isolate will be loaded from that path if it
 /// exists. Otherwise, a snapshot of the isolate's code will be saved to that
 /// path once the isolate is loaded.
-Future runInIsolate(String code, message, {packageRoot, String snapshot})
-    async {
+Future runInIsolate(String code, message,
+    {packageRoot, String snapshot}) async {
   if (snapshot != null && fileExists(snapshot)) {
     log.fine("Spawning isolate from $snapshot.");
     if (packageRoot != null) packageRoot = Uri.parse(packageRoot.toString());
@@ -192,7 +192,8 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     // Don't emit a fatal error here, since we don't want to crash the
     // otherwise successful isolate load.
     log.warning("Failed to compile a snapshot to "
-        "${p.relative(snapshot)}:\n" + result.stderr.join("\n"));
+        "${p.relative(snapshot)}:\n" +
+        result.stderr.join("\n"));
   });
 }
 
@@ -205,16 +206,13 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
 ///
 /// If [id] is passed, it's used to describe the executable in logs and error
 /// messages.
-Future snapshot(Uri executableUrl, String snapshotPath, {Uri packagesFile,
-    AssetId id}) async {
+Future snapshot(Uri executableUrl, String snapshotPath,
+    {Uri packagesFile, AssetId id}) async {
   var name = log.bold(id == null
       ? executableUrl.toString()
       : "${id.package}:${p.url.basenameWithoutExtension(id.path)}");
 
-  var args = [
-    '--snapshot=$snapshotPath',
-    executableUrl.toString()
-  ];
+  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
   if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
   var result = await runProcess(Platform.executable, args);
 
@@ -222,7 +220,6 @@ Future snapshot(Uri executableUrl, String snapshotPath, {Uri packagesFile,
     log.message("Precompiled $name.");
   } else {
     throw new ApplicationException(
-        log.yellow("Failed to precompile $name:\n") +
-        result.stderr.join('\n'));
+        log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
   }
 }

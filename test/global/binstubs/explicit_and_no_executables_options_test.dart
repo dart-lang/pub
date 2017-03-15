@@ -10,14 +10,20 @@ import '../../test_pub.dart';
 
 main() {
   integration("errors if -x and --no-executables are both passed", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-    schedulePub(args: [
-      "global", "activate", "--source", "path", "../foo",
-      "-x", "anything", "--no-executables"
-    ], error: contains("Cannot pass both --no-executables and --executable."),
+    schedulePub(
+        args: [
+          "global",
+          "activate",
+          "--source",
+          "path",
+          "../foo",
+          "-x",
+          "anything",
+          "--no-executables"
+        ],
+        error: contains("Cannot pass both --no-executables and --executable."),
         exitCode: exit_codes.USAGE);
   });
 }

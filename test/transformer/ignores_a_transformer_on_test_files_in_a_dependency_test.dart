@@ -20,20 +20,17 @@ main() {
         ])
       ]);
 
-      builder.serve("foo", "1.2.3",
-        pubspec: {
+      builder.serve("foo", "1.2.3", pubspec: {
         "name": "foo",
         "version": "1.0.0",
-        "dev_dependencies": {
-          "bar": "any"
-        },
-        "transformers": [{
-          "bar": {"\$include": "test/**"}
-        }]
+        "dev_dependencies": {"bar": "any"},
+        "transformers": [
+          {
+            "bar": {"\$include": "test/**"}
+          }
+        ]
       }, contents: [
-        d.dir("test", [
-          d.file("my_test.dart", "void main() {}")
-        ])
+        d.dir("test", [d.file("my_test.dart", "void main() {}")])
       ]);
     });
 
@@ -42,9 +39,7 @@ main() {
         "name": "myapp",
         "dependencies": {"foo": "any"}
       }),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();

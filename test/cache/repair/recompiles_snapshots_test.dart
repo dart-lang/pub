@@ -9,21 +9,18 @@ main() {
   integration('recompiles activated executable snapshots', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     d.dir(cachePath, [
-      d.dir('global_packages/foo/bin', [
-        d.file('script.dart.snapshot', 'junk')
-      ])
+      d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')])
     ]).create();
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.

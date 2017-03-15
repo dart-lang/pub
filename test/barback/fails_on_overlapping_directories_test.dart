@@ -17,12 +17,8 @@ main() {
       d.dir("web", [
         d.dir("sub1", [
           d.file("file.txt", "contents"),
-          d.dir("sub2", [
-            d.file("file.txt", "contents")
-          ]),
-          d.dir("sub3", [
-            d.file("file.txt", "contents")
-          ])
+          d.dir("sub2", [d.file("file.txt", "contents")]),
+          d.dir("sub3", [d.file("file.txt", "contents")])
         ])
       ])
     ]).create();
@@ -45,6 +41,6 @@ main() {
   pubBuildAndServeShouldFail("if multiple directories overlap",
       args: [webSub1, webSub1Sub2, webSub1Sub3],
       error: 'Directories "$webSub1", "$webSub1Sub2" and "$webSub1Sub3" '
-             'cannot overlap.',
+          'cannot overlap.',
       exitCode: exit_codes.USAGE);
 }

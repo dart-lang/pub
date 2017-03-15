@@ -13,18 +13,14 @@ import '../../test_pub.dart';
 main() {
   setUp(() {
     // Create two cached revisions of foo.
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
     pubGet();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.1')
-    ]).commit();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.1')]).commit();
 
     pubUpgrade();
   });
@@ -36,7 +32,8 @@ main() {
       // Find the cached foo packages for each revision.
       var gitCacheDir = path.join(sandboxDir, cachePath, "git");
       fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-")).toList();
+          .where((dir) => path.basename(dir).startsWith("foo-"))
+          .toList();
 
       // Delete "foo.dart" from them.
       for (var dir in fooDirs) {
@@ -45,7 +42,8 @@ main() {
     });
 
     // Repair them.
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         output: '''
           Resetting Git repository for foo 1.0.0...
           Resetting Git repository for foo 1.0.1...
@@ -60,9 +58,7 @@ main() {
         ]);
       }).toList();
 
-      d.dir(cachePath, [
-        d.dir("git", fooLibs)
-      ]).validate();
+      d.dir(cachePath, [d.dir("git", fooLibs)]).validate();
     });
   });
 
@@ -71,14 +67,16 @@ main() {
     schedule(() {
       var gitCacheDir = path.join(sandboxDir, cachePath, "git");
       fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-")).toList();
+          .where((dir) => path.basename(dir).startsWith("foo-"))
+          .toList();
 
       for (var dir in fooDirs) {
         deleteEntry(path.join(dir, "pubspec.yaml"));
       }
     });
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
           contains('Could not find a file named "pubspec.yaml" in '),
@@ -93,8 +91,7 @@ main() {
 
     schedule(() {
       d.dir(cachePath, [
-        d.dir("git",
-            fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
       ]).validate();
     });
   });
@@ -104,14 +101,16 @@ main() {
     schedule(() {
       var gitCacheDir = path.join(sandboxDir, cachePath, "git");
       fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-")).toList();
+          .where((dir) => path.basename(dir).startsWith("foo-"))
+          .toList();
 
       for (var dir in fooDirs) {
         writeTextFile(path.join(dir, "pubspec.yaml"), "{");
       }
     });
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
           contains('Error on line 1, column 2 of '),
@@ -126,8 +125,7 @@ main() {
 
     schedule(() {
       d.dir(cachePath, [
-        d.dir("git",
-            fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
       ]).validate();
     });
   });
