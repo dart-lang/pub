@@ -25,9 +25,10 @@ main() {
 
       pubCommand(command);
 
-      d.dir(appPath, [d.packagesFile({
-          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})])
-       .validate();
+      d.dir(appPath, [
+        d.packagesFile(
+            {"foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})
+      ]).validate();
     });
 
     integration('.packages file is overwritten', () {
@@ -44,15 +45,18 @@ main() {
         d.dir('lib')
       ]).create();
 
-      var oldFile = d.dir(appPath, [d.packagesFile({"notFoo": "9.9.9"})]);
+      var oldFile = d.dir(appPath, [
+        d.packagesFile({"notFoo": "9.9.9"})
+      ]);
       oldFile.create();
-      oldFile.validate();  // Sanity-check that file was created correctly.
+      oldFile.validate(); // Sanity-check that file was created correctly.
 
       pubCommand(command);
 
-      d.dir(appPath, [d.packagesFile({
-          "foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})])
-       .validate();
+      d.dir(appPath, [
+        d.packagesFile(
+            {"foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."})
+      ]).validate();
     });
 
     integration('.packages file is not created if pub command fails', () {
@@ -61,10 +65,11 @@ main() {
         d.dir('lib')
       ]).create();
 
-      pubCommand(command, args: ['--offline'],
+      pubCommand(command,
+          args: ['--offline'],
           error: "Could not find package foo in cache.\n"
-                 "Depended on by:\n"
-                 "- myapp",
+              "Depended on by:\n"
+              "- myapp",
           exitCode: exit_codes.UNAVAILABLE);
 
       d.dir(appPath, [d.nothing('.packages')]).validate();
@@ -74,8 +79,7 @@ main() {
       servePackages((builder) {
         builder.serve("foo", "1.2.3",
             deps: {'baz': 'any'}, contents: [d.dir("lib", [])]);
-        builder.serve("baz", "9.9.9",
-            deps: {}, contents: [d.dir("lib", [])]);
+        builder.serve("baz", "9.9.9", deps: {}, contents: [d.dir("lib", [])]);
       });
 
       d.dir("local_baz", [
@@ -97,10 +101,7 @@ main() {
       pubCommand(command);
 
       d.dir(appPath, [
-        d.packagesFile({
-          "myapp": ".",
-          "baz": "../local_baz"
-        })
+        d.packagesFile({"myapp": ".", "baz": "../local_baz"})
       ]).validate();
     });
   });

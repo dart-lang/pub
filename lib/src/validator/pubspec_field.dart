@@ -10,8 +10,7 @@ import '../validator.dart';
 /// A validator that checks that the pubspec has valid "author" and "homepage"
 /// fields.
 class PubspecFieldValidator extends Validator {
-  PubspecFieldValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  PubspecFieldValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     _validateAuthors();

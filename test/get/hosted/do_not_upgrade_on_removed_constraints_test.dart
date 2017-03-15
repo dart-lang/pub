@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("doesn't upgrade dependencies whose constraints have been "
+  integration(
+      "doesn't upgrade dependencies whose constraints have been "
       "removed", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"shared_dep": "any"});
@@ -19,19 +20,13 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "bar": "1.0.0",
-      "shared_dep": "1.0.0"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "1.0.0", "bar": "1.0.0", "shared_dep": "1.0.0"}).validate();
 
     d.appDir({"foo": "any"}).create();
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "shared_dep": "1.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "1.0.0", "shared_dep": "1.0.0"}).validate();
   });
 }

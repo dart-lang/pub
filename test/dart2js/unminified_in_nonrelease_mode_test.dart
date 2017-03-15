@@ -10,9 +10,7 @@ main() {
   integration("generates unminified JS when not in release mode", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('hello');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
     ]).create();
 
     pubGet();

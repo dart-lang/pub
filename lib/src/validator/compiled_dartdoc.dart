@@ -13,8 +13,7 @@ import '../validator.dart';
 /// Validates that a package doesn't contain compiled Dartdoc
 /// output.
 class CompiledDartdocValidator extends Validator {
-  CompiledDartdocValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  CompiledDartdocValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
@@ -33,9 +32,9 @@ class CompiledDartdocValidator extends Validator {
 
         if (files.every((val) => fileExists(val))) {
           warnings.add("Avoid putting generated documentation in "
-                  "${path.relative(dir)}.\n"
+              "${path.relative(dir)}.\n"
               "Generated documentation bloats the package with redundant "
-                  "data.");
+              "data.");
         }
       }
     });

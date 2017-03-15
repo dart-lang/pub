@@ -12,23 +12,21 @@ main() {
   integration('activating a hosted package deactivates the path one', () {
     servePackages((builder) {
       builder.serve("foo", "2.0.0", contents: [
-        d.dir("bin", [
-          d.file("foo.dart", "main(args) => print('hosted');")
-        ])
+        d.dir("bin", [d.file("foo.dart", "main(args) => print('hosted');")])
       ]);
     });
 
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('path');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('path');")])
     ]).create();
 
     schedulePub(args: ["global", "activate", "-spath", "../foo"]);
 
     var path = canonicalize(p.join(sandboxDir, "foo"));
-    schedulePub(args: ["global", "activate", "foo"], output: """
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: """
         Package foo is currently active at path "$path".
         Resolving dependencies...
         + foo 2.0.0

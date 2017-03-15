@@ -9,12 +9,11 @@ main() {
   integration('checks out a package from Git', () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
@@ -28,9 +27,7 @@ main() {
     ]).validate();
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });
 }

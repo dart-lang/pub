@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("unlocks dependencies if necessary to ensure that a new "
+  integration(
+      "unlocks dependencies if necessary to ensure that a new "
       "dependency is satisfied", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "<2.0.0"});

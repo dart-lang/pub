@@ -9,7 +9,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if no package was given', () {
-    schedulePub(args: ["global", "activate"],
+    schedulePub(
+        args: ["global", "activate"],
         error: contains("No package to activate given."),
         exitCode: exit_codes.USAGE);
   });

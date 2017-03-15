@@ -18,9 +18,7 @@ main() {
       builder.serve("bar", "1.2.0");
     });
 
-    d.appDir({
-      "foo": "any"
-    }).create();
+    d.appDir({"foo": "any"}).create();
 
     // Get once so it gets cached.
     pubGet();
@@ -30,28 +28,24 @@ main() {
     globalServer.clearRequestedPaths();
 
     // Add "bar" to the dependencies.
-    d.appDir({
-      "foo": "any",
-      "bar": "any"
-    }).create();
+    d.appDir({"foo": "any", "bar": "any"}).create();
 
     // Run the solver again.
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.2.0",
-      "bar": "1.2.0"
-    }).validate();
+    d.appPackagesFile({"foo": "1.2.0", "bar": "1.2.0"}).validate();
 
     // The get should not have done any network requests since the lock file is
     // up to date.
     globalServer.requestedPaths.then((paths) {
-      expect(paths, unorderedEquals([
-        // Bar should be requested because it's new, but not foo.
-        "api/packages/bar",
-        // Need to download it.
-        "packages/bar/versions/1.2.0.tar.gz"
-      ]));
+      expect(
+          paths,
+          unorderedEquals([
+            // Bar should be requested because it's new, but not foo.
+            "api/packages/bar",
+            // Need to download it.
+            "packages/bar/versions/1.2.0.tar.gz"
+          ]));
     });
   });
 }

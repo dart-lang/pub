@@ -11,10 +11,7 @@ import '../../test_pub.dart';
 main() {
   // Regression test for issue 20103.
   integration('path dependency to an empty pubspec', () {
-    d.dir('foo', [
-      d.libDir('foo'),
-      d.file('pubspec.yaml', '')
-    ]).create();
+    d.dir('foo', [d.libDir('foo'), d.file('pubspec.yaml', '')]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -22,8 +19,10 @@ main() {
       })
     ]).create();
 
-    pubGet(exitCode: exit_codes.DATA, error:
-        'Error on line 1, column 1 of ${p.join('..', 'foo', 'pubspec.yaml')}: '
+    pubGet(
+        exitCode: exit_codes.DATA,
+        error:
+            'Error on line 1, column 1 of ${p.join('..', 'foo', 'pubspec.yaml')}: '
             'Missing the required "name" field.');
   });
 }

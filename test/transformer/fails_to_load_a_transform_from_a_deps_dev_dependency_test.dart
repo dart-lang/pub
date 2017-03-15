@@ -25,7 +25,9 @@ main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "dev_dependencies": {"bar": {"path": "../bar"}},
+        "dev_dependencies": {
+          "bar": {"path": "../bar"}
+        },
         "transformers": ["bar"]
       })
     ]).create();
@@ -33,7 +35,9 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 

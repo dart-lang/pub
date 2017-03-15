@@ -14,11 +14,14 @@ main() {
     // Activate an old version.
     schedulePub(args: ["global", "activate", "foo", "1.0.0"]);
 
-    schedulePub(args: ["global", "deactivate", "foo"],
+    schedulePub(
+        args: ["global", "deactivate", "foo"],
         output: "Deactivated package foo 1.0.0.");
 
     // Activating again should forget the old version.
-    schedulePub(args: ["global", "activate", "foo"], output: """
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: """
         Resolving dependencies...
         + foo 2.0.0
         Downloading foo 2.0.0...

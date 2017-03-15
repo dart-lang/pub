@@ -28,27 +28,25 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-   integration("a transform can use consumePrimary", () {
-     serveBarback();
+  integration("a transform can use consumePrimary", () {
+    serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", TRANSFORMER)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShouldSucceed("foo.out", "foo.out");
-     requestShould404("foo.txt");
-     endPubServe();
-   });
+    pubGet();
+    pubServe();
+    requestShouldSucceed("foo.out", "foo.out");
+    requestShould404("foo.txt");
+    endPubServe();
+  });
 }

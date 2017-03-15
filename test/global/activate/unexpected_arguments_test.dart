@@ -9,7 +9,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if there are extra arguments', () {
-    schedulePub(args: ["global", "activate", "foo", "1.0.0", "bar", "baz"],
+    schedulePub(
+        args: ["global", "activate", "foo", "1.0.0", "bar", "baz"],
         error: contains('Unexpected arguments "bar" and "baz".'),
         exitCode: exit_codes.USAGE);
   });

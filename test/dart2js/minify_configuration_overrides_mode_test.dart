@@ -11,13 +11,13 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {"minify": true}
-        }]
+        "transformers": [
+          {
+            "\$dart2js": {"minify": true}
+          }
+        ]
       }),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('Hello!');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('Hello!');")])
     ]).create();
 
     pubGet();

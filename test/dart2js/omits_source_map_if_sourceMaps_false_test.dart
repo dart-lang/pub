@@ -10,27 +10,24 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'transformers': [{
-          '\$dart2js': {
-            'sourceMaps': false
+        'transformers': [
+          {
+            '\$dart2js': {'sourceMaps': false}
           }
-        }]
+        ]
       }),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('hello');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build", "--mode", "debug"],
+    schedulePub(
+        args: ["build", "--mode", "debug"],
         output: new RegExp(r'Built \d+ files to "build".'),
         exitCode: 0);
 
     d.dir(appPath, [
       d.dir('build', [
-        d.dir('web', [
-          d.nothing('main.dart.js.map')
-        ])
+        d.dir('web', [d.nothing('main.dart.js.map')])
       ])
     ]).validate();
   });

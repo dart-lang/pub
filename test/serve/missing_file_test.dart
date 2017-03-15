@@ -14,9 +14,7 @@ main() {
   integration("responds with a 404 for missing source files", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("lib", [
-        d.file("nope.dart", "nope")
-      ]),
+      d.dir("lib", [d.file("nope.dart", "nope")]),
       d.dir("web", [
         d.file("index.html", "<body>"),
       ])

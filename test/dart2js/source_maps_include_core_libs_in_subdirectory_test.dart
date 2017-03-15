@@ -14,14 +14,14 @@ main() {
   // not precise as to which source libraries will actually be referenced in
   // the source map. But this tries to use a type in the core library
   // (Duration) and validate that its source ends up in the source map.
-  integration("Dart core libraries are available to source maps when the "
+  integration(
+      "Dart core libraries are available to source maps when the "
       "build directory is a subdirectory", () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
-        d.dir("sub", [
-          d.file("main.dart", "main() => new Duration().toString();")
-        ])
+        d.dir("sub",
+            [d.file("main.dart", "main() => new Duration().toString();")])
       ])
     ]).create();
 
@@ -30,11 +30,11 @@ main() {
     var webSub = path.join("web", "sub");
     pubServe(args: [webSub]);
 
-    requestShouldSucceed("main.dart.js.map",
-        contains(r"packages/$sdk/lib/core/duration.dart"),
+    requestShouldSucceed(
+        "main.dart.js.map", contains(r"packages/$sdk/lib/core/duration.dart"),
         root: webSub);
-    requestShouldSucceed(r"packages/$sdk/lib/core/duration.dart",
-        contains("class Duration"),
+    requestShouldSucceed(
+        r"packages/$sdk/lib/core/duration.dart", contains("class Duration"),
         root: webSub);
 
     endPubServe();

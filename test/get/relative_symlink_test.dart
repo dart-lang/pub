@@ -15,10 +15,7 @@ main() {
   if (Platform.operatingSystem == "windows") return;
 
   integration('uses a relative symlink for the self link', () {
-    d.dir(appPath, [
-      d.appPubspec(),
-      d.libDir('foo')
-    ]).create();
+    d.dir(appPath, [d.appPubspec(), d.libDir('foo')]).create();
 
     pubGet(args: ["--packages-dir"]);
 
@@ -26,19 +23,13 @@ main() {
 
     d.dir("moved", [
       d.dir("packages", [
-        d.dir("myapp", [
-          d.file('foo.dart', 'main() => "foo";')
-        ])
+        d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])
       ])
     ]).validate();
   });
 
   integration('uses a relative symlink for secondary packages directory', () {
-    d.dir(appPath, [
-      d.appPubspec(),
-      d.libDir('foo'),
-      d.dir("bin")
-    ]).create();
+    d.dir(appPath, [d.appPubspec(), d.libDir('foo'), d.dir("bin")]).create();
 
     pubGet(args: ["--packages-dir"]);
 
@@ -47,9 +38,7 @@ main() {
     d.dir("moved", [
       d.dir("bin", [
         d.dir("packages", [
-          d.dir("myapp", [
-            d.file('foo.dart', 'main() => "foo";')
-          ])
+          d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])
         ])
       ])
     ]).validate();

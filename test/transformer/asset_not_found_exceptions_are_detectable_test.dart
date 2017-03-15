@@ -45,20 +45,16 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", transformer)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", transformer)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
     var server = pubServe();
-    requestShouldSucceed("foo.txt", JSON.encode({
-      "package": "myapp",
-      "path": "nonexistent"
-    }));
+    requestShouldSucceed(
+        "foo.txt", JSON.encode({"package": "myapp", "path": "nonexistent"}));
     endPubServe();
 
     // Since the AssetNotFoundException was caught and handled, the server

@@ -11,13 +11,15 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration('with an expired credentials.json without a refresh token, '
-       'authenticates again and saves credentials.json', () {
+  integration(
+      'with an expired credentials.json without a refresh token, '
+      'authenticates again and saves credentials.json', () {
     d.validPackage.create();
 
     var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token',
-        expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+    d
+        .credentialsFile(server, 'access token',
+            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
         .create();
 
     var pub = startPublish(server);

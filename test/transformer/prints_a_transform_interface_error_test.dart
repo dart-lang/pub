@@ -28,20 +28,17 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", transformer)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", transformer)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
     var server = pubServe();
-    server.stderr.expect(emitsLines(
-        "Build error:\n"
+    server.stderr.expect(emitsLines("Build error:\n"
         "Transform Rewrite on myapp|web/foo.txt threw error: Class "
-            "'RewriteTransformer' has no instance method 'apply'."));
+        "'RewriteTransformer' has no instance method 'apply'."));
     endPubServe();
   });
 }

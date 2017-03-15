@@ -9,9 +9,7 @@ main() {
   integration('runs a shorthand Dart application in a dependency', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('foo');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('foo');")])
     ]).create();
 
     d.dir(appPath, [

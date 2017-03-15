@@ -12,16 +12,17 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependency_overrides": {
-          "overridden": "any"
-        }
+        "dependency_overrides": {"overridden": "any"}
       })
     ]).create();
 
     // Upgrade everything.
-    pubUpgrade(output: new RegExp(r"""
+    pubUpgrade(
+        output: new RegExp(
+            r"""
 Resolving dependencies\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
-""", multiLine: true));
+""",
+            multiLine: true));
   });
 }

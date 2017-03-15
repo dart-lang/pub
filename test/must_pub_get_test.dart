@@ -24,9 +24,7 @@ main() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", []),
-      d.dir("bin", [
-        d.file("script.dart", "main() => print('hello!');")
-      ])
+      d.dir("bin", [d.file("script.dart", "main() => print('hello!');")])
     ]).create();
 
     pubGet();
@@ -52,12 +50,12 @@ main() {
 
     group("the pubspec has a new dependency", () {
       setUp(() {
-        d.dir("foo", [
-          d.libPubspec("foo", "1.0.0")
-        ]).create();
+        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../foo"}})
+          d.appPubspec({
+            "foo": {"path": "../foo"}
+          })
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -95,15 +93,17 @@ main() {
         pubGet();
 
         d.dir(appPath, [
-          d.file("pubspec.lock", yaml({
-            "packages": {
-              "foo": {
-                "description": "foo", 
-                "version": "1.0.0",
-                "source": "sdk"
-              }
-            }
-          }))
+          d.file(
+              "pubspec.lock",
+              yaml({
+                "packages": {
+                  "foo": {
+                    "description": "foo",
+                    "version": "1.0.0",
+                    "source": "sdk"
+                  }
+                }
+              }))
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -116,12 +116,12 @@ main() {
 
     group("the lockfile has a dependency with the wrong description", () {
       setUp(() {
-        d.dir("bar", [
-          d.libPubspec("foo", "1.0.0")
-        ]).create();
+        d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../bar"}})
+          d.appPubspec({
+            "foo": {"path": "../bar"}
+          })
         ]).create();
 
         pubGet();
@@ -156,7 +156,8 @@ main() {
           'pubspec.lock file was generated, please run "pub get" again.');
     });
 
-    group("the lockfile is pointing to an unavailable package with a newer "
+    group(
+        "the lockfile is pointing to an unavailable package with a newer "
         "pubspec", () {
       setUp(() {
         d.dir(appPath, [
@@ -175,7 +176,8 @@ main() {
           'pubspec.lock file was generated, please run "pub get" again.');
     });
 
-    group("the lockfile is pointing to an unavailable package with an older "
+    group(
+        "the lockfile is pointing to an unavailable package with an older "
         ".packages", () {
       setUp(() {
         d.dir(appPath, [
@@ -196,12 +198,12 @@ main() {
 
     group("the lockfile has a package that the .packages file doesn't", () {
       setUp(() {
-        d.dir("foo", [
-          d.libPubspec("foo", "1.0.0")
-        ]).create();
+        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../foo"}})
+          d.appPubspec({
+            "foo": {"path": "../foo"}
+          })
         ]).create();
 
         pubGet();
@@ -218,18 +220,20 @@ main() {
 
     group("the .packages file has a package with a non-file URI", () {
       setUp(() {
-        d.dir("foo", [
-          d.libPubspec("foo", "1.0.0")
-        ]).create();
+        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../foo"}})
+          d.appPubspec({
+            "foo": {"path": "../foo"}
+          })
         ]).create();
 
         pubGet();
 
         d.dir(appPath, [
-          d.file(".packages", """
+          d.file(
+              ".packages",
+              """
 myapp:lib
 foo:http://example.com/
 """)
@@ -245,12 +249,12 @@ foo:http://example.com/
 
     group("the .packages file points to the wrong place", () {
       setUp(() {
-        d.dir("bar", [
-          d.libPubspec("foo", "1.0.0")
-        ]).create();
+        d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../bar"}})
+          d.appPubspec({
+            "foo": {"path": "../bar"}
+          })
         ]).create();
 
         pubGet();
@@ -286,7 +290,8 @@ foo:http://example.com/
           "SDK constraints. Please run \"pub get\" again.");
     });
 
-    integration("the lock file's Flutter SDK constraint doesn't match the "
+    integration(
+        "the lock file's Flutter SDK constraint doesn't match the "
         "current Flutter SDK", () {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
@@ -296,9 +301,7 @@ foo:http://example.com/
         });
       });
 
-      d.dir('flutter', [
-        d.file('version', '1.2.3')
-      ]).create();
+      d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
       d.dir(appPath, [
         d.appPubspec({"foo": "3.0.0"})
@@ -306,9 +309,7 @@ foo:http://example.com/
 
       pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
 
-      d.dir('flutter', [
-        d.file('version', '2.4.6')
-      ]).create();
+      d.dir('flutter', [d.file('version', '2.4.6')]).create();
 
       // Run pub manually here because otherwise we don't have access to
       // sandboxDir.
@@ -316,7 +317,7 @@ foo:http://example.com/
           args: ["run", "script"],
           environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')},
           error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
-                   "constraints. Please run \"pub get\" again.",
+              "constraints. Please run \"pub get\" again.",
           exitCode: exit_codes.DATA);
     });
 
@@ -327,7 +328,9 @@ foo:http://example.com/
         ]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"bar": {"path": "../bar"}})
+          d.appPubspec({
+            "bar": {"path": "../bar"}
+          })
         ]).create();
 
         pubGet();
@@ -345,7 +348,8 @@ foo:http://example.com/
   });
 
   group("doesn't require the user to run pub get first if", () {
-    group("the pubspec is older than the lockfile which is older than the "
+    group(
+        "the pubspec is older than the lockfile which is older than the "
         "packages file, even if the contents are wrong", () {
       setUp(() {
         d.dir(appPath, [
@@ -381,7 +385,9 @@ foo:http://example.com/
         ]).create();
 
         d.dir(appPath, [
-          d.appPubspec({"foo": {"path": "../foo"}})
+          d.appPubspec({
+            "foo": {"path": "../foo"}
+          })
         ]).create();
 
         pubGet();
@@ -439,9 +445,7 @@ foo:http://example.com/
         });
       });
 
-      d.dir('flutter', [
-        d.file('version', '1.2.3')
-      ]).create();
+      d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
       d.dir(appPath, [
         d.appPubspec({"foo": "3.0.0"})
@@ -449,9 +453,7 @@ foo:http://example.com/
 
       pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
 
-      d.dir('flutter', [
-        d.file('version', '2.4.6')
-      ]).create();
+      d.dir('flutter', [d.file('version', '2.4.6')]).create();
 
       // Run pub manually here because otherwise we don't have access to
       // sandboxDir.
@@ -472,9 +474,7 @@ void _requiresPubGet(String message) {
       if (command == "run") args.add("script");
 
       schedulePub(
-          args: args,
-          error: contains(message),
-          exitCode: exit_codes.DATA);
+          args: args, error: contains(message), exitCode: exit_codes.DATA);
     });
   }
 }
@@ -510,8 +510,8 @@ void _runsSuccessfully({bool runDeps: true}) {
         var lockFileModified =
             new File(p.join(sandboxDir, "myapp/pubspec.lock"))
                 .lastModifiedSync();
-        var packagesModified = new File(p.join(sandboxDir, "myapp/.packages"))
-            .lastModifiedSync();
+        var packagesModified =
+            new File(p.join(sandboxDir, "myapp/.packages")).lastModifiedSync();
 
         expect(!pubspecModified.isAfter(lockFileModified), isTrue);
         expect(!lockFileModified.isAfter(packagesModified), isTrue);

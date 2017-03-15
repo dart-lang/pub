@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
@@ -26,7 +25,8 @@ main() {
 
     integration('from "pub build"', () {
       pubGet();
-      schedulePub(args: ["build", "--define", "name=fblthp"],
+      schedulePub(
+          args: ["build", "--define", "name=fblthp"],
           output: new RegExp(r'Built 1 file to "build".'));
 
       d.dir(appPath, [
@@ -50,17 +50,19 @@ main() {
         d.pubspec({
           "name": "myapp",
           "transformers": [
-            {"\$dart2js": {"environment": {"name": "slartibartfast"}}}
+            {
+              "\$dart2js": {
+                "environment": {"name": "slartibartfast"}
+              }
+            }
           ]
         })
       ]).create();
 
       pubGet();
       pubServe(args: ["--define", "name=fblthp"]);
-      requestShouldSucceed("file.dart.js", allOf([
-        contains("fblthp"),
-        isNot(contains("slartibartfast"))
-      ]));
+      requestShouldSucceed("file.dart.js",
+          allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
       endPubServe();
     });
   });

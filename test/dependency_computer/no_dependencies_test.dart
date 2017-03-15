@@ -13,7 +13,9 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 
@@ -22,12 +24,15 @@ void main() {
     expectDependencies({});
   });
 
-  integration("reports no dependencies if a transformer is used in a "
+  integration(
+      "reports no dependencies if a transformer is used in a "
       "package that doesn't expose a transformer", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["foo"]
       })
     ]).create();
@@ -44,14 +49,14 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
-        d.file("myapp.dart", transformer([
-          "dart:async",
-          "http://dartlang.org/nonexistent.dart"
-        ]))
+        d.file("myapp.dart",
+            transformer(["dart:async", "http://dartlang.org/nonexistent.dart"]))
       ])
     ]).create();
 
@@ -75,22 +80,27 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration("reports no dependencies if a transformer applies to files that "
+  integration(
+      "reports no dependencies if a transformer applies to files that "
       "aren't used by the exposed transformer", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/myapp.dart"}},
-          {"foo": {"\$exclude": "lib/transformer.dart"}},
+          {
+            "foo": {"\$include": "lib/myapp.dart"}
+          },
+          {
+            "foo": {"\$exclude": "lib/transformer.dart"}
+          },
           "myapp"
         ]
       }),
-      d.dir("lib", [
-        d.file("myapp.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("myapp.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
     d.dir("foo", [
@@ -101,12 +111,15 @@ void main() {
     expectDependencies({"myapp": [], "foo": []});
   });
 
-  integration("reports no dependencies if a transformer applies to a "
+  integration(
+      "reports no dependencies if a transformer applies to a "
       "dependency's files that aren't used by the exposed transformer", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -119,12 +132,14 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$exclude": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$exclude": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
     expectDependencies({'myapp': [], 'foo': []});
@@ -135,9 +150,15 @@ void main() {
       d.pubspec({
         "name": "myapp",
         "transformers": [
-          {"myapp/first": {"\$include": "lib/myapp.dart"}},
-          {"myapp/second": {"\$include": "lib/first.dart"}},
-          {"myapp/third": {"\$include": "lib/second.dart"}}
+          {
+            "myapp/first": {"\$include": "lib/myapp.dart"}
+          },
+          {
+            "myapp/second": {"\$include": "lib/first.dart"}
+          },
+          {
+            "myapp/third": {"\$include": "lib/second.dart"}
+          }
         ]
       }),
       d.dir("lib", [
@@ -148,10 +169,7 @@ void main() {
       ])
     ]).create();
 
-    expectDependencies({
-      'myapp/first': [],
-      'myapp/second': [],
-      'myapp/third': []
-    });
+    expectDependencies(
+        {'myapp/first': [], 'myapp/second': [], 'myapp/third': []});
   });
 }

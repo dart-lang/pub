@@ -9,8 +9,9 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("compiles a Dart file that imports a generated file in another "
-              "package to JS", () {
+  integration(
+      "compiles a Dart file that imports a generated file in another "
+      "package to JS", () {
     serveBarback();
 
     d.dir("foo", [
@@ -21,7 +22,9 @@ main() {
         "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
-        d.file("foo.dart", """
+        d.file(
+            "foo.dart",
+            """
 const TOKEN = "before";
 foo() => TOKEN;
 """),
@@ -31,12 +34,12 @@ foo() => TOKEN;
 
     d.dir(appPath, [
       d.appPubspec({
-        "foo": {
-          "path": "../foo"
-        }
+        "foo": {"path": "../foo"}
       }),
       d.dir("web", [
-        d.file("main.dart", """
+        d.file(
+            "main.dart",
+            """
 import "package:foo/foo.dart";
 main() => print(foo());
 """)

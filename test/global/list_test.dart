@@ -24,30 +24,26 @@ main() {
 
     d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [
-        d.file('foo.dart', 'main() => print("ok");')
-      ])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')])
     ]).create();
 
     schedulePub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
-    schedulePub(args: ['global', 'list'],
+    schedulePub(
+        args: ['global', 'list'],
         output: 'foo 1.0.0 from Git repository "../foo.git"');
   });
 
   integration('lists an activated Path package', () {
     d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [
-        d.file('foo.dart', 'main() => print("ok");')
-      ])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')])
     ]).create();
 
     schedulePub(args: ['global', 'activate', '-spath', '../foo']);
 
     var path = canonicalize(p.join(sandboxDir, 'foo'));
-    schedulePub(args: ['global', 'list'],
-        output: 'foo 1.0.0 at path "$path"');
+    schedulePub(args: ['global', 'list'], output: 'foo 1.0.0 at path "$path"');
   });
 
   integration('lists activated packages in alphabetical order', () {
@@ -61,7 +57,9 @@ main() {
     schedulePub(args: ['global', 'activate', 'aaa']);
     schedulePub(args: ['global', 'activate', 'bbb']);
 
-    schedulePub(args: ['global', 'list'], output: '''
+    schedulePub(
+        args: ['global', 'list'],
+        output: '''
 aaa 1.0.0
 bbb 1.0.0
 ccc 1.0.0

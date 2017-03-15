@@ -9,11 +9,11 @@ main() {
   integration('loads package imports in a dependency', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("lib", [
-        d.file('foo.dart', "final value = 'foobar';")
-      ]),
+      d.dir("lib", [d.file('foo.dart', "final value = 'foobar';")]),
       d.dir("bin", [
-        d.file("bar.dart", """
+        d.file(
+            "bar.dart",
+            """
 import "package:foo/foo.dart";
 
 main() => print(value);

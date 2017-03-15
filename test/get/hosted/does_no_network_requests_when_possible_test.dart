@@ -15,9 +15,7 @@ main() {
       builder.serve("foo", "1.2.0");
     });
 
-    d.appDir({
-      "foo": "any"
-    }).create();
+    d.appDir({"foo": "any"}).create();
 
     // Get once so it gets cached.
     pubGet();

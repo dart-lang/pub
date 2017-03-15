@@ -48,12 +48,15 @@ main() {
     }).create();
 
     // Upgrade everything.
-    pubUpgrade(output: new RegExp(r"""
+    pubUpgrade(
+        output: new RegExp(
+            r"""
 Resolving dependencies\.\.\..*
 . description_changed 1\.0\.0 from path \.\.[/\\]description_changed_2 \(was 1\.0\.0 from path \.\.[/\\]description_changed_1\)
 . source_changed 2\.0\.0 from path \.\.[/\\]source_changed \(was 1\.0\.0\)
 . unchanged 1\.0\.0
 . version_changed 2\.0\.0 \(was 1\.0\.0\)
-""", multiLine: true));
+""",
+            multiLine: true));
   });
 }

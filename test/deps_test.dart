@@ -10,17 +10,13 @@ import 'test_pub.dart';
 main() {
   setUp(() {
     servePackages((builder) {
-      builder.serve("normal", "1.2.3", deps: {
-        "transitive": "any",
-        "circular_a": "any"
-      });
+      builder.serve("normal", "1.2.3",
+          deps: {"transitive": "any", "circular_a": "any"});
       builder.serve("transitive", "1.2.3", deps: {"shared": "any"});
       builder.serve("shared", "1.2.3", deps: {"other": "any"});
       builder.serve("dev_only", "1.2.3");
-      builder.serve("unittest", "1.2.3", deps: {
-        "shared": "any",
-        "dev_only": "any"
-      });
+      builder.serve("unittest", "1.2.3",
+          deps: {"shared": "any", "dev_only": "any"});
       builder.serve("other", "1.0.0", deps: {"myapp": "any"});
       builder.serve("overridden", "1.0.0");
       builder.serve("overridden", "2.0.0");
@@ -29,10 +25,8 @@ main() {
       builder.serve("circular_b", "1.2.3", deps: {"circular_a": "any"});
     });
 
-    d.dir("from_path", [
-      d.libDir("from_path"),
-      d.libPubspec("from_path", "1.2.3")
-    ]).create();
+    d.dir("from_path",
+        [d.libDir("from_path"), d.libPubspec("from_path", "1.2.3")]).create();
 
     d.dir(appPath, [
       d.pubspec({
@@ -42,13 +36,8 @@ main() {
           "overridden": "1.0.0",
           "from_path": {"path": "../from_path"}
         },
-        "dev_dependencies": {
-          "unittest": "any"
-        },
-        "dependency_overrides": {
-          "overridden": "2.0.0",
-          "override_only": "any"
-        }
+        "dev_dependencies": {"unittest": "any"},
+        "dependency_overrides": {"overridden": "2.0.0", "override_only": "any"}
       })
     ]).create();
   });
@@ -56,7 +45,9 @@ main() {
   group("lists all dependencies", () {
     integration("in compact form", () {
       pubGet();
-      schedulePub(args: ['deps', '-s', 'compact'], output: '''
+      schedulePub(
+          args: ['deps', '-s', 'compact'],
+          output: '''
           myapp 0.0.0
 
           dependencies:
@@ -83,7 +74,9 @@ main() {
 
     integration("in list form", () {
       pubGet();
-      schedulePub(args: ['deps', '--style', 'list'], output: '''
+      schedulePub(
+          args: ['deps', '--style', 'list'],
+          output: '''
           myapp 0.0.0
 
           dependencies:
@@ -119,7 +112,9 @@ main() {
 
     integration("lists dependencies in tree form", () {
       pubGet();
-      schedulePub(args: ['deps'], output: '''
+      schedulePub(
+          args: ['deps'],
+          output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3
@@ -142,7 +137,9 @@ main() {
   group("lists non-dev dependencies", () {
     integration("in compact form", () {
       pubGet();
-      schedulePub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
+      schedulePub(
+          args: ['deps', '-s', 'compact', '--no-dev'],
+          output: '''
           myapp 0.0.0
 
           dependencies:
@@ -165,7 +162,9 @@ main() {
 
     integration("in list form", () {
       pubGet();
-      schedulePub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
+      schedulePub(
+          args: ['deps', '--style', 'list', '--no-dev'],
+          output: '''
           myapp 0.0.0
 
           dependencies:
@@ -195,7 +194,9 @@ main() {
 
     integration("in tree form", () {
       pubGet();
-      schedulePub(args: ['deps', '--no-dev'], output: '''
+      schedulePub(
+          args: ['deps', '--no-dev'],
+          output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3

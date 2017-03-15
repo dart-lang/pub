@@ -16,27 +16,27 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
   /// Creates the Git repository and commits the contents.
   Future create([String parent]) => schedule(() {
-    return super.create(parent).then((_) {
-      return _runGitCommands(parent, [
-        ['init'],
-        ['add', '.'],
-        ['commit', '-m', 'initial commit', '--allow-empty']
-      ]);
-    });
-  }, 'creating Git repo:\n${describe()}');
+        return super.create(parent).then((_) {
+          return _runGitCommands(parent, [
+            ['init'],
+            ['add', '.'],
+            ['commit', '-m', 'initial commit', '--allow-empty']
+          ]);
+        });
+      }, 'creating Git repo:\n${describe()}');
 
   /// Writes this descriptor to the filesystem, than commits any changes from
   /// the previous structure to the Git repo.
   ///
   /// [parent] defaults to [defaultRoot].
   Future commit([String parent]) => schedule(() {
-    return super.create(parent).then((_) {
-      return _runGitCommands(parent, [
-        ['add', '.'],
-        ['commit', '-m', 'update']
-      ]);
-    });
-  }, 'committing Git repo:\n${describe()}');
+        return super.create(parent).then((_) {
+          return _runGitCommands(parent, [
+            ['add', '.'],
+            ['commit', '-m', 'update']
+          ]);
+        });
+      }, 'committing Git repo:\n${describe()}');
 
   /// Return a Future that completes to the commit in the git repository
   /// referred to by [ref] at the current point in the scheduled test run.
@@ -53,8 +53,8 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   ///
   /// [parent] defaults to [defaultRoot].
   Future runGit(List<String> args, [String parent]) => schedule(() {
-    return _runGit(args, parent);
-  }, "running 'git ${args.join(' ')}' in Git repo:\n${describe()}");
+        return _runGit(args, parent);
+      }, "running 'git ${args.join(' ')}' in Git repo:\n${describe()}");
 
   Future _runGitCommands(String parent, List<List<String>> commands) async {
     for (var command in commands) {
@@ -74,8 +74,6 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
     if (parent == null) parent = defaultRoot;
     return git.run(args,
-        workingDir: path.join(parent, name),
-        environment: environment);
+        workingDir: path.join(parent, name), environment: environment);
   }
 }
-

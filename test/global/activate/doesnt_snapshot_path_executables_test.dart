@@ -11,12 +11,11 @@ main() {
   integration("doesn't snapshots the executables for a path package", () {
     d.dir('foo', [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("hello.dart", "void main() => print('hello!');")
-      ])
+      d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-spath", "../foo"],
+    schedulePub(
+        args: ["global", "activate", "-spath", "../foo"],
         output: isNot(contains('Precompiled foo:hello.')));
 
     d.dir(cachePath, [

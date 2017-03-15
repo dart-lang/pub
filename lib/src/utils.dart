@@ -29,10 +29,37 @@ final onlyIdentifierRegExp = new RegExp("^${identifierRegExp.pattern}\$");
 
 /// Dart reserved words, from the Dart spec.
 const reservedWords = const [
-  "assert", "break", "case", "catch", "class", "const", "continue", "default",
-  "do", "else", "extends", "false", "final", "finally", "for", "if", "in", "is",
-  "new", "null", "return", "super", "switch", "this", "throw", "true", "try",
-  "var", "void", "while", "with"
+  "assert",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "default",
+  "do",
+  "else",
+  "extends",
+  "false",
+  "final",
+  "finally",
+  "for",
+  "if",
+  "in",
+  "is",
+  "new",
+  "null",
+  "return",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "var",
+  "void",
+  "while",
+  "with"
 ];
 
 /// An cryptographically secure instance of [math.Random].
@@ -47,7 +74,7 @@ class Pair<E, F> {
 
   String toString() => '($first, $last)';
 
-  bool operator==(other) {
+  bool operator ==(other) {
     if (other is! Pair) return false;
     return other.first == first && other.last == last;
   }
@@ -69,7 +96,8 @@ Future newFuture(callback()) => new Future.value().then((_) => callback());
 Future captureErrors(Future callback(), {bool captureStackChains: false}) {
   var completer = new Completer();
   var wrappedCallback = () {
-    new Future.sync(callback).then(completer.complete)
+    new Future.sync(callback)
+        .then(completer.complete)
         .catchError((e, stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
@@ -104,7 +132,8 @@ Future captureErrors(Future callback(), {bool captureStackChains: false}) {
 /// only returns once all Futures have completed, successfully or not.
 ///
 /// This will wrap the first error thrown in a [SilentException] and rethrow it.
-Future<List/*<T>*/> waitAndPrintErrors/*<T>*/(Iterable<Future/*<T>*/> futures) {
+Future<List/*<T>*/ > waitAndPrintErrors/*<T>*/(
+    Iterable<Future/*<T>*/ > futures) {
   return Future.wait(futures.map((future) {
     return future.catchError((error, stackTrace) {
       log.exception(error, stackTrace);
@@ -120,7 +149,7 @@ Future<List/*<T>*/> waitAndPrintErrors/*<T>*/(Iterable<Future/*<T>*/> futures) {
 ///
 /// The stream will be passed through unchanged.
 StreamTransformer/*<T, T>*/ onDoneTransformer/*<T>*/(void onDone()) {
-  return new StreamTransformer/*<T, T>*/.fromHandlers(handleDone: (sink) {
+  return new StreamTransformer/*<T, T>*/ .fromHandlers(handleDone: (sink) {
     onDone();
     sink.close();
   });
@@ -266,8 +295,7 @@ minBy(Iterable iter, Comparable f(element)) {
   var minComparable = null;
   for (var element in iter) {
     var comparable = f(element);
-    if (minComparable == null ||
-        comparable.compareTo(minComparable) < 0) {
+    if (minComparable == null || comparable.compareTo(minComparable) < 0) {
       min = element;
       minComparable = comparable;
     }
@@ -321,8 +349,8 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// [compare] defaults to [Comparable.compare].
 maxAll(Iterable iter, [int compare(element1, element2)]) {
   if (compare == null) compare = Comparable.compare;
-  return iter.reduce((max, element) =>
-      compare(element, max) > 0 ? element : max);
+  return iter
+      .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }
 
 /// Returns the minimum value in [iter] by [compare].
@@ -330,8 +358,8 @@ maxAll(Iterable iter, [int compare(element1, element2)]) {
 /// [compare] defaults to [Comparable.compare].
 minAll(Iterable iter, [int compare(element1, element2)]) {
   if (compare == null) compare = Comparable.compare;
-  return iter.reduce((max, element) =>
-      compare(element, max) < 0 ? element : max);
+  return iter
+      .reduce((max, element) => compare(element, max) < 0 ? element : max);
 }
 
 /// Replace each instance of [matcher] in [source] with the return value of
@@ -364,8 +392,8 @@ String sha1(String source) =>
 Future<String> sha1Stream(Stream<List<int>> stream) async {
   crypto.Digest digest;
 
-  var digestSink = new ChunkedConversionSink<crypto.Digest>.withCallback(
-      (digests) {
+  var digestSink =
+      new ChunkedConversionSink<crypto.Digest>.withCallback((digests) {
     digest = digests.single;
   });
 
@@ -404,7 +432,7 @@ void chainToCompleter(Future future, Completer completer) {
 /// emitting the same values and errors as [stream], but only if at least one
 /// value can be read successfully. If an error occurs before any values are
 /// emitted, the returned Future completes to that error.
-Future<Stream/*<T>*/> validateStream/*<T>*/(Stream/*<T>*/ stream) {
+Future<Stream/*<T>*/ > validateStream/*<T>*/(Stream/*<T>*/ stream) {
   var completer = new Completer<Stream>();
   var controller = new StreamController(sync: true);
 
@@ -456,12 +484,11 @@ Future streamFirst(Stream stream) {
 /// Returns a wrapped version of [stream] along with a [StreamSubscription] that
 /// can be used to control the wrapped stream.
 Pair<Stream, StreamSubscription> streamWithSubscription(Stream stream) {
-  var controller =
-      stream.isBroadcast ? new StreamController.broadcast(sync: true)
-                         : new StreamController(sync: true);
+  var controller = stream.isBroadcast
+      ? new StreamController.broadcast(sync: true)
+      : new StreamController(sync: true);
   var subscription = stream.listen(controller.add,
-      onError: controller.addError,
-      onDone: controller.close);
+      onError: controller.addError, onDone: controller.close);
   return new Pair<Stream, StreamSubscription>(controller.stream, subscription);
 }
 
@@ -472,7 +499,7 @@ final _trailingCR = new RegExp(r"\r$");
 // fixed.
 /// Splits [text] on its line breaks in a Windows-line-break-friendly way.
 List<String> splitLines(String text) =>
-  text.split("\n").map((line) => line.replaceFirst(_trailingCR, "")).toList();
+    text.split("\n").map((line) => line.replaceFirst(_trailingCR, "")).toList();
 
 /// Converts a stream of arbitrarily chunked strings into a line-by-line stream.
 ///
@@ -480,35 +507,35 @@ List<String> splitLines(String text) =>
 /// newline is ignored.
 Stream<String> streamToLines(Stream<String> stream) {
   var buffer = new StringBuffer();
-  return stream.transform(new StreamTransformer.fromHandlers(
-      handleData: (chunk, sink) {
-        var lines = splitLines(chunk);
-        var leftover = lines.removeLast();
-        for (var line in lines) {
-          if (!buffer.isEmpty) {
-            buffer.write(line);
-            line = buffer.toString();
-            buffer = new StringBuffer();
-          }
+  return stream
+      .transform(new StreamTransformer.fromHandlers(handleData: (chunk, sink) {
+    var lines = splitLines(chunk);
+    var leftover = lines.removeLast();
+    for (var line in lines) {
+      if (!buffer.isEmpty) {
+        buffer.write(line);
+        line = buffer.toString();
+        buffer = new StringBuffer();
+      }
 
-          sink.add(line);
-        }
-        buffer.write(leftover);
-      },
-      handleDone: (sink) {
-        if (!buffer.isEmpty) sink.add(buffer.toString());
-        sink.close();
-      }));
+      sink.add(line);
+    }
+    buffer.write(leftover);
+  }, handleDone: (sink) {
+    if (!buffer.isEmpty) sink.add(buffer.toString());
+    sink.close();
+  }));
 }
 
 /// Like [Iterable.where], but allows [test] to return [Future]s and uses the
 /// results of those [Future]s as the test.
 Future<Iterable> futureWhere(Iterable iter, test(value)) {
-  return Future.wait(iter.map((e) {
-    var result = test(e);
-    if (result is! Future) result = new Future.value(result);
-    return result.then((result) => new Pair(e, result));
-  }))
+  return Future
+      .wait(iter.map((e) {
+        var result = test(e);
+        if (result is! Future) result = new Future.value(result);
+        return result.then((result) => new Pair(e, result));
+      }))
       .then((pairs) => pairs.where((pair) => pair.last))
       .then((pairs) => pairs.map((pair) => pair.first));
 }
@@ -524,8 +551,10 @@ List<String> split1(String toSplit, String pattern) {
 
   var index = toSplit.indexOf(pattern);
   if (index == -1) return [toSplit];
-  return [toSplit.substring(0, index),
-    toSplit.substring(index + pattern.length)];
+  return [
+    toSplit.substring(0, index),
+    toSplit.substring(index + pattern.length)
+  ];
 }
 
 /// Adds additional query parameters to [url], overwriting the original
@@ -556,7 +585,8 @@ String mapToQuery(Map<String, String> map) {
   map.forEach((key, value) {
     key = Uri.encodeQueryComponent(key);
     value = (value == null || value.isEmpty)
-       ? null : Uri.encodeQueryComponent(value);
+        ? null
+        : Uri.encodeQueryComponent(value);
     pairs.add([key, value]);
   });
   return pairs.map((pair) {
@@ -566,8 +596,8 @@ String mapToQuery(Map<String, String> map) {
 }
 
 /// Returns the union of all elements in each set in [sets].
-Set/*<T>*/ unionAll/*<T>*/(Iterable<Set/*<T>*/> sets) =>
-  sets.fold(new Set(), (union, set) => union.union(set));
+Set/*<T>*/ unionAll/*<T>*/(Iterable<Set/*<T>*/ > sets) =>
+    sets.fold(new Set(), (union, set) => union.union(set));
 
 // TODO(nweiz): remove this when issue 9068 has been fixed.
 /// Whether [uri1] and [uri2] are equal.
@@ -575,7 +605,7 @@ Set/*<T>*/ unionAll/*<T>*/(Iterable<Set/*<T>*/> sets) =>
 /// This consider HTTP URIs to default to port 80, and HTTPs URIs to default to
 /// port 443.
 bool urisEqual(Uri uri1, Uri uri2) =>
-  canonicalizeUri(uri1) == canonicalizeUri(uri2);
+    canonicalizeUri(uri1) == canonicalizeUri(uri2);
 
 /// Return [uri] with redundant port information removed.
 Uri canonicalizeUri(Uri uri) {
@@ -618,7 +648,7 @@ String niceDuration(Duration duration) {
 ///
 /// Unlike [Uri.decodeComponent], this includes replacing `+` with ` `.
 String urlDecode(String encoded) =>
-  Uri.decodeComponent(encoded.replaceAll("+", " "));
+    Uri.decodeComponent(encoded.replaceAll("+", " "));
 
 /// Takes a simple data structure (composed of [Map]s, [Iterable]s, scalar
 /// objects, and [Future]s) and recursively resolves all the [Future]s contained
@@ -649,7 +679,9 @@ Future/*<T>*/ awaitObject/*<T>*/(/*=T*/ object) async {
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
-bool get canUseSpecialChars => !runningFromTest && !runningAsTest &&
+bool get canUseSpecialChars =>
+    !runningFromTest &&
+    !runningAsTest &&
     Platform.operatingSystem != 'windows' &&
     stdioType(stdout) == StdioType.TERMINAL;
 

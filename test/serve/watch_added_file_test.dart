@@ -10,9 +10,7 @@ main() {
   integration("picks up files added after serving started", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "body")
-      ])
+      d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
     pubGet();
@@ -21,9 +19,7 @@ main() {
     requestShouldSucceed("index.html", "body");
 
     d.dir(appPath, [
-      d.dir("web", [
-        d.file("other.html", "added")
-      ])
+      d.dir("web", [d.file("other.html", "added")])
     ]).create();
 
     waitForBuildSuccess();

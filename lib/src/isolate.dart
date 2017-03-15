@@ -23,11 +23,11 @@ Future runUri(Uri url, List<String> args, Object message,
   var exitPort = new ReceivePort();
 
   await Isolate.spawnUri(url, args, message,
-    checked: checked,
-    automaticPackageResolution: automaticPackageResolution,
-    packageConfig: packageConfig,
-    onError: errorPort.sendPort,
-    onExit: exitPort.sendPort);
+      checked: checked,
+      automaticPackageResolution: automaticPackageResolution,
+      packageConfig: packageConfig,
+      onError: errorPort.sendPort,
+      onExit: exitPort.sendPort);
 
   errorPort.listen((list) {
     stderr.writeln("Unhandled exception:");

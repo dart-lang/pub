@@ -14,13 +14,13 @@ main() {
   integration("pathToUrls errors on bad inputs", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
       d.file("top-level.txt", "top-level"),
       d.dir("bin", [
         d.file("foo.txt", "foo"),
@@ -34,15 +34,19 @@ main() {
     pubServe();
 
     // Bad arguments.
-    expectWebSocketError("pathToUrls", {"path": 123},
+    expectWebSocketError(
+        "pathToUrls",
+        {"path": 123},
         rpc_error_code.INVALID_PARAMS,
         'Parameter "path" for method "pathToUrls" must be a string, but was '
-            '123.');
+        '123.');
 
-    expectWebSocketError("pathToUrls", {"path": "main.dart", "line": 12.34},
+    expectWebSocketError(
+        "pathToUrls",
+        {"path": "main.dart", "line": 12.34},
         rpc_error_code.INVALID_PARAMS,
         'Parameter "line" for method "pathToUrls" must be an integer, but was '
-            '12.34.');
+        '12.34.');
 
     // Unserved directories.
     expectNotServed(p.join('bin', 'foo.txt'));

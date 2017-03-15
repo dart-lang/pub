@@ -25,8 +25,7 @@ void expectDependencies(Map<String, Iterable<String>> expected) {
 
   schedule(() {
     var computer = new DependencyComputer(_loadPackageGraph());
-    var result = mapMap(
-        computer.transformersNeededByTransformers(),
+    var result = mapMap(computer.transformersNeededByTransformers(),
         key: (id, _) => id.toString(),
         value: (_, ids) => ids.map((id) => id.toString()).toSet());
     expect(result, equals(expected));
@@ -64,8 +63,10 @@ void expectLibraryDependencies(String id, Iterable<String> expected) {
 
   schedule(() {
     var computer = new DependencyComputer(_loadPackageGraph());
-    var result = computer.transformersNeededByLibrary(new AssetId.parse(id))
-        .map((id) => id.toString()).toSet();
+    var result = computer
+        .transformersNeededByLibrary(new AssetId.parse(id))
+        .map((id) => id.toString())
+        .toSet();
     expect(result, equals(expected));
   }, "expect dependencies to match $expected");
 }
@@ -85,8 +86,8 @@ PackageGraph _loadPackageGraph() {
   for (var package in listDir(sandboxDir)) {
     if (!fileExists(p.join(package, 'pubspec.yaml'))) continue;
     var packageName = p.basename(package);
-    packages[packageName] = new Package.load(
-        packageName, package, systemCache.sources);
+    packages[packageName] =
+        new Package.load(packageName, package, systemCache.sources);
   }
 
   loadPackage(packageName) {
@@ -109,7 +110,7 @@ String transformer([Iterable<String> imports]) {
   if (imports == null) imports = [];
 
   var buffer = new StringBuffer()
-      ..writeln('import "package:barback/barback.dart";');
+    ..writeln('import "package:barback/barback.dart";');
   for (var import in imports) {
     buffer.writeln('import "$import";');
   }

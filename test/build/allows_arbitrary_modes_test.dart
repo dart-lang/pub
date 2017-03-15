@@ -35,12 +35,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
@@ -48,9 +46,7 @@ main() {
 
     d.dir(appPath, [
       d.dir('build', [
-        d.dir('web', [
-          d.file('foo.out', 'depeche')
-        ])
+        d.dir('web', [d.file('foo.out', 'depeche')])
       ])
     ]).validate();
   });

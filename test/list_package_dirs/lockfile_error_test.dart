@@ -12,16 +12,15 @@ import '../test_pub.dart';
 
 main() {
   integration("reports the lockfile path when there is an error in it", () {
-    d.dir(appPath, [
-      d.appPubspec(),
-      d.file("pubspec.lock", "some bad yaml")
-    ]).create();
+    d.dir(appPath,
+        [d.appPubspec(), d.file("pubspec.lock", "some bad yaml")]).create();
 
-    schedulePub(args: ["list-package-dirs", "--format=json"],
-        outputJson: {
-          "error": contains('The lockfile must be a YAML mapping.'),
-          "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.lock"))
-        },
-        exitCode: exit_codes.DATA);
+    schedulePub(args: [
+      "list-package-dirs",
+      "--format=json"
+    ], outputJson: {
+      "error": contains('The lockfile must be a YAML mapping.'),
+      "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.lock"))
+    }, exitCode: exit_codes.DATA);
   });
 }

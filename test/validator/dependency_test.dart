@@ -18,7 +18,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator dependency(Entrypoint entrypoint) =>
-  new DependencyValidator(entrypoint);
+    new DependencyValidator(entrypoint);
 
 expectDependencyValidationError(String error) {
   expect(schedulePackageValidation(dependency),
@@ -40,12 +40,16 @@ setUpDependency(Map dep, {List<String> hostedVersions}) {
     if (hostedVersions == null) {
       return new Future.value(new http.Response("not found", 404));
     } else {
-      return new Future.value(new http.Response(JSON.encode({
-        "name": "foo",
-        "uploaders": ["nweiz@google.com"],
-        "versions": hostedVersions.map((version) =>
-            packageVersionApiMap(packageMap('foo', version))).toList()
-      }), 200));
+      return new Future.value(new http.Response(
+          JSON.encode({
+            "name": "foo",
+            "uploaders": ["nweiz@google.com"],
+            "versions": hostedVersions
+                .map((version) =>
+                    packageVersionApiMap(packageMap('foo', version)))
+                .toList()
+          }),
+          200));
     }
   }));
 
@@ -63,9 +67,8 @@ main() {
 
     integration('has a ^ constraint with an appropriate SDK constraint', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "foo": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0")
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"foo": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0")
       ]).create();
       expectNoValidationError(dependency);
     });
@@ -82,15 +85,17 @@ main() {
           expectDependencyValidationWarning('  foo: ">=2.0.0 <3.0.0"');
         });
 
-        integration("and should suggest the hosted prerelease version if "
-                    "it's the only version available", () {
+        integration(
+            "and should suggest the hosted prerelease version if "
+            "it's the only version available", () {
           setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
           expectDependencyValidationWarning('  foo: ">=3.0.0-pre <4.0.0"');
         });
 
-        integration("and should suggest a tighter constraint if primary is "
-                    "pre-1.0.0", () {
+        integration(
+            "and should suggest a tighter constraint if primary is "
+            "pre-1.0.0", () {
           setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["0.0.1", "0.0.2"]);
           expectDependencyValidationWarning('  foo: ">=0.0.2 <0.1.0"');
@@ -106,12 +111,11 @@ main() {
           expectDependencyValidationWarning('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration("and should use the other source's unquoted version if "
-                    "concrete", () {
-          setUpDependency({
-            'git': 'git://github.com/dart-lang/foo',
-            'version': '0.2.3'
-          });
+        integration(
+            "and should use the other source's unquoted version if "
+            "concrete", () {
+          setUpDependency(
+              {'git': 'git://github.com/dart-lang/foo', 'version': '0.2.3'});
           expectDependencyValidationWarning('  foo: 0.2.3');
         });
       });
@@ -125,15 +129,17 @@ main() {
           expectDependencyValidationError('  foo: ">=2.0.0 <3.0.0"');
         });
 
-        integration("and should suggest the hosted prerelease version if "
-                    "it's the only version available", () {
+        integration(
+            "and should suggest the hosted prerelease version if "
+            "it's the only version available", () {
           setUpDependency({'path': path.join(sandboxDir, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
           expectDependencyValidationError('  foo: ">=3.0.0-pre <4.0.0"');
         });
 
-        integration("and should suggest a tighter constraint if primary is "
-                    "pre-1.0.0", () {
+        integration(
+            "and should suggest a tighter constraint if primary is "
+            "pre-1.0.0", () {
           setUpDependency({'path': path.join(sandboxDir, 'foo')},
               hostedVersions: ["0.0.1", "0.0.2"]);
           expectDependencyValidationError('  foo: ">=0.0.2 <0.1.0"');
@@ -149,12 +155,11 @@ main() {
           expectDependencyValidationError('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration("and should use the other source's unquoted version if "
-                    "concrete", () {
-          setUpDependency({
-            'path': path.join(sandboxDir, 'foo'),
-            'version': '0.2.3'
-          });
+        integration(
+            "and should use the other source's unquoted version if "
+            "concrete", () {
+          setUpDependency(
+              {'path': path.join(sandboxDir, 'foo'), 'version': '0.2.3'});
           expectDependencyValidationError('  foo: 0.2.3');
         });
       });
@@ -164,82 +169,87 @@ main() {
       group('and it should not suggest a version', () {
         integration("if there's no lockfile", () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            })
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"})
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              schedulePackageValidation(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration("if the lockfile doesn't have an entry for the "
+        integration(
+            "if the lockfile doesn't have an entry for the "
             "dependency", () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'bar': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'bar',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'bar': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'bar',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              schedulePackageValidation(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration('and it should suggest a constraint based on the locked '
+        integration(
+            'and it should suggest a constraint based on the locked '
             'version', () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
         });
 
-        integration('and it should suggest a concrete constraint if the locked '
+        integration(
+            'and it should suggest a concrete constraint if the locked '
             'version is pre-1.0.0', () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '0.1.2',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '0.1.2',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=0.1.2 <0.2.0"');
@@ -247,12 +257,11 @@ main() {
       });
     });
 
-    integration('with a single-version dependency and it should suggest a '
+    integration(
+        'with a single-version dependency and it should suggest a '
         'constraint based on the version', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "foo": "1.2.3"
-        })
+        d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "1.2.3"})
       ]).create();
 
       expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
@@ -262,59 +271,63 @@ main() {
       group('and it should not suggest a version', () {
         integration("if there's no lockfile", () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            })
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"})
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              schedulePackageValidation(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration("if the lockfile doesn't have an entry for the "
+        integration(
+            "if the lockfile doesn't have an entry for the "
             "dependency", () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'bar': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'bar',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'bar': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'bar',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              schedulePackageValidation(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration('and it should suggest a constraint based on the locked '
+        integration(
+            'and it should suggest a constraint based on the locked '
             'version', () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <3.0.0"');
@@ -322,44 +335,45 @@ main() {
 
         integration('and it should preserve the upper-bound operator', () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<=3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
         });
 
-        integration('and it should expand the suggested constraint if the '
+        integration(
+            'and it should expand the suggested constraint if the '
             'locked version matches the upper bound', () {
           d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<=1.2.3"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=1.2.3"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
@@ -371,9 +385,7 @@ main() {
       integration('and it should suggest a constraint based on the lower bound',
           () {
         d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": ">=1.2.3"
-          })
+          d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">=1.2.3"})
         ]).create();
 
         expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
@@ -381,9 +393,7 @@ main() {
 
       integration('and it should preserve the lower-bound operator', () {
         d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": ">1.2.3"
-          })
+          d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">1.2.3"})
         ]).create();
 
         expectDependencyValidationWarning('  foo: ">1.2.3 <2.0.0"');
@@ -393,9 +403,7 @@ main() {
     group('has a ^ dependency', () {
       integration("without an SDK constraint", () {
         d.dir(appPath, [
-          d.libPubspec("integration_pkg", "1.0.0", deps: {
-            "foo": "^1.2.3"
-          })
+          d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
         ]).create();
 
         expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
@@ -403,9 +411,8 @@ main() {
 
       integration("with a too-broad SDK constraint", () {
         d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": "^1.2.3"
-          }, sdk: ">=1.5.0 <2.0.0")
+          d.libPubspec("test_pkg", "1.0.0",
+              deps: {"foo": "^1.2.3"}, sdk: ">=1.5.0 <2.0.0")
         ]).create();
 
         expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');

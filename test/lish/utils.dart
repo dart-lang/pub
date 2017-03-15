@@ -9,7 +9,6 @@ import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
 
-
 void handleUploadForm(ScheduledServer server, [Map body]) {
   server.handle('GET', '/api/packages/versions/new', (request) {
     return server.url.then((url) {
@@ -19,10 +18,7 @@ void handleUploadForm(ScheduledServer server, [Map body]) {
       if (body == null) {
         body = {
           'url': url.resolve('/upload').toString(),
-          'fields': {
-            'field1': 'value1',
-            'field2': 'value2'
-          }
+          'fields': {'field1': 'value1', 'field2': 'value2'}
         };
       }
 
@@ -41,4 +37,3 @@ void handleUpload(ScheduledServer server) {
         .then((url) => new shelf.Response.found(url.resolve('/create')));
   });
 }
-

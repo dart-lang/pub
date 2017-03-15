@@ -4,7 +4,6 @@
 
 // Windows doesn't support sending signals.
 @TestOn('!windows')
-
 import 'dart:io';
 
 import 'package:scheduled_test/scheduled_test.dart';
@@ -38,9 +37,7 @@ main() {
   integration('forwards signals to the inner script', () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", SCRIPT)
-      ])
+      d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
     pubGet();

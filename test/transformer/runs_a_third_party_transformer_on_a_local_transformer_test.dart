@@ -12,9 +12,7 @@ main() {
 
     d.dir("foo", [
       d.libPubspec("foo", '1.0.0', deps: {"barback": "any"}),
-      d.dir("lib", [
-        d.file("transformer.dart", dartTransformer('foo'))
-      ])
+      d.dir("lib", [d.file("transformer.dart", dartTransformer('foo'))])
     ]).create();
 
     d.dir(appPath, [
@@ -25,18 +23,14 @@ main() {
           "foo": {"path": "../foo"}
         }
       }),
-      d.dir("lib", [
-        d.file("transformer.dart", dartTransformer('myapp'))
-      ]),
-      d.dir("web", [
-        d.file("main.dart", 'const TOKEN = "main.dart";')
-      ])
+      d.dir("lib", [d.file("transformer.dart", dartTransformer('myapp'))]),
+      d.dir("web", [d.file("main.dart", 'const TOKEN = "main.dart";')])
     ]).create();
 
     pubGet();
     pubServe();
-    requestShouldSucceed("main.dart",
-        'const TOKEN = "((main.dart, foo), (myapp, foo))";');
+    requestShouldSucceed(
+        "main.dart", 'const TOKEN = "((main.dart, foo), (myapp, foo))";');
     endPubServe();
   });
 }

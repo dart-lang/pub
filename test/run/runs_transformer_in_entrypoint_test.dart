@@ -23,12 +23,11 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", dartTransformer("transformed"))
-      ])]),
-      d.dir("bin", [
-        d.file("hi.dart", SCRIPT)
-      ])
+      d.dir("lib", [
+        d.dir(
+            "src", [d.file("transformer.dart", dartTransformer("transformed"))])
+      ]),
+      d.dir("bin", [d.file("hi.dart", SCRIPT)])
     ]).create();
 
     pubGet();

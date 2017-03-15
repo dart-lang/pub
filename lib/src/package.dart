@@ -125,6 +125,7 @@ class Package {
 
     return _inGitRepoCache;
   }
+
   bool _inGitRepoCache;
 
   /// Loads the package whose root directory is [packageDir].
@@ -139,8 +140,7 @@ class Package {
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec)
-    : dir = null;
+  Package.inMemory(this.pubspec) : dir = null;
 
   /// Creates a package with [pubspec] located at [dir].
   Package(this.pubspec, this.dir);
@@ -151,8 +151,13 @@ class Package {
   /// override it to report that certain paths exist elsewhere than within
   /// [dir]. For example, a [CachedPackage]'s `lib` directory is in the
   /// `.pub/deps` directory.
-  String path(String part1, [String part2, String part3, String part4,
-            String part5, String part6, String part7]) {
+  String path(String part1,
+      [String part2,
+      String part3,
+      String part4,
+      String part5,
+      String part6,
+      String part7]) {
     if (dir == null) {
       throw new StateError("Package $name is in-memory and doesn't have paths "
           "on disk.");
@@ -205,8 +210,8 @@ class Package {
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
-  List<String> listFiles({String beneath, bool recursive: true,
-      bool useGitIgnore: false}) {
+  List<String> listFiles(
+      {String beneath, bool recursive: true, bool useGitIgnore: false}) {
     // An in-memory package has no files.
     if (dir == null) return [];
 
@@ -252,7 +257,9 @@ class Package {
         return recursive ? _listWithinDir(file) : [file];
       });
     } else {
-      files = listDir(beneath, recursive: recursive, includeDirs: false,
+      files = listDir(beneath,
+          recursive: recursive,
+          includeDirs: false,
           whitelist: _WHITELISTED_FILES);
     }
 
@@ -297,13 +304,13 @@ class Package {
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.
-      targetFiles = listDir(target, recursive: true, includeDirs: false,
-          whitelist: _WHITELISTED_FILES);
+      targetFiles = listDir(target,
+          recursive: true, includeDirs: false, whitelist: _WHITELISTED_FILES);
     }
 
     // Re-write the paths so they're underneath the symlink.
-    return targetFiles.map((targetFile) =>
-        p.join(subdir, p.relative(targetFile, from: target)));
+    return targetFiles.map(
+        (targetFile) => p.join(subdir, p.relative(targetFile, from: target)));
   }
 
   /// Returns a debug string for the package.
@@ -339,8 +346,7 @@ abstract class PackageName {
   /// Whether this package is the root package.
   bool get isRoot => source == null && !isMagic;
 
-  PackageName._(this.name, this.source, this.description)
-      : isMagic = false;
+  PackageName._(this.name, this.source, this.description) : isMagic = false;
 
   PackageName._magic(this.name)
       : source = null,
@@ -361,7 +367,7 @@ abstract class PackageName {
 
   /// Returns a [PackageDep] for this package with the given version constraint.
   PackageDep withConstraint(VersionConstraint constraint) =>
-    new PackageDep(name, source, constraint, description);
+      new PackageDep(name, source, constraint, description);
 
   /// Returns whether this refers to the same package as [other].
   ///
@@ -395,8 +401,7 @@ class PackageRef extends PackageName {
       : super._(name, source, description);
 
   /// Creates a reference to a magic package (see [isMagic]).
-  PackageRef.magic(String name)
-      : super._magic(name);
+  PackageRef.magic(String name) : super._magic(name);
 
   bool operator ==(other) => other is PackageRef && samePackage(other);
 }
@@ -428,8 +433,8 @@ class PackageId extends PackageName {
 
   /// Creates an ID for a magic package (see [isMagic]).
   PackageId.magic(String name)
-    : version = Version.none,
-      super._magic(name);
+      : version = Version.none,
+        super._magic(name);
 
   /// Creates an ID for the given root package.
   PackageId.root(Package package)
@@ -475,8 +480,7 @@ class PackageDep extends PackageName {
   ///
   /// Specifically, whether [id] refers to the same package as [this] *and*
   /// [constraint] allows `id.version`.
-  bool allows(PackageId id) =>
-      samePackage(id) && constraint.allows(id.version);
+  bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
 
   int get hashCode => super.hashCode ^ constraint.hashCode;
 

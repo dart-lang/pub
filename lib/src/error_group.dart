@@ -134,7 +134,10 @@ class ErrorGroup {
 
     _isDone = true;
     _done._signalError(error, stackTrace);
-    if (!caught && !_done._hasListeners) scheduleMicrotask((){ throw error; });
+    if (!caught && !_done._hasListeners)
+      scheduleMicrotask(() {
+        throw error;
+      });
   }
 
   /// Notifies [this] that one of its member [Future]s is complete.
@@ -188,7 +191,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
     _completer.future.catchError((_) {});
   }
 
-  Future<S> then<S>(FutureOr<S> onValue(T value), { Function onError }) {
+  Future<S> then<S>(FutureOr<S> onValue(T value), {Function onError}) {
     _hasListeners = true;
     return _completer.future.then(onValue, onError: onError);
   }
@@ -255,7 +258,7 @@ class _ErrorGroupStream<T> extends Stream<T> {
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
   _ErrorGroupStream(this._group, Stream<T> inner)
-    : _controller = new StreamController(sync: true) {
+      : _controller = new StreamController(sync: true) {
     // Use old-style asBroadcastStream behavior - cancel source _subscription
     // the first time the stream has no listeners.
     _stream = inner.isBroadcast
@@ -273,12 +276,9 @@ class _ErrorGroupStream<T> extends Stream<T> {
   }
 
   StreamSubscription<T> listen(void onData(T value),
-      {Function onError, void onDone(),
-       bool cancelOnError}) {
+      {Function onError, void onDone(), bool cancelOnError}) {
     return _stream.listen(onData,
-        onError: onError,
-        onDone: onDone,
-        cancelOnError: true);
+        onError: onError, onDone: onDone, cancelOnError: true);
   }
 
   /// Signal that an error from [_group] should be propagated through [this],

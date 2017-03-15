@@ -53,10 +53,7 @@ main() {
         d.file("lazy.dart", LAZY_TRANSFORMER),
         d.file("aggregate.dart", AGGREGATE_TRANSFORMER),
       ]),
-      d.dir("web", [
-        d.file("foo.txt", "foo"),
-        d.file("bar.txt", "bar")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo"), d.file("bar.txt", "bar")])
     ]).create();
 
     pubGet();

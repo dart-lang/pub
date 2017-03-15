@@ -10,9 +10,7 @@ main() {
   integration("does not compile if dart2js is disabled", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('hello');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
     ]).create();
 
     pubGet();

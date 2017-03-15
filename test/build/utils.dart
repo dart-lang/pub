@@ -14,14 +14,16 @@ void serveBrowserPackage() {
   serve([
     d.dir('api', [
       d.dir('packages', [
-        d.file('browser', JSON.encode({
-          'versions': [packageVersionApiMap(packageMap('browser', '1.0.0'))]
-        })),
+        d.file(
+            'browser',
+            JSON.encode({
+              'versions': [packageVersionApiMap(packageMap('browser', '1.0.0'))]
+            })),
         d.dir('browser', [
           d.dir('versions', [
-            d.file('1.0.0', JSON.encode(
-                packageVersionApiMap(
-                    packageMap('browser', '1.0.0'),
+            d.file(
+                '1.0.0',
+                JSON.encode(packageVersionApiMap(packageMap('browser', '1.0.0'),
                     full: true)))
           ])
         ])

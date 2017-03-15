@@ -8,15 +8,10 @@ import 'utils.dart';
 
 main() {
   integration("gets first if a dependency is not in the lock file", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "0.0.1"),
-      d.libDir("foo")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "0.0.1"), d.libDir("foo")]).create();
 
     // Create a lock file without "foo".
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
     pubGet();
 
     // Add it to the pubspec.

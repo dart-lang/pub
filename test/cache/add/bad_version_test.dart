@@ -8,7 +8,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if the version constraint cannot be parsed', () {
-    schedulePub(args: ["cache", "add", "foo", "-v", "1.0"],
+    schedulePub(
+        args: ["cache", "add", "foo", "-v", "1.0"],
         error: """
             Could not parse version "1.0". Unknown text at "1.0".
             

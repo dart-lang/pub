@@ -8,7 +8,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if there are extra arguments', () {
-    schedulePub(args: ["cache", "add", "foo", "bar", "baz"],
+    schedulePub(
+        args: ["cache", "add", "foo", "bar", "baz"],
         error: """
             Unexpected arguments "bar" and "baz".
             

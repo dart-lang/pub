@@ -9,10 +9,13 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("doesn't recreate a snapshot when no dependencies of a package "
+  integration(
+      "doesn't recreate a snapshot when no dependencies of a package "
       "have changed", () {
     servePackages((builder) {
-      builder.serve("foo", "1.2.3", deps: {"bar": "any"}, contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        "bar": "any"
+      }, contents: [
         d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
       ]);
       builder.serve("bar", "1.2.3");

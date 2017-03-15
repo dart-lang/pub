@@ -46,9 +46,7 @@ main() {
           "unchanged": "any",
           "upgraded": "1.0.0"
         },
-        "dependency_overrides": {
-          "overridden": "any"
-        }
+        "dependency_overrides": {"overridden": "any"}
       })
     ]).create();
 
@@ -66,14 +64,14 @@ main() {
           "unchanged": "any",
           "upgraded": "2.0.0"
         },
-        "dependency_overrides": {
-          "overridden": "any"
-        }
+        "dependency_overrides": {"overridden": "any"}
       })
     ]).create();
 
     // Upgrade everything.
-    pubUpgrade(output: new RegExp(r"""
+    pubUpgrade(
+        output: new RegExp(
+            r"""
 Resolving dependencies\.\.\..*
 \+ added .*
 \* description_changed .*
@@ -84,6 +82,7 @@ Resolving dependencies\.\.\..*
 > upgraded .*
 These packages are no longer being depended on:
 - removed .*
-""", multiLine: true));
+""",
+            multiLine: true));
   });
 }

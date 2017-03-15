@@ -225,20 +225,16 @@ class WebSocketApi {
     var rootDirectory = _validateRelativePath(params, "path");
     try {
       var server = await _environment.serveDirectory(rootDirectory);
-      return {
-        "url": server.url.toString()
-      };
+      return {"url": server.url.toString()};
     } on OverlappingSourceDirectoryException catch (error) {
       var dir = pluralize("directory", error.overlappingDirectories.length,
           plural: "directories");
-      var overlapping = toSentence(error.overlappingDirectories.map(
-          (dir) => '"$dir"'));
+      var overlapping =
+          toSentence(error.overlappingDirectories.map((dir) => '"$dir"'));
       print("data: ${error.overlappingDirectories}");
       throw new json_rpc.RpcException(_Error.OVERLAPPING,
           'Path "$rootDirectory" overlaps already served $dir $overlapping.',
-          data: {
-            "directories": error.overlappingDirectories
-          });
+          data: {"directories": error.overlappingDirectories});
     }
   }
 

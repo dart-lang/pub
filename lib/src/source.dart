@@ -136,7 +136,7 @@ abstract class Source {
 
 /// A source bound to a [SystemCache].
 abstract class BoundSource {
-  /// The unbound source that produced [this]. 
+  /// The unbound source that produced [this].
   Source get source;
 
   /// The system cache to which [this] is bound.
@@ -158,7 +158,8 @@ abstract class BoundSource {
       throw new ArgumentError("Cannot get versions for the root package.");
     }
     if (ref.source != source) {
-      throw new ArgumentError("Package $ref does not use source ${source.name}.");
+      throw new ArgumentError(
+          "Package $ref does not use source ${source.name}.");
     }
 
     return doGetVersions(ref);

@@ -12,8 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 
 import 'package:compiler_unsupported/compiler.dart' as compiler;
-import 'package:compiler_unsupported/src/dart2js.dart'
-    show AbortLeg;
+import 'package:compiler_unsupported/src/dart2js.dart' show AbortLeg;
 import 'package:compiler_unsupported/src/io/source_file.dart';
 import '../barback.dart';
 import '../dart.dart' as dart;
@@ -22,9 +21,18 @@ import 'asset_environment.dart';
 
 /// The set of all valid configuration options for this transformer.
 final _validOptions = new Set<String>.from([
-  'commandLineOptions', 'checked', 'csp', 'minify', 'verbose', 'environment',
-  'preserveUris', 'suppressWarnings', 'suppressHints',
-  'suppressPackageWarnings', 'terse', 'sourceMaps'
+  'commandLineOptions',
+  'checked',
+  'csp',
+  'minify',
+  'verbose',
+  'environment',
+  'preserveUris',
+  'suppressWarnings',
+  'suppressHints',
+  'suppressPackageWarnings',
+  'terse',
+  'sourceMaps'
 ]);
 
 /// A [Transformer] that uses dart2js's library API to transform Dart
@@ -45,8 +53,8 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
       defaultsTo: _settings.mode != BarbackMode.RELEASE);
 
   Dart2JSTransformer.withSettings(this._environment, this._settings) {
-    var invalidOptions = _settings.configuration.keys.toSet()
-        .difference(_validOptions);
+    var invalidOptions =
+        _settings.configuration.keys.toSet().difference(_validOptions);
     if (invalidOptions.isEmpty) return;
 
     throw new FormatException("Unrecognized dart2js "
@@ -137,13 +145,12 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
     // to report compile errors to the user in an easily visible way. Need to
     // make sure paths in errors are mapped to the original source path so they
     // can understand them.
-    return dart.compile(
-        entrypoint, provider,
+    return dart.compile(entrypoint, provider,
         commandLineOptions: _configCommandLineOptions,
         csp: _configBool('csp'),
         checked: _configBool('checked'),
-        minify: _configBool(
-            'minify', defaultsTo: _settings.mode == BarbackMode.RELEASE),
+        minify: _configBool('minify',
+            defaultsTo: _settings.mode == BarbackMode.RELEASE),
         verbose: _configBool('verbose'),
         environment: _configEnvironment,
         packageRoot: packageRoot,
@@ -151,8 +158,8 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
         preserveUris: _configBool('preserveUris'),
         suppressWarnings: _configBool('suppressWarnings'),
         suppressHints: _configBool('suppressHints'),
-        suppressPackageWarnings: _configBool(
-            'suppressPackageWarnings', defaultsTo: true),
+        suppressPackageWarnings:
+            _configBool('suppressPackageWarnings', defaultsTo: true),
         terse: _configBool('terse'),
         includeSourceMapUrls: _generateSourceMaps);
   }
@@ -182,8 +189,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
         environment.keys.every((key) => key is String) &&
         environment.values.every((key) => key is String)) {
       return mergeMaps(
-          DelegatingMap.typed(environment),
-          _environment.environmentConstants);
+          DelegatingMap.typed(environment), _environment.environmentConstants);
     }
 
     throw new FormatException('Invalid value for \$dart2js.environment: '
@@ -243,10 +249,8 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   compiler.Diagnostic _lastKind = null;
 
   static final int _FATAL =
-      compiler.Diagnostic.CRASH.ordinal |
-      compiler.Diagnostic.ERROR.ordinal;
-  static final int _INFO =
-      compiler.Diagnostic.INFO.ordinal |
+      compiler.Diagnostic.CRASH.ordinal | compiler.Diagnostic.ERROR.ordinal;
+  static final int _INFO = compiler.Diagnostic.INFO.ordinal |
       compiler.Diagnostic.VERBOSE_INFO.ordinal;
 
   _BarbackCompilerProvider(this._environment, this._transform,
@@ -269,10 +273,10 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     //     $sdk|lib/lib/...
     //
     // TODO(rnystrom): Fix this if #17751 is fixed.
-    var buildDir = _environment.getSourceDirectoryContaining(
-        _transform.primaryInput.id.path);
-    _libraryRootPath = _environment.rootPackage.path(
-        buildDir, "packages", r"$sdk");
+    var buildDir = _environment
+        .getSourceDirectoryContaining(_transform.primaryInput.id.path);
+    _libraryRootPath =
+        _environment.rootPackage.path(buildDir, "packages", r"$sdk");
   }
 
   /// A [CompilerInputProvider] for dart2js.
@@ -328,8 +332,8 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
 
   /// A [DiagnosticHandler] for dart2js, loosely based on
   /// [FormattingDiagnosticHandler].
-  void handleDiagnostic(Uri uri, int begin, int end,
-                        String message, compiler.Diagnostic kind) {
+  void handleDiagnostic(
+      Uri uri, int begin, int end, String message, compiler.Diagnostic kind) {
     // TODO(ahe): Remove this when source map is handled differently.
     if (kind.name == "source map") return;
 
@@ -410,8 +414,8 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     // should be loaded directly from disk.
     var sourcePath = p.fromUri(url);
     if (_environment.containsPath(sourcePath)) {
-      var relative = p.toUri(_environment.rootPackage.relative(sourcePath))
-          .toString();
+      var relative =
+          p.toUri(_environment.rootPackage.relative(sourcePath)).toString();
 
       return new AssetId(_environment.rootPackage.name, relative);
     }

@@ -13,25 +13,27 @@ main() {
   setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
     pubGet();
   });
 
   integration("responds with an error if 'path' is not a string", () {
     pubServe();
-    expectWebSocketError("serveDirectory", {"path": 123},
+    expectWebSocketError(
+        "serveDirectory",
+        {"path": 123},
         rpc_error_code.INVALID_PARAMS,
         'Parameter "path" for method "serveDirectory" must be a string, but '
-            'was 123.');
+        'was 123.');
     endPubServe();
   });
 
   integration("responds with an error if 'path' is absolute", () {
     pubServe();
-    expectWebSocketError("serveDirectory", {"path": "/absolute.txt"},
+    expectWebSocketError(
+        "serveDirectory",
+        {"path": "/absolute.txt"},
         rpc_error_code.INVALID_PARAMS,
         '"path" must be a relative path. Got "/absolute.txt".');
     endPubServe();
@@ -39,10 +41,12 @@ main() {
 
   integration("responds with an error if 'path' reaches out", () {
     pubServe();
-    expectWebSocketError("serveDirectory", {"path": "a/../../bad.txt"},
+    expectWebSocketError(
+        "serveDirectory",
+        {"path": "a/../../bad.txt"},
         rpc_error_code.INVALID_PARAMS,
         '"path" cannot reach out of its containing directory. Got '
-            '"a/../../bad.txt".');
+        '"a/../../bad.txt".');
     endPubServe();
   });
 }

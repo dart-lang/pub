@@ -12,7 +12,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator utf8Readme(Entrypoint entrypoint) =>
-  new Utf8ReadmeValidator(entrypoint);
+    new Utf8ReadmeValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {
@@ -39,7 +39,8 @@ main() {
     });
   });
 
-  integration('should consider a package invalid if it has a README with '
+  integration(
+      'should consider a package invalid if it has a README with '
       'invalid utf-8', () {
     d.validPackage.create();
 

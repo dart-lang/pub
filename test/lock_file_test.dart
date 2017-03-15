@@ -56,7 +56,8 @@ main() {
       });
 
       test('parses a series of package descriptions', () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = new LockFile.parse(
+            '''
 packages:
   bar:
     version: 1.2.3
@@ -66,7 +67,8 @@ packages:
     version: 2.3.4
     source: mock
     description: foo desc
-''', sources);
+''',
+            sources);
 
         expect(lockFile.packages.length, equals(2));
 
@@ -84,21 +86,25 @@ packages:
       });
 
       test("allows an unknown source", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = new LockFile.parse(
+            '''
 packages:
   foo:
     source: bad
     version: 1.2.3
     description: foo desc
-''', sources);
+''',
+            sources);
         var foo = lockFile.packages['foo'];
         expect(foo.source, equals(sources['bad']));
       });
 
       test("allows an empty dependency map", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = new LockFile.parse(
+            '''
 packages:
-''', sources);
+''',
+            sources);
         expect(lockFile.packages, isEmpty);
       });
 
@@ -110,11 +116,13 @@ packages:
       });
 
       test("allows new-style SDK constraints", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = new LockFile.parse(
+            '''
 sdks:
   dart: ">=1.2.3 <4.0.0"
   flutter: ^0.1.2
-''', sources);
+''',
+            sources);
         expect(lockFile.dartSdkConstraint,
             equals(new VersionConstraint.parse('>=1.2.3 <4.0.0')));
         expect(lockFile.flutterSdkConstraint,
@@ -123,74 +131,88 @@ sdks:
 
       test("throws if the top level is not a map", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 not a map
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the contents of 'packages' is not a map", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages: not a map
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the version is missing", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages:
   foo:
     source: mock
     description: foo desc
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the version is invalid", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages:
   foo:
     version: vorpal
     source: mock
     description: foo desc
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the source is missing", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages:
   foo:
     version: 1.2.3
     description: foo desc
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the description is missing", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages:
   foo:
     version: 1.2.3
     source: mock
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
       test("throws if the description is invalid", () {
         expect(() {
-          new LockFile.parse('''
+          new LockFile.parse(
+              '''
 packages:
   foo:
     version: 1.2.3
     source: mock
     description: foo desc is bad
-''', sources);
+''',
+              sources);
         }, throwsFormatException);
       });
 
@@ -226,7 +248,8 @@ packages:
       });
 
       test("ignores extra stuff in file", () {
-        new LockFile.parse('''
+        new LockFile.parse(
+            '''
 extra:
   some: stuff
 packages:
@@ -235,32 +258,35 @@ packages:
     version: 1.2.3
     source: mock
     description: foo desc
-''', sources);
+''',
+            sources);
       });
     });
 
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = new LockFile([
         new PackageId(
-          'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
+            'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
         new PackageId('bar', mockSource, new Version.parse('3.2.1'), 'bar desc')
       ]);
 
-      expect(loadYaml(lockfile.serialize(null)), equals({
-        'sdks': {'dart': 'any'},
-        'packages': {
-          'foo': {
-            'version': '1.2.3',
-            'source': 'mock',
-            'description': 'foo desc'
-          },
-          'bar': {
-            'version': '3.2.1',
-            'source': 'mock',
-            'description': 'bar desc'
-          }
-        }
-      }));
+      expect(
+          loadYaml(lockfile.serialize(null)),
+          equals({
+            'sdks': {'dart': 'any'},
+            'packages': {
+              'foo': {
+                'version': '1.2.3',
+                'source': 'mock',
+                'description': 'foo desc'
+              },
+              'bar': {
+                'version': '3.2.1',
+                'source': 'mock',
+                'description': 'bar desc'
+              }
+            }
+          }));
     });
   });
 }

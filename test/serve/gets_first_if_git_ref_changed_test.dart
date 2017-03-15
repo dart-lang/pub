@@ -7,32 +7,33 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("gets first if a git dependency's ref doesn't match the one in "
+  integration(
+      "gets first if a git dependency's ref doesn't match the one in "
       "the lock file", () {
-    var repo = d.git('foo.git', [
-      d.libDir('foo', 'before'),
-      d.libPubspec('foo', '1.0.0')
-    ]);
+    var repo = d.git(
+        'foo.git', [d.libDir('foo', 'before'), d.libPubspec('foo', '1.0.0')]);
     repo.create();
     var commit1 = repo.revParse('HEAD');
 
-    d.git('foo.git', [
-      d.libDir('foo', 'after'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    d.git('foo.git',
+        [d.libDir('foo', 'after'), d.libPubspec('foo', '1.0.0')]).commit();
 
     var commit2 = repo.revParse('HEAD');
 
     // Lock it to the ref of the first commit.
     d.appDir({
-      "foo": {"git": {"url": "../foo.git", "ref": commit1}}
+      "foo": {
+        "git": {"url": "../foo.git", "ref": commit1}
+      }
     }).create();
 
     pubGet();
 
     // Change the commit in the pubspec.
     d.appDir({
-      "foo": {"git": {"url": "../foo.git", "ref": commit2}}
+      "foo": {
+        "git": {"url": "../foo.git", "ref": commit2}
+      }
     }).create();
 
     pubGet();

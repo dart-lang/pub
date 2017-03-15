@@ -12,12 +12,12 @@ main() {
     });
 
     // Run once to put it in the cache.
-    schedulePub(args: ["cache", "add", "foo"],
-        output: 'Downloading foo 1.2.3...');
+    schedulePub(
+        args: ["cache", "add", "foo"], output: 'Downloading foo 1.2.3...');
 
     // Should be in the cache now.
-    schedulePub(args: ["cache", "add", "foo"],
-        output: 'Already cached foo 1.2.3.');
+    schedulePub(
+        args: ["cache", "add", "foo"], output: 'Already cached foo 1.2.3.');
 
     d.cacheDir({"foo": "1.2.3"}).validate();
   });

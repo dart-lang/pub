@@ -12,9 +12,7 @@ main() {
         "name": "myapp",
         "transformers": [r"$dart2js"]
       }),
-      d.dir("bin", [
-        d.file("script.dart", "main() => print('Hello!');")
-      ])
+      d.dir("bin", [d.file("script.dart", "main() => print('Hello!');")])
     ]).create();
 
     pubGet();

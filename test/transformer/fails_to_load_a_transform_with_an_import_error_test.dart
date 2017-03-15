@@ -20,9 +20,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", "import 'does/not/exist.dart';")
-      ])])
+      d.dir("lib", [
+        d.dir("src",
+            [d.file("transformer.dart", "import 'does/not/exist.dart';")])
+      ])
     ]).create();
 
     pubGet();

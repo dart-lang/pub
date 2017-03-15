@@ -12,11 +12,14 @@ import '../validator.dart';
 
 /// A validator that validates a package's top-level directories.
 class DirectoryValidator extends Validator {
-  DirectoryValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  DirectoryValidator(Entrypoint entrypoint) : super(entrypoint);
 
   static final _PLURAL_NAMES = [
-    "benchmarks", "docs", "examples", "tests", "tools"
+    "benchmarks",
+    "docs",
+    "examples",
+    "tests",
+    "tools"
   ];
 
   Future validate() {
@@ -29,17 +32,17 @@ class DirectoryValidator extends Validator {
           // Cut off the "s"
           var singularName = dir.substring(0, dir.length - 1);
           warnings.add('Rename the top-level "$dir" directory to '
-                  '"$singularName".\n'
+              '"$singularName".\n'
               'The Pub layout convention is to use singular directory '
-                  'names.\n'
+              'names.\n'
               'Plural names won\'t be correctly identified by Pub and other '
-                  'tools.');
+              'tools.');
         }
 
         if (dir.contains(new RegExp(r"^samples?$"))) {
           warnings.add('Rename the top-level "$dir" directory to "example".\n'
               'This allows Pub to find your examples and create "packages" '
-                  'directories for them.\n');
+              'directories for them.\n');
         }
       }
     });

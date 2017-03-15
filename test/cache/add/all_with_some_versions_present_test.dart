@@ -15,14 +15,17 @@ main() {
     });
 
     // Install a couple of versions first.
-    schedulePub(args: ["cache", "add", "foo", "-v", "1.2.1"],
+    schedulePub(
+        args: ["cache", "add", "foo", "-v", "1.2.1"],
         output: 'Downloading foo 1.2.1...');
 
-    schedulePub(args: ["cache", "add", "foo", "-v", "1.2.3"],
+    schedulePub(
+        args: ["cache", "add", "foo", "-v", "1.2.3"],
         output: 'Downloading foo 1.2.3...');
 
     // They should show up as already installed now.
-    schedulePub(args: ["cache", "add", "foo", "--all"],
+    schedulePub(
+        args: ["cache", "add", "foo", "--all"],
         output: '''
           Already cached foo 1.2.1.
           Downloading foo 1.2.2...

@@ -10,7 +10,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('keeps a hosted package locked to the version in the '
+  integration(
+      'keeps a hosted package locked to the version in the '
       'lockfile', () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));
 

@@ -12,20 +12,18 @@ main() {
 
     d.dir("foo", [
       d.libPubspec("foo", '1.0.0', deps: {"barback": "any"}),
-      d.dir("lib", [
-        d.file("foo.dart", REWRITE_TRANSFORMER)
-      ])
+      d.dir("lib", [d.file("foo.dart", REWRITE_TRANSFORMER)])
     ]).create();
 
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["foo"],
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       }),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();

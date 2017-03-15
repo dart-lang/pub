@@ -156,13 +156,9 @@ main() {
         "example": {
           "console_example.dart": {},
           "main.dart": {},
-          "web copy": {
-            "web_example.dart": {}
-          },
+          "web copy": {"web_example.dart": {}},
         },
-        "lib": {
-          "path.dart": {}
-        },
+        "lib": {"path.dart": {}},
         "pubspec.yaml": {},
         "test": {
           "absolute_test.dart": {},
@@ -238,5 +234,4 @@ main() {
     '-- l.dart
 """));
   });
-
 }

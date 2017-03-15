@@ -9,12 +9,12 @@ main() {
   integration('re-gets a package if its source has changed', () {
     servePackages((builder) => builder.serve("foo", "1.2.3"));
 
-    d.dir('foo', [
-      d.libDir('foo', 'foo 0.0.1'),
-      d.libPubspec('foo', '0.0.1')
-    ]).create();
+    d.dir('foo',
+        [d.libDir('foo', 'foo 0.0.1'), d.libPubspec('foo', '0.0.1')]).create();
 
-    d.appDir({"foo": {"path": "../foo"}}).create();
+    d.appDir({
+      "foo": {"path": "../foo"}
+    }).create();
 
     pubGet();
 

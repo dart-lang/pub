@@ -37,15 +37,13 @@ main() {
     var sources = new SourceRegistry();
     sources.register(new MockSource());
 
-    var throwsPubspecException =
-        throwsA(new isInstanceOf<PubspecException>());
+    var throwsPubspecException = throwsA(new isInstanceOf<PubspecException>());
 
     expectPubspecException(String contents, fn(Pubspec pubspec),
         [String expectedContains]) {
       var expectation = throwsPubspecException;
       if (expectedContains != null) {
-        expectation = throwsA(allOf(
-            new isInstanceOf<PubspecException>(),
+        expectation = throwsA(allOf(new isInstanceOf<PubspecException>(),
             predicate((error) => error.message.contains(expectedContains))));
       }
 
@@ -58,25 +56,29 @@ main() {
       new Pubspec.parse('version: not a semver', sources);
     });
 
-    test("eagerly throws an error if the pubspec name doesn't match the "
+    test(
+        "eagerly throws an error if the pubspec name doesn't match the "
         "expected name", () {
       expect(() => new Pubspec.parse("name: foo", sources, expectedName: 'bar'),
           throwsPubspecException);
     });
 
-    test("eagerly throws an error if the pubspec doesn't have a name and an "
+    test(
+        "eagerly throws an error if the pubspec doesn't have a name and an "
         "expected name is passed", () {
       expect(() => new Pubspec.parse("{}", sources, expectedName: 'bar'),
           throwsPubspecException);
     });
 
     test("allows a version constraint for dependencies", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dependencies:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+          sources);
 
       var foo = pubspec.dependencies[0];
       expect(foo.name, equals('foo'));
@@ -86,20 +88,24 @@ dependencies:
     });
 
     test("allows an empty dependencies map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dependencies:
-''', sources);
+''',
+          sources);
 
       expect(pubspec.dependencies, isEmpty);
     });
 
     test("allows a version constraint for dev dependencies", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dev_dependencies:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+          sources);
 
       var foo = pubspec.devDependencies[0];
       expect(foo.name, equals('foo'));
@@ -109,20 +115,24 @@ dev_dependencies:
     });
 
     test("allows an empty dev dependencies map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dev_dependencies:
-''', sources);
+''',
+          sources);
 
       expect(pubspec.devDependencies, isEmpty);
     });
 
     test("allows a version constraint for dependency overrides", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dependency_overrides:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+          sources);
 
       var foo = pubspec.dependencyOverrides[0];
       expect(foo.name, equals('foo'));
@@ -132,19 +142,23 @@ dependency_overrides:
     });
 
     test("allows an empty dependency overrides map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dependency_overrides:
-''', sources);
+''',
+          sources);
 
       expect(pubspec.dependencyOverrides, isEmpty);
     });
 
     test("allows an unknown source", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 dependencies:
   foo:
     unknown: blah
-''', sources);
+''',
+          sources);
 
       var foo = pubspec.dependencies[0];
       expect(foo.name, equals('foo'));
@@ -152,7 +166,8 @@ dependencies:
     });
 
     test("throws if a package is in dependencies and dev_dependencies", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 dependencies:
   foo:
     mock: ok
@@ -168,237 +183,275 @@ dev_dependencies:
     });
 
     test("throws if it dependes on itself", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: myapp
 dependencies:
   myapp:
     mock: ok
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies);
     });
 
     test("throws if it has a dev dependency on itself", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: myapp
 dev_dependencies:
   myapp:
     mock: ok
-''', (pubspec) => pubspec.devDependencies);
+''',
+          (pubspec) => pubspec.devDependencies);
     });
 
     test("throws if it has an override on itself", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: myapp
 dependency_overrides:
   myapp:
     mock: ok
-''', (pubspec) => pubspec.dependencyOverrides);
+''',
+          (pubspec) => pubspec.dependencyOverrides);
     });
 
     test("throws if the description isn't valid", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 dependencies:
   foo:
     mock: bad
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies);
     });
 
     test("throws if dependency version is not a string", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 dependencies:
   foo:
     mock: ok
     version: 1.2
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies);
     });
 
     test("throws if version is not a version constraint", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 dependencies:
   foo:
     mock: ok
     version: not constraint
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies);
     });
 
     test("throws if there's no source", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 dependencies:
   foo:
     version: 1.2.3
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies);
     });
 
     test("throws if 'name' is not a string", () {
-      expectPubspecException('name: [not, a, string]',
-          (pubspec) => pubspec.name);
+      expectPubspecException(
+          'name: [not, a, string]', (pubspec) => pubspec.name);
     });
 
     test("throws if version is not a string", () {
-      expectPubspecException('version: [2, 0, 0]',
-          (pubspec) => pubspec.version,
+      expectPubspecException('version: [2, 0, 0]', (pubspec) => pubspec.version,
           '"version" field must be a string');
     });
 
     test("throws if version is malformed (looking like a double)", () {
-      expectPubspecException('version: 2.1',
+      expectPubspecException(
+          'version: 2.1',
           (pubspec) => pubspec.version,
           '"version" field must have three numeric components: major, minor, '
           'and patch. Instead of "2.1", consider "2.1.0"');
     });
 
     test("throws if version is malformed (looking like an int)", () {
-      expectPubspecException('version: 2',
+      expectPubspecException(
+          'version: 2',
           (pubspec) => pubspec.version,
           '"version" field must have three numeric components: major, minor, '
           'and patch. Instead of "2", consider "2.0.0"');
     });
 
     test("throws if version is not a version", () {
-      expectPubspecException('version: not version',
-          (pubspec) => pubspec.version);
+      expectPubspecException(
+          'version: not version', (pubspec) => pubspec.version);
     });
 
     test("throws if transformers isn't a list", () {
-      expectPubspecException('transformers: "not list"',
+      expectPubspecException(
+          'transformers: "not list"',
           (pubspec) => pubspec.transformers,
           '"transformers" field must be a list');
     });
 
     test("throws if a transformer isn't a string or map", () {
-      expectPubspecException('transformers: [12]',
+      expectPubspecException(
+          'transformers: [12]',
           (pubspec) => pubspec.transformers,
           'A transformer must be a string or map.');
     });
 
     test("throws if a transformer's configuration isn't a map", () {
-      expectPubspecException('transformers: [{pkg: 12}]',
+      expectPubspecException(
+          'transformers: [{pkg: 12}]',
           (pubspec) => pubspec.transformers,
           "A transformer's configuration must be a map.");
     });
 
-    test("throws if a transformer's configuration contains an unknown "
+    test(
+        "throws if a transformer's configuration contains an unknown "
         "reserved key at the top level", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers: [{pkg: {\$key: "value"}}]''',
           (pubspec) => pubspec.transformers,
           'Invalid transformer config: Unknown reserved field.');
     });
 
-    test("doesn't throw if a transformer's configuration contains a "
+    test(
+        "doesn't throw if a transformer's configuration contains a "
         "non-top-level key beginning with a dollar sign", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 name: pkg
 transformers:
 - pkg: {outer: {\$inner: value}}
-''', sources);
+''',
+          sources);
 
       var pkg = pubspec.transformers[0].single;
       expect(pkg.configuration["outer"]["\$inner"], equals("value"));
     });
 
     test("throws if the \$include value is not a string or list", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers:
 - pkg: {\$include: 123}''',
           (pubspec) => pubspec.transformers,
           'Invalid transformer config: "\$include" field must be a string or '
-            'list.');
+          'list.');
     });
 
     test("throws if the \$include list contains a non-string", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers:
 - pkg: {\$include: ["ok", 123, "alright", null]}''',
-        (pubspec) => pubspec.transformers,
-        'Invalid transformer config: "\$include" field may contain only '
+          (pubspec) => pubspec.transformers,
+          'Invalid transformer config: "\$include" field may contain only '
           'strings.');
     });
 
     test("throws if the \$exclude value is not a string or list", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers:
 - pkg: {\$exclude: 123}''',
-        (pubspec) => pubspec.transformers,
-        'Invalid transformer config: "\$exclude" field must be a string or '
+          (pubspec) => pubspec.transformers,
+          'Invalid transformer config: "\$exclude" field must be a string or '
           'list.');
     });
 
     test("throws if the \$exclude list contains a non-string", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers:
 - pkg: {\$exclude: ["ok", 123, "alright", null]}''',
-        (pubspec) => pubspec.transformers,
-        'Invalid transformer config: "\$exclude" field may contain only '
+          (pubspec) => pubspec.transformers,
+          'Invalid transformer config: "\$exclude" field may contain only '
           'strings.');
     });
 
     test("throws if a transformer is not from a dependency", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 transformers: [foo]
 ''',
-        (pubspec) => pubspec.transformers,
-        '"foo" is not a dependency.');
+          (pubspec) => pubspec.transformers,
+          '"foo" is not a dependency.');
     });
 
     test("allows a transformer from a normal dependency", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 name: pkg
 dependencies:
   foo:
     mock: ok
 transformers:
-- foo''', sources);
+- foo''',
+          sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows a transformer from a dev dependency", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 name: pkg
 dev_dependencies:
   foo:
     mock: ok
 transformers:
-- foo''', sources);
+- foo''',
+          sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows a transformer from a dependency override", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 name: pkg
 dependency_overrides:
   foo:
     mock: ok
 transformers:
-- foo''', sources);
+- foo''',
+          sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows comment-only files", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = new Pubspec.parse(
+          '''
 # No external dependencies yet
 # Including for completeness
 # ...and hoping the spec expands to include details about author, version, etc
 # See http://www.dartlang.org/docs/pub-package-manager/ for details
-''', sources);
+''',
+          sources);
       expect(pubspec.version, equals(Version.none));
       expect(pubspec.dependencies, isEmpty);
     });
 
     test("throws a useful error for unresolvable path dependencies", () {
-      expectPubspecException('''
+      expectPubspecException(
+          '''
 name: pkg
 dependencies:
   from_path: {path: non_local_path}
-''', (pubspec) => pubspec.dependencies,
+''',
+          (pubspec) => pubspec.dependencies,
           '"non_local_path" is a relative path, but this isn\'t a local '
           'pubspec.');
     });
@@ -411,16 +464,18 @@ dependencies:
       });
 
       test("throws if the environment value isn't a map", () {
-        expectPubspecException('environment: []',
-            (pubspec) => pubspec.dartSdkConstraint);
+        expectPubspecException(
+            'environment: []', (pubspec) => pubspec.dartSdkConstraint);
       });
 
       test("allows a version constraint for the SDKs", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
-''', sources);
+''',
+            sources);
         expect(pubspec.dartSdkConstraint,
             equals(new VersionConstraint.parse(">=1.2.3 <2.3.4")));
         expect(pubspec.flutterSdkConstraint,
@@ -428,10 +483,10 @@ environment:
       });
 
       test("throws if the sdk isn't a string", () {
-        expectPubspecException('environment: {sdk: []}',
-            (pubspec) => pubspec.dartSdkConstraint);
-        expectPubspecException('environment: {sdk: 1.0}',
-            (pubspec) => pubspec.dartSdkConstraint);
+        expectPubspecException(
+            'environment: {sdk: []}', (pubspec) => pubspec.dartSdkConstraint);
+        expectPubspecException(
+            'environment: {sdk: 1.0}', (pubspec) => pubspec.dartSdkConstraint);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: []}',
             (pubspec) => pubspec.dartSdkConstraint);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: 1.0}',
@@ -453,21 +508,25 @@ environment:
       });
 
       test("throws if not a string", () {
-        expectPubspecException('publish_to: 123',
-            (pubspec) => pubspec.publishTo);
+        expectPubspecException(
+            'publish_to: 123', (pubspec) => pubspec.publishTo);
       });
 
       test("allows a URL", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 publish_to: http://example.com
-''', sources);
+''',
+            sources);
         expect(pubspec.publishTo, equals("http://example.com"));
       });
 
       test("allows none", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 publish_to: none
-''', sources);
+''',
+            sources);
         expect(pubspec.publishTo, equals("none"));
       });
 
@@ -484,31 +543,33 @@ publish_to: none
       });
 
       test("allows simple names for keys and most characters in values", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 executables:
   abcDEF-123_: "abc DEF-123._"
-''', sources);
+''',
+            sources);
         expect(pubspec.executables['abcDEF-123_'], equals('abc DEF-123._'));
       });
 
       test("throws if not a map", () {
-        expectPubspecException('executables: not map',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+            'executables: not map', (pubspec) => pubspec.executables);
       });
 
       test("throws if key is not a string", () {
-        expectPubspecException('executables: {123: value}',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+            'executables: {123: value}', (pubspec) => pubspec.executables);
       });
 
       test("throws if a key isn't a simple name", () {
-        expectPubspecException('executables: {funny/name: ok}',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+            'executables: {funny/name: ok}', (pubspec) => pubspec.executables);
       });
 
       test("throws if a value is not a string", () {
-        expectPubspecException('executables: {command: 123}',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+            'executables: {command: 123}', (pubspec) => pubspec.executables);
       });
 
       test("throws if a value contains a path separator", () {
@@ -522,10 +583,12 @@ executables:
       });
 
       test("uses the key if the value is null", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 executables:
   command:
-''', sources);
+''',
+            sources);
         expect(pubspec.executables['command'], equals('command'));
       });
     });

@@ -8,10 +8,13 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("doesn't create a snapshot for a package that depends on the "
+  integration(
+      "doesn't create a snapshot for a package that depends on the "
       "entrypoint", () {
     servePackages((builder) {
-      builder.serve("foo", "1.2.3", deps: {'bar': '1.2.3'}, contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'bar': '1.2.3'
+      }, contents: [
         d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
       ]);
       builder.serve("bar", "1.2.3", deps: {'myapp': 'any'});

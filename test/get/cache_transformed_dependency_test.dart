@@ -60,10 +60,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -76,9 +77,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Goodbye!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
   });
 
@@ -86,18 +86,17 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'bar': '1.2.3'},
-          pubspec: {'transformers': ['bar']},
-          contents: [
-        d.dir("lib", [
-          d.file("foo.dart", "final message = 'Hello!';")
-        ])
+      builder.serve("foo", "1.2.3", deps: {
+        'bar': '1.2.3'
+      }, pubspec: {
+        'transformers': ['bar']
+      }, contents: [
+        d.dir("lib", [d.file("foo.dart", "final message = 'Hello!';")])
       ]);
 
-      builder.serve("bar", "1.2.3",
-          deps: {'barback': 'any'},
-          contents: [
+      builder.serve("bar", "1.2.3", deps: {
+        'barback': 'any'
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye"))
         ])
@@ -109,9 +108,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Goodbye!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
   });
 
@@ -119,11 +117,8 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          contents: [
-        d.dir("lib", [
-          d.file("foo.dart", "final message = 'Hello!';")
-        ])
+      builder.serve("foo", "1.2.3", contents: [
+        d.dir("lib", [d.file("foo.dart", "final message = 'Hello!';")])
       ]);
     });
 
@@ -138,20 +133,22 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
         ])
       ]);
 
-      builder.serve("foo", "1.2.4",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.4", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "See ya")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -164,9 +161,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Goodbye!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
 
     // Upgrade to the new version of foo.
@@ -175,9 +171,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'See ya!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'See ya!';")])
     ]).validate();
   });
 
@@ -185,13 +180,12 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {
-            'barback': 'any',
-            'bar': 'any'
-          },
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any',
+        'bar': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -212,10 +206,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -236,10 +231,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", MODE_TRANSFORMER),
           d.file("foo.dart", "final mode = 'MODE';")
@@ -252,9 +248,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final mode = 'debug';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final mode = 'debug';")])
     ]).validate();
   });
 
@@ -262,10 +257,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -276,7 +272,9 @@ main() {
     d.dir(appPath, [
       d.appPubspec({"foo": "1.2.3"}),
       d.dir('bin', [
-        d.file('script.dart', """
+        d.file(
+            'script.dart',
+            """
           import 'package:foo/foo.dart';
 
           void main() => print(message);""")
@@ -286,9 +284,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Modified!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Modified!';")])
     ]).create();
 
     var pub = pubRun(args: ["bin/script"]);
@@ -300,10 +297,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
@@ -314,7 +312,9 @@ main() {
     d.dir(appPath, [
       d.appPubspec({"foo": "1.2.3"}),
       d.dir('bin', [
-        d.file('script.dart', """
+        d.file(
+            'script.dart',
+            """
           import 'package:foo/foo.dart';
 
           void main() => print(message);""")
@@ -326,9 +326,8 @@ main() {
     // Manually reset the cache to its original state to prove that the
     // transformer won't be run again on it.
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Hello!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Hello!';")])
     ]).create();
 
     var pub = pubRun(args: ["bin/script"]);
@@ -341,10 +340,11 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "void main() => print('Hello!');")
@@ -358,44 +358,42 @@ main() {
         "dependencies": {"foo": "1.2.3"},
         "transformers": ["myapp/src/transformer"]
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", HAS_INPUT_TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", HAS_INPUT_TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet(output: contains("Precompiled foo."));
 
     pubServe();
-    requestShouldSucceed("foo.txt",
-        "lib/foo.dart: true, lib/does/not/exist.dart: false");
+    requestShouldSucceed(
+        "foo.txt", "lib/foo.dart: true, lib/does/not/exist.dart: false");
     endPubServe();
   });
 
   // Regression test for issue 21810.
-  integration("decaches when the dependency is updated to something "
+  integration(
+      "decaches when the dependency is updated to something "
       "untransformed", () {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {'barback': 'any'},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [
           d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
           d.file("foo.dart", "final message = 'Hello!';")
         ])
       ]);
 
-      builder.serve("foo", "1.2.4",
-          deps: {'barback': 'any'},
-          contents: [
-        d.dir("lib", [
-          d.file("foo.dart", "final message = 'Hello!';")
-        ])
+      builder.serve("foo", "1.2.4", deps: {
+        'barback': 'any'
+      }, contents: [
+        d.dir("lib", [d.file("foo.dart", "final message = 'Hello!';")])
       ]);
     });
 
@@ -404,9 +402,8 @@ main() {
     pubGet(output: contains("Precompiled foo."));
 
     d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib", [
-        d.file("foo.dart", "final message = 'Goodbye!';")
-      ])
+      d.dir(".pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
 
     // Upgrade to the new version of foo.
@@ -414,9 +411,7 @@ main() {
 
     pubGet(output: isNot(contains("Precompiled foo.")));
 
-    d.dir(appPath, [
-      d.nothing(".pub/deps/debug/foo")
-    ]).validate();
+    d.dir(appPath, [d.nothing(".pub/deps/debug/foo")]).validate();
   });
 
   group("with --no-precompile", () {
@@ -424,10 +419,11 @@ main() {
       servePackages((builder) {
         builder.serveRealPackage('barback');
 
-        builder.serve("foo", "1.2.3",
-            deps: {'barback': 'any'},
-            pubspec: {'transformers': ['foo']},
-            contents: [
+        builder.serve("foo", "1.2.3", deps: {
+          'barback': 'any'
+        }, pubspec: {
+          'transformers': ['foo']
+        }, contents: [
           d.dir("lib", [
             d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
             d.file("foo.dart", "final message = 'Hello!';")
@@ -446,20 +442,22 @@ main() {
       servePackages((builder) {
         builder.serveRealPackage('barback');
 
-        builder.serve("foo", "1.2.3",
-            deps: {'barback': 'any'},
-            pubspec: {'transformers': ['foo']},
-            contents: [
+        builder.serve("foo", "1.2.3", deps: {
+          'barback': 'any'
+        }, pubspec: {
+          'transformers': ['foo']
+        }, contents: [
           d.dir("lib", [
             d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
             d.file("foo.dart", "final message = 'Hello!';")
           ])
         ]);
 
-        builder.serve("foo", "1.2.4",
-            deps: {'barback': 'any'},
-            pubspec: {'transformers': ['foo']},
-            contents: [
+        builder.serve("foo", "1.2.4", deps: {
+          'barback': 'any'
+        }, pubspec: {
+          'transformers': ['foo']
+        }, contents: [
           d.dir("lib", [
             d.file("transformer.dart", replaceTransformer("Hello", "See ya")),
             d.file("foo.dart", "final message = 'Hello!';")
@@ -472,9 +470,8 @@ main() {
       pubGet(output: contains("Precompiled foo."));
 
       d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib", [
-          d.file("foo.dart", "final message = 'Goodbye!';")
-        ])
+        d.dir(".pub/deps/debug/foo/lib",
+            [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
 
       // Upgrade to the new version of foo.
@@ -485,15 +482,17 @@ main() {
       d.nothing(p.join(appPath, ".pub/deps/debug/foo")).validate();
     });
 
-    integration("doesn't delete a cache when an unrelated dependency is "
+    integration(
+        "doesn't delete a cache when an unrelated dependency is "
         "updated", () {
       servePackages((builder) {
         builder.serveRealPackage('barback');
 
-        builder.serve("foo", "1.2.3",
-            deps: {'barback': 'any'},
-            pubspec: {'transformers': ['foo']},
-            contents: [
+        builder.serve("foo", "1.2.3", deps: {
+          'barback': 'any'
+        }, pubspec: {
+          'transformers': ['foo']
+        }, contents: [
           d.dir("lib", [
             d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
             d.file("foo.dart", "final message = 'Hello!';")
@@ -506,22 +505,18 @@ main() {
       d.appDir({"foo": "1.2.3"}).create();
       pubGet(output: contains("Precompiled foo."));
 
-
       d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib", [
-          d.file("foo.dart", "final message = 'Goodbye!';")
-        ])
+        d.dir(".pub/deps/debug/foo/lib",
+            [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
 
       globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
       pubUpgrade(
-          args: ["--no-precompile"],
-          output: isNot(contains("Precompiled")));
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
       d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib", [
-          d.file("foo.dart", "final message = 'Goodbye!';")
-        ])
+        d.dir(".pub/deps/debug/foo/lib",
+            [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
     });
   });

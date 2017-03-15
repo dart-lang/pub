@@ -9,30 +9,26 @@ main() {
   integration("cleans entire build directory before a build", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir('example', [
-        d.file('file.txt', 'example')
-      ]),
-      d.dir('test', [
-        d.file('file.txt', 'test')
-      ])
+      d.dir('example', [d.file('file.txt', 'example')]),
+      d.dir('test', [d.file('file.txt', 'test')])
     ]).create();
 
     pubGet();
 
     // Make a build directory containing "example".
-    schedulePub(args: ["build", "example"],
+    schedulePub(
+        args: ["build", "example"],
         output: new RegExp(r'Built 1 file to "build".'));
 
     // Now build again with just "test". Should wipe out "example".
-    schedulePub(args: ["build", "test"],
+    schedulePub(
+        args: ["build", "test"],
         output: new RegExp(r'Built 1 file to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [
         d.nothing('example'),
-        d.dir('test', [
-          d.file('file.txt', 'test')
-        ]),
+        d.dir('test', [d.file('file.txt', 'test')]),
       ])
     ]).validate();
   });

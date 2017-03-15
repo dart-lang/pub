@@ -12,29 +12,30 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "one": "script",
-          "two": "script",
-          "three": "script"
-        }
+        "executables": {"one": "script", "two": "script", "three": "script"}
       }),
-      d.dir("bin", [
-        d.file("script.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("script.dart", "main() => print('ok');")])
     ]).create();
 
     schedulePub(args: [
-      "global", "activate", "--source", "path", "../foo",
-      "-x", "one", "--executable", "three"
+      "global",
+      "activate",
+      "--source",
+      "path",
+      "../foo",
+      "-x",
+      "one",
+      "--executable",
+      "three"
     ], output: contains("Installed executables one and three."));
 
     d.dir(cachePath, [
       d.dir("bin", [
-        d.matcherFile(binStubName("one"),
-            contains("pub global run foo:script")),
+        d.matcherFile(
+            binStubName("one"), contains("pub global run foo:script")),
         d.nothing(binStubName("two")),
-        d.matcherFile(binStubName("three"),
-            contains("pub global run foo:script"))
+        d.matcherFile(
+            binStubName("three"), contains("pub global run foo:script"))
       ])
     ]).validate();
   });

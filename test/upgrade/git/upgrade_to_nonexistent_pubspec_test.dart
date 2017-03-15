@@ -9,22 +9,20 @@ main() {
   integration("upgrades Git packages to a nonexistent pubspec", () {
     ensureGit();
 
-    var repo = d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]);
+    var repo =
+        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
     repo.create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
     pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
     repo.runGit(['rm', 'pubspec.yaml']);
@@ -38,9 +36,7 @@ main() {
             r'in [^\n]*\.'));
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });
 }

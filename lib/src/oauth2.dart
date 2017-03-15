@@ -34,9 +34,9 @@ final _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
 /// a refresh token from the server. See the [Google OAuth2 documentation][].
 ///
 /// [Google OAuth2 documentation]: https://developers.google.com/accounts/docs/OAuth2WebServer#offline
-final authorizationEndpoint = Uri.parse(
-    'https://accounts.google.com/o/oauth2/auth?access_type=offline'
-    '&approval_prompt=force');
+final authorizationEndpoint =
+    Uri.parse('https://accounts.google.com/o/oauth2/auth?access_type=offline'
+        '&approval_prompt=force');
 
 /// The URL from which the pub client will request an access token once it's
 /// been authorized by the user.
@@ -171,9 +171,7 @@ String _credentialsFile(SystemCache cache) =>
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() {
   var grant = new AuthorizationCodeGrant(
-      _identifier,
-      authorizationEndpoint,
-      tokenEndpoint,
+      _identifier, authorizationEndpoint, tokenEndpoint,
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
@@ -196,14 +194,16 @@ Future<Client> _authorize() {
       // Closing the server here is safe, since it will wait until the response
       // is sent to actually shut down.
       server.close();
-      chainToCompleter(grant.handleAuthorizationResponse(queryToMap(queryString)),
+      chainToCompleter(
+          grant.handleAuthorizationResponse(queryToMap(queryString)),
           completer);
 
       return new shelf.Response.found('http://pub.dartlang.org/authorized');
     });
 
     var authUrl = grant.getAuthorizationUrl(
-        Uri.parse('http://localhost:${server.port}'), scopes: _scopes);
+        Uri.parse('http://localhost:${server.port}'),
+        scopes: _scopes);
 
     log.message(
         'Pub needs your authorization to upload packages on your behalf.\n'

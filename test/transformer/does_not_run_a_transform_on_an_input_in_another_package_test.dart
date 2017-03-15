@@ -24,10 +24,10 @@ main() {
     ]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
-      d.dir("lib", [
-        d.file("bar.txt", "bar")
-      ])
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
+      d.dir("lib", [d.file("bar.txt", "bar")])
     ]).create();
 
     pubGet();

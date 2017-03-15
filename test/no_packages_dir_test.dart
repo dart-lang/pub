@@ -29,7 +29,8 @@ main() {
         ]).validate();
       });
 
-      integration("doesn't remove package directories that pub wouldn't "
+      integration(
+          "doesn't remove package directories that pub wouldn't "
           "generate", () {
         d.dir(appPath, [
           d.appPubspec(),

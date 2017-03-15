@@ -23,13 +23,12 @@ main() {
 
   integration("build ignores Dart entrypoints in lib", () {
     pubGet();
-    schedulePub(args: ["build", "--all"],
+    schedulePub(
+        args: ["build", "--all"],
         output: new RegExp(r'Built 1 file to "build".'));
 
     d.dir(appPath, [
-      d.dir('build', [
-        d.nothing('lib')
-      ])
+      d.dir('build', [d.nothing('lib')])
     ]).validate();
   });
 
@@ -39,5 +38,4 @@ main() {
     requestShould404("packages/myapp/main.dart.js");
     endPubServe();
   });
-
 }

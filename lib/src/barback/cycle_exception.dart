@@ -43,8 +43,7 @@ class CycleException implements ApplicationException {
   }
 
   /// Creates a new [CycleException] with zero or one steps.
-  CycleException([this._step])
-      : _next = null;
+  CycleException([this._step]) : _next = null;
 
   CycleException._(this._step, this._next);
 

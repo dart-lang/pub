@@ -10,9 +10,7 @@ import '../test_pub.dart';
 
 main() {
   integration('Errors if the script in a dependency does not exist.', () {
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
       d.appPubspec({

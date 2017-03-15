@@ -7,24 +7,18 @@ import '../test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration("removes a transitive dependency that's no longer depended "
+    integration(
+        "removes a transitive dependency that's no longer depended "
         "on", () {
       servePackages((builder) {
-        builder.serve("foo", "1.0.0", deps: {
-          "shared_dep": "any"
-        });
-        builder.serve("bar", "1.0.0", deps: {
-          "shared_dep": "any",
-          "bar_dep": "any"
-        });
+        builder.serve("foo", "1.0.0", deps: {"shared_dep": "any"});
+        builder.serve("bar", "1.0.0",
+            deps: {"shared_dep": "any", "bar_dep": "any"});
         builder.serve("shared_dep", "1.0.0");
         builder.serve("bar_dep", "1.0.0");
       });
 
-      d.appDir({
-        "foo": "any",
-        "bar": "any"
-      }).create();
+      d.appDir({"foo": "any", "bar": "any"}).create();
 
       pubCommand(command);
 
@@ -39,10 +33,7 @@ main() {
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "1.0.0",
-        "shared_dep": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "1.0.0", "shared_dep": "1.0.0"}).validate();
     });
   });
 }

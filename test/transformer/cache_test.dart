@@ -35,20 +35,18 @@ void setUp() {
   servePackages((builder) {
     builder.serveRealPackage('barback');
 
-    builder.serve("foo", "1.2.3",
-        deps: {'barback': 'any'},
-        contents: [
-      d.dir("lib", [
-        d.file("transformer.dart", replaceTransformer("Hello", "Goodbye"))
-      ])
+    builder.serve("foo", "1.2.3", deps: {
+      'barback': 'any'
+    }, contents: [
+      d.dir("lib",
+          [d.file("transformer.dart", replaceTransformer("Hello", "Goodbye"))])
     ]);
 
-    builder.serve("bar", "1.2.3",
-        deps: {'barback': 'any'},
-        contents: [
-      d.dir("lib", [
-        d.file("transformer.dart", replaceTransformer("Goodbye", "See ya"))
-      ])
+    builder.serve("bar", "1.2.3", deps: {
+      'barback': 'any'
+    }, contents: [
+      d.dir("lib",
+          [d.file("transformer.dart", replaceTransformer("Goodbye", "See ya"))])
     ]);
 
     builder.serve("baz", "1.2.3");
@@ -57,15 +55,10 @@ void setUp() {
   d.dir(appPath, [
     d.pubspec({
       "name": "myapp",
-      "dependencies": {
-        "foo": "1.2.3",
-        "bar": "1.2.3"
-      },
+      "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
       "transformers": ["foo"]
     }),
-    d.dir("bin", [
-      d.file("myapp.dart", "main() => print('Hello!');")
-    ])
+    d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
   ]).create();
 
   pubGet();
@@ -133,15 +126,10 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {
-          "foo": "1.2.3",
-          "bar": "1.2.3"
-        },
+        "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
         "transformers": ["foo", "bar"]
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "main() => print('Hello!');")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
     pubGet();
@@ -172,12 +160,11 @@ main() {
     ]).validate();
 
     globalPackageServer.add((builder) {
-      builder.serve("foo", "2.0.0",
-          deps: {'barback': 'any'},
-          contents: [
-        d.dir("lib", [
-          d.file("transformer.dart", replaceTransformer("Hello", "New"))
-        ])
+      builder.serve("foo", "2.0.0", deps: {
+        'barback': 'any'
+      }, contents: [
+        d.dir("lib",
+            [d.file("transformer.dart", replaceTransformer("Hello", "New"))])
       ]);
     });
 
@@ -207,21 +194,16 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {
-            'barback': 'any',
-            'bar': 'any'
-          },
-          contents: [
-        d.dir("lib", [
-          d.file("transformer.dart", REPLACE_FROM_LIBRARY_TRANSFORMER)
-        ])
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any',
+        'bar': 'any'
+      }, contents: [
+        d.dir("lib",
+            [d.file("transformer.dart", REPLACE_FROM_LIBRARY_TRANSFORMER)])
       ]);
 
       builder.serve("bar", "1.2.3", contents: [
-        d.dir("lib", [
-          d.file("bar.dart", "final replacement = 'Goodbye';")
-        ])
+        d.dir("lib", [d.file("bar.dart", "final replacement = 'Goodbye';")])
       ]);
     });
 
@@ -231,9 +213,7 @@ main() {
         "dependencies": {"foo": "1.2.3"},
         "transformers": ["foo"]
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "main() => print('Hello!');")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
     pubGet();
@@ -244,9 +224,7 @@ main() {
 
     globalPackageServer.add((builder) {
       builder.serve("bar", "2.0.0", contents: [
-        d.dir("lib", [
-          d.file("bar.dart", "final replacement = 'See ya';")
-        ])
+        d.dir("lib", [d.file("bar.dart", "final replacement = 'See ya';")])
       ]);
     });
 
@@ -272,15 +250,10 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {
-          "foo": "1.2.3",
-          "bar": "1.2.3"
-        },
+        "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
         "transformers": ["foo", "bar"]
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "main() => print('Hello!');")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
     var process = pubRun(args: ['myapp']);
@@ -298,9 +271,7 @@ main() {
         },
         "transformers": ["foo"]
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "main() => print('Hello!');")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
     pubGet();

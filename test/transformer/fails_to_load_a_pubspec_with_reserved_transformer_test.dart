@@ -19,9 +19,9 @@ main() {
         "transformers": ["\$nonexistent"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER)
-      ])])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
+      ])
     ]).create();
 
     pubGet();

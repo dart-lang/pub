@@ -10,9 +10,7 @@ main() {
   integration("does not watch changes to compiled JS files in the package", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "body")
-      ])
+      d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
     pubGet();

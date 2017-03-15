@@ -34,7 +34,7 @@ final _descriptorPool = new Pool(32);
 
 /// Determines if a file or directory exists at [path].
 bool entryExists(String path) =>
-  dirExists(path) || fileExists(path) || linkExists(path);
+    dirExists(path) || fileExists(path) || linkExists(path);
 
 /// Returns whether [link] exists on the file system.
 ///
@@ -69,8 +69,8 @@ String canonicalize(String pathString) {
   // resolved in turn.
   while (!components.isEmpty) {
     seen.add(path.join(newPath, path.joinAll(components)));
-    var resolvedPath = resolveLink(
-        path.join(newPath, components.removeFirst()));
+    var resolvedPath =
+        resolveLink(path.join(newPath, components.removeFirst()));
     var relative = path.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
@@ -142,8 +142,8 @@ String resolveLink(String link) {
   var seen = new Set<String>();
   while (linkExists(link) && !seen.contains(link)) {
     seen.add(link);
-    link = path.normalize(path.join(
-        path.dirname(link), new Link(link).targetSync()));
+    link = path
+        .normalize(path.join(path.dirname(link), new Link(link).targetSync()));
   }
   return link;
 }
@@ -183,8 +183,8 @@ String writeBinaryFile(String file, List<int> contents) {
   log.io("Writing ${contents.length} bytes to binary file $file.");
   _deleteIfLink(file);
   new File(file).openSync(mode: FileMode.WRITE)
-      ..writeFromSync(contents)
-      ..closeSync();
+    ..writeFromSync(contents)
+    ..closeSync();
   log.fine("Wrote text file $file.");
   return file;
 }
@@ -285,8 +285,10 @@ String createSystemTempDir() {
 ///
 /// The returned paths are guaranteed to begin with [dir]. Broken symlinks won't
 /// be returned.
-List<String> listDir(String dir, {bool recursive: false,
-    bool includeHidden: false, bool includeDirs: true,
+List<String> listDir(String dir,
+    {bool recursive: false,
+    bool includeHidden: false,
+    bool includeDirs: true,
     Iterable<String> whitelist}) {
   if (whitelist == null) whitelist = [];
   var whitelistFilter = createFileFilter(whitelist);
@@ -296,38 +298,41 @@ List<String> listDir(String dir, {bool recursive: false,
   // readability than most code in pub. In particular, it avoids using the path
   // package, since re-parsing a path is very expensive relative to string
   // operations.
-  return new Directory(dir).listSync(
-      recursive: recursive, followLinks: true).where((entity) {
-    if (!includeDirs && entity is Directory) return false;
-    if (entity is Link) return false;
-    if (includeHidden) return true;
+  return new Directory(dir)
+      .listSync(recursive: recursive, followLinks: true)
+      .where((entity) {
+        if (!includeDirs && entity is Directory) return false;
+        if (entity is Link) return false;
+        if (includeHidden) return true;
 
-    // Using substring here is generally problematic in cases where dir has one
-    // or more trailing slashes. If you do listDir("foo"), you'll get back
-    // paths like "foo/bar". If you do listDir("foo/"), you'll get "foo/bar"
-    // (note the trailing slash was dropped. If you do listDir("foo//"), you'll
-    // get "foo//bar".
-    //
-    // This means if you strip off the prefix, the resulting string may have a
-    // leading separator (if the prefix did not have a trailing one) or it may
-    // not. However, since we are only using the results of that to call
-    // contains() on, the leading separator is harmless.
-    assert(entity.path.startsWith(dir));
-    var pathInDir = entity.path.substring(dir.length);
+        // Using substring here is generally problematic in cases where dir has one
+        // or more trailing slashes. If you do listDir("foo"), you'll get back
+        // paths like "foo/bar". If you do listDir("foo/"), you'll get "foo/bar"
+        // (note the trailing slash was dropped. If you do listDir("foo//"), you'll
+        // get "foo//bar".
+        //
+        // This means if you strip off the prefix, the resulting string may have a
+        // leading separator (if the prefix did not have a trailing one) or it may
+        // not. However, since we are only using the results of that to call
+        // contains() on, the leading separator is harmless.
+        assert(entity.path.startsWith(dir));
+        var pathInDir = entity.path.substring(dir.length);
 
-    // If the basename is whitelisted, don't count its "/." as making the file
-    // hidden.
-    var whitelistedBasename = whitelistFilter.firstWhere(pathInDir.contains,
-        orElse: () => null);
-    if (whitelistedBasename != null) {
-      pathInDir = pathInDir.substring(
-          0, pathInDir.length - whitelistedBasename.length);
-    }
+        // If the basename is whitelisted, don't count its "/." as making the file
+        // hidden.
+        var whitelistedBasename =
+            whitelistFilter.firstWhere(pathInDir.contains, orElse: () => null);
+        if (whitelistedBasename != null) {
+          pathInDir = pathInDir.substring(
+              0, pathInDir.length - whitelistedBasename.length);
+        }
 
-    if (pathInDir.contains("/.")) return false;
-    if (Platform.operatingSystem != "windows") return true;
-    return !pathInDir.contains("\\.");
-  }).map((entity) => entity.path).toList();
+        if (pathInDir.contains("/.")) return false;
+        if (Platform.operatingSystem != "windows") return true;
+        return !pathInDir.contains("\\.");
+      })
+      .map((entity) => entity.path)
+      .toList();
 }
 
 /// Returns whether [dir] exists on the file system.
@@ -451,8 +456,7 @@ void renameDir(String from, String to) {
 /// symlink to the target. Otherwise, uses the [target] path unmodified.
 ///
 /// Note that on Windows, only directories may be symlinked to.
-void createSymlink(String target, String symlink,
-    {bool relative: false}) {
+void createSymlink(String target, String symlink, {bool relative: false}) {
   if (relative) {
     // Relative junction points are not supported on Windows. Instead, just
     // make sure we have a clean absolute path because it will interpret a
@@ -519,14 +523,13 @@ final bool runningFromSdk =
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
-final _dartRepoRegExp = new RegExp(
-    r"/third_party/pkg/pub/("
-            r"bin/pub\.dart"
-        r"|"
-            r"\.pub/pub\.test\.snapshot"
-        r"|"
-            r"test/.*_test\.dart"
-        r")$");
+final _dartRepoRegExp = new RegExp(r"/third_party/pkg/pub/("
+    r"bin/pub\.dart"
+    r"|"
+    r"\.pub/pub\.test\.snapshot"
+    r"|"
+    r"test/.*_test\.dart"
+    r")$");
 
 /// Whether pub is running from source in the Dart repo.
 ///
@@ -537,8 +540,8 @@ final bool runningFromDartRepo = (() {
     // When running from the test runner, we can't find our location via
     // Platform.script since the runner munges that. However, it guarantees that
     // the working directory is <repo>/third_party/pkg/pub.
-    return path.current.contains(
-        new RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
+    return path.current
+        .contains(new RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
   } else {
     return Platform.script.path.contains(_dartRepoRegExp);
   }
@@ -558,7 +561,7 @@ String sdkAssetPath(String target) {
   }
 
   return path.join(
-    sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', target);
+      sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', target);
 }
 
 /// The path to the root of pub's sources in the pub repo.
@@ -602,14 +605,14 @@ final String dartRepoRoot = (() {
 
   // Get the URL of the repo root in a way that works when either both running
   // as a test or as a pub executable.
-  var url = Platform.script.replace(
-      path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
+  var url = Platform.script
+      .replace(path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
   return path.fromUri(url);
 })();
 
 /// A line-by-line stream of standard input.
-final Stream<String> stdinLines = streamToLines(
-    new ByteStream(stdin).toStringStream());
+final Stream<String> stdinLines =
+    streamToLines(new ByteStream(stdin).toStringStream());
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -643,10 +646,8 @@ Future drainStream(Stream stream) {
 /// exited already. This is useful to prevent Future chains from proceeding
 /// after you've decided to exit.
 Future flushThenExit(int status) {
-  return Future.wait([
-    stdout.close(),
-    stderr.close()
-  ]).then((_) => exit(status));
+  return Future
+      .wait([stdout.close(), stderr.close()]).then((_) => exit(status));
 }
 
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
@@ -702,8 +703,8 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
         environment: environment,
         runInShell: runInShell);
 
-    var pubResult = new PubProcessResult(
-        result.stdout, result.stderr, result.exitCode);
+    var pubResult =
+        new PubProcessResult(result.stdout, result.stderr, result.exitCode);
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -733,15 +734,13 @@ Future<PubProcess> startProcess(String executable, List<String> args,
 
 /// Like [runProcess], but synchronous.
 PubProcessResult runProcessSync(String executable, List<String> args,
-    {String workingDir, Map<String, String> environment,
+    {String workingDir,
+    Map<String, String> environment,
     bool runInShell: false}) {
-  var result = _doProcess(
-      Process.runSync, executable, args,
-      workingDir: workingDir,
-      environment: environment,
-      runInShell: runInShell);
-  var pubResult = new PubProcessResult(
-      result.stdout, result.stderr, result.exitCode);
+  var result = _doProcess(Process.runSync, executable, args,
+      workingDir: workingDir, environment: environment, runInShell: runInShell);
+  var pubResult =
+      new PubProcessResult(result.stdout, result.stderr, result.exitCode);
   log.processResult(executable, pubResult);
   return pubResult;
 }
@@ -807,8 +806,7 @@ class PubProcess {
   Future<int> get exitCode => _exitCode;
 
   /// Creates a new [PubProcess] wrapping [process].
-  PubProcess(Process process)
-    : _process = process {
+  PubProcess(Process process) : _process = process {
     var errorGroup = new ErrorGroup();
 
     var pair = consumerToSink(process.stdin);
@@ -825,7 +823,7 @@ class PubProcess {
 
   /// Sends [signal] to the underlying process.
   bool kill([ProcessSignal signal = ProcessSignal.SIGTERM]) =>
-    _process.kill(signal);
+      _process.kill(signal);
 }
 
 /// Calls [fn] with appropriately modified arguments.
@@ -833,7 +831,8 @@ class PubProcess {
 /// [fn] should have the same signature as [Process.start], except that the
 /// returned value may have any return type.
 _doProcess(Function fn, String executable, List<String> args,
-    {String workingDir, Map<String, String> environment,
+    {String workingDir,
+    Map<String, String> environment,
     bool runInShell: false}) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
@@ -899,8 +898,14 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     return await _extractTarGzWindows(stream, destination);
   }
 
-  var args = ["--extract", "--gunzip", "--no-same-owner",
-              "--no-same-permissions", "--directory", destination];
+  var args = [
+    "--extract",
+    "--gunzip",
+    "--no-same-owner",
+    "--no-same-permissions",
+    "--directory",
+    destination
+  ];
   if (_noUnknownKeyword) {
     // BSD tar (the default on OS X) can insert strange headers to a tarfile
     // that GNU tar (the default on Linux) is unable to understand. This will
@@ -916,10 +921,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
   // std{out,err}Sink.
   store(process.stdout.handleError((_) {}), stdout, closeSink: false);
   store(process.stderr.handleError((_) {}), stderr, closeSink: false);
-  var results = await Future.wait([
-    store(stream, process.stdin),
-    process.exitCode
-  ]);
+  var results =
+      await Future.wait([store(stream, process.stdin), process.exitCode]);
 
   var exitCode = results[1];
   if (exitCode != exit_codes.SUCCESS) {
@@ -942,8 +945,8 @@ bool _computeNoUnknownKeyword() {
         "Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}");
   }
 
-  var match = new RegExp(r"^tar \(GNU tar\) (\d+).(\d+)\n")
-      .firstMatch(result.stdout);
+  var match =
+      new RegExp(r"^tar \(GNU tar\) (\d+).(\d+)\n").firstMatch(result.stdout);
   if (match == null) return false;
 
   var major = int.parse(match[1]);
@@ -973,8 +976,8 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
     // first we un-gzip it to a tar file.
     // Note: Setting the working directory instead of passing in a full file
     // path because 7zip says "A full path is not allowed here."
-    var unzipResult = await runProcess(pathTo7zip, ['e', 'data.tar.gz'],
-        workingDir: tempDir);
+    var unzipResult =
+        await runProcess(pathTo7zip, ['e', 'data.tar.gz'], workingDir: tempDir);
 
     if (unzipResult.exitCode != exit_codes.SUCCESS) {
       throw new Exception(
@@ -984,15 +987,14 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
     }
 
     // Find the tar file we just created since we don't know its name.
-    var tarFile = listDir(tempDir).firstWhere(
-        (file) => path.extension(file) == '.tar',
-        orElse: () {
+    var tarFile = listDir(tempDir)
+        .firstWhere((file) => path.extension(file) == '.tar', orElse: () {
       throw new FormatException('The gzip file did not contain a tar file.');
     });
 
     // Untar the archive into the destination directory.
-    var untarResult = await runProcess(pathTo7zip, ['x', tarFile],
-        workingDir: destination);
+    var untarResult =
+        await runProcess(pathTo7zip, ['x', tarFile], workingDir: destination);
     if (untarResult.exitCode != exit_codes.SUCCESS) {
       throw new Exception(
           'Could not un-tar (exit code ${untarResult.exitCode}). Error:\n'

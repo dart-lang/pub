@@ -16,28 +16,28 @@ main() {
     });
 
     d.dir("foo", [
-      d.libPubspec("foo", "0.0.0", deps: {
-        "bar": "any"
-      }),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.libPubspec("foo", "0.0.0", deps: {"bar": "any"}),
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
     var pub = startPub(args: ["global", "activate", "-spath", "../foo"]);
     pub.stdout.expect(consumeThrough("Resolving dependencies..."));
     pub.stdout.expect(consumeThrough("Downloading bar 1.0.0..."));
     pub.stdout.expect(consumeThrough("Downloading baz 2.0.0..."));
-    pub.stdout.expect(consumeThrough(
-        startsWith("Activated foo 0.0.0 at path")));
+    pub.stdout
+        .expect(consumeThrough(startsWith("Activated foo 0.0.0 at path")));
     pub.shouldExit();
 
     // Puts the lockfile in the linked package itself.
     d.dir("foo", [
-      d.matcherFile("pubspec.lock", allOf([
-        contains("bar"), contains("1.0.0"),
-        contains("baz"), contains("2.0.0")
-      ]))
+      d.matcherFile(
+          "pubspec.lock",
+          allOf([
+            contains("bar"),
+            contains("1.0.0"),
+            contains("baz"),
+            contains("2.0.0")
+          ]))
     ]).validate();
   });
 }

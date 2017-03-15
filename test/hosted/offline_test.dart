@@ -18,23 +18,17 @@ main() {
         "bar": ["1.2.3"]
       }, includePubspecs: true).create();
 
-      d.appDir({
-        "foo": "any",
-        "bar": "any"
-      }).create();
+      d.appDir({"foo": "any", "bar": "any"}).create();
 
       var warning = null;
       if (command == RunCommand.upgrade) {
         warning = "Warning: Upgrading when offline may not update you "
-                  "to the latest versions of your dependencies.";
+            "to the latest versions of your dependencies.";
       }
 
       pubCommand(command, args: ['--offline'], warning: warning);
 
-      d.appPackagesFile({
-        "foo": "1.2.3",
-        "bar": "1.2.3"
-      }).validate();
+      d.appPackagesFile({"foo": "1.2.3", "bar": "1.2.3"}).validate();
     });
 
     integration('supports prerelease versions', () {
@@ -45,21 +39,17 @@ main() {
         "foo": ["1.2.3-alpha.1"]
       }, includePubspecs: true).create();
 
-      d.appDir({
-        "foo": "any"
-      }).create();
+      d.appDir({"foo": "any"}).create();
 
       var warning = null;
       if (command == RunCommand.upgrade) {
         warning = "Warning: Upgrading when offline may not update you "
-                  "to the latest versions of your dependencies.";
+            "to the latest versions of your dependencies.";
       }
 
       pubCommand(command, args: ['--offline'], warning: warning);
 
-      d.appPackagesFile({
-        "foo": "1.2.3-alpha.1"
-      }).validate();
+      d.appPackagesFile({"foo": "1.2.3-alpha.1"}).validate();
     });
 
     integration('fails gracefully if a dependency is not cached', () {
@@ -68,11 +58,12 @@ main() {
 
       d.appDir({"foo": "any"}).create();
 
-      pubCommand(command, args: ['--offline'],
+      pubCommand(command,
+          args: ['--offline'],
           exitCode: exit_codes.UNAVAILABLE,
           error: "Could not find package foo in cache.\n"
-                 "Depended on by:\n"
-                 "- myapp");
+              "Depended on by:\n"
+              "- myapp");
     });
 
     integration('fails gracefully if no cached versions match', () {
@@ -85,12 +76,14 @@ main() {
 
       d.appDir({"foo": ">2.0.0"}).create();
 
-      pubCommand(command, args: ['--offline'], error:
-          "Package foo has no versions that match >2.0.0 derived from:\n"
-          "- myapp depends on version >2.0.0");
+      pubCommand(command,
+          args: ['--offline'],
+          error: "Package foo has no versions that match >2.0.0 derived from:\n"
+              "- myapp depends on version >2.0.0");
     });
 
-    integration('fails gracefully if a dependency is not cached and a lockfile '
+    integration(
+        'fails gracefully if a dependency is not cached and a lockfile '
         'exists', () {
       // Run the server so that we know what URL to use in the system cache.
       serveErrors();
@@ -99,11 +92,12 @@ main() {
 
       createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
-      pubCommand(command, args: ['--offline'],
+      pubCommand(command,
+          args: ['--offline'],
           exitCode: exit_codes.UNAVAILABLE,
           error: "Could not find package foo in cache.\n"
-                 "Depended on by:\n"
-                 "- myapp");
+              "Depended on by:\n"
+              "- myapp");
     });
 
     integration('downgrades to the version in the cache if necessary', () {

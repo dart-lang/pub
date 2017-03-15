@@ -10,10 +10,7 @@ import 'utils.dart';
 
 main() {
   integration("gets first if a dev dependency has changed", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "0.0.1"),
-      d.libDir("foo")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "0.0.1"), d.libDir("foo")]).create();
 
     // Create a pubspec with "foo" and a lock file without it.
     d.dir(appPath, [
@@ -23,9 +20,7 @@ main() {
           "foo": {"path": "../foo"}
         }
       }),
-      d.file("pubspec.lock", JSON.encode({
-        'packages': {}
-      }))
+      d.file("pubspec.lock", JSON.encode({'packages': {}}))
     ]).create();
 
     pubGet();

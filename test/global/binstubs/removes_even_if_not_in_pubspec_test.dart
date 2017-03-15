@@ -10,13 +10,9 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "foo": null
-        }
+        "executables": {"foo": null}
       }),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
     // Create the binstub for foo.
@@ -24,9 +20,7 @@ main() {
 
     // Remove it from the pubspec.
     d.dir("foo", [
-      d.pubspec({
-        "name": "foo"
-      })
+      d.pubspec({"name": "foo"})
     ]).create();
 
     // Deactivate.
@@ -34,9 +28,7 @@ main() {
 
     // It should still be deleted.
     d.dir(cachePath, [
-      d.dir("bin", [
-        d.nothing(binStubName("foo"))
-      ])
+      d.dir("bin", [d.nothing(binStubName("foo"))])
     ]).validate();
   });
 }

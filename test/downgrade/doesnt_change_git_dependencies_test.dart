@@ -9,10 +9,7 @@ main() {
   integration("doesn't change git dependencies", () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     d.appDir({
       "foo": {"git": "../foo.git"}
@@ -23,24 +20,18 @@ main() {
     pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
-    d.git('foo.git', [
-      d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    d.git('foo.git',
+        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
     pubDowngrade(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });
 }

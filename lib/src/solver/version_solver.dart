@@ -29,8 +29,9 @@ import 'solve_report.dart';
 /// packages.
 ///
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
-Future<SolveResult> resolveVersions(SolveType type, SystemCache cache,
-    Package root, {LockFile lockFile, List<String> useLatest}) {
+Future<SolveResult> resolveVersions(
+    SolveType type, SystemCache cache, Package root,
+    {LockFile lockFile, List<String> useLatest}) {
   if (lockFile == null) lockFile = new LockFile.empty();
   if (useLatest == null) useLatest = [];
 
@@ -84,8 +85,8 @@ class SolveResult {
             !_root.dependencyOverrides.any((dep) => dep.name == pubspec.name))
         .toList();
 
-    var dartMerged = new VersionConstraint.intersection(nonOverrides
-        .map((pubspec) => pubspec.dartSdkConstraint));
+    var dartMerged = new VersionConstraint.intersection(
+        nonOverrides.map((pubspec) => pubspec.dartSdkConstraint));
 
     var flutterConstraints = nonOverrides
         .map((pubspec) => pubspec.flutterSdkConstraint)
@@ -96,8 +97,7 @@ class SolveResult {
         : new VersionConstraint.intersection(flutterConstraints);
 
     return new LockFile(packages,
-        dartSdkConstraint: dartMerged,
-        flutterSdkConstraint: flutterMerged);
+        dartSdkConstraint: dartMerged, flutterSdkConstraint: flutterMerged);
   }
 
   final SourceRegistry _sources;
@@ -112,15 +112,22 @@ class SolveResult {
 
     var changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
-        .map((id) => id.name).toSet();
+        .map((id) => id.name)
+        .toSet();
 
     return changed.union(_previousLockFile.packages.keys
         .where((package) => !availableVersions.containsKey(package))
         .toSet());
   }
 
-  SolveResult.success(this._sources, this._root, this._previousLockFile,
-      this.packages, this.overrides, this.pubspecs, this.availableVersions,
+  SolveResult.success(
+      this._sources,
+      this._root,
+      this._previousLockFile,
+      this.packages,
+      this.overrides,
+      this.pubspecs,
+      this.availableVersions,
       this.attemptedSolutions)
       : error = null;
 
@@ -149,11 +156,11 @@ class SolveResult {
   String toString() {
     if (!succeeded) {
       return 'Failed to solve after $attemptedSolutions attempts:\n'
-             '$error';
+          '$error';
     }
 
     return 'Took $attemptedSolutions tries to resolve to\n'
-           '- ${packages.join("\n- ")}';
+        '- ${packages.join("\n- ")}';
   }
 }
 
@@ -421,7 +428,7 @@ class UnknownSourceException extends SolveFailure {
   String toString() {
     var dep = dependencies.single;
     return 'Package ${dep.depender.name} depends on ${dep.dep.name} from '
-           'unknown source "${dep.dep.source}".';
+        'unknown source "${dep.dep.source}".';
   }
 }
 
@@ -430,8 +437,8 @@ class UnknownSourceException extends SolveFailure {
 class DescriptionMismatchException extends SolveFailure {
   String get _message => "Incompatible dependencies on $package";
 
-  DescriptionMismatchException(String package,
-      Iterable<Dependency> dependencies)
+  DescriptionMismatchException(
+      String package, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
   String _describeDependency(PackageDep dep) {
@@ -448,8 +455,8 @@ class DependencyNotFoundException extends SolveFailure {
   final PackageNotFoundException _innerException;
   String get _message => "${_innerException.message}\nDepended on by";
 
-  DependencyNotFoundException(String package, this._innerException,
-      Iterable<Dependency> dependencies)
+  DependencyNotFoundException(
+      String package, this._innerException, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
   /// The failure isn't because of the version of description of the package,

@@ -16,20 +16,19 @@ final _preFlutterSupport = new VersionConstraint.parse("<1.19.0");
 /// A validator that validates that a package's SDK constraint doesn't use the
 /// "^" syntax.
 class SdkConstraintValidator extends Validator {
-  SdkConstraintValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
     var dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
     if (dartConstraint is VersionRange &&
         dartConstraint.toString().startsWith("^")) {
-      errors.add(
-          "^ version constraints aren't allowed for SDK constraints since "
-            "older versions of pub don't support them.\n"
-          "Expand it manually instead:\n"
-          "\n"
-          "environment:\n"
-          "  sdk: \">=${dartConstraint.min} <${dartConstraint.max}\"");
+      errors
+          .add("^ version constraints aren't allowed for SDK constraints since "
+              "older versions of pub don't support them.\n"
+              "Expand it manually instead:\n"
+              "\n"
+              "environment:\n"
+              "  sdk: \">=${dartConstraint.min} <${dartConstraint.max}\"");
     }
 
     if (entrypoint.root.pubspec.flutterSdkConstraint != null &&
@@ -42,12 +41,12 @@ class SdkConstraintValidator extends Validator {
             .difference(_preFlutterSupport);
       }
 
-      errors.add(
-          "Older versions of pub don't support Flutter SDK constraints.\n"
-          "Make sure your SDK constraint excludes those old versions:\n"
-          "\n"
-          "environment:\n"
-          "  sdk: \"$newDartConstraint\"");
+      errors
+          .add("Older versions of pub don't support Flutter SDK constraints.\n"
+              "Make sure your SDK constraint excludes those old versions:\n"
+              "\n"
+              "environment:\n"
+              "  sdk: \"$newDartConstraint\"");
     }
   }
 }

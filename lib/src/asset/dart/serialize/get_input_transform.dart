@@ -15,8 +15,7 @@ abstract class GetInputTransform {
 
   Future<String> readInputAsString(AssetId id, {Encoding encoding}) {
     if (encoding == null) encoding = UTF8;
-    return getInput(id).then((input) =>
-        input.readAsString(encoding: encoding));
+    return getInput(id).then((input) => input.readAsString(encoding: encoding));
   }
 
   Stream<List<int>> readInput(AssetId id) =>

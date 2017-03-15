@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:scheduled_test/scheduled_test.dart';
@@ -21,9 +20,7 @@ main() {
       d.dir('web', [
         d.file('file.txt', 'contents'),
         d.file('file.dart', 'void void;'),
-        d.dir('subdir', [
-          d.file('subfile.dart', 'void void;')
-        ])
+        d.dir('subdir', [d.file('subfile.dart', 'void void;')])
       ])
     ]).create();
 
@@ -43,17 +40,14 @@ main() {
 
     // It's nondeterministic what order the dart2js transformers start running,
     // so we allow the error messages to be emitted in either order.
-    pub.stderr.expect(either(
-        inOrder([consumeFile, consumeSubfile]),
+    pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
         inOrder([consumeSubfile, consumeFile])));
 
     pub.shouldExit(exit_codes.DATA);
 
     // Doesn't output anything if an error occurred.
     d.dir(appPath, [
-      d.dir('build', [
-        d.nothing('web')
-      ])
+      d.dir('build', [d.nothing('web')])
     ]).validate();
   });
 }

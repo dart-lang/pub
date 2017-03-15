@@ -12,22 +12,19 @@ main() {
   integration("can specify the output directory to build into", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir('web', [
-        d.file('file.txt', 'web')
-      ])
+      d.dir('web', [d.file('file.txt', 'web')])
     ]).create();
 
     pubGet();
     var outDir = path.join("out", "dir");
-    schedulePub(args: ["build", "-o", outDir],
+    schedulePub(
+        args: ["build", "-o", outDir],
         output: contains('Built 1 file to "$outDir".'));
 
     d.dir(appPath, [
       d.dir("out", [
         d.dir("dir", [
-          d.dir("web", [
-            d.file("file.txt", "web")
-          ]),
+          d.dir("web", [d.file("file.txt", "web")]),
         ])
       ])
     ]).validate();

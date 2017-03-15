@@ -9,7 +9,8 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("reports previous transformers as dependencies if the "
+  integration(
+      "reports previous transformers as dependencies if the "
       "transformer is transformed", () {
     // The root app just exists so that something is transformed by pkg and qux.
     d.dir(appPath, [
@@ -34,15 +35,17 @@ void main() {
           "baz": {"path": "../baz"},
         },
         "transformers": [
-          {"foo": {"\$include": "lib/pkg.dart"}},
-          {"bar": {"\$exclude": "lib/transformer.dart"}},
+          {
+            "foo": {"\$include": "lib/pkg.dart"}
+          },
+          {
+            "bar": {"\$exclude": "lib/transformer.dart"}
+          },
           "baz"
         ]
       }),
-      d.dir("lib", [
-        d.file("pkg.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("pkg.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
     // Even though foo and bar don't modify pkg/lib/transformer.dart themselves,
@@ -72,11 +75,16 @@ void main() {
     ]).create();
 
     expectDependencies({
-      'pkg': ['foo', 'bar', 'baz'], 'foo': [], 'bar': [], 'baz': [], 'qux': []
+      'pkg': ['foo', 'bar', 'baz'],
+      'foo': [],
+      'bar': [],
+      'baz': [],
+      'qux': []
     });
   });
 
-  integration("reports all transitive package dependencies' transformers as "
+  integration(
+      "reports all transitive package dependencies' transformers as "
       "dependencies if the transformer is transformed", () {
     // The root app just exists so that something is transformed by pkg and qux.
     d.dir(appPath, [
@@ -109,7 +117,9 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "dependencies": {"bar": {"path": "../bar"}},
+        "dependencies": {
+          "bar": {"path": "../bar"}
+        },
         "transformers": ["foo"]
       }),
       d.dir("lib", [d.file("foo.dart", transformer())])
@@ -145,11 +155,16 @@ void main() {
     ]).create();
 
     expectDependencies({
-      'pkg': ['foo', 'bar', 'baz'], 'foo': [], 'bar': [], 'baz': [], 'qux': []
+      'pkg': ['foo', 'bar', 'baz'],
+      'foo': [],
+      'bar': [],
+      'baz': [],
+      'qux': []
     });
   });
 
-  integration("reports previous transformers as dependencies if a "
+  integration(
+      "reports previous transformers as dependencies if a "
       "nonexistent local file is imported", () {
     // The root app just exists so that something is transformed by pkg and bar.
     d.dir(appPath, [
@@ -171,7 +186,11 @@ void main() {
           "foo": {"path": "../foo"},
           "bar": {"path": "../bar"}
         },
-        "transformers": [{"foo": {"\$include": "lib/pkg.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/pkg.dart"}
+          }
+        ]
       }),
       d.dir("lib", [
         d.file("pkg.dart", ""),
@@ -194,10 +213,15 @@ void main() {
       d.dir("lib", [d.file("bar.dart", transformer())])
     ]).create();
 
-    expectDependencies({'pkg': ['foo'], 'foo': [], 'bar': []});
+    expectDependencies({
+      'pkg': ['foo'],
+      'foo': [],
+      'bar': []
+    });
   });
 
-  integration("reports all that package's dependencies' transformers as "
+  integration(
+      "reports all that package's dependencies' transformers as "
       "dependencies if a non-existent file is imported from another package",
       () {
     d.dir(appPath, [
@@ -261,11 +285,16 @@ void main() {
     ]).create();
 
     expectDependencies({
-      'myapp': ['foo', 'bar', 'baz'], 'foo': [], 'bar': [], 'baz': [], 'qux': []
+      'myapp': ['foo', 'bar', 'baz'],
+      'foo': [],
+      'bar': [],
+      'baz': [],
+      'qux': []
     });
   });
 
-  integration("reports all that package's dependencies' transformers as "
+  integration(
+      "reports all that package's dependencies' transformers as "
       "dependencies if a non-existent transformer is used from another package",
       () {
     d.dir(appPath, [
@@ -324,7 +353,10 @@ void main() {
     ]).create();
 
     expectDependencies({
-      'myapp': ['bar', 'baz'], 'bar': [], 'baz': [], 'qux': []
+      'myapp': ['bar', 'baz'],
+      'bar': [],
+      'baz': [],
+      'qux': []
     });
   });
 
@@ -332,11 +364,7 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [
-          "myapp/first",
-          "myapp/second",
-          "myapp/third"
-        ]
+        "transformers": ["myapp/first", "myapp/second", "myapp/third"]
       }),
       d.dir("lib", [
         d.file("first.dart", transformer()),
@@ -352,14 +380,21 @@ void main() {
     });
   });
 
-  integration("considers the entrypoint package's dev and override "
+  integration(
+      "considers the entrypoint package's dev and override "
       "dependencies", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
-        "dev_dependencies": {"bar": {"path": "../bar"}},
-        "dependency_overrides": {"baz": {"path": "../baz"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
+        "dev_dependencies": {
+          "bar": {"path": "../bar"}
+        },
+        "dependency_overrides": {
+          "baz": {"path": "../baz"}
+        },
         "transformers": ["foo", "myapp"]
       }),
       d.dir("lib", [d.file("myapp.dart", transformer())])
@@ -398,26 +433,38 @@ void main() {
     ]).create();
 
     expectDependencies({
-      'myapp': ['foo', 'bar', 'baz'], 'foo': [], 'bar': [], 'baz': []
+      'myapp': ['foo', 'bar', 'baz'],
+      'foo': [],
+      'bar': [],
+      'baz': []
     });
   });
 
-  integration("doesn't consider a non-entrypoint package's dev and override "
+  integration(
+      "doesn't consider a non-entrypoint package's dev and override "
       "dependencies", () {
     // myapp just exists so that pkg isn't the entrypoint.
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"pkg": {"path": "../pkg"}}
+        "dependencies": {
+          "pkg": {"path": "../pkg"}
+        }
       })
     ]).create();
 
     d.dir("pkg", [
       d.pubspec({
         "name": "pkg",
-        "dependencies": {"foo": {"path": "../foo"}},
-        "dev_dependencies": {"bar": {"path": "../bar"}},
-        "dependency_overrides": {"baz": {"path": "../baz"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
+        "dev_dependencies": {
+          "bar": {"path": "../bar"}
+        },
+        "dependency_overrides": {
+          "baz": {"path": "../baz"}
+        },
         "transformers": ["foo", "pkg"]
       }),
       d.dir("lib", [d.file("pkg.dart", transformer())])
@@ -457,6 +504,11 @@ void main() {
       d.dir("lib", [d.file("baz.dart", transformer())])
     ]).create();
 
-    expectDependencies({'pkg': ['foo'], 'foo': [], 'bar': [], 'baz': []});
+    expectDependencies({
+      'pkg': ['foo'],
+      'foo': [],
+      'bar': [],
+      'baz': []
+    });
   });
 }

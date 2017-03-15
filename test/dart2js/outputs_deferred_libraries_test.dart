@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
@@ -37,16 +36,13 @@ main() {
   integration("compiles deferred libraries to separate outputs", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir('web', [
-        d.file('main.dart', MAIN),
-        d.file('a.dart', A),
-        d.file('b.dart', B)
-      ])
+      d.dir('web',
+          [d.file('main.dart', MAIN), d.file('a.dart', A), d.file('b.dart', B)])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build"],
-        output: new RegExp(r'Built 3 files to "build".'));
+    schedulePub(
+        args: ["build"], output: new RegExp(r'Built 3 files to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [

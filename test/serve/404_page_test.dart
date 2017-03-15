@@ -10,9 +10,7 @@ import 'utils.dart';
 
 main() {
   setUp(() {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
   });
 
   integration("the 404 page describes the missing asset", () {

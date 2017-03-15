@@ -12,16 +12,13 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "foo": null
-        }
+        "executables": {"foo": null}
       }),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"],
+    schedulePub(
+        args: ["global", "activate", "--source", "path", "../foo"],
         output: contains("Installed executable foo."));
 
     d.dir(cachePath, [

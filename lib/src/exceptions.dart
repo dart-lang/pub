@@ -64,8 +64,7 @@ class SilentException extends WrappedException {
 ///
 /// This corresponds to the [exit_codes.DATA] exit code.
 class DataException extends ApplicationException {
-  DataException(String message)
-      : super(message);
+  DataException(String message) : super(message);
 }
 
 /// An class for exceptions where a package could not be found in a [Source].
@@ -107,11 +106,11 @@ bool isUserFacingException(error) {
   // TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
   // fixed.
   return error is ApplicationException ||
-    error is AnalyzerError ||
-    error is AnalyzerErrorGroup ||
-    error is IsolateSpawnException ||
-    error is IOException ||
-    error is http.ClientException ||
-    error is YamlException ||
-    error is UsageException;
+      error is AnalyzerError ||
+      error is AnalyzerErrorGroup ||
+      error is IsolateSpawnException ||
+      error is IOException ||
+      error is http.ClientException ||
+      error is YamlException ||
+      error is UsageException;
 }

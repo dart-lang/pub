@@ -13,8 +13,9 @@ main() {
     d.appDir().create();
   });
 
-  pubBuildAndServeShouldFail("if no directories were passed and no default "
-          "ones exist",
+  pubBuildAndServeShouldFail(
+      "if no directories were passed and no default "
+      "ones exist",
       args: [],
       buildError: 'Your package must have a "web" directory,\n'
           'or you must specify the source directories.',

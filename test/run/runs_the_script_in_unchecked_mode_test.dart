@@ -18,9 +18,7 @@ main() {
   integration('runs the script in unchecked mode by default', () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", SCRIPT)
-      ])
+      d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
     pubGet();

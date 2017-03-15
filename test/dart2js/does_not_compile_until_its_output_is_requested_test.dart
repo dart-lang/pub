@@ -15,9 +15,7 @@ main() {
         "name": "myapp",
         "version": "0.0.1",
       }),
-      d.dir("web", [
-        d.file("syntax-error.dart", "syntax error")
-      ])
+      d.dir("web", [d.file("syntax-error.dart", "syntax error")])
     ]).create();
 
     pubGet();
@@ -26,8 +24,7 @@ main() {
 
     // Once we request the output, it should start compiling and fail.
     requestShould404("syntax-error.dart.js");
-    server.stdout.expect(emitsLines(
-        "[Info from Dart2JS]:\n"
+    server.stdout.expect(emitsLines("[Info from Dart2JS]:\n"
         "Compiling myapp|web/syntax-error.dart..."));
     server.stdout.expect(consumeThrough("Build completed with 1 errors."));
     endPubServe();

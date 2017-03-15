@@ -9,11 +9,10 @@ import '../test_pub.dart';
 
 main() {
   integration('Errors if the executable does not exist.', () {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
 
-    schedulePub(args: ["run"],
+    schedulePub(
+        args: ["run"],
         error: """
 Must specify an executable to run.
 

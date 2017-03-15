@@ -29,12 +29,10 @@ TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
 
 /// Describes a package that passes all validation.
 Descriptor get validPackage => dir(appPath, [
-  libPubspec("test_pkg", "1.0.0"),
-  file("LICENSE", "Eh, do what you want."),
-  dir("lib", [
-    file("test_pkg.dart", "int i = 1;")
-  ])
-]);
+      libPubspec("test_pkg", "1.0.0"),
+      file("LICENSE", "Eh, do what you want."),
+      dir("lib", [file("test_pkg.dart", "int i = 1;")])
+    ]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
 ///
@@ -49,8 +47,8 @@ FileDescriptor outOfDateSnapshot(String name) =>
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
 Descriptor pubspec(Map contents) {
-  return async(awaitObject(contents).then((resolvedContents) =>
-      file("pubspec.yaml", yaml(resolvedContents))));
+  return async(awaitObject(contents).then(
+      (resolvedContents) => file("pubspec.yaml", yaml(resolvedContents))));
 }
 
 /// Describes a file named `pubspec.yaml` for an application package with the
@@ -64,10 +62,8 @@ Descriptor appPubspec([Map dependencies]) {
 /// Describes a file named `pubspec.yaml` for a library package with the given
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
 /// constraint on that version.
-Descriptor libPubspec(String name, String version, {
-    Map deps,
-    Map devDeps,
-    String sdk}) {
+Descriptor libPubspec(String name, String version,
+    {Map deps, Map devDeps, String sdk}) {
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) map["environment"] = {"sdk": sdk};
   return pubspec(map);
@@ -78,9 +74,7 @@ Descriptor libPubspec(String name, String version, {
 Descriptor libDir(String name, [String code]) {
   // Default to printing the name if no other code was given.
   if (code == null) code = name;
-  return dir("lib", [
-    file("$name.dart", 'main() => "$code";')
-  ]);
+  return dir("lib", [file("$name.dart", 'main() => "$code";')]);
 }
 
 /// Describes a directory for a Git package. This directory is of the form
@@ -95,13 +89,10 @@ Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
 /// Describes a directory for a Git package. This directory is of the form
 /// found in the repo cache of the global package cache.
 Descriptor gitPackageRepoCacheDir(String name) {
-  return pattern(new RegExp("$name${r'-[a-f0-9]+'}"),
-      (dirName) => dir(dirName, [
-    dir('hooks'),
-    dir('info'),
-    dir('objects'),
-    dir('refs')
-  ]));
+  return pattern(
+      new RegExp("$name${r'-[a-f0-9]+'}"),
+      (dirName) => dir(
+          dirName, [dir('hooks'), dir('info'), dir('objects'), dir('refs')]));
 }
 
 /// Describes the `packages/` directory containing all the given [packages],
@@ -115,9 +106,8 @@ Descriptor packagesDir(Map<String, String> packages) {
     if (version == null) {
       contents.add(nothing(name));
     } else {
-      contents.add(dir(name, [
-        file("$name.dart", 'main() => "$name $version";')
-      ]));
+      contents
+          .add(dir(name, [file("$name.dart", 'main() => "$name $version";')]));
     }
   });
   return dir(packagesPath, contents);
@@ -171,19 +161,18 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {port}) {
 /// Describes the file in the system cache that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
-Descriptor credentialsFile(
-    ScheduledServer server,
-    String accessToken,
-    {String refreshToken,
-     DateTime expiration}) {
+Descriptor credentialsFile(ScheduledServer server, String accessToken,
+    {String refreshToken, DateTime expiration}) {
   return async(server.url.then((url) {
     return dir(cachePath, [
-      file('credentials.json', new oauth2.Credentials(
-          accessToken,
-          refreshToken: refreshToken,
-          tokenEndpoint: url.resolve('/token'),
-          scopes: ['https://www.googleapis.com/auth/userinfo.email'],
-          expiration: expiration).toJson())
+      file(
+          'credentials.json',
+          new oauth2.Credentials(accessToken,
+                  refreshToken: refreshToken,
+                  tokenEndpoint: url.resolve('/token'),
+                  scopes: ['https://www.googleapis.com/auth/userinfo.email'],
+                  expiration: expiration)
+              .toJson())
     ]);
   }));
 }
@@ -191,7 +180,7 @@ Descriptor credentialsFile(
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
 DirectoryDescriptor appDir([Map dependencies]) =>
-  dir(appPath, [appPubspec(dependencies)]);
+    dir(appPath, [appPubspec(dependencies)]);
 
 /// Describes a `.packages` file.
 ///
@@ -205,7 +194,7 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 /// either the version string (for a reference to the pub cache) or a
 /// path to a path dependency, relative to the application directory.
 Descriptor packagesFile([Map<String, String> dependencies]) =>
-  new PackagesFileDescriptor(dependencies);
+    new PackagesFileDescriptor(dependencies);
 
 /// Describes a `.packages` file in the application directory, including the
 /// implicit entry for the app itself.

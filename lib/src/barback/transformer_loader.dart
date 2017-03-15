@@ -34,7 +34,8 @@ class TransformerLoader {
   TransformerLoader(this._environment, this._transformerServer) {
     for (var package in _environment.graph.packages.values) {
       for (var config in unionAll(package.pubspec.transformers)) {
-        _transformerUsers.putIfAbsent(config.id, () => new Set<String>())
+        _transformerUsers
+            .putIfAbsent(config.id, () => new Set<String>())
             .add(package.name);
       }
     }
@@ -51,9 +52,10 @@ class TransformerLoader {
     ids = ids.where((id) => !_isolates.containsKey(id)).toList();
     if (ids.isEmpty) return;
 
-    var isolate = await log.progress("Loading ${toSentence(ids)} transformers",
+    var isolate = await log.progress(
+        "Loading ${toSentence(ids)} transformers",
         () => TransformerIsolate.spawn(_environment, _transformerServer, ids,
-                  snapshot: snapshot));
+            snapshot: snapshot));
 
     for (var id in ids) {
       _isolates[id] = isolate;
@@ -83,7 +85,7 @@ class TransformerLoader {
       var location;
       if (config.id.path == null) {
         location = 'package:${config.id.package}/transformer.dart or '
-          'package:${config.id.package}/${config.id.package}.dart';
+            'package:${config.id.package}/${config.id.package}.dart';
       } else {
         location = 'package:$config.dart';
       }
@@ -104,8 +106,8 @@ class TransformerLoader {
     }
 
     // Handle any exclusions.
-    _transformers[config] = new Set.from(
-        [ExcludingTransformer.wrap(transformer, config)]);
+    _transformers[config] =
+        new Set.from([ExcludingTransformer.wrap(transformer, config)]);
     return _transformers[config];
   }
 

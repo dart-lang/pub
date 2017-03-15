@@ -16,9 +16,7 @@ main() {
   integration('runs a script in unchecked mode by default', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", SCRIPT)
-        ])
+        d.dir("bin", [d.file("script.dart", SCRIPT)])
       ]);
     });
 

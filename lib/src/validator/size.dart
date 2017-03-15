@@ -15,8 +15,7 @@ const _MAX_SIZE = 100 * 1024 * 1024;
 class SizeValidator extends Validator {
   final Future<int> packageSize;
 
-  SizeValidator(Entrypoint entrypoint, this.packageSize)
-    : super(entrypoint);
+  SizeValidator(Entrypoint entrypoint, this.packageSize) : super(entrypoint);
 
   Future validate() {
     return packageSize.then((size) {
@@ -27,4 +26,3 @@ class SizeValidator extends Validator {
     });
   }
 }
-

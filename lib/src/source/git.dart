@@ -56,10 +56,8 @@ class GitSource extends Source {
           "string.");
     }
 
-    return new PackageRef(name, this, {
-      "url": description["url"],
-      "ref": description["ref"] ?? "HEAD"
-    });
+    return new PackageRef(name, this,
+        {"url": description["url"], "ref": description["ref"] ?? "HEAD"});
   }
 
   PackageId parseId(String name, Version version, description) {
@@ -191,8 +189,8 @@ class BoundGitSource extends CachedSource {
 
     var lines;
     try {
-      lines = await git.run(["show", "$revision:pubspec.yaml"],
-          workingDir: path);
+      lines =
+          await git.run(["show", "$revision:pubspec.yaml"], workingDir: path);
     } on git.GitException catch (_) {
       fail('Could not find a file named "pubspec.yaml" in '
           '${ref.description['url']} $revision.');
@@ -234,8 +232,8 @@ class BoundGitSource extends CachedSource {
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) => p.join(
-      systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
+  String getDirectory(PackageId id) =>
+      p.join(systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
 
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
@@ -279,8 +277,8 @@ class BoundGitSource extends CachedSource {
 
       try {
         // Remove all untracked files.
-        await git.run(["clean", "-d", "--force", "-x"],
-            workingDir: package.dir);
+        await git
+            .run(["clean", "-d", "--force", "-x"], workingDir: package.dir);
 
         // Discard all changes to tracked files.
         await git.run(["reset", "--hard", "HEAD"], workingDir: package.dir);
@@ -355,8 +353,8 @@ class BoundGitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
-    var lines = await git.run(["rev-list", "--max-count=1", reference],
-        workingDir: path);
+    var lines = await git
+        .run(["rev-list", "--max-count=1", reference], workingDir: path);
     return lines.first;
   }
 
@@ -370,8 +368,8 @@ class BoundGitSource extends CachedSource {
   ///
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
-  Future _clone(String from, String to, {bool mirror: false,
-      bool shallow: false}) {
+  Future _clone(String from, String to,
+      {bool mirror: false, bool shallow: false}) {
     return new Future.sync(() {
       // Git on Windows does not seem to automatically create the destination
       // directory.
@@ -387,8 +385,8 @@ class BoundGitSource extends CachedSource {
 
   /// Checks out the reference [ref] in [repoPath].
   Future _checkOut(String repoPath, String ref) {
-    return git.run(["checkout", ref], workingDir: repoPath).then(
-        (result) => null);
+    return git
+        .run(["checkout", ref], workingDir: repoPath).then((result) => null);
   }
 
   /// Returns the path to the canonical clone of the repository referred to by

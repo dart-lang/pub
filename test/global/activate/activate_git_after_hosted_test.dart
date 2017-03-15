@@ -13,30 +13,25 @@ main() {
 
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("foo.dart", "main(args) => print('hosted');")
-        ])
+        d.dir("bin", [d.file("foo.dart", "main(args) => print('hosted');")])
       ]);
     });
 
     d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('git');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('git');")])
     ]).create();
 
     schedulePub(args: ["global", "activate", "foo"]);
 
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"],
+    schedulePub(
+        args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf(
-            startsWith(
-                'Package foo is currently active at version 1.0.0.\n'
+            startsWith('Package foo is currently active at version 1.0.0.\n'
                 'Resolving dependencies...\n'
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith(
-                'Precompiling executables...\n'
+            endsWith('Precompiling executables...\n'
                 'Precompiled foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 

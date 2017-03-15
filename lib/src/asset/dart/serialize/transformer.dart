@@ -68,8 +68,8 @@ Map _serializeAggregateTransformer(AggregateTransformer transformer) {
         // Make sure we return null so that if the transformer's [apply] returns
         // a non-serializable value it doesn't cause problems.
         return new Future.sync(() {
-          return transformer.apply(
-              new ForeignAggregateTransform(message['transform']));
+          return transformer
+              .apply(new ForeignAggregateTransform(message['transform']));
         }).then((_) => null);
       }
     });

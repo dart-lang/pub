@@ -26,32 +26,28 @@ class ModeTransformer extends Transformer {
 """;
 
 main() {
-   integration("defaults to release mode", () {
-     serveBarback();
+  integration("defaults to release mode", () {
+    serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", TRANSFORMER)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     schedulePub(args: ["build"]);
+    pubGet();
+    schedulePub(args: ["build"]);
 
-     d.dir(appPath, [
-       d.dir('build', [
-         d.dir('web', [
-           d.file('foo.out', 'release')
-         ])
-       ])
-     ]).validate();
-   });
+    d.dir(appPath, [
+      d.dir('build', [
+        d.dir('web', [d.file('foo.out', 'release')])
+      ])
+    ]).validate();
+  });
 }

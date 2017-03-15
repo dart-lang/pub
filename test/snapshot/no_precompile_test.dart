@@ -17,9 +17,8 @@ main() {
             d.file("hello.dart", "void main() => print('hello!');"),
             d.file("goodbye.dart", "void main() => print('goodbye!');"),
             d.file("shell.sh", "echo shell"),
-            d.dir("subdir", [
-              d.file("sub.dart", "void main() => print('sub!');")
-            ])
+            d.dir(
+                "subdir", [d.file("sub.dart", "void main() => print('sub!');")])
           ])
         ]);
       });
@@ -42,9 +41,8 @@ main() {
     integration("deletes a snapshot when its package is upgraded", () {
       servePackages((builder) {
         builder.serve("foo", "1.2.3", contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello!');")
-          ])
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
         ]);
       });
 
@@ -58,15 +56,13 @@ main() {
 
       globalPackageServer.add((builder) {
         builder.serve("foo", "1.2.4", contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello 2!');")
-          ])
+          d.dir("bin",
+              [d.file("hello.dart", "void main() => print('hello 2!');")])
         ]);
       });
 
       pubUpgrade(
-          args: ["--no-precompile"],
-          output: isNot(contains("Precompiled")));
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
       d.nothing(p.join(appPath, '.pub', 'bin', 'foo')).validate();
 
@@ -75,13 +71,15 @@ main() {
       process.shouldExit();
     });
 
-    integration("doesn't delete a snapshot when no dependencies of a package "
+    integration(
+        "doesn't delete a snapshot when no dependencies of a package "
         "have changed", () {
       servePackages((builder) {
-        builder.serve("foo", "1.2.3", deps: {"bar": "any"}, contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello!');")
-          ])
+        builder.serve("foo", "1.2.3", deps: {
+          "bar": "any"
+        }, contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
         ]);
         builder.serve("bar", "1.2.3");
       });
@@ -91,8 +89,7 @@ main() {
       pubGet(output: contains("Precompiled foo:hello."));
 
       pubUpgrade(
-          args: ["--no-precompile"],
-          output: isNot(contains("Precompiled")));
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
       d.dir(p.join(appPath, '.pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),

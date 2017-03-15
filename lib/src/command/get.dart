@@ -20,10 +20,13 @@ class GetCommand extends PubCommand {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
 
-    argParser.addFlag('dry-run', abbr: 'n', negatable: false,
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
-    argParser.addFlag('precompile', defaultsTo: true,
+    argParser.addFlag('precompile',
+        defaultsTo: true,
         help: "Precompile executables and transformed dependencies.");
 
     argParser.addFlag('packages-dir',

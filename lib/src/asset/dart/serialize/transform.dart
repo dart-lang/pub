@@ -40,16 +40,16 @@ Map _serializeBaseTransform(transform, Map<String, dynamic> additionalFields,
       }[message['level']];
       assert(method != null);
 
-      var assetId = message['assetId'] == null ? null :
-        deserializeId(message['assetId']);
-      var span = message['span'] == null ? null :
-        deserializeSpan(message['span']);
+      var assetId =
+          message['assetId'] == null ? null : deserializeId(message['assetId']);
+      var span =
+          message['span'] == null ? null : deserializeSpan(message['span']);
       method(message['message'], asset: assetId, span: span);
     });
   });
 
   return <String, dynamic>{'port': receivePort.sendPort}
-      ..addAll(additionalFields);
+    ..addAll(additionalFields);
 }
 
 /// Converts [transform] into a serializable map.
@@ -57,7 +57,8 @@ Map serializeTransform(Transform transform) {
   return _serializeBaseTransform(transform, {
     'primaryInput': serializeAsset(transform.primaryInput)
   }, {
-    'getInput': (message) => transform.getInput(deserializeId(message['id']))
+    'getInput': (message) => transform
+        .getInput(deserializeId(message['id']))
         .then((asset) => serializeAsset(asset)),
     'addOutput': (message) =>
         transform.addOutput(deserializeAsset(message['output']))
@@ -84,8 +85,7 @@ class _ForeignBaseTransform {
   TransformLogger get logger => _logger;
   TransformLogger _logger;
 
-  _ForeignBaseTransform(Map transform)
-      : _port = transform['port'] {
+  _ForeignBaseTransform(Map transform) : _port = transform['port'] {
     _logger = new TransformLogger((assetId, level, message, span) {
       call(_port, {
         'type': 'log',
@@ -106,7 +106,8 @@ class _ForeignBaseTransform {
 ///
 /// This retrieves inputs from and sends outputs and logs to the host isolate.
 class ForeignTransform extends _ForeignBaseTransform
-    with GetInputTransform implements Transform {
+    with GetInputTransform
+    implements Transform {
   final Asset primaryInput;
 
   /// Creates a transform from a serialized map sent from the host isolate.
@@ -115,17 +116,12 @@ class ForeignTransform extends _ForeignBaseTransform
         super(transform);
 
   Future<Asset> getInput(AssetId id) {
-    return call(_port, {
-      'type': 'getInput',
-      'id': serializeId(id)
-    }).then(deserializeAsset);
+    return call(_port, {'type': 'getInput', 'id': serializeId(id)})
+        .then(deserializeAsset);
   }
 
   void addOutput(Asset output) {
-    call(_port, {
-      'type': 'addOutput',
-      'output': serializeAsset(output)
-    });
+    call(_port, {'type': 'addOutput', 'output': serializeAsset(output)});
   }
 }
 
@@ -140,9 +136,6 @@ class ForeignDeclaringTransform extends _ForeignBaseTransform
         super(transform);
 
   void declareOutput(AssetId id) {
-    call(_port, {
-      'type': 'declareOutput',
-      'output': serializeId(id)
-    });
+    call(_port, {'type': 'declareOutput', 'output': serializeId(id)});
   }
 }

@@ -15,18 +15,15 @@ main() {
     });
 
     d.git('foo.git', [
-      d.libPubspec("foo", "1.0.0", deps: {
-        "bar": "any"
-      }),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.libPubspec("foo", "1.0.0", deps: {"bar": "any"}),
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"],
+    schedulePub(
+        args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf([
-      contains("Downloading bar 1.0.0..."),
-      contains("Downloading baz 1.0.0...")
-    ]));
+          contains("Downloading bar 1.0.0..."),
+          contains("Downloading baz 1.0.0...")
+        ]));
   });
 }

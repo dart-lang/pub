@@ -10,9 +10,7 @@ main() {
   integration("errors if the directory is not served", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();

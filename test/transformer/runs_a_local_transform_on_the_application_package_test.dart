@@ -16,12 +16,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();

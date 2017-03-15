@@ -15,7 +15,9 @@ main() {
 
     schedulePub(args: ["cache", "add", "foo"]);
 
-    schedulePub(args: ["global", "activate", "foo"], output: """
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: """
         Resolving dependencies...
         + foo 1.0.0
         Precompiling executables...

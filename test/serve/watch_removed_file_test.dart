@@ -14,17 +14,15 @@ main() {
   integration("stop serving a file that is removed", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "body")
-      ])
+      d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
     pubGet();
     pubServe();
     requestShouldSucceed("index.html", "body");
 
-    schedule(() => deleteEntry(
-        path.join(sandboxDir, appPath, "web", "index.html")));
+    schedule(
+        () => deleteEntry(path.join(sandboxDir, appPath, "web", "index.html")));
 
     waitForBuildSuccess();
     requestShould404("index.html");

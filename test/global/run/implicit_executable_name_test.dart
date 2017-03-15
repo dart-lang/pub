@@ -9,9 +9,7 @@ main() {
   integration('defaults to the package name if the script is omitted', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("foo.dart", "main(args) => print('foo');")
-        ])
+        d.dir("bin", [d.file("foo.dart", "main(args) => print('foo');")])
       ]);
     });
 

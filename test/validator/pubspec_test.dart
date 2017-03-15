@@ -15,7 +15,8 @@ main() {
     expectNoValidationError((entrypoint) => new PubspecValidator(entrypoint));
   });
 
-  integration('should consider a package invalid if it has a .gitignored '
+  integration(
+      'should consider a package invalid if it has a .gitignored '
       'pubspec', () {
     var repo = d.git(appPath, [d.file(".gitignore", "pubspec.yaml")]);
     d.validPackage.create();

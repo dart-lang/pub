@@ -8,9 +8,7 @@ import 'utils.dart';
 
 main() {
   integration("responds with a 404 unknown dependencies", () {
-    d.dir(appPath, [
-      d.appPubspec()
-    ]).create();
+    d.dir(appPath, [d.appPubspec()]).create();
 
     pubGet();
     pubServe();

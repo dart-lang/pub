@@ -17,9 +17,12 @@ import '../test_pub.dart';
 /// If [error] is provided, then both pub build and pub serve should exit with
 /// that message. Otherwise, [buildError] is the expected error from pub build
 /// and [serveError] from pub serve.
-void pubBuildAndServeShouldFail(String description, {List<String> args,
-    String error, String buildError, String serveError, int exitCode}) {
-
+void pubBuildAndServeShouldFail(String description,
+    {List<String> args,
+    String error,
+    String buildError,
+    String serveError,
+    int exitCode}) {
   if (error != null) {
     assert(buildError == null);
     buildError = error;
@@ -32,20 +35,22 @@ void pubBuildAndServeShouldFail(String description, {List<String> args,
   Object buildExpectation = buildError;
   Object serveExpectation = serveError;
   if (exitCode == exit_codes.USAGE) {
-    buildExpectation = allOf(
-        startsWith(buildExpectation), contains("Usage: pub build"));
-    serveExpectation = allOf(
-        startsWith(serveExpectation), contains("Usage: pub serve"));
+    buildExpectation =
+        allOf(startsWith(buildExpectation), contains("Usage: pub build"));
+    serveExpectation =
+        allOf(startsWith(serveExpectation), contains("Usage: pub serve"));
   }
 
   integration("build fails $description", () {
-    schedulePub(args: ["build"]..addAll(args),
+    schedulePub(
+        args: ["build"]..addAll(args),
         error: buildExpectation,
         exitCode: exitCode);
   });
 
   integration("build --format json fails $description", () {
-    schedulePub(args: ["build", "--format", "json"]..addAll(args),
+    schedulePub(
+        args: ["build", "--format", "json"]..addAll(args),
         outputJson: {
           "error": buildError // No usage in JSON output.
         },
@@ -53,7 +58,8 @@ void pubBuildAndServeShouldFail(String description, {List<String> args,
   });
 
   integration("serve fails $description", () {
-    schedulePub(args: ["serve"]..addAll(args),
+    schedulePub(
+        args: ["serve"]..addAll(args),
         error: serveExpectation,
         exitCode: exitCode);
   });

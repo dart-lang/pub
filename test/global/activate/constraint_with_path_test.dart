@@ -9,7 +9,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if a version is passed with the path source', () {
-    schedulePub(args: ["global", "activate", "-spath", "foo", "1.2.3"],
+    schedulePub(
+        args: ["global", "activate", "-spath", "foo", "1.2.3"],
         error: contains('Unexpected argument "1.2.3".'),
         exitCode: exit_codes.USAGE);
   });

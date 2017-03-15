@@ -18,19 +18,13 @@ main() {
 
     pubUpgrade();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "bar": "1.0.0",
-      "shared_dep": "1.0.0"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "1.0.0", "bar": "1.0.0", "shared_dep": "1.0.0"}).validate();
 
     d.appDir({"foo": "any"}).create();
 
     pubUpgrade();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "shared_dep": "2.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "1.0.0", "shared_dep": "2.0.0"}).validate();
   });
 }

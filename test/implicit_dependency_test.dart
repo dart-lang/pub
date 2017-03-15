@@ -21,9 +21,7 @@ main() {
         builder.serve("async", current("async"));
       });
 
-      d.appDir({
-        "barback": "any"
-      }).create();
+      d.appDir({"barback": "any"}).create();
 
       pubCommand(command);
 
@@ -35,7 +33,8 @@ main() {
       }).validate();
     });
 
-    integration("pub's implicit constraint uses the same source and "
+    integration(
+        "pub's implicit constraint uses the same source and "
         "description as a dependency override", () {
       servePackages((builder) {
         builder.serve("barback", current("barback"));
@@ -71,7 +70,8 @@ main() {
       }).validate();
     });
 
-    integration("doesn't add a constraint if barback isn't in the package "
+    integration(
+        "doesn't add a constraint if barback isn't in the package "
         "graph", () {
       servePackages((builder) {
         builder.serve("stack_trace", previous("stack_trace"));
@@ -82,9 +82,7 @@ main() {
         builder.serve("async", current("async"));
       });
 
-      d.appDir({
-        "stack_trace": "any"
-      }).create();
+      d.appDir({"stack_trace": "any"}).create();
 
       pubCommand(command);
 
@@ -92,7 +90,8 @@ main() {
     });
   });
 
-  integration("unlocks if the locked version doesn't meet pub's "
+  integration(
+      "unlocks if the locked version doesn't meet pub's "
       "constraint", () {
     servePackages((builder) {
       builder.serve("barback", current("barback"));

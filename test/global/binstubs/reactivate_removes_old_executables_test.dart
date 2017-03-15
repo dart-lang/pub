@@ -12,10 +12,7 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "one": null,
-          "two": null
-        }
+        "executables": {"one": null, "two": null}
       }),
       d.dir("bin", [
         d.file("one.dart", "main() => print('ok');"),

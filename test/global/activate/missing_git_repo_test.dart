@@ -10,7 +10,8 @@ main() {
   integration('fails if the Git repo does not exist', () {
     ensureGit();
 
-    schedulePub(args: ["global", "activate", "-sgit", "../nope.git"],
+    schedulePub(
+        args: ["global", "activate", "-sgit", "../nope.git"],
         error: contains("repository '../nope.git' does not exist"),
         exitCode: 1);
   });

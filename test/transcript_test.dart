@@ -51,5 +51,4 @@ main() {
     transcript.add("f");
     expect(forEachToString(), equals("abcdef"));
   });
-
 }

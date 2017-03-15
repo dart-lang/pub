@@ -13,15 +13,13 @@ main() {
       d.dir(appPath, [
         d.appPubspec({
           "foo": {
-            "hosted": {
-              "name": "foo",
-              "url": "http://pub.invalid"
-            }
+            "hosted": {"name": "foo", "url": "http://pub.invalid"}
           }
         })
       ]).create();
 
-      pubCommand(command, error: 'Could not resolve URL "http://pub.invalid".',
+      pubCommand(command,
+          error: 'Could not resolve URL "http://pub.invalid".',
           exitCode: exit_codes.UNAVAILABLE);
     });
   });

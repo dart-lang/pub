@@ -10,7 +10,8 @@ main() {
 
     schedulePub(args: ["global", "activate", "foo"]);
 
-    schedulePub(args: ["global", "deactivate", "foo"],
+    schedulePub(
+        args: ["global", "deactivate", "foo"],
         output: "Deactivated package foo 1.0.0.");
   });
 }
