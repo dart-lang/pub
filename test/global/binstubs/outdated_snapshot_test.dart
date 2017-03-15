@@ -16,13 +16,10 @@ main() {
   integration("a binstub runs 'pub global run' for an outdated snapshot", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
@@ -47,8 +44,10 @@ main() {
 
     d.dir(cachePath, [
       d.dir('global_packages/foo/bin', [
-        d.binaryMatcherFile('script.dart.snapshot', isNot(equals(
-            readBinaryFile(testAssetPath('out-of-date.snapshot')))))
+        d.binaryMatcherFile(
+            'script.dart.snapshot',
+            isNot(
+                equals(readBinaryFile(testAssetPath('out-of-date.snapshot')))))
       ])
     ]).validate();
   });

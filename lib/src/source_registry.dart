@@ -78,7 +78,7 @@ class SourceRegistry {
   ///
   /// Returns an [UnknownSource] if no source with that name has been
   /// registered. If [name] is null, returns the default source.
-  Source operator[](String name) {
+  Source operator [](String name) {
     if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
     return new UnknownSource(name);

@@ -8,7 +8,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if no package was given', () {
-    schedulePub(args: ["cache", "add"],
+    schedulePub(
+        args: ["cache", "add"],
         error: """
             No package to add given.
             

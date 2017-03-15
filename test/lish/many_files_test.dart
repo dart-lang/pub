@@ -29,7 +29,8 @@ import 'utils.dart';
 const _pathMax = 260 - 1;
 
 main() {
-  integration('archives and uploads a package with more files than can fit on '
+  integration(
+      'archives and uploads a package with more files than can fit on '
       'the command line', () {
     d.validPackage.create();
 
@@ -69,7 +70,7 @@ main() {
         // The file name contains "x"s to make the path hit [_pathMax],
         // followed by a number to distinguish different files.
         var fileName =
-          "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
+            "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
 
         new File(p.join(appRoot, fileName)).writeAsStringSync("");
       }

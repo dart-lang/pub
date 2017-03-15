@@ -12,10 +12,7 @@ main() {
   integration('prints the local paths to all packages in the lockfile', () {
     servePackages((builder) => builder.serve("bar", "1.0.0"));
 
-    d.dir("foo", [
-      d.libDir("foo"),
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libDir("foo"), d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -30,19 +27,20 @@ main() {
     // entrypoint package from the working directory, which has had symlinks
     // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
     // need to accomodate that.
-    schedulePub(args: ["list-package-dirs", "--format=json"],
-        outputJson: {
-          "packages": {
-            "foo": path.join(sandboxDir, "foo", "lib"),
-            "bar": globalServer.port.then(
-                (p) => path.join(sandboxDir, cachePath, "hosted",
-                    "localhost%58$p", "bar-1.0.0", "lib")),
-            "myapp": canonicalize(path.join(sandboxDir, appPath, "lib"))
-          },
-          "input_files": [
-            canonicalize(path.join(sandboxDir, appPath, "pubspec.lock")),
-            canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
-          ]
-        });
+    schedulePub(args: [
+      "list-package-dirs",
+      "--format=json"
+    ], outputJson: {
+      "packages": {
+        "foo": path.join(sandboxDir, "foo", "lib"),
+        "bar": globalServer.port.then((p) => path.join(sandboxDir, cachePath,
+            "hosted", "localhost%58$p", "bar-1.0.0", "lib")),
+        "myapp": canonicalize(path.join(sandboxDir, appPath, "lib"))
+      },
+      "input_files": [
+        canonicalize(path.join(sandboxDir, appPath, "pubspec.lock")),
+        canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
+      ]
+    });
   });
 }

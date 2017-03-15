@@ -16,7 +16,9 @@ main() {
       ])
     ]).create();
 
-    d.appDir({"foo": {"path": "../foo"}}).create();
+    d.appDir({
+      "foo": {"path": "../foo"}
+    }).create();
 
     pubGet();
 

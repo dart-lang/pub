@@ -19,38 +19,40 @@ class RewriteGroup implements TransformerGroup {
 """;
 
 main() {
-   integration("works on a transformer group", () {
-     serveBarback();
+  integration("works on a transformer group", () {
+    serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": [
-           {
-             "myapp/src/group": {
-               "\$include": ["web/a.txt", "web/b.txt"],
-               "\$exclude": "web/a.txt"
-             }
-           }
-         ],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", REWRITE_TRANSFORMER),
-         d.file("group.dart", GROUP)
-       ])]),
-       d.dir("web", [
-         d.file("a.txt", "a.txt"),
-         d.file("b.txt", "b.txt"),
-         d.file("c.txt", "c.txt")
-       ])
-     ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp/src/group": {
+              "\$include": ["web/a.txt", "web/b.txt"],
+              "\$exclude": "web/a.txt"
+            }
+          }
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [
+          d.file("transformer.dart", REWRITE_TRANSFORMER),
+          d.file("group.dart", GROUP)
+        ])
+      ]),
+      d.dir("web", [
+        d.file("a.txt", "a.txt"),
+        d.file("b.txt", "b.txt"),
+        d.file("c.txt", "c.txt")
+      ])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShould404("a.out");
-     requestShouldSucceed("b.out", "b.txt.out");
-     requestShould404("c.out");
-     endPubServe();
-   });
+    pubGet();
+    pubServe();
+    requestShould404("a.out");
+    requestShouldSucceed("b.out", "b.txt.out");
+    requestShould404("c.out");
+    endPubServe();
+  });
 }

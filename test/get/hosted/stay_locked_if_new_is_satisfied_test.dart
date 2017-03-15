@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("doesn't unlock dependencies if a new dependency is already "
+  integration(
+      "doesn't unlock dependencies if a new dependency is already "
       "satisfied", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "<2.0.0"});
@@ -18,11 +19,8 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "bar": "1.0.0",
-      "baz": "1.0.0"
-    }).validate();
+    d.appPackagesFile(
+        {"foo": "1.0.0", "bar": "1.0.0", "baz": "1.0.0"}).validate();
 
     globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"bar": "<3.0.0"});

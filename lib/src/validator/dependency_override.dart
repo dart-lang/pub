@@ -10,18 +10,16 @@ import '../validator.dart';
 /// A validator that validates a package's dependencies overrides (or the
 /// absence thereof).
 class DependencyOverrideValidator extends Validator {
-  DependencyOverrideValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  DependencyOverrideValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     var overridden =
         entrypoint.root.dependencyOverrides.map((dep) => dep.name).toSet();
     var dev = entrypoint.root.devDependencies.map((dep) => dep.name).toSet();
     if (overridden.difference(dev).isNotEmpty) {
-      errors.add(
-          'Your pubspec.yaml must not override non-dev dependencies.\n'
+      errors.add('Your pubspec.yaml must not override non-dev dependencies.\n'
           'This ensures you test your package against the same versions of '
-              'its dependencies\n'
+          'its dependencies\n'
           'that users will have when they use it.');
     }
     return new Future.value();

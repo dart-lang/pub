@@ -14,7 +14,8 @@ main() {
       builder.serve("foo", "2.0.0");
     });
 
-    schedulePub(args: ["cache", "add", "foo", "-v", ">=1.0.0 <2.0.0", "--all"],
+    schedulePub(
+        args: ["cache", "add", "foo", "-v", ">=1.0.0 <2.0.0", "--all"],
         output: '''
           Downloading foo 1.2.2...
           Downloading foo 1.2.3-dev...

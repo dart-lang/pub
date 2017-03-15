@@ -8,7 +8,8 @@ import '../../test_pub.dart';
 
 main() {
   integration('fails if no package was given', () {
-    schedulePub(args: ["global", "deactivate"],
+    schedulePub(
+        args: ["global", "deactivate"],
         error: """
             No package to deactivate given.
 

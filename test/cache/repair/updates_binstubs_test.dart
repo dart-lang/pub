@@ -21,26 +21,22 @@ main() {
   integration('updates an outdated binstub script', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     d.dir(cachePath, [
-      d.dir('bin', [
-        d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)
-      ])
+      d.dir('bin', [d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)])
     ]).create();
 
     // Repair them.
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.

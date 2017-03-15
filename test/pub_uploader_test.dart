@@ -29,8 +29,8 @@ See http://dartlang.org/tools/pub/cmd/pub-uploader.html for detailed documentati
 ''';
 
 ScheduledProcess startPubUploader(ScheduledServer server, List<String> args) {
-  var tokenEndpoint = server.url.then((url) =>
-      url.resolve('/token').toString());
+  var tokenEndpoint =
+      server.url.then((url) => url.resolve('/token').toString());
   var allArgs = <Object>['uploader', '--server', tokenEndpoint]..addAll(args);
   return startPub(args: allArgs, tokenEndpoint: tokenEndpoint);
 }
@@ -38,18 +38,22 @@ ScheduledProcess startPubUploader(ScheduledServer server, List<String> args) {
 main() {
   group('displays usage', () {
     integration('when run with no arguments', () {
-      schedulePub(args: ['uploader'],
-          output: USAGE_STRING, exitCode: exit_codes.USAGE);
+      schedulePub(
+          args: ['uploader'], output: USAGE_STRING, exitCode: exit_codes.USAGE);
     });
 
     integration('when run with only a command', () {
-      schedulePub(args: ['uploader', 'add'],
-          output: USAGE_STRING, exitCode: exit_codes.USAGE);
+      schedulePub(
+          args: ['uploader', 'add'],
+          output: USAGE_STRING,
+          exitCode: exit_codes.USAGE);
     });
 
     integration('when run with an invalid command', () {
-      schedulePub(args: ['uploader', 'foo', 'email'],
-          output: USAGE_STRING, exitCode: exit_codes.USAGE);
+      schedulePub(
+          args: ['uploader', 'foo', 'email'],
+          output: USAGE_STRING,
+          exitCode: exit_codes.USAGE);
     });
   });
 
@@ -62,9 +66,11 @@ main() {
       return request.readAsString().then((body) {
         expect(body, equals('email=email'));
 
-        return new shelf.Response.ok(JSON.encode({
-          'success': {'message': 'Good job!'}
-        }), headers: {'content-type': 'application/json'});
+        return new shelf.Response.ok(
+            JSON.encode({
+              'success': {'message': 'Good job!'}
+            }),
+            headers: {'content-type': 'application/json'});
       });
     });
 
@@ -78,9 +84,11 @@ main() {
     var pub = startPubUploader(server, ['--package', 'pkg', 'remove', 'email']);
 
     server.handle('DELETE', '/api/packages/pkg/uploaders/email', (request) {
-      return new shelf.Response.ok(JSON.encode({
-        'success': {'message': 'Good job!'}
-      }), headers: {'content-type': 'application/json'});
+      return new shelf.Response.ok(
+          JSON.encode({
+            'success': {'message': 'Good job!'}
+          }),
+          headers: {'content-type': 'application/json'});
     });
 
     pub.stdout.expect('Good job!');
@@ -95,9 +103,11 @@ main() {
     var pub = startPubUploader(server, ['add', 'email']);
 
     server.handle('POST', '/api/packages/test_pkg/uploaders', (request) {
-      return new shelf.Response.ok(JSON.encode({
-        'success': {'message': 'Good job!'}
-      }), headers: {'content-type': 'application/json'});
+      return new shelf.Response.ok(
+          JSON.encode({
+            'success': {'message': 'Good job!'}
+          }),
+          headers: {'content-type': 'application/json'});
     });
 
     pub.stdout.expect('Good job!');
@@ -111,7 +121,9 @@ main() {
 
     server.handle('POST', '/api/packages/pkg/uploaders', (request) {
       return new shelf.Response(400,
-          body: JSON.encode({'error': {'message': 'Bad job!'}}),
+          body: JSON.encode({
+            'error': {'message': 'Bad job!'}
+          }),
           headers: {'content-type': 'application/json'});
     });
 
@@ -122,12 +134,14 @@ main() {
   integration('remove provides an error', () {
     var server = new ScheduledServer();
     d.credentialsFile(server, 'access token').create();
-    var pub = startPubUploader(server,
-        ['--package', 'pkg', 'remove', 'e/mail']);
+    var pub =
+        startPubUploader(server, ['--package', 'pkg', 'remove', 'e/mail']);
 
     server.handle('DELETE', '/api/packages/pkg/uploaders/e%2Fmail', (request) {
       return new shelf.Response(400,
-          body: JSON.encode({'error': {'message': 'Bad job!'}}),
+          body: JSON.encode({
+            'error': {'message': 'Bad job!'}
+          }),
           headers: {'content-type': 'application/json'});
     });
 
@@ -143,8 +157,7 @@ main() {
     server.handle('POST', '/api/packages/pkg/uploaders',
         (request) => new shelf.Response.ok("{not json"));
 
-    pub.stderr.expect(emitsLines(
-        'Invalid server response:\n'
+    pub.stderr.expect(emitsLines('Invalid server response:\n'
         '{not json'));
     pub.shouldExit(1);
   });
@@ -157,8 +170,7 @@ main() {
     server.handle('DELETE', '/api/packages/pkg/uploaders/email',
         (request) => new shelf.Response.ok("{not json"));
 
-    pub.stderr.expect(emitsLines(
-        'Invalid server response:\n'
+    pub.stderr.expect(emitsLines('Invalid server response:\n'
         '{not json'));
     pub.shouldExit(1);
   });

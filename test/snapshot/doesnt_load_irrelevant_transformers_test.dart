@@ -26,26 +26,18 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          contents: [
-        d.dir("bin", [
-          d.file("hello.dart", "void main() => print('hello!');")
-        ])
+      builder.serve("foo", "1.2.3", contents: [
+        d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
       ]);
     });
 
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {
-          "foo": "1.2.3",
-          "barback": "any"
-        },
+        "dependencies": {"foo": "1.2.3", "barback": "any"},
         "transformers": ["myapp"]
       }),
-      d.dir("lib", [
-        d.file("transformer.dart", BROKEN_TRANSFORMER)
-      ])
+      d.dir("lib", [d.file("transformer.dart", BROKEN_TRANSFORMER)])
     ]).create();
 
     pubGet(output: contains("Precompiled foo:hello."));

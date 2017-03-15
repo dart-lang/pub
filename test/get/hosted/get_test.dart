@@ -26,7 +26,7 @@ main() {
 
     pubGet(
         error: new RegExp(
-          r"Could not find package bad name! at http://localhost:\d+\."),
+            r"Could not find package bad name! at http://localhost:\d+\."),
         exitCode: exit_codes.UNAVAILABLE);
   });
 

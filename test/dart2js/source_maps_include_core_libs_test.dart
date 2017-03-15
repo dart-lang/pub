@@ -17,14 +17,14 @@ main() {
       d.appPubspec(),
       d.dir("web", [
         d.file("main.dart", "main() => new Duration().toString();"),
-        d.dir("sub", [
-          d.file("main.dart", "main() => new Duration().toString();")
-        ])
+        d.dir("sub",
+            [d.file("main.dart", "main() => new Duration().toString();")])
       ])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build", "--mode", "debug"],
+    schedulePub(
+        args: ["build", "--mode", "debug"],
         output: new RegExp(r'Built \d+ files to "build".'),
         exitCode: 0);
 
@@ -41,8 +41,7 @@ main() {
             d.dir(r"$sdk", [
               d.dir("lib", [
                 d.dir(r"core", [
-                  d.matcherFile("duration.dart",
-                      contains("class Duration"))
+                  d.matcherFile("duration.dart", contains("class Duration"))
                 ])
               ])
             ])

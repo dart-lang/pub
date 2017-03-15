@@ -19,20 +19,14 @@ main() {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependencies": {
-            "foo": ">2.0.0"
-          },
-          "dependency_overrides": {
-            "foo": "<3.0.0"
-          }
+          "dependencies": {"foo": ">2.0.0"},
+          "dependency_overrides": {"foo": "<3.0.0"}
         })
       ]).create();
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "2.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "2.0.0"}).validate();
     });
 
     integration("treats override as implicit dependency", () {
@@ -43,17 +37,13 @@ main() {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependency_overrides": {
-            "foo": "any"
-          }
+          "dependency_overrides": {"foo": "any"}
         })
       ]).create();
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "1.0.0"}).validate();
     });
 
     integration("ignores other constraints on overridden package", () {
@@ -69,46 +59,33 @@ main() {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependencies": {
-            "bar": "any"
-          },
-          "dependency_overrides": {
-            "foo": "<3.0.0"
-          }
+          "dependencies": {"bar": "any"},
+          "dependency_overrides": {"foo": "<3.0.0"}
         })
       ]).create();
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "2.0.0",
-        "bar": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "2.0.0", "bar": "1.0.0"}).validate();
     });
 
     integration("ignores SDK constraints", () {
       servePackages((builder) {
         builder.serve("foo", "1.0.0", pubspec: {
-          "environment": {
-            "sdk": "5.6.7-fblthp"
-          }
+          "environment": {"sdk": "5.6.7-fblthp"}
         });
       });
 
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependency_overrides": {
-            "foo": "any"
-          }
+          "dependency_overrides": {"foo": "any"}
         })
       ]).create();
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "1.0.0"}).validate();
     });
 
     integration("warns about overridden dependencies", () {
@@ -117,10 +94,7 @@ main() {
         builder.serve("bar", "1.0.0");
       });
 
-      d.dir("baz", [
-        d.libDir("baz"),
-        d.libPubspec("baz", "0.0.1")
-      ]).create();
+      d.dir("baz", [d.libDir("baz"), d.libPubspec("baz", "0.0.1")]).create();
 
       d.dir(appPath, [
         d.pubspec({
@@ -135,8 +109,10 @@ main() {
 
       var bazPath = path.join("..", "baz");
 
-      schedulePub(args: [command.name], output: command.success, error:
-          """
+      schedulePub(
+          args: [command.name],
+          output: command.success,
+          error: """
           Warning: You are using these overridden dependencies:
           ! bar 1.0.0
           ! baz 0.0.1 from path $bazPath

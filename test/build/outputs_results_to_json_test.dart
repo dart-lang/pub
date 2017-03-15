@@ -5,7 +5,6 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
 import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
@@ -15,13 +14,15 @@ main() {
   integration("outputs results to JSON in a successful build", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir('web', [
-        d.file('main.dart', 'void main() => print("hello");')
-      ])
+      d.dir('web', [d.file('main.dart', 'void main() => print("hello");')])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build", "--format", "json"], outputJson: {
+    schedulePub(args: [
+      "build",
+      "--format",
+      "json"
+    ], outputJson: {
       'buildResult': 'success',
       'outputDirectory': 'build',
       'numFiles': 1,

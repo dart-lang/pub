@@ -62,10 +62,15 @@ class AssetEnvironment {
   ///
   /// Returns a [Future] that completes to the environment once the inputs,
   /// transformers, and server are loaded and ready.
-  static Future<AssetEnvironment> create(Entrypoint entrypoint,
-      BarbackMode mode, {WatcherType watcherType, String hostname, int basePort,
-      Iterable<String> packages, Iterable<AssetId> entrypoints,
-      Map<String, String> environmentConstants, bool useDart2JS: true}) {
+  static Future<AssetEnvironment> create(
+      Entrypoint entrypoint, BarbackMode mode,
+      {WatcherType watcherType,
+      String hostname,
+      int basePort,
+      Iterable<String> packages,
+      Iterable<AssetId> entrypoints,
+      Map<String, String> environmentConstants,
+      bool useDart2JS: true}) {
     if (watcherType == null) watcherType = WatcherType.NONE;
     if (hostname == null) hostname = "localhost";
     if (basePort == null) basePort = 0;
@@ -86,19 +91,21 @@ class AssetEnvironment {
 
   /// Return a version of [graph] that's restricted to [packages] (if passed)
   /// and loads cached packages (if [mode] is [BarbackMode.DEBUG]).
-  static PackageGraph _adjustPackageGraph(PackageGraph graph,
-      BarbackMode mode, Iterable<String> packages) {
+  static PackageGraph _adjustPackageGraph(
+      PackageGraph graph, BarbackMode mode, Iterable<String> packages) {
     if (mode != BarbackMode.DEBUG && packages == null) return graph;
     packages = (packages == null ? graph.packages.keys : packages).toSet();
 
-    return new PackageGraph(graph.entrypoint, graph.lockFile,
+    return new PackageGraph(
+        graph.entrypoint,
+        graph.lockFile,
         new Map.fromIterable(packages, value: (packageName) {
-      var package = graph.packages[packageName];
-      if (mode != BarbackMode.DEBUG) return package;
-      var cache = path.join('.pub/deps/debug', packageName);
-      if (!dirExists(cache)) return package;
-      return new CachedPackage(package, cache);
-    }));
+          var package = graph.packages[packageName];
+          if (mode != BarbackMode.DEBUG) return package;
+          var cache = path.join('.pub/deps/debug', packageName);
+          if (!dirExists(cache)) return package;
+          return new CachedPackage(package, cache);
+        }));
   }
 
   /// The server for the Web Socket API and admin interface.
@@ -160,9 +167,8 @@ class AssetEnvironment {
   /// go to barback immediately.
   Set<AssetId> _modifiedSources;
 
-  AssetEnvironment._(this.graph, this.barback, this.mode,
-        this._watcherType, this._hostname, this._basePort,
-        this.environmentConstants);
+  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
+      this._hostname, this._basePort, this.environmentConstants);
 
   /// Gets the built-in [Transformer]s that should be added to [package].
   ///
@@ -185,7 +191,8 @@ class AssetEnvironment {
     // Can only start once.
     assert(_adminServer == null);
 
-    return AdminServer.bind(this, _hostname, port)
+    return AdminServer
+        .bind(this, _hostname, port)
         .then((server) => _adminServer = server);
   }
 
@@ -207,9 +214,11 @@ class AssetEnvironment {
     }
 
     // See if the new directory overlaps any existing servers.
-    var overlapping = _directories.keys.where((directory) =>
-        path.isWithin(directory, rootDirectory) ||
-        path.isWithin(rootDirectory, directory)).toList();
+    var overlapping = _directories.keys
+        .where((directory) =>
+            path.isWithin(directory, rootDirectory) ||
+            path.isWithin(rootDirectory, directory))
+        .toList();
 
     if (overlapping.isNotEmpty) {
       return new Future.error(
@@ -220,15 +229,15 @@ class AssetEnvironment {
 
     // If not using an ephemeral port, find the lowest-numbered available one.
     if (port != 0) {
-      var boundPorts = _directories.values.map((directory) => directory.port)
-          .toSet();
+      var boundPorts =
+          _directories.values.map((directory) => directory.port).toSet();
       while (boundPorts.contains(port)) {
         port++;
       }
     }
 
-    var sourceDirectory = new SourceDirectory(
-        this, rootDirectory, _hostname, port);
+    var sourceDirectory =
+        new SourceDirectory(this, rootDirectory, _hostname, port);
     _directories[rootDirectory] = sourceDirectory;
 
     sourceDirectory.watchSubscription =
@@ -245,9 +254,9 @@ class AssetEnvironment {
   ///
   /// Returns a [Future] that completes to the bound server.
   Future<BarbackServer> servePackageBinDirectory(String package) {
-    return _provideDirectorySources(graph.packages[package], "bin").then(
-        (_) => BarbackServer.bind(this, _hostname, 0, package: package,
-            rootDirectory: "bin"));
+    return _provideDirectorySources(graph.packages[package], "bin").then((_) =>
+        BarbackServer.bind(this, _hostname, 0,
+            package: package, rootDirectory: "bin"));
   }
 
   /// Precompiles all of [packageName]'s executables to snapshots in
@@ -257,8 +266,9 @@ class AssetEnvironment {
   ///
   /// Returns a map from executable name to path for the snapshots that were
   /// successfully precompiled.
-  Future<Map<String, String>> precompileExecutables(String packageName,
-      String directory, {Iterable<AssetId> executableIds}) async {
+  Future<Map<String, String>> precompileExecutables(
+      String packageName, String directory,
+      {Iterable<AssetId> executableIds}) async {
     if (executableIds == null) {
       executableIds = graph.packages[packageName].executableIds;
     }
@@ -305,10 +315,9 @@ class AssetEnvironment {
   ///
   /// If [assetPath] is not contained within a source directory, this throws
   /// an exception.
-  String getSourceDirectoryContaining(String assetPath) =>
-      _directories.values
-          .firstWhere((dir) => path.isWithin(dir.directory, assetPath))
-          .directory;
+  String getSourceDirectoryContaining(String assetPath) => _directories.values
+      .firstWhere((dir) => path.isWithin(dir.directory, assetPath))
+      .directory;
 
   /// Return all URLs serving [assetPath] in this environment.
   Future<List<Uri>> getUrlsForAssetPath(String assetPath) async {
@@ -328,8 +337,8 @@ class AssetEnvironment {
         .where((dir) => path.isWithin(dir.directory, assetPath))
         .map((dir) {
       var relativePath = path.relative(assetPath, from: dir.directory);
-      return dir.server.then((server) =>
-          server.url.resolveUri(path.toUri(relativePath)));
+      return dir.server
+          .then((server) => server.url.resolveUri(path.toUri(relativePath)));
     }));
   }
 
@@ -339,8 +348,8 @@ class AssetEnvironment {
     if (components.first != "packages") return new Future.value([]);
     if (!graph.packages.containsKey(components[1])) return new Future.value([]);
     return Future.wait(_directories.values.map((dir) {
-      return dir.server.then((server) =>
-          server.url.resolveUri(path.toUri(assetPath)));
+      return dir.server
+          .then((server) => server.url.resolveUri(path.toUri(assetPath)));
     }));
   }
 
@@ -354,11 +363,11 @@ class AssetEnvironment {
 
       var uri;
       if (path.isWithin(libDir, assetPath)) {
-        uri = path.toUri(path.join('packages', package.name,
-            path.relative(assetPath, from: libDir)));
+        uri = path.toUri(path.join(
+            'packages', package.name, path.relative(assetPath, from: libDir)));
       } else if (path.isWithin(assetDir, assetPath)) {
-        uri = path.toUri(path.join('assets', package.name,
-            path.relative(assetPath, from: assetDir)));
+        uri = path.toUri(path.join(
+            'assets', package.name, path.relative(assetPath, from: assetDir)));
       } else {
         continue;
       }
@@ -376,7 +385,8 @@ class AssetEnvironment {
   ///
   /// If no server can serve [url], completes to `null`.
   Future<AssetId> getAssetIdForUrl(Uri url) {
-    return Future.wait(_directories.values.map((dir) => dir.server))
+    return Future
+        .wait(_directories.values.map((dir) => dir.server))
         .then((servers) {
       var server = servers.firstWhere((server) {
         if (server.port != url.port) return false;
@@ -436,8 +446,8 @@ class AssetEnvironment {
       //
       // TODO(nweiz): if/when we support more built-in transformers, make
       // this more general.
-      var containsDart2JS = graph.entrypoint.root.pubspec.transformers
-          .any((transformers) =>
+      var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
+          (transformers) =>
               transformers.any((config) => config.id.package == '\$dart2js'));
 
       if (!containsDart2JS && useDart2JS) {
@@ -478,7 +488,7 @@ class AssetEnvironment {
         }
 
         _log(new LogEntry(error.transform, error.transform.primaryId,
-                LogLevel.ERROR, message, null));
+            LogLevel.ERROR, message, null));
       });
 
       await _withStreamErrors(() async {
@@ -639,8 +649,10 @@ class AssetEnvironment {
   /// running.
   Future _withStreamErrors(Future futureCallback(), List<Stream> streams) {
     var completer = new Completer.sync();
-    var subscriptions = streams.map((stream) =>
-        stream.listen((_) {}, onError: completer.completeError)).toList();
+    var subscriptions = streams
+        .map(
+            (stream) => stream.listen((_) {}, onError: completer.completeError))
+        .toList();
 
     new Future.sync(futureCallback).then((_) {
       if (!completer.isCompleted) completer.complete();
@@ -747,8 +759,7 @@ abstract class WatcherType {
 class _AutoWatcherType implements WatcherType {
   const _AutoWatcherType();
 
-  DirectoryWatcher create(String directory) =>
-    new DirectoryWatcher(directory);
+  DirectoryWatcher create(String directory) => new DirectoryWatcher(directory);
 
   String toString() => "auto";
 }
@@ -757,7 +768,7 @@ class _PollingWatcherType implements WatcherType {
   const _PollingWatcherType();
 
   DirectoryWatcher create(String directory) =>
-    new PollingDirectoryWatcher(directory);
+      new PollingDirectoryWatcher(directory);
 
   String toString() => "polling";
 }

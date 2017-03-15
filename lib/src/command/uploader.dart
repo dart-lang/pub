@@ -26,11 +26,12 @@ class UploaderCommand extends PubCommand {
   Uri get server => Uri.parse(argResults['server']);
 
   UploaderCommand() {
-    argParser.addOption('server', defaultsTo: cache.sources.hosted.defaultUrl,
+    argParser.addOption('server',
+        defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server on which the package is hosted.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
-              '(defaults to the current package)');
+            '(defaults to the current package)');
   }
 
   Future run() {
@@ -58,24 +59,26 @@ class UploaderCommand extends PubCommand {
       var package = argResults['package'];
       if (package != null) return package;
       return new Entrypoint(path.current, cache).root.name;
-    }).then((package) {
-      var uploader = rest[0];
-      return oauth2.withClient(cache, (client) {
-        if (command == 'add') {
-          var url = server.resolve("/api/packages/"
-              "${Uri.encodeComponent(package)}/uploaders");
-          return client.post(url,
-              headers: PUB_API_HEADERS,
-              body: {"email": uploader});
-        } else { // command == 'remove'
-          var url = server.resolve("/api/packages/"
-              "${Uri.encodeComponent(package)}/uploaders/"
-              "${Uri.encodeComponent(uploader)}");
-          return client.delete(url, headers: PUB_API_HEADERS);
-        }
-      });
-    }).then(handleJsonSuccess)
-      .catchError((error) => handleJsonError(error.response),
-                  test: (e) => e is PubHttpException);
+    })
+        .then((package) {
+          var uploader = rest[0];
+          return oauth2.withClient(cache, (client) {
+            if (command == 'add') {
+              var url = server.resolve("/api/packages/"
+                  "${Uri.encodeComponent(package)}/uploaders");
+              return client.post(url,
+                  headers: PUB_API_HEADERS, body: {"email": uploader});
+            } else {
+              // command == 'remove'
+              var url = server.resolve("/api/packages/"
+                  "${Uri.encodeComponent(package)}/uploaders/"
+                  "${Uri.encodeComponent(uploader)}");
+              return client.delete(url, headers: PUB_API_HEADERS);
+            }
+          });
+        })
+        .then(handleJsonSuccess)
+        .catchError((error) => handleJsonError(error.response),
+            test: (e) => e is PubHttpException);
   }
 }

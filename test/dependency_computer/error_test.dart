@@ -24,9 +24,10 @@ void main() {
 
     expectException(predicate((error) {
       expect(error, new isInstanceOf<ApplicationException>());
-      expect(error.message, equals(
-          'A transformer imported unknown package "foo" (in '
-          '"package:foo/foo.dart").'));
+      expect(
+          error.message,
+          equals('A transformer imported unknown package "foo" (in '
+              '"package:foo/foo.dart").'));
       return true;
     }));
   });
@@ -37,9 +38,7 @@ void main() {
         "name": "myapp",
         "transformers": ["myapp"]
       }),
-      d.dir('lib', [
-        d.file("myapp.dart", "library;")
-      ])
+      d.dir('lib', [d.file("myapp.dart", "library;")])
     ]).create();
 
     expectException(new isInstanceOf<AnalyzerErrorGroup>());

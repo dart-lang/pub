@@ -48,8 +48,8 @@ class ExcludingTransformer extends Transformer {
 
 class _DeclaringExcludingTransformer extends ExcludingTransformer
     implements DeclaringTransformer {
-  _DeclaringExcludingTransformer(DeclaringTransformer inner,
-          TransformerConfig config)
+  _DeclaringExcludingTransformer(
+      DeclaringTransformer inner, TransformerConfig config)
       : super._(inner as Transformer, config);
 
   Future declareOutputs(DeclaringTransform transform) =>
@@ -58,7 +58,7 @@ class _DeclaringExcludingTransformer extends ExcludingTransformer
 
 class _LazyExcludingTransformer extends _DeclaringExcludingTransformer
     implements LazyTransformer {
-  _LazyExcludingTransformer(DeclaringTransformer inner,
-          TransformerConfig config)
+  _LazyExcludingTransformer(
+      DeclaringTransformer inner, TransformerConfig config)
       : super(inner, config);
 }

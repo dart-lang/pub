@@ -9,15 +9,9 @@ main() {
   integration("upgrades locked Git packages", () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.git('bar.git', [
-      d.libDir('bar'),
-      d.libPubspec('bar', '1.0.0')
-    ]).create();
+    d.git('bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     d.appDir({
       "foo": {"git": "../foo.git"},
@@ -29,35 +23,23 @@ main() {
     pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ]),
-      d.dir('bar', [
-        d.file('bar.dart', 'main() => "bar";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')]),
+      d.dir('bar', [d.file('bar.dart', 'main() => "bar";')])
     ]).validate();
 
-    d.git('foo.git', [
-      d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    d.git('foo.git',
+        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    d.git('bar.git', [
-      d.libDir('bar', 'bar 2'),
-      d.libPubspec('bar', '1.0.0')
-    ]).commit();
+    d.git('bar.git',
+        [d.libDir('bar', 'bar 2'), d.libPubspec('bar', '1.0.0')]).commit();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
     pubUpgrade(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo 2";')
-      ]),
-      d.dir('bar', [
-        d.file('bar.dart', 'main() => "bar 2";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')]),
+      d.dir('bar', [d.file('bar.dart', 'main() => "bar 2";')])
     ]).validate();
   });
 }

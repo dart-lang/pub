@@ -11,14 +11,13 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration('with a malformed credentials.json, authenticates again and '
+  integration(
+      'with a malformed credentials.json, authenticates again and '
       'saves credentials.json', () {
     d.validPackage.create();
 
     var server = new ScheduledServer();
-    d.dir(cachePath, [
-      d.file('credentials.json', '{bad json')
-    ]).create();
+    d.dir(cachePath, [d.file('credentials.json', '{bad json')]).create();
 
     var pub = startPublish(server);
     confirmPublish(pub);

@@ -63,7 +63,7 @@ class TransformerId {
         'Unsupported built-in transformer $package.', span);
   }
 
-  bool operator==(other) =>
+  bool operator ==(other) =>
       other is TransformerId && other.package == package && other.path == path;
 
   int get hashCode => package.hashCode ^ path.hashCode;

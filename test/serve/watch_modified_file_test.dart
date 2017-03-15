@@ -10,9 +10,7 @@ main() {
   integration("watches modifications to files", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "before")
-      ])
+      d.dir("web", [d.file("index.html", "before")])
     ]).create();
 
     pubGet();
@@ -20,9 +18,7 @@ main() {
     requestShouldSucceed("index.html", "before");
 
     d.dir(appPath, [
-      d.dir("web", [
-        d.file("index.html", "after")
-      ])
+      d.dir("web", [d.file("index.html", "after")])
     ]).create();
 
     waitForBuildSuccess();

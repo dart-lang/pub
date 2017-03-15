@@ -42,16 +42,16 @@ main() {
         "transformers": ["myapp/src/lazy", "myapp/src/declaring"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        // Include a lazy transformer before the declaring transformer,
-        // because otherwise its behavior is indistinguishable from a normal
-        // transformer.
-        d.file("lazy.dart", LAZY_TRANSFORMER),
-        d.file("declaring.dart", DECLARING_TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [
+          // Include a lazy transformer before the declaring transformer,
+          // because otherwise its behavior is indistinguishable from a normal
+          // transformer.
+          d.file("lazy.dart", LAZY_TRANSFORMER),
+          d.file("declaring.dart", DECLARING_TRANSFORMER)
+        ])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
@@ -60,8 +60,7 @@ main() {
     server.stdout.expect('Build completed successfully');
 
     requestShouldSucceed("foo.final", "foo.out.final");
-    server.stdout.expect(emitsLines(
-        '[Info from LazyRewrite]:\n'
+    server.stdout.expect(emitsLines('[Info from LazyRewrite]:\n'
         'Rewriting myapp|web/foo.txt.\n'
         '[Info from DeclaringRewrite]:\n'
         'Rewriting myapp|web/foo.out.'));

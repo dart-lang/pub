@@ -12,15 +12,14 @@ import '../test_pub.dart';
 
 main() {
   integration("reports the pubspec path when there is an error in it", () {
-    d.dir(appPath, [
-      d.file("pubspec.yaml", "some bad yaml")
-    ]).create();
+    d.dir(appPath, [d.file("pubspec.yaml", "some bad yaml")]).create();
 
-    schedulePub(args: ["list-package-dirs", "--format=json"],
-        outputJson: {
-          "error": contains('Error on line 1'),
-          "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
-        },
-        exitCode: exit_codes.DATA);
+    schedulePub(args: [
+      "list-package-dirs",
+      "--format=json"
+    ], outputJson: {
+      "error": contains('Error on line 1'),
+      "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
+    }, exitCode: exit_codes.DATA);
   });
 }

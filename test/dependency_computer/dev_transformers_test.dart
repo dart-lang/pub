@@ -12,7 +12,9 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 
@@ -20,7 +22,11 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "test/foo_test.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "test/foo_test.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("foo.dart", transformer())]),
       d.dir("test", [d.file("foo_test.dart", "")])
@@ -29,12 +35,17 @@ void main() {
     expectDependencies({});
   });
 
-  integration("does return the root package's transformer that can't run on "
+  integration(
+      "does return the root package's transformer that can't run on "
       "lib", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{"myapp": {"\$include": "test/myapp_test.dart"}}]
+        "transformers": [
+          {
+            "myapp": {"\$include": "test/myapp_test.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("myapp.dart", transformer())]),
       d.dir("test", [d.file("myapp_test.dart", "")])
@@ -43,22 +54,26 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration("does return a dependency's transformer that the root package "
+  integration(
+      "does return a dependency's transformer that the root package "
       "uses", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
-        "transformers": [{"foo": {"\$include": "test/myapp_test.dart"}}]
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
+        "transformers": [
+          {
+            "foo": {"\$include": "test/myapp_test.dart"}
+          }
+        ]
       }),
       d.dir("test", [d.file("myapp_test.dart", "")])
     ]).create();
 
     d.dir("foo", [
-      d.pubspec({
-        "name": "foo",
-        "version": "1.0.0"
-      }),
+      d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
 
@@ -70,7 +85,9 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 
@@ -78,7 +95,11 @@ void main() {
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "bin/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "bin/foo.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("foo.dart", transformer())]),
       d.dir("test", [d.file("foo_test.dart", "")])
@@ -88,12 +109,15 @@ void main() {
   });
 
   // Regression test for #1291
-  integration("doesn't return a dependency's transformer that can't run on lib "
+  integration(
+      "doesn't return a dependency's transformer that can't run on lib "
       "when the app's transformer imports the dependency's", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -107,7 +131,11 @@ void main() {
         "version": "1.0.0",
         "transformers": [
           ["foo/bar"],
-          [{"foo": {"\$include": "test/foo_test.dart"}}]
+          [
+            {
+              "foo": {"\$include": "test/foo_test.dart"}
+            }
+          ]
         ]
       }),
       d.dir("lib", [

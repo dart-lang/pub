@@ -12,10 +12,7 @@ import '../test_pub.dart';
 main() {
   integration("pub get fails with a non-identifier name", () {
     d.dir(appPath, [
-      d.pubspec({
-        "name": "invalid package name",
-        "version": "1.0.0"
-      })
+      d.pubspec({"name": "invalid package name", "version": "1.0.0"})
     ]).create();
 
     pubGet(
@@ -34,10 +31,7 @@ main() {
 
   integration("pub get fails with a reserved word name", () {
     d.dir(appPath, [
-      d.pubspec({
-        "name": "return",
-        "version": "1.0.0"
-      })
+      d.pubspec({"name": "return", "version": "1.0.0"})
     ]).create();
 
     pubGet(
@@ -56,19 +50,14 @@ main() {
 
   integration("pub get allows a name with dotted identifiers", () {
     d.dir(appPath, [
-      d.pubspec({
-        "name": "foo.bar.baz",
-        "version": "1.0.0"
-      }),
+      d.pubspec({"name": "foo.bar.baz", "version": "1.0.0"}),
       d.libDir("foo.bar.baz", "foo.bar.baz 1.0.0")
     ]).create();
 
     pubGet();
 
     d.dir(appPath, [
-      d.packagesFile({
-        "foo.bar.baz": "."
-      })
+      d.packagesFile({"foo.bar.baz": "."})
     ]).validate();
   });
 }

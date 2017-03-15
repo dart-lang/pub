@@ -25,8 +25,9 @@ void loadTransformers(SendPort replyTo) {
     respond(wrappedMessage, (message) {
       var configuration = JSON.decode(message['configuration']);
       var mode = new BarbackMode(message['mode']);
-      return _initialize(message['library'], configuration, mode).
-          map(serializeTransformerLike).toList();
+      return _initialize(message['library'], configuration, mode)
+          .map(serializeTransformerLike)
+          .toList();
     });
   });
 }

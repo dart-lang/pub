@@ -20,11 +20,9 @@ class CacheAddCommand extends PubCommand {
 
   CacheAddCommand() {
     argParser.addFlag("all",
-        help: "Install all matching versions.",
-        negatable: false);
+        help: "Install all matching versions.", negatable: false);
 
-    argParser.addOption("version", abbr: "v",
-        help: "Version constraint.");
+    argParser.addOption("version", abbr: "v", help: "Version constraint.");
   }
 
   Future run() async {

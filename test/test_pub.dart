@@ -85,12 +85,16 @@ bool _abortScheduled = false;
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
-  static final get = new RunCommand('get', new RegExp(
-      r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = new RunCommand('upgrade', new RegExp(
-      r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
-  static final downgrade = new RunCommand('downgrade', new RegExp(
-      r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final get = new RunCommand(
+      'get', new RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
+  static final upgrade = new RunCommand(
+      'upgrade',
+      new RegExp(
+          r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final downgrade = new RunCommand(
+      'downgrade',
+      new RegExp(
+          r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
 
   final String name;
   final RegExp success;
@@ -120,8 +124,13 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-void pubCommand(RunCommand command, {Iterable<String> args, output, error,
-    warning, int exitCode, Map<String, String> environment}) {
+void pubCommand(RunCommand command,
+    {Iterable<String> args,
+    output,
+    error,
+    warning,
+    int exitCode,
+    Map<String, String> environment}) {
   if (error != null && warning != null) {
     throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -137,26 +146,60 @@ void pubCommand(RunCommand command, {Iterable<String> args, output, error,
   if (error != null) output = null;
   if (warning != null) error = warning;
 
-  schedulePub(args: allArgs, output: output, error: error, exitCode: exitCode,
+  schedulePub(
+      args: allArgs,
+      output: output,
+      error: error,
+      exitCode: exitCode,
       environment: environment);
 }
 
-void pubGet({Iterable<String> args, output, error, warning, int exitCode,
+void pubGet(
+    {Iterable<String> args,
+    output,
+    error,
+    warning,
+    int exitCode,
     Map<String, String> environment}) {
-  pubCommand(RunCommand.get, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode, environment: environment);
+  pubCommand(RunCommand.get,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment);
 }
 
-void pubUpgrade({Iterable<String> args, output, error, warning, int exitCode,
+void pubUpgrade(
+    {Iterable<String> args,
+    output,
+    error,
+    warning,
+    int exitCode,
     Map<String, String> environment}) {
-  pubCommand(RunCommand.upgrade, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode, environment: environment);
+  pubCommand(RunCommand.upgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment);
 }
 
-void pubDowngrade({Iterable<String> args, output, error, warning,
-    int exitCode, Map<String, String> environment}) {
-  pubCommand(RunCommand.downgrade, args: args, output: output, error: error,
-      warning: warning, exitCode: exitCode, environment: environment);
+void pubDowngrade(
+    {Iterable<String> args,
+    output,
+    error,
+    warning,
+    int exitCode,
+    Map<String, String> environment}) {
+  pubCommand(RunCommand.downgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment);
 }
 
 /// Schedules starting the "pub [global] run" process and validates the
@@ -215,10 +258,7 @@ void integration(String description, void body(),
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
 /// are assumed to be relative to [sandboxDir].
 void scheduleRename(String from, String to) {
-  schedule(
-      () => renameDir(
-          p.join(sandboxDir, from),
-          p.join(sandboxDir, to)),
+  schedule(() => renameDir(p.join(sandboxDir, from), p.join(sandboxDir, to)),
       'renaming $from to $to');
 }
 
@@ -227,8 +267,7 @@ void scheduleRename(String from, String to) {
 void scheduleSymlink(String target, String symlink) {
   schedule(
       () => createSymlink(
-          p.join(sandboxDir, target),
-          p.join(sandboxDir, symlink)),
+          p.join(sandboxDir, target), p.join(sandboxDir, symlink)),
       'symlinking $target to $symlink');
 }
 
@@ -246,32 +285,40 @@ void scheduleSymlink(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-void schedulePub({List args, output, error, outputJson, silent,
-    int exitCode: exit_codes.SUCCESS, Map<String, String> environment}) {
+void schedulePub(
+    {List args,
+    output,
+    error,
+    outputJson,
+    silent,
+    int exitCode: exit_codes.SUCCESS,
+    Map<String, String> environment}) {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = startPub(args: args, environment: environment);
   pub.shouldExit(exitCode);
 
-  expect(() async {
-    var actualOutput = (await pub.stdoutStream().toList()).join("\n");
-    var actualError = (await pub.stderrStream().toList()).join("\n");
-    var actualSilent = (await pub.silentStream().toList()).join("\n");
+  expect(
+      () async {
+        var actualOutput = (await pub.stdoutStream().toList()).join("\n");
+        var actualError = (await pub.stderrStream().toList()).join("\n");
+        var actualSilent = (await pub.silentStream().toList()).join("\n");
 
-    var failures = <String>[];
-    if (outputJson == null) {
-      _validateOutput(failures, 'stdout', output, actualOutput);
-    } else {
-      _validateOutputJson(
-          failures, 'stdout', await awaitObject(outputJson), actualOutput);
-    }
+        var failures = <String>[];
+        if (outputJson == null) {
+          _validateOutput(failures, 'stdout', output, actualOutput);
+        } else {
+          _validateOutputJson(
+              failures, 'stdout', await awaitObject(outputJson), actualOutput);
+        }
 
-    _validateOutput(failures, 'stderr', error, actualError);
-    _validateOutput(failures, 'silent', silent, actualSilent);
+        _validateOutput(failures, 'stderr', error, actualError);
+        _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
-  }(), completes);
+        if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
+      }(),
+      completes);
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
@@ -280,8 +327,8 @@ void schedulePub({List args, output, error, outputJson, silent,
 ///
 /// Any futures in [args] will be resolved before the process is started.
 PubProcess startPublish(ScheduledServer server, {List args}) {
-  var tokenEndpoint = server.url.then((url) =>
-      url.resolve('/token').toString());
+  var tokenEndpoint =
+      server.url.then((url) => url.resolve('/token').toString());
   if (args == null) args = [];
   args = ['lish', '--server', tokenEndpoint]..addAll(args);
   return startPub(args: args, tokenEndpoint: tokenEndpoint);
@@ -334,7 +381,9 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-PubProcess startPub({List args, Future<String> tokenEndpoint,
+PubProcess startPub(
+    {List args,
+    Future<String> tokenEndpoint,
     Map<String, String> environment}) {
   args ??= [];
 
@@ -374,7 +423,8 @@ PubProcess startPub({List args, Future<String> tokenEndpoint,
     return pubEnvironment;
   });
 
-  return new PubProcess.start(dartBin, dartArgs, environment: environmentFuture,
+  return new PubProcess.start(dartBin, dartArgs,
+      environment: environmentFuture,
       workingDirectory: schedule(() => _pathInSandbox(appPath)),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
 }
@@ -389,13 +439,15 @@ class PubProcess extends ScheduledProcess {
   Stream<String> _silent;
 
   PubProcess.start(executable, arguments,
-      {workingDirectory, environment, String description,
-       Encoding encoding: UTF8})
-    : super.start(executable, arguments,
-        workingDirectory: workingDirectory,
-        environment: environment,
-        description: description,
-        encoding: encoding);
+      {workingDirectory,
+      environment,
+      String description,
+      Encoding encoding: UTF8})
+      : super.start(executable, arguments,
+            workingDirectory: workingDirectory,
+            environment: environment,
+            description: description,
+            encoding: encoding);
 
   Stream<Pair<log.Level, String>> _logStream() {
     if (_log == null) {
@@ -412,15 +464,19 @@ class PubProcess extends ScheduledProcess {
 
   final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
   final _logLevels = [
-    log.Level.ERROR, log.Level.WARNING, log.Level.MESSAGE, log.Level.IO,
-    log.Level.SOLVER, log.Level.FINE
+    log.Level.ERROR,
+    log.Level.WARNING,
+    log.Level.MESSAGE,
+    log.Level.IO,
+    log.Level.SOLVER,
+    log.Level.FINE
   ].fold(<String, log.Level>{}, (levels, level) {
     levels[level.name] = level;
     return levels;
   });
 
-  Stream<Pair<log.Level, String>> _outputToLog(Stream<String> stream,
-      log.Level defaultLevel) {
+  Stream<Pair<log.Level, String>> _outputToLog(
+      Stream<String> stream, log.Level defaultLevel) {
     var lastLevel;
     return stream.map((line) {
       var match = _logLineRegExp.firstMatch(line);
@@ -502,13 +558,13 @@ void ensureGit() {
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-void createLockFile(String package, {Iterable<String> sandbox,
-    Map<String, String> hosted}) {
+void createLockFile(String package,
+    {Iterable<String> sandbox, Map<String, String> hosted}) {
   schedule(() async {
     var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
 
-    var lockFile = _createLockFile(cache.sources,
-        sandbox: sandbox, hosted: hosted);
+    var lockFile =
+        _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
 
     await d.dir(package, [
       d.file('pubspec.lock', lockFile.serialize(null)),
@@ -519,16 +575,15 @@ void createLockFile(String package, {Iterable<String> sandbox,
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
-void createPackagesFile(String package, {Iterable<String> sandbox,
-    Map<String, String> hosted}) {
+void createPackagesFile(String package,
+    {Iterable<String> sandbox, Map<String, String> hosted}) {
   schedule(() async {
     var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
-    var lockFile = _createLockFile(cache.sources,
-        sandbox: sandbox, hosted: hosted);
+    var lockFile =
+        _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
 
-    await d.dir(package, [
-      d.file('.packages', lockFile.packagesFile(cache, package))
-    ]).create();
+    await d.dir(package,
+        [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
   }, "creating .packages for $package");
 }
 
@@ -541,8 +596,8 @@ void createPackagesFile(String package, {Iterable<String> sandbox,
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-LockFile _createLockFile(SourceRegistry sources, {Iterable<String> sandbox,
-    Map<String, String> hosted}) {
+LockFile _createLockFile(SourceRegistry sources,
+    {Iterable<String> sandbox, Map<String, String> hosted}) {
   var dependencies = {};
 
   if (sandbox != null) {
@@ -581,8 +636,7 @@ String packagePath(String package) {
   }
 
   return p.join(
-      SystemCache.defaultDir,
-      'hosted/pub.dartlang.org/$package-${id.version}');
+      SystemCache.defaultDir, 'hosted/pub.dartlang.org/$package-${id.version}');
 }
 
 /// Uses [client] as the mock HTTP client for this test.
@@ -599,9 +653,12 @@ void useMockClient(MockClient client) {
 
 /// Describes a map representing a library package with the given [name],
 /// [version], and [dependencies].
-Map packageMap(String name, String version, [
-    Map dependencies,
-    Map devDependencies,]) {
+Map packageMap(
+  String name,
+  String version, [
+  Map dependencies,
+  Map devDependencies,
+]) {
   var package = <String, dynamic>{
     "name": name,
     "version": version,
@@ -660,8 +717,8 @@ String binStubName(String name) => Platform.isWindows ? '$name.bat' : name;
 /// differences and tries to report the offending difference in a nice way.
 ///
 /// If it's a [RegExp] or [Matcher], just reports whether the output matches.
-void _validateOutput(List<String> failures, String pipe, expected,
-                     String actual) {
+void _validateOutput(
+    List<String> failures, String pipe, expected, String actual) {
   if (expected == null) return;
 
   if (expected is String) {
@@ -672,8 +729,8 @@ void _validateOutput(List<String> failures, String pipe, expected,
   }
 }
 
-void _validateOutputString(List<String> failures, String pipe,
-                           String expected, String actual) {
+void _validateOutputString(
+    List<String> failures, String pipe, String expected, String actual) {
   var actualLines = actual.split("\n");
   var expectedLines = expected.split("\n");
 
@@ -724,8 +781,8 @@ void _validateOutputString(List<String> failures, String pipe,
 
 /// Validates that [actualText] is a string of JSON that matches [expected],
 /// which may be a literal JSON object, or any other [Matcher].
-void _validateOutputJson(List<String> failures, String pipe,
-                         expected, String actualText) {
+void _validateOutputJson(
+    List<String> failures, String pipe, expected, String actualText) {
   var actual;
   try {
     actual = JSON.decode(actualText);
@@ -759,7 +816,7 @@ Future<Pair<List<String>, List<String>>> schedulePackageValidation(
 
 /// A matcher that matches a Pair.
 Matcher pairOf(Matcher firstMatcher, Matcher lastMatcher) =>
-   new _PairMatcher(firstMatcher, lastMatcher);
+    new _PairMatcher(firstMatcher, lastMatcher);
 
 class _PairMatcher extends Matcher {
   final Matcher _firstMatcher;

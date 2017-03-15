@@ -10,7 +10,9 @@ main() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [
-        d.file("script.dart", """
+        d.file(
+            "script.dart",
+            """
           import 'dart:io';
 
           main() {
@@ -41,7 +43,9 @@ main() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [
-        d.file("script.dart", """
+        d.file(
+            "script.dart",
+            """
           import 'dart:io';
 
           main() {

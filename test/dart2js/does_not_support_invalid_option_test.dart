@@ -13,9 +13,11 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {"invalidOption": true}
-        }]
+        "transformers": [
+          {
+            "\$dart2js": {"invalidOption": true}
+          }
+        ]
       })
     ]).create();
 

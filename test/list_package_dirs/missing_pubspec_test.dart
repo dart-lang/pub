@@ -13,13 +13,13 @@ main() {
   integration("reports a missing pubspec error using JSON", () {
     d.dir(appPath).create();
 
-    schedulePub(args: ["list-package-dirs", "--format=json"],
-        outputJson: {
-          "error":
-            'Could not find a file named "pubspec.yaml" in "'
-                '${canonicalize(path.join(sandboxDir, appPath))}".',
-          "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
-        },
-        exitCode: 1);
+    schedulePub(args: [
+      "list-package-dirs",
+      "--format=json"
+    ], outputJson: {
+      "error": 'Could not find a file named "pubspec.yaml" in "'
+          '${canonicalize(path.join(sandboxDir, appPath))}".',
+      "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
+    }, exitCode: 1);
   });
 }

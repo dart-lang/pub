@@ -9,8 +9,8 @@ import '../test_pub.dart';
 
 main() {
   hostedDir(package) {
-    return path.join(sandboxDir, cachePath, "hosted",
-        "pub.dartlang.org", package);
+    return path.join(
+        sandboxDir, cachePath, "hosted", "pub.dartlang.org", package);
   }
 
   integration('running pub cache list when there is no cache', () {
@@ -20,35 +20,34 @@ main() {
   integration('running pub cache list on empty cache', () {
     // Set up a cache.
     d.dir(cachePath, [
-      d.dir('hosted', [
-         d.dir('pub.dartlang.org', [
-        ])
-      ])
+      d.dir('hosted', [d.dir('pub.dartlang.org', [])])
     ]).create();
 
-    schedulePub(args: ['cache', 'list'], outputJson: {"packages":{}});
+    schedulePub(args: ['cache', 'list'], outputJson: {"packages": {}});
   });
 
   integration('running pub cache list', () {
     // Set up a cache.
     d.dir(cachePath, [
       d.dir('hosted', [
-         d.dir('pub.dartlang.org', [
-          d.dir("foo-1.2.3", [
-            d.libPubspec("foo", "1.2.3"),
-            d.libDir("foo")
-          ]),
-          d.dir("bar-2.0.0", [
-            d.libPubspec("bar", "2.0.0"),
-            d.libDir("bar") ])
+        d.dir('pub.dartlang.org', [
+          d.dir("foo-1.2.3", [d.libPubspec("foo", "1.2.3"), d.libDir("foo")]),
+          d.dir("bar-2.0.0", [d.libPubspec("bar", "2.0.0"), d.libDir("bar")])
         ])
       ])
     ]).create();
 
-    schedulePub(args: ['cache', 'list'], outputJson: {
+    schedulePub(args: [
+      'cache',
+      'list'
+    ], outputJson: {
       "packages": {
-        "bar": {"2.0.0": {"location": hostedDir('bar-2.0.0')}},
-        "foo": {"1.2.3": {"location": hostedDir('foo-1.2.3')}}
+        "bar": {
+          "2.0.0": {"location": hostedDir('bar-2.0.0')}
+        },
+        "foo": {
+          "1.2.3": {"location": hostedDir('foo-1.2.3')}
+        }
       }
     });
   });
@@ -57,18 +56,25 @@ main() {
     // Set up a cache.
     d.dir(cachePath, [
       d.dir('hosted', [
-         d.dir('pub.dartlang.org', [
+        d.dir('pub.dartlang.org', [
           d.dir("foo-1.2.3", [
-            d.libPubspec("foo", "1.2.3", deps: { "bar": {"bad": "bar"}}),
+            d.libPubspec("foo", "1.2.3", deps: {
+              "bar": {"bad": "bar"}
+            }),
             d.libDir("foo")
           ])
         ])
       ])
     ]).create();
 
-    schedulePub(args: ['cache', 'list'], outputJson: {
+    schedulePub(args: [
+      'cache',
+      'list'
+    ], outputJson: {
       "packages": {
-        "foo": {"1.2.3": {"location": hostedDir('foo-1.2.3')}}
+        "foo": {
+          "1.2.3": {"location": hostedDir('foo-1.2.3')}
+        }
       }
     });
   });

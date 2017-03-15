@@ -15,17 +15,17 @@ main() {
           d.file("hello.dart", "void main() => print('hello!');"),
           d.file("goodbye.dart", "void main() => print('goodbye!');"),
           d.file("shell.sh", "echo shell"),
-          d.dir("subdir", [
-            d.file("sub.dart", "void main() => print('sub!');")
-          ])
+          d.dir("subdir", [d.file("sub.dart", "void main() => print('sub!');")])
         ])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"], output: allOf([
-      contains('Precompiled foo:hello.'),
-      contains("Precompiled foo:goodbye.")
-    ]));
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: allOf([
+          contains('Precompiled foo:hello.'),
+          contains("Precompiled foo:goodbye.")
+        ]));
 
     d.dir(cachePath, [
       d.dir('global_packages', [

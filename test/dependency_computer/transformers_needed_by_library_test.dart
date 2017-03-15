@@ -11,9 +11,13 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "bin/myapp.dart.dart"}}
+          {
+            "foo": {"\$include": "bin/myapp.dart.dart"}
+          }
         ]
       }),
       d.dir("bin", [
@@ -34,9 +38,13 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}}
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          }
         ]
       }),
       d.dir("lib", [
@@ -60,36 +68,43 @@ void main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "import 'package:foo/foo.dart';")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "import 'package:foo/foo.dart';")])
     ]).create();
 
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
     expectLibraryDependencies('myapp|bin/myapp.dart', ['foo']);
   });
 
-  integration("doesn't report a dependency if no transformed files are "
+  integration(
+      "doesn't report a dependency if no transformed files are "
       "imported", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}}
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          }
         ]
       }),
       d.dir("lib", [

@@ -28,15 +28,18 @@ main() {
     servePackages((builder) {
       builder.serveRealPackage("barback");
 
-      builder.serve("foo", "1.0.0",
-          pubspec: {"transformers": ["foo/src/transformer"]},
-          deps: {"barback": "any"},
-          contents: [
-            d.dir("lib", [d.dir("src", [
-              d.file("transformer.dart", TRANSFORMER),
-              d.file("primary.in", "")
-            ])])
-          ]);
+      builder.serve("foo", "1.0.0", pubspec: {
+        "transformers": ["foo/src/transformer"]
+      }, deps: {
+        "barback": "any"
+      }, contents: [
+        d.dir("lib", [
+          d.dir("src", [
+            d.file("transformer.dart", TRANSFORMER),
+            d.file("primary.in", "")
+          ])
+        ])
+      ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);

@@ -116,8 +116,8 @@ class _Preprocessor {
     }
     _scanner.expect("\n");
 
-    var allowed = _versions.containsKey(package) &&
-        constraint.allows(_versions[package]);
+    var allowed =
+        _versions.containsKey(package) && constraint.allows(_versions[package]);
     if (allowed) {
       _emitText();
     } else {

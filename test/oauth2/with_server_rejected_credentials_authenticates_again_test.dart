@@ -12,7 +12,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('with server-rejected credentials, authenticates again and saves '
+  integration(
+      'with server-rejected credentials, authenticates again and saves '
       'credentials.json', () {
     d.validPackage.create();
     var server = new ScheduledServer();
@@ -23,11 +24,13 @@ main() {
 
     server.handle('GET', '/api/packages/versions/new', (request) {
       return new shelf.Response(401,
-          body: JSON.encode({'error': {'message': 'your token sucks'}}),
+          body: JSON.encode({
+            'error': {'message': 'your token sucks'}
+          }),
           headers: {
-        'www-authenticate': 'Bearer error="invalid_token",'
-            ' error_description="your token sucks"'
-      });
+            'www-authenticate': 'Bearer error="invalid_token",'
+                ' error_description="your token sucks"'
+          });
     });
 
     pub.stderr.expect('OAuth2 authorization failed (your token sucks).');

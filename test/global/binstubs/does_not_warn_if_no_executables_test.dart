@@ -11,13 +11,13 @@ main() {
   integration("does not warn if the package has no executables", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"],
+    schedulePub(
+        args: ["global", "activate", "foo"],
         output: isNot(contains("is not on your path")));
   });
 }

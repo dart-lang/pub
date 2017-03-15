@@ -63,7 +63,7 @@ class CacheRepairCommand extends PubCommand {
       var packages = pluralize("package", results.last.length);
       log.message(
           "Failed to reactivate ${log.red(results.last.length)} $packages:\n" +
-          results.last.map((name) => "- ${log.bold(name)}").join("\n"));
+              results.last.map((name) => "- ${log.bold(name)}").join("\n"));
     }
 
     if (successes.length == 0 && failures.length == 0) {

@@ -19,11 +19,11 @@ main() {
         "transformers": ["myapp/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [
-        d.file("transformer.dart", dartTransformer("munge"))
-      ]),
+      d.dir("lib", [d.file("transformer.dart", dartTransformer("munge"))]),
       d.dir("web", [
-        d.file("main.dart", """
+        d.file(
+            "main.dart",
+            """
 const TOKEN = "before";
 void main() => print(TOKEN);
 """)

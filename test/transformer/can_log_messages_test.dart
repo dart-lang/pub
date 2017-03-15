@@ -45,12 +45,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
@@ -72,10 +70,10 @@ Warning!
     // so instead of validating the entire line, just look for a couple of
     // salient bits of information.
     pub.stderr.expect(allOf([
-      contains("2"),                              // The line number.
-      contains("1"),                              // The column number.
-      contains("http://fake.com/not_real.dart"),  // The library.
-      contains("ERROR"),                          // That it's an error.
+      contains("2"), // The line number.
+      contains("1"), // The column number.
+      contains("http://fake.com/not_real.dart"), // The library.
+      contains("ERROR"), // That it's an error.
     ]));
 
     // In barback >=0.15.0, the span will point to the location where the error

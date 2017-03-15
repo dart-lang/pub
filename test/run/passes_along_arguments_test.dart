@@ -15,9 +15,7 @@ main() {
   integration('passes arguments to the spawned script', () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("args.dart", SCRIPT)
-      ])
+      d.dir("bin", [d.file("args.dart", SCRIPT)])
     ]).create();
 
     pubGet();

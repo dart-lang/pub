@@ -23,13 +23,11 @@ main() {
 
   integration("build ignores non-entrypoint Dart files", () {
     pubGet();
-    schedulePub(args: ["build"],
-        output: new RegExp(r'Built 0 files to "build".'));
+    schedulePub(
+        args: ["build"], output: new RegExp(r'Built 0 files to "build".'));
 
     d.dir(appPath, [
-      d.dir('build', [
-        d.nothing('web')
-      ])
+      d.dir('build', [d.nothing('web')])
     ]).validate();
   });
 
@@ -42,5 +40,4 @@ main() {
     requestShould404("file4.dart.js");
     endPubServe();
   });
-
 }

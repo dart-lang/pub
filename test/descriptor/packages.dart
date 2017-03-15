@@ -28,31 +28,31 @@ class PackagesFileDescriptor extends Descriptor {
   PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
   Future create([String parent]) => schedule(() {
-    if (parent == null) parent = defaultRoot;
-    var contents = const <int>[];
-    if (_dependencies != null) {
-      var mapping = <String, Uri>{};
-      _dependencies.forEach((package, version) {
-        var packagePath;
-        if (_isSemver(version)) {
-          // It's a cache reference.
-          packagePath = p.join(cachePath, "$package-$version");
-        } else {
-          // Otherwise it's a path relative to the pubspec file,
-          // which is also relative to the .packages file.
-          packagePath = p.fromUri(version);
+        if (parent == null) parent = defaultRoot;
+        var contents = const <int>[];
+        if (_dependencies != null) {
+          var mapping = <String, Uri>{};
+          _dependencies.forEach((package, version) {
+            var packagePath;
+            if (_isSemver(version)) {
+              // It's a cache reference.
+              packagePath = p.join(cachePath, "$package-$version");
+            } else {
+              // Otherwise it's a path relative to the pubspec file,
+              // which is also relative to the .packages file.
+              packagePath = p.fromUri(version);
+            }
+            mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
+          });
+          var buffer = new StringBuffer();
+          packages_file.write(buffer, mapping);
+          contents = UTF8.encode(buffer.toString());
         }
-        mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
-      });
-      var buffer = new StringBuffer();
-      packages_file.write(buffer, mapping);
-      contents = UTF8.encode(buffer.toString());
-    }
-    return new File(p.join(parent, name)).writeAsBytes(contents);
-  }, "creating file '$name'");
+        return new File(p.join(parent, name)).writeAsBytes(contents);
+      }, "creating file '$name'");
 
   Future validate([String parent]) =>
-    schedule(() => validateNow(parent), "validating file '$name'");
+      schedule(() => validateNow(parent), "validating file '$name'");
 
   Future validateNow([String parent]) {
     // Copied from FileDescriptor in scheduled_test.
@@ -61,7 +61,8 @@ class PackagesFileDescriptor extends Descriptor {
     if (!new File(fullPath).existsSync()) {
       fail("File not found: '$fullPath'.");
     }
-    return new File(fullPath).readAsBytes()
+    return new File(fullPath)
+        .readAsBytes()
         .then((bytes) => _validateNow(bytes, fullPath));
   }
 
@@ -83,7 +84,7 @@ class PackagesFileDescriptor extends Descriptor {
       if (_isSemver(description)) {
         if (!map[package].path.contains(description)) {
           fail(".packages of $package has incorrect version. "
-               "Expected $description, found location: ${map[package]}.");
+              "Expected $description, found location: ${map[package]}.");
         }
       } else {
         var expected = p.normalize(p.join(p.fromUri(description), 'lib'));

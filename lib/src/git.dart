@@ -23,8 +23,7 @@ class GitException implements ApplicationException {
 
   String get message => 'Git error. Command: git ${args.join(" ")}\n$stderr';
 
-  GitException(Iterable<String> args, this.stderr)
-      : args = args.toList();
+  GitException(Iterable<String> args, this.stderr) : args = args.toList();
 
   String toString() => message;
 }
@@ -35,6 +34,7 @@ bool get isInstalled {
   _isInstalledCache = command != null;
   return _isInstalledCache;
 }
+
 bool _isInstalledCache;
 
 /// Run a git process with [args] from [workingDir].
@@ -50,8 +50,8 @@ Future<List<String>> run(List<String> args,
 
   log.muteProgress();
   try {
-    var result = await runProcess(command, args, workingDir: workingDir,
-        environment: environment);
+    var result = await runProcess(command, args,
+        workingDir: workingDir, environment: environment);
     if (!result.success) throw new GitException(args, result.stderr.join("\n"));
     return result.stdout;
   } finally {
@@ -60,16 +60,15 @@ Future<List<String>> run(List<String> args,
 }
 
 /// Like [run], but synchronous.
-List<String> runSync(List<String> args, {String workingDir,
-    Map<String, String> environment}) {
+List<String> runSync(List<String> args,
+    {String workingDir, Map<String, String> environment}) {
   if (!isInstalled) {
     fail("Cannot find a Git executable.\n"
         "Please ensure Git is correctly installed.");
   }
 
   var result = runProcessSync(command, args,
-      workingDir: workingDir,
-      environment: environment);
+      workingDir: workingDir, environment: environment);
   if (!result.success) throw new GitException(args, result.stderr.join("\n"));
   return result.stdout;
 }
@@ -82,8 +81,8 @@ Future<PubProcess> start(List<String> args,
         "Please ensure Git is correctly installed.");
   }
 
-  return startProcess(command, args, workingDir: workingDir,
-      environment: environment);
+  return startProcess(command, args,
+      workingDir: workingDir, environment: environment);
 }
 
 /// Returns the name of the git command-line app, or null if Git could not be
@@ -94,7 +93,7 @@ String get command {
   var command;
   if (_tryGitCommand("git")) {
     _commandCache = "git";
-  } else if (_tryGitCommand("git.cmd")){
+  } else if (_tryGitCommand("git.cmd")) {
     _commandCache = "git.cmd";
   } else {
     return null;
@@ -103,6 +102,7 @@ String get command {
   log.fine('Determined git command $command.');
   return _commandCache;
 }
+
 String _commandCache;
 
 /// Checks whether [command] is the Git command for this computer.

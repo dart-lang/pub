@@ -88,16 +88,16 @@ class TransformerIsolate {
       // The isolate error message contains the fully expanded path, not the
       // "package:" URI, so we have to be liberal in what we look for in the
       // error message.
-      var missingTransformer = idsToUrls.keys.firstWhere((id) =>
-          firstErrorLine.startsWith('Could not import "${idsToUrls[id]}"'),
+      var missingTransformer = idsToUrls.keys.firstWhere(
+          (id) =>
+              firstErrorLine.startsWith('Could not import "${idsToUrls[id]}"'),
           orElse: () => throw error);
       var packageUri = idToPackageUri(idsToAssetIds[missingTransformer]);
 
       // If there was an IsolateSpawnException and the import that actually
       // failed was the one we were loading transformers from, throw an
       // application exception with a more user-friendly message.
-      fail('Transformer library "$packageUri" not found.',
-          error, stackTrace);
+      fail('Transformer library "$packageUri" not found.', error, stackTrace);
       return null;
     }
   }

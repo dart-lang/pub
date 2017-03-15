@@ -19,7 +19,8 @@ import 'get_input_transform.dart';
 /// serialized transform. [methodHandlers] is a set of additional methods. Each
 /// value should take a JSON message and return the response (which may be a
 /// Future).
-Map _serializeBaseAggregateTransform(transform,
+Map _serializeBaseAggregateTransform(
+    transform,
     Map<String, dynamic> additionalFields,
     Map<String, Function> methodHandlers) {
   var receivePort = new ReceivePort();
@@ -42,10 +43,10 @@ Map _serializeBaseAggregateTransform(transform,
       }[message['level']];
       assert(method != null);
 
-      var assetId = message['assetId'] == null ? null :
-        deserializeId(message['assetId']);
-      var span = message['span'] == null ? null :
-        deserializeSpan(message['span']);
+      var assetId =
+          message['assetId'] == null ? null : deserializeId(message['assetId']);
+      var span =
+          message['span'] == null ? null : deserializeSpan(message['span']);
       method(message['message'], asset: assetId, span: span);
     });
   });
@@ -62,7 +63,8 @@ Map serializeAggregateTransform(AggregateTransform transform) {
   return _serializeBaseAggregateTransform(transform, {
     'primaryInputs': serializeStream(transform.primaryInputs, serializeAsset)
   }, {
-    'getInput': (message) => transform.getInput(deserializeId(message['id']))
+    'getInput': (message) => transform
+        .getInput(deserializeId(message['id']))
         .then((asset) => serializeAsset(asset)),
     'addOutput': (message) =>
         transform.addOutput(deserializeAsset(message['output']))
@@ -124,46 +126,37 @@ class _ForeignBaseAggregateTransform {
 ///
 /// This retrieves inputs from and sends outputs and logs to the host isolate.
 class ForeignAggregateTransform extends _ForeignBaseAggregateTransform
-    with GetInputTransform implements AggregateTransform {
+    with GetInputTransform
+    implements AggregateTransform {
   final Stream<Asset> primaryInputs;
 
   /// Creates a transform from a serialized map sent from the host isolate.
   ForeignAggregateTransform(Map transform)
-      : primaryInputs = deserializeStream(
-            transform['primaryInputs'], deserializeAsset),
+      : primaryInputs =
+            deserializeStream(transform['primaryInputs'], deserializeAsset),
         super(transform);
 
   Future<Asset> getInput(AssetId id) {
-    return call(_port, {
-      'type': 'getInput',
-      'id': serializeId(id)
-    }).then(deserializeAsset);
+    return call(_port, {'type': 'getInput', 'id': serializeId(id)})
+        .then(deserializeAsset);
   }
 
   void addOutput(Asset output) {
-    call(_port, {
-      'type': 'addOutput',
-      'output': serializeAsset(output)
-    });
+    call(_port, {'type': 'addOutput', 'output': serializeAsset(output)});
   }
 }
 
 /// A wrapper for a [DeclaringAggregateTransform] that's in the host isolate.
-class ForeignDeclaringAggregateTransform
-    extends _ForeignBaseAggregateTransform
+class ForeignDeclaringAggregateTransform extends _ForeignBaseAggregateTransform
     implements DeclaringAggregateTransform {
   final Stream<AssetId> primaryIds;
 
   /// Creates a transform from a serializable map sent from the host isolate.
   ForeignDeclaringAggregateTransform(Map transform)
-      : primaryIds = deserializeStream(
-            transform['primaryIds'], deserializeId),
+      : primaryIds = deserializeStream(transform['primaryIds'], deserializeId),
         super(transform);
 
   void declareOutput(AssetId id) {
-    call(_port, {
-      'type': 'declareOutput',
-      'output': serializeId(id)
-    });
+    call(_port, {'type': 'declareOutput', 'output': serializeId(id)});
   }
 }

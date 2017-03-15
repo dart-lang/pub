@@ -10,18 +10,17 @@ main() {
   integration("exits when the connection closes", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
     var server = pubServe();
 
     // Make sure the web socket is active.
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "index.html")
-    }, {"package": "myapp", "path": "web/index.html"});
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "index.html")},
+        {"package": "myapp", "path": "web/index.html"});
 
     expectWebSocketResult("exitOnClose", null, null);
 

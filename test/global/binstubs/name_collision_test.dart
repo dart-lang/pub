@@ -13,29 +13,17 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "foo": "foo",
-          "collide1": "foo",
-          "collide2": "foo"
-        }
+        "executables": {"foo": "foo", "collide1": "foo", "collide2": "foo"}
       }),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
     d.dir("bar", [
       d.pubspec({
         "name": "bar",
-        "executables": {
-          "bar": "bar",
-          "collide1": "bar",
-          "collide2": "bar"
-        }
+        "executables": {"bar": "bar", "collide1": "bar", "collide2": "bar"}
       }),
-      d.dir("bin", [
-        d.file("bar.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("bar.dart", "main() => print('ok');")])
     ]).create();
 
     schedulePub(args: ["global", "activate", "-spath", "../foo"]);

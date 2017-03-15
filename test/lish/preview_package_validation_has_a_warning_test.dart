@@ -25,7 +25,7 @@ main() {
     pub.stderr.expect(consumeThrough('Suggestions:'));
     pub.stderr.expect(emitsLines(
         '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
-            'address\n'
+        'address\n'
         '  (e.g. "name <email>").\n'
         '\n'
         'Package has 1 warning.'));

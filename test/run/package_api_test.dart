@@ -41,36 +41,32 @@ final _script = """
 
 main() {
   integration('an untransformed application sees a file: package config', () {
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
-      d.appPubspec({"foo": {"path": "../foo"}}),
-      d.dir("bin", [
-        d.file("script.dart", _script)
-      ])
+      d.appPubspec({
+        "foo": {"path": "../foo"}
+      }),
+      d.dir("bin", [d.file("script.dart", _script)])
     ]).create();
 
     pubGet();
     var pub = pubRun(args: ["bin/script"]);
 
     pub.stdout.expect("null");
-    pub.stdout.expect(
-        p.toUri(p.join(sandboxDir, "myapp/.packages")).toString());
+    pub.stdout
+        .expect(p.toUri(p.join(sandboxDir, "myapp/.packages")).toString());
     pub.stdout.expect(
         p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")).toString());
-    pub.stdout.expect(
-        p.toUri(p.join(sandboxDir, "foo/lib/resource.txt")).toString());
+    pub.stdout
+        .expect(p.toUri(p.join(sandboxDir, "foo/lib/resource.txt")).toString());
     pub.shouldExit(0);
   });
 
   integration('a transformed application sees an http: package root', () {
     serveBarback();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     d.dir(appPath, [
       d.pubspec({
@@ -80,44 +76,33 @@ main() {
       }),
       d.dir("lib", [
         d.file("resource.in", "hello!"),
-        d.dir("src", [
-          d.file("transformer.dart", _transformer)
-        ])
+        d.dir("src", [d.file("transformer.dart", _transformer)])
       ]),
-      d.dir("bin", [
-        d.file("script.dart", _script)
-      ])
+      d.dir("bin", [d.file("script.dart", _script)])
     ]).create();
 
     pubGet();
     var pub = pubRun(args: ["bin/script"]);
 
-    pub.stdout.expect(
-        allOf(startsWith("http://localhost:"), endsWith("/packages/")));
+    pub.stdout
+        .expect(allOf(startsWith("http://localhost:"), endsWith("/packages/")));
     pub.stdout.expect("null");
-    pub.stdout.expect(allOf(
-        startsWith("http://localhost:"),
+    pub.stdout.expect(allOf(startsWith("http://localhost:"),
         endsWith("/packages/myapp/resource.txt")));
-    pub.stdout.expect(allOf(
-        startsWith("http://localhost:"),
+    pub.stdout.expect(allOf(startsWith("http://localhost:"),
         endsWith("/packages/foo/resource.txt")));
     pub.shouldExit(0);
   });
 
   integration('a snapshotted application sees a file: package root', () {
     servePackages((builder) {
-      builder.serve("foo", "1.0.0",
-          contents: [
-        d.dir("bin", [
-          d.file("script.dart", _script)
-        ])
+      builder.serve("foo", "1.0.0", contents: [
+        d.dir("bin", [d.file("script.dart", _script)])
       ]);
     });
 
     d.dir(appPath, [
-      d.appPubspec({
-        "foo": "any"
-      })
+      d.appPubspec({"foo": "any"})
     ]).create();
 
     pubGet(output: contains("Precompiled foo:script."));
@@ -125,8 +110,8 @@ main() {
     var pub = pubRun(args: ["foo:script"]);
 
     pub.stdout.expect("null");
-    pub.stdout.expect(
-        p.toUri(p.join(sandboxDir, "myapp/.packages")).toString());
+    pub.stdout
+        .expect(p.toUri(p.join(sandboxDir, "myapp/.packages")).toString());
     pub.stdout.expect(
         p.toUri(p.join(sandboxDir, "myapp/lib/resource.txt")).toString());
     schedule(() async {

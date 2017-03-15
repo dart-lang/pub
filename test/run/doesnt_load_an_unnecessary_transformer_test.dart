@@ -22,33 +22,33 @@ class BrokenTransformer extends Transformer {
 """;
 
 main() {
-   integration("doesn't load an unnecessary transformer", () {
-     serveBarback();
+  integration("doesn't load an unnecessary transformer", () {
+    serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": [
-           {"myapp/src/transformer": {r"$include": "lib/myapp.dart"}}
-         ],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [
-         d.file("myapp.dart", ""),
-         d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
-       ]),
-       d.dir("bin", [
-         d.file("hi.dart", "void main() => print('Hello!');")
-       ])
-     ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp/src/transformer": {r"$include": "lib/myapp.dart"}
+          }
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.file("myapp.dart", ""),
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("bin", [d.file("hi.dart", "void main() => print('Hello!');")])
+    ]).create();
 
-     pubGet();
+    pubGet();
 
-     // This shouldn't load the transformer, since it doesn't transform
-     // anything that the entrypoint imports. If it did load the transformer,
-     // we'd know since it would throw an exception.
-     var pub = pubRun(args: ["bin/hi"]);
-     pub.stdout.expect("Hello!");
-     pub.shouldExit();
-   });
+    // This shouldn't load the transformer, since it doesn't transform
+    // anything that the entrypoint imports. If it did load the transformer,
+    // we'd know since it would throw an exception.
+    var pub = pubRun(args: ["bin/hi"]);
+    pub.stdout.expect("Hello!");
+    pub.shouldExit();
+  });
 }

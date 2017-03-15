@@ -75,6 +75,7 @@ class Pubspec {
     _name = name;
     return _name;
   }
+
   String _name;
 
   /// The package's version.
@@ -93,17 +94,20 @@ class Pubspec {
       if (version is int) {
         fixed = '$fixed.0';
       }
-      _error('"version" field must have three numeric components: major, '
-          'minor, and patch. Instead of "$version", consider "$fixed".', span);
+      _error(
+          '"version" field must have three numeric components: major, '
+          'minor, and patch. Instead of "$version", consider "$fixed".',
+          span);
     }
     if (version is! String) {
       _error('"version" field must be a string.', span);
     }
 
-    _version = _wrapFormatException('version number', span,
-        () => new Version.parse(version));
+    _version = _wrapFormatException(
+        'version number', span, () => new Version.parse(version));
     return _version;
   }
+
   Version _version;
 
   /// The additional packages this package depends on.
@@ -113,6 +117,7 @@ class Pubspec {
     _checkDependencyOverlap(_dependencies, _devDependencies);
     return _dependencies;
   }
+
   List<PackageDep> _dependencies;
 
   /// The packages this package depends on when it is the root package.
@@ -122,6 +127,7 @@ class Pubspec {
     _checkDependencyOverlap(_dependencies, _devDependencies);
     return _devDependencies;
   }
+
   List<PackageDep> _devDependencies;
 
   /// The dependency constraints that this package overrides when it is the
@@ -134,6 +140,7 @@ class Pubspec {
     _dependencyOverrides = _parseDependencies('dependency_overrides');
     return _dependencyOverrides;
   }
+
   List<PackageDep> _dependencyOverrides;
 
   /// The configurations of the transformers to use for this package.
@@ -156,8 +163,8 @@ class Pubspec {
       return phaseNodes.map((transformerNode) {
         var transformer = transformerNode.value;
         if (transformer is! String && transformer is! Map) {
-          _error('A transformer must be a string or map.',
-                 transformerNode.span);
+          _error(
+              'A transformer must be a string or map.', transformerNode.span);
         }
 
         var libraryNode;
@@ -166,8 +173,10 @@ class Pubspec {
           libraryNode = transformerNode;
         } else {
           if (transformer.length != 1) {
-            _error('A transformer map must have a single key: the transformer '
-                'identifier.', transformerNode.span);
+            _error(
+                'A transformer map must have a single key: the transformer '
+                'identifier.',
+                transformerNode.span);
           } else if (transformer.keys.single is! String) {
             _error('A transformer identifier must be a string.',
                 transformer.nodes.keys.single.span);
@@ -183,15 +192,14 @@ class Pubspec {
 
         var config = _wrapSpanFormatException('transformer config', () {
           return new TransformerConfig.parse(
-            libraryNode.value, libraryNode.span,
-            configurationNode);
+              libraryNode.value, libraryNode.span, configurationNode);
         });
 
         var package = config.id.package;
-        if (package != name && !config.id.isBuiltInTransformer &&
+        if (package != name &&
+            !config.id.isBuiltInTransformer &&
             !_hasDependency(package)) {
-          _error('"$package" is not a dependency.',
-              libraryNode.span);
+          _error('"$package" is not a dependency.', libraryNode.span);
         }
 
         return config;
@@ -200,6 +208,7 @@ class Pubspec {
 
     return _transformers;
   }
+
   List<Set<TransformerConfig>> _transformers;
 
   /// Returns whether this pubspec has any kind of dependency on [package].
@@ -208,9 +217,8 @@ class Pubspec {
   /// dependencies can fail for a hosted package's pubspec (e.g. if that package
   /// has a relative path dev dependency).
   bool _hasDependency(String package) {
-    return [
-      'dependencies', 'dev_dependencies', 'dependency_overrides'
-    ].any((field) {
+    return ['dependencies', 'dev_dependencies', 'dependency_overrides']
+        .any((field) {
       var map = fields[field];
       if (map == null) return false;
 
@@ -228,6 +236,7 @@ class Pubspec {
     _parseEnvironment();
     return _dartSdkConstraint;
   }
+
   VersionConstraint _dartSdkConstraint;
 
   /// The constraint on the Flutter SDK, or `null` if none is specified.
@@ -235,6 +244,7 @@ class Pubspec {
     _parseEnvironment();
     return _flutterSdkConstraint;
   }
+
   VersionConstraint _flutterSdkConstraint;
 
   /// Parses the "environment" field and sets [_dartSdkConstraint] and
@@ -250,7 +260,7 @@ class Pubspec {
 
     if (yaml is! Map) {
       _error('"environment" field must be a map.',
-             fields.nodes['environment'].span);
+          fields.nodes['environment'].span);
     }
 
     _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk']);
@@ -277,8 +287,8 @@ class Pubspec {
 
       // It must be "none" or a valid URL.
       if (publishTo != "none") {
-        _wrapFormatException('"publish_to" field', span,
-            () => Uri.parse(publishTo));
+        _wrapFormatException(
+            '"publish_to" field', span, () => Uri.parse(publishTo));
       }
     }
 
@@ -286,6 +296,7 @@ class Pubspec {
     _publishTo = publishTo;
     return _publishTo;
   }
+
   bool _parsedPublishTo = false;
   String _publishTo;
 
@@ -317,8 +328,10 @@ class Pubspec {
 
       final keyPattern = new RegExp(r"^[a-zA-Z0-9_-]+$");
       if (!keyPattern.hasMatch(key.value)) {
-        _error('"executables" keys may only contain letters, '
-            'numbers, hyphens and underscores.', key.span);
+        _error(
+            '"executables" keys may only contain letters, '
+            'numbers, hyphens and underscores.',
+            key.span);
       }
 
       if (value.value == null) {
@@ -338,6 +351,7 @@ class Pubspec {
 
     return _executables;
   }
+
   Map<String, String> _executables;
 
   /// Whether the package is private and cannot be published.
@@ -347,7 +361,7 @@ class Pubspec {
 
   /// Whether or not the pubspec has no contents.
   bool get isEmpty =>
-    name == null && version == Version.none && dependencies.isEmpty;
+      name == null && version == Version.none && dependencies.isEmpty;
 
   /// Loads the pubspec for a package located in [packageDir].
   ///
@@ -362,7 +376,7 @@ class Pubspec {
           // Make the package dir absolute because for the entrypoint it'll just
           // be ".", which may be confusing.
           'Could not find a file named "pubspec.yaml" in '
-              '"${canonicalize(packageDir)}".',
+          '"${canonicalize(packageDir)}".',
           pubspecPath);
     }
 
@@ -370,36 +384,40 @@ class Pubspec {
         expectedName: expectedName, location: pubspecUri);
   }
 
-  Pubspec(this._name, {Version version, Iterable<PackageDep> dependencies,
-          Iterable<PackageDep> devDependencies,
-          Iterable<PackageDep> dependencyOverrides,
-          VersionConstraint dartSdkConstraint,
-          VersionConstraint flutterSdkConstraint,
-          Iterable<Iterable<TransformerConfig>> transformers,
-          Map fields, SourceRegistry sources})
+  Pubspec(this._name,
+      {Version version,
+      Iterable<PackageDep> dependencies,
+      Iterable<PackageDep> devDependencies,
+      Iterable<PackageDep> dependencyOverrides,
+      VersionConstraint dartSdkConstraint,
+      VersionConstraint flutterSdkConstraint,
+      Iterable<Iterable<TransformerConfig>> transformers,
+      Map fields,
+      SourceRegistry sources})
       : _version = version,
         _dependencies = dependencies == null ? null : dependencies.toList(),
-        _devDependencies = devDependencies == null ? null :
-            devDependencies.toList(),
-        _dependencyOverrides = dependencyOverrides == null ? null :
-            dependencyOverrides.toList(),
+        _devDependencies =
+            devDependencies == null ? null : devDependencies.toList(),
+        _dependencyOverrides =
+            dependencyOverrides == null ? null : dependencyOverrides.toList(),
         _dartSdkConstraint = dartSdkConstraint ?? VersionConstraint.any,
         _flutterSdkConstraint = flutterSdkConstraint,
-        _transformers = transformers == null ? [] :
-            transformers.map((phase) => phase.toSet()).toList(),
+        _transformers = transformers == null
+            ? []
+            : transformers.map((phase) => phase.toSet()).toList(),
         fields = fields == null ? new YamlMap() : new YamlMap.wrap(fields),
         _sources = sources;
 
   Pubspec.empty()
-    : _sources = null,
-      _name = null,
-      _version = Version.none,
-      _dependencies = <PackageDep>[],
-      _devDependencies = <PackageDep>[],
-      _dartSdkConstraint = VersionConstraint.any,
-      _flutterSdkConstraint = null,
-      _transformers = <Set<TransformerConfig>>[],
-      fields = new YamlMap();
+      : _sources = null,
+        _name = null,
+        _version = Version.none,
+        _dependencies = <PackageDep>[],
+        _devDependencies = <PackageDep>[],
+        _dartSdkConstraint = VersionConstraint.any,
+        _flutterSdkConstraint = null,
+        _transformers = <Set<TransformerConfig>>[],
+        fields = new YamlMap();
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
@@ -408,17 +426,20 @@ class Pubspec {
   /// field, this will throw a [PubspecError].
   ///
   /// [location] is the location from which this pubspec was loaded.
-  Pubspec.fromMap(Map fields, this._sources, {String expectedName,
-      Uri location})
-      : fields = fields is YamlMap ? fields :
-            new YamlMap.wrap(fields, sourceUrl: location) {
+  Pubspec.fromMap(Map fields, this._sources,
+      {String expectedName, Uri location})
+      : fields = fields is YamlMap
+            ? fields
+            : new YamlMap.wrap(fields, sourceUrl: location) {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
     if (name == expectedName) return;
 
-    throw new PubspecException('"name" field doesn\'t match expected name '
-        '"$expectedName".', this.fields.nodes["name"].span);
+    throw new PubspecException(
+        '"name" field doesn\'t match expected name '
+        '"$expectedName".',
+        this.fields.nodes["name"].span);
   }
 
   /// Parses the pubspec stored at [filePath] whose text is [contents].
@@ -484,8 +505,8 @@ class Pubspec {
       _error('"$field" field must be a map.', fields.nodes[field].span);
     }
 
-    var nonStringNode = yaml.nodes.keys.firstWhere((e) => e.value is! String,
-        orElse: () => null);
+    var nonStringNode = yaml.nodes.keys
+        .firstWhere((e) => e.value is! String, orElse: () => null);
     if (nonStringNode != null) {
       _error('A dependency name must be a string.', nonStringNode.span);
     }
@@ -494,8 +515,7 @@ class Pubspec {
       var name = nameNode.value;
       var spec = specNode.value;
       if (fields['name'] != null && name == this.name) {
-        _error('A package may not list itself as a dependency.',
-            nameNode.span);
+        _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
       var descriptionNode;
@@ -515,8 +535,8 @@ class Pubspec {
 
         if (spec.containsKey('version')) {
           spec.remove('version');
-          versionConstraint = _parseVersionConstraint(
-              specNode.nodes['version']);
+          versionConstraint =
+              _parseVersionConstraint(specNode.nodes['version']);
         }
 
         var sourceNames = spec.keys.toList();
@@ -545,8 +565,8 @@ class Pubspec {
           pubspecPath = path.fromUri(_location);
         }
 
-        return _sources[sourceName].parseRef(name, descriptionNode.value,
-            containingPath: pubspecPath);
+        return _sources[sourceName]
+            .parseRef(name, descriptionNode.value, containingPath: pubspecPath);
       });
 
       dependencies.add(ref.withConstraint(versionConstraint));
@@ -568,22 +588,26 @@ class Pubspec {
 
   /// Makes sure the same package doesn't appear as both a regular and dev
   /// dependency.
-  void _checkDependencyOverlap(List<PackageDep> dependencies,
-      List<PackageDep> devDependencies) {
+  void _checkDependencyOverlap(
+      List<PackageDep> dependencies, List<PackageDep> devDependencies) {
     if (dependencies == null) return;
     if (devDependencies == null) return;
 
     var dependencyNames = dependencies.map((dep) => dep.name).toSet();
-    var collisions = dependencyNames.intersection(
-        devDependencies.map((dep) => dep.name).toSet());
+    var collisions = dependencyNames
+        .intersection(devDependencies.map((dep) => dep.name).toSet());
     if (collisions.isEmpty) return;
 
-    var span = fields["dependencies"].nodes.keys
-        .firstWhere((key) => collisions.contains(key.value)).span;
+    var span = fields["dependencies"]
+        .nodes
+        .keys
+        .firstWhere((key) => collisions.contains(key.value))
+        .span;
 
     // TODO(nweiz): associate source range info with PackageDeps and use it
     // here.
-    _error('${pluralize('Package', collisions.length)} '
+    _error(
+        '${pluralize('Package', collisions.length)} '
         '${toSentence(collisions.map((package) => '"$package"'))} cannot '
         'appear in both "dependencies" and "dev_dependencies".',
         span);
@@ -622,8 +646,7 @@ class Pubspec {
 /// These exceptions are often thrown lazily while accessing pubspec properties.
 class PubspecException extends SourceSpanFormatException
     implements ApplicationException {
-  PubspecException(String message, SourceSpan span)
-      : super(message, span);
+  PubspecException(String message, SourceSpan span) : super(message, span);
 }
 
 /// Returns whether [uri] is a file URI.

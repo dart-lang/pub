@@ -13,37 +13,28 @@ main() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('benchmark', [d.file('file.txt', 'benchmark')]),
-      d.dir('bin',       [d.file('file.txt', 'bin')]),
-      d.dir('example',   [d.file('file.txt', 'example')]),
-      d.dir('test',      [d.file('file.txt', 'test')]),
-      d.dir('web',       [d.file('file.txt', 'web')]),
-      d.dir('unknown',   [d.file('file.txt', 'unknown')])
+      d.dir('bin', [d.file('file.txt', 'bin')]),
+      d.dir('example', [d.file('file.txt', 'example')]),
+      d.dir('test', [d.file('file.txt', 'test')]),
+      d.dir('web', [d.file('file.txt', 'web')]),
+      d.dir('unknown', [d.file('file.txt', 'unknown')])
     ]).create();
 
     pubGet();
   });
 
   integration("build --all finds assets in default source directories", () {
-    schedulePub(args: ["build", "--all"],
+    schedulePub(
+        args: ["build", "--all"],
         output: new RegExp(r'Built 5 files to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [
-        d.dir('benchmark', [
-          d.file('file.txt', 'benchmark')
-        ]),
-        d.dir('bin', [
-          d.file('file.txt', 'bin')
-        ]),
-        d.dir('example', [
-          d.file('file.txt', 'example')
-        ]),
-        d.dir('test', [
-          d.file('file.txt', 'test')
-        ]),
-        d.dir('web', [
-          d.file('file.txt', 'web')
-        ]),
+        d.dir('benchmark', [d.file('file.txt', 'benchmark')]),
+        d.dir('bin', [d.file('file.txt', 'bin')]),
+        d.dir('example', [d.file('file.txt', 'example')]),
+        d.dir('test', [d.file('file.txt', 'test')]),
+        d.dir('web', [d.file('file.txt', 'web')]),
         // Only includes default source directories.
         d.nothing('unknown')
       ])

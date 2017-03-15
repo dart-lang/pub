@@ -29,6 +29,7 @@ set globalServer(DescriptorServer value) {
 
   _globalServer = value;
 }
+
 DescriptorServer _globalServer;
 
 /// Creates a global [DescriptorServer] to serve [contents] as static files.
@@ -54,8 +55,7 @@ class DescriptorServer {
 
   /// Gets the list of paths that have been requested from the server.
   Future<List<String>> get requestedPaths =>
-      schedule(() => _requestedPaths.toList(),
-          "get previous network requests");
+      schedule(() => _requestedPaths.toList(), "get previous network requests");
 
   /// The list of paths that have been requested from this server.
   final _requestedPaths = <String>[];

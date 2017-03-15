@@ -11,9 +11,8 @@ import 'package:scheduled_test/scheduled_test.dart';
 import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
 
-
 void authorizePub(ScheduledProcess pub, ScheduledServer server,
-    [String accessToken="access token"]) {
+    [String accessToken = "access token"]) {
   pub.stdout.expect('Pub needs your authorization to upload packages on your '
       'behalf.');
 
@@ -26,7 +25,7 @@ void authorizePub(ScheduledProcess pub, ScheduledServer server,
       var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)));
       redirectUrl = addQueryParameters(redirectUrl, {'code': 'access code'});
       return (new http.Request('GET', redirectUrl)..followRedirects = false)
-        .send();
+          .send();
     }).then((response) {
       expect(response.headers['location'],
           equals('http://pub.dartlang.org/authorized'));
@@ -41,11 +40,9 @@ void handleAccessTokenRequest(ScheduledServer server, String accessToken) {
     return request.readAsString().then((body) {
       expect(body, matches(new RegExp(r'(^|&)code=access\+code(&|$)')));
 
-      return new shelf.Response.ok(JSON.encode({
-        "access_token": accessToken,
-        "token_type": "bearer"
-      }), headers: {'content-type': 'application/json'});
+      return new shelf.Response.ok(
+          JSON.encode({"access_token": accessToken, "token_type": "bearer"}),
+          headers: {'content-type': 'application/json'});
     });
   });
 }
-

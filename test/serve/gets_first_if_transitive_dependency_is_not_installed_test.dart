@@ -15,9 +15,7 @@ main() {
     servePackages((builder) => builder.serve("bar", "1.2.3"));
 
     d.dir("foo", [
-      d.libPubspec("foo", "1.0.0", deps: {
-        "bar": "any"
-      }),
+      d.libPubspec("foo", "1.0.0", deps: {"bar": "any"}),
       d.libDir("foo")
     ]).create();
 

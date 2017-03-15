@@ -16,7 +16,7 @@ main() {
   pubBuildAndServeShouldFail("on --all with no default source directories",
       args: ["--all"],
       error: 'There are no source directories present.\n'
-        'The default directories are "benchmark", "bin", "example", '
-        '"test" and "web".',
+          'The default directories are "benchmark", "bin", "example", '
+          '"test" and "web".',
       exitCode: exit_codes.DATA);
 }

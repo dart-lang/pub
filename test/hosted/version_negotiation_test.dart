@@ -26,8 +26,8 @@ main() {
       var pub = startPub(args: [command.name]);
 
       server.handle('GET', '/api/packages/foo', (request) {
-        expect(request.headers['accept'],
-            equals('application/vnd.pub.v2+json'));
+        expect(
+            request.headers['accept'], equals('application/vnd.pub.v2+json'));
         return new shelf.Response(200);
       });
 
@@ -48,8 +48,8 @@ main() {
 
       var pub = startPub(args: [command.name]);
 
-      server.handle('GET', '/api/packages/foo',
-          (request) => new shelf.Response(406));
+      server.handle(
+          'GET', '/api/packages/foo', (request) => new shelf.Response(406));
 
       pub.shouldExit(1);
 

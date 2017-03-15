@@ -19,9 +19,7 @@ main() {
         "transformers": ["myapp/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [
-        d.file("transformer.dart", "library does_nothing;")
-      ])
+      d.dir("lib", [d.file("transformer.dart", "library does_nothing;")])
     ]).create();
 
     pubGet();

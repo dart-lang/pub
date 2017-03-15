@@ -93,6 +93,7 @@ class Entrypoint {
 
     return _lockFile;
   }
+
   LockFile _lockFile;
 
   /// The package graph for the application and all of its transitive
@@ -113,6 +114,7 @@ class Entrypoint {
     _packageGraph = new PackageGraph(this, lockFile, packages);
     return _packageGraph;
   }
+
   PackageGraph _packageGraph;
 
   /// The path to the entrypoint's "packages" directory.
@@ -145,13 +147,13 @@ class Entrypoint {
 
   /// Creates an entrypoint given package and lockfile objects.
   Entrypoint.inMemory(this.root, this._lockFile, this.cache,
-          {this.isGlobal: false})
+      {this.isGlobal: false})
       : _inMemory = true;
 
   /// Creates an entrypoint given a package and a [solveResult], from which the
   /// package graph and lockfile will be computed.
   Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult,
-          {this.isGlobal: false})
+      {this.isGlobal: false})
       : _inMemory = true {
     _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
     _lockFile = _packageGraph.lockFile;
@@ -180,9 +182,11 @@ class Entrypoint {
   /// any directory that might contain an entrypoint.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
-  Future acquireDependencies(SolveType type, {List<String> useLatest,
-      bool dryRun: false, bool precompile: true, bool packagesDir: false})
-      async {
+  Future acquireDependencies(SolveType type,
+      {List<String> useLatest,
+      bool dryRun: false,
+      bool precompile: true,
+      bool packagesDir: false}) async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
     if (!result.succeeded) throw result.error;
@@ -201,8 +205,8 @@ class Entrypoint {
       deleteEntry(packagesPath);
     }
 
-    await Future.wait(result.packages
-        .map((id) => _get(id, packagesDir: packagesDir)));
+    await Future
+        .wait(result.packages.map((id) => _get(id, packagesDir: packagesDir)));
     _saveLockFile(result);
 
     if (packagesDir) _linkSelf();
@@ -248,10 +252,10 @@ class Entrypoint {
 
     try {
       await log.progress("Precompiling dependencies", () async {
-        var packagesToLoad =
-            unionAll(dependenciesToPrecompile.map(
-                packageGraph.transitiveDependencies))
-            .map((package) => package.name).toSet();
+        var packagesToLoad = unionAll(dependenciesToPrecompile
+                .map(packageGraph.transitiveDependencies))
+            .map((package) => package.name)
+            .toSet();
 
         var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
             packages: packagesToLoad, useDart2JS: false);
@@ -273,7 +277,8 @@ class Entrypoint {
         }));
 
         log.message("Precompiled " +
-            toSentence(ordered(dependenciesToPrecompile).map(log.bold)) + ".");
+            toSentence(ordered(dependenciesToPrecompile).map(log.bold)) +
+            ".");
       });
     } catch (_) {
       // TODO(nweiz): When barback does a better job of associating errors with
@@ -291,20 +296,26 @@ class Entrypoint {
   /// If [changed] is passed, only dependencies whose contents might be changed
   /// if one of the given packages changes will be returned.
   Set<String> _dependenciesToPrecompile({Set<String> changed}) {
-    return packageGraph.packages.values.where((package) {
-      if (package.pubspec.transformers.isEmpty) return false;
-      if (packageGraph.isPackageMutable(package.name)) return false;
-      if (!dirExists(p.join(_precompiledDepsPath, package.name))) return true;
-      if (changed == null) return true;
+    return packageGraph.packages.values
+        .where((package) {
+          if (package.pubspec.transformers.isEmpty) return false;
+          if (packageGraph.isPackageMutable(package.name)) return false;
+          if (!dirExists(p.join(_precompiledDepsPath, package.name)))
+            return true;
+          if (changed == null) return true;
 
-      /// Only recompile [package] if any of its transitive dependencies have
-      /// changed. We check all transitive dependencies because it's possible
-      /// that a transformer makes decisions based on their contents.
-      return overlaps(
-          packageGraph.transitiveDependencies(package.name)
-              .map((package) => package.name).toSet(),
-          changed);
-    }).map((package) => package.name).toSet();
+          /// Only recompile [package] if any of its transitive dependencies have
+          /// changed. We check all transitive dependencies because it's possible
+          /// that a transformer makes decisions based on their contents.
+          return overlaps(
+              packageGraph
+                  .transitiveDependencies(package.name)
+                  .map((package) => package.name)
+                  .toSet(),
+              changed);
+        })
+        .map((package) => package.name)
+        .toSet();
   }
 
   /// Deletes outdated precompiled dependencies.
@@ -324,7 +335,8 @@ class Entrypoint {
     // Also delete any cached dependencies that should no longer be cached.
     for (var subdir in listDir(_precompiledDepsPath)) {
       var package = packageGraph.packages[p.basename(subdir)];
-      if (package == null || package.pubspec.transformers.isEmpty ||
+      if (package == null ||
+          package.pubspec.transformers.isEmpty ||
           packageGraph.isPackageMutable(package.name)) {
         deleteEntry(subdir);
       }
@@ -360,8 +372,8 @@ class Entrypoint {
 
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
-      if (packagesToLoad.every(
-          (package) => package.pubspec.transformers.isEmpty)) {
+      if (packagesToLoad
+          .every((package) => package.pubspec.transformers.isEmpty)) {
         await _precompileExecutablesWithoutBarback(executables);
       } else {
         await _precompileExecutablesWithBarback(executables, packagesToLoad);
@@ -380,8 +392,7 @@ class Entrypoint {
         url = url.replace(path: p.url.join(url.path, id.path));
         return dart.snapshot(
             url, p.join(dir, p.url.basename(id.path) + '.snapshot'),
-            packagesFile: p.toUri(packagesFile),
-            id: id);
+            packagesFile: p.toUri(packagesFile), id: id);
       }));
     }));
   }
@@ -391,9 +402,9 @@ class Entrypoint {
   //// The [packagesToLoad] set should include all packages that are
   //// transitively imported by [executables].
   Future _precompileExecutablesWithBarback(
-      Map<String, List<AssetId>> executables, Set<Package> packagesToLoad) async {
-    var executableIds = unionAll(
-        executables.values.map((ids) => ids.toSet()));
+      Map<String, List<AssetId>> executables,
+      Set<Package> packagesToLoad) async {
+    var executableIds = unionAll(executables.values.map((ids) => ids.toSet()));
     var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
         packages: packagesToLoad.map((package) => package.name),
         entrypoints: executableIds,
@@ -409,7 +420,6 @@ class Entrypoint {
           executableIds: executables[package]);
     }));
   }
-      
 
   /// Deletes outdated cached executable snapshots.
   ///
@@ -442,7 +452,8 @@ class Entrypoint {
       var package = p.basename(entry);
       if (!packageGraph.packages.containsKey(package) ||
           packageGraph.isPackageMutable(package) ||
-          packageGraph.transitiveDependencies(package)
+          packageGraph
+              .transitiveDependencies(package)
               .any((dep) => changed.contains(dep.name))) {
         deleteEntry(entry);
       }
@@ -466,9 +477,10 @@ class Entrypoint {
     // executable will save us a few IO operations over checking each one. If
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
-    var executablesExist = executables.every((executable) =>
-        fileExists(p.join(_snapshotPath, packageName,
-            "${p.url.basename(executable.path)}.snapshot")));
+    var executablesExist = executables.every((executable) => fileExists(p.join(
+        _snapshotPath,
+        packageName,
+        "${p.url.basename(executable.path)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
@@ -516,8 +528,7 @@ class Entrypoint {
     var lockFileModified = new File(lockFilePath).lastModifiedSync();
 
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified) ||
-        hasPathDependencies) {
+    if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
       _assertLockFileUpToDate();
       if (_arePackagesAvailable()) {
         touchedLockFile = true;
@@ -555,8 +566,8 @@ class Entrypoint {
     // `pub run` non-Flutter tools even in a Flutter app.
     var flutterSdkConstraint = _flutterSdkConstraint.firstMatch(lockFileText);
     if (flutterSdkConstraint != null && flutter.isAvailable) {
-      var parsedConstraint = new VersionConstraint.parse(
-          flutterSdkConstraint[1]);
+      var parsedConstraint =
+          new VersionConstraint.parse(flutterSdkConstraint[1]);
 
       if (!parsedConstraint.allows(flutter.version)) {
         dataError("Flutter ${flutter.version} is incompatible with your "
@@ -634,8 +645,7 @@ class Entrypoint {
   /// not in the lockfile or that don't match what's in there.
   bool _isPackagesFileUpToDate() {
     var packages = packages_file.parse(
-        new File(packagesFile).readAsBytesSync(),
-        p.toUri(packagesFile));
+        new File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
 
     return lockFile.packages.values.every((lockFileId) {
       // It's very unlikely that the lockfile is invalid here, but it's not
@@ -656,15 +666,14 @@ class Entrypoint {
       var source = cache.source(lockFileId.source);
 
       // Get the dirname of the .packages path, since it's pointing to lib/.
-      var packagesFilePath = p.dirname(
-          p.join(root.dir, p.fromUri(packagesFileUri)));
+      var packagesFilePath =
+          p.dirname(p.join(root.dir, p.fromUri(packagesFileUri)));
       var lockFilePath = p.join(root.dir, source.getDirectory(lockFileId));
 
       // For cached sources, make sure the directory exists and looks like a
       // package. This is also done by [_arePackagesAvailable] but that may not
       // be run if the lockfile is newer than the pubspec.
-      if (source is CachedSource &&
-          !dirExists(packagesFilePath) ||
+      if (source is CachedSource && !dirExists(packagesFilePath) ||
           !fileExists(p.join(packagesFilePath, "pubspec.yaml"))) {
         return false;
       }
@@ -711,7 +720,7 @@ class Entrypoint {
       _linkOrDeleteSecondaryPackageDirsRecursively(root.path(dir),
           packagesDir: packagesDir);
     }
- }
+  }
 
   /// If [packagesDir] is true, creates a symlink to the "packages" directory in
   /// [dir] and all its subdirectories.

@@ -12,17 +12,15 @@ main() {
   integration('runs a script in checked mode', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main() { int a = true; }")
-        ])
+        d.dir("bin", [d.file("script.dart", "main() { int a = true; }")])
       ]);
     });
 
     schedulePub(args: ["global", "activate", "foo"]);
 
     var pub = pubRun(global: true, args: ["--checked", "foo:script"]);
-    pub.stderr.expect(consumeThrough(contains(
-        "'bool' is not a subtype of type 'int' of 'a'")));
+    pub.stderr.expect(consumeThrough(
+        contains("'bool' is not a subtype of type 'int' of 'a'")));
     pub.shouldExit(255);
   });
 }

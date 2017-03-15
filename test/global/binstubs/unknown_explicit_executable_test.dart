@@ -13,18 +13,23 @@ main() {
     d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "executables": {
-          "one": "one"
-        }
+        "executables": {"one": "one"}
       }),
-      d.dir("bin", [
-        d.file("one.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("one.dart", "main() => print('ok');")])
     ]).create();
 
     var pub = startPub(args: [
-      "global", "activate", "--source", "path", "../foo",
-      "-x", "who", "-x", "one", "--executable", "wat"
+      "global",
+      "activate",
+      "--source",
+      "path",
+      "../foo",
+      "-x",
+      "who",
+      "-x",
+      "one",
+      "--executable",
+      "wat"
     ]);
 
     pub.stdout.expect(consumeThrough("Installed executable one."));

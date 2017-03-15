@@ -22,7 +22,9 @@ class DowngradeCommand extends PubCommand {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
 
-    argParser.addFlag('dry-run', abbr: 'n', negatable: false,
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('packages-dir',

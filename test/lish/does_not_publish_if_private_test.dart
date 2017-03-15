@@ -14,7 +14,8 @@ main() {
     pkg["publish_to"] = "none";
     d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    schedulePub(args: ["lish"],
+    schedulePub(
+        args: ["lish"],
         error: startsWith("A private package cannot be published."),
         exitCode: exit_codes.DATA);
   });

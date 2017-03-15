@@ -24,10 +24,10 @@ class GlobalRunCommand extends PubCommand {
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
   GlobalRunCommand() {
-    argParser.addFlag("checked", abbr: "c",
-        help: "Enable runtime type checks and assertions.");
-    argParser.addOption("mode", defaultsTo: "release",
-        help: 'Mode to run transformers in.');
+    argParser.addFlag("checked",
+        abbr: "c", help: "Enable runtime type checks and assertions.");
+    argParser.addOption("mode",
+        defaultsTo: "release", help: 'Mode to run transformers in.');
   }
 
   Future run() async {

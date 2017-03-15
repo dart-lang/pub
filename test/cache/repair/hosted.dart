@@ -24,24 +24,19 @@ main() {
     d.dir(cachePath, [
       d.dir('hosted', [
         d.async(globalServer.port.then((p) => d.dir('localhost%58$p', [
-          d.dir("foo-1.2.3", [
-            d.libPubspec("foo", "1.2.3"),
-            d.file("broken.txt")
-          ]),
-          d.dir("foo-1.2.5", [
-            d.libPubspec("foo", "1.2.5"),
-            d.file("broken.txt")
-          ]),
-          d.dir("bar-1.2.4", [
-            d.libPubspec("bar", "1.2.4"),
-            d.file("broken.txt")
-          ])
-        ])))
+              d.dir("foo-1.2.3",
+                  [d.libPubspec("foo", "1.2.3"), d.file("broken.txt")]),
+              d.dir("foo-1.2.5",
+                  [d.libPubspec("foo", "1.2.5"), d.file("broken.txt")]),
+              d.dir("bar-1.2.4",
+                  [d.libPubspec("bar", "1.2.4"), d.file("broken.txt")])
+            ])))
       ])
     ]).create();
 
     // Repair them.
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         output: '''
           Downloading bar 1.2.4...
           Downloading foo 1.2.3...
@@ -61,14 +56,15 @@ main() {
     d.dir(cachePath, [
       d.dir('hosted', [
         d.async(globalServer.port.then((p) => d.dir('localhost%58$p', [
-          d.dir("bar-1.2.4", [d.file("broken.txt")]),
-          d.dir("foo-1.2.3", [d.file("broken.txt")]),
-          d.dir("foo-1.2.5", [d.file("broken.txt")]),
-        ])))
+              d.dir("bar-1.2.4", [d.file("broken.txt")]),
+              d.dir("foo-1.2.3", [d.file("broken.txt")]),
+              d.dir("foo-1.2.5", [d.file("broken.txt")]),
+            ])))
       ])
     ]).create();
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
           contains('Could not find a file named "pubspec.yaml" in '),
@@ -96,14 +92,15 @@ main() {
     d.dir(cachePath, [
       d.dir('hosted', [
         d.async(globalServer.port.then((p) => d.dir('localhost%58$p', [
-          d.dir("bar-1.2.4", [d.file("pubspec.yaml", "{")]),
-          d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")]),
-          d.dir("foo-1.2.5", [d.file("pubspec.yaml", "{")]),
-        ])))
+              d.dir("bar-1.2.4", [d.file("pubspec.yaml", "{")]),
+              d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")]),
+              d.dir("foo-1.2.5", [d.file("pubspec.yaml", "{")]),
+            ])))
       ])
     ]).create();
 
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
           contains('Error on line 1, column 2 of '),

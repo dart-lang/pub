@@ -26,8 +26,7 @@ main() {
       return new shelf.Response.ok('{not json');
     });
 
-    pub.stderr.expect(emitsLines(
-        'Invalid server response:\n'
+    pub.stderr.expect(emitsLines('Invalid server response:\n'
         '{not json'));
     pub.shouldExit(1);
   });

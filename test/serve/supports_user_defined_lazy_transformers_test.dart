@@ -16,12 +16,10 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", LAZY_TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", LAZY_TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
     pubGet();
@@ -30,8 +28,7 @@ main() {
     server.stdout.expect('Build completed successfully');
 
     requestShouldSucceed("foo.out", "foo.out");
-    server.stdout.expect(emitsLines(
-        '[Info from LazyRewrite]:\n'
+    server.stdout.expect(emitsLines('[Info from LazyRewrite]:\n'
         'Rewriting myapp|web/foo.txt.'));
     endPubServe();
   });

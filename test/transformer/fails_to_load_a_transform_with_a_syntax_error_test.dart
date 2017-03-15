@@ -21,9 +21,9 @@ main() {
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", "syntax error")
-      ])])
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", "syntax error")])
+      ])
     ]).create();
 
     pubGet();

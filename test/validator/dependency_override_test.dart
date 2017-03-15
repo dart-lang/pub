@@ -15,17 +15,14 @@ Validator dependencyOverride(Entrypoint entrypoint) =>
     new DependencyOverrideValidator(entrypoint);
 
 main() {
-  integration('should consider a package valid if it has dev dependency '
+  integration(
+      'should consider a package valid if it has dev dependency '
       'overrides', () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dev_dependencies": {
-          "foo": "1.0.0"
-        },
-        "dependency_overrides": {
-          "foo": "<3.0.0"
-        }
+        "dev_dependencies": {"foo": "1.0.0"},
+        "dependency_overrides": {"foo": "<3.0.0"}
       })
     ]).create();
 
@@ -37,9 +34,7 @@ main() {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependency_overrides": {
-            "foo": "<3.0.0"
-          }
+          "dependency_overrides": {"foo": "<3.0.0"}
         })
       ]).create();
 
@@ -50,9 +45,7 @@ main() {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dev_dependencies": {
-            "foo": "1.0.0"
-          },
+          "dev_dependencies": {"foo": "1.0.0"},
           "dependency_overrides": {
             "foo": "<3.0.0",
             "bar": ">3.0.0",

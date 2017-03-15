@@ -56,13 +56,9 @@ main() {
       }),
       d.dir("lib", [
         d.file("lib.dart", LIB),
-        d.dir("src", [
-          d.file("transformer.dart", TRANSFORMER)
-        ])
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
       ]),
-      d.dir("bin", [
-        d.file("script.dart", SCRIPT)
-      ])
+      d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
     pubGet();

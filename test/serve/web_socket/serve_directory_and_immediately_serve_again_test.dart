@@ -11,16 +11,13 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  integration("binds a directory to a new port and immediately binds that "
+  integration(
+      "binds a directory to a new port and immediately binds that "
       "directory again", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("test", [
-        d.file("index.html", "<test body>")
-      ]),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("test", [d.file("index.html", "<test body>")]),
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();

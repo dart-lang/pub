@@ -11,10 +11,7 @@ main() {
   integration("creates binstubs for each executable in the pubspec", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "one": null,
-          "two-renamed": "second"
-        }
+        "executables": {"one": null, "two-renamed": "second"}
       }, contents: [
         d.dir("bin", [
           d.file("one.dart", "main(args) => print('one');"),
@@ -24,8 +21,9 @@ main() {
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"], output:
-        contains("Installed executables one and two-renamed."));
+    schedulePub(
+        args: ["global", "activate", "foo"],
+        output: contains("Installed executables one and two-renamed."));
 
     d.dir(cachePath, [
       d.dir("bin", [

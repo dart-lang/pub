@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("doesn't upgrade a locked pub server package with a new "
+  integration(
+      "doesn't upgrade a locked pub server package with a new "
       "compatible constraint", () {
     servePackages((builder) => builder.serve("foo", "1.0.0"));
 

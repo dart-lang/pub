@@ -53,8 +53,8 @@ class VersionQueue {
   /// This is asynchronous so that [current] can always be accessed
   /// synchronously. If there is no locked version, we need to get the list of
   /// versions asynchronously before we can determine what the first one is.
-  static Future<VersionQueue> create(PackageId locked,
-      PackageIdGenerator allowedGenerator) async {
+  static Future<VersionQueue> create(
+      PackageId locked, PackageIdGenerator allowedGenerator) async {
     var versions = new VersionQueue._(locked, allowedGenerator);
 
     // If there isn't a locked version, it needs to be calculated before we can

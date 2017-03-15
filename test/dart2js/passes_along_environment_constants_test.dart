@@ -13,12 +13,18 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {"environment": {'CONSTANT': 'true'}}
-        }]
+        "transformers": [
+          {
+            "\$dart2js": {
+              "environment": {'CONSTANT': 'true'}
+            }
+          }
+        ]
       }),
       d.dir("web", [
-        d.file("main.dart", """
+        d.file(
+            "main.dart",
+            """
 void main() {
   if (const bool.fromEnvironment('CONSTANT')) {
     print("hello");

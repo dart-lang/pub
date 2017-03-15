@@ -17,16 +17,12 @@ main() {
     });
 
     // Create the first lockfile.
-    d.appDir({
-      "foo": "2.0.0"
-    }).create();
+    d.appDir({"foo": "2.0.0"}).create();
 
     pubGet();
 
     // Change the pubspec.
-    d.appDir({
-      "foo": "any"
-    }).create();
+    d.appDir({"foo": "any"}).create();
 
     // Also delete the "packages" directory.
     schedule(() {
@@ -34,10 +30,10 @@ main() {
     });
 
     // Do the dry run.
-    pubDowngrade(args: ["--dry-run"], output: allOf([
-      contains("< foo 1.0.0"),
-      contains("Would change 1 dependency.")
-    ]));
+    pubDowngrade(
+        args: ["--dry-run"],
+        output: allOf(
+            [contains("< foo 1.0.0"), contains("Would change 1 dependency.")]));
 
     d.dir(appPath, [
       // The lockfile should be unmodified.

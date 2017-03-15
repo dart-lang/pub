@@ -9,16 +9,13 @@ import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  integration("binds a directory to a new port and immediately requests an "
+  integration(
+      "binds a directory to a new port and immediately requests an "
       "asset URL from that server", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("test", [
-        d.file("index.html", "<test body>")
-      ]),
-      d.dir("web", [
-        d.file("index.html", "<body>")
-      ])
+      d.dir("test", [d.file("index.html", "<test body>")]),
+      d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
     pubGet();
@@ -27,7 +24,9 @@ main() {
     // Bind the new directory.
     expect(webSocketRequest("serveDirectory", {"path": "test"}), completes);
 
-    expectWebSocketResult("pathToUrls", {"path": "test/index.html"}, {
+    expectWebSocketResult("pathToUrls", {
+      "path": "test/index.html"
+    }, {
       "urls": [endsWith("/index.html")]
     });
 

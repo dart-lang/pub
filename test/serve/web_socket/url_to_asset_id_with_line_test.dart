@@ -10,23 +10,17 @@ main() {
   integration("provides output line number if given source one", () {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("main.dart", "main")
-      ])
+      d.dir("web", [d.file("main.dart", "main")])
     ]).create();
 
     pubGet();
     pubServe();
 
     // Paths in web/.
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "main.dart"),
-      "line": 12345
-    }, {
-      "package": "myapp",
-      "path": "web/main.dart",
-      "line": 12345
-    });
+    expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "main.dart"), "line": 12345},
+        {"package": "myapp", "path": "web/main.dart", "line": 12345});
 
     endPubServe();
   });

@@ -12,7 +12,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator directory(Entrypoint entrypoint) =>
-  new DirectoryValidator(entrypoint);
+    new DirectoryValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {
@@ -28,12 +28,19 @@ main() {
     });
   });
 
-  group('should consider a package invalid if it has a top-level directory '
+  group(
+      'should consider a package invalid if it has a top-level directory '
       'named', () {
     setUp(d.validPackage.create);
 
     var names = [
-      "benchmarks", "docs", "examples", "sample", "samples", "tests", "tools"
+      "benchmarks",
+      "docs",
+      "examples",
+      "sample",
+      "samples",
+      "tests",
+      "tools"
     ];
 
     for (var name in names) {

@@ -11,12 +11,11 @@ main() {
   integration('checks out and upgrades a package from Git', () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
@@ -30,21 +29,16 @@ main() {
     ]).validate();
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
-    d.git('foo.git', [
-      d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    d.git('foo.git',
+        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
     pubUpgrade(
-        args: ["--packages-dir"],
-        output: contains("Changed 1 dependency!"));
+        args: ["--packages-dir"], output: contains("Changed 1 dependency!"));
 
     // When we download a new version of the git package, we should re-use the
     // git/cache directory but create a new git/ directory.
@@ -57,9 +51,7 @@ main() {
     ]).validate();
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo 2";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')])
     ]).validate();
   });
 }

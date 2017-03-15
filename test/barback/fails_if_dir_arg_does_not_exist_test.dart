@@ -13,9 +13,7 @@ main() {
   setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bar", [
-        d.file("file.txt", "contents")
-      ])
+      d.dir("bar", [d.file("file.txt", "contents")])
     ]).create();
   });
 

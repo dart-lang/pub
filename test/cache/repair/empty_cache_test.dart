@@ -7,7 +7,8 @@ import '../../test_pub.dart';
 main() {
   integration('does nothing if the cache is empty', () {
     // Repair them.
-    schedulePub(args: ["cache", "repair"],
+    schedulePub(
+        args: ["cache", "repair"],
         output: "No packages in cache, so nothing to repair.");
   });
 }

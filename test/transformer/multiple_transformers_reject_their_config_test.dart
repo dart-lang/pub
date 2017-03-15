@@ -25,33 +25,42 @@ class RejectConfigTransformer extends Transformer {
 """;
 
 main() {
-    integration("multiple transformers in the same phase reject their "
-        "configurations", () {
-      serveBarback();
+  integration(
+      "multiple transformers in the same phase reject their "
+      "configurations", () {
+    serveBarback();
 
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [[
-            {"myapp/src/transformer": {'foo': 'bar'}},
-            {"myapp/src/transformer": {'baz': 'bang'}},
-            {"myapp/src/transformer": {'qux': 'fblthp'}}
-          ]],
-          "dependencies": {"barback": "any"}
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)
-        ])])
-      ]).create();
+    d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          [
+            {
+              "myapp/src/transformer": {'foo': 'bar'}
+            },
+            {
+              "myapp/src/transformer": {'baz': 'bang'}
+            },
+            {
+              "myapp/src/transformer": {'qux': 'fblthp'}
+            }
+          ]
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)])
+      ])
+    ]).create();
 
-      pubGet();
-      // We should see three instances of the error message, once for each
-      // use of the transformer.
-      var pub = startPubServe();
-      for (var i = 0; i < 3; i++) {
-        pub.stderr.expect(consumeThrough(endsWith('Error loading transformer: '
-            'I hate these settings!')));
-      }
-      pub.shouldExit(1);
-    });
+    pubGet();
+    // We should see three instances of the error message, once for each
+    // use of the transformer.
+    var pub = startPubServe();
+    for (var i = 0; i < 3; i++) {
+      pub.stderr.expect(consumeThrough(endsWith('Error loading transformer: '
+          'I hate these settings!')));
+    }
+    pub.shouldExit(1);
+  });
 }

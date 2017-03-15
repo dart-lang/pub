@@ -32,13 +32,15 @@ main() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.txt'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt')
-        ]));
+        expect(
+            entrypoint.root.listFiles(),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, 'file1.txt'),
+              p.join(root, 'file2.txt'),
+              p.join(root, 'subdir', 'subfile1.txt'),
+              p.join(root, 'subdir', 'subfile2.txt')
+            ]));
       });
     });
 
@@ -65,13 +67,15 @@ main() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.txt'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt')
-        ]));
+        expect(
+            entrypoint.root.listFiles(),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, 'file1.txt'),
+              p.join(root, 'file2.txt'),
+              p.join(root, 'subdir', 'subfile1.txt'),
+              p.join(root, 'subdir', 'subfile2.txt')
+            ]));
       });
     });
 
@@ -87,26 +91,31 @@ main() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, '.gitignore'),
-          p.join(root, 'file2.text'),
-          p.join(root, 'subdir', 'subfile2.text')
-        ]));
+        expect(
+            entrypoint.root.listFiles(useGitIgnore: true),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, '.gitignore'),
+              p.join(root, 'file2.text'),
+              p.join(root, 'subdir', 'subfile2.text')
+            ]));
       });
 
       schedule(() {
-        expect(entrypoint.root.listFiles(), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.text'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.text')
-        ]));
+        expect(
+            entrypoint.root.listFiles(),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, 'file1.txt'),
+              p.join(root, 'file2.text'),
+              p.join(root, 'subdir', 'subfile1.txt'),
+              p.join(root, 'subdir', 'subfile2.text')
+            ]));
       });
     });
 
-    integration("ignores files that are gitignored even if the package isn't "
+    integration(
+        "ignores files that are gitignored even if the package isn't "
         "the repo root", () {
       d.dir(appPath, [
         d.dir('sub', [
@@ -124,22 +133,26 @@ main() {
       scheduleEntrypoint(p.join(appPath, 'sub'));
 
       schedule(() {
-        expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, '.gitignore'),
-          p.join(root, 'file2.text'),
-          p.join(root, 'subdir', 'subfile2.text')
-        ]));
+        expect(
+            entrypoint.root.listFiles(useGitIgnore: true),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, '.gitignore'),
+              p.join(root, 'file2.text'),
+              p.join(root, 'subdir', 'subfile2.text')
+            ]));
       });
 
       schedule(() {
-        expect(entrypoint.root.listFiles(), unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.text'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.text')
-        ]));
+        expect(
+            entrypoint.root.listFiles(),
+            unorderedEquals([
+              p.join(root, 'pubspec.yaml'),
+              p.join(root, 'file1.txt'),
+              p.join(root, 'file2.text'),
+              p.join(root, 'subdir', 'subfile1.txt'),
+              p.join(root, 'subdir', 'subfile2.text')
+            ]));
       });
     });
 
@@ -159,22 +172,26 @@ main() {
 
       integration("ignores its .gitignore without useGitIgnore", () {
         schedule(() {
-          expect(entrypoint.root.listFiles(), unorderedEquals([
-            p.join(root, 'pubspec.yaml'),
-            p.join(root, 'submodule', 'file1.txt'),
-            p.join(root, 'submodule', 'file2.text'),
-          ]));
+          expect(
+              entrypoint.root.listFiles(),
+              unorderedEquals([
+                p.join(root, 'pubspec.yaml'),
+                p.join(root, 'submodule', 'file1.txt'),
+                p.join(root, 'submodule', 'file2.text'),
+              ]));
         });
       });
 
       integration("respects its .gitignore with useGitIgnore", () {
         schedule(() {
-          expect(entrypoint.root.listFiles(useGitIgnore: true), unorderedEquals([
-            p.join(root, '.gitmodules'),
-            p.join(root, 'pubspec.yaml'),
-            p.join(root, 'submodule', '.gitignore'),
-            p.join(root, 'submodule', 'file2.text'),
-          ]));
+          expect(
+              entrypoint.root.listFiles(useGitIgnore: true),
+              unorderedEquals([
+                p.join(root, '.gitmodules'),
+                p.join(root, 'pubspec.yaml'),
+                p.join(root, 'submodule', '.gitignore'),
+                p.join(root, 'submodule', 'file2.text'),
+              ]));
         });
       });
     });
@@ -203,8 +220,8 @@ void commonTests() {
     schedule(() => deleteEntry(p.join(sandboxDir, appPath, 'target')));
 
     schedule(() {
-      expect(entrypoint.root.listFiles(),
-          equals([p.join(root, 'pubspec.yaml')]));
+      expect(
+          entrypoint.root.listFiles(), equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -215,8 +232,8 @@ void commonTests() {
     ]).create();
 
     schedule(() {
-      expect(entrypoint.root.listFiles(),
-          equals([p.join(root, 'pubspec.yaml')]));
+      expect(
+          entrypoint.root.listFiles(), equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -229,8 +246,8 @@ void commonTests() {
     ]).create();
 
     schedule(() {
-      expect(entrypoint.root.listFiles(),
-          equals([p.join(root, 'pubspec.yaml')]));
+      expect(
+          entrypoint.root.listFiles(), equals([p.join(root, 'pubspec.yaml')]));
     });
   });
 
@@ -242,10 +259,12 @@ void commonTests() {
     ]).create();
 
     schedule(() {
-      expect(entrypoint.root.listFiles(), unorderedEquals([
-        p.join(root, 'pubspec.yaml'),
-        p.join(root, 'pubspec.lock', 'file.txt')
-      ]));
+      expect(
+          entrypoint.root.listFiles(),
+          unorderedEquals([
+            p.join(root, 'pubspec.yaml'),
+            p.join(root, 'pubspec.lock', 'file.txt')
+          ]));
     });
   });
 
@@ -265,13 +284,14 @@ void commonTests() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(beneath: p.join(root, 'subdir')),
+        expect(
+            entrypoint.root.listFiles(beneath: p.join(root, 'subdir')),
             unorderedEquals([
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt'),
-          p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
-          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
-        ]));
+              p.join(root, 'subdir', 'subfile1.txt'),
+              p.join(root, 'subdir', 'subfile2.txt'),
+              p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
+              p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
+            ]));
       });
     });
 
@@ -290,13 +310,14 @@ void commonTests() {
       ]).create();
 
       schedule(() {
-        expect(entrypoint.root.listFiles(beneath: p.join(root, 'packages')),
+        expect(
+            entrypoint.root.listFiles(beneath: p.join(root, 'packages')),
             unorderedEquals([
-          p.join(root, 'packages', 'subfile1.txt'),
-          p.join(root, 'packages', 'subfile2.txt'),
-          p.join(root, 'packages', 'subsubdir', 'subsubfile1.txt'),
-          p.join(root, 'packages', 'subsubdir', 'subsubfile2.txt')
-        ]));
+              p.join(root, 'packages', 'subfile1.txt'),
+              p.join(root, 'packages', 'subfile2.txt'),
+              p.join(root, 'packages', 'subsubdir', 'subsubfile1.txt'),
+              p.join(root, 'packages', 'subsubdir', 'subsubfile2.txt')
+            ]));
       });
     });
   });

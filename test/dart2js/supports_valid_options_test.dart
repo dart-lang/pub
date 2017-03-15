@@ -13,26 +13,26 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {
-            "commandLineOptions": ["--enable-diagnostic-colors"],
-            "checked": true,
-            "csp": true,
-            "minify": true,
-            "verbose": true,
-            "environment": {"name": "value"},
-            // TODO(nweiz): Re-add these when sdk#24653 is fixed.
-            // "suppressWarnings": true,
-            // "suppressHints": true,
-            "suppressPackageWarnings": false,
-            "terse": true,
-            "sourceMaps": false
+        "transformers": [
+          {
+            "\$dart2js": {
+              "commandLineOptions": ["--enable-diagnostic-colors"],
+              "checked": true,
+              "csp": true,
+              "minify": true,
+              "verbose": true,
+              "environment": {"name": "value"},
+              // TODO(nweiz): Re-add these when sdk#24653 is fixed.
+              // "suppressWarnings": true,
+              // "suppressHints": true,
+              "suppressPackageWarnings": false,
+              "terse": true,
+              "sourceMaps": false
+            }
           }
-        }]
+        ]
       }),
-      d.dir("web", [
-        d.file("main.dart", "void main() => print('Hello!');")
-      ])
+      d.dir("web", [d.file("main.dart", "void main() => print('Hello!');")])
     ]).create();
 
     pubGet();

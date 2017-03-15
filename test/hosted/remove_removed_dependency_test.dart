@@ -17,18 +17,13 @@ main() {
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "1.0.0",
-        "bar": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "1.0.0", "bar": "1.0.0"}).validate();
 
       d.appDir({"foo": "any"}).create();
 
       pubCommand(command);
 
-      d.appPackagesFile({
-        "foo": "1.0.0"
-      }).validate();
+      d.appPackagesFile({"foo": "1.0.0"}).validate();
     });
   });
 }

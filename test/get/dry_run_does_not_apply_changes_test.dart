@@ -13,14 +13,12 @@ main() {
       builder.serve("foo", "1.0.0");
     });
 
-    d.appDir({
-      "foo": "1.0.0"
-    }).create();
+    d.appDir({"foo": "1.0.0"}).create();
 
-    pubGet(args: ["--dry-run"], output: allOf([
-      contains("+ foo 1.0.0"),
-      contains("Would change 1 dependency.")
-    ]));
+    pubGet(
+        args: ["--dry-run"],
+        output: allOf(
+            [contains("+ foo 1.0.0"), contains("Would change 1 dependency.")]));
 
     d.dir(appPath, [
       // The lockfile should not be created.

@@ -70,7 +70,8 @@ void basicGraph() {
     expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'shared': '3.6.9'});
   });
 
-  integration('shared dependency where dependent version in turn affects other '
+  integration(
+      'shared dependency where dependent version in turn affects other '
       'dependencies', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0');
@@ -136,7 +137,7 @@ void withLockFile() {
       builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
       builder.serve('bar', '1.0.0');
       builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2'); 
+      builder.serve('bar', '1.0.2');
     });
 
     d.appDir({'foo': '1.0.1'}).create();
@@ -164,7 +165,8 @@ void withLockFile() {
     expectResolves(result: {'foo': '1.0.2', 'bar': '1.0.2'});
   });
 
-  integration('unlocks dependencies if necessary to ensure that a new '
+  integration(
+      'unlocks dependencies if necessary to ensure that a new '
       'dependency is satisfied', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
@@ -210,14 +212,16 @@ void rootDependency() {
   integration('with mismatched sources', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
-      builder.serve('bar', '1.0.0', deps: {'myapp': {'git': 'nowhere'}});
+      builder.serve('bar', '1.0.0', deps: {
+        'myapp': {'git': 'nowhere'}
+      });
     });
 
     d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     expectResolves(
         error: "Incompatible dependencies on myapp:\n"
-               "- bar 1.0.0 depends on it from source git\n"
-               "- foo 1.0.0 depends on it from source hosted");
+            "- bar 1.0.0 depends on it from source git\n"
+            "- foo 1.0.0 depends on it from source hosted");
   });
 
   integration('with wrong version', () {
@@ -228,7 +232,7 @@ void rootDependency() {
     d.appDir({'foo': '1.0.0'}).create();
     expectResolves(
         error: "Package myapp has no versions that match >0.0.0 derived from:\n"
-               "- foo 1.0.0 depends on version >0.0.0");
+            "- foo 1.0.0 depends on version >0.0.0");
   });
 }
 
@@ -236,16 +240,13 @@ void devDependency() {
   integration("includes root package's dev dependencies", () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0');
-      builder.serve('bar', '1.0.0'); 
+      builder.serve('bar', '1.0.0');
     });
 
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {
-          'foo': '1.0.0',
-          'bar': '1.0.0'
-        }
+        'dev_dependencies': {'foo': '1.0.0', 'bar': '1.0.0'}
       })
     ]).create();
 
@@ -264,7 +265,7 @@ void devDependency() {
         'dev_dependencies': {'foo': '1.0.0'}
       })
     ]).create();
-    
+
     expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
@@ -290,8 +291,8 @@ void unsolvable() {
     d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
     expectResolves(
         error: 'Package foo has no versions that match >=1.0.0 <2.0.0 derived '
-                 'from:\n'
-               '- myapp depends on version >=1.0.0 <2.0.0');
+            'from:\n'
+            '- myapp depends on version >=1.0.0 <2.0.0');
   });
 
   integration('no version that matches combined constraint', () {
@@ -299,15 +300,15 @@ void unsolvable() {
       builder.serve('foo', '1.0.0', deps: {'shared': '>=2.0.0 <3.0.0'});
       builder.serve('bar', '1.0.0', deps: {'shared': '>=2.9.0 <4.0.0'});
       builder.serve('shared', '2.5.0');
-      builder.serve('shared', '3.5.0'); 
+      builder.serve('shared', '3.5.0');
     });
 
     d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     expectResolves(
         error: 'Package shared has no versions that match >=2.9.0 <3.0.0 '
-                 'derived from:\n'
-               '- bar 1.0.0 depends on version >=2.9.0 <4.0.0\n'
-               '- foo 1.0.0 depends on version >=2.0.0 <3.0.0');
+            'derived from:\n'
+            '- bar 1.0.0 depends on version >=2.9.0 <4.0.0\n'
+            '- foo 1.0.0 depends on version >=2.0.0 <3.0.0');
   });
 
   integration('disjoint constraints', () {
@@ -315,14 +316,14 @@ void unsolvable() {
       builder.serve('foo', '1.0.0', deps: {'shared': '<=2.0.0'});
       builder.serve('bar', '1.0.0', deps: {'shared': '>3.0.0'});
       builder.serve('shared', '2.0.0');
-      builder.serve('shared', '4.0.0'); 
+      builder.serve('shared', '4.0.0');
     });
 
     d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     expectResolves(
         error: 'Incompatible version constraints on shared:\n'
-               '- bar 1.0.0 depends on version >3.0.0\n'
-               '- foo 1.0.0 depends on version <=2.0.0');
+            '- bar 1.0.0 depends on version >3.0.0\n'
+            '- foo 1.0.0 depends on version <=2.0.0');
   });
 
   integration('mismatched descriptions', () {
@@ -342,7 +343,8 @@ void unsolvable() {
     });
 
     d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    expectResolves(error: allOf([
+    expectResolves(
+        error: allOf([
       contains('Incompatible dependencies on shared:'),
       contains('- bar 1.0.0 depends on it with description'),
       contains('- foo 1.0.0 depends on it with description "shared"')
@@ -363,8 +365,8 @@ void unsolvable() {
     d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     expectResolves(
         error: 'Incompatible dependencies on shared:\n'
-               '- bar 1.0.0 depends on it from source path\n'
-               '- foo 1.0.0 depends on it from source hosted');
+            '- bar 1.0.0 depends on it from source path\n'
+            '- foo 1.0.0 depends on it from source hosted');
   });
 
   integration('no valid solution', () {
@@ -378,8 +380,8 @@ void unsolvable() {
     d.appDir({'a': 'any', 'b': 'any'}).create();
     expectResolves(
         error: 'Package a has no versions that match 2.0.0 derived from:\n'
-               '- b 1.0.0 depends on version 2.0.0\n'
-               '- myapp depends on version any',
+            '- b 1.0.0 depends on version 2.0.0\n'
+            '- myapp depends on version any',
         tries: 2);
   });
 
@@ -393,43 +395,39 @@ void unsolvable() {
     d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
     expectResolves(
         error: 'Package b has no versions that match >1.0.0 derived from:\n'
-               '- myapp depends on version >1.0.0');
+            '- myapp depends on version >1.0.0');
   });
 
   // This is a regression test for #18300.
   integration('issue 18300', () {
     servePackages((builder) {
       builder.serve('analyzer', '0.12.2');
-      builder.serve('angular', '0.10.0', deps: {
-        'di': '>=0.0.32 <0.1.0',
-        'collection': '>=0.9.1 <1.0.0'
-      });
-      builder.serve('angular', '0.9.11', deps: {
-        'di': '>=0.0.32 <0.1.0',
-        'collection': '>=0.9.1 <1.0.0'
-      });
-      builder.serve('angular', '0.9.10', deps: {
-        'di': '>=0.0.32 <0.1.0',
-        'collection': '>=0.9.1 <1.0.0'
-      });
+      builder.serve('angular', '0.10.0',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
+      builder.serve('angular', '0.9.11',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
+      builder.serve('angular', '0.9.10',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
       builder.serve('collection', '0.9.0');
       builder.serve('collection', '0.9.1');
       builder.serve('di', '0.0.37', deps: {'analyzer': '>=0.13.0 <0.14.0'});
-      builder.serve('di', '0.0.36', deps: {'analyzer': '>=0.13.0 <0.14.0'}); 
+      builder.serve('di', '0.0.36', deps: {'analyzer': '>=0.13.0 <0.14.0'});
     });
 
     d.appDir({'angular': 'any', 'collection': 'any'}).create();
     expectResolves(
         error: 'Package analyzer has no versions that match >=0.13.0 <0.14.0 '
-                 'derived from:\n'
-               '- di 0.0.36 depends on version >=0.13.0 <0.14.0',
+            'derived from:\n'
+            '- di 0.0.36 depends on version >=0.13.0 <0.14.0',
         tries: 2);
   });
 }
 
 void badSource() {
   integration('fail if the root package has a bad source in dep', () {
-    d.appDir({'foo': {'bad': 'any'}}).create();
+    d.appDir({
+      'foo': {'bad': 'any'}
+    }).create();
     expectResolves(
         error: 'Package myapp depends on foo from unknown source "bad".');
   });
@@ -438,7 +436,9 @@ void badSource() {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'foo': {'bad': 'any'}}
+        'dev_dependencies': {
+          'foo': {'bad': 'any'}
+        }
       })
     ]).create();
 
@@ -448,9 +448,15 @@ void badSource() {
 
   integration('fail if all versions have bad source in dep', () {
     servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': {'bad': 'any'}});
-      builder.serve('foo', '1.0.1', deps: {'baz': {'bad': 'any'}});
-      builder.serve('foo', '1.0.2', deps: {'bang': {'bad': 'any'}});
+      builder.serve('foo', '1.0.0', deps: {
+        'bar': {'bad': 'any'}
+      });
+      builder.serve('foo', '1.0.1', deps: {
+        'baz': {'bad': 'any'}
+      });
+      builder.serve('foo', '1.0.2', deps: {
+        'bang': {'bad': 'any'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
@@ -461,8 +467,12 @@ void badSource() {
   integration('ignore versions with bad source in dep', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('foo', '1.0.1', deps: {'bar': {'bad': 'any'}});
-      builder.serve('foo', '1.0.2', deps: {'bar': {'bad': 'any'}});
+      builder.serve('foo', '1.0.1', deps: {
+        'bar': {'bad': 'any'}
+      });
+      builder.serve('foo', '1.0.2', deps: {
+        'bar': {'bad': 'any'}
+      });
       builder.serve('bar', '1.0.0');
     });
 
@@ -497,8 +507,7 @@ void backtracking() {
     });
 
     d.appDir({'a': 'any'}).create();
-    expectResolves(
-        result: {'a': '2.0.0', 'b': '1.0.0', 'c': '2.0.0'});
+    expectResolves(result: {'a': '2.0.0', 'b': '1.0.0', 'c': '2.0.0'});
   });
 
   // Only one version of baz, so foo and bar will have to downgrade until they
@@ -516,8 +525,7 @@ void backtracking() {
 
     d.appDir({'foo': 'any'}).create();
     expectResolves(
-        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'},
-        tries: 3);
+        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}, tries: 3);
   });
 
   // This ensures it doesn't exhaustively search all versions of b when it's
@@ -536,8 +544,7 @@ void backtracking() {
 
     d.appDir({'a': 'any', 'b': 'any'}).create();
     expectResolves(
-        result: {'a': '1.0.0', 'b': '3.0.0', 'c': '1.0.0'},
-        tries: 2);
+        result: {'a': '1.0.0', 'b': '3.0.0', 'c': '1.0.0'}, tries: 2);
   });
 
   // Tests that the backjumper will jump past unrelated selections when a
@@ -584,7 +591,9 @@ void backtracking() {
       builder.serve('a', '1.0.0');
       builder.serve('b', '1.0.0', deps: {'a': 'any'});
       builder.serve('b', '2.0.0', deps: {
-        'a': {'hosted': {'name': 'a', 'url': otherServer.url}}
+        'a': {
+          'hosted': {'name': 'a', 'url': otherServer.url}
+        }
       });
       builder.serve('c', '1.0.0');
       builder.serve('c', '2.0.0');
@@ -611,14 +620,14 @@ void backtracking() {
       builder.serve('c', '2.0.0');
       builder.serve('c', '3.0.0');
       builder.serve('c', '4.0.0');
-      builder.serve('c', '5.0.0'); 
+      builder.serve('c', '5.0.0');
     });
 
     d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     expectResolves(
         error: 'Incompatible dependencies on a:\n'
-               '- b 1.0.0 depends on it from source path\n'
-               '- myapp depends on it from source hosted');
+            '- b 1.0.0 depends on it from source path\n'
+            '- myapp depends on it from source hosted');
   });
 
   integration('failing backjump to conflicting description', () {
@@ -629,7 +638,9 @@ void backtracking() {
     servePackages((builder) {
       builder.serve('a', '1.0.0');
       builder.serve('b', '1.0.0', deps: {
-        'a': {'hosted': {'name': 'a', 'url': otherServer.url}}
+        'a': {
+          'hosted': {'name': 'a', 'url': otherServer.url}
+        }
       });
       builder.serve('c', '1.0.0');
       builder.serve('c', '2.0.0');
@@ -639,7 +650,8 @@ void backtracking() {
     });
 
     d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
-    expectResolves(error: allOf([
+    expectResolves(
+        error: allOf([
       contains('Incompatible dependencies on a:'),
       contains('- b 1.0.0 depends on it with description'),
       contains('- myapp depends on it with description "a"')
@@ -685,13 +697,13 @@ void backtracking() {
       builder.serve('bar', '1.0.0');
       builder.serve('bar', '2.0.0');
       builder.serve('bar', '3.0.0');
-      builder.serve('none', '1.0.0'); 
+      builder.serve('none', '1.0.0');
     });
 
     d.appDir({"foo": ">2.0.0", "bar": "any"}).create();
     expectResolves(
         error: 'Package none has no versions that match 2.0.0 derived from:\n'
-               '- foo 3.0.0 depends on version 2.0.0',
+            '- foo 3.0.0 depends on version 2.0.0',
         tries: 2);
   });
 
@@ -713,8 +725,7 @@ void backtracking() {
 
     d.appDir({'foo': 'any', 'bar': 'any'}).create();
     expectResolves(
-        result: {'foo': '0.9.0', 'bar': '9.0.0', 'baz': '0.0.0'},
-        tries: 10);
+        result: {'foo': '0.9.0', 'bar': '9.0.0', 'baz': '0.0.0'}, tries: 10);
   });
 
   // If there's a disjoint constraint on a package, then selecting other
@@ -732,7 +743,7 @@ void backtracking() {
       builder.serve('foo', '2.0.1');
       builder.serve('foo', '2.0.2');
       builder.serve('foo', '2.0.3');
-      builder.serve('foo', '2.0.4');      
+      builder.serve('foo', '2.0.4');
     });
 
     d.appDir({'a': 'any', 'foo': '>2.0.0'}).create();
@@ -750,7 +761,7 @@ void backtracking() {
       builder.serve('b', '1.0.0', deps: {'a': '1.0.0'});
       builder.serve('c', '1.0.0', deps: {'b': 'any'});
       builder.serve('d', '2.0.0', deps: {'myapp': 'any'});
-      builder.serve('d', '1.0.0', deps: {'myapp': '<1.0.0'}); 
+      builder.serve('d', '1.0.0', deps: {'myapp': '<1.0.0'});
     });
 
     d.appDir({"a": "any", "c": "any", "d": "any"}).create();
@@ -779,41 +790,52 @@ void dartSdkConstraint() {
       })
     ]).create();
 
-    expectResolves(error: 'Package myapp requires SDK version 0.0.0 but the '
-                 'current SDK is 0.1.2+3.');
+    expectResolves(
+        error: 'Package myapp requires SDK version 0.0.0 but the '
+            'current SDK is 0.1.2+3.');
   });
 
   integration('dependency does not match SDK', () {
     servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
+      builder.serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
     expectResolves(
         error: 'Package foo requires SDK version 0.0.0 but the '
-                 'current SDK is 0.1.2+3.');
+            'current SDK is 0.1.2+3.');
   });
 
   integration('transitive dependency does not match SDK', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
+      builder.serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
     expectResolves(
         error: 'Package bar requires SDK version 0.0.0 but the '
-                 'current SDK is 0.1.2+3.');
+            'current SDK is 0.1.2+3.');
   });
 
   integration('selects a dependency version that allows the SDK', () {
     servePackages((builder) {
-      builder.serve('foo', '1.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('foo', '2.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('foo', '3.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
-      builder.serve('foo', '4.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
+      builder.serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('foo', '2.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('foo', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
+      builder.serve('foo', '4.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
@@ -824,31 +846,44 @@ void dartSdkConstraint() {
       () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('bar', '2.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('bar', '3.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
-      builder.serve('bar', '4.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
+      builder.serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('bar', '2.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('bar', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
+      builder.serve('bar', '4.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
     expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
   });
 
-  integration('selects a dependency version that allows a transitive '
+  integration(
+      'selects a dependency version that allows a transitive '
       'dependency that allows the SDK', () {
     servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
       builder.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
       builder.serve('foo', '3.0.0', deps: {'bar': '3.0.0'});
       builder.serve('foo', '4.0.0', deps: {'bar': '4.0.0'});
-      builder.serve('bar', '1.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('bar', '2.0.0',
-          pubspec: {'environment': {'sdk': '0.1.2+3'}});
-      builder.serve('bar', '3.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
-      builder.serve('bar', '4.0.0', pubspec: {'environment': {'sdk': '0.0.0'}});
+      builder.serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('bar', '2.0.0', pubspec: {
+        'environment': {'sdk': '0.1.2+3'}
+      });
+      builder.serve('bar', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
+      builder.serve('bar', '4.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
     });
 
     d.appDir({'foo': 'any'}).create();
@@ -868,27 +903,29 @@ void flutterSdkConstraint() {
 
       expectResolves(
           error: 'Package myapp requires the Flutter SDK, which is not '
-                    'available.');
+              'available.');
     });
 
     integration('fails for a dependency', () {
       servePackages((builder) {
-        builder.serve('foo', '1.0.0',
-            pubspec: {'environment': {'flutter': '0.0.0'}});
+        builder.serve('foo', '1.0.0', pubspec: {
+          'environment': {'flutter': '0.0.0'}
+        });
       });
 
       d.appDir({'foo': 'any'}).create();
       expectResolves(
           error: 'Package foo requires the Flutter SDK, which is not '
-                    'available.');
+              'available.');
     });
 
     integration("chooses a version that doesn't need Flutter", () {
       servePackages((builder) {
         builder.serve('foo', '1.0.0');
         builder.serve('foo', '2.0.0');
-        builder.serve('foo', '3.0.0',
-            pubspec: {'environment': {'flutter': '0.0.0'}});
+        builder.serve('foo', '3.0.0', pubspec: {
+          'environment': {'flutter': '0.0.0'}
+        });
       });
 
       d.appDir({'foo': 'any'}).create();
@@ -899,24 +936,19 @@ void flutterSdkConstraint() {
       d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {
-            'dart': '0.1.2+3',
-            'flutter': '1.2.3'
-          }
+          'environment': {'dart': '0.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
       expectResolves(
           error: 'Package myapp requires the Flutter SDK, which is not '
-                    'available.');
+              'available.');
     });
   });
 
   group('with a Flutter SDK', () {
     setUp(() {
-      d.dir('flutter', [
-        d.file('version', '1.2.3')
-      ]).create();
+      d.dir('flutter', [d.file('version', '1.2.3')]).create();
     });
 
     integration('succeeds with a matching constraint', () {
@@ -943,17 +975,14 @@ void flutterSdkConstraint() {
       expectResolves(
           environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
           error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-                    'current SDK is 1.2.3.');
+              'current SDK is 1.2.3.');
     });
 
     integration('succeeds if both Flutter and Dart SDKs match', () {
       d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {
-            'sdk': '0.1.2+3',
-            'flutter': '1.2.3'
-          }
+          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
@@ -966,44 +995,41 @@ void flutterSdkConstraint() {
       d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {
-            'sdk': '0.1.2+3',
-            'flutter': '>1.2.3'
-          }
+          'environment': {'sdk': '0.1.2+3', 'flutter': '>1.2.3'}
         })
       ]).create();
 
       expectResolves(
           environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
           error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-                    'current SDK is 1.2.3.');
+              'current SDK is 1.2.3.');
     });
 
     integration("fails if Dart SDK doesn't match but Flutter does", () {
       d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {
-            'sdk': '>0.1.2+3',
-            'flutter': '1.2.3'
-          }
+          'environment': {'sdk': '>0.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
       expectResolves(
           environment: {'FLUTTER_ROOT': p.join(sandboxDir, 'flutter')},
           error: 'Package myapp requires SDK version >0.1.2+3 but the current '
-                   'SDK is 0.1.2+3.');
+              'SDK is 0.1.2+3.');
     });
 
     integration('selects the latest dependency with a matching constraint', () {
       servePackages((builder) {
-        builder.serve('foo', '1.0.0',
-            pubspec: {'environment': {'flutter': '^0.0.0'}});
-        builder.serve('foo', '2.0.0',
-            pubspec: {'environment': {'flutter': '^1.0.0'}});
-        builder.serve('foo', '3.0.0',
-            pubspec: {'environment': {'flutter': '^2.0.0'}});
+        builder.serve('foo', '1.0.0', pubspec: {
+          'environment': {'flutter': '^0.0.0'}
+        });
+        builder.serve('foo', '2.0.0', pubspec: {
+          'environment': {'flutter': '^1.0.0'}
+        });
+        builder.serve('foo', '3.0.0', pubspec: {
+          'environment': {'flutter': '^2.0.0'}
+        });
       });
 
       d.appDir({'foo': 'any'}).create();
@@ -1044,7 +1070,7 @@ void prerelease() {
       builder.serve('a', '1.0.0');
       builder.serve('a', '1.1.0');
       builder.serve('a', '2.0.0-dev');
-      builder.serve('a', '2.0.0'); 
+      builder.serve('a', '2.0.0');
     });
 
     d.appDir({'a': '<2.0.0'}).create();
@@ -1107,7 +1133,7 @@ void override() {
       builder.serve('a', '2.0.0');
       builder.serve('a', '3.0.0');
       builder.serve('b', '1.0.0', deps: {'a': '1.0.0'});
-      builder.serve('c', '1.0.0', deps: {'a': '3.0.0'}); 
+      builder.serve('c', '1.0.0', deps: {'a': '3.0.0'});
     });
 
     d.dir(appPath, [
@@ -1126,7 +1152,7 @@ void override() {
       builder.serve('a', '1.0.0', deps: {'shared': 'any'});
       builder.serve('a', '2.0.0', deps: {'shared': '1.0.0'});
       builder.serve('shared', '1.0.0');
-      builder.serve('shared', '2.0.0'); 
+      builder.serve('shared', '2.0.0');
     });
 
     d.dir(appPath, [
@@ -1147,7 +1173,7 @@ void override() {
       builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
       builder.serve('bar', '1.0.0');
       builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2'); 
+      builder.serve('bar', '1.0.2');
     });
 
     d.appDir({'foo': '1.0.1'}).create();
@@ -1159,7 +1185,7 @@ void override() {
         'dependency_overrides': {'foo': '<1.0.2'}
       })
     ]).create();
-    
+
     expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
   });
 
@@ -1170,7 +1196,7 @@ void override() {
       builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
       builder.serve('bar', '1.0.0');
       builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2'); 
+      builder.serve('bar', '1.0.2');
     });
 
     d.appDir({'foo': '1.0.1'}).create();
@@ -1182,7 +1208,7 @@ void override() {
         'dependency_overrides': {'foo': '>1.0.1'}
       })
     ]).create();
-    
+
     expectResolves(result: {'foo': '1.0.2', 'bar': '1.0.2'});
   });
 
@@ -1201,8 +1227,8 @@ void override() {
 
     expectResolves(
         error: 'Package foo has no versions that match >=1.0.0 <2.0.0 derived '
-                 'from:\n'
-               '- myapp depends on version >=1.0.0 <2.0.0');
+            'from:\n'
+            '- myapp depends on version >=1.0.0 <2.0.0');
   });
 
   integration('overrides a bad source without error', () {
@@ -1213,7 +1239,9 @@ void override() {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependencies': {'foo': {'bad': 'any'}},
+        'dependencies': {
+          'foo': {'bad': 'any'}
+        },
         'dependency_overrides': {'foo': 'any'}
       })
     ]).create();
@@ -1254,7 +1282,8 @@ void downgrade() {
     expectResolves(result: {'foo': '2.0.0'}, downgrade: true);
   });
 
-  integration('use earliest allowed prerelease if no stable versions match '
+  integration(
+      'use earliest allowed prerelease if no stable versions match '
       'while downgrading', () {
     servePackages((builder) {
       builder.serve('a', '1.0.0');
@@ -1284,14 +1313,17 @@ void downgrade() {
 /// pub.
 ///
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
-void expectResolves({Map result, error, int tries,
-    Map<String, String> environment, bool downgrade: false}) {
+void expectResolves(
+    {Map result,
+    error,
+    int tries,
+    Map<String, String> environment,
+    bool downgrade: false}) {
   schedulePub(
       args: [downgrade ? 'downgrade' : 'get'],
       environment: environment,
       output: error == null
-          ? anyOf(
-              contains('Got dependencies!'),
+          ? anyOf(contains('Got dependencies!'),
               matches(new RegExp(r'Changed \d+ dependenc(ies|y)!')))
           : null,
       error: error,
@@ -1303,8 +1335,7 @@ void expectResolves({Map result, error, int tries,
   schedule(() async {
     var registry = new SourceRegistry();
     var lockFile = new LockFile.load(
-        p.join(sandboxDir, appPath, 'pubspec.lock'),
-        registry);
+        p.join(sandboxDir, appPath, 'pubspec.lock'), registry);
     var resultPubspec = new Pubspec.fromMap({"dependencies": result}, registry);
 
     var ids = new Map.from(lockFile.packages);

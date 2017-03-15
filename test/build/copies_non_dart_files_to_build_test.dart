@@ -15,24 +15,20 @@ main() {
       d.appPubspec({"browser": "1.0.0"}),
       d.dir('web', [
         d.file('file.txt', 'contents'),
-        d.dir('subdir', [
-          d.file('subfile.txt', 'subcontents')
-        ])
+        d.dir('subdir', [d.file('subfile.txt', 'subcontents')])
       ])
     ]).create();
 
     pubGet();
-    schedulePub(args: ["build"],
-        output: new RegExp(r'Built 2 files to "build".'));
+    schedulePub(
+        args: ["build"], output: new RegExp(r'Built 2 files to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [
         d.dir('web', [
           d.nothing('packages'),
           d.file('file.txt', 'contents'),
-          d.dir('subdir', [
-            d.file('subfile.txt', 'subcontents')
-          ])
+          d.dir('subdir', [d.file('subfile.txt', 'subcontents')])
         ])
       ])
     ]).validate();

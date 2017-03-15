@@ -252,13 +252,12 @@ after
       });
 
       test("disallows dangling end", () {
-        expect(() => _preprocess('//# end'),
-            throwsFormatException);
+        expect(() => _preprocess('//# end'), throwsFormatException);
       });
 
       test("disallows if without end", () {
-        expect(() => _preprocess('//# if barback >=1.0.0'),
-            throwsFormatException);
+        expect(
+            () => _preprocess('//# if barback >=1.0.0'), throwsFormatException);
       });
 
       test("disallows nested if", () {
@@ -267,8 +266,7 @@ after
 //# if barback >= 1.5.0
 //# end
 //# end
-'''),
-            throwsFormatException);
+'''), throwsFormatException);
       });
     });
 

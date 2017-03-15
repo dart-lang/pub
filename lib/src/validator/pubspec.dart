@@ -14,8 +14,7 @@ import '../validator.dart';
 /// In most cases this is clearly true, since pub can't run without a pubspec,
 /// but it's possible that the pubspec is gitignored.
 class PubspecValidator extends Validator {
-  PubspecValidator(Entrypoint entrypoint)
-      : super(entrypoint);
+  PubspecValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
     var files = entrypoint.root.listFiles(recursive: false, useGitIgnore: true);
@@ -24,4 +23,3 @@ class PubspecValidator extends Validator {
     }
   }
 }
-

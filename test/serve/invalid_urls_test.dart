@@ -8,9 +8,7 @@ import 'utils.dart';
 
 main() {
   integration("responds with a 404 on incomplete special URLs", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "0.0.1")
-    ]).create();
+    d.dir("foo", [d.libPubspec("foo", "0.0.1")]).create();
 
     d.dir(appPath, [
       d.appPubspec({
@@ -21,9 +19,7 @@ main() {
         // it is *not* found.
         d.file("packages")
       ]),
-      d.dir("web", [
-        d.file("packages")
-      ])
+      d.dir("web", [d.file("packages")])
     ]).create();
 
     pubGet();
@@ -38,5 +34,4 @@ main() {
     requestShould404("packages/unknown/");
     endPubServe();
   });
-
 }

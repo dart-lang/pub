@@ -14,13 +14,9 @@ main() {
   integration("an outdated binstub runs 'pub global run'", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 

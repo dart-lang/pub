@@ -10,7 +10,8 @@ import '../serve/utils.dart';
 
 main() {
   // This is a regression test for issue #17198.
-  integration("compiles a Dart file that imports a generated file to JS "
+  integration(
+      "compiles a Dart file that imports a generated file to JS "
       "outside web/", () {
     serveBarback();
 
@@ -21,15 +22,17 @@ main() {
         "transformers": ["myapp/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [
-        d.file("transformer.dart", dartTransformer("munge"))
-      ]),
+      d.dir("lib", [d.file("transformer.dart", dartTransformer("munge"))]),
       d.dir("test", [
-        d.file("main.dart", """
+        d.file(
+            "main.dart",
+            """
 import "other.dart";
 void main() => print(TOKEN);
 """),
-        d.file("other.dart", """
+        d.file(
+            "other.dart",
+            """
 const TOKEN = "before";
 """)
       ])

@@ -21,7 +21,9 @@ main() {
 
       integration('a pubspec with a "name" key', () {
         d.dir(appPath, [
-          d.pubspec({"dependencies": {"foo": null}})
+          d.pubspec({
+            "dependencies": {"foo": null}
+          })
         ]).create();
 
         pubCommand(command,
@@ -41,19 +43,17 @@ main() {
       pubCommand(command, args: ["--packages-dir"]);
 
       d.dir(packagesPath, [
-        d.dir("myapp_name", [
-          d.file('myapp_name.dart', 'main() => "myapp_name";')
-        ])
-       ]).validate();
+        d.dir("myapp_name",
+            [d.file('myapp_name.dart', 'main() => "myapp_name";')])
+      ]).validate();
 
       d.dir("myapp", [
-        d.packagesFile({
-          "myapp_name": "."
-        })
+        d.packagesFile({"myapp_name": "."})
       ]).validate();
     });
 
-    integration('does not adds itself to the packages if it has no "lib" '
+    integration(
+        'does not adds itself to the packages if it has no "lib" '
         'directory', () {
       // The symlink should use the name in the pubspec, not the name of the
       // directory.
@@ -63,20 +63,19 @@ main() {
 
       pubCommand(command, args: ["--packages-dir"]);
 
-      d.dir(packagesPath, [
-        d.nothing("myapp_name")
-      ]).validate();
+      d.dir(packagesPath, [d.nothing("myapp_name")]).validate();
     });
 
-    integration('does not add a package if it does not have a "lib" '
+    integration(
+        'does not add a package if it does not have a "lib" '
         'directory', () {
       // Using a path source, but this should be true of all sources.
-      d.dir('foo', [
-        d.libPubspec('foo', '0.0.0-not.used')
-      ]).create();
+      d.dir('foo', [d.libPubspec('foo', '0.0.0-not.used')]).create();
 
       d.dir(appPath, [
-        d.appPubspec({"foo": {"path": "../foo"}})
+        d.appPubspec({
+          "foo": {"path": "../foo"}
+        })
       ]).create();
 
       pubCommand(command, args: ["--packages-dir"]);
@@ -89,21 +88,23 @@ main() {
       // descriptions.
       d.dir('deps', [
         d.dir('foo', [
-          d.pubspec({"name": "foo", "dependencies": {
-            "baz": {"path": "../baz1"}
-          }})
+          d.pubspec({
+            "name": "foo",
+            "dependencies": {
+              "baz": {"path": "../baz1"}
+            }
+          })
         ]),
         d.dir('bar', [
-          d.pubspec({"name": "bar", "dependencies": {
-            "baz": {"path": "../baz2"}
-          }})
+          d.pubspec({
+            "name": "bar",
+            "dependencies": {
+              "baz": {"path": "../baz2"}
+            }
+          })
         ]),
-        d.dir('baz1', [
-          d.libPubspec('baz', '0.0.0')
-        ]),
-        d.dir('baz2', [
-          d.libPubspec('baz', '0.0.0')
-        ])
+        d.dir('baz1', [d.libPubspec('baz', '0.0.0')]),
+        d.dir('baz2', [d.libPubspec('baz', '0.0.0')])
       ]).create();
 
       d.dir(appPath, [

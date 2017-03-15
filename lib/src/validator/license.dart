@@ -11,14 +11,14 @@ import '../validator.dart';
 
 /// A validator that checks that a LICENSE-like file exists.
 class LicenseValidator extends Validator {
-  LicenseValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
-      var licenseLike = new RegExp(
-          r"^([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)(\..*)?$");
-      if (entrypoint.root.listFiles(recursive: false, useGitIgnore: true)
+      var licenseLike =
+          new RegExp(r"^([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)(\..*)?$");
+      if (entrypoint.root
+          .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)
           .any(licenseLike.hasMatch)) {
         return;

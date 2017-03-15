@@ -23,11 +23,12 @@ main() {
 
     integration('declares an "import" as a dependency in lib/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('lib', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -38,11 +39,12 @@ main() {
 
     integration('declares an "export" as a dependency in lib/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('lib', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             export 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -53,11 +55,12 @@ main() {
 
     integration('declares an "import" as a dependency in bin/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('bin', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -68,11 +71,12 @@ main() {
 
     integration('declares an "import" as a dev dependency in test/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", devDeps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('test', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -83,11 +87,12 @@ main() {
 
     integration('declares an "import" as a dev dependency in tool/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", devDeps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('tool', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -97,60 +102,87 @@ main() {
     });
 
     integration('only uses dart: dependencies (not pub packages)', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'dart:async';
         import 'dart:collection';
         import 'dart:typed_data';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
     integration('imports itself', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'package:test_pkg/test_pkg.dart';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
     integration('has a relative import', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'some/relative/path.dart';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
     integration('has an absolute import', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'file://shared/some/library.dart';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
-
     integration('has a parse error preventing reading directives', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import not_supported_keyword 'dart:async';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
     integration('has a top-level Dart file with an invalid dependency', () {
-      d.file(path.join(appPath, 'top_level.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'top_level.dart'),
+              r'''
         import 'package:';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
 
     integration('has a Dart-like file with an invalid dependency', () {
-      d.file(path.join(appPath, 'lib', 'generator.dart.template'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'generator.dart.template'),
+              r'''
         import 'package:';
-      ''').create();
+      ''')
+          .create();
 
       expectNoValidationError(strictDeps);
     });
@@ -160,36 +192,49 @@ main() {
     setUp(d.validPackage.create);
 
     integration('does not declare an "import" as a dependency', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'package:silly_monkey/silly_monkey.dart';
-      ''').create();
+      ''')
+          .create();
 
       expectValidationWarning(strictDeps);
     });
 
     integration('does not declare an "export" as a dependency', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         export 'package:silly_monkey/silly_monkey.dart';
-      ''').create();
+      ''')
+          .create();
 
       expectValidationWarning(strictDeps);
     });
 
     integration('has an invalid URI', () {
-      d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      d
+          .file(
+              path.join(appPath, 'lib', 'library.dart'),
+              r'''
         import 'package:/';
-      ''').create();
+      ''')
+          .create();
 
       expectValidationWarning(strictDeps);
     });
 
     integration('declares an "import" as a devDependency for lib/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", devDeps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('lib', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -200,11 +245,12 @@ main() {
 
     integration('declares an "import" as a devDependency for bin/', () {
       d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", devDeps: {
-          "silly_monkey": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec("test_pkg", "1.0.0",
+            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('bin', [
-          d.file('library.dart', r'''
+          d.file(
+              'library.dart',
+              r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -217,7 +263,9 @@ main() {
       integration('"package:"', () {
         d.dir(appPath, [
           d.dir('lib', [
-            d.file('library.dart', r'''
+            d.file(
+                'library.dart',
+                r'''
             import 'package:';
           '''),
           ]),
@@ -228,11 +276,12 @@ main() {
 
       integration('"package:silly_monkey"', () {
         d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "silly_monkey": "^1.2.3"
-          }, sdk: ">=1.8.0 <2.0.0"),
+          d.libPubspec("test_pkg", "1.0.0",
+              deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
           d.dir('lib', [
-            d.file('library.dart', r'''
+            d.file(
+                'library.dart',
+                r'''
             import 'package:silly_monkey';
           '''),
           ]),
@@ -244,7 +293,9 @@ main() {
       integration('"package:/"', () {
         d.dir(appPath, [
           d.dir('lib', [
-            d.file('library.dart', r'''
+            d.file(
+                'library.dart',
+                r'''
             import 'package:/';
           '''),
           ]),
@@ -256,7 +307,9 @@ main() {
       integration('"package:/]"', () {
         d.dir(appPath, [
           d.dir('lib', [
-            d.file('library.dart', r'''
+            d.file(
+                'library.dart',
+                r'''
             import 'package:/]';
           '''),
           ]),

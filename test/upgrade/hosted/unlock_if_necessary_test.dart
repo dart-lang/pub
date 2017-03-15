@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("upgrades one locked pub server package's dependencies if it's "
+  integration(
+      "upgrades one locked pub server package's dependencies if it's "
       "necessary", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"foo_dep": "any"});
@@ -17,10 +18,7 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "foo_dep": "1.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "1.0.0", "foo_dep": "1.0.0"}).validate();
 
     globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"foo_dep": ">1.0.0"});
@@ -29,9 +27,6 @@ main() {
 
     pubUpgrade(args: ['foo']);
 
-    d.appPackagesFile({
-      "foo": "2.0.0",
-      "foo_dep": "2.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "2.0.0", "foo_dep": "2.0.0"}).validate();
   });
 }

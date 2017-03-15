@@ -12,27 +12,21 @@ main() {
   integration("upgrades Git packages to an incompatible pubspec", () {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]).create();
+    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
     pubGet(args: ["--packages-dir"]);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
-    d.git('foo.git', [
-      d.libDir('zoo'),
-      d.libPubspec('zoo', '1.0.0')
-    ]).commit();
+    d.git('foo.git', [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')]).commit();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
@@ -42,9 +36,7 @@ main() {
         exitCode: exit_codes.DATA);
 
     d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });
 }

@@ -6,7 +6,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("upgrades a locked package's dependers in order to get it to max "
+  integration(
+      "upgrades a locked package's dependers in order to get it to max "
       "version", () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "<2.0.0"});
@@ -17,10 +18,7 @@ main() {
 
     pubGet();
 
-    d.appPackagesFile({
-      "foo": "1.0.0",
-      "bar": "1.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "1.0.0", "bar": "1.0.0"}).validate();
 
     globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"bar": "<3.0.0"});
@@ -29,9 +27,6 @@ main() {
 
     pubUpgrade(args: ['bar']);
 
-    d.appPackagesFile({
-      "foo": "2.0.0",
-      "bar": "2.0.0"
-    }).validate();
+    d.appPackagesFile({"foo": "2.0.0", "bar": "2.0.0"}).validate();
   });
 }

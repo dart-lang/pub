@@ -16,18 +16,15 @@ main() {
         "transformers": [
           {
             "myapp/src/transformer": {
-              "\$exclude": [
-                "web/foo.txt",
-                "web/sub/foo.txt"
-              ]
+              "\$exclude": ["web/foo.txt", "web/sub/foo.txt"]
             }
           }
         ],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER)
-      ])]),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
+      ]),
       d.dir("web", [
         d.file("foo.txt", "foo"),
         d.file("bar.txt", "bar"),

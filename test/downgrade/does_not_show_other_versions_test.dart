@@ -15,16 +15,12 @@ main() {
       builder.serve("downgraded", "3.0.0-dev");
     });
 
-    d.appDir({
-      "downgraded": "3.0.0-dev"
-    }).create();
+    d.appDir({"downgraded": "3.0.0-dev"}).create();
 
     pubGet();
 
     // Loosen the constraints.
-    d.appDir({
-      "downgraded": ">=2.0.0"
-    }).create();
+    d.appDir({"downgraded": ">=2.0.0"}).create();
 
     pubDowngrade(output: contains("downgraded 2.0.0 (was 3.0.0-dev)"));
   });

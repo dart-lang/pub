@@ -11,7 +11,8 @@ main() {
   integration('errors if the package could not be found', () {
     serveNoPackages();
 
-    schedulePub(args: ["global", "activate", "foo"],
+    schedulePub(
+        args: ["global", "activate", "foo"],
         error: startsWith("Could not find package foo at"),
         exitCode: exit_codes.UNAVAILABLE);
   });

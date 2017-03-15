@@ -15,7 +15,9 @@ main() {
         "dependencies": {"bar": "any"}
       }, contents: [
         d.dir("bin", [
-          d.file("hello.dart", """
+          d.file(
+              "hello.dart",
+              """
 import 'package:bar/bar.dart';
 
 void main() => print(message);
@@ -31,9 +33,8 @@ void main() => print(message);
 
     pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin', 'foo'), [
-      d.matcherFile('hello.dart.snapshot', contains('hello!'))
-    ]).validate();
+    d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        [d.matcherFile('hello.dart.snapshot', contains('hello!'))]).validate();
 
     globalPackageServer.add((builder) {
       builder.serve("bar", "1.2.4", contents: [

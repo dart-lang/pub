@@ -11,11 +11,13 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{
-          "\$dart2js": {
-            "checked": "foo",
+        "transformers": [
+          {
+            "\$dart2js": {
+              "checked": "foo",
+            }
           }
-        }]
+        ]
       }),
       d.dir("web", [d.file("main.dart", "void main() {}")])
     ]).create();
@@ -23,11 +25,10 @@ main() {
     pubGet();
     var server = pubServe();
     requestShould404("main.dart.js");
-    server.stderr.expect(emitsLines(
-        'Build error:\n'
+    server.stderr.expect(emitsLines('Build error:\n'
         'Transform Dart2JS on myapp|web/main.dart threw error: '
-            'Invalid value for \$dart2js.checked: "foo" '
-            '(expected true or false).'));
+        'Invalid value for \$dart2js.checked: "foo" '
+        '(expected true or false).'));
     endPubServe();
   });
 }

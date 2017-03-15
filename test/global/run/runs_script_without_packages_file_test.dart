@@ -13,9 +13,7 @@ main() {
   integration('runs a snapshotted script without a .packages file', () {
     servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok');")
-        ])
+        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
@@ -24,8 +22,8 @@ main() {
     // Mimic the global packages installed by pub <1.12, which didn't create a
     // .packages file for global installs.
     schedule(() {
-      deleteEntry(p.join(sandboxDir, cachePath,
-          'global_packages/foo/.packages'));
+      deleteEntry(
+          p.join(sandboxDir, cachePath, 'global_packages/foo/.packages'));
     });
 
     var pub = pubRun(global: true, args: ["foo:script"]);
@@ -36,16 +34,14 @@ main() {
   integration('runs an unsnapshotted script without a .packages file', () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [
-        d.file("foo.dart", "main() => print('ok');")
-      ])
+      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
     schedulePub(args: ["global", "activate", "--source", "path", "../foo"]);
 
     schedule(() {
-      deleteEntry(p.join(sandboxDir, cachePath,
-          'global_packages/foo/.packages'));
+      deleteEntry(
+          p.join(sandboxDir, cachePath, 'global_packages/foo/.packages'));
     });
 
     var pub = pubRun(global: true, args: ["foo"]);

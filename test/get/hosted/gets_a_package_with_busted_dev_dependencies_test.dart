@@ -7,7 +7,8 @@ import '../../test_pub.dart';
 
 main() {
   // Regression test for issue 22194.
-  integration('gets a dependency with broken dev dependencies from a pub '
+  integration(
+      'gets a dependency with broken dev dependencies from a pub '
       'server', () {
     servePackages((builder) {
       builder.serve("foo", "1.2.3", pubspec: {
