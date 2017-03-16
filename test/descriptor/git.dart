@@ -19,13 +19,14 @@ class GitRepoDescriptor extends DirectoryDescriptor {
         return super.create(parent).then((_) {
           return _runGitCommands(parent, [
             ['init'],
+            ['config', 'core.excludesfile', ''],
             ['add', '.'],
             ['commit', '-m', 'initial commit', '--allow-empty']
           ]);
         });
       }, 'creating Git repo:\n${describe()}');
 
-  /// Writes this descriptor to the filesystem, than commits any changes from
+  /// Writes this descriptor to the filesystem, then commits any changes from
   /// the previous structure to the Git repo.
   ///
   /// [parent] defaults to [defaultRoot].
