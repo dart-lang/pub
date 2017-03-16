@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
+import 'package:scheduled_test/scheduled_test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
@@ -18,7 +22,14 @@ main() {
 
     schedulePub(
         args: ["cache", "add", "foo", "-v", ">=1.0.0 <2.0.0"],
-        output: 'Downloading foo 1.2.3...');
+        output: 'Downloading foo 1.2.3...',
+        silent: allOf([
+          contains("X-Pub-OS: ${Platform.operatingSystem}"),
+          contains("X-Pub-Command: cache add"),
+          contains("X-Pub-Session-ID:"),
+          isNot(contains("X-Pub-Environment")),
+          isNot(contains("X-Pub-Reason")),
+        ]));
 
     d.cacheDir({"foo": "1.2.3"}).validate();
     d.hostedCache([

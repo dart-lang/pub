@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
+import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../source/hosted.dart';
@@ -71,7 +72,7 @@ class DependencyValidator extends Validator {
       var ids = await entrypoint.cache.hosted
           .getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));
       versions = ids.map((id) => id.version).toList();
-    } catch (error) {
+    } on ApplicationException catch (_) {
       versions = [];
     }
 

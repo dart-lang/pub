@@ -188,6 +188,17 @@ class Package {
     return path('lib/$name.dart');
   }
 
+  /// Returns the type of dependency from this package onto [name].
+  DependencyType dependencyType(String name) {
+    if (pubspec.fields['dependencies']?.containsKey(name) ?? false) {
+      return DependencyType.direct;
+    } else if (pubspec.fields['dev_dependencies']?.containsKey(name) ?? false) {
+      return DependencyType.dev;
+    } else {
+      return DependencyType.none;
+    }
+  }
+
   /// The basenames of files that are included in [list] despite being hidden.
   static final _WHITELISTED_FILES = const ['.htaccess'];
 
@@ -488,4 +499,22 @@ class PackageDep extends PackageName {
       other is PackageDep &&
       samePackage(other) &&
       other.constraint == constraint;
+}
+
+/// The type of dependency from one package to another.
+class DependencyType {
+  /// A dependency declared in `dependencies`.
+  static const direct = const DependencyType._("direct");
+
+  /// A dependency declared in `dev_dependencies`.
+  static const dev = const DependencyType._("dev");
+
+  /// No dependency exists.
+  static const none = const DependencyType._("none");
+
+  final String _name;
+
+  const DependencyType._(this._name);
+
+  String toString() => _name;
 }
