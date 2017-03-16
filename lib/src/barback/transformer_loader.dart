@@ -111,10 +111,11 @@ class TransformerLoader {
     return _transformers[config];
   }
 
-  /// Loads all transformers defined in each phase of [phases].
+  /// Loads all [Transformer]s or [AggregateTransformer]s defined in each phase
+  /// of [phases].
   ///
   /// If any library hasn't yet been loaded via [load], it will be ignored.
-  Future<List<Set<Transformer>>> transformersForPhases(
+  Future<List<Set>> transformersForPhases(
       Iterable<Set<TransformerConfig>> phases) async {
     var result = await Future.wait(phases.map((phase) async {
       var transformers = await waitAndPrintErrors(phase.map(transformersFor));

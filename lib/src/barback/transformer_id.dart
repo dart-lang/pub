@@ -10,7 +10,7 @@ import 'package:source_span/source_span.dart';
 import '../utils.dart';
 
 /// A list of the names of all built-in transformers that pub exposes.
-const _BUILT_IN_TRANSFORMERS = const ['\$dart2js'];
+const _BUILT_IN_TRANSFORMERS = const ['\$dart2js', '\$ddc'];
 
 /// An identifier that indicates the library that contains a transformer.
 ///

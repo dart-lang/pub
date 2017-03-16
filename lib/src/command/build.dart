@@ -67,7 +67,9 @@ class BuildCommand extends BarbackCommand {
       // user-facing, just use an IPv4 address to avoid a weird bug on the OS X
       // buildbots.
       var environment = await AssetEnvironment.create(entrypoint, mode,
-          environmentConstants: environmentConstants, useDart2JS: true);
+          environmentConstants: environmentConstants,
+          useDart2JS: true,
+          useDdc: true);
 
       // Show in-progress errors, but not results. Those get handled
       // implicitly by getAllAssets().

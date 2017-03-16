@@ -154,9 +154,10 @@ class PackageGraph {
   /// Note that a static package isn't the same as an immutable package (see
   /// [isPackageMutable]).
   bool isPackageStatic(String package) {
-    var id = lockFile.packages[package];
-    if (id == null) return false;
-    if (entrypoint.cache.source(id.source) is! CachedSource) return false;
-    return packages[package].pubspec.transformers.isEmpty;
+    return false;
+    // var id = lockFile.packages[package];
+    // if (id == null) return false;
+    // if (entrypoint.cache.source(id.source) is! CachedSource) return false;
+    // return packages[package].pubspec.transformers.isEmpty;
   }
 }
