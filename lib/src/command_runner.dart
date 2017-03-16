@@ -35,11 +35,16 @@ import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
   /// Returns the nested name of the command that's currently being run.
-  static List<String> get command {
-    if (_options == null) {
-      throw new StateError("PubCommandRunner.command is only available after "
-          "PubCommandRunner.run() is called.");
-    }
+  /// Examples:
+  ///
+  ///     get
+  ///     cache repair
+  ///
+  /// Returns an empty string if no command is being run. (This is only
+  /// expected to happen when unit tests invoke code inside pub without going
+  /// through a command.)
+  static String get command {
+    if (_options == null) return "";
 
     var list = <String>[];
     for (var command = _options.command;
@@ -47,7 +52,7 @@ class PubCommandRunner extends CommandRunner {
         command = command.command) {
       list.add(command.name);
     }
-    return list;
+    return list.join(" ");
   }
 
   /// The top-level options parsed by the command runner.
@@ -103,15 +108,13 @@ class PubCommandRunner extends CommandRunner {
   }
 
   Future run(Iterable<String> arguments) async {
-    ArgResults options;
     try {
-      options = super.parse(arguments);
+      _options = super.parse(arguments);
     } on UsageException catch (error) {
       log.exception(error);
       await flushThenExit(exit_codes.USAGE);
     }
-    _options = options;
-    await runCommand(options);
+    await runCommand(_options);
   }
 
   Future runCommand(ArgResults options) async {

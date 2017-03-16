@@ -46,7 +46,7 @@ class _PubHttpClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_shouldAddMetadata(request)) {
       request.headers["X-Pub-OS"] = Platform.operatingSystem;
-      request.headers["X-Pub-Command"] = PubCommandRunner.command.join(" ");
+      request.headers["X-Pub-Command"] = PubCommandRunner.command;
       request.headers["X-Pub-Session-ID"] = _sessionId;
 
       var environment = Platform.environment["PUB_ENVIRONMENT"];
@@ -137,20 +137,14 @@ class _PubHttpClient extends http.BaseClient {
       if (request.url.origin != "https://pub.dartlang.org") return false;
     }
 
-    var command = PubCommandRunner.command;
-    if (command.length > 2) return false;
-    if (command.length == 1) {
-      return ["downgrade", "get", "upgrade"].contains(command.first);
-    }
-
-    switch (command[0]) {
-      case "cache":
-        return ["add", "repair"].contains(command[1]);
-      case "global":
-        return command[1] == "activate";
-      default:
-        return false;
-    }
+    return const [
+      "cache add",
+      "cache repair",
+      "downgrade",
+      "get",
+      "global activate",
+      "upgrade",
+    ].contains(PubCommandRunner.command);
   }
 
   /// Logs the fact that [request] was sent, and information about it.
