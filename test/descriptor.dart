@@ -89,10 +89,8 @@ Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
 /// Describes a directory for a Git package. This directory is of the form
 /// found in the repo cache of the global package cache.
 Descriptor gitPackageRepoCacheDir(String name) {
-  return pattern(
-      new RegExp("$name${r'-[a-f0-9]+'}"),
-      (dirName) => dir(
-          dirName, [dir('hooks'), dir('info'), dir('objects'), dir('refs')]));
+  return pattern(new RegExp("$name${r'-[a-f0-9]+'}"),
+      (dirName) => dir(dirName, [dir('objects'), dir('refs')]));
 }
 
 /// Describes the `packages/` directory containing all the given [packages],
