@@ -31,7 +31,6 @@ dependencies:
   stack_trace: "^1.0.0"
   stream_channel: "^1.4.0"
   string_scanner: "^1.0.0"
-  uuid: "^0.5.0"
   watcher: "^0.9.2"
   web_socket_channel: "^1.0.0"
   yaml: "^2.0.0"

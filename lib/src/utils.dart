@@ -824,3 +824,26 @@ void dataError(String message) => throw new DataException(message);
 Iterable/*<T>*/ combineIterables/*<T>*/(
         Iterable/*<T>*/ iter1, Iterable/*<T>*/ iter2) =>
     iter1.toList()..addAll(iter2);
+
+/// Returns a UUID in v4 format as a `String`.
+///
+/// If [bytes] is provided, it must be length 16 and have values between `0` and
+/// `255` inclusive.
+///
+/// If [bytes] is not provided, it is generated using `Random.secure`.
+String createUuid([List<int> bytes]) {
+  var rnd = new math.Random.secure();
+
+  // See http://www.cryptosys.net/pki/uuid-rfc4122.html for notes
+  bytes ??= new List<int>.generate(16, (_) => rnd.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0F) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  var chars = bytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join()
+      .toUpperCase();
+
+  return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
+      '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
+}

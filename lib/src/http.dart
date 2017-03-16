@@ -10,7 +10,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:uuid/uuid.dart';
 
 import 'command_runner.dart';
 import 'io.dart';
@@ -31,7 +30,7 @@ final _CENSORED_FIELDS = const ['refresh_token', 'authorization'];
 final PUB_API_HEADERS = const {'Accept': 'application/vnd.pub.v2+json'};
 
 /// A unique ID to identify this particular invocation of pub.
-final _sessionId = new Uuid().v4() as String;
+final _sessionId = createUuid();
 
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
