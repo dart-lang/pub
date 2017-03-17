@@ -66,7 +66,7 @@ class StrictDependenciesValidator extends Validator {
     var devDependencies =
         entrypoint.root.devDependencies.map((d) => d.name).toSet();
     _validateLibBin(dependencies, devDependencies);
-    _validateTestTool(dependencies, devDependencies);
+    _validateBenchmarkExampleTestTool(dependencies, devDependencies);
   }
 
   /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
@@ -75,9 +75,7 @@ class StrictDependenciesValidator extends Validator {
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
   void _validateLibBin(Set<String> deps, Set<String> devDeps) {
-    var libFiles = entrypoint.root.listFiles(beneath: 'lib').where(_isDart);
-    var binFiles = entrypoint.root.listFiles(beneath: 'bin').where(_isDart);
-    for (var usage in _findPackages(combineIterables(libFiles, binFiles))) {
+    for (var usage in _usagesBeneath(['lib', 'bin'])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           warnings.add(usage.dependencyMisplaceMessage());
@@ -88,20 +86,22 @@ class StrictDependenciesValidator extends Validator {
     }
   }
 
-  /// Validates that no Dart files in `test/` or `tool/` have dependencies that
-  /// aren't in [deps] or [devDeps].
-  void _validateTestTool(Set<String> deps, Set<String> devDeps) {
-    var testFiles = entrypoint.root.listFiles(beneath: 'test').where(_isDart);
-    var toolFiles = entrypoint.root.listFiles(beneath: 'tool').where(_isDart);
-    for (var usage in _findPackages(combineIterables(testFiles, toolFiles))) {
+  /// Validates that no Dart files in `benchmark/`, `example/, `test/` or
+  /// `tool/` have dependencies that aren't in [deps] or [devDeps].
+  void _validateBenchmarkExampleTestTool(
+      Set<String> deps, Set<String> devDeps) {
+    for (var usage
+        in _usagesBeneath(['benchmark', 'example', 'test', 'tool'])) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependencyMissingMessage());
       }
     }
   }
 
-  /// Returns whether [file] is a Dart file.
-  bool _isDart(String file) => p.extension(file) == '.dart';
+  Iterable<_Usage> _usagesBeneath(List<String> paths) => _findPackages(paths
+      .map((path) => entrypoint.root.listFiles(beneath: path))
+      .expand((files) => files)
+      .where((String file) => p.extension(file) == '.dart'));
 }
 
 /// A parsed import or export directive in a D source file.
