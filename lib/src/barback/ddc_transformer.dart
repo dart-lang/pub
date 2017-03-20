@@ -32,7 +32,10 @@ class DevCompilerEntryPointTransformer extends Transformer
         p.url.split(transform.primaryInput.id.path).first,
         transform.addOutput,
         transform.getInput,
-        transform.readInput);
+        transform.readInput,
+        transform.primaryInput.id.addExtension('.js'),
+        transform.primaryInput.id.addExtension('.js.map'),
+        transform.primaryInput.id.addExtension('.$_summaryExtension'));
   }
 
   @override
@@ -46,6 +49,8 @@ class DevCompilerPackageTransformer extends AggregateTransformer
     implements LazyAggregateTransformer {
   @override
   Future apply(AggregateTransform transform) async {
+    var jsOutputId = new AssetId(
+        transform.package, p.url.join('lib', '${transform.package}.js'));
     await _compileWithDDC(
         transform.logger,
         (await transform.primaryInputs.toList()).map((a) => a.id),
@@ -53,7 +58,10 @@ class DevCompilerPackageTransformer extends AggregateTransformer
         transform.key,
         transform.addOutput,
         transform.getInput,
-        transform.readInput);
+        transform.readInput,
+        jsOutputId,
+        jsOutputId.addExtension('.map'),
+        jsOutputId.changeExtension('.$_summaryExtension'));
   }
 
   @override
@@ -80,14 +88,17 @@ Future _compileWithDDC(
     String topLevelDir,
     _OutputAdder addOutput,
     _InputGetter getInput,
-    _InputReader readInput) async {
+    _InputReader readInput,
+    AssetId jsOutputId,
+    AssetId sourceMapOutputId,
+    AssetId summaryOutputId) async {
   var tmpDir = await Directory.systemTemp.createTemp();
   final watch = new Stopwatch()..start();
   logger.info('Compiling package:$basePackage with dartdevc...');
   try {
     final stepWatch = new Stopwatch()..start();
-    final dependentPackages =
-        await findDependentPackages(idsToCompile, logger, getInput);
+    final dependentPackages = await findDependentPackages(
+        basePackage, idsToCompile, logger, getInput);
     logger.fine('Took ${stepWatch.elapsed} to discover dependencies.');
 
     stepWatch.reset();
@@ -101,28 +112,15 @@ Future _compileWithDDC(
 
     var summaryFiles = new Set<File>();
     for (var id in summaryIds) {
-      var file = id.path.startsWith('lib/')
-          ? new File(p.joinAll([packagesDir.path, id.package]
-            ..addAll(p.url.split(id.path).skip(1))))
-          : new File(p.joinAll([tmpDir.path]..addAll(p.url.split(id.path))));
-      await file.create(recursive: true);
-      var sink = file.openWrite();
-      await sink.addStream(readInput(id));
-      await sink.close();
+      var file = _fileForId(id, tmpDir.path, packagesDir.path);
+      await _writeFile(file, readInput(id));
       summaryFiles.add(file);
     }
 
     var filesToCompile = new Set<File>();
     for (var id in idsToCompile) {
-      var file = id.path.startsWith('lib/')
-          ? new File(p.joinAll([packagesDir.path, id.package]
-            ..addAll(p.url.split(id.path).skip(1))))
-          : new File(
-              p.joinAll([packagesDir.path]..addAll(p.url.split(id.path))));
-      await file.create(recursive: true);
-      var sink = file.openWrite();
-      await sink.addStream(readInput(id));
-      await sink.close();
+      var file = _fileForId(id, tmpDir.path, packagesDir.path);
+      await _writeFile(file, readInput(id));
       filesToCompile.add(file);
     }
     logger.fine(
@@ -136,21 +134,23 @@ Future _compileWithDDC(
 
     stepWatch.reset();
     var sdk_summary = p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
-    var jsOutputFile = new File(p.join(tmpDir.path, 'out.js'));
+    var jsOutputFile = _fileForId(jsOutputId, tmpDir.path, packagesDir.path);
+    var sourceMapOutputFile =
+        _fileForId(sourceMapOutputId, tmpDir.path, packagesDir.path);
     var summaryOutputFile =
-        new File(p.join(tmpDir.path, 'out.$_summaryExtension'));
+        _fileForId(summaryOutputId, tmpDir.path, packagesDir.path);
     var ddcArgs = <String>[
       '--dart-sdk-summary=${sdk_summary}',
       '--summary-extension=${_summaryExtension}',
       '--unsafe-angular2-whitelist',
-      '--modules=legacy',
+      '--modules=amd',
       '--dart-sdk=${sdk.path}',
       '-o',
       jsOutputFile.path,
       '--module-root=${tmpDir.path}',
     ];
     if (topLevelDir == 'lib') {
-      ddcArgs.add('--library-root=${p.join(packagesDir.path, topLevelDir)}');
+      ddcArgs.add('--library-root=${p.join(packagesDir.path, basePackage)}');
     }
     for (var file in summaryFiles) {
       ddcArgs.addAll(['-s', file.path]);
@@ -167,14 +167,13 @@ Future _compileWithDDC(
       return;
     }
 
+    addOutput(
+        new Asset.fromString(jsOutputId, await jsOutputFile.readAsString()));
     addOutput(new Asset.fromString(
-        new AssetId(basePackage, p.url.join(topLevelDir, '$basePackage.js')),
-        await jsOutputFile.readAsString()));
+        sourceMapOutputId, await sourceMapOutputFile.readAsString()));
 
     addOutput(new Asset.fromBytes(
-        new AssetId(basePackage,
-            p.url.join(topLevelDir, '$basePackage.$_summaryExtension')),
-        await summaryOutputFile.readAsBytes()));
+        summaryOutputId, await summaryOutputFile.readAsBytes()));
 
     logger.info('Took ${watch.elapsed} to compile package:$basePackage');
   } catch (e) {
@@ -184,17 +183,20 @@ Future _compileWithDDC(
   }
 }
 
-Future<Set<String>> findDependentPackages(
+Future<Set<String>> findDependentPackages(String basePackage,
     Iterable<AssetId> assetIds, TransformLogger logger, _InputGetter getInput,
-    {Set<String> foundPackages}) async {
+    {Set<AssetId> foundIds, Set<String> foundPackages}) async {
+  foundIds ??= new Set<AssetId>();
   foundPackages ??= new Set<String>();
   for (var id in assetIds) {
-    var asset = await getInput(id);
-    if (!foundPackages.add(id.package)) continue;
+    if (!foundIds.add(id)) continue;
+    foundPackages.add(id.package);
 
+    var asset = await getInput(id);
     var contents = await asset.readAsString();
     var unit = parseDirectives(contents);
     await findDependentPackages(
+        basePackage,
         unit.directives
             .where((d) => d is UriBasedDirective)
             .map((d) => _urlToAssetId(
@@ -202,9 +204,17 @@ Future<Set<String>> findDependentPackages(
             .where((id) => id != null),
         logger,
         getInput,
+        foundIds: foundIds,
         foundPackages: foundPackages);
   }
   return foundPackages;
+}
+
+File _fileForId(AssetId id, String rootDir, String packagesDir) {
+  return id.path.startsWith('lib/')
+      ? new File(p.joinAll(
+          [packagesDir, id.package]..addAll(p.url.split(id.path).skip(1))))
+      : new File(p.joinAll([rootDir]..addAll(p.url.split(id.path))));
 }
 
 Set<AssetId> _findSummaryIds(package) {
@@ -233,6 +243,13 @@ AssetId _urlToAssetId(AssetId source, String url, TransformLogger logger) {
         p.url.normalize(p.url.join(p.url.dirname(source.path), uri.path));
     return new AssetId(source.package, targetPath);
   }
+}
+
+Future _writeFile(File file, Stream<List<int>> stream) async {
+  await file.create(recursive: true);
+  var sink = file.openWrite();
+  await sink.addStream(stream);
+  await sink.close();
 }
 
 const _summaryExtension = 'api.ds';

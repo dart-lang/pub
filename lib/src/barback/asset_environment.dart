@@ -85,10 +85,9 @@ class AssetEnvironment {
       barback.log.listen(_log);
 
       var environment = new AssetEnvironment._(graph, barback, mode,
-          watcherType, hostname, basePort, environmentConstants);
+          watcherType, hostname, basePort, environmentConstants, compilerMode);
 
-      await environment._load(
-          entrypoints: entrypoints, compilerMode: compilerMode);
+      await environment._load(entrypoints: entrypoints);
       return environment;
     }, fine: true);
   }
@@ -177,8 +176,18 @@ class AssetEnvironment {
   /// go to barback immediately.
   Set<AssetId> _modifiedSources;
 
-  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
-      this._hostname, this._basePort, this.environmentConstants);
+  /// The compiler mode for this environment.
+  final CompilerMode compilerMode;
+
+  AssetEnvironment._(
+      this.graph,
+      this.barback,
+      this.mode,
+      this._watcherType,
+      this._hostname,
+      this._basePort,
+      this.environmentConstants,
+      this.compilerMode);
 
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
@@ -463,7 +472,7 @@ class AssetEnvironment {
   ///
   /// Returns a [Future] that completes once all inputs and transformers are
   /// loaded.
-  Future _load({Iterable<AssetId> entrypoints, CompilerMode compilerMode}) {
+  Future _load({Iterable<AssetId> entrypoints}) {
     return log.progress("Initializing barback", () async {
       // If the entrypoint package manually configures the dart2js
       // transformer, don't include it in the built-in transformer list.
