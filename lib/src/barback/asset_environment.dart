@@ -20,6 +20,7 @@ import '../source/cached.dart';
 import '../utils.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
+import 'compiler_mode.dart';
 import 'dart_forwarding_transformer.dart';
 import 'dart2js_transformer.dart';
 import 'ddc_transformer.dart';
@@ -42,8 +43,8 @@ class AssetEnvironment {
   /// to [hostname] and have ports based on [basePort]. If omitted, they
   /// default to "localhost" and "0" (use ephemeral ports), respectively.
   ///
-  /// Loads all used transformers using [mode] (including dart2js if
-  /// [useDart2JS] is true).
+  /// Loads all used transformers using [mode] (including dart2js or ddc based
+  /// on [compilerMode]).
   ///
   /// This will only add the root package's "lib" directory to the environment.
   /// Other directories can be added to the environment using [serveDirectory].
@@ -71,12 +72,12 @@ class AssetEnvironment {
       Iterable<String> packages,
       Iterable<AssetId> entrypoints,
       Map<String, String> environmentConstants,
-      bool useDart2JS: true,
-      bool useDdc: false}) {
+      CompilerMode compilerMode}) {
     if (watcherType == null) watcherType = WatcherType.NONE;
     if (hostname == null) hostname = "localhost";
     if (basePort == null) basePort = 0;
     if (environmentConstants == null) environmentConstants = {};
+    compilerMode ??= CompilerMode.Dart2Js;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -87,7 +88,7 @@ class AssetEnvironment {
           watcherType, hostname, basePort, environmentConstants);
 
       await environment._load(
-          entrypoints: entrypoints, useDart2JS: useDart2JS, useDdc: useDdc);
+          entrypoints: entrypoints, compilerMode: compilerMode);
       return environment;
     }, fine: true);
   }
@@ -449,18 +450,18 @@ class AssetEnvironment {
   /// in packages in [graph] and re-runs them as necessary when any input files
   /// change.
   ///
-  /// If [useDart2JS] is `true`, then the [Dart2JSTransformer] is implicitly
+  /// If [CompilerMode.Dart2Js], then the [Dart2JSTransformer] is implicitly
   /// added to end of the root package's transformer phases.
   ///
-  /// if [useDdc] is `true`, then the [DevCompilerTransformer] is implicitly
-  /// added to the end of all package's transformer phases.
+  /// if [CompilerMode.DevCompiler], then the [DevCompilerTransformer] is
+  /// implicitly added to the end of all package's transformer phases.
   ///
   /// If [entrypoints] is passed, only transformers necessary to run those
   /// entrypoints will be loaded.
   ///
   /// Returns a [Future] that completes once all inputs and transformers are
   /// loaded.
-  Future _load({Iterable<AssetId> entrypoints, bool useDart2JS, bool useDdc}) {
+  Future _load({Iterable<AssetId> entrypoints, CompilerMode compilerMode}) {
     return log.progress("Initializing barback", () async {
       // If the entrypoint package manually configures the dart2js
       // transformer, don't include it in the built-in transformer list.
@@ -471,7 +472,7 @@ class AssetEnvironment {
           (transformers) =>
               transformers.any((config) => config.id.package == '\$dart2js'));
 
-      if (!containsDart2JS && useDart2JS) {
+      if (!containsDart2JS && compilerMode == CompilerMode.Dart2Js) {
         _builtInTransformers.addAll([
           new Dart2JSTransformer(this, mode),
           new DartForwardingTransformer()
@@ -482,7 +483,7 @@ class AssetEnvironment {
           (transformers) =>
               transformers.any((config) => config.id.package == '\$ddc'));
 
-      if (!containsDdc && useDdc) {
+      if (!containsDdc && compilerMode == CompilerMode.DevCompiler) {
         _transitiveBuiltInTransformers.add(new DevCompilerTransformer());
       }
 

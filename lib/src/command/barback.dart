@@ -7,12 +7,19 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 
+import '../barback/compiler_mode.dart';
 import '../command.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
 final _arrow = getSpecial('\u2192', '=>');
+
+final _compilerArgToMode = const {
+  'dart2js': CompilerMode.Dart2Js,
+  'dartdevc': CompilerMode.DevCompiler,
+  'none': CompilerMode.None,
+};
 
 /// The set of top level directories in the entrypoint package that are built
 /// when the user does "--all".
@@ -23,6 +30,9 @@ final _allSourceDirectories =
 abstract class BarbackCommand extends PubCommand {
   /// The build mode.
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
+
+  // The current compiler mode.
+  CompilerMode get compilerMode => _compilerArgToMode[argResults["compiler"]];
 
   /// The directories in the entrypoint package that should be added to the
   /// build environment.
@@ -44,6 +54,11 @@ abstract class BarbackCommand extends PubCommand {
         help: "Use all default source directories.",
         defaultsTo: false,
         negatable: false);
+
+    argParser.addOption("compiler",
+        allowed: const ['dartdevc', 'dart2js', 'none'],
+        defaultsTo: 'dart2js',
+        help: 'The js compiler to use to build the app.');
   }
 
   Future run() {

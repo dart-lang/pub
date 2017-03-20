@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'barback/compiler_mode.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'flutter.dart' as flutter;
@@ -258,7 +259,7 @@ class Entrypoint {
             .toSet();
 
         var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
-            packages: packagesToLoad, useDart2JS: false);
+            packages: packagesToLoad, compilerMode: CompilerMode.DevCompiler);
 
         /// Ignore barback errors since they'll be emitted via [getAllAssets]
         /// below.
@@ -408,7 +409,7 @@ class Entrypoint {
     var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
         packages: packagesToLoad.map((package) => package.name),
         entrypoints: executableIds,
-        useDart2JS: false);
+        compilerMode: CompilerMode.None);
     environment.barback.errors.listen((error) {
       log.error(log.red("Build error:\n$error"));
     });

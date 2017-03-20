@@ -10,108 +10,22 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+typedef Future<Asset> _InputGetter(AssetId id);
+typedef Stream<List<int>> _InputReader(AssetId id);
+typedef void _OutputAdder(Asset);
+
 class DevCompilerTransformer extends AggregateTransformer
     implements LazyAggregateTransformer {
   @override
   Future apply(AggregateTransform transform) async {
-    var tmpDir = await Directory.systemTemp.createTemp();
-    final watch = new Stopwatch()..start();
-    transform.logger.info('Compiling package:${transform.package} with DDC...');
-    try {
-      var dartAssets = await transform.primaryInputs.toList();
-      assert(dartAssets.every((asset) => asset.id.extension == '.dart'));
-
-      final dependentPackages = await findDependentPackages(
-          dartAssets.map((asset) => asset.id), transform);
-
-      var packagesDir = new Directory(p.join(tmpDir.path, 'packages'));
-      await packagesDir.createSync(recursive: true);
-      var summaryIds = new Set<AssetId>();
-      for (var package in dependentPackages) {
-        if (package == transform.package && transform.key == 'lib') continue;
-        summaryIds.addAll(_findSummaryIds(package));
-      }
-
-      var summaryFiles = new Set<File>();
-      for (var id in summaryIds) {
-        var file = id.path.startsWith('lib/')
-            ? new File(p.joinAll([packagesDir.path, id.package]
-              ..addAll(p.url.split(id.path).skip(1))))
-            : new File(p.joinAll([tmpDir.path]..addAll(p.url.split(id.path))));
-        await file.create(recursive: true);
-        var sink = file.openWrite();
-        await sink.addStream(transform.readInput(id));
-        await sink.close();
-        summaryFiles.add(file);
-      }
-
-      var filesToCompile = new Set<File>();
-      for (var asset in dartAssets) {
-        var file = asset.id.path.startsWith('lib/')
-            ? new File(p.joinAll([packagesDir.path, asset.id.package]
-              ..addAll(p.url.split(asset.id.path).skip(1))))
-            : new File(p.joinAll(
-                [packagesDir.path]..addAll(p.url.split(asset.id.path))));
-        await file.create(recursive: true);
-        await file.writeAsString(await asset.readAsString());
-        filesToCompile.add(file);
-      }
-
-      var sdk = cli_util.getSdkDir();
-      if (sdk == null) {
-        transform.logger.error('Unable to find dart sdk');
-        return;
-      }
-
-      var sdk_summary =
-          p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
-      var jsOutputFile =
-          new File(p.join(tmpDir.path, '${transform.package}.js'));
-      var summaryOutputFile = new File(
-          p.join(tmpDir.path, '${transform.package}.$_summaryExtension'));
-      var ddcArgs = <String>[
-        '--dart-sdk-summary=${sdk_summary}',
-        '--summary-extension=${_summaryExtension}',
-        '--unsafe-angular2-whitelist',
-        '--modules=legacy',
-        '--dart-sdk=${sdk.path}',
-        '-o',
-        jsOutputFile.path,
-        // '--library-root=${p.join(packagesDir.path, transform.package)}',
-        '--module-root=${tmpDir.path}',
-        '--package-root=${packagesDir.path}',
-      ];
-      for (var file in summaryFiles) {
-        ddcArgs.addAll(['-s', file.path]);
-      }
-      ddcArgs.addAll(filesToCompile.map((f) => p
-          .relative(f.path, from: tmpDir.path)
-          .replaceFirst('packages/', 'package:')));
-      var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
-      var result =
-          await Process.run(ddcPath, ddcArgs, workingDirectory: tmpDir.path);
-      if (result.exitCode != 0) {
-        transform.logger.error(result.stdout);
-        return;
-      }
-
-      transform.addOutput(new Asset.fromString(
-          new AssetId(
-              transform.package, '${transform.key}/${transform.package}.js'),
-          await jsOutputFile.readAsString()));
-
-      transform.addOutput(new Asset.fromBytes(
-          new AssetId(transform.package,
-              '${transform.key}/${transform.package}.$_summaryExtension'),
-          await summaryOutputFile.readAsBytes()));
-
-      transform.logger.info(
-          'Took ${watch.elapsed} to compile package:${transform.package}');
-    } catch (e) {
-      transform.logger.error('$e');
-    } finally {
-      await tmpDir.delete(recursive: true);
-    }
+    await _compileWithDDC(
+        transform.logger,
+        (await transform.primaryInputs.toList()).map((a) => a.id),
+        transform.package,
+        transform.key,
+        transform.addOutput,
+        transform.getInput,
+        transform.readInput);
   }
 
   @override
@@ -131,12 +45,123 @@ class DevCompilerTransformer extends AggregateTransformer
   }
 }
 
+Future _compileWithDDC(
+    TransformLogger logger,
+    Iterable<AssetId> idsToCompile,
+    String basePackage,
+    String topLevelDir,
+    _OutputAdder addOutput,
+    _InputGetter getInput,
+    _InputReader readInput) async {
+  var tmpDir = await Directory.systemTemp.createTemp();
+  final watch = new Stopwatch()..start();
+  logger.info('Compiling package:$basePackage with dartdevc...');
+  try {
+    final stepWatch = new Stopwatch()..start();
+    final dependentPackages =
+        await findDependentPackages(idsToCompile, logger, getInput);
+    logger.fine('Took ${stepWatch.elapsed} to discover dependencies.');
+
+    stepWatch.reset();
+    var packagesDir = new Directory(p.join(tmpDir.path, 'packages'));
+    await packagesDir.createSync(recursive: true);
+    var summaryIds = new Set<AssetId>();
+    for (var package in dependentPackages) {
+      if (package == basePackage && topLevelDir == 'lib') continue;
+      summaryIds.addAll(_findSummaryIds(package));
+    }
+
+    var summaryFiles = new Set<File>();
+    for (var id in summaryIds) {
+      var file = id.path.startsWith('lib/')
+          ? new File(p.joinAll([packagesDir.path, id.package]
+            ..addAll(p.url.split(id.path).skip(1))))
+          : new File(p.joinAll([tmpDir.path]..addAll(p.url.split(id.path))));
+      await file.create(recursive: true);
+      var sink = file.openWrite();
+      await sink.addStream(readInput(id));
+      await sink.close();
+      summaryFiles.add(file);
+    }
+
+    var filesToCompile = new Set<File>();
+    for (var id in idsToCompile) {
+      var file = id.path.startsWith('lib/')
+          ? new File(p.joinAll([packagesDir.path, id.package]
+            ..addAll(p.url.split(id.path).skip(1))))
+          : new File(
+              p.joinAll([packagesDir.path]..addAll(p.url.split(id.path))));
+      await file.create(recursive: true);
+      var sink = file.openWrite();
+      await sink.addStream(readInput(id));
+      await sink.close();
+      filesToCompile.add(file);
+    }
+    logger.fine(
+        'Took ${stepWatch.elapsed} to set up a tmp environment for dartdevc.');
+
+    var sdk = cli_util.getSdkDir();
+    if (sdk == null) {
+      logger.error('Unable to find dart sdk');
+      return;
+    }
+
+    stepWatch.reset();
+    var sdk_summary = p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
+    var jsOutputFile = new File(p.join(tmpDir.path, '$basePackage.js'));
+    var summaryOutputFile =
+        new File(p.join(tmpDir.path, '$basePackage.$_summaryExtension'));
+    var ddcArgs = <String>[
+      '--dart-sdk-summary=${sdk_summary}',
+      '--summary-extension=${_summaryExtension}',
+      '--unsafe-angular2-whitelist',
+      '--modules=legacy',
+      '--dart-sdk=${sdk.path}',
+      '-o',
+      jsOutputFile.path,
+      '--module-root=${tmpDir.path}',
+    ];
+    if (topLevelDir == 'lib') {
+      ddcArgs.add('--library-root=${p.join(packagesDir.path, topLevelDir)}');
+    }
+    for (var file in summaryFiles) {
+      ddcArgs.addAll(['-s', file.path]);
+    }
+    ddcArgs.addAll(filesToCompile.map((f) => p
+        .relative(f.path, from: tmpDir.path)
+        .replaceFirst('packages/', 'package:')));
+    var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
+    var result =
+        await Process.run(ddcPath, ddcArgs, workingDirectory: tmpDir.path);
+    logger.fine('Took ${stepWatch.elapsed} to run dartdevc.');
+    if (result.exitCode != 0) {
+      logger.error(result.stdout);
+      return;
+    }
+
+    addOutput(new Asset.fromString(
+        new AssetId(basePackage, p.url.join(topLevelDir, '$basePackage.js')),
+        await jsOutputFile.readAsString()));
+
+    addOutput(new Asset.fromBytes(
+        new AssetId(basePackage,
+            p.url.join(topLevelDir, '$basePackage.$_summaryExtension')),
+        await summaryOutputFile.readAsBytes()));
+
+    logger.info('Took ${watch.elapsed} to compile package:$basePackage');
+  } catch (e) {
+    logger.error('$e');
+  } finally {
+    await tmpDir.delete(recursive: true);
+  }
+}
+
 Future<Set<String>> findDependentPackages(
-    Iterable<AssetId> assetIds, AggregateTransform transform,
+    Iterable<AssetId> assetIds, TransformLogger logger, _InputGetter getInput,
     {Set<String> foundPackages}) async {
   foundPackages ??= new Set<String>();
   for (var id in assetIds) {
-    var asset = await transform.getInput(id);
+    var asset = await getInput(id);
     if (!foundPackages.add(id.package)) continue;
 
     var contents = await asset.readAsString();
@@ -144,10 +169,11 @@ Future<Set<String>> findDependentPackages(
     await findDependentPackages(
         unit.directives
             .where((d) => d is UriBasedDirective)
-            .map((d) => _urlToAssetId(asset.id,
-                (d as UriBasedDirective).uri.stringValue, transform.logger))
+            .map((d) => _urlToAssetId(
+                asset.id, (d as UriBasedDirective).uri.stringValue, logger))
             .where((id) => id != null),
-        transform,
+        logger,
+        getInput,
         foundPackages: foundPackages);
   }
   return foundPackages;

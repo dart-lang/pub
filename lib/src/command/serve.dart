@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:barback/barback.dart';
 
 import '../barback/asset_environment.dart';
+import '../barback/compiler_mode.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'barback.dart';
@@ -37,9 +38,6 @@ class ServeCommand extends BarbackCommand {
     var adminPort = argResults['admin-port'];
     return adminPort == null ? null : parseInt(adminPort, 'admin port');
   }
-
-  /// `true` if Dart entrypoints should be compiled to JavaScript.
-  bool get useDart2JS => argResults['dart2js'];
 
   /// `true` if the admin server URL should be displayed on startup.
   bool get logAdminUrl => argResults['log-admin-url'];
@@ -74,7 +72,8 @@ class ServeCommand extends BarbackCommand {
     argParser.addOption('admin-port', hide: true);
 
     argParser.addFlag('dart2js',
-        defaultsTo: true, help: 'Compile Dart to JavaScript.');
+        defaultsTo: true,
+        help: 'Deprecated: Use --compiler=none to disable js compilation.');
     argParser.addFlag('force-poll',
         defaultsTo: false,
         help: 'Force the use of a polling filesystem watcher.');
@@ -94,11 +93,16 @@ class ServeCommand extends BarbackCommand {
         key: (pair) => pair.split("=").first,
         value: (pair) => pair.split("=").last);
 
+    var actualCompilerMode = compilerMode;
+    if (argResults.wasParsed('dart2js')) {
+      actualCompilerMode =
+          argResults['dart2js'] ? CompilerMode.Dart2Js : CompilerMode.None;
+    }
     var environment = await AssetEnvironment.create(entrypoint, mode,
         watcherType: watcherType,
         hostname: hostname,
         basePort: port,
-        useDart2JS: useDart2JS,
+        compilerMode: actualCompilerMode,
         environmentConstants: environmentConstants);
     var directoryLength =
         sourceDirectories.map((dir) => dir.length).reduce(math.max);

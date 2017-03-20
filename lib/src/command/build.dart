@@ -68,8 +68,7 @@ class BuildCommand extends BarbackCommand {
       // buildbots.
       var environment = await AssetEnvironment.create(entrypoint, mode,
           environmentConstants: environmentConstants,
-          useDart2JS: true,
-          useDdc: true);
+          compilerMode: compilerMode);
 
       // Show in-progress errors, but not results. Those get handled
       // implicitly by getAllAssets().
