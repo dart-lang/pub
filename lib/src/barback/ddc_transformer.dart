@@ -14,7 +14,35 @@ typedef Future<Asset> _InputGetter(AssetId id);
 typedef Stream<List<int>> _InputReader(AssetId id);
 typedef void _OutputAdder(Asset);
 
-class DevCompilerTransformer extends AggregateTransformer
+class DevCompilerEntryPointTransformer extends Transformer
+    implements LazyTransformer {
+  // Runs on all dart files not under `lib`.
+  @override
+  bool isPrimary(AssetId id) =>
+      id.extension == '.dart' && p.url.split(id.path).first != 'lib';
+
+  @override
+  Future apply(Transform transform) async {
+    // TODO(jakemac): add other transitive non-lib deps
+    var idsToCompile = [transform.primaryInput.id];
+    await _compileWithDDC(
+        transform.logger,
+        idsToCompile,
+        transform.primaryInput.id.package,
+        p.url.split(transform.primaryInput.id.path).first,
+        transform.addOutput,
+        transform.getInput,
+        transform.readInput);
+  }
+
+  @override
+  void declareOutputs(DeclaringTransform transform) {
+    transform.declareOutput(transform.primaryId.addExtension('.js'));
+  }
+}
+
+/// Compiles an entire package to a ddc module
+class DevCompilerPackageTransformer extends AggregateTransformer
     implements LazyAggregateTransformer {
   @override
   Future apply(AggregateTransform transform) async {
@@ -39,9 +67,9 @@ class DevCompilerTransformer extends AggregateTransformer
   @override
   void declareOutputs(DeclaringAggregateTransform transform) {
     transform.declareOutput(new AssetId(
-        transform.package, '${transform.key}/${transform.package}.js'));
+        transform.package, p.url.join('lib', '${transform.package}.js')));
     transform.declareOutput(new AssetId(transform.package,
-        '${transform.key}/${transform.package}.$_summaryExtension'));
+        p.url.join('lib', '${transform.package}.$_summaryExtension')));
   }
 }
 
@@ -108,9 +136,9 @@ Future _compileWithDDC(
 
     stepWatch.reset();
     var sdk_summary = p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
-    var jsOutputFile = new File(p.join(tmpDir.path, '$basePackage.js'));
+    var jsOutputFile = new File(p.join(tmpDir.path, 'out.js'));
     var summaryOutputFile =
-        new File(p.join(tmpDir.path, '$basePackage.$_summaryExtension'));
+        new File(p.join(tmpDir.path, 'out.$_summaryExtension'));
     var ddcArgs = <String>[
       '--dart-sdk-summary=${sdk_summary}',
       '--summary-extension=${_summaryExtension}',

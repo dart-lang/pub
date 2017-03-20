@@ -142,12 +142,12 @@ class AssetEnvironment {
   /// The [Transformer]s or [AggregateTransformer]s that should be appended by
   /// default to the root package's transformer cascade. Will be empty if there
   /// are none.
-  final _builtInTransformers = [];
+  final _builtInTransformers = new Set();
 
   /// The [Transformer]s or [AggregateTransformer]s that should be added by
   /// default to all package's transformer cascade. Will be empty if there are
   /// none.
-  final _transitiveBuiltInTransformers = [];
+  final _transitiveBuiltInTransformers = new Set();
 
   /// How source files should be watched.
   final WatcherType _watcherType;
@@ -184,20 +184,22 @@ class AssetEnvironment {
   /// added to [package].
   ///
   /// Returns `null` if there are none.
-  Iterable getBuiltInTransformers(Package package) {
-    var transformers = [];
+  Iterable<Set> getBuiltInTransformers(Package package) {
+    var transformers = <Set>[];
+    // Transitive built-in transformers apply to all packages.
+    //
+    // Today these transformers are only for dartdevc.
+    if (_transitiveBuiltInTransformers.isNotEmpty) {
+      transformers.add(_transitiveBuiltInTransformers);
+    }
+
     // Built-in transformers only apply to the root package.
     //
     // Today these transformers are for dart2js and forwarding assets around
-    // dart2js.
-    if (package.name == rootPackage.name) {
-      transformers.addAll(_builtInTransformers);
+    // dart2js, as well as compiling ddc entry points.
+    if (_builtInTransformers.isNotEmpty && package.name == rootPackage.name) {
+      transformers.add(_builtInTransformers);
     }
-
-    // Transitive built-in transformers apply to all packages.
-    //
-    // Today these transformers are only for ddc.
-    transformers.addAll(_transitiveBuiltInTransformers);
 
     if (transformers.isEmpty) return null;
     return transformers;
@@ -479,12 +481,9 @@ class AssetEnvironment {
         ]);
       }
 
-      var containsDdc = graph.entrypoint.root.pubspec.transformers.any(
-          (transformers) =>
-              transformers.any((config) => config.id.package == '\$ddc'));
-
-      if (!containsDdc && compilerMode == CompilerMode.DevCompiler) {
-        _transitiveBuiltInTransformers.add(new DevCompilerTransformer());
+      if (compilerMode == CompilerMode.DevCompiler) {
+        _transitiveBuiltInTransformers.add(new DevCompilerPackageTransformer());
+        _builtInTransformers.add(new DevCompilerEntryPointTransformer());
       }
 
       // Bind a server that we can use to load the transformers.
