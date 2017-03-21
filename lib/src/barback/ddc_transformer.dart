@@ -39,7 +39,8 @@ class DevCompilerEntryPointTransformer extends Transformer
         transform.readInput,
         transform.primaryInput.id.addExtension('.js'),
         transform.primaryInput.id.addExtension('.js.map'),
-        transform.primaryInput.id.addExtension('.$_summaryExtension'));
+        transform.primaryInput.id.addExtension('.$_summaryExtension'),
+        failOnError: true);
   }
 
   @override
@@ -97,7 +98,8 @@ Future _compileWithDDC(
     _InputReader readInput,
     AssetId jsOutputId,
     AssetId sourceMapOutputId,
-    AssetId summaryOutputId) async {
+    AssetId summaryOutputId,
+    {bool failOnError = false}) async {
   var tmpDir = await Directory.systemTemp.createTemp();
   try {
     final watch = new Stopwatch()..start();
@@ -179,7 +181,11 @@ Future _compileWithDDC(
     logger.info(
         'Took ${watch.elapsed} to compile package:$basePackage with dartdevc.');
     if (result.exitCode != 0) {
-      logger.warning(result.stdout);
+      if (failOnError) {
+        logger.error(result.stdout);
+      } else {
+        logger.warning(result.stdout);
+      }
       return;
     }
 
@@ -243,7 +249,7 @@ Future<Set<String>> _findDependentPackages(
   foundPackages ??= new Set<String>();
   for (var id in assetIds) {
     if (!foundIds.add(id)) continue;
-    foundPackages.add(id.package);
+    if (p.url.split(id.path).first == 'lib') foundPackages.add(id.package);
 
     if (!await hasInput(id)) {
       logger.warning(
@@ -270,7 +276,7 @@ Future<Set<String>> _findDependentPackages(
 }
 
 File _fileForId(AssetId id, String rootDir, String packagesDir) {
-  return id.path.startsWith('lib/')
+  return p.url.split(id.path).first == 'lib'
       ? new File(p.joinAll(
           [packagesDir, id.package]..addAll(p.url.split(id.path).skip(1))))
       : new File(p.joinAll([rootDir]..addAll(p.url.split(id.path))));
@@ -279,7 +285,8 @@ File _fileForId(AssetId id, String rootDir, String packagesDir) {
 Set<AssetId> _findSummaryIds(package) {
   // TODO(jakemac): Read build.yaml if available?
   return new Set<AssetId>()
-    ..add(new AssetId(package, 'lib/$package.$_summaryExtension'));
+    ..add(
+        new AssetId(package, p.url.join('lib', '$package.$_summaryExtension')));
 }
 
 AssetId _urlToAssetId(AssetId source, String url, TransformLogger logger) {
