@@ -11,7 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("compiles Dart entrypoints in root package to JS", () {
+  setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('benchmark', [
@@ -35,40 +35,53 @@ main() {
     ]).create();
 
     pubGet();
+  });
+
+  integration("dart2js compiles Dart entrypoints in root package to JS", () {
     schedulePub(
         args: ["build", "benchmark", "foo", "web"],
         output: new RegExp(r'Built 6 files to "build".'));
+    validateBuild();
+  });
 
-    d.dir(appPath, [
-      d.dir('build', [
-        d.dir('benchmark', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
-          d.nothing('file.dart'),
-          d.nothing('lib.dart'),
-          d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
-            d.nothing('subfile.dart')
-          ])
-        ]),
-        d.dir('foo', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
-          d.nothing('file.dart'),
-          d.nothing('lib.dart'),
-          d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
-            d.nothing('subfile.dart')
-          ])
-        ]),
-        d.dir('web', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
-          d.nothing('file.dart'),
-          d.nothing('lib.dart'),
-          d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
-            d.nothing('subfile.dart')
-          ])
+  integration("dartdevc compiles Dart entrypoints in root package to JS", () {
+    schedulePub(
+        args: ["build", "benchmark", "foo", "web", "--compiler=dartdevc"],
+        output: new RegExp(r'Built \d* files to "build".'));
+    validateBuild();
+  });
+}
+
+void validateBuild() {
+  d.dir(appPath, [
+    d.dir('build', [
+      d.dir('benchmark', [
+        d.matcherFile('file.dart.js', isNot(isEmpty)),
+        d.nothing('file.dart'),
+        d.nothing('lib.dart'),
+        d.dir('subdir', [
+          d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+          d.nothing('subfile.dart')
+        ])
+      ]),
+      d.dir('foo', [
+        d.matcherFile('file.dart.js', isNot(isEmpty)),
+        d.nothing('file.dart'),
+        d.nothing('lib.dart'),
+        d.dir('subdir', [
+          d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+          d.nothing('subfile.dart')
+        ])
+      ]),
+      d.dir('web', [
+        d.matcherFile('file.dart.js', isNot(isEmpty)),
+        d.nothing('file.dart'),
+        d.nothing('lib.dart'),
+        d.dir('subdir', [
+          d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+          d.nothing('subfile.dart')
         ])
       ])
-    ]).validate();
-  });
+    ])
+  ]).validate();
 }

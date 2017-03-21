@@ -15,7 +15,7 @@ main() {
   // the source map. But this tries to use a type in the core library
   // (Duration) and validate that its source ends up in the source map.
   integration(
-      "Dart core libraries are available to source maps when the "
+      "dart2js dart core libraries are available to source maps when the "
       "build directory is a subdirectory", () {
     d.dir(appPath, [
       d.appPubspec(),
@@ -39,4 +39,10 @@ main() {
 
     endPubServe();
   });
+
+  integration(
+      "dartdevc dart core libraries are available to source maps when the "
+      "build directory is a subdirectory",
+      () {},
+      skip: 'TODO(jakemac53): make sdk sourcemaps available');
 }

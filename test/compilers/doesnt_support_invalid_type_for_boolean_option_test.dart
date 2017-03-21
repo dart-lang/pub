@@ -7,7 +7,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("doesn't support invalid type for boolean option", () {
+  integration("dart2js doesn't support invalid type for boolean option", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -31,4 +31,8 @@ main() {
         '(expected true or false).'));
     endPubServe();
   });
+
+  integration("dartdevc doesn't support invalid type for boolean option", () {},
+      skip: "TODO(jakemac53): Add type validation to the dartdevc "
+          "transformer options.");
 }

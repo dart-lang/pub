@@ -9,7 +9,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("handles imports in the Dart code", () {
+  setUp(() {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
@@ -47,9 +47,23 @@ void main() {
     ]).create();
 
     pubGet();
+  });
+
+  tearDown(() {
+    endPubServe();
+  });
+
+  integration("dart2js handles imports in the Dart code", () {
     pubServe();
     requestShouldSucceed("main.dart.js", contains("footext"));
     requestShouldSucceed("main.dart.js", contains("libtext"));
-    endPubServe();
+  });
+
+  integration("dartdevc handles imports in the Dart code", () {
+    pubServe(args: ['--compiler=dartdevc']);
+    requestShouldSucceed("main.dart.js", contains("foo()"));
+    requestShouldSucceed("main.dart.js", contains("lib()"));
+    requestShouldSucceed("packages/foo/foo.js", contains("footext"));
+    requestShouldSucceed("packages/myapp/myapp.js", contains("libtext"));
   });
 }

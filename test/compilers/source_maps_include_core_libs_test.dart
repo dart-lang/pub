@@ -12,7 +12,7 @@ main() {
   // not precise as to which source libraries will actually be referenced in
   // the source map. But this tries to use a type in the core library
   // (Duration) and validate that its source ends up in the source map.
-  integration("Dart core libraries are available to source maps", () {
+  integration("dart2js: dart core libraries are available to source maps", () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
@@ -50,4 +50,8 @@ main() {
       ])
     ]).validate();
   });
+
+  integration(
+      "dartdevc: dart core libraries are available to source maps", () {},
+      skip: 'TODO(jakemac53): make sdk sourcemaps available');
 }

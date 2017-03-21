@@ -9,7 +9,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("doesn't support an invalid dart2js option", () {
+  integration("dart2js doesn't support an invalid options", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -29,4 +29,8 @@ main() {
     pub.stderr.expect('Unrecognized dart2js option "invalidOption".');
     pub.shouldExit(exit_codes.DATA);
   });
+
+  integration("dartdevc doesn't support invalid options", () {},
+      skip: "TODO(jakemac53): Don't support invalid options in the dartdevc "
+          "transformer.");
 }

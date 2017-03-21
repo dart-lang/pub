@@ -42,4 +42,7 @@ main() {
     requestShouldSucceed("main.dart.js", isNot(isEmpty));
     endPubServe();
   });
+
+  integration("supports most dartdevc command-line options", () {},
+      skip: 'TODO(jakemac53): Add support for dartdevc command line options');
 }

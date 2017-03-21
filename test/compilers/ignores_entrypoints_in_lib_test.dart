@@ -19,23 +19,29 @@ main() {
         d.file('index.html', 'html'),
       ])
     ]).create();
+    pubGet();
   });
 
-  integration("build ignores Dart entrypoints in lib", () {
-    pubGet();
-    schedulePub(
-        args: ["build", "--all"],
-        output: new RegExp(r'Built 1 file to "build".'));
+  runTests("dart2js");
+  runTests("dartdevc");
+}
 
-    d.dir(appPath, [
-      d.dir('build', [d.nothing('lib')])
-    ]).validate();
-  });
+void runTests(String compiler) {
+  group(compiler, () {
+    integration("build ignores Dart entrypoints in lib", () {
+      schedulePub(
+          args: ["build", "--all", "--compiler=$compiler"],
+          output: new RegExp(r'Built \d file[s]? to "build".'));
 
-  integration("serve ignores Dart entrypoints in lib", () {
-    pubGet();
-    pubServe();
-    requestShould404("packages/myapp/main.dart.js");
-    endPubServe();
+      d.dir(appPath, [
+        d.dir('build', [d.nothing('lib')])
+      ]).validate();
+    });
+
+    integration("serve ignores Dart entrypoints in lib", () {
+      pubServe(args: ["--compiler=$compiler"]);
+      requestShould404("packages/myapp/main.dart.js");
+      endPubServe();
+    });
   });
 }

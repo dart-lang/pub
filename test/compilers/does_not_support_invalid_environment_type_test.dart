@@ -7,7 +7,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("doesn't support invalid environment type", () {
+  integration("dart2js doesn't support invalid environment type", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -32,4 +32,8 @@ main() {
         '(expected map from strings to strings).'));
     endPubServe();
   });
+
+  integration("dartdevc doesn't support invalid environment type", () {},
+      skip: "TODO(jakemac53): Add support for environment variables in the "
+          "dartdevc transformer.");
 }

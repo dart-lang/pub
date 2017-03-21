@@ -6,7 +6,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("omits source maps from a debug build if sourceMaps false", () {
+  integration(
+      "dart2js omits source maps from a debug build if sourceMaps false", () {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -31,4 +32,9 @@ main() {
       ])
     ]).validate();
   });
+
+  integration(
+      "dartdevc omits source maps from a debug build if sourceMaps false",
+      () {},
+      skip: 'TODO(jakemac53): Add a way of disabling sourcemaps.');
 }

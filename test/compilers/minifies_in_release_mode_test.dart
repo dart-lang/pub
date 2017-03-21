@@ -7,7 +7,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("generates minified JS in release mode", () {
+  integration("dart2js generates minified JS in release mode", () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("main.dart", "void main() => print('hello');")])

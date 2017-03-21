@@ -9,7 +9,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("compiles a Dart file that imports a generated file to JS", () {
+  setUp(() {
     serveBarback();
 
     d.dir(appPath, [
@@ -36,8 +36,21 @@ const TOKEN = "before";
     ]).create();
 
     pubGet();
+  });
+
+  tearDown(() {
+    endPubServe();
+  });
+
+  integration(
+      "dart2js compiles a Dart file that imports a generated file to JS", () {
     pubServe();
     requestShouldSucceed("main.dart.js", contains("(before, munge)"));
-    endPubServe();
+  });
+
+  integration(
+      "dartdevc compiles a Dart file that imports a generated file to JS", () {
+    pubServe(args: ["--compiler=dartdevc"]);
+    requestShouldSucceed("main.dart.js", contains("(before, munge)"));
   });
 }

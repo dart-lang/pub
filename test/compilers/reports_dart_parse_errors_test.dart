@@ -14,7 +14,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("reports Dart parse errors", () {
+  setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [
@@ -25,29 +25,66 @@ main() {
     ]).create();
 
     pubGet();
-    var pub = startPub(args: ["build"]);
-    pub.stdout.expect(startsWith("Loading source assets..."));
-    pub.stdout.expect(startsWith("Building myapp..."));
+  });
 
-    var consumeFile = consumeThrough(inOrder([
-      "[Error from Dart2JS]:",
-      startsWith(p.join("web", "file.dart") + ":")
-    ]));
-    var consumeSubfile = consumeThrough(inOrder([
-      "[Error from Dart2JS]:",
-      startsWith(p.join("web", "subdir", "subfile.dart") + ":")
-    ]));
+  runTest("dart2js");
+  runTest("dartdevc");
+}
 
-    // It's nondeterministic what order the dart2js transformers start running,
-    // so we allow the error messages to be emitted in either order.
-    pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
-        inOrder([consumeSubfile, consumeFile])));
+void runTest(String compiler) {
+  group(compiler, () {
+    integration("reports Dart parse errors", () {
+      var pub = startPub(args: ["build", "--compiler", compiler]);
+      pub.stdout.expect(startsWith("Loading source assets..."));
+      pub.stdout.expect(startsWith("Building myapp..."));
 
-    pub.shouldExit(exit_codes.DATA);
+      StreamMatcher consumeFile;
+      StreamMatcher consumeSubfile;
 
-    // Doesn't output anything if an error occurred.
-    d.dir(appPath, [
-      d.dir('build', [d.nothing('web')])
-    ]).validate();
+      if (compiler == "dart2js") {
+        consumeFile = consumeThrough(inOrder([
+          startsWith("[Error from Dart2JS]:"),
+          startsWith(p.join("web", "file.dart") + ":")
+        ]));
+        consumeSubfile = consumeThrough(inOrder([
+          startsWith("[Error from Dart2JS]:"),
+          startsWith(p.join("web", "subdir", "subfile.dart") + ":")
+        ]));
+      } else if (compiler == "dartdevc") {
+        consumeFile = consumeThrough(inOrder([
+          startsWith("[DevCompilerEntryPoint]"),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 6\)')),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 10\)')),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 10\)')),
+          isEmpty,
+          "Please fix all errors before compiling (warnings are okay)."
+        ]));
+        consumeSubfile = consumeThrough(inOrder([
+          startsWith("[DevCompilerEntryPoint]"),
+          matches(new RegExp(
+              '\[error\].*\(web/subdir/subfile.dart, line 1, col 6\)')),
+          matches(new RegExp(
+              '\[error\].*\(web/subdir/subfile.dart, line 1, col 10\)')),
+          matches(new RegExp(
+              '\[error\].*\(web/subdir/subfile.dart, line 1, col 10\)')),
+          isEmpty,
+          "Please fix all errors before compiling (warnings are okay)."
+        ]));
+      } else {
+        fail("Unsupported compiler `$compiler`");
+      }
+
+      // It's nondeterministic what order the dart2js transformers start running,
+      // so we allow the error messages to be emitted in either order.
+      pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
+          inOrder([consumeSubfile, consumeFile])));
+
+      pub.shouldExit(exit_codes.DATA);
+
+      // Doesn't output anything if an error occurred.
+      d.dir(appPath, [
+        d.dir('build', [d.nothing('web')])
+      ]).validate();
+    });
   });
 }

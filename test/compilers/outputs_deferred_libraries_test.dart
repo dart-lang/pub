@@ -17,7 +17,7 @@ import 'a.dart' deferred as a;
 import 'b.dart' deferred as b;
 
 void main() {
-  Future.wait([lazyA.loadLibrary(), lazyB.loadLibrary()]).then((_) {
+  Future.wait([a.loadLibrary(), b.loadLibrary()]).then((_) {
     a.fn();
     b.fn();
   });
@@ -33,7 +33,7 @@ fn() => print("b");
 """;
 
 main() {
-  integration("compiles deferred libraries to separate outputs", () {
+  setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('web',
@@ -41,6 +41,9 @@ main() {
     ]).create();
 
     pubGet();
+  });
+
+  integration("dart2js compiles deferred libraries to separate outputs", () {
     schedulePub(
         args: ["build"], output: new RegExp(r'Built 3 files to "build".'));
 
@@ -50,6 +53,19 @@ main() {
           d.matcherFile('main.dart.js', isNot(isEmpty)),
           d.matcherFile('main.dart.js_1.part.js', isNot(isEmpty)),
           d.matcherFile('main.dart.js_2.part.js', isNot(isEmpty)),
+        ])
+      ])
+    ]).validate();
+  });
+
+  integration("dartdevc compiles deferred libraries into the module", () {
+    schedulePub(args: ["build", "--compiler", "dartdevc"]);
+
+    d.dir(appPath, [
+      d.dir('build', [
+        d.dir('web', [
+          d.matcherFile('main.dart.js', isNot(isEmpty)),
+          d.nothing('main.dart.js_1.part.js'),
         ])
       ])
     ]).validate();

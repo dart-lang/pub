@@ -9,34 +9,42 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("passes along environment constants", () {
-    d.dir(appPath, [
-      d.pubspec({
-        "name": "myapp",
-        "transformers": [
-          {
-            "\$dart2js": {
-              "environment": {'CONSTANT': 'true'}
+  runTest("dart2js");
+  runTest("dartdevc",
+      skip: 'TODO(jakemac53): forward environment config to dartdevc');
+}
+
+void runTest(String compiler, {skip}) {
+  group(compiler, () {
+    integration("passes along environment constants", () {
+      d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "transformers": [
+            {
+              "\$$compiler": {
+                "environment": {'CONSTANT': 'true'}
+              }
             }
-          }
-        ]
-      }),
-      d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+          ]
+        }),
+        d.dir("web", [
+          d.file(
+              "main.dart",
+              """
 void main() {
   if (const bool.fromEnvironment('CONSTANT')) {
     print("hello");
   }
 }
 """)
-      ])
-    ]).create();
+        ])
+      ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("main.dart.js", contains("hello"));
-    endPubServe();
+      pubGet();
+      pubServe(args: ["--compiler", compiler]);
+      requestShouldSucceed("main.dart.js", contains("hello"));
+      endPubServe();
+    }, skip: skip);
   });
 }

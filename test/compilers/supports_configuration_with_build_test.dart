@@ -88,4 +88,10 @@ main() {
       ])
     ]).validate();
   });
+
+  integration(
+      "compiles dart.js and interop.js next to entrypoints when "
+      "dartdevc is explicitly configured",
+      () {},
+      skip: "TODO(jakemac53): dartdevc can't yet be explicitly configured.");
 }

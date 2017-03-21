@@ -7,7 +7,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("minify configuration overrides the mode", () {
+  integration("dart2js minify configuration overrides the mode", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",

@@ -12,20 +12,33 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("converts a Dart isolate entrypoint in web to JS", () {
+  setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file(
             "isolate.dart",
-            "void main(List<String> args, SendPort "
-            "sendPort) => print('hello');")
+            """
+import 'dart:isolate';
+
+void main(List<String> args, SendPort sendPort) => print('hello');""")
       ])
     ]).create();
 
     pubGet();
+  });
+
+  tearDown(() {
+    endPubServe();
+  });
+
+  integration("dart2js converts a Dart isolate entrypoint in web to JS", () {
     pubServe();
     requestShouldSucceed("isolate.dart.js", contains("hello"));
-    endPubServe();
+  });
+
+  integration("dartdevc converts a Dart isolate entrypoint in web to JS", () {
+    pubServe(args: ["--compiler=dartdevc"]);
+    requestShouldSucceed("isolate.dart.js", contains("hello"));
   });
 }

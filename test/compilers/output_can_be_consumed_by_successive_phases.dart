@@ -27,7 +27,7 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  integration("output can be consumed by successive phases", () {
+  integration("dart2js output can be consumed by successive phases", () {
     serveBarback();
 
     d.dir(appPath, [
@@ -47,4 +47,7 @@ main() {
     requestShouldSucceed("main.dart.out", isUnminifiedDart2JSOutput);
     endPubServe();
   });
+
+  integration("dart2js output can be consumed by successive phases", () {},
+      skip: 'TODO(jakemac53): Add option for explicit dartdevc transformer.');
 }

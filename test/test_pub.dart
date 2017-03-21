@@ -840,3 +840,6 @@ class _PairMatcher extends Matcher {
 
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => inOrder(output.split("\n"));
+
+/// A [StreamMatcher] that matches multiple lines of output.
+StreamMatcher emitsMatchingLines(Iterable<Matcher> output) => inOrder(output);

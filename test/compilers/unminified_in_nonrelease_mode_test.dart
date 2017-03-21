@@ -18,4 +18,6 @@ main() {
     requestShouldSucceed("main.dart.js", isUnminifiedDart2JSOutput);
     endPubServe();
   });
+
+  // **Note:**: No dartdevc test since it's not relevant (no minified mode).
 }

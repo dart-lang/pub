@@ -8,7 +8,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("includes source maps in a release build if sourceMaps true", () {
+  integration(
+      "dart2js includes source maps in a release build if sourceMaps true", () {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -37,4 +38,8 @@ main() {
       ])
     ]).validate();
   });
+
+  test("dartdevc includes source maps in a release build if sourceMaps true.",
+      () {},
+      skip: 'TODO(jakemac53): Add an option to opt in/out of sourcemaps.');
 }

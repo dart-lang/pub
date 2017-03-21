@@ -9,10 +9,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  // This is a regression test for issue #17198.
-  integration(
-      "compiles a Dart file that imports a generated file to JS "
-      "outside web/", () {
+  setUp(() {
     serveBarback();
 
     d.dir(appPath, [
@@ -39,9 +36,29 @@ const TOKEN = "before";
     ]).create();
 
     pubGet();
+  });
+
+  tearDown(() {
+    endPubServe();
+  });
+
+  // This is a regression test for issue #17198.
+  integration(
+      "dart2js compiles a Dart file that imports a generated file to JS "
+      "outside web/", () {
     pubServe(args: ["test"]);
     requestShouldSucceed("main.dart.js", contains("(before, munge)"),
         root: "test");
-    endPubServe();
+  });
+
+  // This is a regression test for issue #17198.
+  integration(
+      "dartdevc compiles a Dart file that imports a generated file to JS "
+      "outside web/", () {
+    pubServe(args: ["test", "--compiler=dartdevc"]);
+    // Since `other.dart` is a part of this module its contents should appear
+    // here.
+    requestShouldSucceed("main.dart.js", contains("(before, munge)"),
+        root: "test");
   });
 }

@@ -6,7 +6,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("omits source maps from a release build", () {
+  integration("dart2js omits source maps from a release build", () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
@@ -24,4 +24,7 @@ main() {
       ])
     ]).validate();
   });
+
+  integration("dartdevc omits source maps from a release build", () {},
+      skip: 'TODO(jakemac53): Disable sourcemaps in release mode.');
 }

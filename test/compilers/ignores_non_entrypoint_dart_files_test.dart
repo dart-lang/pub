@@ -19,25 +19,32 @@ main() {
         d.file('file4.dart', 'var foo;')
       ])
     ]).create();
+    pubGet();
   });
 
-  integration("build ignores non-entrypoint Dart files", () {
-    pubGet();
-    schedulePub(
-        args: ["build"], output: new RegExp(r'Built 0 files to "build".'));
+  runTests("dart2js");
+  runTests("dartdevc", skip: "TODO(jakemac53): Don't compile non-entrypoints.");
+}
 
-    d.dir(appPath, [
-      d.dir('build', [d.nothing('web')])
-    ]).validate();
-  });
+void runTests(String compiler, {skip}) {
+  group(compiler, () {
+    integration("build ignores non-entrypoint Dart files", () {
+      schedulePub(
+          args: ["build", "--compiler=$compiler"],
+          output: new RegExp(r'Built 0 files to "build".'));
 
-  integration("serve ignores non-entrypoint Dart files", () {
-    pubGet();
-    pubServe();
-    requestShould404("file1.dart.js");
-    requestShould404("file2.dart.js");
-    requestShould404("file3.dart.js");
-    requestShould404("file4.dart.js");
-    endPubServe();
+      d.dir(appPath, [
+        d.dir('build', [d.nothing('web')])
+      ]).validate();
+    }, skip: skip);
+
+    integration("serve ignores non-entrypoint Dart files", () {
+      pubServe(args: ["--compiler=$compiler"]);
+      requestShould404("file1.dart.js");
+      requestShould404("file2.dart.js");
+      requestShould404("file3.dart.js");
+      requestShould404("file4.dart.js");
+      endPubServe();
+    }, skip: skip);
   });
 }

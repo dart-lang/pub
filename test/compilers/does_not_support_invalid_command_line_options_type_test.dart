@@ -7,7 +7,7 @@ import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("doesn't support invalid commandLineOptions type", () {
+  integration("dart2js doesn't support invalid commandLineOptions type", () {
     d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
@@ -32,4 +32,8 @@ main() {
         '"foo" (expected list of strings).'));
     endPubServe();
   });
+
+  integration("dartdevc doesn't support invalid commandLineOptions type", () {},
+      skip: "TODO(jakemac53): Add support for commandLineOptions in the "
+          "dartdevc transformer.");
 }
