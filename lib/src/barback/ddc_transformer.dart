@@ -24,8 +24,10 @@ class DevCompilerEntryPointTransformer extends Transformer
 
   @override
   Future apply(Transform transform) async {
-    // TODO(jakemac): add other transitive non-lib deps
-    var idsToCompile = [transform.primaryInput.id];
+    // Find all transitive relative imports and compile them as a part of this
+    // module.
+    var idsToCompile = await _findRelativeIds(transform.primaryInput.id,
+        transform.logger, transform.getInput, transform.hasInput);
     await _compileWithDDC(
         transform.logger,
         idsToCompile,
@@ -99,7 +101,7 @@ Future _compileWithDDC(
   var tmpDir = await Directory.systemTemp.createTemp();
   try {
     final watch = new Stopwatch()..start();
-    final dependentPackages = await findDependentPackages(
+    final dependentPackages = await _findDependentPackages(
         basePackage, idsToCompile, logger, getInput, hasInput);
     logger.fine('Took ${watch.elapsed} to discover dependencies.');
 
@@ -198,7 +200,38 @@ Future _compileWithDDC(
   }
 }
 
-Future<Set<String>> findDependentPackages(
+/// Crawls from [entryId] and finds all [Asset]s that are relative through
+/// relative uris (via all [UriBasedDirective]s).
+Future<Set<AssetId>> _findRelativeIds(AssetId entryId, TransformLogger logger,
+    _InputGetter getInput, _InputChecker hasInput,
+    {Set<AssetId> foundIds}) async {
+  foundIds ??= new Set<AssetId>();
+  if (!await hasInput(entryId)) {
+    logger.warning('Unable to find file `$entryId`.');
+    return foundIds;
+  }
+  if (!foundIds.add(entryId)) return foundIds;
+
+  var asset = await getInput(entryId);
+  var contents = await asset.readAsString();
+  var unit = parseDirectives(contents);
+
+  var relativeIds = unit.directives
+      .where((d) =>
+          d is UriBasedDirective && !Uri.parse(d.uri.stringValue).isAbsolute)
+      .map((d) => _urlToAssetId(
+          asset.id, (d as UriBasedDirective).uri.stringValue, logger))
+      .where((id) => id != null);
+  for (var id in relativeIds) {
+    await _findRelativeIds(id, logger, getInput, hasInput, foundIds: foundIds);
+  }
+
+  return foundIds;
+}
+
+/// Crawls from each of [assetIds] and finds all reachable packages (through
+/// all [UriBasedDirective]s).
+Future<Set<String>> _findDependentPackages(
     String basePackage,
     Iterable<AssetId> assetIds,
     TransformLogger logger,
@@ -220,7 +253,7 @@ Future<Set<String>> findDependentPackages(
     var asset = await getInput(id);
     var contents = await asset.readAsString();
     var unit = parseDirectives(contents);
-    await findDependentPackages(
+    await _findDependentPackages(
         basePackage,
         unit.directives
             .where((d) => d is UriBasedDirective)
