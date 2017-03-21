@@ -10,9 +10,10 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+typedef Future<bool> _InputChecker(AssetId id);
 typedef Future<Asset> _InputGetter(AssetId id);
 typedef Stream<List<int>> _InputReader(AssetId id);
-typedef void _OutputAdder(Asset);
+typedef void _OutputWriter(Asset);
 
 class DevCompilerEntryPointTransformer extends Transformer
     implements LazyTransformer {
@@ -32,6 +33,7 @@ class DevCompilerEntryPointTransformer extends Transformer
         p.url.split(transform.primaryInput.id.path).first,
         transform.addOutput,
         transform.getInput,
+        transform.hasInput,
         transform.readInput,
         transform.primaryInput.id.addExtension('.js'),
         transform.primaryInput.id.addExtension('.js.map'),
@@ -58,6 +60,7 @@ class DevCompilerPackageTransformer extends AggregateTransformer
         transform.key,
         transform.addOutput,
         transform.getInput,
+        transform.hasInput,
         transform.readInput,
         jsOutputId,
         jsOutputId.addExtension('.map'),
@@ -66,7 +69,7 @@ class DevCompilerPackageTransformer extends AggregateTransformer
 
   @override
   String classifyPrimary(AssetId id) {
-    if (!id.path.endsWith('.dart')) return null;
+    if (id.extension != '.dart') return null;
     var dir = p.url.split(id.path).first;
     if (dir != 'lib') return null;
     return dir;
@@ -86,22 +89,21 @@ Future _compileWithDDC(
     Iterable<AssetId> idsToCompile,
     String basePackage,
     String topLevelDir,
-    _OutputAdder addOutput,
+    _OutputWriter addOutput,
     _InputGetter getInput,
+    _InputChecker hasInput,
     _InputReader readInput,
     AssetId jsOutputId,
     AssetId sourceMapOutputId,
     AssetId summaryOutputId) async {
   var tmpDir = await Directory.systemTemp.createTemp();
-  final watch = new Stopwatch()..start();
-  logger.info('Compiling package:$basePackage with dartdevc...');
   try {
-    final stepWatch = new Stopwatch()..start();
+    final watch = new Stopwatch()..start();
     final dependentPackages = await findDependentPackages(
-        basePackage, idsToCompile, logger, getInput);
-    logger.fine('Took ${stepWatch.elapsed} to discover dependencies.');
+        basePackage, idsToCompile, logger, getInput, hasInput);
+    logger.fine('Took ${watch.elapsed} to discover dependencies.');
 
-    stepWatch.reset();
+    watch.reset();
     var packagesDir = new Directory(p.join(tmpDir.path, 'packages'));
     await packagesDir.createSync(recursive: true);
     var summaryIds = new Set<AssetId>();
@@ -112,6 +114,11 @@ Future _compileWithDDC(
 
     var summaryFiles = new Set<File>();
     for (var id in summaryIds) {
+      if (!await hasInput(id)) {
+        logger.warning('Unable to find summary file `$id` when compiling '
+            'package:$basePackage.');
+        continue;
+      }
       var file = _fileForId(id, tmpDir.path, packagesDir.path);
       await _writeFile(file, readInput(id));
       summaryFiles.add(file);
@@ -119,20 +126,26 @@ Future _compileWithDDC(
 
     var filesToCompile = new Set<File>();
     for (var id in idsToCompile) {
+      if (!await hasInput(id)) {
+        logger.warning(
+            'Unable to find file `$id` when compiling package:$basePackage.');
+        continue;
+      }
       var file = _fileForId(id, tmpDir.path, packagesDir.path);
       await _writeFile(file, readInput(id));
       filesToCompile.add(file);
     }
     logger.fine(
-        'Took ${stepWatch.elapsed} to set up a tmp environment for dartdevc.');
+        'Took ${watch.elapsed} to set up a tmp environment for dartdevc.');
 
     var sdk = cli_util.getSdkDir();
     if (sdk == null) {
-      logger.error('Unable to find dart sdk');
+      logger.error('Unable to find dart sdk.');
       return;
     }
 
-    stepWatch.reset();
+    watch.reset();
+    logger.fine('Compiling package:$basePackage with dartdevc...');
     var sdk_summary = p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
     var jsOutputFile = _fileForId(jsOutputId, tmpDir.path, packagesDir.path);
     var sourceMapOutputFile =
@@ -161,12 +174,14 @@ Future _compileWithDDC(
     var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
     var result =
         await Process.run(ddcPath, ddcArgs, workingDirectory: tmpDir.path);
-    logger.fine('Took ${stepWatch.elapsed} to run dartdevc.');
+    logger.info(
+        'Took ${watch.elapsed} to compile package:$basePackage with dartdevc.');
     if (result.exitCode != 0) {
-      logger.error(result.stdout);
+      logger.warning(result.stdout);
       return;
     }
 
+    watch.reset();
     addOutput(
         new Asset.fromString(jsOutputId, await jsOutputFile.readAsString()));
     addOutput(new Asset.fromString(
@@ -174,8 +189,8 @@ Future _compileWithDDC(
 
     addOutput(new Asset.fromBytes(
         summaryOutputId, await summaryOutputFile.readAsBytes()));
-
-    logger.info('Took ${watch.elapsed} to compile package:$basePackage');
+    logger.fine(
+        'Took ${watch.elapsed} to copy output files for package:$basePackage.');
   } catch (e) {
     logger.error('$e');
   } finally {
@@ -183,15 +198,25 @@ Future _compileWithDDC(
   }
 }
 
-Future<Set<String>> findDependentPackages(String basePackage,
-    Iterable<AssetId> assetIds, TransformLogger logger, _InputGetter getInput,
-    {Set<AssetId> foundIds, Set<String> foundPackages}) async {
+Future<Set<String>> findDependentPackages(
+    String basePackage,
+    Iterable<AssetId> assetIds,
+    TransformLogger logger,
+    _InputGetter getInput,
+    _InputChecker hasInput,
+    {Set<AssetId> foundIds,
+    Set<String> foundPackages}) async {
   foundIds ??= new Set<AssetId>();
   foundPackages ??= new Set<String>();
   for (var id in assetIds) {
     if (!foundIds.add(id)) continue;
     foundPackages.add(id.package);
 
+    if (!await hasInput(id)) {
+      logger.warning(
+          'Unable to find file `$id` when compiling package:$basePackage.');
+      continue;
+    }
     var asset = await getInput(id);
     var contents = await asset.readAsString();
     var unit = parseDirectives(contents);
@@ -204,6 +229,7 @@ Future<Set<String>> findDependentPackages(String basePackage,
             .where((id) => id != null),
         logger,
         getInput,
+        hasInput,
         foundIds: foundIds,
         foundPackages: foundPackages);
   }
