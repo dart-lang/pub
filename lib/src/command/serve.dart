@@ -8,7 +8,6 @@ import 'dart:math' as math;
 import 'package:barback/barback.dart';
 
 import '../barback/asset_environment.dart';
-import '../barback/compiler_mode.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'barback.dart';
@@ -93,16 +92,11 @@ class ServeCommand extends BarbackCommand {
         key: (pair) => pair.split("=").first,
         value: (pair) => pair.split("=").last);
 
-    var actualCompilerMode = compilerMode;
-    if (argResults.wasParsed('dart2js')) {
-      actualCompilerMode =
-          argResults['dart2js'] ? CompilerMode.Dart2Js : CompilerMode.None;
-    }
     var environment = await AssetEnvironment.create(entrypoint, mode,
         watcherType: watcherType,
         hostname: hostname,
         basePort: port,
-        compilerMode: actualCompilerMode,
+        compilerMode: compilerMode,
         environmentConstants: environmentConstants);
     var directoryLength =
         sourceDirectories.map((dir) => dir.length).reduce(math.max);

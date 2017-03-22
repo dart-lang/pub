@@ -45,8 +45,7 @@ class PubPackageProvider implements StaticPackageProvider {
 
   PubPackageProvider(PackageGraph graph)
       : _graph = graph,
-        staticPackages = [r"$pub", r"$sdk"]
-          ..addAll(graph.packages.keys.where(graph.isPackageStatic));
+        staticPackages = [r"$pub", r"$sdk"];
 
   Future<Asset> getAsset(AssetId id) async {
     // "$pub" is a psuedo-package that allows pub's transformer-loading

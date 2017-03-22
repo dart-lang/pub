@@ -32,7 +32,10 @@ abstract class BarbackCommand extends PubCommand {
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
   // The current compiler mode.
-  CompilerMode get compilerMode => _compilerArgToMode[argResults["compiler"]];
+  CompilerMode get compilerMode =>
+      argResults.options.contains('dart2js') && argResults.wasParsed('dart2js')
+          ? argResults['dart2js'] ? CompilerMode.Dart2Js : CompilerMode.None
+          : _compilerArgToMode[argResults["compiler"]];
 
   /// The directories in the entrypoint package that should be added to the
   /// build environment.

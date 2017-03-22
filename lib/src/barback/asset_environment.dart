@@ -551,7 +551,6 @@ class AssetEnvironment {
     // other build directories in the root package by calling
     // [serveDirectory].
     await Future.wait(graph.packages.values.map((package) async {
-      if (graph.isPackageStatic(package.name)) return;
       await _provideDirectorySources(package, "lib");
     }));
   }
