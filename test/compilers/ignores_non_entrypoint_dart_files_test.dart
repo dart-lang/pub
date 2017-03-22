@@ -34,7 +34,21 @@ void runTests(String compiler, {skip}) {
           output: new RegExp(r'Built \d files to "build".'));
 
       d.dir(appPath, [
-        d.dir('build', [d.nothing('web')])
+        d.dir(
+            'build',
+            // Slight difference in behavior between dart2js and dartdevc here,
+            // dartdevc will output some shared resources under this directory
+            // even if there are no actual web entry points.
+            compiler == "dart2js"
+                ? [d.nothing('web')]
+                : [
+                    d.dir('web', [
+                      d.nothing("file1.dart.js"),
+                      d.nothing("file2.dart.js"),
+                      d.nothing("file3.dart.js"),
+                      d.nothing("file4.dart.js"),
+                    ])
+                  ])
       ]).validate();
     }, skip: skip);
 

@@ -52,7 +52,7 @@ void runTest(String compiler) {
         ]));
       } else if (compiler == "dartdevc") {
         consumeFile = consumeThrough(inOrder([
-          startsWith("[DevCompilerEntryPoint]"),
+          startsWith("[DevCompilerEntryPointModule]"),
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 6\)')),
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
@@ -60,7 +60,7 @@ void runTest(String compiler) {
           "Please fix all errors before compiling (warnings are okay)."
         ]));
         consumeSubfile = consumeThrough(inOrder([
-          startsWith("[DevCompilerEntryPoint]"),
+          startsWith("[DevCompilerEntryPointModule]"),
           matches(new RegExp(
               '\[error\].*\(web/subdir/subfile.dart, line 2, col 6\)')),
           matches(new RegExp(
