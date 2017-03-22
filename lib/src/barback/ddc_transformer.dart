@@ -27,23 +27,29 @@ class DevCompilerEntryPointTransformer extends Transformer
     // First, check if we have a `main`.
     if (!await _isEntryPoint(transform.primaryInput.id, transform)) return;
 
+    // Create the bootstrap script,
+    var jsOutputId = transform.primaryInput.id.addExtension('.module.js');
+    _createAmdBootstrap(transform.primaryInput.id.addExtension('.js'),
+        jsOutputId, transform.addOutput);
+
     // Find all transitive relative imports and compile them as a part of this
     // module.
     var idsToCompile = await _findRelativeIds(transform.primaryInput.id,
         transform.logger, transform.getInput, transform.hasInput);
     await _compileWithDDC(
-        transform.logger,
-        idsToCompile,
-        transform.primaryInput.id.package,
-        p.url.split(transform.primaryInput.id.path).first,
-        transform.addOutput,
-        transform.getInput,
-        transform.hasInput,
-        transform.readInput,
-        transform.primaryInput.id.addExtension('.js'),
-        transform.primaryInput.id.addExtension('.js.map'),
-        transform.primaryInput.id.addExtension('.$_summaryExtension'),
-        failOnError: true);
+      transform.logger,
+      idsToCompile,
+      transform.primaryInput.id.package,
+      p.url.split(transform.primaryInput.id.path).first,
+      transform.addOutput,
+      transform.getInput,
+      transform.hasInput,
+      transform.readInput,
+      jsOutputId,
+      jsOutputId.addExtension('.map'),
+      jsOutputId.changeExtension('.$_summaryExtension'),
+      failOnError: true,
+    );
   }
 
   @override
@@ -207,6 +213,23 @@ Future _compileWithDDC(
   } finally {
     await tmpDir.delete(recursive: true);
   }
+}
+
+void _createAmdBootstrap(
+    AssetId bootstrapId, AssetId jsOutputId, _OutputWriter addOutput) {
+  var appModuleName = p.withoutExtension(
+      p.relative(jsOutputId.path, from: p.dirname(bootstrapId.path)));
+
+  var jsOutputModule =
+      jsOutputId.path.substring(0, jsOutputId.path.indexOf('.'));
+  var appModuleScope = p.url.split(jsOutputModule).join("__");
+  var bootstrapContent = '''
+require(["$appModuleName", "dart_sdk"], function(app, dart_sdk) {
+  dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
+  app.$appModuleScope.main();
+});
+''';
+  addOutput(new Asset.fromString(bootstrapId, bootstrapContent));
 }
 
 /// Crawls from [entryId] and finds all [Asset]s that are relative through

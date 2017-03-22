@@ -39,6 +39,7 @@ void main(List<String> args, SendPort sendPort) => print('hello');""")
 
   integration("dartdevc converts a Dart isolate entrypoint in web to JS", () {
     pubServe(args: ["--compiler=dartdevc"]);
-    requestShouldSucceed("isolate.dart.js", contains("hello"));
+    requestShouldSucceed("isolate.dart.js", isNotEmpty);
+    requestShouldSucceed("isolate.dart.module.js", contains("hello"));
   });
 }

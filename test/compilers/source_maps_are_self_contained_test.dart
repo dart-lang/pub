@@ -97,12 +97,12 @@ main() {
             d.dir("foo", [d.matcherFile("foo.js.map", contains(r'"foo.dart"'))])
           ]),
           d.matcherFile(
-              "main.dart.js.map",
+              "main.dart.module.js.map",
               allOf(contains(r'"main.dart"'),
                   isNot(contains("packages/foo/foo.dart")))),
           d.dir("sub", [
             d.matcherFile(
-                "main2.dart.js.map",
+                "main2.dart.module.js.map",
                 allOf(contains(r'"main2.dart"'),
                     isNot(contains("../packages/foo/foo.dart")))),
           ]),

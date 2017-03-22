@@ -43,6 +43,16 @@ void main() => print(TOKEN);
 
   integration("dartdevc compiles a generated Dart file to JS", () {
     pubServe(args: ['--compiler=dartdevc']);
-    requestShouldSucceed("main.dart.js", contains("(before, munge)"));
+    // AMD Bootstrap file.
+    requestShouldSucceed(
+        "main.dart.js",
+        '''
+require(["main.dart.module", "dart_sdk"], function(app, dart_sdk) {
+  dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
+  app.web__main.main();
+});
+''');
+    // Actual entry point module.
+    requestShouldSucceed("main.dart.module.js", contains("(before, munge)"));
   });
 }

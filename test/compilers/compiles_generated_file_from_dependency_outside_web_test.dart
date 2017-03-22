@@ -58,7 +58,8 @@ const TOKEN = "before";
     pubServe(args: ["test", "--compiler=dartdevc"]);
     // Since `other.dart` is a part of this module its contents should appear
     // here.
-    requestShouldSucceed("main.dart.js", contains("(before, munge)"),
+    requestShouldSucceed("main.dart.js", isNotEmpty, root: "test");
+    requestShouldSucceed("main.dart.module.js", contains("(before, munge)"),
         root: "test");
   });
 }

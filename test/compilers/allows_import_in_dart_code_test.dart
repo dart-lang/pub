@@ -55,14 +55,15 @@ void main() {
 
   integration("dart2js handles imports in the Dart code", () {
     pubServe();
-    requestShouldSucceed("main.dart.js", contains("footext"));
-    requestShouldSucceed("main.dart.js", contains("libtext"));
+    requestShouldSucceed(
+        "main.dart.js", allOf(contains("footext"), contains("libtext")));
   });
 
   integration("dartdevc handles imports in the Dart code", () {
     pubServe(args: ['--compiler=dartdevc']);
-    requestShouldSucceed("main.dart.js", contains("foo()"));
-    requestShouldSucceed("main.dart.js", contains("lib()"));
+    requestShouldSucceed("main.dart.js", isNotEmpty);
+    requestShouldSucceed(
+        "main.dart.module.js", allOf(contains("foo()"), contains("lib()")));
     requestShouldSucceed("packages/foo/foo.js", contains("footext"));
     requestShouldSucceed("packages/myapp/myapp.js", contains("libtext"));
   });

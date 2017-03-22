@@ -51,6 +51,7 @@ const TOKEN = "before";
   integration(
       "dartdevc compiles a Dart file that imports a generated file to JS", () {
     pubServe(args: ["--compiler=dartdevc"]);
-    requestShouldSucceed("main.dart.js", contains("(before, munge)"));
+    requestShouldSucceed("main.dart.js", isNotEmpty);
+    requestShouldSucceed("main.dart.module.js", contains("(before, munge)"));
   });
 }

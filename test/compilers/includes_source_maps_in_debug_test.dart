@@ -29,15 +29,15 @@ void runTest(String compiler) {
           output: new RegExp(r'Built \d+ files to "build".'),
           exitCode: 0);
 
+      var mainJsFile =
+          compiler == "dartdevc" ? 'main.dart.module.js' : 'main.dart.js';
       d.dir(appPath, [
         d.dir('build', [
           d.dir('web', [
-            d.matcherFile('main.dart.js',
-                contains("# sourceMappingURL=main.dart.js.map")),
             d.matcherFile(
-                'main.dart.js.map',
-                anyOf(contains('"file": "main.dart.js"'),
-                    contains('"file":"main.dart.js"')))
+                mainJsFile, contains("# sourceMappingURL=$mainJsFile.map")),
+            d.matcherFile('$mainJsFile.map',
+                matches(new RegExp('"file": ?"$mainJsFile"')))
           ])
         ])
       ]).validate();
