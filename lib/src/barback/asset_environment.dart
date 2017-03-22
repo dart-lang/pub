@@ -494,8 +494,9 @@ class AssetEnvironment {
         _transitiveBuiltInTransformers
             .add(new DevCompilerPackageModuleTransformer());
         _builtInTransformers.addAll([
-          new DevCompilerEntryPointModuleTransformer(),
+          new DevCompilerHtmlTransformer(),
           new DevCompilerResourceTransformer(),
+          new DevCompilerEntryPointModuleTransformer(),
         ]);
       }
 

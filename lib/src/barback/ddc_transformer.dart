@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
+import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 
 typedef Future<bool> _InputChecker(AssetId id);
@@ -15,6 +16,42 @@ typedef Future<Asset> _InputGetter(AssetId id);
 typedef Stream<List<int>> _InputReader(AssetId id);
 typedef Future<String> _InputAsStringReader(AssetId id);
 typedef void _OutputWriter(Asset);
+
+/// Transforms all html files to be compatible with the dev compiler:
+///
+/// * Converts `<script type="application/dart" src="..."></script>` to
+///   `<script data-main="..." src="require.js"></script>`.
+/// * Deletes `<script src="packages/browser/dart.js"></script>` if present.
+class DevCompilerHtmlTransformer extends Transformer {
+  @override
+  bool isPrimary(AssetId id) =>
+      id.extension == '.html' && p.url.split(id.path).first != 'lib';
+
+  @override
+  Future apply(Transform transform) async {
+    var originalHtml = await transform.primaryInput.readAsString();
+    var doc = html.parse(originalHtml);
+    var scripts = doc.querySelectorAll('script');
+    for (var script in scripts) {
+      if (!script.attributes.containsKey('src')) continue;
+
+      if (script.attributes['src'].endsWith('packages/browser/dart.js')) {
+        script.remove();
+      } else if (script.attributes['type'] == 'application/dart') {
+        script.attributes.remove('type');
+        script.attributes['data-main'] = script.attributes['src'];
+        script.attributes['src'] = 'require.js';
+        if (!script.attributes.containsKey('defer')) {
+          script.attributes['defer'] = '';
+        }
+      }
+    }
+
+    transform.consumePrimary();
+    transform.addOutput(
+        new Asset.fromString(transform.primaryInput.id, doc.outerHtml));
+  }
+}
 
 /// Copies required resources into each entry point directory.
 ///
