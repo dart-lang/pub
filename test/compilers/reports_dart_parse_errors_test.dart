@@ -19,8 +19,8 @@ main() {
       d.appPubspec(),
       d.dir('web', [
         d.file('file.txt', 'contents'),
-        d.file('file.dart', 'void void;'),
-        d.dir('subdir', [d.file('subfile.dart', 'void void;')])
+        d.file('file.dart', 'main() {}\nvoid void;'),
+        d.dir('subdir', [d.file('subfile.dart', 'main() {}\nvoid void;')])
       ])
     ]).create();
 
@@ -53,20 +53,20 @@ void runTest(String compiler) {
       } else if (compiler == "dartdevc") {
         consumeFile = consumeThrough(inOrder([
           startsWith("[DevCompilerEntryPoint]"),
-          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 6\)')),
-          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 10\)')),
-          matches(new RegExp('\[error\].*\(web/file.dart, line 1, col 10\)')),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 6\)')),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
+          matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
           isEmpty,
           "Please fix all errors before compiling (warnings are okay)."
         ]));
         consumeSubfile = consumeThrough(inOrder([
           startsWith("[DevCompilerEntryPoint]"),
           matches(new RegExp(
-              '\[error\].*\(web/subdir/subfile.dart, line 1, col 6\)')),
+              '\[error\].*\(web/subdir/subfile.dart, line 2, col 6\)')),
           matches(new RegExp(
-              '\[error\].*\(web/subdir/subfile.dart, line 1, col 10\)')),
+              '\[error\].*\(web/subdir/subfile.dart, line 2, col 10\)')),
           matches(new RegExp(
-              '\[error\].*\(web/subdir/subfile.dart, line 1, col 10\)')),
+              '\[error\].*\(web/subdir/subfile.dart, line 2, col 10\)')),
           isEmpty,
           "Please fix all errors before compiling (warnings are okay)."
         ]));

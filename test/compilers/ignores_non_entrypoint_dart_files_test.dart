@@ -23,7 +23,7 @@ main() {
   });
 
   runTests("dart2js");
-  runTests("dartdevc", skip: "TODO(jakemac53): Don't compile non-entrypoints.");
+  runTests("dartdevc");
 }
 
 void runTests(String compiler, {skip}) {
@@ -31,7 +31,7 @@ void runTests(String compiler, {skip}) {
     integration("build ignores non-entrypoint Dart files", () {
       schedulePub(
           args: ["build", "--compiler=$compiler"],
-          output: new RegExp(r'Built 0 files to "build".'));
+          output: new RegExp(r'Built \d files to "build".'));
 
       d.dir(appPath, [
         d.dir('build', [d.nothing('web')])

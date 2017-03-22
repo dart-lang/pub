@@ -16,7 +16,7 @@ main() {
         "name": "myapp",
         "version": "0.0.1",
       }),
-      d.dir("web", [d.file("syntax-error.dart", "syntax error")])
+      d.dir("web", [d.file("syntax-error.dart", "main() {}\nsyntax error")])
     ]).create();
 
     pubGet();
@@ -43,11 +43,6 @@ main() {
 
     // Once we request the output, it should start compiling and fail.
     requestShould404("syntax-error.dart.js");
-    server.stdout.expect(emitsMatchingLines([
-      startsWith("[Info from DevCompilerEntryPoint on"),
-      allOf(startsWith("Took"),
-          endsWith("to compile package:myapp with dartdevc.")),
-    ]));
     server.stdout.expect(consumeThrough("Build completed with 1 errors."));
   });
 }

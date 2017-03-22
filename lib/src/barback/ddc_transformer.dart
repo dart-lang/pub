@@ -24,6 +24,9 @@ class DevCompilerEntryPointTransformer extends Transformer
 
   @override
   Future apply(Transform transform) async {
+    // First, check if we have a `main`.
+    if (!await _isEntryPoint(transform.primaryInput.id, transform)) return;
+
     // Find all transitive relative imports and compile them as a part of this
     // module.
     var idsToCompile = await _findRelativeIds(transform.primaryInput.id,
@@ -220,7 +223,7 @@ Future<Set<AssetId>> _findRelativeIds(AssetId entryId, TransformLogger logger,
 
   var asset = await getInput(entryId);
   var contents = await asset.readAsString();
-  var unit = parseDirectives(contents);
+  var unit = parseDirectives(contents, name: '$entryId');
 
   var relativeIds = unit.directives
       .where((d) =>
@@ -258,7 +261,7 @@ Future<Set<String>> _findDependentPackages(
     }
     var asset = await getInput(id);
     var contents = await asset.readAsString();
-    var unit = parseDirectives(contents);
+    var unit = parseDirectives(contents, name: '$id');
     await _findDependentPackages(
         basePackage,
         unit.directives
@@ -287,6 +290,48 @@ Set<AssetId> _findSummaryIds(package) {
   return new Set<AssetId>()
     ..add(
         new AssetId(package, p.url.join('lib', '$package.$_summaryExtension')));
+}
+
+Future<bool> _isEntryPoint(AssetId id, Transform transform,
+    {Set<AssetId> seenIds}) async {
+  seenIds ??= new Set<AssetId>();
+  if (!seenIds.add(id)) return false;
+
+  var content = await transform.readInputAsString(id);
+  // Suppress errors at this step, dartdevc will error later if the file can't
+  // parse.
+  var unit = parseCompilationUnit(content, name: '$id', suppressErrors: true);
+  // Logic to check for a valid main(). Currently this is a check for any
+  // top level function called "main" with 2 or fewer parameters. The 2nd
+  // argument is allowed for the isolate conversion test.
+  if (unit.declarations.any((d) =>
+      d is FunctionDeclaration &&
+      d.name.name == 'main' &&
+      d.functionExpression.parameters.parameters.length <= 2)) {
+    return true;
+  }
+
+  // Additionally search all exports that might be exposing a `main` based on
+  // the show/hide settings.
+  var exportsToSearch = unit.directives.where((d) {
+    if (d is! ExportDirective) return false;
+    for (var combinator in (d as ExportDirective).combinators) {
+      if ('${combinator.keyword}' == 'show') {
+        if (combinator.childEntities.any((e) => '$e' == 'main')) return true;
+      } else if ('${combinator.keyword}' == 'hide') {
+        if (combinator.childEntities.any((e) => '$e' == 'main')) return false;
+      }
+    }
+    return true;
+  });
+
+  for (var export in exportsToSearch) {
+    var exportId = _urlToAssetId(
+        id, (export as UriBasedDirective).uri.stringValue, transform.logger);
+    if (exportId == null) continue;
+    if (await _isEntryPoint(exportId, transform, seenIds: seenIds)) return true;
+  }
+  return false;
 }
 
 AssetId _urlToAssetId(AssetId source, String url, TransformLogger logger) {
