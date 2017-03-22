@@ -491,8 +491,12 @@ class AssetEnvironment {
       }
 
       if (compilerMode == CompilerMode.DevCompiler) {
-        _transitiveBuiltInTransformers.add(new DevCompilerPackageTransformer());
-        _builtInTransformers.add(new DevCompilerEntryPointTransformer());
+        _transitiveBuiltInTransformers
+            .add(new DevCompilerPackageModuleTransformer());
+        _builtInTransformers.addAll([
+          new DevCompilerEntryPointModuleTransformer(),
+          new DevCompilerResourceTransformer(),
+        ]);
       }
 
       // Bind a server that we can use to load the transformers.
