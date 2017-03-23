@@ -297,15 +297,14 @@ Future _compileWithDDC(
     var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
     var result =
         await Process.run(ddcPath, ddcArgs, workingDirectory: tmpDir.path);
-    logger.info(
-        'Took ${watch.elapsed} to compile package:$basePackage with dartdevc.');
     if (result.exitCode != 0) {
-      if (failOnError) {
-        logger.error(result.stdout);
-      } else {
-        logger.warning(result.stdout);
-      }
+      var message = 'Failed to compile package:$basePackage with dartdevc '
+          'after ${watch.elapsed}:\n\n${result.stdout}';
+      failOnError ? logger.error(message) : logger.warning(message);
       return;
+    } else {
+      logger.info('Took ${watch.elapsed} to compile package:$basePackage '
+          'with dartdevc.');
     }
 
     watch.reset();
