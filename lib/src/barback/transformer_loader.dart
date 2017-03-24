@@ -103,14 +103,17 @@ class TransformerLoader {
       if (_environment.compilerMode == CompilerMode.Dart2Js) {
         transformer = new Dart2JSTransformer.withSettings(_environment,
             new BarbackSettings(config.configuration, _environment.mode));
+        // Handle any exclusions.
+        _transformers[config] =
+            new Set.from([ExcludingTransformer.wrap(transformer, config)]);
+      } else {
+        // Empty set if dart2js is disabled based on compiler flag.
+        _transformers[config] = new Set();
       }
     } on FormatException catch (error, stackTrace) {
       fail(error.message, error, stackTrace);
     }
 
-    // Handle any exclusions.
-    _transformers[config] =
-        new Set.from([ExcludingTransformer.wrap(transformer, config)]);
     return _transformers[config];
   }
 
