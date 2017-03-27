@@ -23,6 +23,7 @@ class FailingTransformer extends Transformer {
 
 main() {
   integration("reports failures in transformers which don't output dart", () {
+    // Test for https://github.com/dart-lang/pub/issues/1336
     serveBarback();
 
     d.dir(appPath, [
