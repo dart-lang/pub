@@ -137,7 +137,7 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   // TODO(nweiz): Use [packages] to only load assets from packages that the
   // executable might load.
   var environment = await AssetEnvironment.create(entrypoint, mode,
-      compilerMode: CompilerMode.None, entrypoints: [id]);
+      compilerMode: CompilerMode.none, entrypoints: [id]);
   environment.barback.errors.listen((error) {
     log.error(log.red("Build error:\n$error"));
   });

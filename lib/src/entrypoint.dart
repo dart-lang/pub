@@ -259,7 +259,7 @@ class Entrypoint {
             .toSet();
 
         var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
-            packages: packagesToLoad, compilerMode: CompilerMode.DevCompiler);
+            packages: packagesToLoad, compilerMode: CompilerMode.devCompiler);
 
         /// Ignore barback errors since they'll be emitted via [getAllAssets]
         /// below.
@@ -409,7 +409,7 @@ class Entrypoint {
     var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
         packages: packagesToLoad.map((package) => package.name),
         entrypoints: executableIds,
-        compilerMode: CompilerMode.None);
+        compilerMode: CompilerMode.none);
     environment.barback.errors.listen((error) {
       log.error(log.red("Build error:\n$error"));
     });

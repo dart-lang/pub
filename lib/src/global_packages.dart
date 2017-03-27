@@ -249,7 +249,7 @@ class GlobalPackages {
       Entrypoint entrypoint, Package package, String dir) async {
     var environment = await AssetEnvironment.create(
         entrypoint, BarbackMode.RELEASE,
-        entrypoints: package.executableIds, compilerMode: CompilerMode.None);
+        entrypoints: package.executableIds, compilerMode: CompilerMode.none);
     environment.barback.errors.listen((error) {
       log.error(log.red("Build error:\n$error"));
     });

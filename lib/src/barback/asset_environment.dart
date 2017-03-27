@@ -77,7 +77,7 @@ class AssetEnvironment {
     if (hostname == null) hostname = "localhost";
     if (basePort == null) basePort = 0;
     if (environmentConstants == null) environmentConstants = {};
-    compilerMode ??= CompilerMode.Dart2Js;
+    compilerMode ??= CompilerMode.dart2Js;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -197,15 +197,18 @@ class AssetEnvironment {
     var transformers = <Set>[];
     // Transitive built-in transformers apply to all packages.
     //
-    // Today these transformers are only for dartdevc.
+    // These transformers are for dartdevc and compile all transitive deps.
+    // They must be in an earlier phase than the non-transitive built-in
+    // transformers, because the output analyzer summaries are relied upon by
+    // the entry point transformers for dartdevc that run on the same package.
     if (_transitiveBuiltInTransformers.isNotEmpty) {
       transformers.add(_transitiveBuiltInTransformers);
     }
 
     // Built-in transformers only apply to the root package.
     //
-    // Today these transformers are for dart2js and forwarding assets around
-    // dart2js, as well as compiling ddc entry points.
+    // These transformers are for dart2js and forwarding assets around dart2js,
+    // as well as compiling dartdevc entry points.
     if (_builtInTransformers.isNotEmpty && package.name == rootPackage.name) {
       transformers.add(_builtInTransformers);
     }
@@ -483,14 +486,14 @@ class AssetEnvironment {
           (transformers) =>
               transformers.any((config) => config.id.package == '\$dart2js'));
 
-      if (!containsDart2JS && compilerMode == CompilerMode.Dart2Js) {
+      if (!containsDart2JS && compilerMode == CompilerMode.dart2Js) {
         _builtInTransformers.addAll([
           new Dart2JSTransformer(this, mode),
           new DartForwardingTransformer()
         ]);
       }
 
-      if (compilerMode == CompilerMode.DevCompiler) {
+      if (compilerMode == CompilerMode.devCompiler) {
         _transitiveBuiltInTransformers
             .add(new DevCompilerPackageModuleTransformer());
         _builtInTransformers.addAll([

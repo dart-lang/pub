@@ -16,9 +16,9 @@ import '../utils.dart';
 final _arrow = getSpecial('\u2192', '=>');
 
 final _compilerArgToMode = const {
-  'dart2js': CompilerMode.Dart2Js,
-  'dartdevc': CompilerMode.DevCompiler,
-  'none': CompilerMode.None,
+  'dart2js': CompilerMode.dart2Js,
+  'dartdevc': CompilerMode.devCompiler,
+  'none': CompilerMode.none,
 };
 
 /// The set of top level directories in the entrypoint package that are built
@@ -34,7 +34,7 @@ abstract class BarbackCommand extends PubCommand {
   // The current compiler mode.
   CompilerMode get compilerMode =>
       argResults.options.contains('dart2js') && argResults.wasParsed('dart2js')
-          ? argResults['dart2js'] ? CompilerMode.Dart2Js : CompilerMode.None
+          ? argResults['dart2js'] ? CompilerMode.dart2Js : CompilerMode.none
           : _compilerArgToMode[argResults["compiler"]];
 
   /// The directories in the entrypoint package that should be added to the
