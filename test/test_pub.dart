@@ -117,10 +117,10 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
 ///
 /// By default, this validates that the command completes successfully and
 /// understands the normal output of a successful pub command. If [warning] is
-/// given, it expects the command to complete successfully *and* print
-/// [warning] to stderr. If [error] is given, it expects the command to *only*
-/// print [error] to stderr. [output], [error], and [warning] may be strings,
-/// [RegExp]s, or [Matcher]s.
+/// given, it expects the command to complete successfully *and* print [warning]
+/// to stderr. If [error] is given, it expects the command to *only* print
+/// [error] to stderr. [output], [error], [silent], and [warning] may be
+/// strings, [RegExp]s, or [Matcher]s.
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
@@ -128,6 +128,7 @@ void pubCommand(RunCommand command,
     {Iterable<String> args,
     output,
     error,
+    silent,
     warning,
     int exitCode,
     Map<String, String> environment}) {
@@ -150,6 +151,7 @@ void pubCommand(RunCommand command,
       args: allArgs,
       output: output,
       error: error,
+      silent: silent,
       exitCode: exitCode,
       environment: environment);
 }
@@ -292,7 +294,7 @@ void schedulePub(
     outputJson,
     silent,
     int exitCode: exit_codes.SUCCESS,
-    Map<String, String> environment}) {
+    environment}) {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
@@ -416,12 +418,13 @@ PubProcess startPub(
   ]..addAll(args);
 
   if (tokenEndpoint == null) tokenEndpoint = new Future.value();
-  var environmentFuture = tokenEndpoint
-      .then((tokenEndpoint) => getPubTestEnvironment(tokenEndpoint))
-      .then((pubEnvironment) {
-    if (environment != null) pubEnvironment.addAll(environment);
+  var environmentFuture = () async {
+    var pubEnvironment = await getPubTestEnvironment(await tokenEndpoint);
+    if (environment != null) {
+      pubEnvironment.addAll(await awaitObject(environment));
+    }
     return pubEnvironment;
-  });
+  }();
 
   return new PubProcess.start(dartBin, dartArgs,
       environment: environmentFuture,

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:scheduled_test/scheduled_test.dart';
 
@@ -41,7 +43,14 @@ main() {
           Downloading bar 1.2.4...
           Downloading foo 1.2.3...
           Downloading foo 1.2.5...
-          Reinstalled 3 packages.''');
+          Reinstalled 3 packages.''',
+        silent: allOf([
+          contains("X-Pub-OS: ${Platform.operatingSystem}"),
+          contains("X-Pub-Command: cache repair"),
+          contains("X-Pub-Session-ID:"),
+          isNot(contains("X-Pub-Environment")),
+          isNot(contains("X-Pub-Reason")),
+        ]));
 
     // The broken versions should have been replaced.
     d.hostedCache([

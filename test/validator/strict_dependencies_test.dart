@@ -69,37 +69,37 @@ main() {
       expectNoValidationError(strictDeps);
     });
 
-    integration('declares an "import" as a dev dependency in test/', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
-        d.dir('test', [
-          d.file(
-              'library.dart',
-              r'''
-            import 'package:silly_monkey/silly_monkey.dart';
+    for (var port in ['import', 'export']) {
+      for (var isDev in [false, true]) {
+        var deps;
+        var devDeps;
+
+        if (isDev) {
+          devDeps = {"silly_monkey": "^1.2.3"};
+        } else {
+          deps = {"silly_monkey": "^1.2.3"};
+        }
+        for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
+          integration(
+              'declares an "$port" as a '
+              '${isDev ? 'dev ': ''}dependency in $devDir/', () {
+            d.dir(appPath, [
+              d.libPubspec("test_pkg", "1.0.0",
+                  deps: deps, devDeps: devDeps, sdk: ">=1.8.0 <2.0.0"),
+              d.dir(devDir, [
+                d.file(
+                    'library.dart',
+                    '''
+            $port 'package:silly_monkey/silly_monkey.dart';
           '''),
-        ]),
-      ]).create();
+              ]),
+            ]).create();
 
-      expectNoValidationError(strictDeps);
-    });
-
-    integration('declares an "import" as a dev dependency in tool/', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
-        d.dir('tool', [
-          d.file(
-              'library.dart',
-              r'''
-            import 'package:silly_monkey/silly_monkey.dart';
-          '''),
-        ]),
-      ]).create();
-
-      expectNoValidationError(strictDeps);
-    });
+            expectNoValidationError(strictDeps);
+          });
+        }
+      }
+    }
 
     integration('only uses dart: dependencies (not pub packages)', () {
       d
@@ -227,37 +227,45 @@ main() {
       expectValidationWarning(strictDeps);
     });
 
-    integration('declares an "import" as a devDependency for lib/', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
-        d.dir('lib', [
-          d.file(
-              'library.dart',
-              r'''
-            import 'package:silly_monkey/silly_monkey.dart';
+    for (var port in ['import', 'export']) {
+      for (var codeDir in ['bin', 'lib']) {
+        integration('declares an "$port" as a devDependency for $codeDir/', () {
+          d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0",
+                devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+            d.dir(codeDir, [
+              d.file(
+                  'library.dart',
+                  '''
+            $port 'package:silly_monkey/silly_monkey.dart';
           '''),
-        ]),
-      ]).create();
+            ]),
+          ]).create();
 
-      expectValidationWarning(strictDeps);
-    });
+          expectValidationWarning(strictDeps);
+        });
+      }
+    }
 
-    integration('declares an "import" as a devDependency for bin/', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
-        d.dir('bin', [
-          d.file(
-              'library.dart',
-              r'''
-            import 'package:silly_monkey/silly_monkey.dart';
+    for (var port in ['import', 'export']) {
+      for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
+        integration('does not declare an "$port" as a dependency in $devDir/',
+            () {
+          d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", sdk: ">=1.8.0 <2.0.0"),
+            d.dir(devDir, [
+              d.file(
+                  'library.dart',
+                  '''
+            $port 'package:silly_monkey/silly_monkey.dart';
           '''),
-        ]),
-      ]).create();
+            ]),
+          ]).create();
 
-      expectValidationWarning(strictDeps);
-    });
+          expectValidationWarning(strictDeps);
+        });
+      }
+    }
 
     group('declares an import with an invalid package URL: ', () {
       integration('"package:"', () {

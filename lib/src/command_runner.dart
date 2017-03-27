@@ -34,6 +34,30 @@ import 'solver/version_solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
+  /// Returns the nested name of the command that's currently being run.
+  /// Examples:
+  ///
+  ///     get
+  ///     cache repair
+  ///
+  /// Returns an empty string if no command is being run. (This is only
+  /// expected to happen when unit tests invoke code inside pub without going
+  /// through a command.)
+  static String get command {
+    if (_options == null) return "";
+
+    var list = <String>[];
+    for (var command = _options.command;
+        command != null;
+        command = command.command) {
+      list.add(command.name);
+    }
+    return list.join(" ");
+  }
+
+  /// The top-level options parsed by the command runner.
+  static ArgResults _options;
+
   String get usageFooter => "See http://dartlang.org/tools/pub for detailed "
       "documentation.";
 
@@ -84,14 +108,13 @@ class PubCommandRunner extends CommandRunner {
   }
 
   Future run(Iterable<String> arguments) async {
-    var options;
     try {
-      options = super.parse(arguments);
+      _options = super.parse(arguments);
     } on UsageException catch (error) {
       log.exception(error);
       await flushThenExit(exit_codes.USAGE);
     }
-    await runCommand(options);
+    await runCommand(_options);
   }
 
   Future runCommand(ArgResults options) async {
