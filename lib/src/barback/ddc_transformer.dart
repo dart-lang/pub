@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
-import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 
 typedef Future<bool> _InputChecker(AssetId id);
