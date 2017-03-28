@@ -289,6 +289,12 @@ void _createAmdBootstrap(AssetId entryPointId, AssetId bootstrapId,
   var appModuleName = p.withoutExtension(
       p.relative(moduleId.path, from: p.dirname(entryPointId.path)));
 
+  // TODO(jakemac53): Sane module name creation, this only works in the most
+  // basic of cases.
+  //
+  // See https://github.com/dart-lang/sdk/issues/27262 for the root issue which
+  // will allow us to not rely on the naming schemes that dartdevc uses
+  // internally, but instead specify our own.
   var appModuleScope = p.url
       .split(moduleId.path.substring(0, moduleId.path.indexOf('.dart')))
       .join("__");
