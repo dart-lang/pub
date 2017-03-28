@@ -17,42 +17,6 @@ typedef Stream<List<int>> _InputReader(AssetId id);
 typedef Future<String> _InputAsStringReader(AssetId id);
 typedef void _OutputWriter(Asset);
 
-/// Transforms all html files to be compatible with the dev compiler:
-///
-/// * Converts `<script type="application/dart" src="..."></script>` to
-///   `<script data-main="..." src="require.js"></script>`.
-/// * Deletes `<script src="packages/browser/dart.js"></script>` if present.
-class DevCompilerHtmlTransformer extends Transformer {
-  @override
-  bool isPrimary(AssetId id) =>
-      id.extension == '.html' && p.url.split(id.path).first != 'lib';
-
-  @override
-  Future apply(Transform transform) async {
-    var originalHtml = await transform.primaryInput.readAsString();
-    var doc = html.parse(originalHtml);
-    var scripts = doc.querySelectorAll('script');
-    for (var script in scripts) {
-      if (!script.attributes.containsKey('src')) continue;
-
-      if (script.attributes['src'].endsWith('packages/browser/dart.js')) {
-        script.remove();
-      } else if (script.attributes['type'] == 'application/dart') {
-        script.attributes.remove('type');
-        script.attributes['data-main'] = script.attributes['src'];
-        script.attributes['src'] = 'require.js';
-        if (!script.attributes.containsKey('defer')) {
-          script.attributes['defer'] = '';
-        }
-      }
-    }
-
-    transform.consumePrimary();
-    transform.addOutput(
-        new Asset.fromString(transform.primaryInput.id, doc.outerHtml));
-  }
-}
-
 /// Copies required resources into each entry point directory.
 ///
 ///  * Copies the `dart_sdk.js` file from the sdk into each entry point dir.
@@ -113,6 +77,9 @@ class DevCompilerResourceTransformer extends AggregateTransformer
 
 /// Compiles an entry point and all its relative imports under the same top
 /// level directory into a single ddc module.
+///
+/// Also generates a script to bootstrap the app and invoke `main` from the
+/// module that was created.
 class DevCompilerEntryPointModuleTransformer extends Transformer
     implements LazyTransformer {
   // Runs on all dart files not under `lib`.
@@ -131,10 +98,19 @@ class DevCompilerEntryPointModuleTransformer extends Transformer
       return;
     }
 
-    // Boostraps the AMD entry point module and calls its `main`.
-    var jsOutputId = transform.primaryInput.id.addExtension('.module.js');
-    _createAmdBootstrap(transform.primaryInput.id.addExtension('.js'),
-        jsOutputId, transform.addOutput);
+    // The actual AMD module being created.
+    var jsModuleId = transform.primaryInput.id.addExtension('.module.js');
+    // The AMD bootstrap script, initializes the dart sdk, calls `require` with
+    // the module for  `jsModuleId` and invokes its main.
+    var bootstrapId = transform.primaryInput.id.addExtension('.bootstrap.js');
+    // The entry point for the app, injects a deferred script tag whose src is
+    // `require.js`, with the `data-main` attribute set to the `bootstrapId`
+    // module.
+    var entryPointId = transform.primaryInput.id.addExtension('.js');
+
+    // Create the actual bootsrap.
+    _createAmdBootstrap(
+        entryPointId, bootstrapId, jsModuleId, transform.addOutput);
 
     // Find all transitive relative imports and compile them as a part of this
     // module.
@@ -149,9 +125,9 @@ class DevCompilerEntryPointModuleTransformer extends Transformer
       transform.getInput,
       transform.hasInput,
       transform.readInput,
-      jsOutputId,
-      jsOutputId.addExtension('.map'),
-      jsOutputId.changeExtension('.$_summaryExtension'),
+      jsModuleId,
+      jsModuleId.addExtension('.map'),
+      jsModuleId.changeExtension('.$_summaryExtension'),
       failOnError: true,
     );
   }
@@ -159,6 +135,7 @@ class DevCompilerEntryPointModuleTransformer extends Transformer
   @override
   void declareOutputs(DeclaringTransform transform) {
     transform.declareOutput(transform.primaryId.addExtension('.js'));
+    transform.declareOutput(transform.primaryId.addExtension('.bootstrap.js'));
     transform.declareOutput(transform.primaryId.addExtension('.module.js'));
     transform.declareOutput(transform.primaryId.addExtension('.module.js.map'));
     transform.declareOutput(
@@ -307,14 +284,14 @@ Future _compileWithDDC(
   }
 }
 
-void _createAmdBootstrap(
-    AssetId bootstrapId, AssetId jsOutputId, _OutputWriter addOutput) {
+void _createAmdBootstrap(AssetId entryPointId, AssetId bootstrapId,
+    AssetId moduleId, _OutputWriter addOutput) {
   var appModuleName = p.withoutExtension(
-      p.relative(jsOutputId.path, from: p.dirname(bootstrapId.path)));
+      p.relative(moduleId.path, from: p.dirname(entryPointId.path)));
 
-  var jsOutputModule =
-      jsOutputId.path.substring(0, jsOutputId.path.indexOf('.'));
-  var appModuleScope = p.url.split(jsOutputModule).join("__");
+  var appModuleScope = p.url
+      .split(moduleId.path.substring(0, moduleId.path.indexOf('.dart')))
+      .join("__");
   var bootstrapContent = '''
 require(["$appModuleName", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
@@ -322,6 +299,18 @@ require(["$appModuleName", "dart_sdk"], function(app, dart_sdk) {
 });
 ''';
   addOutput(new Asset.fromString(bootstrapId, bootstrapContent));
+
+  var bootstrapModuleName = p.withoutExtension(
+      p.relative(bootstrapId.path, from: p.dirname(entryPointId.path)));
+  var entryPointContent = '''
+var el = document.createElement("script");
+el.defer = true;
+el.async = false;
+el.src = "require.js";
+el.setAttribute("data-main", "$bootstrapModuleName");
+document.head.appendChild(el);
+''';
+  addOutput(new Asset.fromString(entryPointId, entryPointContent));
 }
 
 /// Copies [ids] to [tmpDir], and returns the set of [File]s that were created.
