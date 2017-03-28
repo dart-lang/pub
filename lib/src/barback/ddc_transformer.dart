@@ -227,37 +227,21 @@ Future _compileWithDDC(
     logger.fine('Took ${watch.elapsed} to discover dependencies.');
 
     watch.reset();
+    // Set up the packages directory in `tmpDir`.
     var packagesDir = new Directory(p.join(tmpDir.path, 'packages'));
-    await packagesDir.createSync(recursive: true);
+    await packagesDir.create(recursive: true);
     var summaryIds = new Set<AssetId>();
     for (var package in dependentPackages) {
+      // Don't try and read the summary that we are trying to output.
       if (package == basePackage && topLevelDir == 'lib') continue;
       summaryIds.addAll(_findSummaryIds(package));
     }
 
-    var summaryFiles = new Set<File>();
-    for (var id in summaryIds) {
-      if (!await hasInput(id)) {
-        logger.warning('Unable to find summary file `$id` when compiling '
-            'package:$basePackage.');
-        continue;
-      }
-      var file = _fileForId(id, tmpDir.path, packagesDir.path);
-      await _writeFile(file, readInput(id));
-      summaryFiles.add(file);
-    }
-
-    var filesToCompile = new Set<File>();
-    for (var id in idsToCompile) {
-      if (!await hasInput(id)) {
-        logger.warning(
-            'Unable to find file `$id` when compiling package:$basePackage.');
-        continue;
-      }
-      var file = _fileForId(id, tmpDir.path, packagesDir.path);
-      await _writeFile(file, readInput(id));
-      filesToCompile.add(file);
-    }
+    // Copy all the summary files and Dart files into `tmpDir`.
+    var summaryFiles = await _createTmpFiles(summaryIds, tmpDir, packagesDir,
+        basePackage, hasInput, readInput, logger);
+    var filesToCompile = await _createTmpFiles(idsToCompile, tmpDir,
+        packagesDir, basePackage, hasInput, readInput, logger);
     logger.fine(
         'Took ${watch.elapsed} to set up a tmp environment for dartdevc.');
 
@@ -338,6 +322,29 @@ require(["$appModuleName", "dart_sdk"], function(app, dart_sdk) {
 });
 ''';
   addOutput(new Asset.fromString(bootstrapId, bootstrapContent));
+}
+
+/// Copies [ids] to [tmpDir], and returns the set of [File]s that were created.
+Future<Set<File>> _createTmpFiles(
+    Set<AssetId> ids,
+    Directory tmpDir,
+    Directory packagesDir,
+    String basePackage,
+    _InputChecker hasInput,
+    _InputReader readInput,
+    TransformLogger logger) async {
+  var files = new Set<File>();
+  await Future.wait(ids.map((id) async {
+    if (!await hasInput(id)) {
+      logger.warning('Unable to find asset `$id` when compiling '
+          'package:$basePackage.');
+      return;
+    }
+    var file = _fileForId(id, tmpDir.path, packagesDir.path);
+    await _writeFile(file, readInput(id));
+    files.add(file);
+  }));
+  return files;
 }
 
 /// Crawls from [entryId] and finds all [Asset]s that are relative through
