@@ -69,10 +69,12 @@ class BuildCommand extends BarbackCommand {
       var environment = await AssetEnvironment.create(entrypoint, mode,
           environmentConstants: environmentConstants, useDart2JS: true);
 
+      var hasError = false;
       // Show in-progress errors, but not results. Those get handled
       // implicitly by getAllAssets().
       environment.barback.errors.listen((error) {
         log.error(log.red("Build error:\n$error"));
+        hasError = true;
 
         if (log.json.enabled) {
           // Wrap the error in a map in case we end up decorating it with
@@ -111,12 +113,19 @@ class BuildCommand extends BarbackCommand {
       log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
           'to "$outputDirectory".');
 
-      log.json.message({
-        "buildResult": "success",
-        "outputDirectory": outputDirectory,
-        "numFiles": builtFiles,
-        "log": logJson
-      });
+      if (hasError) {
+        log.error(log.red("Build failed."));
+        log.json.message(
+            {"buildResult": "failure", "errors": errorsJson, "log": logJson});
+        return flushThenExit(exit_codes.DATA);
+      } else {
+        log.json.message({
+          "buildResult": "success",
+          "outputDirectory": outputDirectory,
+          "numFiles": builtFiles,
+          "log": logJson
+        });
+      }
     } on BarbackException catch (_) {
       // If [getAllAssets()] throws a BarbackException, the error has already
       // been reported.
