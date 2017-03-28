@@ -43,9 +43,22 @@ void main() => print(TOKEN);
 
   integration("dartdevc compiles a generated Dart file to JS", () {
     pubServe(args: ['--compiler=dartdevc']);
-    // AMD Bootstrap file.
+    // Entry point js, just injects the require.js script tag and points at the
+    // bootstrap script.
     requestShouldSucceed(
         "main.dart.js",
+        '''
+var el = document.createElement("script");
+el.defer = true;
+el.async = false;
+el.src = "require.js";
+el.setAttribute("data-main", "main.dart.bootstrap");
+document.head.appendChild(el);
+''');
+
+    // AMD Bootstrap file.
+    requestShouldSucceed(
+        "main.dart.bootstrap.js",
         '''
 require(["main.dart.module", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);

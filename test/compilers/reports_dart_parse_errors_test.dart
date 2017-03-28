@@ -53,6 +53,8 @@ void runTest(String compiler) {
       } else if (compiler == "dartdevc") {
         consumeFile = consumeThrough(inOrder([
           startsWith("[DevCompilerEntryPointModule]"),
+          startsWith("Failed to compile package:myapp with dartdevc"),
+          isEmpty,
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 6\)')),
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
           matches(new RegExp('\[error\].*\(web/file.dart, line 2, col 10\)')),
@@ -61,6 +63,8 @@ void runTest(String compiler) {
         ]));
         consumeSubfile = consumeThrough(inOrder([
           startsWith("[DevCompilerEntryPointModule]"),
+          startsWith("Failed to compile package:myapp with dartdevc"),
+          isEmpty,
           matches(new RegExp(
               '\[error\].*\(web/subdir/subfile.dart, line 2, col 6\)')),
           matches(new RegExp(
