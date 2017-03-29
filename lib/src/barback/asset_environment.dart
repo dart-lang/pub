@@ -20,7 +20,7 @@ import '../source/cached.dart';
 import '../utils.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
-import 'compiler_mode.dart';
+import 'compiler.dart';
 import 'dart_forwarding_transformer.dart';
 import 'dart2js_transformer.dart';
 import 'ddc_transformer.dart';
@@ -43,8 +43,8 @@ class AssetEnvironment {
   /// to [hostname] and have ports based on [basePort]. If omitted, they
   /// default to "localhost" and "0" (use ephemeral ports), respectively.
   ///
-  /// Loads all used transformers using [mode] (including dart2js or ddc based
-  /// on [compilerMode]).
+  /// Loads all used transformers using [mode] (including dart2js or dartdevc
+  /// based on [compiler]).
   ///
   /// This will only add the root package's "lib" directory to the environment.
   /// Other directories can be added to the environment using [serveDirectory].
@@ -72,12 +72,12 @@ class AssetEnvironment {
       Iterable<String> packages,
       Iterable<AssetId> entrypoints,
       Map<String, String> environmentConstants,
-      CompilerMode compilerMode}) {
-    if (watcherType == null) watcherType = WatcherType.NONE;
-    if (hostname == null) hostname = "localhost";
-    if (basePort == null) basePort = 0;
-    if (environmentConstants == null) environmentConstants = {};
-    compilerMode ??= CompilerMode.dart2Js;
+      Compiler compiler}) {
+    watcherType ??= WatcherType.NONE;
+    hostname ??= "localhost";
+    basePort ??= 0;
+    environmentConstants ??= {};
+    compiler ??= Compiler.dart2Js;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -85,7 +85,7 @@ class AssetEnvironment {
       barback.log.listen(_log);
 
       var environment = new AssetEnvironment._(graph, barback, mode,
-          watcherType, hostname, basePort, environmentConstants, compilerMode);
+          watcherType, hostname, basePort, environmentConstants, compiler);
 
       await environment._load(entrypoints: entrypoints);
       return environment;
@@ -177,17 +177,10 @@ class AssetEnvironment {
   Set<AssetId> _modifiedSources;
 
   /// The compiler mode for this environment.
-  final CompilerMode compilerMode;
+  final Compiler compiler;
 
-  AssetEnvironment._(
-      this.graph,
-      this.barback,
-      this.mode,
-      this._watcherType,
-      this._hostname,
-      this._basePort,
-      this.environmentConstants,
-      this.compilerMode);
+  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
+      this._hostname, this._basePort, this.environmentConstants, this.compiler);
 
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
@@ -464,10 +457,10 @@ class AssetEnvironment {
   /// in packages in [graph] and re-runs them as necessary when any input files
   /// change.
   ///
-  /// If [CompilerMode.Dart2Js], then the [Dart2JSTransformer] is implicitly
+  /// If [Compiler.dart2Js], then the [Dart2JSTransformer] is implicitly
   /// added to end of the root package's transformer phases.
   ///
-  /// if [CompilerMode.DevCompiler], then the [DevCompilerTransformer] is
+  /// if [Compiler.dartDevc], then the [DevCompilerTransformer] is
   /// implicitly added to the end of all package's transformer phases.
   ///
   /// If [entrypoints] is passed, only transformers necessary to run those
@@ -486,14 +479,14 @@ class AssetEnvironment {
           (transformers) =>
               transformers.any((config) => config.id.package == '\$dart2js'));
 
-      if (!containsDart2JS && compilerMode == CompilerMode.dart2Js) {
+      if (!containsDart2JS && compiler == Compiler.dart2Js) {
         _builtInTransformers.addAll([
           new Dart2JSTransformer(this, mode),
           new DartForwardingTransformer()
         ]);
       }
 
-      if (compilerMode == CompilerMode.devCompiler) {
+      if (compiler == Compiler.dartDevc) {
         _transitiveBuiltInTransformers
             .add(new DevCompilerPackageModuleTransformer());
         _builtInTransformers.addAll([

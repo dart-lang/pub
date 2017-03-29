@@ -68,7 +68,7 @@ class BuildCommand extends BarbackCommand {
       // buildbots.
       var environment = await AssetEnvironment.create(entrypoint, mode,
           environmentConstants: environmentConstants,
-          compilerMode: compilerMode);
+          compiler: compiler);
 
       // Show in-progress errors, but not results. Those get handled
       // implicitly by getAllAssets().

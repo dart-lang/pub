@@ -10,7 +10,7 @@ import '../log.dart' as log;
 import '../utils.dart';
 import 'asset_environment.dart';
 import 'barback_server.dart';
-import 'compiler_mode.dart';
+import 'compiler.dart';
 import 'dart2js_transformer.dart';
 import 'excluding_transformer.dart';
 import 'transformer_config.dart';
@@ -100,7 +100,7 @@ class TransformerLoader {
 
     var transformer;
     try {
-      if (_environment.compilerMode == CompilerMode.dart2Js) {
+      if (_environment.compiler == Compiler.dart2Js) {
         transformer = new Dart2JSTransformer.withSettings(_environment,
             new BarbackSettings(config.configuration, _environment.mode));
         // Handle any exclusions.

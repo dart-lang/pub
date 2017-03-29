@@ -7,19 +7,13 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 
-import '../barback/compiler_mode.dart';
+import '../barback/compiler.dart';
 import '../command.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
 final _arrow = getSpecial('\u2192', '=>');
-
-final _compilerArgToMode = const {
-  'dart2js': CompilerMode.dart2Js,
-  'dartdevc': CompilerMode.devCompiler,
-  'none': CompilerMode.none,
-};
 
 /// The set of top level directories in the entrypoint package that are built
 /// when the user does "--all".
@@ -32,10 +26,26 @@ abstract class BarbackCommand extends PubCommand {
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
   // The current compiler mode.
-  CompilerMode get compilerMode =>
-      argResults.options.contains('dart2js') && argResults.wasParsed('dart2js')
-          ? argResults['dart2js'] ? CompilerMode.dart2Js : CompilerMode.none
-          : _compilerArgToMode[argResults["compiler"]];
+  Compiler get compiler {
+    if (argResults.options.contains('dart2js') &&
+        argResults.wasParsed('dart2js')) {
+      print('hey!!');
+      if (argResults["compiler"] && argResults.wasParsed("compiler")) {
+        throw new ArgumentError(
+            "The `dart2js` arg can't be used with the `compiler` arg. Prefer "
+            "using the compiler flag.");
+      }
+      if (argResults['dart2js']) {
+        return Compiler.dart2Js;
+      } else {
+        return Compiler.none;
+      }
+    } else if (argResults.options.contains("compiler")) {
+      return Compiler.byName(argResults["compiler"]);
+    } else {
+      return Compiler.dart2Js;
+    }
+  }
 
   /// The directories in the entrypoint package that should be added to the
   /// build environment.
@@ -59,9 +69,9 @@ abstract class BarbackCommand extends PubCommand {
         negatable: false);
 
     argParser.addOption("compiler",
-        allowed: const ['dartdevc', 'dart2js', 'none'],
+        allowed: Compiler.compilerNames,
         defaultsTo: 'dart2js',
-        help: 'The js compiler to use to build the app.');
+        help: 'The JavaScript compiler to use to build the app.');
   }
 
   Future run() {

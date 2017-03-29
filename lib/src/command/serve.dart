@@ -96,7 +96,7 @@ class ServeCommand extends BarbackCommand {
         watcherType: watcherType,
         hostname: hostname,
         basePort: port,
-        compilerMode: compilerMode,
+        compiler: compiler,
         environmentConstants: environmentConstants);
     var directoryLength =
         sourceDirectories.map((dir) => dir.length).reduce(math.max);
