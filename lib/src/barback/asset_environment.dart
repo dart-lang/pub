@@ -81,7 +81,7 @@ class AssetEnvironment {
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
-      var barback = new Barback(new PubPackageProvider(graph));
+      var barback = new Barback(new PubPackageProvider(graph, compiler));
       barback.log.listen(_log);
 
       var environment = new AssetEnvironment._(graph, barback, mode,
@@ -547,6 +547,9 @@ class AssetEnvironment {
     // other build directories in the root package by calling
     // [serveDirectory].
     await Future.wait(graph.packages.values.map((package) async {
+      if (graph.isPackageStatic(package.name, compiler)) {
+        return;
+      }
       await _provideDirectorySources(package, "lib");
     }));
   }
