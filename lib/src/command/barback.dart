@@ -29,7 +29,6 @@ abstract class BarbackCommand extends PubCommand {
   Compiler get compiler {
     if (argResults.options.contains('dart2js') &&
         argResults.wasParsed('dart2js')) {
-      print('hey!!');
       if (argResults["compiler"] && argResults.wasParsed("compiler")) {
         throw new ArgumentError(
             "The `dart2js` arg can't be used with the `compiler` arg. Prefer "
