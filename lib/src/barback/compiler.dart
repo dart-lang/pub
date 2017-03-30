@@ -10,9 +10,9 @@ const _noneName = 'none';
 ///
 /// This is controlled by the `--compiler=$name` flag.
 class Compiler {
-  static final dart2Js = new Compiler._(_dart2JsName);
-  static final dartDevc = new Compiler._(_dartDevcName);
-  static final none = new Compiler._(_noneName);
+  static const dart2Js = const Compiler._(_dart2JsName);
+  static const dartDevc = const Compiler._(_dartDevcName);
+  static const none = const Compiler._(_noneName);
 
   static final compilers = [dart2Js, dartDevc, none];
   static Iterable<String> get compilerNames =>
@@ -20,7 +20,7 @@ class Compiler {
 
   final String name;
 
-  Compiler._(this.name);
+  const Compiler._(this.name);
 
   static Compiler byName(String name) =>
       compilers.firstWhere((compiler) => compiler.name == name, orElse: () {

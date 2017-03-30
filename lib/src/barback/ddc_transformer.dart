@@ -452,8 +452,8 @@ File _fileForId(AssetId id, String rootDir, String packagesDir) {
 /// change when we add support for multiple modules.
 Iterable<AssetId> _findSummaryIds(String package) {
   // TODO(jakemac): Read build.yaml if available?
-  return <AssetId>[
-    new AssetId(package, p.url.join('lib', '$package.$_summaryExtension'))
+  return [
+    new AssetId(package, p.url.join('lib', '$package.$_summaryExtension')),
   ];
 }
 

@@ -138,16 +138,6 @@ class AssetEnvironment {
   /// Constants to passed to the built-in dart2js transformer.
   final Map<String, String> environmentConstants;
 
-  /// The [Transformer]s or [AggregateTransformer]s that should be appended by
-  /// default to the root package's transformer cascade. Will be empty if there
-  /// are none.
-  final _builtInTransformers = new Set();
-
-  /// The [Transformer]s or [AggregateTransformer]s that should be added by
-  /// default to all package's transformer cascade. Will be empty if there are
-  /// none.
-  final _transitiveBuiltInTransformers = new Set();
-
   /// How source files should be watched.
   final WatcherType _watcherType;
 
@@ -188,22 +178,46 @@ class AssetEnvironment {
   /// Returns `null` if there are none.
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
-    // Transitive built-in transformers apply to all packages.
-    //
-    // These transformers are for dartdevc and compile all transitive deps.
-    // They must be in an earlier phase than the non-transitive built-in
-    // transformers, because the output analyzer summaries are relied upon by
-    // the entry point transformers for dartdevc that run on the same package.
-    if (_transitiveBuiltInTransformers.isNotEmpty) {
-      transformers.add(_transitiveBuiltInTransformers);
+
+    if (compiler == Compiler.dartDevc) {
+      // This transformer applies to all packages, and it must be in an earlier
+      // phase than the other dartdevc transformers, because the output analyzer
+      // summaries are relied upon by the entrypoint transformers that run on
+      // the same package.
+      transformers.add([
+        new DevCompilerPackageModuleTransformer(),
+      ].toSet());
     }
 
-    // Built-in transformers only apply to the root package.
-    //
-    // These transformers are for dart2js and forwarding assets around dart2js,
-    // as well as compiling dartdevc entry points.
-    if (_builtInTransformers.isNotEmpty && package.name == rootPackage.name) {
-      transformers.add(_builtInTransformers);
+    // These transformers are just for the root package.
+    if (package.name == rootPackage.name) {
+      switch (compiler) {
+        case Compiler.dart2Js:
+          // If the entrypoint package manually configures the dart2js
+          // transformer, don't include it in the built-in transformer list.
+          //
+          // TODO(nweiz): if/when we support more built-in transformers, make
+          // this more general.
+          var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
+              (transformers) => transformers
+                  .any((config) => config.id.package == '\$dart2js'));
+
+          if (!containsDart2JS && compiler == Compiler.dart2Js) {
+            transformers.add([
+              new Dart2JSTransformer(this, mode),
+              new DartForwardingTransformer(),
+            ].toSet());
+          }
+          break;
+        case Compiler.dartDevc:
+          transformers.add([
+            new DevCompilerResourceTransformer(),
+            new DevCompilerEntrypointModuleTransformer(),
+          ].toSet());
+          break;
+        default:
+          break;
+      }
     }
 
     if (transformers.isEmpty) return null;
@@ -470,31 +484,6 @@ class AssetEnvironment {
   /// loaded.
   Future _load({Iterable<AssetId> entrypoints}) {
     return log.progress("Initializing barback", () async {
-      // If the entrypoint package manually configures the dart2js
-      // transformer, don't include it in the built-in transformer list.
-      //
-      // TODO(nweiz): if/when we support more built-in transformers, make
-      // this more general.
-      var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
-          (transformers) =>
-              transformers.any((config) => config.id.package == '\$dart2js'));
-
-      if (!containsDart2JS && compiler == Compiler.dart2Js) {
-        _builtInTransformers.addAll([
-          new Dart2JSTransformer(this, mode),
-          new DartForwardingTransformer()
-        ]);
-      }
-
-      if (compiler == Compiler.dartDevc) {
-        _transitiveBuiltInTransformers
-            .add(new DevCompilerPackageModuleTransformer());
-        _builtInTransformers.addAll([
-          new DevCompilerResourceTransformer(),
-          new DevCompilerEntrypointModuleTransformer(),
-        ]);
-      }
-
       // Bind a server that we can use to load the transformers.
       var transformerServer = await BarbackServer.bind(this, _hostname, 0);
 
