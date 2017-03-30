@@ -11,6 +11,7 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+import '../dart.dart' as dart;
 import '../io.dart';
 
 const _summaryExtension = 'api.ds';
@@ -91,9 +92,15 @@ class DevCompilerEntrypointModuleTransformer extends Transformer
   @override
   Future apply(Transform transform) async {
     var dartId = transform.primaryInput.id;
-    // Skip anything that isn't an entry point.
-    if (!await _isEntrypoint(dartId, transform)) {
-      return;
+    var contents = await transform.readInputAsString(dartId);
+    try {
+      var parsed = parseCompilationUnit(contents, name: '$dartId');
+      // Skip anything that isn't an entry point.
+      if (!dart.isEntrypoint(parsed)) {
+        return;
+      }
+    } on AnalyzerErrorGroup {
+      // Ignore errors for now, instead run ddc and let it report nicer ones.
     }
 
     // The actual AMD module being created.
@@ -303,8 +310,11 @@ Future _compileWithDDC(
     var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
     var result = await runProcess(ddcPath, ddcArgs, workingDir: tempDir.path);
     if (result.exitCode != 0) {
+      var stdErrAndOut = <String>[]
+        ..addAll(result.stderr)
+        ..addAll(result.stdout);
       logError('Failed to compile package:$basePackage with dartdevc '
-          'after ${watch.elapsed}:\n\n${result.stdout.join('\n')}');
+          'after ${watch.elapsed}:\n\n${stdErrAndOut.join('\n')}');
       return;
     } else {
       logger.info('Took ${watch.elapsed} to compile package:$basePackage '
@@ -445,48 +455,6 @@ Iterable<AssetId> _findSummaryIds(String package) {
   return <AssetId>[
     new AssetId(package, p.url.join('lib', '$package.$_summaryExtension'))
   ];
-}
-
-Future<bool> _isEntrypoint(AssetId id, Transform transform,
-    {Set<AssetId> seenIds}) async {
-  seenIds ??= new Set<AssetId>();
-  if (!seenIds.add(id)) return false;
-
-  var content = await transform.readInputAsString(id);
-  // Suppress errors at this step, dartdevc will error later if the file can't
-  // parse.
-  var unit = parseCompilationUnit(content, name: '$id', suppressErrors: true);
-  // Logic to check for a valid main(). Currently this is a check for any
-  // top level function called "main" with 2 or fewer parameters. The 2nd
-  // argument is allowed for the isolate conversion test.
-  if (unit.declarations.any((d) =>
-      d is FunctionDeclaration &&
-      d.name.name == 'main' &&
-      d.functionExpression.parameters.parameters.length <= 2)) {
-    return true;
-  }
-
-  // Additionally search all exports that might be exposing a `main` based on
-  // the show/hide settings.
-  var exportsToSearch = unit.directives.where((d) {
-    if (d is! ExportDirective) return false;
-    for (var combinator in (d as ExportDirective).combinators) {
-      if ('${combinator.keyword}' == 'show') {
-        if (combinator.childEntities.any((e) => '$e' == 'main')) return true;
-      } else if ('${combinator.keyword}' == 'hide') {
-        if (combinator.childEntities.any((e) => '$e' == 'main')) return false;
-      }
-    }
-    return true;
-  });
-
-  for (var export in exportsToSearch) {
-    var exportId = _urlToAssetId(
-        id, (export as UriBasedDirective).uri.stringValue, transform.logger);
-    if (exportId == null) continue;
-    if (await _isEntrypoint(exportId, transform, seenIds: seenIds)) return true;
-  }
-  return false;
 }
 
 /// Reads and parses [sourceId], and returns an [Iterable<AssetId>] for all the
