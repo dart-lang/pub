@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:package_resolver/package_resolver.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'compiler.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_graph.dart';
@@ -43,10 +44,10 @@ class PubPackageProvider implements StaticPackageProvider {
   Iterable<String> get packages =>
       _graph.packages.keys.toSet().difference(staticPackages.toSet());
 
-  PubPackageProvider(PackageGraph graph)
+  PubPackageProvider(PackageGraph graph, Compiler compiler)
       : _graph = graph,
-        staticPackages = [r"$pub", r"$sdk"]
-          ..addAll(graph.packages.keys.where(graph.isPackageStatic));
+        staticPackages = [r"$pub", r"$sdk"]..addAll(graph.packages.keys
+            .where((p) => graph.isPackageStatic(p, compiler)));
 
   Future<Asset> getAsset(AssetId id) async {
     // "$pub" is a psuedo-package that allows pub's transformer-loading

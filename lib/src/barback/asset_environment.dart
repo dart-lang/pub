@@ -20,8 +20,10 @@ import '../source/cached.dart';
 import '../utils.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
+import 'compiler.dart';
 import 'dart_forwarding_transformer.dart';
 import 'dart2js_transformer.dart';
+import 'ddc_transformer.dart';
 import 'load_all_transformers.dart';
 import 'pub_package_provider.dart';
 import 'source_directory.dart';
@@ -41,8 +43,8 @@ class AssetEnvironment {
   /// to [hostname] and have ports based on [basePort]. If omitted, they
   /// default to "localhost" and "0" (use ephemeral ports), respectively.
   ///
-  /// Loads all used transformers using [mode] (including dart2js if
-  /// [useDart2JS] is true).
+  /// Loads all used transformers using [mode] (including dart2js or dartdevc
+  /// based on [compiler]).
   ///
   /// This will only add the root package's "lib" directory to the environment.
   /// Other directories can be added to the environment using [serveDirectory].
@@ -70,21 +72,22 @@ class AssetEnvironment {
       Iterable<String> packages,
       Iterable<AssetId> entrypoints,
       Map<String, String> environmentConstants,
-      bool useDart2JS: true}) {
-    if (watcherType == null) watcherType = WatcherType.NONE;
-    if (hostname == null) hostname = "localhost";
-    if (basePort == null) basePort = 0;
-    if (environmentConstants == null) environmentConstants = {};
+      Compiler compiler}) {
+    watcherType ??= WatcherType.NONE;
+    hostname ??= "localhost";
+    basePort ??= 0;
+    environmentConstants ??= {};
+    compiler ??= Compiler.dart2Js;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
-      var barback = new Barback(new PubPackageProvider(graph));
+      var barback = new Barback(new PubPackageProvider(graph, compiler));
       barback.log.listen(_log);
 
       var environment = new AssetEnvironment._(graph, barback, mode,
-          watcherType, hostname, basePort, environmentConstants);
+          watcherType, hostname, basePort, environmentConstants, compiler);
 
-      await environment._load(entrypoints: entrypoints, useDart2JS: useDart2JS);
+      await environment._load(entrypoints: entrypoints);
       return environment;
     }, fine: true);
   }
@@ -135,10 +138,6 @@ class AssetEnvironment {
   /// Constants to passed to the built-in dart2js transformer.
   final Map<String, String> environmentConstants;
 
-  /// The [Transformer]s that should be appended by default to the root
-  /// package's transformer cascade. Will be empty if there are none.
-  final _builtInTransformers = <Transformer>[];
-
   /// How source files should be watched.
   final WatcherType _watcherType;
 
@@ -167,21 +166,62 @@ class AssetEnvironment {
   /// go to barback immediately.
   Set<AssetId> _modifiedSources;
 
-  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
-      this._hostname, this._basePort, this.environmentConstants);
+  /// The compiler mode for this environment.
+  final Compiler compiler;
 
-  /// Gets the built-in [Transformer]s that should be added to [package].
+  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
+      this._hostname, this._basePort, this.environmentConstants, this.compiler);
+
+  /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
+  /// added to [package].
   ///
   /// Returns `null` if there are none.
-  Iterable<Transformer> getBuiltInTransformers(Package package) {
-    // Built-in transformers only apply to the root package.
-    if (package.name != rootPackage.name) return null;
+  Iterable<Set> getBuiltInTransformers(Package package) {
+    var transformers = <Set>[];
 
-    // The built-in transformers are for dart2js and forwarding assets around
-    // dart2js.
-    if (_builtInTransformers.isEmpty) return null;
+    if (compiler == Compiler.dartDevc) {
+      // This transformer applies to all packages, and it must be in an earlier
+      // phase than the other dartdevc transformers, because the output analyzer
+      // summaries are relied upon by the entrypoint transformers that run on
+      // the same package.
+      transformers.add([
+        new DevCompilerPackageModuleTransformer(),
+      ].toSet());
+    }
 
-    return _builtInTransformers;
+    // These transformers are just for the root package.
+    if (package.name == rootPackage.name) {
+      switch (compiler) {
+        case Compiler.dart2Js:
+          // If the entrypoint package manually configures the dart2js
+          // transformer, don't include it in the built-in transformer list.
+          //
+          // TODO(nweiz): if/when we support more built-in transformers, make
+          // this more general.
+          var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
+              (transformers) => transformers
+                  .any((config) => config.id.package == '\$dart2js'));
+
+          if (!containsDart2JS && compiler == Compiler.dart2Js) {
+            transformers.add([
+              new Dart2JSTransformer(this, mode),
+              new DartForwardingTransformer(),
+            ].toSet());
+          }
+          break;
+        case Compiler.dartDevc:
+          transformers.add([
+            new DevCompilerResourceTransformer(),
+            new DevCompilerEntrypointModuleTransformer(),
+          ].toSet());
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (transformers.isEmpty) return null;
+    return transformers;
   }
 
   /// Starts up the admin server on an appropriate port and returns it.
@@ -431,32 +471,19 @@ class AssetEnvironment {
   /// in packages in [graph] and re-runs them as necessary when any input files
   /// change.
   ///
-  /// If [useDart2JS] is `true`, then the [Dart2JSTransformer] is implicitly
+  /// If [Compiler.dart2Js], then the [Dart2JSTransformer] is implicitly
   /// added to end of the root package's transformer phases.
+  ///
+  /// if [Compiler.dartDevc], then the [DevCompilerTransformer] is
+  /// implicitly added to the end of all package's transformer phases.
   ///
   /// If [entrypoints] is passed, only transformers necessary to run those
   /// entrypoints will be loaded.
   ///
   /// Returns a [Future] that completes once all inputs and transformers are
   /// loaded.
-  Future _load({Iterable<AssetId> entrypoints, bool useDart2JS}) {
+  Future _load({Iterable<AssetId> entrypoints}) {
     return log.progress("Initializing barback", () async {
-      // If the entrypoint package manually configures the dart2js
-      // transformer, don't include it in the built-in transformer list.
-      //
-      // TODO(nweiz): if/when we support more built-in transformers, make
-      // this more general.
-      var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
-          (transformers) =>
-              transformers.any((config) => config.id.package == '\$dart2js'));
-
-      if (!containsDart2JS && useDart2JS) {
-        _builtInTransformers.addAll([
-          new Dart2JSTransformer(this, mode),
-          new DartForwardingTransformer()
-        ]);
-      }
-
       // Bind a server that we can use to load the transformers.
       var transformerServer = await BarbackServer.bind(this, _hostname, 0);
 
@@ -509,7 +536,9 @@ class AssetEnvironment {
     // other build directories in the root package by calling
     // [serveDirectory].
     await Future.wait(graph.packages.values.map((package) async {
-      if (graph.isPackageStatic(package.name)) return;
+      if (graph.isPackageStatic(package.name, compiler)) {
+        return;
+      }
       await _provideDirectorySources(package, "lib");
     }));
   }

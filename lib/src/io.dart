@@ -193,12 +193,18 @@ String writeBinaryFile(String file, List<int> contents) {
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
+///
+/// If [recursive] then all non-existent parent directories will be created
+/// before the file is created.
+Future<String> createFileFromStream(Stream<List<int>> stream, String file,
+    {bool recursive}) {
+  recursive ??= false;
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
   return _descriptorPool.withResource/*<Future<String>>*/(() async {
     _deleteIfLink(file);
+    if (recursive) ensureDir(path.dirname(file));
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
     return file;
