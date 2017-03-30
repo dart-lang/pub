@@ -395,16 +395,8 @@ Future<Set<AssetId>> _findRelativeIds(AssetId entryId, Transform transform,
   }
   if (!foundIds.add(entryId)) return foundIds;
 
-  var asset = await transform.getInput(entryId);
-  var contents = await asset.readAsString();
-  var unit = parseDirectives(contents, name: '$entryId');
-  var relativeIds = unit.directives
-      .where((d) =>
-          d is UriBasedDirective &&
-          Uri.parse(d.uri.stringValue).scheme != 'package')
-      .map((d) => _urlToAssetId(
-          asset.id, (d as UriBasedDirective).uri.stringValue, transform.logger))
-      .where((id) => id != null);
+  var relativeIds =
+      await _directivesToIds(entryId, transform, relativeOnly: true);
   for (var id in relativeIds) {
     await _findRelativeIds(id, transform, foundIds: foundIds);
   }
@@ -428,19 +420,9 @@ Future<Set<String>> _findDependentPackages(
           'Unable to find file `$id` when compiling package:$basePackage.');
       continue;
     }
-    var asset = await transform.getInput(id);
-    var contents = await asset.readAsString();
-    var unit = parseDirectives(contents, name: '$id');
     await _findDependentPackages(
-        basePackage,
-        unit.directives
-            .where((d) => d is UriBasedDirective)
-            .map((d) => _urlToAssetId(asset.id,
-                (d as UriBasedDirective).uri.stringValue, transform.logger))
-            .where((id) => id != null),
-        transform,
-        foundIds: foundIds,
-        foundPackages: foundPackages);
+        basePackage, await _directivesToIds(id, transform), transform,
+        foundIds: foundIds, foundPackages: foundPackages);
   }
   return foundPackages;
 }
@@ -503,6 +485,26 @@ Future<bool> _isEntrypoint(AssetId id, Transform transform,
     if (await _isEntrypoint(exportId, transform, seenIds: seenIds)) return true;
   }
   return false;
+}
+
+/// Reads and parses [sourceId], and returns an [Iterable<AssetId>] for all the
+/// assets referred to by the [UriBasedDirective]s.
+///
+/// If [relativeOnly] then any `package:` directives will be ignored.
+Future<Iterable<AssetId>> _directivesToIds(
+    AssetId sourceId, Transform transform,
+    {bool relativeOnly = false}) async {
+  var contents = await transform.readInputAsString(sourceId);
+  var unit = parseDirectives(contents, name: '$sourceId');
+  Iterable<UriBasedDirective> uriDirectives =
+      unit.directives.where((d) => d is UriBasedDirective);
+  if (relativeOnly) {
+    uriDirectives = uriDirectives
+        .where((d) => Uri.parse(d.uri.stringValue).scheme != 'package');
+  }
+  return uriDirectives
+      .map((d) => _urlToAssetId(sourceId, d.uri.stringValue, transform.logger))
+      .where((id) => id != null);
 }
 
 AssetId _urlToAssetId(AssetId source, String url, TransformLogger logger) {
