@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
@@ -10,16 +11,12 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
-typedef Future<bool> _InputChecker(AssetId id);
-typedef Future<Asset> _InputGetter(AssetId id);
-typedef Stream<List<int>> _InputReader(AssetId id);
-typedef Future<String> _InputAsStringReader(AssetId id);
-typedef void _OutputWriter(Asset);
+const _summaryExtension = 'api.ds';
 
 /// Copies required resources into each entry point directory.
 ///
-///  * Copies the `dart_sdk.js` file from the sdk into each entry point dir.
-///  * Copies the `require.js` file from the sdk into each entry point dir, if
+///  * Copies the `dart_sdk.js` file from the SDK into each entry point dir.
+///  * Copies the `require.js` file from the SDK into each entry point dir, if
 ///    available.
 class DevCompilerResourceTransformer extends AggregateTransformer
     implements LazyAggregateTransformer {
@@ -27,6 +24,7 @@ class DevCompilerResourceTransformer extends AggregateTransformer
   // Group files by output directory.
   String classifyPrimary(AssetId id) {
     if (p.extension(id.path) != '.dart') return null;
+    assert(id.path.isNotEmpty);
     var dir = p.url.split(id.path).first;
     if (dir == 'lib' || dir == 'bin') return null;
     return p.url.dirname(id.path);
@@ -39,8 +37,7 @@ class DevCompilerResourceTransformer extends AggregateTransformer
     // Copy the dart_sdk.js file for AMD into the output folder.
     var sdkJsOutputId = new AssetId(
         transform.package, p.url.join(transform.key, 'dart_sdk.js'));
-    var sdkAmdJsPath =
-        p.joinAll([sdk.path, 'lib', 'dev_compiler', 'amd', 'dart_sdk.js']);
+    var sdkAmdJsPath = p.url.join(sdk.path, 'lib/dev_compiler/amd/dart_sdk.js');
     transform
         .addOutput(new Asset.fromFile(sdkJsOutputId, new File(sdkAmdJsPath)));
 
@@ -50,7 +47,7 @@ class DevCompilerResourceTransformer extends AggregateTransformer
         new AssetId(transform.package, p.url.join(transform.key, 'require.js'));
     if (!await transform.hasInput(requireJsOutputId)) {
       var requireJsPath =
-          p.joinAll([sdk.path, 'lib', 'dev_compiler', 'amd', 'require.js']);
+          p.url.join(sdk.path, 'lib/dev_compiler/amd/require.js');
       var requireJsFile = new File(requireJsPath);
       if (await requireJsFile.exists()) {
         transform
@@ -58,7 +55,7 @@ class DevCompilerResourceTransformer extends AggregateTransformer
       } else {
         transform.logger.error(
             'Unable to locate `require.js` under the `${transform.key}` '
-            'directory or the sdk. Either update your sdk to a version which '
+            'directory or the sdk. Either update your SDK to a version which '
             'contains that file or download your own copy and put it the '
             '`${transform.key}` directory under your package.');
       }
@@ -79,9 +76,9 @@ class DevCompilerResourceTransformer extends AggregateTransformer
 ///
 /// Also generates a script to bootstrap the app and invoke `main` from the
 /// module that was created.
-class DevCompilerEntryPointModuleTransformer extends Transformer
+class DevCompilerEntrypointModuleTransformer extends Transformer
     implements LazyTransformer {
-  // Runs on all dart files not under `lib`.
+  /// Runs on all dart files not under "lib" or "bin".
   @override
   bool isPrimary(AssetId id) {
     if (id.extension != '.dart') return false;
@@ -91,39 +88,33 @@ class DevCompilerEntryPointModuleTransformer extends Transformer
 
   @override
   Future apply(Transform transform) async {
+    var dartId = transform.primaryInput.id;
     // Skip anything that isn't an entry point.
-    if (!await _isEntryPoint(transform.primaryInput.id, transform.logger,
-        transform.readInputAsString)) {
+    if (!await _isEntrypoint(dartId, transform)) {
       return;
     }
 
     // The actual AMD module being created.
-    var jsModuleId = transform.primaryInput.id.addExtension('.module.js');
-    // The AMD bootstrap script, initializes the dart sdk, calls `require` with
+    var jsModuleId = dartId.addExtension('.module.js');
+    // The AMD bootstrap script, initializes the dart SDK, calls `require` with
     // the module for  `jsModuleId` and invokes its main.
-    var bootstrapId = transform.primaryInput.id.addExtension('.bootstrap.js');
+    var bootstrapId = dartId.addExtension('.bootstrap.js');
     // The entry point for the app, injects a deferred script tag whose src is
     // `require.js`, with the `data-main` attribute set to the `bootstrapId`
     // module.
-    var entryPointId = transform.primaryInput.id.addExtension('.js');
+    var entryPointId = dartId.addExtension('.js');
 
     // Create the actual bootsrap.
-    _createAmdBootstrap(
-        entryPointId, bootstrapId, jsModuleId, transform.addOutput);
+    _createAmdBootstrap(entryPointId, bootstrapId, jsModuleId, transform);
 
     // Find all transitive relative imports and compile them as a part of this
     // module.
-    var idsToCompile = await _findRelativeIds(transform.primaryInput.id,
-        transform.logger, transform.getInput, transform.hasInput);
+    var idsToCompile = await _findRelativeIds(dartId, transform);
     await _compileWithDDC(
-      transform.logger,
       idsToCompile,
-      transform.primaryInput.id.package,
-      p.url.split(transform.primaryInput.id.path).first,
-      transform.addOutput,
-      transform.getInput,
-      transform.hasInput,
-      transform.readInput,
+      dartId.package,
+      p.url.split(dartId.path).first,
+      transform,
       jsModuleId,
       jsModuleId.addExtension('.map'),
       jsModuleId.changeExtension('.$_summaryExtension'),
@@ -133,12 +124,12 @@ class DevCompilerEntryPointModuleTransformer extends Transformer
 
   @override
   void declareOutputs(DeclaringTransform transform) {
-    transform.declareOutput(transform.primaryId.addExtension('.js'));
-    transform.declareOutput(transform.primaryId.addExtension('.bootstrap.js'));
-    transform.declareOutput(transform.primaryId.addExtension('.module.js'));
-    transform.declareOutput(transform.primaryId.addExtension('.module.js.map'));
-    transform.declareOutput(
-        transform.primaryId.addExtension('.module.$_summaryExtension'));
+    var dartId = transform.primaryId;
+    transform.declareOutput(dartId.addExtension('.js'));
+    transform.declareOutput(dartId.addExtension('.bootstrap.js'));
+    transform.declareOutput(dartId.addExtension('.module.js'));
+    transform.declareOutput(dartId.addExtension('.module.js.map'));
+    transform.declareOutput(dartId.addExtension('.module.$_summaryExtension'));
   }
 }
 
@@ -150,14 +141,10 @@ class DevCompilerPackageModuleTransformer extends AggregateTransformer
     var jsOutputId = new AssetId(
         transform.package, p.url.join('lib', '${transform.package}.js'));
     await _compileWithDDC(
-        transform.logger,
         (await transform.primaryInputs.toList()).map((a) => a.id),
         transform.package,
         transform.key,
-        transform.addOutput,
-        transform.getInput,
-        transform.hasInput,
-        transform.readInput,
+        new _WrappedTransform(transform),
         jsOutputId,
         jsOutputId.addExtension('.map'),
         jsOutputId.changeExtension('.$_summaryExtension'));
@@ -182,29 +169,85 @@ class DevCompilerPackageModuleTransformer extends AggregateTransformer
   }
 }
 
+/// [AggregateTransform] that is wrapped to pretend it is an [Transform].
+class _WrappedTransform implements Transform {
+  final AggregateTransform _transform;
+
+  _WrappedTransform(this._transform);
+
+  // Unsupported members
+  void consumePrimary() => throw new UnsupportedError(
+      "An AggregateTransform wrapped as a Transform doesn't have a single "
+      "primary input to consume.");
+  Asset get primaryInput => throw new UnsupportedError(
+      "An AggregateTransform wrapped as a Transform doesn't have a single "
+      "primary input to return.");
+
+  // Forwarding members
+  TransformLogger get logger => _transform.logger;
+  void addOutput(Asset asset) => _transform.addOutput(asset);
+  Future<Asset> getInput(AssetId id) => _transform.getInput(id);
+  Future<bool> hasInput(AssetId id) => _transform.hasInput(id);
+  Stream<List<int>> readInput(AssetId id) => _transform.readInput(id);
+  Future<String> readInputAsString(AssetId id, {Encoding encoding}) =>
+      _transform.readInputAsString(id, encoding: encoding ?? UTF8);
+}
+
+/// Compiles [idsToCompile] into a single module, using the `dartdevc` binary
+/// from the SDK.
+///
+/// The [basePackage] is the package currently being compiled, and [topLevelDir]
+/// is the directory under that package that is being compiled. All
+/// [idsToCompile] must live under that directory and package.
+///
+/// The [jsOutputId], [sourceMapOutputId], and [summaryOutputId] are the assets
+/// to output for the module.
+///
+/// If [failOnError] is true, then an error will be logged if compilation fails,
+/// otherwise only a warning will be logged. This is because during a
+/// `pub build` it is ok for certain packages to fail to compile if they aren't
+/// imported by the entry points. It is only if an entry point fails that we
+/// should actually fail the build (and it will fail if any module it depends on
+/// failed).
+///
+// TODO(jakemac53): Investigate other ways of running dartdevc and compare
+// performance, https://github.com/dart-lang/pub/issues/1551.
 Future _compileWithDDC(
-    TransformLogger logger,
     Iterable<AssetId> idsToCompile,
     String basePackage,
     String topLevelDir,
-    _OutputWriter addOutput,
-    _InputGetter getInput,
-    _InputChecker hasInput,
-    _InputReader readInput,
+    Transform transform,
     AssetId jsOutputId,
     AssetId sourceMapOutputId,
     AssetId summaryOutputId,
     {bool failOnError = false}) async {
-  var tmpDir = await Directory.systemTemp.createTemp();
+  var logger = transform.logger;
+  var logError = failOnError ? logger.error : logger.warning;
+
+  // Validate that `idsToCompile`, `basePackage`, and `topLevelDir` all agree
+  // with each other.
+  var invalidIdsToCompile = idsToCompile.where((id) {
+    assert(id.path.isNotEmpty);
+    return id.package != basePackage ||
+        p.url.split(id.path).first != topLevelDir;
+  });
+  if (invalidIdsToCompile.isNotEmpty) {
+    logError('Invalid dartdevc module, all files must be under the '
+        '`$topLevelDir` directory of the `$basePackage` package.\n'
+        'Got the following invalid files:\n'
+        '${invalidIdsToCompile.join('\n')}');
+  }
+
+  var tempDir = await Directory.systemTemp.createTemp();
   try {
-    final watch = new Stopwatch()..start();
-    final dependentPackages = await _findDependentPackages(
-        basePackage, idsToCompile, logger, getInput, hasInput);
+    var watch = new Stopwatch()..start();
+    var dependentPackages =
+        await _findDependentPackages(basePackage, idsToCompile, transform);
     logger.fine('Took ${watch.elapsed} to discover dependencies.');
 
     watch.reset();
-    // Set up the packages directory in `tmpDir`.
-    var packagesDir = new Directory(p.join(tmpDir.path, 'packages'));
+    // Set up the packages directory in `tempDir`.
+    var packagesDir = new Directory(p.join(tempDir.path, 'packages'));
     await packagesDir.create(recursive: true);
     var summaryIds = new Set<AssetId>();
     for (var package in dependentPackages) {
@@ -213,13 +256,13 @@ Future _compileWithDDC(
       summaryIds.addAll(_findSummaryIds(package));
     }
 
-    // Copy all the summary files and Dart files into `tmpDir`.
-    var summaryFiles = await _createTmpFiles(summaryIds, tmpDir, packagesDir,
-        basePackage, hasInput, readInput, logger);
-    var filesToCompile = await _createTmpFiles(idsToCompile, tmpDir,
-        packagesDir, basePackage, hasInput, readInput, logger);
+    // Copy all the summary files and Dart files into `tempDir`.
+    var summaryFiles = await _createTempFiles(
+        summaryIds, tempDir, packagesDir, basePackage, transform);
+    var filesToCompile = await _createTempFiles(
+        idsToCompile, tempDir, packagesDir, basePackage, transform);
     logger.fine(
-        'Took ${watch.elapsed} to set up a tmp environment for dartdevc.');
+        'Took ${watch.elapsed} to set up a temp environment for dartdevc.');
 
     var sdk = cli_util.getSdkDir();
     if (sdk == null) {
@@ -229,21 +272,22 @@ Future _compileWithDDC(
 
     watch.reset();
     logger.fine('Compiling package:$basePackage with dartdevc...');
-    var sdk_summary = p.joinAll([sdk.path, 'lib', '_internal', 'ddc_sdk.sum']);
-    var jsOutputFile = _fileForId(jsOutputId, tmpDir.path, packagesDir.path);
+    var sdk_summary = p.url.join(sdk.path, 'lib/_internal/ddc_sdk.sum');
+    var jsOutputFile = _fileForId(jsOutputId, tempDir.path, packagesDir.path);
     var sourceMapOutputFile =
-        _fileForId(sourceMapOutputId, tmpDir.path, packagesDir.path);
+        _fileForId(sourceMapOutputId, tempDir.path, packagesDir.path);
     var summaryOutputFile =
-        _fileForId(summaryOutputId, tmpDir.path, packagesDir.path);
-    var ddcArgs = <String>[
-      '--dart-sdk-summary=${sdk_summary}',
-      '--summary-extension=${_summaryExtension}',
+        _fileForId(summaryOutputId, tempDir.path, packagesDir.path);
+    var ddcArgs = [
+      '--dart-sdk-summary=$sdk_summary',
+      '--summary-extension=$_summaryExtension',
+      // TODO(jakemac53): Remove when no longer needed.
       '--unsafe-angular2-whitelist',
       '--modules=amd',
       '--dart-sdk=${sdk.path}',
       '-o',
       jsOutputFile.path,
-      '--module-root=${tmpDir.path}',
+      '--module-root=${tempDir.path}',
     ];
     if (topLevelDir == 'lib') {
       ddcArgs.add('--library-root=${p.join(packagesDir.path, basePackage)}');
@@ -252,15 +296,14 @@ Future _compileWithDDC(
       ddcArgs.addAll(['-s', file.path]);
     }
     ddcArgs.addAll(filesToCompile.map((f) => p
-        .relative(f.path, from: tmpDir.path)
+        .relative(f.path, from: tempDir.path)
         .replaceFirst('packages/', 'package:')));
     var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
     var result =
-        await Process.run(ddcPath, ddcArgs, workingDirectory: tmpDir.path);
+        await Process.run(ddcPath, ddcArgs, workingDirectory: tempDir.path);
     if (result.exitCode != 0) {
-      var message = 'Failed to compile package:$basePackage with dartdevc '
-          'after ${watch.elapsed}:\n\n${result.stdout}';
-      failOnError ? logger.error(message) : logger.warning(message);
+      logError('Failed to compile package:$basePackage with dartdevc '
+          'after ${watch.elapsed}:\n\n${result.stdout}');
       return;
     } else {
       logger.info('Took ${watch.elapsed} to compile package:$basePackage '
@@ -268,23 +311,29 @@ Future _compileWithDDC(
     }
 
     watch.reset();
-    addOutput(
+    transform.addOutput(
         new Asset.fromString(jsOutputId, await jsOutputFile.readAsString()));
-    addOutput(new Asset.fromString(
+    transform.addOutput(new Asset.fromString(
         sourceMapOutputId, await sourceMapOutputFile.readAsString()));
-    addOutput(new Asset.fromBytes(
+    transform.addOutput(new Asset.fromBytes(
         summaryOutputId, await summaryOutputFile.readAsBytes()));
-    logger.fine(
-        'Took ${watch.elapsed} to copy output files for package:$basePackage.');
-  } catch (e) {
-    logger.error('$e');
+    logger.fine('Took ${watch.elapsed} to produce output assets for '
+        'package:$basePackage.');
   } finally {
-    await tmpDir.delete(recursive: true);
+    await tempDir.delete(recursive: true);
   }
 }
 
+/// Bootstraps the entry point [moduleId] with two additional files.
+///
+/// The [entryPointId] is the entry point for the app, it simply injects a
+/// script tag whose src is `require.js` and whose `data-main` points at the
+/// [bootstrapId].
+///
+/// The [bootstrapId] requires [moduleId] and invokes its top level `main`,
+/// after performing some necessary SDK setup.
 void _createAmdBootstrap(AssetId entryPointId, AssetId bootstrapId,
-    AssetId moduleId, _OutputWriter addOutput) {
+    AssetId moduleId, Transform transform) {
   var appModuleName = p.withoutExtension(
       p.relative(moduleId.path, from: p.dirname(entryPointId.path)));
 
@@ -303,7 +352,7 @@ require(["$appModuleName", "dart_sdk"], function(app, dart_sdk) {
   app.$appModuleScope.main();
 });
 ''';
-  addOutput(new Asset.fromString(bootstrapId, bootstrapContent));
+  transform.addOutput(new Asset.fromString(bootstrapId, bootstrapContent));
 
   var bootstrapModuleName = p.withoutExtension(
       p.relative(bootstrapId.path, from: p.dirname(entryPointId.path)));
@@ -315,56 +364,49 @@ el.src = "require.js";
 el.setAttribute("data-main", "$bootstrapModuleName");
 document.head.appendChild(el);
 ''';
-  addOutput(new Asset.fromString(entryPointId, entryPointContent));
+  transform.addOutput(new Asset.fromString(entryPointId, entryPointContent));
 }
 
-/// Copies [ids] to [tmpDir], and returns the set of [File]s that were created.
-Future<Set<File>> _createTmpFiles(
-    Set<AssetId> ids,
-    Directory tmpDir,
-    Directory packagesDir,
-    String basePackage,
-    _InputChecker hasInput,
-    _InputReader readInput,
-    TransformLogger logger) async {
-  var files = new Set<File>();
+/// Copies [ids] to [tempDir], and returns the set of [File]s that were created.
+Future<Iterable<File>> _createTempFiles(Set<AssetId> ids, Directory tempDir,
+    Directory packagesDir, String basePackage, Transform transform) async {
+  var files = <File>[];
   await Future.wait(ids.map((id) async {
-    if (!await hasInput(id)) {
-      logger.warning('Unable to find asset `$id` when compiling '
+    if (!await transform.hasInput(id)) {
+      transform.logger.warning('Unable to find asset `$id` when compiling '
           'package:$basePackage.');
       return;
     }
-    var file = _fileForId(id, tmpDir.path, packagesDir.path);
-    await _writeFile(file, readInput(id));
+    var file = _fileForId(id, tempDir.path, packagesDir.path);
+    await _writeFile(file, transform.readInput(id));
     files.add(file);
   }));
   return files;
 }
 
-/// Crawls from [entryId] and finds all [Asset]s that are relative through
-/// relative uris (via all [UriBasedDirective]s).
-Future<Set<AssetId>> _findRelativeIds(AssetId entryId, TransformLogger logger,
-    _InputGetter getInput, _InputChecker hasInput,
+/// Crawls from [entryId] and finds all [Asset]s that are reachable through
+/// relative URIs (via all [UriBasedDirective]s).
+Future<Set<AssetId>> _findRelativeIds(AssetId entryId, Transform transform,
     {Set<AssetId> foundIds}) async {
   foundIds ??= new Set<AssetId>();
-  if (!await hasInput(entryId)) {
-    logger.warning('Unable to find file `$entryId`.');
+  if (!await transform.hasInput(entryId)) {
+    transform.logger.warning('Unable to find file `$entryId`.');
     return foundIds;
   }
   if (!foundIds.add(entryId)) return foundIds;
 
-  var asset = await getInput(entryId);
+  var asset = await transform.getInput(entryId);
   var contents = await asset.readAsString();
   var unit = parseDirectives(contents, name: '$entryId');
-
   var relativeIds = unit.directives
       .where((d) =>
-          d is UriBasedDirective && !Uri.parse(d.uri.stringValue).isAbsolute)
+          d is UriBasedDirective &&
+          Uri.parse(d.uri.stringValue).scheme != 'package')
       .map((d) => _urlToAssetId(
-          asset.id, (d as UriBasedDirective).uri.stringValue, logger))
+          asset.id, (d as UriBasedDirective).uri.stringValue, transform.logger))
       .where((id) => id != null);
   for (var id in relativeIds) {
-    await _findRelativeIds(id, logger, getInput, hasInput, foundIds: foundIds);
+    await _findRelativeIds(id, transform, foundIds: foundIds);
   }
 
   return foundIds;
@@ -373,37 +415,30 @@ Future<Set<AssetId>> _findRelativeIds(AssetId entryId, TransformLogger logger,
 /// Crawls from each of [assetIds] and finds all reachable packages (through
 /// all [UriBasedDirective]s).
 Future<Set<String>> _findDependentPackages(
-    String basePackage,
-    Iterable<AssetId> assetIds,
-    TransformLogger logger,
-    _InputGetter getInput,
-    _InputChecker hasInput,
-    {Set<AssetId> foundIds,
-    Set<String> foundPackages}) async {
+    String basePackage, Iterable<AssetId> assetIds, Transform transform,
+    {Set<AssetId> foundIds, Set<String> foundPackages}) async {
   foundIds ??= new Set<AssetId>();
   foundPackages ??= new Set<String>();
   for (var id in assetIds) {
     if (!foundIds.add(id)) continue;
     if (p.url.split(id.path).first == 'lib') foundPackages.add(id.package);
 
-    if (!await hasInput(id)) {
-      logger.warning(
+    if (!await transform.hasInput(id)) {
+      transform.logger.warning(
           'Unable to find file `$id` when compiling package:$basePackage.');
       continue;
     }
-    var asset = await getInput(id);
+    var asset = await transform.getInput(id);
     var contents = await asset.readAsString();
     var unit = parseDirectives(contents, name: '$id');
     await _findDependentPackages(
         basePackage,
         unit.directives
             .where((d) => d is UriBasedDirective)
-            .map((d) => _urlToAssetId(
-                asset.id, (d as UriBasedDirective).uri.stringValue, logger))
+            .map((d) => _urlToAssetId(asset.id,
+                (d as UriBasedDirective).uri.stringValue, transform.logger))
             .where((id) => id != null),
-        logger,
-        getInput,
-        hasInput,
+        transform,
         foundIds: foundIds,
         foundPackages: foundPackages);
   }
@@ -417,20 +452,23 @@ File _fileForId(AssetId id, String rootDir, String packagesDir) {
       : new File(p.joinAll([rootDir]..addAll(p.url.split(id.path))));
 }
 
-Set<AssetId> _findSummaryIds(package) {
+/// Returns the [AssetId]s for the summaries of [package].
+///
+/// Today this is always just a single file under `lib`, but that will likely
+/// change when we add support for multiple modules.
+Iterable<AssetId> _findSummaryIds(String package) {
   // TODO(jakemac): Read build.yaml if available?
-  return new Set<AssetId>()
-    ..add(
-        new AssetId(package, p.url.join('lib', '$package.$_summaryExtension')));
+  return <AssetId>[
+    new AssetId(package, p.url.join('lib', '$package.$_summaryExtension'))
+  ];
 }
 
-Future<bool> _isEntryPoint(
-    AssetId id, TransformLogger logger, _InputAsStringReader readInputAsString,
+Future<bool> _isEntrypoint(AssetId id, Transform transform,
     {Set<AssetId> seenIds}) async {
   seenIds ??= new Set<AssetId>();
   if (!seenIds.add(id)) return false;
 
-  var content = await readInputAsString(id);
+  var content = await transform.readInputAsString(id);
   // Suppress errors at this step, dartdevc will error later if the file can't
   // parse.
   var unit = parseCompilationUnit(content, name: '$id', suppressErrors: true);
@@ -460,10 +498,9 @@ Future<bool> _isEntryPoint(
 
   for (var export in exportsToSearch) {
     var exportId = _urlToAssetId(
-        id, (export as UriBasedDirective).uri.stringValue, logger);
+        id, (export as UriBasedDirective).uri.stringValue, transform.logger);
     if (exportId == null) continue;
-    if (await _isEntryPoint(exportId, logger, readInputAsString,
-        seenIds: seenIds)) return true;
+    if (await _isEntrypoint(exportId, transform, seenIds: seenIds)) return true;
   }
   return false;
 }
@@ -496,5 +533,3 @@ Future _writeFile(File file, Stream<List<int>> stream) async {
   await sink.addStream(stream);
   await sink.close();
 }
-
-const _summaryExtension = 'api.ds';

@@ -491,7 +491,7 @@ class AssetEnvironment {
             .add(new DevCompilerPackageModuleTransformer());
         _builtInTransformers.addAll([
           new DevCompilerResourceTransformer(),
-          new DevCompilerEntryPointModuleTransformer(),
+          new DevCompilerEntrypointModuleTransformer(),
         ]);
       }
 
