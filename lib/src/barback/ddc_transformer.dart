@@ -11,6 +11,8 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+import '../io.dart';
+
 const _summaryExtension = 'api.ds';
 
 /// Copies required resources into each entry point directory.
@@ -299,11 +301,10 @@ Future _compileWithDDC(
         .relative(f.path, from: tempDir.path)
         .replaceFirst('packages/', 'package:')));
     var ddcPath = p.join(sdk.path, 'bin', 'dartdevc');
-    var result =
-        await Process.run(ddcPath, ddcArgs, workingDirectory: tempDir.path);
+    var result = await runProcess(ddcPath, ddcArgs, workingDir: tempDir.path);
     if (result.exitCode != 0) {
       logError('Failed to compile package:$basePackage with dartdevc '
-          'after ${watch.elapsed}:\n\n${result.stdout}');
+          'after ${watch.elapsed}:\n\n${result.stdout.join('\n')}');
       return;
     } else {
       logger.info('Took ${watch.elapsed} to compile package:$basePackage '
@@ -378,7 +379,8 @@ Future<Iterable<File>> _createTempFiles(Set<AssetId> ids, Directory tempDir,
       return;
     }
     var file = _fileForId(id, tempDir.path, packagesDir.path);
-    await _writeFile(file, transform.readInput(id));
+    await createFileFromStream(transform.readInput(id), file.path,
+        recursive: true);
     files.add(file);
   }));
   return files;
@@ -527,11 +529,4 @@ AssetId _urlToAssetId(AssetId source, String url, TransformLogger logger) {
         p.url.normalize(p.url.join(p.url.dirname(source.path), uri.path));
     return new AssetId(source.package, targetPath);
   }
-}
-
-Future _writeFile(File file, Stream<List<int>> stream) async {
-  await file.create(recursive: true);
-  var sink = file.openWrite();
-  await sink.addStream(stream);
-  await sink.close();
 }
