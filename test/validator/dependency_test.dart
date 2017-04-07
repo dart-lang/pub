@@ -72,6 +72,16 @@ main() {
       ]).create();
       expectNoValidationError(dependency);
     });
+
+    integration('depends on Flutter from an SDK source', () {
+      d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {
+          "flutter": {"sdk": ">=1.2.3 <2.0.0"}
+        })
+      ]).create();
+
+      expectNoValidationError(dependency);
+    });
   });
 
   group('should consider a package invalid if it', () {
@@ -417,6 +427,14 @@ main() {
 
         expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
       });
+    });
+
+    integration('depends on Flutter from a non-SDK source', () {
+      d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {"flutter": ">=1.2.3 <2.0.0"})
+      ]).create();
+
+      expectDependencyValidationError('sdk: >=1.2.3 <2.0.0');
     });
   });
 }
