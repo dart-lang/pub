@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -53,5 +54,21 @@ main() {
 
     d.cacheDir({"foo": "1.2.3"}, port: server.port).validate();
     d.appPackagesFile({"foo": "1.2.3"}).validate();
+  });
+
+  group('HTTP response info is printed', () {
+    integration('silently on success', () {
+      servePackages((builder) => builder.serve("foo", "1.2.3"));
+
+      d.appDir({"foo": "1.2.3"}).create();
+
+      schedulePub(args: ["get"], silent: contains("HTTP response 200"));
+    });
+
+    integration('as a warning on error', () {
+      d.appDir({"foo": "1.2.3"}).create();
+
+      schedulePub(args: ["get"], error: contains("HTTP response 404"));
+    });
   });
 }

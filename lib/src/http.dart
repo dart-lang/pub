@@ -194,7 +194,11 @@ class _PubHttpClient extends http.BaseClient {
     response.headers
         .forEach((name, value) => responseLog.writeln(_logField(name, value)));
 
-    log.fine(responseLog.toString().trim());
+    if (response.statusCode < 400) {
+      log.fine(responseLog.toString().trim());
+    } else {
+      log.warning(responseLog.toString().trim());
+    }
   }
 
   /// Returns a log-formatted string for the HTTP field or header with the given
