@@ -12,6 +12,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
+import '../source/sdk.dart';
 import '../validator.dart';
 
 /// The range of all pub versions that don't support `^` version constraints.
@@ -41,7 +42,9 @@ class DependencyValidator extends Validator {
 
     for (var dependency in entrypoint.root.pubspec.dependencies) {
       var constraint = dependency.constraint;
-      if (dependency.source is! HostedSource) {
+      if (dependency.name == "flutter") {
+        _warnAboutFlutterSdk(dependency);
+      } else if (dependency.source is! HostedSource) {
         await _warnAboutSource(dependency);
       } else if (constraint.isAny) {
         _warnAboutNoConstraint(dependency);
@@ -63,6 +66,20 @@ class DependencyValidator extends Validator {
     if (caretDeps.isNotEmpty && !_caretAllowed) {
       _errorAboutCaretConstraints(caretDeps);
     }
+  }
+
+  /// Warn about improper dependencies on Flutter.
+  void _warnAboutFlutterSdk(PackageDep dep) {
+    if (dep.source is SdkSource) return;
+
+    errors.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
+        'source. Use the SDK source instead. For example:\n'
+        '\n'
+        'dependencies:\n'
+        '  ${dep.name}:\n'
+        '    sdk: ${dep.constraint}\n'
+        '\n'
+        'The Flutter SDK is downloaded and managed outside of pub.');
   }
 
   /// Warn that dependencies should use the hosted source.
