@@ -24,7 +24,7 @@ void main() {
     test('can go to and from json', () {
       var module = makeModule();
       var newModule = new Module.fromJson(JSON.decode(JSON.encode(module)));
-      expectModulesEqual(module, newModule);
+      expect(module, equalsModule(newModule));
     });
 
     test('can be serialized in a list', () {
@@ -34,7 +34,7 @@ void main() {
           JSON.decode(serialized).map((s) => new Module.fromJson(s)).toList();
       expect(modules.length, equals(newModules.length));
       for (int i = 0; i < modules.length; i++) {
-        expectModulesEqual(modules[i], newModules[i]);
+        expect(modules[i], equalsModule(newModules[i]));
       }
     });
   });
