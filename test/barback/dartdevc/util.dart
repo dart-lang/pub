@@ -37,21 +37,34 @@ Set<AssetId> makeAssetIds({String package, String topLevelDir}) =>
     new Set<AssetId>.from(new List.generate(
         10, (_) => makeAssetId(package: package, topLevelDir: topLevelDir)));
 
-ModuleId makeModuleId({String package}) {
-  _next++;
-  package ??= 'pkg_$_next';
-  return new ModuleId(package, 'name_$_next');
+ModuleId makeModuleId({String name, String package}) {
+  package ??= 'pkg_${_next++}';
+  name ??= 'name_${_next++}';
+  return new ModuleId(package, name);
 }
 
 Set<ModuleId> makeModuleIds({String package}) => new Set<ModuleId>.from(
     new List.generate(10, (_) => makeModuleId(package: package)));
 
 Module makeModule(
-    {String package, Set<AssetId> directDependencies, String topLevelDir}) {
-  var id = makeModuleId(package: package);
-  var assetIds = makeAssetIds(package: id.package, topLevelDir: topLevelDir);
-  directDependencies ??= new Set<AssetId>();
-  return new Module(id, assetIds, directDependencies);
+    {String name,
+    String package,
+    Iterable<dynamic> directDependencies,
+    Iterable<dynamic> srcs,
+    String topLevelDir}) {
+  assert(srcs == null || topLevelDir == null);
+  AssetId toAssetId(dynamic id) {
+    if (id is AssetId) return id;
+    assert(id is String);
+    return new AssetId.parse(id);
+  }
+
+  var id = makeModuleId(package: package, name: name);
+  srcs ??= makeAssetIds(package: id.package, topLevelDir: topLevelDir);
+  var assetIds = new Set<AssetId>()..addAll(srcs.map(toAssetId));
+  directDependencies ??= new Set();
+  var realDeps = new Set<AssetId>()..addAll(directDependencies.map(toAssetId));
+  return new Module(id, assetIds, realDeps);
 }
 
 List<Module> makeModules({String package}) =>
