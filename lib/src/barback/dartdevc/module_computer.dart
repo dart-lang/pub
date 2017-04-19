@@ -210,10 +210,21 @@ class _ModuleComputer {
   /// Does the actual computation of [Module]s.
   ///
   /// See [computeModules] top level function for more information.
-  Future<List<Module>> _computeModules() async {
+  List<Module> _computeModules() {
     var connectedComponents = _stronglyConnectedComponents();
     var modulesById = _createModulesFromComponents(connectedComponents);
-    return _mergeModules(modulesById);
+    var modules = _mergeModules(modulesById);
+    // Rename shared modules at the end, the module names can become a bit
+    // insane otherwise.
+    var next = 0;
+    return modules.map((module) {
+      if (module.id.name.contains('\$')) {
+        return new Module(new ModuleId(module.id.package, 'shared_${next++}'),
+            module.assetIds, module.directDependencies);
+      } else {
+        return module;
+      }
+    }).toList();
   }
 
   /// Creates simple modules based strictly off of [connectedComponents].
