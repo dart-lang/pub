@@ -29,11 +29,16 @@ class ModuleReader {
 
   /// Returns a [Future<Module>] containing [id].
   ///
-  /// Module configs are expected to live under the same top level directory of
-  /// the package as [id].
+  /// The module config is expected to live directly inside the top level
+  /// directory of the package containing [id].
+  ///
+  /// For example:
+  ///
+  ///   id -> myapp|test/stuff/thing.dart
+  ///   config -> myapp|test/.moduleConfig
   Future<Module> moduleFor(AssetId id) async {
     var parts = p.split(p.dirname(id.path));
-    if (parts.length == 0) {
+    if (parts.isEmpty) {
       throw new ArgumentError("Unexpected asset `$id` which isn't under a top "
           "level directory of its package.");
     }
@@ -46,20 +51,20 @@ class ModuleReader {
   /// Computes the transitive deps of [id] by reading all the modules for all
   /// its dependencies recursively.
   ///
-  /// Assumes that any dependencies modules are either already loaded or exist
+  /// Assumes that any dependencies' modules are either already loaded or exist
   /// in the default module config file for their package.
   Future<Set<ModuleId>> readTransitiveDeps(Module module) async {
-    var allModuleDepIds = new Set<ModuleId>();
+    var result = new Set<ModuleId>();
     Future updateDeps(Iterable<AssetId> assetDepIds) async {
       for (var assetDepId in assetDepIds) {
         var assetDepModule = await moduleFor(assetDepId);
-        if (!allModuleDepIds.add(assetDepModule.id)) continue;
+        if (!result.add(assetDepModule.id)) continue;
         await updateDeps(assetDepModule.directDependencies);
       }
     }
 
     await updateDeps(module.directDependencies);
-    return allModuleDepIds;
+    return result;
   }
 
   /// Loads all [Module]s in [moduleConfigId] if they are not already loaded.

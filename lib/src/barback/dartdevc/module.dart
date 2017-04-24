@@ -20,6 +20,12 @@ class Module {
   final Set<AssetId> directDependencies;
 
   Module(this.id, this.assetIds, this.directDependencies);
+
+  /// Creates a [Module] from [json] which should be a [List] that was created
+  /// with [toJson].
+  ///
+  /// It should contain exactly 3 entries, representing the [id], [assetIds],
+  /// and [directDependencies] fields in that order.
   Module.fromJson(List<List<dynamic>> json)
       : id = new ModuleId.fromJson(json[0]),
         assetIds = new Set<AssetId>.from(
@@ -27,6 +33,11 @@ class Module {
         directDependencies = new Set<AssetId>.from(
             json[2].map((d) => new AssetId.deserialize(d)));
 
+  /// Serialize this [Module] to a nested [List] which can be encoded with
+  /// `JSON.encode` and then decoded later with `JSON.decode`.
+  ///
+  /// The resulting [List] will have 3 values, representing the [id],
+  /// [assetIds], and [directDependencies] fields in that order.
   List<List<dynamic>> toJson() => [
         id.toJson(),
         assetIds.map((id) => id.serialize()).toList(),
@@ -43,10 +54,21 @@ class ModuleId {
   final String name;
 
   const ModuleId(this.package, this.name);
+
+  /// Creates a [ModuleId] from [json] which should be a [List] that was created
+  /// with [toJson].
+  ///
+  /// It should contain exactly 2 entries, representing the [package] and [name]
+  /// fields in that order.
   ModuleId.fromJson(List<String> json)
       : package = json[0],
         name = json[1];
 
+  /// Serialize this [ModuleId] to a nested [List] which can be encoded with
+  /// `JSON.encode` and then decoded later with `JSON.decode`.
+  ///
+  /// The resulting [List] will have 2 values, representing the [package] and
+  /// [name] fields in that order.
   List<String> toJson() => <String>[package, name];
 
   @override
@@ -57,5 +79,5 @@ class ModuleId {
       other is ModuleId && other.package == package && other.name == this.name;
 
   @override
-  int get hashCode => '$package|$name'.hashCode;
+  int get hashCode => package.hashCode ^ name.hashCode;
 }
