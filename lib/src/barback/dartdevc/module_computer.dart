@@ -28,15 +28,15 @@ enum ModuleMode {
 /// Computes the [Module]s for [srcAssets], or throws an [ArgumentError] if the
 /// configuration is invalid.
 ///
-/// All entry points are guaranteed their own [Module], unless they are in a
-/// strongly connected component with another entry point in which case a
+/// All entrypoints are guaranteed their own [Module], unless they are in a
+/// strongly connected component with another entrypoint in which case a
 /// single [Module] is created for the strongly connected component.
 ///
-/// Note that only entry points are guaranteed to exist in any [Module], if
-/// an asset exists in [assetIds] but is not reachable from any [entrypoint]
+/// Note that only entrypoints are guaranteed to exist in any [Module], if
+/// an asset exists in [assetIds] but is not reachable from any entrypoint
 /// then it will not be contained in any [Module].
 ///
-/// An entry point is defined as follows:
+/// An entrypoint is defined as follows:
 ///
 ///   * In [ModuleMode.public], any asset under "lib" but not "lib/src".
 ///
@@ -118,7 +118,7 @@ Future<List<Module>> computeModules(
   var srcAssetIds = srcAssets.map((asset) => asset.id).toSet();
   var nonPartAssets = srcAssets.where((asset) => !partIds.contains(asset.id));
   for (var asset in nonPartAssets) {
-    var node = await _AssetNode.create(
+    var node = new _AssetNode.forParsedUnit(
         asset.id, parsedAssetsById[asset.id], srcAssetIds);
     nodesById[asset.id] = node;
   }
@@ -136,6 +136,9 @@ Future<List<Module>> computeModules(
 ///
 /// External deps are used to compute the dependent modules of each module once
 /// the modules are decided.
+///
+/// Part files are also tracked here but ignored during computation of strongly
+/// connected components, as they must always be a part of this assets module.
 class _AssetNode {
   final AssetId id;
 
@@ -165,8 +168,11 @@ class _AssetNode {
 
   _AssetNode(this.id, this.internalDeps, this.parts, this.externalDeps);
 
-  static Future<_AssetNode> create(
-      AssetId id, CompilationUnit parsed, Set<AssetId> srcs) async {
+  /// Creates an [_AssetNode] for [id] given a parsed [CompilationUnit] and some
+  /// [internalSrcs] which represent other assets that may become part of the
+  /// same module.
+  factory _AssetNode.forParsedUnit(
+      AssetId id, CompilationUnit parsed, Set<AssetId> internalSrcs) {
     var externalDeps = new Set<AssetId>();
     var internalDeps = new Set<AssetId>();
     var parts = new Set<AssetId>();
@@ -176,13 +182,13 @@ class _AssetNode {
           urlToAssetId(id, (directive as UriBasedDirective).uri.stringValue);
       if (linkedId == null) continue;
       if (directive is PartDirective) {
-        if (!srcs.contains(linkedId)) {
+        if (!internalSrcs.contains(linkedId)) {
           throw new StateError(
               'Referenced part file $linkedId from $id which is not in the '
               'same package');
         }
         parts.add(linkedId);
-      } else if (srcs.contains(linkedId)) {
+      } else if (internalSrcs.contains(linkedId)) {
         internalDeps.add(linkedId);
       } else {
         externalDeps.add(linkedId);
@@ -302,8 +308,6 @@ class _ModuleComputer {
   /// following rules:
   ///
   ///   * If it is an entrypoint module, skip it.
-  ///   * Else if it is only imported by a single entrypoint, merge it into
-  ///     that entrypoints module.
   ///   * Else merge it into a module whose name is a combination of all the
   ///     entrypoints that import it (create that module if it doesn't exist).
   List<Module> _mergeModules(Map<ModuleId, Module> originalModulesById) {
@@ -315,12 +319,8 @@ class _ModuleComputer {
         _findReverseEntrypointDeps(entrypointModuleIds, modulesById);
 
     for (var moduleId in modulesById.keys.toList()) {
-      // Rule #1: Skip entrypoint modules.
+      // Skip entrypoint modules.
       if (entrypointModuleIds.any((id) => id == moduleId)) continue;
-
-      // We always create a new module for non-entrypoint modules, although it
-      // may end up being equivalent to the original (with a different name).
-      Module newModule;
 
       // The entry points that transitively import this module.
       var entrypointIds = modulesToEntryPoints[moduleId];
@@ -329,20 +329,17 @@ class _ModuleComputer {
             'Internal error, found a module that is not depended on by any '
             'entrypoints. Please file an issue at '
             'https://github.com/dart-lang/pub/issues/new');
-      } else if (entrypointIds.length == 1) {
-        // Rule #2: Merge into the entrypoint module if only included in one.
-        newModule = modulesById[entrypointIds.first];
-      } else {
-        // Rule #3: Fallback case, create a new module based off the name of
-        // all entrypoints or merge into an existing one by that name.
-        var moduleNames = entrypointIds.map((id) => id.name).toList()..sort();
-        var newModuleId =
-            new ModuleId(entrypointIds.first.package, moduleNames.join('\$'));
-        newModule = modulesById.putIfAbsent(
-            newModuleId,
-            () => new Module(
-                newModuleId, new Set<AssetId>(), new Set<AssetId>()));
       }
+
+      // Create a new module based off the name of all entrypoints or merge into
+      // an existing one by that name.
+      var moduleNames = entrypointIds.map((id) => id.name).toList()..sort();
+      var newModuleId =
+          new ModuleId(entrypointIds.first.package, moduleNames.join('\$'));
+      var newModule = modulesById.putIfAbsent(
+          newModuleId,
+          () =>
+              new Module(newModuleId, new Set<AssetId>(), new Set<AssetId>()));
 
       var oldModule = modulesById.remove(moduleId);
       // Add all the original assets and deps to the new module.
@@ -359,14 +356,14 @@ class _ModuleComputer {
   List<Set<_AssetNode>> _stronglyConnectedComponents() {
     var currentDiscoveryIndex = 0;
     // [LinkedHashSet] maintains insertion order which is important!
-    var componentStack = new LinkedHashSet<_AssetNode>();
+    var nodeStack = new LinkedHashSet<_AssetNode>();
     var connectedComponents = <Set<_AssetNode>>[];
 
     void stronglyConnect(_AssetNode node) {
       node.discoveryIndex = currentDiscoveryIndex;
       node.lowestLinkedDiscoveryIndex = currentDiscoveryIndex;
       currentDiscoveryIndex++;
-      componentStack.add(node);
+      nodeStack.add(node);
 
       for (var dep in node.internalDeps) {
         var depNode = nodesById[dep];
@@ -374,7 +371,7 @@ class _ModuleComputer {
           stronglyConnect(depNode);
           node.lowestLinkedDiscoveryIndex = min(node.lowestLinkedDiscoveryIndex,
               depNode.lowestLinkedDiscoveryIndex);
-        } else if (componentStack.contains(depNode)) {
+        } else if (nodeStack.contains(depNode)) {
           node.lowestLinkedDiscoveryIndex = min(node.lowestLinkedDiscoveryIndex,
               depNode.lowestLinkedDiscoveryIndex);
         }
@@ -382,15 +379,19 @@ class _ModuleComputer {
 
       if (node.discoveryIndex == node.lowestLinkedDiscoveryIndex) {
         var component = new Set<_AssetNode>();
-        connectedComponents.add(component);
-        var last = componentStack.last;
-        componentStack.remove(last);
-        component.add(last);
-        while (last != node) {
-          last = componentStack.last;
-          componentStack.remove(last);
+
+        // Pops the last node off of `nodeStack`, adds it to `component`, and
+        // returns it.
+        _AssetNode _popAndAddNode() {
+          var last = nodeStack.last;
+          nodeStack.remove(last);
           component.add(last);
+          return last;
         }
+
+        while (_popAndAddNode() != node) {}
+
+        connectedComponents.add(component);
       }
     }
 
