@@ -12,7 +12,7 @@ import 'package:path/path.dart' as p;
 
 import 'module.dart';
 import 'util.dart';
-import '../../dart.dart' show isEntrypoint;
+import '../../dart.dart' show isEntrypoint, isPart;
 
 /// There are two "types" of modules, `public` and `private`.
 ///
@@ -74,28 +74,52 @@ Future<List<Module>> computeModules(
       break;
   }
 
-  // Compute the set of entry points from `srcAssets` based on `mode`.
+  // The set of entry points from `srcAssets` based on `mode`.
   var entryIds = new Set<AssetId>();
+  // All the `srcAssets` that are part files.
+  var partIds = new Set<AssetId>();
+  // Invalid assets that should be removed from `srcAssets` after this loop.
+  var idsToRemove = <AssetId>[];
+  var parsedAssetsById = <AssetId, CompilationUnit>{};
   for (var asset in srcAssets) {
     var id = asset.id;
+    var content = await asset.readAsString();
+    var parsed = parseCompilationUnit(content,
+        name: id.path, parseFunctionBodies: false, suppressErrors: true);
+    parsedAssetsById[id] = parsed;
+
+    // Skip any files which contain a `dart:_` import.
+    if (parsed.directives.any((d) =>
+        d is UriBasedDirective && d.uri.stringValue.startsWith('dart:_'))) {
+      idsToRemove.add(asset.id);
+      continue;
+    }
+
+    // Short-circuit for part files.
+    if (isPart(parsed)) {
+      partIds.add(asset.id);
+      continue;
+    }
+
     switch (mode) {
       case ModuleMode.public:
         if (!id.path.startsWith('lib/src/')) entryIds.add(id);
         break;
       case ModuleMode.private:
-        var content = await asset.readAsString();
-        var parsed = parseCompilationUnit(content,
-            name: id.path, parseFunctionBodies: false);
         if (isEntrypoint(parsed)) entryIds.add(id);
         break;
     }
   }
 
-  // Compute all the `AssetNode`s for `srcAssets`.
+  srcAssets = srcAssets.where((asset) => !idsToRemove.contains(asset.id));
+
+  // Build the `_AssetNode`s for each asset, skipping part files.
   var nodesById = <AssetId, _AssetNode>{};
   var srcAssetIds = srcAssets.map((asset) => asset.id).toSet();
-  for (var asset in srcAssets) {
-    var node = await _AssetNode.fromAsset(asset, srcAssetIds);
+  var nonPartAssets = srcAssets.where((asset) => !partIds.contains(asset.id));
+  for (var asset in nonPartAssets) {
+    var node = await _AssetNode.create(
+        asset.id, parsedAssetsById[asset.id], srcAssetIds);
     nodesById[asset.id] = node;
   }
 
@@ -115,11 +139,16 @@ Future<List<Module>> computeModules(
 class _AssetNode {
   final AssetId id;
 
-  /// The other internal sources that this file depends on.
+  /// The other internal sources that this file import or exports.
   ///
   /// These may be merged into the same [Module] as this node, and are used when
   /// computing strongly connected components.
   final Set<AssetId> internalDeps;
+
+  /// Part files included by this asset.
+  ///
+  /// These should always be a part of the same connected component.
+  final Set<AssetId> parts;
 
   /// The deps of this source that are from an external package.
   ///
@@ -134,26 +163,32 @@ class _AssetNode {
   /// Lowest discoveryIndex for any node this is connected to.
   int lowestLinkedDiscoveryIndex;
 
-  _AssetNode(this.id, this.internalDeps, this.externalDeps);
+  _AssetNode(this.id, this.internalDeps, this.parts, this.externalDeps);
 
-  static Future<_AssetNode> fromAsset(Asset asset, Set<AssetId> srcs) async {
-    var internalDeps = new Set<AssetId>();
+  static Future<_AssetNode> create(
+      AssetId id, CompilationUnit parsed, Set<AssetId> srcs) async {
     var externalDeps = new Set<AssetId>();
-    var content = await asset.readAsString();
-    var parsed = parseDirectives(content);
+    var internalDeps = new Set<AssetId>();
+    var parts = new Set<AssetId>();
     for (var directive in parsed.directives) {
       if (directive is! UriBasedDirective) continue;
-      var id = urlToAssetId(
-          asset.id, (directive as UriBasedDirective).uri.stringValue);
-      if (id == null) continue;
-
-      if (srcs.contains(id)) {
-        internalDeps.add(id);
+      var linkedId =
+          urlToAssetId(id, (directive as UriBasedDirective).uri.stringValue);
+      if (linkedId == null) continue;
+      if (directive is PartDirective) {
+        if (!srcs.contains(linkedId)) {
+          throw new StateError(
+              'Referenced part file $linkedId from $id which is not in the '
+              'same package');
+        }
+        parts.add(linkedId);
+      } else if (srcs.contains(linkedId)) {
+        internalDeps.add(linkedId);
       } else {
-        externalDeps.add(id);
+        externalDeps.add(linkedId);
       }
     }
-    return new _AssetNode(asset.id, internalDeps, externalDeps);
+    return new _AssetNode(id, internalDeps, parts, externalDeps);
   }
 }
 
@@ -191,7 +226,11 @@ class _ModuleComputer {
       var moduleName =
           p.url.split(p.withoutExtension(primaryNode.id.path)).join('__');
       var id = new ModuleId(primaryNode.id.package, moduleName);
-      var allAssetIds = componentNodes.map((node) => node.id).toSet();
+      // Expand to include all the part files of each node, these aren't
+      // included as individual `_AssetNodes`s in `connectedComponents`.
+      var allAssetIds = componentNodes
+          .expand((node) => [node.id]..addAll(node.parts))
+          .toSet();
       var allDepIds = new Set<AssetId>();
       for (var node in componentNodes) {
         allDepIds.addAll(node.externalDeps);

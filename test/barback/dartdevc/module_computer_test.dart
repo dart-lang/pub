@@ -250,5 +250,34 @@ main() {
 
       expect(modules, unorderedMatches(expectedModules));
     });
+
+    test('part files are merged into the parent libraries component', () async {
+      var assets = makeAssets({
+        'a|lib/a.dart': '''
+          library a;
+
+          part 'a.part.dart';
+          part 'src/a.part.dart';
+        ''',
+        'a|lib/a.part.dart': '''
+          part of a;
+        ''',
+        'a|lib/src/a.part.dart': '''
+          part of a;
+        ''',
+      });
+
+      var expectedModules = [
+        equalsModule(makeModule(package: 'a', name: 'lib__a', srcs: [
+          'a|lib/a.dart',
+          'a|lib/a.part.dart',
+          'a|lib/src/a.part.dart'
+        ])),
+      ];
+
+      var modules = await computeModules(ModuleMode.public, assets.values);
+
+      expect(modules, unorderedMatches(expectedModules));
+    });
   });
 }
