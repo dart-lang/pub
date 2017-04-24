@@ -1,0 +1,184 @@
+// Copyright (c) 2017, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+import 'dart:convert';
+
+import 'package:barback/barback.dart';
+import 'package:test/test.dart';
+
+import 'package:pub/src/barback/dartdevc/module.dart';
+import 'package:pub/src/barback/dartdevc/module_reader.dart';
+
+import 'util.dart';
+
+void main() {
+  InMemoryModuleConfigManager configManager;
+  ModuleReader moduleReader;
+
+  setUp(() {
+    configManager = new InMemoryModuleConfigManager();
+    moduleReader = new ModuleReader(configManager.readAsString);
+  });
+
+  group('ModuleReader', () {
+    group('single config with single module and no deps', () {
+      Module originalModule;
+      AssetId originalModuleConfig;
+      setUp(() {
+        originalModule = makeModule();
+        originalModuleConfig = configManager.addConfig([originalModule]);
+      });
+
+      test('readModules', () async {
+        var modules = await moduleReader.readModules(originalModuleConfig);
+        expect(modules.length, 1);
+        expectModulesEqual(modules.first, originalModule);
+      });
+
+      test('moduleFor', () async {
+        for (var assetId in originalModule.assetIds) {
+          var module = await moduleReader.moduleFor(assetId);
+          expectModulesEqual(originalModule, module);
+        }
+      });
+
+      test('transitiveDependencies', () async {
+        var modules = await moduleReader.readModules(originalModuleConfig);
+        var deps = await moduleReader.readTransitiveDeps(modules.first);
+        expect(deps, isEmpty);
+      });
+    });
+
+    group('multiple configs with transitive deps', () {
+      var packageAModuleA = makeModule(package: 'a');
+      var packageAModuleB = makeModule(package: 'a')
+        ..directDependencies.add(packageAModuleA.assetIds.first);
+      var packageAModuleC = makeModule(package: 'a')
+        ..directDependencies.add(packageAModuleA.assetIds.last);
+      var packageAModules = [
+        packageAModuleA,
+        packageAModuleB,
+        packageAModuleC,
+      ];
+
+      var packageBModuleA = makeModule(package: 'b')
+        ..directDependencies.add(packageAModuleB.assetIds.last);
+      var packageBModuleB = makeModule(package: 'b')
+        ..directDependencies.add(packageBModuleA.assetIds.first);
+      var packageBModules = [
+        packageBModuleA,
+        packageBModuleB,
+      ];
+      var packageCLibModule = makeModule(package: 'c')
+        ..directDependencies.add(packageBModuleB.assetIds.last);
+      var packageCModules = [packageCLibModule];
+      var packageCWebModule = makeModule(package: 'c', topLevelDir: 'web')
+        ..directDependencies.add(packageCLibModule.assetIds.first);
+      var packageCWebModules = [packageCWebModule];
+
+      var libModules = [
+        packageAModuleA,
+        packageAModuleB,
+        packageAModuleC,
+        packageBModuleA,
+        packageBModuleB,
+        packageCLibModule,
+      ];
+
+      AssetId packageAModuleConfig;
+      AssetId packageBModuleConfig;
+      AssetId packageCModuleConfig;
+      AssetId packageCWebModuleConfig;
+
+      setUp(() {
+        packageAModuleConfig = configManager.addConfig(packageAModules);
+        packageBModuleConfig = configManager.addConfig([
+          packageBModuleA,
+          packageBModuleB,
+        ]);
+        packageCModuleConfig = configManager.addConfig([packageCLibModule]);
+        packageCWebModuleConfig = configManager.addConfig([packageCWebModule],
+            configId: new AssetId('c', 'web/$moduleConfigName'));
+      });
+
+      test('readModules', () async {
+        var expectedModules = {
+          packageAModuleConfig: packageAModules,
+          packageBModuleConfig: packageBModules,
+          packageCModuleConfig: packageCModules,
+          packageCWebModuleConfig: packageCWebModules,
+        };
+        for (var config in expectedModules.keys) {
+          var modules = await moduleReader.readModules(config);
+          for (int i = 0; i < modules.length; i++) {
+            expectModulesEqual(modules[i], expectedModules[config][i]);
+          }
+        }
+      });
+
+      test('moduleFor', () async {
+        var allModules = [packageCWebModule]..addAll(libModules);
+        for (var expected in allModules) {
+          for (var assetId in expected.assetIds) {
+            var actual = await moduleReader.moduleFor(assetId);
+            expectModulesEqual(expected, actual);
+          }
+        }
+      });
+
+      test('transitiveDependencies', () async {
+        expect(await moduleReader.readTransitiveDeps(packageAModuleA), isEmpty);
+        expect(await moduleReader.readTransitiveDeps(packageAModuleB),
+            unorderedEquals([packageAModuleA.id]));
+        expect(await moduleReader.readTransitiveDeps(packageAModuleC),
+            unorderedEquals([packageAModuleA.id]));
+
+        expect(await moduleReader.readTransitiveDeps(packageBModuleA),
+            unorderedEquals([packageAModuleA.id, packageAModuleB.id]));
+        expect(
+            await moduleReader.readTransitiveDeps(packageBModuleB),
+            unorderedEquals(
+                [packageAModuleA.id, packageAModuleB.id, packageBModuleA.id]));
+
+        expect(
+            await moduleReader.readTransitiveDeps(packageCLibModule),
+            unorderedEquals([
+              packageAModuleA.id,
+              packageAModuleB.id,
+              packageBModuleA.id,
+              packageBModuleB.id,
+            ]));
+        expect(
+            await moduleReader.readTransitiveDeps(packageCWebModule),
+            unorderedEquals([
+              packageAModuleA.id,
+              packageAModuleB.id,
+              packageBModuleA.id,
+              packageBModuleB.id,
+              packageCLibModule.id,
+            ]));
+      });
+    });
+  });
+}
+
+/// Manages an in memory view of a set of module configs, mimics on disk module
+/// config files.
+class InMemoryModuleConfigManager {
+  final _moduleConfigs = <AssetId, String>{};
+
+  /// Adds a module config file containing serialized [modules] to
+  /// [_moduleConfigs].
+  ///
+  /// Returns the [AssetId] for the config that was created.
+  AssetId addConfig(Iterable<Module> modules, {AssetId configId}) {
+    var package = modules.first.id.package;
+    assert(modules.every((m) => m.id.package == package));
+    configId ??= new AssetId(package, 'lib/$moduleConfigName');
+    _moduleConfigs[configId] = JSON.encode(modules);
+    return configId;
+  }
+
+  String readAsString(AssetId id) => _moduleConfigs[id];
+}
