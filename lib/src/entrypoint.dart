@@ -259,7 +259,7 @@ class Entrypoint {
             .toSet();
 
         var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
-            packages: packagesToLoad, compiler: Compiler.dartDevc);
+            packages: packagesToLoad, compiler: Compiler.none);
 
         /// Ignore barback errors since they'll be emitted via [getAllAssets]
         /// below.
