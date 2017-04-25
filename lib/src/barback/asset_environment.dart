@@ -18,6 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
+import 'dartdevc/module_config_transformer.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
 import 'compiler.dart';
@@ -179,32 +180,25 @@ class AssetEnvironment {
     var transformers = <Set>[];
 
     if (compiler == Compiler.dartDevc) {
-      throw new UnimplementedError(
-          'The dartdevc compiler is not yet supported.');
+      transformers.add([new ModuleConfigTransformer()].toSet());
     }
 
     // These transformers are just for the root package.
-    if (package.name == rootPackage.name) {
-      switch (compiler) {
-        case Compiler.dart2Js:
-          // If the entrypoint package manually configures the dart2js
-          // transformer, don't include it in the built-in transformer list.
-          //
-          // TODO(nweiz): if/when we support more built-in transformers, make
-          // this more general.
-          var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
-              (transformers) => transformers
-                  .any((config) => config.id.package == '\$dart2js'));
+    if (package.name == rootPackage.name && compiler == Compiler.dart2Js) {
+      // If the entrypoint package manually configures the dart2js
+      // transformer, don't include it in the built-in transformer list.
+      //
+      // TODO(nweiz): if/when we support more built-in transformers, make
+      // this more general.
+      var containsDart2JS = graph.entrypoint.root.pubspec.transformers.any(
+          (transformers) =>
+              transformers.any((config) => config.id.package == '\$dart2js'));
 
-          if (!containsDart2JS && compiler == Compiler.dart2Js) {
-            transformers.add([
-              new Dart2JSTransformer(this, mode),
-              new DartForwardingTransformer(),
-            ].toSet());
-          }
-          break;
-        default:
-          break;
+      if (!containsDart2JS && compiler == Compiler.dart2Js) {
+        transformers.add([
+          new Dart2JSTransformer(this, mode),
+          new DartForwardingTransformer(),
+        ].toSet());
       }
     }
 
