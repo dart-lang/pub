@@ -16,27 +16,18 @@ import 'util.dart';
 /// Computes the ideal set of [Module]s for top level directories in a package,
 /// and outputs a single `.moduleConfig` file in each one.
 class ModuleConfigTransformer extends AggregateTransformer {
-  final ModuleMode moduleMode;
-
-  ModuleConfigTransformer(this.moduleMode);
+  ModuleConfigTransformer();
 
   @override
   String classifyPrimary(AssetId id) {
     if (p.extension(id.path) != '.dart') return null;
-    var dir = topLevelDir(id.path);
-    switch (moduleMode) {
-      case ModuleMode.public:
-        if (dir != 'lib') return null;
-        break;
-      case ModuleMode.private:
-        if (dir == 'lib') return null;
-        break;
-    }
-    return dir;
+    return topLevelDir(id.path);
   }
 
   @override
   Future apply(AggregateTransform transform) async {
+    var moduleMode =
+        transform.key == 'lib' ? ModuleMode.public : ModuleMode.private;
     var allAssets = await transform.primaryInputs.toList();
     var modules = await computeModules(moduleMode, allAssets);
     var encoded = JSON.encode(modules);
