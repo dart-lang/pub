@@ -104,7 +104,7 @@ Future loadAllTransformers(
     var phases =
         await loader.transformersForPhases(package.pubspec.transformers);
     var transformers = environment.getBuiltInTransformers(package);
-    if (transformers != null) phases.add(transformers);
+    if (transformers != null) phases.addAll(transformers);
     if (phases.isEmpty) return;
 
     // TODO(nweiz): remove the [newFuture] here when issue 17305 is fixed.

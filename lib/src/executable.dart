@@ -10,6 +10,7 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import 'barback/asset_environment.dart';
+import 'barback/compiler.dart';
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
@@ -136,7 +137,7 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   // TODO(nweiz): Use [packages] to only load assets from packages that the
   // executable might load.
   var environment = await AssetEnvironment
-      .create(entrypoint, mode, useDart2JS: false, entrypoints: [id]);
+      .create(entrypoint, mode, compiler: Compiler.none, entrypoints: [id]);
   environment.barback.errors.listen((error) {
     log.error(log.red("Build error:\n$error"));
   });
