@@ -49,7 +49,7 @@ Set<ModuleId> makeModuleIds({String package}) => new Set<ModuleId>.from(
 Module makeModule(
     {String name,
     String package,
-    Iterable<dynamic> directDependencies,
+    Iterable<dynamic> directDependencies = const [],
     Iterable<dynamic> srcs,
     String topLevelDir}) {
   assert(srcs == null || topLevelDir == null);
