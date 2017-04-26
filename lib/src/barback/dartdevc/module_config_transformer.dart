@@ -8,10 +8,10 @@ import 'dart:convert';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
+import '../../io.dart';
 import 'module.dart';
 import 'module_computer.dart';
 import 'module_reader.dart';
-import 'util.dart';
 
 /// Computes the ideal set of [Module]s for top level directories in a package,
 /// and outputs a single `.moduleConfig` file in each one.
