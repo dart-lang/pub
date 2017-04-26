@@ -11,7 +11,8 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import 'module.dart';
-import 'util.dart';
+import '../../barback.dart';
+import '../../io.dart';
 import '../../dart.dart' show isEntrypoint, isPart;
 
 /// There are two "types" of modules, `public` and `private`.
@@ -178,8 +179,8 @@ class _AssetNode {
     var parts = new Set<AssetId>();
     for (var directive in parsed.directives) {
       if (directive is! UriBasedDirective) continue;
-      var linkedId =
-          urlToAssetId(id, (directive as UriBasedDirective).uri.stringValue);
+      var linkedId = importUriToAssetId(
+          id, (directive as UriBasedDirective).uri.stringValue);
       if (linkedId == null) continue;
       if (directive is PartDirective) {
         if (!internalSrcs.contains(linkedId)) {
@@ -288,7 +289,7 @@ class _ModuleComputer {
       Module module, Map<AssetId, Module> assetsToModules) {
     var localTransitiveDeps = new Set<ModuleId>();
     var nextIds = module.directDependencies;
-    var seenIds = new Set<AssetId>.from([module.id]);
+    var seenIds = new Set<AssetId>();
     while (nextIds.isNotEmpty) {
       var ids = nextIds;
       seenIds.addAll(ids);

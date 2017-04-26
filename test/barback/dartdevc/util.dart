@@ -61,9 +61,9 @@ Module makeModule(
 
   var id = makeModuleId(package: package, name: name);
   srcs ??= makeAssetIds(package: id.package, topLevelDir: topLevelDir);
-  var assetIds = new Set<AssetId>()..addAll(srcs.map(toAssetId));
+  var assetIds = srcs.map(toAssetId).toSet();
   directDependencies ??= new Set();
-  var realDeps = new Set<AssetId>()..addAll(directDependencies.map(toAssetId));
+  var realDeps = directDependencies.map(toAssetId).toSet();
   return new Module(id, assetIds, realDeps);
 }
 

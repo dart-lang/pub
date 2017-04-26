@@ -344,6 +344,23 @@ void testExistencePredicate(String name, bool predicate(String path),
       });
     }
   });
+
+  group('topLevelDir', () {
+    test('returns the top level dir in a path', () {
+      expect(topLevelDir('foo/bar/baz.dart'), 'foo');
+      expect(topLevelDir('foo/../bar/baz.dart'), 'bar');
+      expect(topLevelDir('./foo/baz.dart'), 'foo');
+    });
+
+    test('throws for invalid paths', () {
+      expect(() => topLevelDir('foo/../../bar.dart'), throwsArgumentError,
+          reason: 'Paths reaching outside the root dir should throw.');
+      expect(() => topLevelDir('foo.dart'), throwsArgumentError,
+          reason: 'Paths to the root directory should throw.');
+      expect(() => topLevelDir('foo/../foo.dart'), throwsArgumentError,
+          reason: 'Normalized paths to the root directory should throw.');
+    });
+  });
 }
 
 /// Like [withTempDir], but canonicalizes the path before passing it to [fn].
