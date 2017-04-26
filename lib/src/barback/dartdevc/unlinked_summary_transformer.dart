@@ -60,7 +60,11 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
   ]);
   // Add all the files to include in the unlinked summary bundle.
   request.arguments.addAll(module.assetIds.map((id) {
-    return '${canonicalUriFor(id)}|${tempEnv.fileFor(id).path}';
+    var uri = canonicalUriFor(id);
+    if (!uri.startsWith('package:')) {
+      uri = 'file://$uri';
+    }
+    return '$uri|${tempEnv.fileFor(id).path}';
   }));
   var response = await analyzerDriver.doWork(request);
   if (response.exitCode == EXIT_CODE_ERROR) {
@@ -70,5 +74,6 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
   } else {
     transform.addOutput(new Asset.fromBytes(
         summaryOutputId, summaryOutputFile.readAsBytesSync()));
+    transform.logger.warning(summaryOutputId.toString());
   }
 }
