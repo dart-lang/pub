@@ -1139,7 +1139,7 @@ class PubProcessResult {
 String topLevelDir(String pathString) {
   var parts = path.url.split(path.normalize(pathString));
   String error;
-  if (parts.isEmpty) {
+  if (parts.length == 1) {
     error = 'The path does not contain a directory.';
   } else if (parts.first == '..') {
     error = 'The path reaches outside the root directory.';
