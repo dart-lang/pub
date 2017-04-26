@@ -50,7 +50,7 @@ class ServeCommand extends BarbackCommand {
 
   /// This completer is used to keep pub running (by not completing) and to
   /// pipe fatal errors to pub's top-level error-handling machinery.
-  final _completer = new Completer();
+  final _completer = new Completer<Null>();
 
   ServeCommand() {
     argParser.addOption("define",
