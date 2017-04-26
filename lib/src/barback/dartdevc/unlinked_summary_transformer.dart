@@ -8,6 +8,7 @@ import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 import 'package:path/path.dart' as p;
 
+import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -27,42 +28,47 @@ class UnlinkedSummaryTransformer extends Transformer {
   @override
   Future apply(Transform transform) async {
     var reader = new ModuleReader(transform.readInputAsString);
-    var modules = await reader.readModules(transform.primaryInput.id);
-    await Future.wait(
-        modules.map((m) => _createUnlinkedSummaryForModule(m, transform)));
+    var configId = transform.primaryInput.id;
+    var modules = await reader.readModules(configId);
+    TempEnvironment tempEnv;
+    try {
+      var allAssetIds = modules.fold(new Set<AssetId>(), (allAssets, module) {
+        allAssets.addAll(module.assetIds);
+        return allAssets;
+      });
+      // Create a single temp environment for all the modules in this package.
+      tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
+      await Future.wait(modules.map((m) => _createUnlinkedSummaryForModule(
+          m, topLevelDir(configId.path), tempEnv, transform)));
+    } finally {
+      tempEnv?.delete();
+    }
   }
 }
 
-Future _createUnlinkedSummaryForModule(
-    Module module, Transform transform) async {
-  TempEnvironment tempEnv;
-  try {
-    tempEnv =
-        await TempEnvironment.create(module.assetIds, transform.readInput);
-    var summaryOutputId = new AssetId(module.id.package,
-        p.url.join('lib', '${module.id.name}$unlinkedSummaryExtension'));
-    var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
-    var request = new WorkRequest();
-    request.arguments.addAll([
-      '--build-summary-only',
-      '--build-summary-only-unlinked',
-      '--build-summary-only-diet',
-      '--build-summary-output=${summaryOutputFile.path}',
-    ]);
-    // Add all the files to include in the unlinked summary bundle.
-    request.arguments.addAll(module.assetIds.map((id) {
-      return '${canonicalUriFor(id)}|${tempEnv.fileFor(id).path}';
-    }));
-    var response = await analyzerDriver.doWork(request);
-    if (response.exitCode == EXIT_CODE_ERROR) {
-      transform.logger
-          .error('Error creating unlinked summaries for module: ${module.id}.\n'
-              '${response.output}');
-    } else {
-      transform.addOutput(new Asset.fromBytes(
-          summaryOutputId, summaryOutputFile.readAsBytesSync()));
-    }
-  } finally {
-    tempEnv?.delete();
+Future _createUnlinkedSummaryForModule(Module module, String outputDir,
+    TempEnvironment tempEnv, Transform transform) async {
+  var summaryOutputId = new AssetId(module.id.package,
+      p.url.join(outputDir, '${module.id.name}$unlinkedSummaryExtension'));
+  var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
+  var request = new WorkRequest();
+  request.arguments.addAll([
+    '--build-summary-only',
+    '--build-summary-only-unlinked',
+    '--build-summary-only-diet',
+    '--build-summary-output=${summaryOutputFile.path}',
+  ]);
+  // Add all the files to include in the unlinked summary bundle.
+  request.arguments.addAll(module.assetIds.map((id) {
+    return '${canonicalUriFor(id)}|${tempEnv.fileFor(id).path}';
+  }));
+  var response = await analyzerDriver.doWork(request);
+  if (response.exitCode == EXIT_CODE_ERROR) {
+    transform.logger
+        .error('Error creating unlinked summaries for module: ${module.id}.\n'
+            '${response.output}');
+  } else {
+    transform.addOutput(new Asset.fromBytes(
+        summaryOutputId, summaryOutputFile.readAsBytesSync()));
   }
 }
