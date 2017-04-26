@@ -214,13 +214,19 @@ class _ModuleComputer {
     var connectedComponents = _stronglyConnectedComponents();
     var modulesById = _createModulesFromComponents(connectedComponents);
     var modules = _mergeModules(modulesById);
+    if (modules.isEmpty) return modules;
     // Rename shared modules at the end, the module names can become a bit
     // insane otherwise.
     var next = 0;
+    // All modules and assets in those modules share a top level dir, we just
+    // grab it from the first one.
+    var moduleDir = topLevelDir(modules.first.assetIds.first.path);
     return modules.map((module) {
       if (module.id.name.contains('\$')) {
-        return new Module(new ModuleId(module.id.package, 'shared_${next++}'),
-            module.assetIds, module.directDependencies);
+        return new Module(
+            new ModuleId(module.id.package, '${moduleDir}__shared_${next++}'),
+            module.assetIds,
+            module.directDependencies);
       } else {
         return module;
       }

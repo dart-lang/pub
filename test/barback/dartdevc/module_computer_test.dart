@@ -40,7 +40,7 @@ main() {
               directDependencies: ['myapp|lib/src/c.dart'])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'lib__a\$lib__b',
+              name: 'lib__shared_0',
               srcs: ['myapp|lib/src/c.dart', 'myapp|lib/src/d.dart'])),
         ];
 
@@ -121,7 +121,7 @@ main() {
           ])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'lib__a\$lib__b',
+              name: 'lib__shared_0',
               srcs: [
                 'myapp|lib/src/e.dart',
                 'myapp|lib/src/f.dart',
@@ -237,17 +237,17 @@ main() {
           ])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'lib__a\$lib__b',
+              name: 'lib__shared_1',
               srcs: ['myapp|lib/src/e.dart'],
               directDependencies: ['myapp|lib/src/d.dart'])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'lib__a\$lib__c',
+              name: 'lib__shared_2',
               srcs: ['myapp|lib/src/f.dart'],
               directDependencies: ['myapp|lib/src/d.dart'])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'lib__a\$lib__b\$lib__c',
+              name: 'lib__shared_0',
               srcs: ['myapp|lib/src/d.dart'])),
         ];
 
@@ -328,7 +328,7 @@ main() {
               directDependencies: ['myapp|web/c.dart'])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'web__a\$web__b',
+              name: 'web__shared_0',
               srcs: ['myapp|web/c.dart', 'myapp|web/d.dart'])),
         ];
 
@@ -376,7 +376,7 @@ main() {
               directDependencies: ['myapp|web/d.dart'])),
           equalsModule(makeModule(
               package: 'myapp',
-              name: 'web__a\$web__e',
+              name: 'web__shared_0',
               srcs: ['myapp|web/c.dart', 'myapp|web/d.dart'])),
         ];
 
