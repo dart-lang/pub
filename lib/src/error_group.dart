@@ -38,7 +38,7 @@ class ErrorGroup {
   var _isDone = false;
 
   /// The [Completer] for [done].
-  final _doneCompleter = new Completer();
+  final _doneCompleter = new Completer<Null>();
 
   /// The underlying [Future] for [done].
   ///

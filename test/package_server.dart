@@ -153,7 +153,7 @@ class PackageServerBuilder {
   /// A group of futures from [serve] calls.
   ///
   /// This should be accessed by calling [_awair].
-  var _futures = new FutureGroup();
+  var _futures = new FutureGroup<Null>();
 
   PackageServerBuilder._();
 

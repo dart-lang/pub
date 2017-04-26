@@ -301,26 +301,24 @@ void schedulePub(
   var pub = startPub(args: args, environment: environment);
   pub.shouldExit(exitCode);
 
-  expect(
-      () async {
-        var actualOutput = (await pub.stdoutStream().toList()).join("\n");
-        var actualError = (await pub.stderrStream().toList()).join("\n");
-        var actualSilent = (await pub.silentStream().toList()).join("\n");
+  expect(() async {
+    var actualOutput = (await pub.stdoutStream().toList()).join("\n");
+    var actualError = (await pub.stderrStream().toList()).join("\n");
+    var actualSilent = (await pub.silentStream().toList()).join("\n");
 
-        var failures = <String>[];
-        if (outputJson == null) {
-          _validateOutput(failures, 'stdout', output, actualOutput);
-        } else {
-          _validateOutputJson(
-              failures, 'stdout', await awaitObject(outputJson), actualOutput);
-        }
+    var failures = <String>[];
+    if (outputJson == null) {
+      _validateOutput(failures, 'stdout', output, actualOutput);
+    } else {
+      _validateOutputJson(
+          failures, 'stdout', await awaitObject(outputJson), actualOutput);
+    }
 
-        _validateOutput(failures, 'stderr', error, actualError);
-        _validateOutput(failures, 'silent', silent, actualSilent);
+    _validateOutput(failures, 'stderr', error, actualError);
+    _validateOutput(failures, 'silent', silent, actualSilent);
 
-        if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
-      }(),
-      completes);
+    if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
+  }(), completes);
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
@@ -466,14 +464,14 @@ class PubProcess extends ScheduledProcess {
   }
 
   final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
-  final _logLevels = [
+  final Map<String, log.Level> _logLevels = [
     log.Level.ERROR,
     log.Level.WARNING,
     log.Level.MESSAGE,
     log.Level.IO,
     log.Level.SOLVER,
     log.Level.FINE
-  ].fold(<String, log.Level>{}, (levels, level) {
+  ].fold({}, (levels, level) {
     levels[level.name] = level;
     return levels;
   });
