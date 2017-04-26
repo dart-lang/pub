@@ -100,7 +100,7 @@ class TransformerLoader {
 
     var transformer;
     try {
-      if (_environment.compiler == Compiler.dart2Js) {
+      if (_environment.compiler == Compiler.dart2JS) {
         transformer = new Dart2JSTransformer.withSettings(_environment,
             new BarbackSettings(config.configuration, _environment.mode));
         // Handle any exclusions.

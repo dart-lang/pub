@@ -21,7 +21,7 @@ main() {
     pubServe(args: ['--compiler', 'dartdevc']);
     requestShouldSucceed(
         'packages/$appPath/.moduleConfig', contains('lib__hello'));
-    // Not implemented yet, these should be updated once available.
+    // TODO(jakemac53): Not implemented yet, update once available.
     requestShould404('packages/$appPath/lib__hello.unlinked.sum');
     requestShould404('packages/$appPath/lib__hello.linked.sum');
     requestShould404('packages/$appPath/lib__hello.js');

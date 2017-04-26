@@ -35,14 +35,14 @@ abstract class BarbackCommand extends PubCommand {
             "using the compiler flag.");
       }
       if (argResults['dart2js']) {
-        return Compiler.dart2Js;
+        return Compiler.dart2JS;
       } else {
         return Compiler.none;
       }
     } else if (argResults.options.contains("compiler")) {
       return Compiler.byName(argResults["compiler"]);
     } else {
-      return Compiler.dart2Js;
+      return Compiler.dart2JS;
     }
   }
 
