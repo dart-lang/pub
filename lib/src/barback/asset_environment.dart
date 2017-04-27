@@ -18,6 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
+import 'dartdevc/linked_summary_transformer.dart';
 import 'dartdevc/module_config_transformer.dart';
 import 'dartdevc/unlinked_summary_transformer.dart';
 import 'admin_server.dart';
@@ -184,7 +185,8 @@ class AssetEnvironment {
       case Compiler.dartDevc:
         transformers.addAll([
           [new ModuleConfigTransformer()],
-          [new UnlinkedSummaryTransformer()]
+          [new UnlinkedSummaryTransformer()],
+          [new LinkedSummaryTransformer()]
         ].map((list) => list.toSet()));
         break;
       case Compiler.dart2JS:
