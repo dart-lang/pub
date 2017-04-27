@@ -19,6 +19,7 @@ import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
 import 'dartdevc/dartdevc_module_transformer.dart';
+import 'dartdevc/dartdevc_resource_transformer.dart';
 import 'dartdevc/linked_summary_transformer.dart';
 import 'dartdevc/module_config_transformer.dart';
 import 'dartdevc/unlinked_summary_transformer.dart';
@@ -182,6 +183,7 @@ class AssetEnvironment {
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
 
+    var isRootPackage = package.name == rootPackage.name;
     switch (compiler) {
       case Compiler.dartDevc:
         transformers.addAll([
@@ -190,10 +192,14 @@ class AssetEnvironment {
           [new LinkedSummaryTransformer()],
           [new DartDevcModuleTransformer()],
         ].map((list) => list.toSet()));
+
+        if (isRootPackage) {
+          transformers.first.add(new DartDevcResourceTransformer());
+        }
         break;
       case Compiler.dart2JS:
         // the dart2js transformer only runs on the root package.
-        if (package.name == rootPackage.name) {
+        if (isRootPackage) {
           // If the entrypoint package manually configures the dart2js
           // transformer, don't include it in the built-in transformer list.
           //
