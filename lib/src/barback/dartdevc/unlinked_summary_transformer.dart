@@ -74,6 +74,5 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
   } else {
     transform.addOutput(new Asset.fromBytes(
         summaryOutputId, summaryOutputFile.readAsBytesSync()));
-    transform.logger.warning(summaryOutputId.toString());
   }
 }
