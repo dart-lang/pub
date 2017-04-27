@@ -22,12 +22,9 @@ main() {
     requestShouldSucceed(
         'packages/$appPath/.moduleConfig', contains('lib__hello'));
     // Binary response, just confirm it exists.
-    scheduleRequest('packages/$appPath/lib__hello.unlinked.sum')
-        .then((response) {
-      expect(response.statusCode, equals(200));
-    });
+    requestShouldSucceed('packages/$appPath/lib__hello.unlinked.sum', null);
+    requestShouldSucceed('packages/$appPath/lib__hello.linked.sum', null);
     // TODO(jakemac53): Not implemented yet, update once available.
-    requestShould404('packages/$appPath/lib__hello.linked.sum');
     requestShould404('packages/$appPath/lib__hello.js');
     endPubServe();
   });
