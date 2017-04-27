@@ -39,8 +39,7 @@ main() {
     requestShouldSucceed('web__main.linked.sum', null);
     requestShouldSucceed('packages/$appPath/lib__hello.js', contains('hello'));
     requestShouldSucceed('web__main.js', contains('hello'));
-    // Bootstrap js file, should have the same name as the original dart file
-    // but with `.js` added.
+    // TODO(jakemac53): Not implemented yet, update once available.
     requestShould404('main.dart.js');
     endPubServe();
   });
