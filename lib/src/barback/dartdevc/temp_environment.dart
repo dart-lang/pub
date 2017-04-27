@@ -23,15 +23,15 @@ class TempEnvironment {
   /// Creates a new [TempEnvironment] containing [assetIds].
   ///
   /// Any [Asset] that is under a `lib` dir will be output under a `packages`
-  /// folder corresponding to it's package, and any other assets are output
+  /// directory corresponding to it's package, and any other assets are output
   /// directly under the temp dir using their unmodified path.
   static Future<TempEnvironment> create(
       Iterable<AssetId> assetIds, Stream<List<int>> readAsset(AssetId)) async {
-    var tempDir = await Directory.systemTemp.createTemp('pub_');
+    var tempDir = new Directory(createSystemTempDir());
     var futures = <Future>[];
     for (var id in assetIds) {
       var filePath = p.join(tempDir.path, _relativePathFor(id));
-      new File(filePath).createSync(recursive: true);
+      ensureDir(p.dirname(filePath));
       futures.add(createFileFromStream(readAsset(id), filePath));
     }
     await Future.wait(futures);
