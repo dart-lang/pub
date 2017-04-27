@@ -10,14 +10,11 @@ import 'package:path/path.dart' as p;
 
 /// Manages a shared set of persistent analyzer workers.
 final analyzerDriver = new BazelWorkerDriver(() => Process.start(
-      p.join(sdkDir.path, 'bin', 'dartanalyzer'),
-      ['--build-mode', '--persistent_worker'],
-    ));
+    p.join(sdkDir.path, 'bin', 'dartanalyzer'),
+    ['--build-mode', '--persistent_worker']));
 
-/// Manages a shared set of persistent analyzer workers.
-final dartdevcDriver = new BazelWorkerDriver(() => Process.start(
-      p.join(sdkDir.path, 'bin', 'dartdevc'),
-      ['--persistent_worker'],
-    ));
+/// Manages a shared set of persistent dartdevc workers.
+final dartdevcDriver = new BazelWorkerDriver(() => Process
+    .start(p.join(sdkDir.path, 'bin', 'dartdevc'), ['--persistent_worker']));
 
 final sdkDir = cli_util.getSdkDir();
