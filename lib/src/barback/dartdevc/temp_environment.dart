@@ -9,7 +9,6 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import '../../io.dart';
-import 'util.dart';
 
 /// An on-disk temporary environment for running executables that don't have
 /// a standard dart library api.
@@ -31,7 +30,7 @@ class TempEnvironment {
     var tempDir = await Directory.systemTemp.createTemp('pub_');
     var futures = <Future>[];
     for (var id in assetIds) {
-      var filePath = p.join(tempDir.path, relativePathFor(id));
+      var filePath = p.join(tempDir.path, _relativePathFor(id));
       new File(filePath).createSync(recursive: true);
       futures.add(createFileFromStream(readAsset(id), filePath));
     }
@@ -46,9 +45,21 @@ class TempEnvironment {
   ///
   /// The returned [File] may or may not already exist.
   File fileFor(AssetId id) =>
-      new File(p.join(tempDir.path, relativePathFor(id)));
+      new File(p.join(tempDir.path, _relativePathFor(id)));
+}
+
+/// Returns a canonical uri for [id].
+///
+/// If [id] is under a `lib` directory then this returns a `package:` uri,
+/// otherwise it just returns [id.path].
+String canonicalUriFor(AssetId id) {
+  if (topLevelDir(id.path) == 'lib') {
+    return 'package:${p.join(id.package, p.joinAll(p.split(id.path).skip(1)))}';
+  } else {
+    return id.path;
+  }
 }
 
 /// The path relative to the root of the environment for a given [id].
-String relativePathFor(AssetId id) =>
+String _relativePathFor(AssetId id) =>
     canonicalUriFor(id).replaceFirst('package:', 'packages/');

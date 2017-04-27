@@ -13,7 +13,6 @@ import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
 import 'temp_environment.dart';
-import 'util.dart';
 
 final String unlinkedSummaryExtension = '.unlinked.sum';
 

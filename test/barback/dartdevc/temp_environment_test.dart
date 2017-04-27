@@ -51,4 +51,20 @@ void main() {
     }
     expect(tempEnv.tempDir.existsSync(), isFalse);
   });
+
+  test('canonicalUriFor', () {
+    expect(canonicalUriFor(new AssetId('a', 'lib/a.dart')),
+        equals('package:a/a.dart'));
+    expect(canonicalUriFor(new AssetId('a', 'lib/src/a.dart')),
+        equals('package:a/src/a.dart'));
+    expect(
+        canonicalUriFor(new AssetId('a', 'web/a.dart')), equals('web/a.dart'));
+
+    expect(
+        () => canonicalUriFor(new AssetId('a', 'a.dart')), throwsArgumentError);
+    expect(() => canonicalUriFor(new AssetId('a', 'lib/../a.dart')),
+        throwsArgumentError);
+    expect(() => canonicalUriFor(new AssetId('a', 'web/../a.dart')),
+        throwsArgumentError);
+  });
 }
