@@ -4,6 +4,7 @@
 
 import 'package:collection/collection.dart';
 
+import 'barback/compiler.dart';
 import 'barback/transformer_cache.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
@@ -44,12 +45,13 @@ class PackageGraph {
   factory PackageGraph.fromSolveResult(
       Entrypoint entrypoint, SolveResult result) {
     var packages = new Map<String, Package>.fromIterable(result.packages,
-        key: (id) => id.name, value: (id) {
-      if (id.name == entrypoint.root.name) return entrypoint.root;
+        key: (id) => id.name,
+        value: (id) {
+          if (id.name == entrypoint.root.name) return entrypoint.root;
 
-      return new Package(result.pubspecs[id.name],
-          entrypoint.cache.source(id.source).getDirectory(id));
-    });
+          return new Package(result.pubspecs[id.name],
+              entrypoint.cache.source(id.source).getDirectory(id));
+        });
 
     return new PackageGraph(entrypoint, result.lockFile, packages);
   }
@@ -151,9 +153,13 @@ class PackageGraph {
   /// from a cached source. Static packages don't need to be fully processed by
   /// barback.
   ///
+  /// If [compiler] is [Compiler.dartDevc] then no package is static because the
+  /// transformer will be added to all packages.
+  ///
   /// Note that a static package isn't the same as an immutable package (see
   /// [isPackageMutable]).
-  bool isPackageStatic(String package) {
+  bool isPackageStatic(String package, Compiler compiler) {
+    if (compiler == Compiler.dartDevc) return false;
     var id = lockFile.packages[package];
     if (id == null) return false;
     if (entrypoint.cache.source(id.source) is! CachedSource) return false;
