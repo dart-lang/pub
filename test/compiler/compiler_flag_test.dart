@@ -55,8 +55,8 @@ main() {
       var process = startPubServe(args: args);
       process.shouldExit(USAGE);
       process.stderr.expect(consumeThrough(
-          "The `dart2js` arg can't be used with the `compiler` arg. Prefer "
-          "using the compiler flag."));
+          "The --dart2js flag can't be used with the --compiler arg. Prefer "
+          "using the --compiler arg as --[no]-dart2js is deprecated."));
     }
   });
 }
