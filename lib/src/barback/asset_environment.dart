@@ -18,6 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
+import 'dartdevc/dartdevc_bootstrap_transformer.dart';
 import 'dartdevc/dartdevc_module_transformer.dart';
 import 'dartdevc/dartdevc_resource_transformer.dart';
 import 'dartdevc/linked_summary_transformer.dart';
@@ -181,21 +182,24 @@ class AssetEnvironment {
   ///
   /// Returns `null` if there are none.
   Iterable<Set> getBuiltInTransformers(Package package) {
-    var transformers = <Set>[];
+    var transformers = <List>[];
 
     var isRootPackage = package.name == rootPackage.name;
     switch (compiler) {
       case Compiler.dartDevc:
+        var firstPhase = <dynamic>[new ModuleConfigTransformer()];
+        var lastPhase = <dynamic>[new DartDevcModuleTransformer()];
+        if (isRootPackage) {
+          firstPhase.add(new DartDevcResourceTransformer());
+          lastPhase.add(new DartDevcBootstrapTransformer());
+        }
+
         transformers.addAll([
-          [new ModuleConfigTransformer()],
+          firstPhase,
           [new UnlinkedSummaryTransformer()],
           [new LinkedSummaryTransformer()],
-          [new DartDevcModuleTransformer()],
-        ].map((list) => list.toSet()));
-
-        if (isRootPackage) {
-          transformers.first.add(new DartDevcResourceTransformer());
-        }
+          lastPhase,
+        ]);
         break;
       case Compiler.dart2JS:
         // the dart2js transformer only runs on the root package.
@@ -213,13 +217,12 @@ class AssetEnvironment {
             transformers.add([
               new Dart2JSTransformer(this, mode),
               new DartForwardingTransformer(),
-            ].toSet());
+            ]);
           }
         }
     }
 
-    if (transformers.isEmpty) return null;
-    return transformers;
+    return transformers.map((list) => list.toSet());
   }
 
   /// Starts up the admin server on an appropriate port and returns it.
