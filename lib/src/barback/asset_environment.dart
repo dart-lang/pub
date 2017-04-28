@@ -18,6 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
+import 'dartdevc/module_config_transformer.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
 import 'compiler.dart';
@@ -76,7 +77,7 @@ class AssetEnvironment {
     hostname ??= "localhost";
     basePort ??= 0;
     environmentConstants ??= {};
-    compiler ??= Compiler.dart2Js;
+    compiler ??= Compiler.dart2JS;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -182,16 +183,13 @@ class AssetEnvironment {
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
 
-    if (compiler == Compiler.dartDevc) {
-      // TODO(jakemac53): Implement dartdevc!
-      throw new UnimplementedError(
-          'The dartdevc compiler is not yet supported.');
-    }
-
-    // These transformers are just for the root package.
-    if (package.name == rootPackage.name) {
-      switch (compiler) {
-        case Compiler.dart2Js:
+    switch (compiler) {
+      case Compiler.dartDevc:
+        transformers.add([new ModuleConfigTransformer()].toSet());
+        break;
+      case Compiler.dart2JS:
+        // the dart2js transformer only runs on the root package.
+        if (package.name == rootPackage.name) {
           // If the entrypoint package manually configures the dart2js
           // transformer, don't include it in the built-in transformer list.
           //
@@ -201,16 +199,13 @@ class AssetEnvironment {
               (transformers) => transformers
                   .any((config) => config.id.package == '\$dart2js'));
 
-          if (!containsDart2JS && compiler == Compiler.dart2Js) {
+          if (!containsDart2JS && compiler == Compiler.dart2JS) {
             transformers.add([
               new Dart2JSTransformer(this, mode),
               new DartForwardingTransformer(),
             ].toSet());
           }
-          break;
-        default:
-          break;
-      }
+        }
     }
 
     return transformers;
@@ -463,7 +458,7 @@ class AssetEnvironment {
   /// in packages in [graph] and re-runs them as necessary when any input files
   /// change.
   ///
-  /// If [Compiler.dart2Js], then the [Dart2JSTransformer] is implicitly
+  /// If [Compiler.dart2JS], then the [Dart2JSTransformer] is implicitly
   /// added to end of the root package's transformer phases.
   ///
   /// if [Compiler.dartDevc], then the [DevCompilerTransformer] is
