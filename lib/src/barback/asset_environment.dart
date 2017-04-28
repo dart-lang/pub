@@ -174,11 +174,16 @@ class AssetEnvironment {
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
+  /// These are returned as an [Iterable<Set>] to represent each phase (the
+  /// outer [Iterable]), and the transformers that should be ran in each phase (
+  /// the inner [Set]).
+  ///
   /// Returns `null` if there are none.
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
 
     if (compiler == Compiler.dartDevc) {
+      // TODO(jakemac53): Implement dartdevc!
       throw new UnimplementedError(
           'The dartdevc compiler is not yet supported.');
     }
@@ -208,7 +213,6 @@ class AssetEnvironment {
       }
     }
 
-    if (transformers.isEmpty) return null;
     return transformers;
   }
 

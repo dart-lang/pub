@@ -25,14 +25,15 @@ abstract class BarbackCommand extends PubCommand {
   /// The build mode.
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
-  // The current compiler mode.
+  /// The current compiler mode.
   Compiler get compiler {
     if (argResults.options.contains('dart2js') &&
         argResults.wasParsed('dart2js')) {
-      if (argResults["compiler"] && argResults.wasParsed("compiler")) {
-        throw new ArgumentError(
-            "The `dart2js` arg can't be used with the `compiler` arg. Prefer "
-            "using the compiler flag.");
+      if (argResults.options.contains("compiler") &&
+          argResults.wasParsed("compiler")) {
+        usageException(
+            "The --dart2js flag can't be used with the --compiler arg. "
+            "Prefer using the --compiler arg as --[no]-dart2js is deprecated.");
       }
       if (argResults['dart2js']) {
         return Compiler.dart2Js;
@@ -68,7 +69,7 @@ abstract class BarbackCommand extends PubCommand {
         negatable: false);
 
     argParser.addOption("compiler",
-        allowed: Compiler.compilerNames,
+        allowed: Compiler.names,
         defaultsTo: 'dart2js',
         help: 'The JavaScript compiler to use to build the app.');
   }
