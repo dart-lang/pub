@@ -47,8 +47,8 @@ Future _bootstrapEntrypoint(
 
   // The path to the entrypoint js module as it should appear in the call to
   // `require` in the bootstrap file.
-  var appModulePath = p.relative(
-      p.join(topLevelDir(dartEntrypointId.path), module.id.name),
+  var moduleDir = topLevelDir(dartEntrypointId.path);
+  var appModulePath = p.relative(p.join(moduleDir, module.id.name),
       from: p.dirname(dartEntrypointId.path));
 
   // The name of the entrypoint dart library within the entrypoint js module.
@@ -61,8 +61,10 @@ Future _bootstrapEntrypoint(
   // See https://github.com/dart-lang/sdk/issues/27262 for the root issue which
   // will allow us to not rely on the naming schemes that dartdevc uses
   // internally, but instead specify our own.
-  var appModuleScope =
-      p.url.split(p.withoutExtension(dartEntrypointId.path)).join("__");
+  var appModuleScope = p.url
+      .split(p
+          .withoutExtension(p.relative(dartEntrypointId.path, from: moduleDir)))
+      .join("__");
   var bootstrapContent = '''
 require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
