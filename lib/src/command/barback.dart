@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 
+import '../barback/compiler.dart';
 import '../command.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -23,6 +24,28 @@ final _allSourceDirectories =
 abstract class BarbackCommand extends PubCommand {
   /// The build mode.
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
+
+  /// The current compiler mode.
+  Compiler get compiler {
+    if (argResults.options.contains('dart2js') &&
+        argResults.wasParsed('dart2js')) {
+      if (argResults.options.contains("compiler") &&
+          argResults.wasParsed("compiler")) {
+        usageException(
+            "The --dart2js flag can't be used with the --compiler arg. "
+            "Prefer using the --compiler arg as --[no]-dart2js is deprecated.");
+      }
+      if (argResults['dart2js']) {
+        return Compiler.dart2Js;
+      } else {
+        return Compiler.none;
+      }
+    } else if (argResults.options.contains("compiler")) {
+      return Compiler.byName(argResults["compiler"]);
+    } else {
+      return Compiler.dart2Js;
+    }
+  }
 
   /// The directories in the entrypoint package that should be added to the
   /// build environment.
@@ -44,6 +67,11 @@ abstract class BarbackCommand extends PubCommand {
         help: "Use all default source directories.",
         defaultsTo: false,
         negatable: false);
+
+    argParser.addOption("compiler",
+        allowed: Compiler.names,
+        defaultsTo: 'dart2js',
+        help: 'The JavaScript compiler to use to build the app.');
   }
 
   Future run() {

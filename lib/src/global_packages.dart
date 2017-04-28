@@ -10,6 +10,7 @@ import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'barback/compiler.dart';
 import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
@@ -248,7 +249,7 @@ class GlobalPackages {
       Entrypoint entrypoint, Package package, String dir) async {
     var environment = await AssetEnvironment.create(
         entrypoint, BarbackMode.RELEASE,
-        entrypoints: package.executableIds, useDart2JS: false);
+        entrypoints: package.executableIds, compiler: Compiler.none);
     environment.barback.errors.listen((error) {
       log.error(log.red("Build error:\n$error"));
     });

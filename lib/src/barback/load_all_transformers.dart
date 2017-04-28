@@ -103,8 +103,7 @@ Future loadAllTransformers(
   await Future.wait(environment.graph.packages.values.map((package) async {
     var phases =
         await loader.transformersForPhases(package.pubspec.transformers);
-    var transformers = environment.getBuiltInTransformers(package);
-    if (transformers != null) phases.add(transformers);
+    phases.addAll(environment.getBuiltInTransformers(package));
     if (phases.isEmpty) return;
 
     // TODO(nweiz): remove the [newFuture] here when issue 17305 is fixed.

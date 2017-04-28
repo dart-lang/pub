@@ -10,6 +10,7 @@ import '../log.dart' as log;
 import '../utils.dart';
 import 'asset_environment.dart';
 import 'barback_server.dart';
+import 'compiler.dart';
 import 'dart2js_transformer.dart';
 import 'excluding_transformer.dart';
 import 'transformer_config.dart';
@@ -99,22 +100,28 @@ class TransformerLoader {
 
     var transformer;
     try {
-      transformer = new Dart2JSTransformer.withSettings(_environment,
-          new BarbackSettings(config.configuration, _environment.mode));
+      if (_environment.compiler == Compiler.dart2Js) {
+        transformer = new Dart2JSTransformer.withSettings(_environment,
+            new BarbackSettings(config.configuration, _environment.mode));
+        // Handle any exclusions.
+        _transformers[config] =
+            new Set.from([ExcludingTransformer.wrap(transformer, config)]);
+      } else {
+        // Empty set if dart2js is disabled based on compiler flag.
+        _transformers[config] = new Set();
+      }
     } on FormatException catch (error, stackTrace) {
       fail(error.message, error, stackTrace);
     }
 
-    // Handle any exclusions.
-    _transformers[config] =
-        new Set.from([ExcludingTransformer.wrap(transformer, config)]);
     return _transformers[config];
   }
 
-  /// Loads all transformers defined in each phase of [phases].
+  /// Loads all [Transformer]s or [AggregateTransformer]s defined in each phase
+  /// of [phases].
   ///
   /// If any library hasn't yet been loaded via [load], it will be ignored.
-  Future<List<Set<Transformer>>> transformersForPhases(
+  Future<List<Set>> transformersForPhases(
       Iterable<Set<TransformerConfig>> phases) async {
     var result = await Future.wait(phases.map((phase) async {
       var transformers = await waitAndPrintErrors(phase.map(transformersFor));
