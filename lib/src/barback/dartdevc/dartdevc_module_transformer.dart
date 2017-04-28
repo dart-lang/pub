@@ -118,5 +118,9 @@ Future _createDartdevcModule(
   } else {
     transform.addOutput(
         new Asset.fromBytes(jsOutputId, jsOutputFile.readAsBytesSync()));
+    var sourceMapOutputId = jsOutputId.addExtension('.map');
+    var sourceMapFile = tempEnv.fileFor(sourceMapOutputId);
+    transform.addOutput(new Asset.fromBytes(
+        sourceMapOutputId, sourceMapFile.readAsBytesSync()));
   }
 }

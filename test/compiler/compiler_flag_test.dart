@@ -38,11 +38,13 @@ main() {
     requestShouldSucceed('packages/$appPath/lib__hello.linked.sum', null);
     requestShouldSucceed('web__main.linked.sum', null);
     requestShouldSucceed('packages/$appPath/lib__hello.js', contains('hello'));
+    requestShouldSucceed(
+        'packages/$appPath/lib__hello.js.map', contains('lib__hello.js'));
     requestShouldSucceed('web__main.js', contains('hello'));
+    requestShouldSucceed('web__main.js.map', contains('web__main.js'));
     requestShouldSucceed('dart_sdk.js', null);
     requestShouldSucceed('require.js', null);
-    // TODO(jakemac53): Not implemented yet, update once available.
-    requestShould404('main.dart.js');
+    requestShouldSucceed('main.dart.js', null);
     endPubServe();
   });
 }
