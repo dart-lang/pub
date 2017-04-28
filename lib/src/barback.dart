@@ -6,6 +6,8 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'io.dart';
+
 /// The currently supported versions of packages that this version of pub works
 /// with.
 ///
@@ -86,4 +88,51 @@ AssetId packagesUrlToId(Uri url) {
   var package = parts[index + 1];
   var assetPath = p.url.join("lib", p.url.joinAll(parts.skip(index + 2)));
   return new AssetId(package, assetPath);
+}
+
+/// Convert [importUri] found in [source] to an [AssetId], handling both
+/// `package:` imports and relative imports.
+///
+/// Returns [null] for `dart:` uris since they cannot be referenced properly
+/// by an `AssetId`.
+///
+/// Throws an [ArgumentError] if an [AssetId] can otherwise not be created. This
+/// might happen if:
+///
+/// * [importUri] is absolute but has a scheme other than `dart:` or `package:`.
+/// * [importUri] is a relative path that reaches outside of the current top
+///   level directory of a package (relative import from `web` to `lib` for
+///   instance).
+AssetId importUriToAssetId(AssetId source, String importUri) {
+  var parsedUri = Uri.parse(importUri);
+  if (parsedUri.isAbsolute) {
+    switch (parsedUri.scheme) {
+      case 'package':
+        var parts = parsedUri.pathSegments;
+        var packagePath = p.url.joinAll(['lib']..addAll(parts.skip(1)));
+        if (!p.isWithin('lib', packagePath)) {
+          throw new ArgumentError(
+              'Unable to create AssetId for import `$importUri` in `$source` '
+              'because it reaches outside the `lib` directory.');
+        }
+        return new AssetId(parts.first, packagePath);
+      case 'dart':
+        return null;
+      default:
+        throw new ArgumentError(
+            'Unable to resolve import. Only package: paths and relative '
+            'paths are supported, got `$importUri`.');
+    }
+  } else {
+    // Relative path.
+    var targetPath =
+        p.url.normalize(p.url.join(p.url.dirname(source.path), parsedUri.path));
+    var dir = topLevelDir(source.path);
+    if (!p.isWithin(dir, targetPath)) {
+      throw new ArgumentError(
+          'Unable to create AssetId for relative import `$importUri` in '
+          '`$source`  because it reaches outside the `$dir` directory.');
+    }
+    return new AssetId(source.package, targetPath);
+  }
 }
