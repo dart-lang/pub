@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:scheduled_test/scheduled_stream.dart';
+import 'package:scheduled_test/scheduled_test.dart';
 
 import 'package:pub/src/exit_codes.dart';
 
@@ -20,11 +21,14 @@ main() {
     ]).create();
 
     pubGet();
-    var process = startPubServe(args: ['--compiler', 'dartdevc']);
-    // TODO(jakemac53): Update when dartdevc is supported.
-    process.shouldExit(1);
-    process.stderr
-        .expect(consumeThrough('The dartdevc compiler is not yet supported.'));
+    pubServe(args: ['--compiler', 'dartdevc']);
+    requestShouldSucceed(
+        'packages/$appPath/.moduleConfig', contains('lib__hello'));
+    // TODO(jakemac53): Not implemented yet, update once available.
+    requestShould404('packages/$appPath/lib__hello.unlinked.sum');
+    requestShould404('packages/$appPath/lib__hello.linked.sum');
+    requestShould404('packages/$appPath/lib__hello.js');
+    endPubServe();
   });
 
   integration("invalid compiler flag gives an error", () {

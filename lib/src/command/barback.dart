@@ -36,14 +36,14 @@ abstract class BarbackCommand extends PubCommand {
             "Prefer using the --compiler arg as --[no]-dart2js is deprecated.");
       }
       if (argResults['dart2js']) {
-        return Compiler.dart2Js;
+        return Compiler.dart2JS;
       } else {
         return Compiler.none;
       }
     } else if (argResults.options.contains("compiler")) {
       return Compiler.byName(argResults["compiler"]);
     } else {
-      return Compiler.dart2Js;
+      return Compiler.dart2JS;
     }
   }
 
