@@ -15,6 +15,7 @@ class Compiler {
   static const none = const Compiler._(_noneName);
 
   static final all = [dart2JS, dartDevc, none];
+
   static Iterable<String> get names => all.map((compiler) => compiler.name);
 
   final String name;
