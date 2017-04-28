@@ -78,6 +78,7 @@ Future _createDartdevcModule(
     '--dart-sdk=${sdkDir.path}',
     '--module-root=${tempEnv.tempDir.path}',
     '--library-root=${p.dirname(jsOutputFile.path)}',
+    '--summary-extension=${linkedSummaryExtension.substring(1)}',
     '-o',
     jsOutputFile.path,
   ]);
