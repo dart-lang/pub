@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:convert';
-
 import 'package:barback/barback.dart';
 import 'package:test/test.dart';
 
@@ -33,13 +31,13 @@ void main() {
       test('readModules', () async {
         var modules = await moduleReader.readModules(originalModuleConfig);
         expect(modules.length, 1);
-        expectModulesEqual(modules.first, originalModule);
+        expect(modules.first, equalsModule(originalModule));
       });
 
       test('moduleFor', () async {
         for (var assetId in originalModule.assetIds) {
           var module = await moduleReader.moduleFor(assetId);
-          expectModulesEqual(originalModule, module);
+          expect(module, equalsModule(originalModule));
         }
       });
 
@@ -112,7 +110,7 @@ void main() {
         for (var config in expectedModules.keys) {
           var modules = await moduleReader.readModules(config);
           for (int i = 0; i < modules.length; i++) {
-            expectModulesEqual(modules[i], expectedModules[config][i]);
+            expect(modules[i], equalsModule(expectedModules[config][i]));
           }
         }
       });
@@ -122,7 +120,7 @@ void main() {
         for (var expected in allModules) {
           for (var assetId in expected.assetIds) {
             var actual = await moduleReader.moduleFor(assetId);
-            expectModulesEqual(expected, actual);
+            expect(expected, equalsModule(actual));
           }
         }
       });
@@ -161,24 +159,4 @@ void main() {
       });
     });
   });
-}
-
-/// Manages an in memory view of a set of module configs, mimics on disk module
-/// config files.
-class InMemoryModuleConfigManager {
-  final _moduleConfigs = <AssetId, String>{};
-
-  /// Adds a module config file containing serialized [modules] to
-  /// [_moduleConfigs].
-  ///
-  /// Returns the [AssetId] for the config that was created.
-  AssetId addConfig(Iterable<Module> modules, {AssetId configId}) {
-    var package = modules.first.id.package;
-    assert(modules.every((m) => m.id.package == package));
-    configId ??= new AssetId(package, 'lib/$moduleConfigName');
-    _moduleConfigs[configId] = JSON.encode(modules);
-    return configId;
-  }
-
-  String readAsString(AssetId id) => _moduleConfigs[id];
 }

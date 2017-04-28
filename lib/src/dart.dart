@@ -128,6 +128,10 @@ bool isEntrypoint(CompilationUnit dart) {
   });
 }
 
+/// Returns whether [dart] contains a [PartOfDirective].
+bool isPart(CompilationUnit dart) =>
+    dart.directives.any((directive) => directive is PartOfDirective);
+
 /// Efficiently parses the import and export directives in [contents].
 ///
 /// If [name] is passed, it's used as the filename for error reporting.
