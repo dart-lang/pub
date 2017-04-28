@@ -43,6 +43,11 @@ class Module {
         assetIds.map((id) => id.serialize()).toList(),
         directDependencies.map((d) => d.serialize()).toList(),
       ];
+
+  String toString() => '''
+$id
+assetIds: $assetIds
+directDependencies: $directDependencies''';
 }
 
 /// Serializable identifier of a [Module].
