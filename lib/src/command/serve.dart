@@ -38,9 +38,6 @@ class ServeCommand extends BarbackCommand {
     return adminPort == null ? null : parseInt(adminPort, 'admin port');
   }
 
-  /// `true` if Dart entrypoints should be compiled to JavaScript.
-  bool get useDart2JS => argResults['dart2js'];
-
   /// `true` if the admin server URL should be displayed on startup.
   bool get logAdminUrl => argResults['log-admin-url'];
 
@@ -74,7 +71,9 @@ class ServeCommand extends BarbackCommand {
     argParser.addOption('admin-port', hide: true);
 
     argParser.addFlag('dart2js',
-        defaultsTo: true, help: 'Compile Dart to JavaScript.');
+        defaultsTo: true,
+        help: 'Deprecated: Use --compiler=none to disable js compilation.',
+        hide: true);
     argParser.addFlag('force-poll',
         defaultsTo: false,
         help: 'Force the use of a polling filesystem watcher.');
@@ -98,7 +97,7 @@ class ServeCommand extends BarbackCommand {
         watcherType: watcherType,
         hostname: hostname,
         basePort: port,
-        useDart2JS: useDart2JS,
+        compiler: compiler,
         environmentConstants: environmentConstants);
     var directoryLength =
         sourceDirectories.map((dir) => dir.length).reduce(math.max);
