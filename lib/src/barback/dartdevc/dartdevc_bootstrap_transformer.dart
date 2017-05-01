@@ -64,7 +64,8 @@ Future _bootstrapEntrypoint(
   var appModuleScope = p.url
       .split(p
           .withoutExtension(p.relative(dartEntrypointId.path, from: moduleDir)))
-      .join("__");
+      .join("__")
+      .replaceAll('.', '\$46');
   var bootstrapContent = '''
 require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
@@ -86,4 +87,8 @@ document.head.appendChild(el);
 ''';
   transform.addOutput(new Asset.fromString(
       dartEntrypointId.addExtension('.js'), entrypointJsContent));
+  transform.addOutput(new Asset.fromString(
+      dartEntrypointId.addExtension('.js.map'),
+      '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
+      '"file":""}'));
 }

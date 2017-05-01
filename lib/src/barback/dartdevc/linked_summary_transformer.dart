@@ -73,6 +73,7 @@ Future _createLinkedSummaryForModule(
     '--build-summary-only',
     '--build-summary-only-diet',
     '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
   ]);
   // Add all the unlinked summaries as build summary inputs.
   request.arguments.addAll(unlinkedSummaryIds.map(

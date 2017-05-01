@@ -56,6 +56,7 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
     '--build-summary-only-unlinked',
     '--build-summary-only-diet',
     '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
   ]);
   // Add all the files to include in the unlinked summary bundle.
   request.arguments.addAll(module.assetIds.map((id) {
