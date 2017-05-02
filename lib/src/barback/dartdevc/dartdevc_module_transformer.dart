@@ -79,7 +79,6 @@ Future _createDartdevcModule(
     '--module-root=${tempEnv.tempDir.path}',
     '--library-root=${p.dirname(jsOutputFile.path)}',
     '--summary-extension=${linkedSummaryExtension.substring(1)}',
-    '--unsafe-force-compile',
     '--no-summarize',
     '-o',
     jsOutputFile.path,

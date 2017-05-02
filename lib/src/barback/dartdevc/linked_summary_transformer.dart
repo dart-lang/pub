@@ -69,9 +69,10 @@ Future _createLinkedSummaryForModule(
       p.url.join(outputDir, '${module.id.name}$linkedSummaryExtension'));
   var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
   var request = new WorkRequest();
+  // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
+  // but ideally we would do that (pass '--build-summary-only-diet').
   request.arguments.addAll([
     '--build-summary-only',
-    '--build-summary-only-diet',
     '--build-summary-output=${summaryOutputFile.path}',
     '--strong',
   ]);
