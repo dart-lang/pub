@@ -24,7 +24,9 @@ class DartDevcModuleTransformer extends Transformer {
   @override
   String get allowedExtensions => moduleConfigName;
 
-  DartDevcModuleTransformer();
+  final Map<String, String> environmentConstants;
+
+  DartDevcModuleTransformer({this.environmentConstants = const {}});
 
   @override
   Future apply(Transform transform) async {
@@ -48,8 +50,8 @@ class DartDevcModuleTransformer extends Transformer {
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
       var outputDir = topLevelDir(transform.primaryInput.id.path);
-      await Future.wait(modules.map((m) => _createDartdevcModule(
-          m, outputDir, tempEnv, summariesForModule[m.id], transform)));
+      await Future.wait(modules.map((m) => _createDartdevcModule(m, outputDir,
+          tempEnv, summariesForModule[m.id], environmentConstants, transform)));
     } finally {
       tempEnv?.delete();
     }
@@ -63,6 +65,7 @@ Future _createDartdevcModule(
     String outputDir,
     TempEnvironment tempEnv,
     Set<AssetId> linkedSummaryIds,
+    Map<String, String> environmentConstants,
     Transform transform) async {
   var logger = transform.logger;
   var jsOutputId = new AssetId(
@@ -83,10 +86,17 @@ Future _createDartdevcModule(
     '-o',
     jsOutputFile.path,
   ]);
+
+  // Add environment constants.
+  environmentConstants.forEach((key, value) {
+    request.arguments.add('-D$key=$value');
+  });
+
   // Add all the linked summaries as summary inputs.
   for (var id in linkedSummaryIds) {
     request.arguments.addAll(['-s', tempEnv.fileFor(id).path]);
   }
+
   // Add url mappings for all the package: files to tell ddc where to find them.
   for (var id in module.assetIds) {
     var uri = canonicalUriFor(id);
