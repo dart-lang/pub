@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 
 import '../../io.dart';
 
-/// Copies the `dart_sdk.js` and `require.js` amd files from the SDK into each
+/// Copies the `dart_sdk.js` and `require.js` AMD files from the SDK into each
 /// entrypoint dir.
 class DartDevcResourceTransformer extends AggregateTransformer
     implements DeclaringAggregateTransformer {
