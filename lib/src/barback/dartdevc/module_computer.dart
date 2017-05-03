@@ -85,6 +85,7 @@ Future<List<Module>> computeModules(
   for (var asset in srcAssets) {
     var id = asset.id;
     var content = await asset.readAsString();
+    // Skip errors here, dartdevc gives nicer messages.
     var parsed = parseCompilationUnit(content,
         name: id.path, parseFunctionBodies: false, suppressErrors: true);
     parsedAssetsById[id] = parsed;

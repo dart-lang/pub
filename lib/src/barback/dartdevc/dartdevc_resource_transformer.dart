@@ -31,7 +31,8 @@ class DartDevcResourceTransformer extends AggregateTransformer
     // If there are no entrypoints then skip this folder.
     var hasEntrypoint = false;
     await for (var asset in transform.primaryInputs) {
-      if (isEntrypoint(parseDirectives(await asset.readAsString()))) {
+      if (isEntrypoint(parseCompilationUnit(await asset.readAsString(),
+          parseFunctionBodies: false))) {
         hasEntrypoint = true;
         break;
       }
