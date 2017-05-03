@@ -19,6 +19,7 @@ import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
 import 'dartdevc/module_config_transformer.dart';
+import 'dartdevc/unlinked_summary_transformer.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
 import 'compiler.dart';
@@ -185,7 +186,10 @@ class AssetEnvironment {
 
     switch (compiler) {
       case Compiler.dartDevc:
-        transformers.add([new ModuleConfigTransformer()].toSet());
+        transformers.addAll([
+          [new ModuleConfigTransformer()],
+          [new UnlinkedSummaryTransformer()]
+        ].map((list) => list.toSet()));
         break;
       case Compiler.dart2JS:
         // the dart2js transformer only runs on the root package.

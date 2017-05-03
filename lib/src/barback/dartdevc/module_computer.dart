@@ -210,10 +210,11 @@ class _ModuleComputer {
   /// Does the actual computation of [Module]s.
   ///
   /// See [computeModules] top level function for more information.
-  Future<List<Module>> _computeModules() async {
+  List<Module> _computeModules() {
     var connectedComponents = _stronglyConnectedComponents();
     var modulesById = _createModulesFromComponents(connectedComponents);
-    return _mergeModules(modulesById);
+    var modules = _mergeModules(modulesById);
+    return _renameSharedModules(modules);
   }
 
   /// Creates simple modules based strictly off of [connectedComponents].
@@ -351,6 +352,26 @@ class _ModuleComputer {
     }
 
     return modulesById.values.toList();
+  }
+
+  /// Renames shared [Module]s to something unique and short to avoid issues
+  /// with file names that are too long.
+  List<Module> _renameSharedModules(List<Module> modules) {
+    if (modules.isEmpty) return modules;
+    var next = 0;
+    // All modules and assets in those modules share a top level dir, we just
+    // grab it from the first one.
+    var moduleDir = topLevelDir(modules.first.assetIds.first.path);
+    return modules.map((module) {
+      if (module.id.name.contains('\$')) {
+        return new Module(
+            new ModuleId(module.id.package, '${moduleDir}__shared_${next++}'),
+            module.assetIds,
+            module.directDependencies);
+      } else {
+        return module;
+      }
+    }).toList();
   }
 
   /// Computes the strongly connected components reachable from [entrypoints].

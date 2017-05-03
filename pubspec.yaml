@@ -10,6 +10,8 @@ dependencies:
   args: "^0.13.5"
   async: "^1.5.0"
   barback: "^0.15.2"
+  bazel_worker: "^0.1.4"
+  cli_util: "^0.0.1"
   collection: "^1.8.0"
   compiler_unsupported: "^1.22.0"
   crypto: ">=1.0.0 <3.0.0"
@@ -40,4 +42,4 @@ dev_dependencies:
   test: "^0.12.3+3"
 
 environment:
-  sdk: ">=1.11.0 <2.0.0"
+  sdk: ">=1.24.0-dev.2.0 <2.0.0"
