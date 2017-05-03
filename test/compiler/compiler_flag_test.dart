@@ -24,8 +24,12 @@ main() {
     pubServe(args: ['--compiler', 'dartdevc']);
     requestShouldSucceed(
         'packages/$appPath/.moduleConfig', contains('lib__hello'));
+    // Binary response, just confirm it exists.
+    scheduleRequest('packages/$appPath/lib__hello.unlinked.sum')
+        .then((response) {
+      expect(response.statusCode, equals(200));
+    });
     // TODO(jakemac53): Not implemented yet, update once available.
-    requestShould404('packages/$appPath/lib__hello.unlinked.sum');
     requestShould404('packages/$appPath/lib__hello.linked.sum');
     requestShould404('packages/$appPath/lib__hello.js');
     endPubServe();
