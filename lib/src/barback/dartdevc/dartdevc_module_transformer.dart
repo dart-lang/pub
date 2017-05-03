@@ -8,7 +8,6 @@ import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 import 'package:path/path.dart' as p;
 
-import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -36,20 +35,15 @@ class DartDevcModuleTransformer extends Transformer {
       var summariesForModule = <ModuleId, Set<AssetId>>{};
       for (var module in modules) {
         var transitiveModuleDeps = await reader.readTransitiveDeps(module);
-        var linkedSummaryIds = transitiveModuleDeps.map((depId) {
-          assert(depId.name.isNotEmpty);
-          var summaryDir = depId.name.split('__').first;
-          return new AssetId(depId.package,
-              p.join(summaryDir, '${depId.name}$linkedSummaryExtension'));
-        }).toSet();
+        var linkedSummaryIds =
+            transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
         summariesForModule[module.id] = linkedSummaryIds;
         allAssetIds..addAll(module.assetIds)..addAll(linkedSummaryIds);
       }
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
-      var outputDir = topLevelDir(transform.primaryInput.id.path);
       await Future.wait(modules.map((m) => _createDartdevcModule(
-          m, outputDir, tempEnv, summariesForModule[m.id], transform)));
+          m, tempEnv, summariesForModule[m.id], transform)));
     } finally {
       tempEnv?.delete();
     }
@@ -58,16 +52,10 @@ class DartDevcModuleTransformer extends Transformer {
 
 /// Compiles [module] using the `dartdevc` binary from the SDK to a relative
 /// path under the package that looks like `$outputDir/${module.id.name}.js`.
-Future _createDartdevcModule(
-    Module module,
-    String outputDir,
-    TempEnvironment tempEnv,
-    Set<AssetId> linkedSummaryIds,
-    Transform transform) async {
+Future _createDartdevcModule(Module module, TempEnvironment tempEnv,
+    Set<AssetId> linkedSummaryIds, Transform transform) async {
   var logger = transform.logger;
-  var jsOutputId = new AssetId(
-      module.id.package, p.url.join(outputDir, '${module.id.name}.js'));
-  var jsOutputFile = tempEnv.fileFor(jsOutputId);
+  var jsOutputFile = tempEnv.fileFor(module.id.jsId);
   var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
   var request = new WorkRequest();
   request.arguments.addAll([
@@ -115,6 +103,6 @@ Future _createDartdevcModule(
         '${response.output}');
   } else {
     transform.addOutput(
-        new Asset.fromBytes(jsOutputId, jsOutputFile.readAsBytesSync()));
+        new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
   }
 }

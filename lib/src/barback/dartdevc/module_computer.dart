@@ -233,7 +233,8 @@ class _ModuleComputer {
           orElse: () => sortedNodes.first);
       var moduleName =
           p.url.split(p.withoutExtension(primaryNode.id.path)).join('__');
-      var id = new ModuleId(primaryNode.id.package, moduleName);
+      var id = new ModuleId(
+          primaryNode.id.package, moduleName, topLevelDir(primaryNode.id.path));
       // Expand to include all the part files of each node, these aren't
       // included as individual `_AssetNodes`s in `connectedComponents`.
       var allAssetIds = componentNodes
@@ -336,8 +337,8 @@ class _ModuleComputer {
       // Create a new module based off the name of all entrypoints or merge into
       // an existing one by that name.
       var moduleNames = entrypointIds.map((id) => id.name).toList()..sort();
-      var newModuleId =
-          new ModuleId(entrypointIds.first.package, moduleNames.join('\$'));
+      var newModuleId = new ModuleId(entrypointIds.first.package,
+          moduleNames.join('\$'), entrypointIds.first.dir);
       var newModule = modulesById.putIfAbsent(
           newModuleId,
           () =>
@@ -365,7 +366,8 @@ class _ModuleComputer {
     return modules.map((module) {
       if (module.id.name.contains('\$')) {
         return new Module(
-            new ModuleId(module.id.package, '${moduleDir}__shared_${next++}'),
+            new ModuleId(
+                module.id.package, '${moduleDir}__shared_${next++}', moduleDir),
             module.assetIds,
             module.directDependencies);
       } else {

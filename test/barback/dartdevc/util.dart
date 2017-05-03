@@ -10,6 +10,8 @@ import 'package:test/test.dart';
 import 'package:pub/src/barback/dartdevc/module.dart';
 import 'package:pub/src/barback/dartdevc/module_reader.dart';
 
+import 'package:pub/src/io.dart' as io_helpers;
+
 // Keep incrementing ids so we don't accidentally create duplicates.
 int _next = 0;
 
@@ -37,10 +39,11 @@ Set<AssetId> makeAssetIds({String package, String topLevelDir}) =>
     new Set<AssetId>.from(new List.generate(
         10, (_) => makeAssetId(package: package, topLevelDir: topLevelDir)));
 
-ModuleId makeModuleId({String name, String package}) {
+ModuleId makeModuleId({String dir, String name, String package}) {
   package ??= 'pkg_${_next++}';
   name ??= 'name_${_next++}';
-  return new ModuleId(package, name);
+  dir ??= 'lib';
+  return new ModuleId(package, name, dir);
 }
 
 Set<ModuleId> makeModuleIds({String package}) => new Set<ModuleId>.from(
@@ -59,7 +62,10 @@ Module makeModule(
     return new AssetId.parse(id);
   }
 
-  var id = makeModuleId(package: package, name: name);
+  topLevelDir ??= srcs?.isEmpty != false
+      ? 'lib'
+      : io_helpers.topLevelDir(toAssetId(srcs.first).path);
+  var id = makeModuleId(package: package, name: name, dir: topLevelDir);
   srcs ??= makeAssetIds(package: id.package, topLevelDir: topLevelDir);
   var assetIds = srcs.map(toAssetId).toSet();
   directDependencies ??= new Set();
