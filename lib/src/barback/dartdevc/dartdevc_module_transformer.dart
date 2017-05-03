@@ -54,13 +54,13 @@ class DartDevcModuleTransformer extends Transformer {
 /// path under the package that looks like `$outputDir/${module.id.name}.js`.
 Future _createDartdevcModule(Module module, TempEnvironment tempEnv,
     Set<AssetId> linkedSummaryIds, Transform transform) async {
-  var logger = transform.logger;
   var jsOutputFile = tempEnv.fileFor(module.id.jsId);
   var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
   var request = new WorkRequest();
   request.arguments.addAll([
     '--dart-sdk-summary=$sdk_summary',
-    // TODO(jakemac53): Remove when no longer needed.
+    // TODO(jakemac53): Remove when no longer needed,
+    // https://github.com/dart-lang/pub/issues/1583.
     '--unsafe-angular2-whitelist',
     '--modules=amd',
     '--dart-sdk=${sdkDir.path}',
@@ -74,7 +74,8 @@ Future _createDartdevcModule(Module module, TempEnvironment tempEnv,
   for (var id in linkedSummaryIds) {
     request.arguments.addAll(['-s', tempEnv.fileFor(id).path]);
   }
-  // Add url mappings for all the package: files to tell ddc where to find them.
+  // Add URL mappings for all the package: files to tell DartDevc where to find
+  // them.
   for (var id in module.assetIds) {
     var uri = canonicalUriFor(id);
     if (uri.startsWith('package:')) {
@@ -99,7 +100,7 @@ Future _createDartdevcModule(Module module, TempEnvironment tempEnv,
   if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
     // We only log warnings for ddc modules because technically they don't all
     // need to compile successfully, only the ones imported by an entrypoint do.
-    logger.warning('Error compiling dartdevc module: ${module.id}.\n'
+    transform.logger.warning('Error compiling dartdevc module: ${module.id}.\n'
         '${response.output}');
   } else {
     transform.addOutput(
