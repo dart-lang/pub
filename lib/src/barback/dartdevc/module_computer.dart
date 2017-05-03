@@ -360,14 +360,11 @@ class _ModuleComputer {
   List<Module> _renameSharedModules(List<Module> modules) {
     if (modules.isEmpty) return modules;
     var next = 0;
-    // All modules and assets in those modules share a top level dir, we just
-    // grab it from the first one.
-    var moduleDir = topLevelDir(modules.first.assetIds.first.path);
     return modules.map((module) {
       if (module.id.name.contains('\$')) {
         return new Module(
-            new ModuleId(
-                module.id.package, '${moduleDir}__shared_${next++}', moduleDir),
+            new ModuleId(module.id.package,
+                '${module.id.dir}__shared_${next++}', module.id.dir),
             module.assetIds,
             module.directDependencies);
       } else {
