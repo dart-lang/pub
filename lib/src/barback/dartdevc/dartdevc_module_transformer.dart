@@ -8,7 +8,6 @@ import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 import 'package:path/path.dart' as p;
 
-import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -39,26 +38,15 @@ class DartDevcModuleTransformer extends Transformer {
       var summariesForModule = <ModuleId, Set<AssetId>>{};
       for (var module in modules) {
         var transitiveModuleDeps = await reader.readTransitiveDeps(module);
-        var linkedSummaryIds = transitiveModuleDeps.map((depId) {
-          assert(depId.name.isNotEmpty);
-          var summaryDir = depId.name.split('__').first;
-          return new AssetId(depId.package,
-              p.join(summaryDir, '${depId.name}$linkedSummaryExtension'));
-        }).toSet();
+        var linkedSummaryIds =
+            transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
         summariesForModule[module.id] = linkedSummaryIds;
         allAssetIds..addAll(module.assetIds)..addAll(linkedSummaryIds);
       }
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
-      var outputDir = topLevelDir(transform.primaryInput.id.path);
-      await Future.wait(modules.map((m) => _createDartdevcModule(
-          m,
-          outputDir,
-          tempEnv,
-          summariesForModule[m.id],
-          environmentConstants,
-          mode,
-          transform)));
+      await Future.wait(modules.map((m) => _createDartdevcModule(m, tempEnv,
+          summariesForModule[m.id], environmentConstants, mode, transform)));
     } finally {
       tempEnv?.delete();
     }
@@ -69,21 +57,18 @@ class DartDevcModuleTransformer extends Transformer {
 /// path under the package that looks like `$outputDir/${module.id.name}.js`.
 Future _createDartdevcModule(
     Module module,
-    String outputDir,
     TempEnvironment tempEnv,
     Set<AssetId> linkedSummaryIds,
     Map<String, String> environmentConstants,
     BarbackMode mode,
     Transform transform) async {
-  var logger = transform.logger;
-  var jsOutputId = new AssetId(
-      module.id.package, p.url.join(outputDir, '${module.id.name}.js'));
-  var jsOutputFile = tempEnv.fileFor(jsOutputId);
+  var jsOutputFile = tempEnv.fileFor(module.id.jsId);
   var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
   var request = new WorkRequest();
   request.arguments.addAll([
     '--dart-sdk-summary=$sdk_summary',
-    // TODO(jakemac53): Remove when no longer needed.
+    // TODO(jakemac53): Remove when no longer needed,
+    // https://github.com/dart-lang/pub/issues/1583.
     '--unsafe-angular2-whitelist',
     '--modules=amd',
     '--dart-sdk=${sdkDir.path}',
@@ -109,7 +94,8 @@ Future _createDartdevcModule(
     request.arguments.addAll(['-s', tempEnv.fileFor(id).path]);
   }
 
-  // Add url mappings for all the package: files to tell ddc where to find them.
+  // Add URL mappings for all the package: files to tell DartDevc where to find
+  // them.
   for (var id in module.assetIds) {
     var uri = canonicalUriFor(id);
     if (uri.startsWith('package:')) {
@@ -134,13 +120,13 @@ Future _createDartdevcModule(
   if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
     // We only log warnings for ddc modules because technically they don't all
     // need to compile successfully, only the ones imported by an entrypoint do.
-    logger.warning('Error compiling dartdevc module: ${module.id}.\n'
+    transform.logger.warning('Error compiling dartdevc module: ${module.id}.\n'
         '${response.output}');
   } else {
     transform.addOutput(
-        new Asset.fromBytes(jsOutputId, jsOutputFile.readAsBytesSync()));
+        new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
     if (mode == BarbackMode.DEBUG) {
-      var sourceMapOutputId = jsOutputId.addExtension('.map');
+      var sourceMapOutputId = module.id.jsId.addExtension('.map');
       var sourceMapFile = tempEnv.fileFor(sourceMapOutputId);
       transform.addOutput(new Asset.fromBytes(
           sourceMapOutputId, sourceMapFile.readAsBytesSync()));

@@ -6,14 +6,11 @@ import 'dart:async';
 
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
-import 'package:path/path.dart' as p;
 
-import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
 import 'temp_environment.dart';
-import 'unlinked_summary_transformer.dart';
 
 final String linkedSummaryExtension = '.linked.sum';
 
@@ -39,20 +36,16 @@ class LinkedSummaryTransformer extends Transformer {
       var summariesForModule = <ModuleId, Set<AssetId>>{};
       for (var module in modules) {
         var transitiveModuleDeps = await reader.readTransitiveDeps(module);
-        var unlinkedSummaryIds = transitiveModuleDeps.map((depId) {
-          assert(depId.name.isNotEmpty);
-          var summaryDir = depId.name.split('__').first;
-          return new AssetId(depId.package,
-              p.join(summaryDir, '${depId.name}$unlinkedSummaryExtension'));
-        }).toSet();
+        var unlinkedSummaryIds = transitiveModuleDeps
+            .map((depId) => depId.unlinkedSummaryId)
+            .toSet();
         summariesForModule[module.id] = unlinkedSummaryIds;
         allAssetIds..addAll(module.assetIds)..addAll(unlinkedSummaryIds);
       }
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
-      var outputDir = topLevelDir(configId.path);
       await Future.wait(modules.map((m) => _createLinkedSummaryForModule(
-          m, summariesForModule[m.id], outputDir, tempEnv, transform)));
+          m, summariesForModule[m.id], tempEnv, transform)));
     } finally {
       tempEnv?.delete();
     }
@@ -62,12 +55,9 @@ class LinkedSummaryTransformer extends Transformer {
 Future _createLinkedSummaryForModule(
     Module module,
     Set<AssetId> unlinkedSummaryIds,
-    String outputDir,
     TempEnvironment tempEnv,
     Transform transform) async {
-  var summaryOutputId = new AssetId(module.id.package,
-      p.url.join(outputDir, '${module.id.name}$linkedSummaryExtension'));
-  var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
+  var summaryOutputFile = tempEnv.fileFor(module.id.linkedSummaryId);
   var request = new WorkRequest();
   // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
   // but ideally we would do that (pass '--build-summary-only-diet').
@@ -94,6 +84,6 @@ Future _createLinkedSummaryForModule(
             '${response.output}');
   } else {
     transform.addOutput(new Asset.fromBytes(
-        summaryOutputId, summaryOutputFile.readAsBytesSync()));
+        module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync()));
   }
 }

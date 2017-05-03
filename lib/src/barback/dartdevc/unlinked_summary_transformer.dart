@@ -6,9 +6,7 @@ import 'dart:async';
 
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
-import 'package:path/path.dart' as p;
 
-import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -37,19 +35,17 @@ class UnlinkedSummaryTransformer extends Transformer {
       });
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
-      await Future.wait(modules.map((m) => _createUnlinkedSummaryForModule(
-          m, topLevelDir(configId.path), tempEnv, transform)));
+      await Future.wait(modules
+          .map((m) => _createUnlinkedSummaryForModule(m, tempEnv, transform)));
     } finally {
       tempEnv?.delete();
     }
   }
 }
 
-Future _createUnlinkedSummaryForModule(Module module, String outputDir,
-    TempEnvironment tempEnv, Transform transform) async {
-  var summaryOutputId = new AssetId(module.id.package,
-      p.url.join(outputDir, '${module.id.name}$unlinkedSummaryExtension'));
-  var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
+Future _createUnlinkedSummaryForModule(
+    Module module, TempEnvironment tempEnv, Transform transform) async {
+  var summaryOutputFile = tempEnv.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();
   // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
   // but ideally we would do that (pass '--build-summary-only-diet').
@@ -74,6 +70,6 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
             '${response.output}');
   } else {
     transform.addOutput(new Asset.fromBytes(
-        summaryOutputId, summaryOutputFile.readAsBytesSync()));
+        module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync()));
   }
 }
