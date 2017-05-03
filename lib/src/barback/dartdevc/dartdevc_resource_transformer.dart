@@ -5,10 +5,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+import '../../dart.dart';
 import '../../io.dart';
 
 /// Copies the `dart_sdk.js` and `require.js` amd files from the SDK into each
@@ -26,6 +28,16 @@ class DartDevcResourceTransformer extends AggregateTransformer
 
   @override
   Future apply(AggregateTransform transform) async {
+    // If there are no entrypoints then skip this folder.
+    var hasEntrypoint = false;
+    await for (var asset in transform.primaryInputs) {
+      if (isEntrypoint(parseDirectives(await asset.readAsString()))) {
+        hasEntrypoint = true;
+        break;
+      }
+    }
+    if (!hasEntrypoint) return;
+
     var sdk = cli_util.getSdkDir();
 
     // Copy the dart_sdk.js file for AMD into the output folder.
