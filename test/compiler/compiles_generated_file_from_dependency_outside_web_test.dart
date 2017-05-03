@@ -7,12 +7,13 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
   // This is a regression test for issue #17198.
-  integration(
+  integrationWithCompiler(
       "compiles a Dart file that imports a generated file to JS "
-      "outside web/", () {
+      "outside web/", (compiler) {
     serveBarback();
 
     d.dir(appPath, [
@@ -39,9 +40,17 @@ const TOKEN = "before";
     ]).create();
 
     pubGet();
-    pubServe(args: ["test"]);
-    requestShouldSucceed("main.dart.js", contains("(before, munge)"),
-        root: "test");
+    pubServe(args: ["test"], compiler: compiler);
+    switch (compiler) {
+      case Compiler.dart2JS:
+        requestShouldSucceed("main.dart.js", contains("(before, munge)"),
+            root: "test");
+        break;
+      case Compiler.dartDevc:
+        requestShouldSucceed("test__main.js", contains("(before, munge)"),
+            root: "test");
+        break;
+    }
     endPubServe();
   });
 }

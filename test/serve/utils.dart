@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:pub/src/barback/compiler.dart';
 import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/scheduled_process.dart';
 import 'package:scheduled_test/scheduled_stream.dart';
@@ -147,13 +148,15 @@ class DartTransformer extends Transformer {
 ///
 /// Returns the `pub serve` process.
 ScheduledProcess startPubServe(
-    {Iterable<String> args, bool createWebDir: true}) {
+    {Iterable<String> args, bool createWebDir: true, Compiler compiler}) {
+  compiler ??= Compiler.dart2JS;
   var pubArgs = [
     "serve",
     "--port=0", // Use port 0 to get an ephemeral port.
     "--force-poll",
     "--admin-port=0", // Use port 0 to get an ephemeral port.
-    "--log-admin-url"
+    "--log-admin-url",
+    "--compiler=${compiler.name}",
   ];
 
   if (args != null) pubArgs.addAll(args);
@@ -169,8 +172,10 @@ ScheduledProcess startPubServe(
 /// so pub doesn't complain about having nothing to serve.
 ///
 /// Returns the `pub serve` process.
-ScheduledProcess pubServe({bool createWebDir: true, Iterable<String> args}) {
-  _pubServer = startPubServe(args: args, createWebDir: createWebDir);
+ScheduledProcess pubServe(
+    {bool createWebDir: true, Iterable<String> args, Compiler compiler}) {
+  _pubServer =
+      startPubServe(args: args, createWebDir: createWebDir, compiler: compiler);
   _portsCompleter = new Completer();
 
   currentSchedule.onComplete.schedule(() {

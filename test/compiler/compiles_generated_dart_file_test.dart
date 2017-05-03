@@ -7,9 +7,10 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
-  integration("compiles a generated Dart file to JS", () {
+  integrationWithCompiler("compiles a generated Dart file to JS", (compiler) {
     serveBarback();
 
     d.dir(appPath, [
@@ -31,8 +32,15 @@ void main() => print(TOKEN);
     ]).create();
 
     pubGet();
-    pubServe();
-    requestShouldSucceed("main.dart.js", contains("(before, munge)"));
+    pubServe(compiler: compiler);
+    switch (compiler) {
+      case Compiler.dart2JS:
+        requestShouldSucceed("main.dart.js", contains("(before, munge)"));
+        break;
+      case Compiler.dartDevc:
+        requestShouldSucceed("web__main.js", contains("(before, munge)"));
+        break;
+    }
     endPubServe();
   });
 }

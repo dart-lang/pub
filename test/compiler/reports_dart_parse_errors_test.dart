@@ -12,31 +12,48 @@ import 'package:scheduled_test/scheduled_stream.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
+import 'utils.dart';
 
 main() {
-  integration("reports Dart parse errors", () {
+  integrationWithCompiler("reports Dart parse errors", (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [
         d.file('file.txt', 'contents'),
-        d.file('file.dart', 'void void;'),
-        d.dir('subdir', [d.file('subfile.dart', 'void void;')])
+        d.file('file.dart', 'void main() {}; void void;'),
+        d.dir('subdir', [d.file('subfile.dart', 'void main() {}; void void;')])
       ])
     ]).create();
 
     pubGet();
-    var pub = startPub(args: ["build"]);
+    var pub = startPub(args: ["build", "--compiler", compiler.name]);
     pub.stdout.expect(startsWith("Loading source assets..."));
     pub.stdout.expect(startsWith("Building myapp..."));
 
-    var consumeFile = consumeThrough(inOrder([
-      "[Error from Dart2JS]:",
-      startsWith(p.join("web", "file.dart") + ":")
-    ]));
-    var consumeSubfile = consumeThrough(inOrder([
-      "[Error from Dart2JS]:",
-      startsWith(p.join("web", "subdir", "subfile.dart") + ":")
-    ]));
+    var consumeFile;
+    var consumeSubfile;
+    switch (compiler) {
+      case Compiler.dart2JS:
+        consumeFile = consumeThrough(inOrder([
+          "[Error from Dart2JS]:",
+          startsWith(p.join("web", "file.dart") + ":")
+        ]));
+        consumeSubfile = consumeThrough(inOrder([
+          "[Error from Dart2JS]:",
+          startsWith(p.join("web", "subdir", "subfile.dart") + ":")
+        ]));
+        break;
+      case Compiler.dartDevc:
+        consumeFile = consumeThrough(inOrder([
+          startsWith("Error compiling dartdevc module:"),
+          contains(p.join("web", "file.dart"))
+        ]));
+        consumeSubfile = consumeThrough(inOrder([
+          startsWith("Error compiling dartdevc module:"),
+          contains(p.join("web", "subdir", "subfile.dart"))
+        ]));
+        break;
+    }
 
     // It's nondeterministic what order the dart2js transformers start running,
     // so we allow the error messages to be emitted in either order.

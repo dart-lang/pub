@@ -7,6 +7,7 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
   setUp(() {
@@ -21,21 +22,23 @@ main() {
     ]).create();
   });
 
-  integration("build ignores Dart entrypoints in lib", () {
+  integrationWithCompiler("build ignores Dart entrypoints in lib", (compiler) {
     pubGet();
     schedulePub(
-        args: ["build", "--all"],
-        output: new RegExp(r'Built 1 file to "build".'));
+        args: ["build", "--all", "--compiler=${compiler.name}"],
+        output: new RegExp(r'Built [\d]+ files? to "build".'));
 
     d.dir(appPath, [
-      d.dir('build', [d.nothing('lib')])
+      d.dir('build', [
+        d.nothing('lib'),
+      ])
     ]).validate();
   });
 
-  integration("serve ignores Dart entrypoints in lib", () {
+  integrationWithCompiler("serve ignores Dart entrypoints in lib", (compiler) {
     pubGet();
     pubServe();
-    requestShould404("packages/myapp/main.dart.js");
+    requestShould404("packages/myapp/file.dart.js");
     endPubServe();
   });
 }

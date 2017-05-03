@@ -9,9 +9,10 @@ import 'package:pub/src/barback/dartdevc/module_reader.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
-  integration("compiler flag switches compilers", () {
+  integrationWithCompiler("compiler flag switches compilers", (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [
@@ -29,22 +30,36 @@ main() {
     ]).create();
 
     pubGet();
-    pubServe(args: ['--compiler', 'dartdevc']);
-    requestShouldSucceed(
-        'packages/$appPath/$moduleConfigName', contains('lib__hello'));
-    requestShouldSucceed(moduleConfigName, contains('web__main'));
-    requestShouldSucceed('packages/$appPath/lib__hello.unlinked.sum', null);
-    requestShouldSucceed('web__main.unlinked.sum', null);
-    requestShouldSucceed('packages/$appPath/lib__hello.linked.sum', null);
-    requestShouldSucceed('web__main.linked.sum', null);
-    requestShouldSucceed('packages/$appPath/lib__hello.js', contains('hello'));
-    requestShouldSucceed(
-        'packages/$appPath/lib__hello.js.map', contains('lib__hello.js'));
-    requestShouldSucceed('web__main.js', contains('hello'));
-    requestShouldSucceed('web__main.js.map', contains('web__main.js'));
-    requestShouldSucceed('dart_sdk.js', null);
-    requestShouldSucceed('require.js', null);
-    requestShouldSucceed('main.dart.js', null);
+    pubServe(compiler: compiler);
+    switch (compiler) {
+      case Compiler.dartDevc:
+        requestShouldSucceed(
+            'packages/$appPath/$moduleConfigName', contains('lib__hello'));
+        requestShouldSucceed(moduleConfigName, contains('web__main'));
+        requestShouldSucceed('packages/$appPath/lib__hello.unlinked.sum', null);
+        requestShouldSucceed('web__main.unlinked.sum', null);
+        requestShouldSucceed('packages/$appPath/lib__hello.linked.sum', null);
+        requestShouldSucceed('web__main.linked.sum', null);
+        requestShouldSucceed(
+            'packages/$appPath/lib__hello.js', contains('hello'));
+        requestShouldSucceed(
+            'packages/$appPath/lib__hello.js.map', contains('lib__hello.js'));
+        requestShouldSucceed('web__main.js', contains('hello'));
+        requestShouldSucceed('web__main.js.map', contains('web__main.js'));
+        requestShouldSucceed('dart_sdk.js', null);
+        requestShouldSucceed('require.js', null);
+        requestShouldSucceed('main.dart.js', null);
+        break;
+      case Compiler.dart2JS:
+        requestShouldSucceed('main.dart.js', null);
+        requestShould404('web__main.js');
+        // requestShould404('dart_sdk.js');
+        // requestShould404('require.js');
+        break;
+      case Compiler.none:
+        requestShould404('main.dart.js');
+        break;
+    }
     endPubServe();
-  });
+  }, compilers: Compiler.compilers);
 }
