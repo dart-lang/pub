@@ -189,12 +189,12 @@ class AssetEnvironment {
       case Compiler.dartDevc:
         var firstPhase = <dynamic>[new ModuleConfigTransformer()];
         var lastPhase = <dynamic>[
-          new DartDevcModuleTransformer(
+          new DartDevcModuleTransformer(mode,
               environmentConstants: environmentConstants)
         ];
         if (isRootPackage) {
           firstPhase.add(new DartDevcResourceTransformer());
-          lastPhase.add(new DartDevcBootstrapTransformer());
+          lastPhase.add(new DartDevcBootstrapTransformer(mode));
         }
 
         transformers.addAll([

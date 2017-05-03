@@ -25,8 +25,9 @@ class DartDevcModuleTransformer extends Transformer {
   String get allowedExtensions => moduleConfigName;
 
   final Map<String, String> environmentConstants;
+  final BarbackMode mode;
 
-  DartDevcModuleTransformer({this.environmentConstants = const {}});
+  DartDevcModuleTransformer(this.mode, {this.environmentConstants = const {}});
 
   @override
   Future apply(Transform transform) async {
@@ -50,8 +51,14 @@ class DartDevcModuleTransformer extends Transformer {
       // Create a single temp environment for all the modules in this package.
       tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
       var outputDir = topLevelDir(transform.primaryInput.id.path);
-      await Future.wait(modules.map((m) => _createDartdevcModule(m, outputDir,
-          tempEnv, summariesForModule[m.id], environmentConstants, transform)));
+      await Future.wait(modules.map((m) => _createDartdevcModule(
+          m,
+          outputDir,
+          tempEnv,
+          summariesForModule[m.id],
+          environmentConstants,
+          mode,
+          transform)));
     } finally {
       tempEnv?.delete();
     }
@@ -66,6 +73,7 @@ Future _createDartdevcModule(
     TempEnvironment tempEnv,
     Set<AssetId> linkedSummaryIds,
     Map<String, String> environmentConstants,
+    BarbackMode mode,
     Transform transform) async {
   var logger = transform.logger;
   var jsOutputId = new AssetId(
@@ -86,6 +94,10 @@ Future _createDartdevcModule(
     '-o',
     jsOutputFile.path,
   ]);
+
+  if (mode == BarbackMode.RELEASE) {
+    request.arguments.add('--no-source-map');
+  }
 
   // Add environment constants.
   environmentConstants.forEach((key, value) {
@@ -127,9 +139,11 @@ Future _createDartdevcModule(
   } else {
     transform.addOutput(
         new Asset.fromBytes(jsOutputId, jsOutputFile.readAsBytesSync()));
-    var sourceMapOutputId = jsOutputId.addExtension('.map');
-    var sourceMapFile = tempEnv.fileFor(sourceMapOutputId);
-    transform.addOutput(new Asset.fromBytes(
-        sourceMapOutputId, sourceMapFile.readAsBytesSync()));
+    if (mode == BarbackMode.DEBUG) {
+      var sourceMapOutputId = jsOutputId.addExtension('.map');
+      var sourceMapFile = tempEnv.fileFor(sourceMapOutputId);
+      transform.addOutput(new Asset.fromBytes(
+          sourceMapOutputId, sourceMapFile.readAsBytesSync()));
+    }
   }
 }

@@ -13,6 +13,10 @@ import '../../io.dart';
 import 'module_reader.dart';
 
 class DartDevcBootstrapTransformer extends Transformer {
+  final BarbackMode mode;
+
+  DartDevcBootstrapTransformer(this.mode);
+
   @override
   bool isPrimary(AssetId id) {
     // Only `.dart` files not under `lib` or `bin` are considered candidates for
@@ -27,7 +31,7 @@ class DartDevcBootstrapTransformer extends Transformer {
     var parsed =
         parseCompilationUnit(await transform.primaryInput.readAsString());
     if (!isEntrypoint(parsed)) return;
-    await _bootstrapEntrypoint(transform.primaryInput.id, transform);
+    await _bootstrapEntrypoint(transform.primaryInput.id, mode, transform);
   }
 }
 
@@ -41,7 +45,7 @@ class DartDevcBootstrapTransformer extends Transformer {
 ///   function from the entrypoint module, after performing some necessary SDK
 ///   setup.
 Future _bootstrapEntrypoint(
-    AssetId dartEntrypointId, Transform transform) async {
+    AssetId dartEntrypointId, BarbackMode mode, Transform transform) async {
   var moduleReader = new ModuleReader(transform.readInputAsString);
   var module = await moduleReader.moduleFor(dartEntrypointId);
 
@@ -87,8 +91,11 @@ document.head.appendChild(el);
 ''';
   transform.addOutput(new Asset.fromString(
       dartEntrypointId.addExtension('.js'), entrypointJsContent));
-  transform.addOutput(new Asset.fromString(
-      dartEntrypointId.addExtension('.js.map'),
-      '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
-      '"file":""}'));
+
+  if (mode == BarbackMode.DEBUG) {
+    transform.addOutput(new Asset.fromString(
+        dartEntrypointId.addExtension('.js.map'),
+        '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
+        '"file":""}'));
+  }
 }
