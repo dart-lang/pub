@@ -53,8 +53,6 @@ main() {
       case Compiler.dart2JS:
         requestShouldSucceed('main.dart.js', null);
         requestShould404('web__main.js');
-        // requestShould404('dart_sdk.js');
-        // requestShould404('require.js');
         break;
       case Compiler.none:
         requestShould404('main.dart.js');
