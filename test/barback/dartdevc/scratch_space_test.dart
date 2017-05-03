@@ -9,11 +9,11 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import 'package:pub/src/barback/dartdevc/temp_environment.dart';
+import 'package:pub/src/barback/dartdevc/scratch_space.dart';
 import 'package:pub/src/io.dart';
 
 void main() {
-  test('Can create and delete a temp environment', () async {
+  test('Can create and delete a scratch space', () async {
     Map<AssetId, List<int>> allAssets = [
       'dep|lib/dep.dart',
       'myapp|lib/myapp.dart',
@@ -23,17 +23,19 @@ void main() {
       return assets;
     });
 
-    var tempEnv = await TempEnvironment.create(
+    var scratchSpace = await ScratchSpace.create(
         allAssets.keys, (id) => new Stream.fromIterable([allAssets[id]]));
 
-    expect(p.isWithin(Directory.systemTemp.path, tempEnv.tempDir.path), isTrue);
+    expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),
+        isTrue);
 
     for (var id in allAssets.keys) {
-      var file = tempEnv.fileFor(id);
+      var file = scratchSpace.fileFor(id);
       expect(file.existsSync(), isTrue);
       expect(file.readAsStringSync(), equals('$id'));
 
-      var relativeFilePath = p.relative(file.path, from: tempEnv.tempDir.path);
+      var relativeFilePath =
+          p.relative(file.path, from: scratchSpace.tempDir.path);
       if (topLevelDir(id.path) == 'lib') {
         var packagesPath =
             p.join('packages', id.package, p.relative(id.path, from: 'lib'));
@@ -43,13 +45,13 @@ void main() {
       }
     }
 
-    await tempEnv.delete();
+    await scratchSpace.delete();
 
     for (var id in allAssets.keys) {
-      var file = tempEnv.fileFor(id);
+      var file = scratchSpace.fileFor(id);
       expect(file.existsSync(), isFalse);
     }
-    expect(tempEnv.tempDir.existsSync(), isFalse);
+    expect(scratchSpace.tempDir.existsSync(), isFalse);
   });
 
   test('canonicalUriFor', () {

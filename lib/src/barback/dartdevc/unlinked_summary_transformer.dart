@@ -12,7 +12,7 @@ import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
-import 'temp_environment.dart';
+import 'scratch_space.dart';
 
 final String unlinkedSummaryExtension = '.unlinked.sum';
 
@@ -29,27 +29,28 @@ class UnlinkedSummaryTransformer extends Transformer {
     var reader = new ModuleReader(transform.readInputAsString);
     var configId = transform.primaryInput.id;
     var modules = await reader.readModules(configId);
-    TempEnvironment tempEnv;
+    ScratchSpace scratchSpace;
     try {
       var allAssetIds = modules.fold(new Set<AssetId>(), (allAssets, module) {
         allAssets.addAll(module.assetIds);
         return allAssets;
       });
       // Create a single temp environment for all the modules in this package.
-      tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
+      scratchSpace =
+          await ScratchSpace.create(allAssetIds, transform.readInput);
       await Future.wait(modules.map((m) => _createUnlinkedSummaryForModule(
-          m, topLevelDir(configId.path), tempEnv, transform)));
+          m, topLevelDir(configId.path), scratchSpace, transform)));
     } finally {
-      tempEnv?.delete();
+      scratchSpace?.delete();
     }
   }
 }
 
 Future _createUnlinkedSummaryForModule(Module module, String outputDir,
-    TempEnvironment tempEnv, Transform transform) async {
+    ScratchSpace scratchSpace, Transform transform) async {
   var summaryOutputId = new AssetId(module.id.package,
       p.url.join(outputDir, '${module.id.name}$unlinkedSummaryExtension'));
-  var summaryOutputFile = tempEnv.fileFor(summaryOutputId);
+  var summaryOutputFile = scratchSpace.fileFor(summaryOutputId);
   var request = new WorkRequest();
   request.arguments.addAll([
     '--build-summary-only',
@@ -63,7 +64,7 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
     if (!uri.startsWith('package:')) {
       uri = 'file://$uri';
     }
-    return '$uri|${tempEnv.fileFor(id).path}';
+    return '$uri|${scratchSpace.fileFor(id).path}';
   }));
   var response = await analyzerDriver.doWork(request);
   if (response.exitCode == EXIT_CODE_ERROR) {

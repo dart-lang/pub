@@ -11,21 +11,21 @@ import 'package:path/path.dart' as p;
 import '../../io.dart';
 
 /// An on-disk temporary environment for running executables that don't have
-/// a standard dart library api.
-class TempEnvironment {
+/// a standard Dart library API.
+class ScratchSpace {
   final Directory tempDir;
   final Directory packagesDir;
 
-  TempEnvironment._(Directory tempDir)
+  ScratchSpace._(Directory tempDir)
       : packagesDir = new Directory(p.join(tempDir.path, 'packages')),
         this.tempDir = tempDir;
 
-  /// Creates a new [TempEnvironment] containing [assetIds].
+  /// Creates a new [ScratchSpace] containing [assetIds].
   ///
   /// Any [Asset] that is under a `lib` dir will be output under a `packages`
-  /// directory corresponding to it's package, and any other assets are output
+  /// directory corresponding to its package, and any other assets are output
   /// directly under the temp dir using their unmodified path.
-  static Future<TempEnvironment> create(
+  static Future<ScratchSpace> create(
       Iterable<AssetId> assetIds, Stream<List<int>> readAsset(AssetId)) async {
     var tempDir = new Directory(createSystemTempDir());
     var futures = <Future>[];
@@ -35,7 +35,7 @@ class TempEnvironment {
       futures.add(createFileFromStream(readAsset(id), filePath));
     }
     await Future.wait(futures);
-    return new TempEnvironment._(tempDir);
+    return new ScratchSpace._(tempDir);
   }
 
   /// Deletes the temp directory for this environment.
