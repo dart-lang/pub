@@ -41,6 +41,8 @@ main() {
     requestShouldSucceed('web__main.linked.sum', null);
     requestShouldSucceed('packages/$appPath/lib__hello.js', contains('hello'));
     requestShouldSucceed('web__main.js', contains('hello'));
+    requestShouldSucceed('dart_sdk.js', null);
+    requestShouldSucceed('require.js', null);
     // TODO(jakemac53): Not implemented yet, update once available.
     requestShould404('main.dart.js');
     endPubServe();
