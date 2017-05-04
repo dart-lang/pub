@@ -149,15 +149,16 @@ class DartTransformer extends Transformer {
 /// Returns the `pub serve` process.
 ScheduledProcess startPubServe(
     {Iterable<String> args, bool createWebDir: true, Compiler compiler}) {
-  compiler ??= Compiler.dart2JS;
   var pubArgs = [
     "serve",
     "--port=0", // Use port 0 to get an ephemeral port.
     "--force-poll",
     "--admin-port=0", // Use port 0 to get an ephemeral port.
     "--log-admin-url",
-    "--compiler=${compiler.name}",
   ];
+  if (compiler != null) {
+    pubArgs.add("--compiler=${compiler.name}");
+  }
 
   if (args != null) pubArgs.addAll(args);
 
