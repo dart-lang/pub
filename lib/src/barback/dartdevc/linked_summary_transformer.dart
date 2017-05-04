@@ -59,10 +59,12 @@ Future _createLinkedSummaryForModule(
     Transform transform) async {
   var summaryOutputFile = tempEnv.fileFor(module.id.linkedSummaryId);
   var request = new WorkRequest();
+  // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
+  // but ideally we would do that (pass '--build-summary-only-diet').
   request.arguments.addAll([
     '--build-summary-only',
-    '--build-summary-only-diet',
     '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
   ]);
   // Add all the unlinked summaries as build summary inputs.
   request.arguments.addAll(unlinkedSummaryIds.map(

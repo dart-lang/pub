@@ -47,11 +47,13 @@ Future _createUnlinkedSummaryForModule(
     Module module, ScratchSpace scratchSpace, Transform transform) async {
   var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();
+  // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
+  // but ideally we would do that (pass '--build-summary-only-diet').
   request.arguments.addAll([
     '--build-summary-only',
     '--build-summary-only-unlinked',
-    '--build-summary-only-diet',
     '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
   ]);
   // Add all the files to include in the unlinked summary bundle.
   request.arguments.addAll(module.assetIds.map((id) {
