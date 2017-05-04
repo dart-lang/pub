@@ -9,9 +9,11 @@ import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
+import 'utils.dart';
 
 main() {
-  integration("compiles Dart entrypoints in root package to JS", () {
+  integrationWithCompiler("compiles Dart entrypoints in root package to JS",
+      (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('benchmark', [
@@ -35,9 +37,13 @@ main() {
     ]).create();
 
     pubGet();
-    schedulePub(
-        args: ["build", "benchmark", "foo", "web"],
-        output: new RegExp(r'Built 6 files to "build".'));
+    schedulePub(args: [
+      "build",
+      "benchmark",
+      "foo",
+      "web",
+      "--compiler=${compiler.name}"
+    ], output: new RegExp(r'Built [\d]+ files to "build".'));
 
     d.dir(appPath, [
       d.dir('build', [

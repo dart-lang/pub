@@ -23,10 +23,11 @@ class DartDevcModuleTransformer extends Transformer {
   @override
   String get allowedExtensions => moduleConfigName;
 
+  final Map<String, String> environmentConstants;
   final BarbackMode mode;
 
-  DartDevcModuleTransformer(this.mode);
-
+  DartDevcModuleTransformer(this.mode, {this.environmentConstants = const {}});
+  
   @override
   Future apply(Transform transform) async {
     ScratchSpace scratchSpace;
@@ -46,7 +47,12 @@ class DartDevcModuleTransformer extends Transformer {
       scratchSpace =
           await ScratchSpace.create(allAssetIds, transform.readInput);
       await Future.wait(modules.map((m) => _createDartdevcModule(
-          m, scratchSpace, summariesForModule[m.id], mode, transform)));
+          m,
+          scratchSpace,
+          summariesForModule[m.id],
+          environmentConstants,
+          mode,
+          transform)));
     } finally {
       scratchSpace?.delete();
     }
@@ -59,6 +65,7 @@ Future _createDartdevcModule(
     Module module,
     ScratchSpace scratchSpace,
     Set<AssetId> linkedSummaryIds,
+    Map<String, String> environmentConstants,
     BarbackMode mode,
     Transform transform) async {
   var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
@@ -74,13 +81,25 @@ Future _createDartdevcModule(
     '--module-root=${scratchSpace.tempDir.path}',
     '--library-root=${p.dirname(jsOutputFile.path)}',
     '--summary-extension=${linkedSummaryExtension.substring(1)}',
+    '--no-summarize',
     '-o',
     jsOutputFile.path,
   ]);
+
+  if (mode == BarbackMode.RELEASE) {
+    request.arguments.add('--no-source-map');
+  }
+
+  // Add environment constants.
+  environmentConstants.forEach((key, value) {
+    request.arguments.add('-D$key=$value');
+  });
+
   // Add all the linked summaries as summary inputs.
   for (var id in linkedSummaryIds) {
     request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
   }
+
   // Add URL mappings for all the package: files to tell DartDevc where to find
   // them.
   for (var id in module.assetIds) {
@@ -121,5 +140,11 @@ Future _createDartdevcModule(
   } else {
     transform.addOutput(
         new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
+    if (mode == BarbackMode.DEBUG) {
+      var sourceMapOutputId = module.id.jsId.addExtension('.map');
+      var sourceMapFile = scratchSpace.fileFor(sourceMapOutputId);
+      transform.addOutput(new Asset.fromBytes(
+          sourceMapOutputId, sourceMapFile.readAsBytesSync()));
+    }
   }
 }

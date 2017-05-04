@@ -7,6 +7,7 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
   setUp(() {
@@ -21,19 +22,31 @@ main() {
     ]).create();
   });
 
-  integration("build ignores non-entrypoint Dart files", () {
+  integrationWithCompiler("build ignores non-entrypoint Dart files",
+      (compiler) {
     pubGet();
     schedulePub(
-        args: ["build"], output: new RegExp(r'Built 0 files to "build".'));
+        args: ["build", "--compiler=${compiler.name}"],
+        output: new RegExp(r'Built [\d]+ files? to "build".'));
 
+    var expectedWebDir;
+    switch (compiler) {
+      case Compiler.dart2JS:
+        expectedWebDir = d.nothing('web');
+        break;
+      case Compiler.dartDevc:
+        expectedWebDir = d.dir('web', [d.file('.moduleConfig', '[]')]);
+        break;
+    }
     d.dir(appPath, [
-      d.dir('build', [d.nothing('web')])
+      d.dir('build', [expectedWebDir])
     ]).validate();
   });
 
-  integration("serve ignores non-entrypoint Dart files", () {
+  integrationWithCompiler("serve ignores non-entrypoint Dart files",
+      (compiler) {
     pubGet();
-    pubServe();
+    pubServe(compiler: compiler);
     requestShould404("file1.dart.js");
     requestShould404("file2.dart.js");
     requestShould404("file3.dart.js");

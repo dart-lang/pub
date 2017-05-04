@@ -10,9 +10,10 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
 import '../test_pub.dart';
+import 'utils.dart';
 
 main() {
-  group("passes environment constants to dart2js", () {
+  group("passes environment constants to", () {
     setUp(() {
       d.dir(appPath, [
         d.appPubspec(),
@@ -23,29 +24,48 @@ main() {
       ]).create();
     });
 
-    integration('from "pub build"', () {
+    integrationWithCompiler('from "pub build"', (compiler) {
       pubGet();
-      schedulePub(
-          args: ["build", "--define", "name=fblthp"],
-          output: new RegExp(r'Built 1 file to "build".'));
+      schedulePub(args: [
+        "build",
+        "--define",
+        "name=fblthp",
+        "--compiler=${compiler.name}"
+      ], output: new RegExp(r'Built [\d]+ file[s]? to "build".'));
+
+      var expectedFile;
+      switch (compiler) {
+        case Compiler.dart2JS:
+          expectedFile = d.matcherFile('file.dart.js', contains('fblthp'));
+          break;
+        case Compiler.dartDevc:
+          expectedFile = d.matcherFile('web__file.js', contains('fblthp'));
+          break;
+      }
 
       d.dir(appPath, [
         d.dir('build', [
-          d.dir('web', [
-            d.matcherFile('file.dart.js', contains('fblthp')),
-          ])
+          d.dir('web', [expectedFile])
         ])
       ]).validate();
     });
 
-    integration('from "pub serve"', () {
+    integrationWithCompiler('from "pub serve"', (compiler) {
       pubGet();
-      pubServe(args: ["--define", "name=fblthp"]);
-      requestShouldSucceed("file.dart.js", contains("fblthp"));
+      pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
+      switch (compiler) {
+        case Compiler.dart2JS:
+          requestShouldSucceed("file.dart.js", contains("fblthp"));
+          break;
+        case Compiler.dartDevc:
+          requestShouldSucceed("web__file.js", contains("fblthp"));
+          break;
+      }
       endPubServe();
     });
 
-    integration('which takes precedence over the pubspec', () {
+    integrationWithCompiler('which takes precedence over the pubspec',
+        (compiler) {
       d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
@@ -60,9 +80,17 @@ main() {
       ]).create();
 
       pubGet();
-      pubServe(args: ["--define", "name=fblthp"]);
-      requestShouldSucceed("file.dart.js",
-          allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
+      pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
+      switch (compiler) {
+        case Compiler.dart2JS:
+          requestShouldSucceed("file.dart.js",
+              allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
+          break;
+        case Compiler.dartDevc:
+          requestShouldSucceed("web__file.js",
+              allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
+          break;
+      }
       endPubServe();
     });
   });

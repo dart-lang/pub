@@ -11,11 +11,12 @@ import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
+import 'utils.dart';
 
 main() {
-  integration(
+  integrationWithCompiler(
       "compiles dart.js and interop.js next to entrypoints when "
-      "dartjs is explicitly configured", () {
+      "dartjs is explicitly configured", (compiler) {
     serve([
       d.dir('api', [
         d.dir('packages', [
@@ -70,8 +71,8 @@ main() {
     pubGet();
 
     schedulePub(
-        args: ["build"],
-        output: new RegExp(r'Built 3 files to "build".'),
+        args: ["build", "--compiler", compiler.name],
+        output: new RegExp(r'Built \d+ files? to "build".'),
         exitCode: 0);
 
     d.dir(appPath, [
