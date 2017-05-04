@@ -188,7 +188,7 @@ class AssetEnvironment {
           [new ModuleConfigTransformer()],
           [new UnlinkedSummaryTransformer()],
           [new LinkedSummaryTransformer()],
-          [new DartDevcModuleTransformer()],
+          [new DartDevcModuleTransformer(mode)],
         ].map((list) => list.toSet()));
         break;
       case Compiler.dart2JS:

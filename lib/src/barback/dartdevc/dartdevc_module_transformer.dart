@@ -23,7 +23,9 @@ class DartDevcModuleTransformer extends Transformer {
   @override
   String get allowedExtensions => moduleConfigName;
 
-  DartDevcModuleTransformer();
+  final BarbackMode mode;
+
+  DartDevcModuleTransformer(this.mode);
 
   @override
   Future apply(Transform transform) async {
@@ -44,7 +46,7 @@ class DartDevcModuleTransformer extends Transformer {
       scratchSpace =
           await ScratchSpace.create(allAssetIds, transform.readInput);
       await Future.wait(modules.map((m) => _createDartdevcModule(
-          m, scratchSpace, summariesForModule[m.id], transform)));
+          m, scratchSpace, summariesForModule[m.id], mode, transform)));
     } finally {
       scratchSpace?.delete();
     }
@@ -53,8 +55,12 @@ class DartDevcModuleTransformer extends Transformer {
 
 /// Compiles [module] using the `dartdevc` binary from the SDK to a relative
 /// path under the package that looks like `$outputDir/${module.id.name}.js`.
-Future _createDartdevcModule(Module module, ScratchSpace scratchSpace,
-    Set<AssetId> linkedSummaryIds, Transform transform) async {
+Future _createDartdevcModule(
+    Module module,
+    ScratchSpace scratchSpace,
+    Set<AssetId> linkedSummaryIds,
+    BarbackMode mode,
+    Transform transform) async {
   var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
   var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
   var request = new WorkRequest();
@@ -100,10 +106,18 @@ Future _createDartdevcModule(Module module, ScratchSpace scratchSpace,
   // status code if something failed. Today we just make sure there is an output
   // js file to verify it was successful.
   if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-    // We only log warnings for ddc modules because technically they don't all
+    var message = 'Error compiling dartdevc module: ${module.id}.\n'
+        '${response.output}';
+    // We only log warnings in debug mode for ddc modules because they don't all
     // need to compile successfully, only the ones imported by an entrypoint do.
-    transform.logger.warning('Error compiling dartdevc module: ${module.id}.\n'
-        '${response.output}');
+    switch (mode) {
+      case BarbackMode.DEBUG:
+        transform.logger.warning(message);
+        break;
+      case BarbackMode.RELEASE:
+        transform.logger.error(message);
+        break;
+    }
   } else {
     transform.addOutput(
         new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
