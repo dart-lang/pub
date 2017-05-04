@@ -5,6 +5,7 @@
 import 'package:scheduled_test/scheduled_stream.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
+import 'package:pub/src/barback/dartdevc/module_reader.dart';
 import 'package:pub/src/exit_codes.dart';
 
 import '../descriptor.dart' as d;
@@ -17,18 +18,31 @@ main() {
       d.appPubspec(),
       d.dir("lib", [
         d.file("hello.dart", "hello() => print('hello');"),
-      ])
+      ]),
+      d.dir("web", [
+        d.file(
+            "main.dart",
+            '''
+          import 'package:myapp/hello.dart';
+
+          void main() => hello();
+        '''),
+      ]),
     ]).create();
 
     pubGet();
     pubServe(args: ['--compiler', 'dartdevc']);
     requestShouldSucceed(
-        'packages/$appPath/.moduleConfig', contains('lib__hello'));
-    // Binary response, just confirm it exists.
+        'packages/$appPath/$moduleConfigName', contains('lib__hello'));
+    requestShouldSucceed(moduleConfigName, contains('web__main'));
     requestShouldSucceed('packages/$appPath/lib__hello.unlinked.sum', null);
+    requestShouldSucceed('web__main.unlinked.sum', null);
     requestShouldSucceed('packages/$appPath/lib__hello.linked.sum', null);
+    requestShouldSucceed('web__main.linked.sum', null);
+    requestShouldSucceed('packages/$appPath/lib__hello.js', contains('hello'));
+    requestShouldSucceed('web__main.js', contains('hello'));
     // TODO(jakemac53): Not implemented yet, update once available.
-    requestShould404('packages/$appPath/lib__hello.js');
+    requestShould404('main.dart.js');
     endPubServe();
   });
 

@@ -25,7 +25,6 @@ abstract class BarbackCommand extends PubCommand {
   /// The build mode.
   BarbackMode get mode => new BarbackMode(argResults["mode"]);
 
-
   /// The current compiler mode.
   Compiler get compiler {
     if (argResults.options.contains('dart2js') &&
