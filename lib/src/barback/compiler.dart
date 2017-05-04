@@ -14,18 +14,19 @@ class Compiler {
   static const dartDevc = const Compiler._(_dartDevcName);
   static const none = const Compiler._(_noneName);
 
-  static final compilers = [dart2JS, dartDevc, none];
-  static Iterable<String> get compilerNames =>
-      compilers.map((compiler) => compiler.name);
+  static final all = [dart2JS, dartDevc, none];
+
+  static Iterable<String> get names => all.map((compiler) => compiler.name);
 
   final String name;
 
   const Compiler._(this.name);
 
   static Compiler byName(String name) =>
-      compilers.firstWhere((compiler) => compiler.name == name, orElse: () {
-        throw 'Unrecognized compiler `$name`, supported compilers are '
-            '`${compilerNames.join(", ")}`.';
+      all.firstWhere((compiler) => compiler.name == name, orElse: () {
+        throw new ArgumentError(
+            'Unrecognized compiler `$name`, supported compilers are '
+            '`${names.join(", ")}`.');
       });
 
   String toString() => name;

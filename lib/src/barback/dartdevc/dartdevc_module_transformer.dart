@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
-import 'temp_environment.dart';
+import 'scratch_space.dart';
 import 'linked_summary_transformer.dart';
 
 /// Creates dartdevc modules given [moduleConfigName] files which describe a set
@@ -27,10 +27,9 @@ class DartDevcModuleTransformer extends Transformer {
   final BarbackMode mode;
 
   DartDevcModuleTransformer(this.mode, {this.environmentConstants = const {}});
-
   @override
   Future apply(Transform transform) async {
-    TempEnvironment tempEnv;
+    ScratchSpace scratchSpace;
     var reader = new ModuleReader(transform.readInputAsString);
     var modules = await reader.readModules(transform.primaryInput.id);
     try {
@@ -44,11 +43,17 @@ class DartDevcModuleTransformer extends Transformer {
         allAssetIds..addAll(module.assetIds)..addAll(linkedSummaryIds);
       }
       // Create a single temp environment for all the modules in this package.
-      tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
-      await Future.wait(modules.map((m) => _createDartdevcModule(m, tempEnv,
-          summariesForModule[m.id], environmentConstants, mode, transform)));
+      scratchSpace =
+          await ScratchSpace.create(allAssetIds, transform.readInput);
+      await Future.wait(modules.map((m) => _createDartdevcModule(
+          m,
+          scratchSpace,
+          summariesForModule[m.id],
+          environmentConstants,
+          mode,
+          transform)));
     } finally {
-      tempEnv?.delete();
+      scratchSpace?.delete();
     }
   }
 }
@@ -57,12 +62,12 @@ class DartDevcModuleTransformer extends Transformer {
 /// path under the package that looks like `$outputDir/${module.id.name}.js`.
 Future _createDartdevcModule(
     Module module,
-    TempEnvironment tempEnv,
+    ScratchSpace scratchSpace,
     Set<AssetId> linkedSummaryIds,
     Map<String, String> environmentConstants,
     BarbackMode mode,
     Transform transform) async {
-  var jsOutputFile = tempEnv.fileFor(module.id.jsId);
+  var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
   var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
   var request = new WorkRequest();
   request.arguments.addAll([
@@ -72,7 +77,7 @@ Future _createDartdevcModule(
     '--unsafe-angular2-whitelist',
     '--modules=amd',
     '--dart-sdk=${sdkDir.path}',
-    '--module-root=${tempEnv.tempDir.path}',
+    '--module-root=${scratchSpace.tempDir.path}',
     '--library-root=${p.dirname(jsOutputFile.path)}',
     '--summary-extension=${linkedSummaryExtension.substring(1)}',
     '--no-summarize',
@@ -91,7 +96,7 @@ Future _createDartdevcModule(
 
   // Add all the linked summaries as summary inputs.
   for (var id in linkedSummaryIds) {
-    request.arguments.addAll(['-s', tempEnv.fileFor(id).path]);
+    request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
   }
 
   // Add URL mappings for all the package: files to tell DartDevc where to find
@@ -99,7 +104,8 @@ Future _createDartdevcModule(
   for (var id in module.assetIds) {
     var uri = canonicalUriFor(id);
     if (uri.startsWith('package:')) {
-      request.arguments.add('--url-mapping=$uri,${tempEnv.fileFor(id).path}');
+      request.arguments
+          .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
     }
   }
   // And finally add all the urls to compile, using the package: path for files
@@ -109,7 +115,7 @@ Future _createDartdevcModule(
     if (uri.startsWith('package:')) {
       return uri;
     }
-    return tempEnv.fileFor(id).path;
+    return scratchSpace.fileFor(id).path;
   }));
 
   var response = await dartdevcDriver.doWork(request);
@@ -118,16 +124,24 @@ Future _createDartdevcModule(
   // status code if something failed. Today we just make sure there is an output
   // js file to verify it was successful.
   if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-    // We only log warnings for ddc modules because technically they don't all
+    var message = 'Error compiling dartdevc module: ${module.id}.\n'
+        '${response.output}';
+    // We only log warnings in debug mode for ddc modules because they don't all
     // need to compile successfully, only the ones imported by an entrypoint do.
-    transform.logger.warning('Error compiling dartdevc module: ${module.id}.\n'
-        '${response.output}');
+    switch (mode) {
+      case BarbackMode.DEBUG:
+        transform.logger.warning(message);
+        break;
+      case BarbackMode.RELEASE:
+        transform.logger.error(message);
+        break;
+    }
   } else {
     transform.addOutput(
         new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
     if (mode == BarbackMode.DEBUG) {
       var sourceMapOutputId = module.id.jsId.addExtension('.map');
-      var sourceMapFile = tempEnv.fileFor(sourceMapOutputId);
+      var sourceMapFile = scratchSpace.fileFor(sourceMapOutputId);
       transform.addOutput(new Asset.fromBytes(
           sourceMapOutputId, sourceMapFile.readAsBytesSync()));
     }
