@@ -177,7 +177,9 @@ class AssetEnvironment {
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
-  /// Returns `null` if there are none.
+  /// These are returned as an [Iterable<Set>] to represent each phase (the
+  /// outer [Iterable]), and the transformers that should be ran in each phase (
+  /// the inner [Set]).
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
 
@@ -209,8 +211,6 @@ class AssetEnvironment {
           }
         }
     }
-
-    if (transformers.isEmpty) return null;
     return transformers;
   }
 

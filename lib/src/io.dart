@@ -1133,20 +1133,21 @@ class PubProcessResult {
   bool get success => exitCode == exit_codes.SUCCESS;
 }
 
-/// Returns the top level directory in [path].
+
+/// Returns the top level directory in [uri].
 ///
-/// Throws an [ArgumentError] if [path] is just a filename with no directory.
-String topLevelDir(String pathString) {
-  var parts = path.url.split(path.normalize(pathString));
+/// Throws an [ArgumentError] if [uri] is just a filename with no directory.
+String topLevelDir(String uri) {
+  var parts = path.url.split(path.normalize(uri));
   String error;
   if (parts.length == 1) {
-    error = 'The path does not contain a directory.';
+    error = 'The uri `$uri` does not contain a directory.';
   } else if (parts.first == '..') {
-    error = 'The path reaches outside the root directory.';
+    error = 'The uri `$uri` reaches outside the root directory.';
   }
   if (error != null) {
     throw new ArgumentError(
-        'Cannot compute top level dir for path `$pathString`. $error');
+        'Cannot compute top level dir for path `$uri`. $error');
   }
   return parts.first;
 }
