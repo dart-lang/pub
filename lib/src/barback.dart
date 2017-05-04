@@ -94,27 +94,34 @@ AssetId packagesUrlToId(Uri url) {
 /// `package:` imports and relative imports.
 ///
 /// Returns [null] for `dart:` uris since they cannot be referenced properly
-///  by an `AssetId`.
+/// by an `AssetId`.
 ///
-/// Throws an [ArgumentError] if an [AssetId] can otherwise not be created.
+/// Throws an [ArgumentError] if an [AssetId] can otherwise not be created. This
+/// might happen if:
+///
+/// * [importUri] is absolute but has a scheme other than `dart:` or `package:`.
+/// * [importUri] is a relative path that reaches outside of the current top
+///   level directory of a package (relative import from `web` to `lib` for
+///   instance).
 AssetId importUriToAssetId(AssetId source, String importUri) {
   var parsedUri = Uri.parse(importUri);
   if (parsedUri.isAbsolute) {
-    if (parsedUri.scheme == 'package') {
-      var parts = parsedUri.pathSegments;
-      var packagePath = p.url.joinAll(['lib']..addAll(parts.skip(1)));
-      if (!p.isWithin('lib', packagePath)) {
+    switch (parsedUri.scheme) {
+      case 'package':
+        var parts = parsedUri.pathSegments;
+        var packagePath = p.url.joinAll(['lib']..addAll(parts.skip(1)));
+        if (!p.isWithin('lib', packagePath)) {
+          throw new ArgumentError(
+              'Unable to create AssetId for import `$importUri` in `$source` '
+              'because it reaches outside the `lib` directory.');
+        }
+        return new AssetId(parts.first, packagePath);
+      case 'dart':
+        return null;
+      default:
         throw new ArgumentError(
-            'Unable to create AssetId for import `$importUri` in `$source` '
-            'because it reaches outside the `lib` directory.');
-      }
-      return new AssetId(parts.first, packagePath);
-    } else if (parsedUri.scheme == 'dart') {
-      return null;
-    } else {
-      throw new ArgumentError(
-          'Unable to resolve import. Only package: paths and relative '
-          'paths are supported, got `$importUri`.');
+            'Unable to resolve import. Only package: paths and relative '
+            'paths are supported, got `$importUri`.');
     }
   } else {
     // Relative path.

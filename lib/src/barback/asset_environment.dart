@@ -190,7 +190,7 @@ class AssetEnvironment {
           [new ModuleConfigTransformer()],
           [new UnlinkedSummaryTransformer()],
           [new LinkedSummaryTransformer()],
-          [new DartDevcModuleTransformer()],
+          [new DartDevcModuleTransformer(mode)],
         ].map((list) => list.toSet()));
 
         if (isRootPackage) {
@@ -218,7 +218,6 @@ class AssetEnvironment {
         }
     }
 
-    if (transformers.isEmpty) return null;
     return transformers;
   }
 
