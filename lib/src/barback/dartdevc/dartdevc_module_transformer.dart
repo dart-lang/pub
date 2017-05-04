@@ -27,6 +27,7 @@ class DartDevcModuleTransformer extends Transformer {
   final BarbackMode mode;
 
   DartDevcModuleTransformer(this.mode, {this.environmentConstants = const {}});
+  
   @override
   Future apply(Transform transform) async {
     ScratchSpace scratchSpace;
