@@ -7,10 +7,10 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 
-import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
-import 'temp_environment.dart';
+import 'scratch_space.dart';
+import 'workers.dart';
 
 final String linkedSummaryExtension = '.linked.sum';
 
@@ -30,7 +30,7 @@ class LinkedSummaryTransformer extends Transformer {
     var reader = new ModuleReader(transform.readInputAsString);
     var configId = transform.primaryInput.id;
     var modules = await reader.readModules(configId);
-    TempEnvironment tempEnv;
+    ScratchSpace scratchSpace;
     try {
       var allAssetIds = new Set<AssetId>();
       var summariesForModule = <ModuleId, Set<AssetId>>{};
@@ -43,11 +43,12 @@ class LinkedSummaryTransformer extends Transformer {
         allAssetIds..addAll(module.assetIds)..addAll(unlinkedSummaryIds);
       }
       // Create a single temp environment for all the modules in this package.
-      tempEnv = await TempEnvironment.create(allAssetIds, transform.readInput);
+      scratchSpace =
+          await ScratchSpace.create(allAssetIds, transform.readInput);
       await Future.wait(modules.map((m) => _createLinkedSummaryForModule(
-          m, summariesForModule[m.id], tempEnv, transform)));
+          m, summariesForModule[m.id], scratchSpace, transform)));
     } finally {
-      tempEnv?.delete();
+      scratchSpace?.delete();
     }
   }
 }
@@ -55,9 +56,9 @@ class LinkedSummaryTransformer extends Transformer {
 Future _createLinkedSummaryForModule(
     Module module,
     Set<AssetId> unlinkedSummaryIds,
-    TempEnvironment tempEnv,
+    ScratchSpace scratchSpace,
     Transform transform) async {
-  var summaryOutputFile = tempEnv.fileFor(module.id.linkedSummaryId);
+  var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
   var request = new WorkRequest();
   // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
   // but ideally we would do that (pass '--build-summary-only-diet').
@@ -67,15 +68,15 @@ Future _createLinkedSummaryForModule(
     '--strong',
   ]);
   // Add all the unlinked summaries as build summary inputs.
-  request.arguments.addAll(unlinkedSummaryIds.map(
-      (id) => '--build-summary-unlinked-input=${tempEnv.fileFor(id).path}'));
+  request.arguments.addAll(unlinkedSummaryIds.map((id) =>
+      '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
   // Add all the files to include in the linked summary bundle.
   request.arguments.addAll(module.assetIds.map((id) {
     var uri = canonicalUriFor(id);
     if (!uri.startsWith('package:')) {
       uri = 'file://$uri';
     }
-    return '$uri|${tempEnv.fileFor(id).path}';
+    return '$uri|${scratchSpace.fileFor(id).path}';
   }));
   var response = await analyzerDriver.doWork(request);
   if (response.exitCode == EXIT_CODE_ERROR) {

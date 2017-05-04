@@ -54,7 +54,9 @@ class ScratchSpace {
 /// otherwise it just returns [id.path].
 String canonicalUriFor(AssetId id) {
   if (topLevelDir(id.path) == 'lib') {
-    return 'package:${p.join(id.package, p.joinAll(p.split(id.path).skip(1)))}';
+    var packagePath =
+        p.url.join(id.package, p.url.joinAll(p.url.split(id.path).skip(1)));
+    return 'package:$packagePath';
   } else {
     return id.path;
   }

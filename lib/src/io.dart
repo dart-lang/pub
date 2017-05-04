@@ -1137,7 +1137,7 @@ class PubProcessResult {
 ///
 /// Throws an [ArgumentError] if [uri] is just a filename with no directory.
 String topLevelDir(String uri) {
-  var parts = path.url.split(path.normalize(uri));
+  var parts = path.url.split(path.url.normalize(uri));
   String error;
   if (parts.length == 1) {
     error = 'The uri `$uri` does not contain a directory.';
