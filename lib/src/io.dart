@@ -1133,6 +1133,7 @@ class PubProcessResult {
   bool get success => exitCode == exit_codes.SUCCESS;
 }
 
+
 /// Returns the top level directory in [uri].
 ///
 /// Throws an [ArgumentError] if [uri] is just a filename with no directory.
