@@ -58,6 +58,14 @@ class ModuleReader {
     Future updateDeps(Iterable<AssetId> assetDepIds) async {
       for (var assetDepId in assetDepIds) {
         var assetDepModule = await moduleFor(assetDepId);
+        if (assetDepModule == null) {
+          throw new StateError(
+              'Unable to find module for asset `$assetDepId`. This indicates '
+              'that either the file doesn\'t exist or it is not imported by '
+              'any public entrypoints in its package (files not under `lib/src`'
+              '). Importing a file directly that lives under `lib/src` is not '
+              'supported by the dartdevc transformers.');
+        }
         if (!result.add(assetDepModule.id)) continue;
         await updateDeps(assetDepModule.directDependencies);
       }

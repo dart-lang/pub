@@ -52,8 +52,13 @@ void main() {
     // Just confirm some basic things are present indicating that the module
     // was compiled. The goal here is not to test dartdevc itself.
     requestShouldSucceed('web__main.js', contains('main'));
+    requestShouldSucceed('web__main.js.map', contains('web__main.js'));
     requestShouldSucceed('packages/myapp/lib__hello.js', contains('hello'));
+    requestShouldSucceed(
+        'packages/myapp/lib__hello.js.map', contains('lib__hello.js'));
     requestShouldSucceed('packages/foo/lib__foo.js', contains('message'));
+    requestShouldSucceed(
+        'packages/foo/lib__foo.js.map', contains('lib__foo.js'));
     endPubServe();
   });
 }

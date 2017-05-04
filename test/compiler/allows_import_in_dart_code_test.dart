@@ -7,9 +7,10 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
-  integration("handles imports in the Dart code", () {
+  integrationWithCompiler("handles imports in the Dart code", (compiler) {
     d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
@@ -47,9 +48,21 @@ void main() {
     ]).create();
 
     pubGet();
-    pubServe();
-    requestShouldSucceed("main.dart.js", contains("footext"));
-    requestShouldSucceed("main.dart.js", contains("libtext"));
+    pubServe(compiler: compiler);
+    switch (compiler) {
+      case Compiler.dart2JS:
+        requestShouldSucceed("main.dart.js", contains("footext"));
+        requestShouldSucceed("main.dart.js", contains("libtext"));
+        break;
+      case Compiler.dartDevc:
+        requestShouldSucceed("main.dart.js", contains("main.dart.bootstrap"));
+        requestShouldSucceed("main.dart.bootstrap.js", contains("web__main"));
+        requestShouldSucceed(
+            "web__main.js", allOf(contains("foo"), contains("lib")));
+        requestShouldSucceed("packages/foo/lib__foo.js", contains("footext"));
+        requestShouldSucceed("packages/myapp/lib__lib.js", contains("libtext"));
+        break;
+    }
     endPubServe();
   });
 }

@@ -10,22 +10,33 @@ import 'package:scheduled_test/scheduled_test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
+import 'utils.dart';
 
 main() {
-  integration("converts a Dart isolate entrypoint in web to JS", () {
+  integrationWithCompiler("converts a Dart isolate entrypoint in web to JS",
+      (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file(
             "isolate.dart",
-            "void main(List<String> args, SendPort "
-            "sendPort) => print('hello');")
+            """
+              import 'dart:isolate';
+              void main(List<String> args, SendPort sendPort) => print('hello');
+            """)
       ])
     ]).create();
 
     pubGet();
-    pubServe();
-    requestShouldSucceed("isolate.dart.js", contains("hello"));
+    pubServe(compiler: compiler);
+    switch (compiler) {
+      case Compiler.dart2JS:
+        requestShouldSucceed("isolate.dart.js", contains("hello"));
+        break;
+      case Compiler.dartDevc:
+        requestShouldSucceed("web__isolate.js", contains("hello"));
+        break;
+    }
     endPubServe();
   });
 }
