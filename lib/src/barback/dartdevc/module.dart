@@ -3,6 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:barback/barback.dart';
+import 'package:path/path.dart' as p;
+
+import 'linked_summary_transformer.dart';
+import 'unlinked_summary_transformer.dart';
 
 /// Serializable object that describes a single `module`.
 ///
@@ -53,12 +57,24 @@ directDependencies: $directDependencies''';
 /// Serializable identifier of a [Module].
 ///
 /// A [Module] can only be a part of a single package, and must have a unique
-/// name within that package.
+/// [name] within that package.
+///
+/// The [dir] is the top level directory under the package where the module
+/// lives (such as `lib`, `web`, `test`, etc).
 class ModuleId {
-  final String package;
+  final String dir;
   final String name;
+  final String package;
 
-  const ModuleId(this.package, this.name);
+  AssetId get unlinkedSummaryId =>
+      _moduleAssetWithExtension(unlinkedSummaryExtension);
+
+  AssetId get linkedSummaryId =>
+      _moduleAssetWithExtension(linkedSummaryExtension);
+
+  AssetId get jsId => _moduleAssetWithExtension('.js');
+
+  const ModuleId(this.package, this.name, this.dir);
 
   /// Creates a [ModuleId] from [json] which should be a [List] that was created
   /// with [toJson].
@@ -67,22 +83,31 @@ class ModuleId {
   /// fields in that order.
   ModuleId.fromJson(List<String> json)
       : package = json[0],
-        name = json[1];
+        name = json[1],
+        dir = json[2];
 
   /// Serialize this [ModuleId] to a nested [List] which can be encoded with
   /// `JSON.encode` and then decoded later with `JSON.decode`.
   ///
-  /// The resulting [List] will have 2 values, representing the [package] and
-  /// [name] fields in that order.
-  List<String> toJson() => <String>[package, name];
+  /// The resulting [List] will have 3 values, representing the [package],
+  /// [name], and [dir] fields in that order.
+  List<String> toJson() => <String>[package, name, dir];
 
   @override
-  String toString() => 'ModuleId: $package|$name';
+  String toString() => 'ModuleId: $package|$dir/$name';
 
   @override
   bool operator ==(other) =>
-      other is ModuleId && other.package == package && other.name == this.name;
+      other is ModuleId &&
+      other.package == package &&
+      other.name == name &&
+      other.dir == dir;
 
   @override
-  int get hashCode => package.hashCode ^ name.hashCode;
+  int get hashCode => package.hashCode ^ name.hashCode ^ dir.hashCode;
+
+  /// Returns an asset for this module with the given [extension].
+  AssetId _moduleAssetWithExtension(String extension) {
+    return new AssetId(package, p.join(dir, '$name$extension'));
+  }
 }

@@ -18,6 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
+import 'dartdevc/dartdevc_module_transformer.dart';
 import 'dartdevc/linked_summary_transformer.dart';
 import 'dartdevc/module_config_transformer.dart';
 import 'dartdevc/unlinked_summary_transformer.dart';
@@ -177,9 +178,7 @@ class AssetEnvironment {
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
-  /// These are returned as an [Iterable<Set>] to represent each phase (the
-  /// outer [Iterable]), and the transformers that should be ran in each phase (
-  /// the inner [Set]).
+  /// Returns `null` if there are none.
   Iterable<Set> getBuiltInTransformers(Package package) {
     var transformers = <Set>[];
 
@@ -188,7 +187,8 @@ class AssetEnvironment {
         transformers.addAll([
           [new ModuleConfigTransformer()],
           [new UnlinkedSummaryTransformer()],
-          [new LinkedSummaryTransformer()]
+          [new LinkedSummaryTransformer()],
+          [new DartDevcModuleTransformer(mode)],
         ].map((list) => list.toSet()));
         break;
       case Compiler.dart2JS:
@@ -211,6 +211,7 @@ class AssetEnvironment {
           }
         }
     }
+
     return transformers;
   }
 

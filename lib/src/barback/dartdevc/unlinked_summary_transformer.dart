@@ -6,9 +6,7 @@ import 'dart:async';
 
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
-import 'package:path/path.dart' as p;
 
-import '../../io.dart';
 import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -36,21 +34,18 @@ class UnlinkedSummaryTransformer extends Transformer {
         return allAssets;
       });
       // Create a single temp environment for all the modules in this package.
-      scratchSpace =
-          await ScratchSpace.create(allAssetIds, transform.readInput);
-      await Future.wait(modules.map((m) => _createUnlinkedSummaryForModule(
-          m, topLevelDir(configId.path), scratchSpace, transform)));
+      scratchSpace = await ScratchSpace.create(allAssetIds, transform.readInput);
+      await Future.wait(modules
+          .map((m) => _createUnlinkedSummaryForModule(m, scratchSpace, transform)));
     } finally {
       scratchSpace?.delete();
     }
   }
 }
 
-Future _createUnlinkedSummaryForModule(Module module, String outputDir,
-    ScratchSpace scratchSpace, Transform transform) async {
-  var summaryOutputId = new AssetId(module.id.package,
-      p.url.join(outputDir, '${module.id.name}$unlinkedSummaryExtension'));
-  var summaryOutputFile = scratchSpace.fileFor(summaryOutputId);
+Future _createUnlinkedSummaryForModule(
+    Module module, ScratchSpace scratchSpace, Transform transform) async {
+  var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();
   request.arguments.addAll([
     '--build-summary-only',
@@ -73,6 +68,6 @@ Future _createUnlinkedSummaryForModule(Module module, String outputDir,
             '${response.output}');
   } else {
     transform.addOutput(new Asset.fromBytes(
-        summaryOutputId, summaryOutputFile.readAsBytesSync()));
+        module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync()));
   }
 }
