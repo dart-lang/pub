@@ -8,13 +8,16 @@ import 'package:bazel_worker/driver.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+String get _scriptExtension => Platform.isWindows ? '.bat' : '';
+
 /// Manages a shared set of persistent analyzer workers.
 final analyzerDriver = new BazelWorkerDriver(() => Process.start(
-    p.join(sdkDir.path, 'bin', 'dartanalyzer'),
+    p.join(sdkDir.path, 'bin', 'dartanalyzer$_scriptExtension'),
     ['--build-mode', '--persistent_worker']));
 
 /// Manages a shared set of persistent dartdevc workers.
-final dartdevcDriver = new BazelWorkerDriver(() => Process
-    .start(p.join(sdkDir.path, 'bin', 'dartdevc'), ['--persistent_worker']));
+final dartdevcDriver = new BazelWorkerDriver(() => Process.start(
+    p.join(sdkDir.path, 'bin', 'dartdevc$_scriptExtension'),
+    ['--persistent_worker']));
 
 final sdkDir = cli_util.getSdkDir();
