@@ -212,7 +212,6 @@ class AssetEnvironment {
         }
     }
 
-    if (transformers.isEmpty) return null;
     return transformers;
   }
 

@@ -72,7 +72,8 @@ class ServeCommand extends BarbackCommand {
 
     argParser.addFlag('dart2js',
         defaultsTo: true,
-        help: 'Deprecated: Use --compiler=none to disable js compilation.');
+        help: 'Deprecated: Use --compiler=none to disable js compilation.',
+        hide: true);
     argParser.addFlag('force-poll',
         defaultsTo: false,
         help: 'Force the use of a polling filesystem watcher.');
