@@ -44,7 +44,9 @@ class CachedPackage extends Package {
   }
 
   String relative(String path) {
-    if (p.isWithin(path, _cacheDir)) return p.relative(path, from: _cacheDir);
+    if (p.isWithin(_cacheDir, path)) {
+      return p.relative(path, from: _cacheDir);
+    }
     return super.relative(path);
   }
 
@@ -56,14 +58,18 @@ class CachedPackage extends Package {
       return super.listFiles(recursive: recursive, useGitIgnore: useGitIgnore);
     }
 
-    if (_pathInCache(beneath)) return listDir(p.join(_cacheDir, beneath));
+    if (_pathInCache(beneath)) {
+      return listDir(p.join(_cacheDir, beneath),
+          includeDirs: false, recursive: recursive);
+    }
     return super.listFiles(
         beneath: beneath, recursive: recursive, useGitIgnore: useGitIgnore);
   }
 
   /// Returns whether [relativePath], a path relative to the package's root,
   /// is in a cached directory.
-  bool _pathInCache(String relativePath) => p.isWithin('lib', relativePath);
+  bool _pathInCache(String relativePath) =>
+      relativePath == 'lib' || p.isWithin('lib', relativePath);
 }
 
 /// A pubspec wrapper that reports no transformers.
