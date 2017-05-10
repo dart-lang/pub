@@ -31,8 +31,8 @@ class ScratchSpace {
     var futures = <Future>[];
     for (var id in assetIds) {
       var filePath = p.join(tempDir.path, _relativePathFor(id));
-      ensureDir(p.dirname(filePath));
-      futures.add(createFileFromStream(readAsset(id), filePath));
+      var file = new File(filePath)..createSync(recursive: true);
+      await readAsset(id).pipe(file.openWrite());
     }
     await Future.wait(futures);
     return new ScratchSpace._(tempDir);

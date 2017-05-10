@@ -94,6 +94,7 @@ Future loadAllTransformers(
       var phases =
           await loader.transformersForPhases(package.pubspec.transformers);
       environment.barback.updateTransformers(packageName, phases);
+      environment.dartDevcEnvironment?.invalidatePackage(packageName);
     }));
   }
 
@@ -112,8 +113,10 @@ Future loadAllTransformers(
     // immediate emission. Issue 17305 means that the caller will be unable
     // to receive this result unless we delay the update to after this
     // function returns.
-    newFuture(
-        () => environment.barback.updateTransformers(package.name, phases));
+    newFuture(() {
+      environment.barback.updateTransformers(package.name, phases);
+      environment.dartDevcEnvironment?.invalidatePackage(package.name);
+    });
   }));
 }
 

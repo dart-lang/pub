@@ -19,6 +19,8 @@ import '../utils.dart';
 import 'base_server.dart';
 import 'asset_environment.dart';
 
+import 'dartdevc/dartdevc_environment.dart';
+
 /// Callback for determining if an asset with [id] should be served or not.
 typedef bool AllowAsset(AssetId id);
 
@@ -43,6 +45,8 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// If this is `null`, all assets may be served.
   AllowAsset allowAsset;
 
+  final DartDevcEnvironment dartDevcEnvironment;
+
   /// Creates a new server and binds it to [port] of [host].
   ///
   /// This server serves assets from [barback], and uses [rootDirectory]
@@ -52,7 +56,9 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// URLs). If [package] is omitted, it defaults to the entrypoint package.
   static Future<BarbackServer> bind(
       AssetEnvironment environment, String host, int port,
-      {String package, String rootDirectory}) {
+      {String package,
+      String rootDirectory,
+      DartDevcEnvironment dartDevcEnvironment}) {
     if (package == null) package = environment.rootPackage.name;
     return bindServer(host, port).then((server) {
       if (rootDirectory == null) {
@@ -60,12 +66,14 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       } else {
         log.fine('Bound "$rootDirectory" to $host:$port.');
       }
-      return new BarbackServer._(environment, server, package, rootDirectory);
+      return new BarbackServer._(environment, server, package, rootDirectory,
+          dartDevcEnvironment: dartDevcEnvironment);
     });
   }
 
   BarbackServer._(AssetEnvironment environment, HttpServer server, this.package,
-      this.rootDirectory)
+      this.rootDirectory,
+      {this.dartDevcEnvironment})
       : super(environment, server);
 
   /// Converts a [url] served by this server into an [AssetId] that can be
@@ -115,51 +123,53 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
 
     return environment.barback
         .getAssetById(id)
-        .then((result) {
-          return result;
-        })
         .then((asset) => _serveAsset(request, asset))
         .catchError((error, trace) {
-          if (error is! AssetNotFoundException) throw error;
-          return environment.barback
-              .getAssetById(id.addExtension("/index.html"))
-              .then((asset) {
-            if (request.url.path.isEmpty || request.url.path.endsWith('/')) {
-              return _serveAsset(request, asset);
-            }
+      if (error is! AssetNotFoundException) throw error;
+      return environment.barback
+          .getAssetById(id.addExtension("/index.html"))
+          .then((asset) {
+        if (request.url.path.isEmpty || request.url.path.endsWith('/')) {
+          return _serveAsset(request, asset);
+        }
 
-            // We only want to serve index.html if the URL explicitly ends in a
-            // slash. For other URLs, we redirect to one with the slash added to
-            // implicitly support that too. This follows Apache's behavior.
-            logRequest(request, "302 Redirect to /${request.url}/");
-            return new shelf.Response.found('/${request.url}/');
-          }).catchError((newError, newTrace) {
-            // If we find neither the original file or the index, we should report
-            // the error about the original to the user.
-            throw newError is AssetNotFoundException ? error : newError;
-          });
-        })
-        .catchError((error, trace) {
-          if (error is! AssetNotFoundException) {
-            var chain = new Chain.forTrace(trace);
-            logRequest(request, "$error\n$chain");
+        // We only want to serve index.html if the URL explicitly ends in a
+        // slash. For other URLs, we redirect to one with the slash added to
+        // implicitly support that too. This follows Apache's behavior.
+        logRequest(request, "302 Redirect to /${request.url}/");
+        return new shelf.Response.found('/${request.url}/');
+      }).catchError((newError, newTrace) {
+        // If we find neither the original file or the index, we should report
+        // the error about the original to the user.
+        throw newError is AssetNotFoundException ? error : newError;
+      });
+    }).catchError((error, trace) {
+      if (error is! AssetNotFoundException || dartDevcEnvironment == null) {
+        throw error;
+      }
+      return dartDevcEnvironment
+          .getAssetById(id)
+          .then((asset) => _serveAsset(request, asset));
+    }).catchError((error, trace) {
+      if (error is! AssetNotFoundException) {
+        var chain = new Chain.forTrace(trace);
+        logRequest(request, "$error\n$chain");
 
-            addError(error, chain);
-            close();
-            return new shelf.Response.internalServerError();
-          }
+        addError(error, chain);
+        close();
+        return new shelf.Response.internalServerError();
+      }
 
-          addResult(new BarbackServerResult._failure(request.url, id, error));
-          return notFound(request, asset: id);
-        })
-        .then((response) {
-          // Allow requests of any origin to access "pub serve". This is useful for
-          // running "pub serve" in parallel with another development server. Since
-          // "pub serve" is only used as a development server and doesn't require
-          // any sort of credentials anyway, this is secure.
-          return response
-              .change(headers: const {"Access-Control-Allow-Origin": "*"});
-        });
+      addResult(new BarbackServerResult._failure(request.url, id, error));
+      return notFound(request, asset: id);
+    }).then((response) {
+      // Allow requests of any origin to access "pub serve". This is useful for
+      // running "pub serve" in parallel with another development server. Since
+      // "pub serve" is only used as a development server and doesn't require
+      // any sort of credentials anyway, this is secure.
+      return response
+          .change(headers: const {"Access-Control-Allow-Origin": "*"});
+    });
   }
 
   /// Returns the body of [asset] as a response to [request].

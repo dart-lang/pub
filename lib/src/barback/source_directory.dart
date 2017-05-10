@@ -8,6 +8,7 @@ import 'package:watcher/watcher.dart';
 
 import 'asset_environment.dart';
 import 'barback_server.dart';
+import 'dartdevc/dartdevc_environment.dart';
 
 /// A directory in the entrypoint package whose contents have been made
 /// available to barback and that are bound to a server.
@@ -39,9 +40,10 @@ class SourceDirectory {
   SourceDirectory(this._environment, this.directory, this.hostname, this.port);
 
   /// Binds a server running on [hostname]:[port] to this directory.
-  Future<BarbackServer> serve() {
+  Future<BarbackServer> serve({DartDevcEnvironment dartDevcEnvironment}) {
     return BarbackServer
-        .bind(_environment, hostname, port, rootDirectory: directory)
+        .bind(_environment, hostname, port,
+            rootDirectory: directory, dartDevcEnvironment: dartDevcEnvironment)
         .then((server) {
       _serverCompleter.complete(server);
       return server;
