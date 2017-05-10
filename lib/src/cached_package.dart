@@ -54,16 +54,13 @@ class CachedPackage extends Package {
   /// is within a cached directory, but not otherwise.
   List<String> listFiles(
       {String beneath, recursive: true, bool useGitIgnore: false}) {
-    if (beneath == null) {
-      return super.listFiles(recursive: recursive, useGitIgnore: useGitIgnore);
+    if (beneath == null || !_pathInCache(beneath)) {
+      throw new UnsupportedError(
+          'Cached packages can only list their `lib` dir.');
     }
 
-    if (_pathInCache(beneath)) {
-      return listDir(p.join(_cacheDir, beneath),
-          includeDirs: false, recursive: recursive);
-    }
-    return super.listFiles(
-        beneath: beneath, recursive: recursive, useGitIgnore: useGitIgnore);
+    return listDir(p.join(_cacheDir, beneath),
+        includeDirs: false, recursive: recursive);
   }
 
   /// Returns whether [relativePath], a path relative to the package's root,

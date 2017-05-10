@@ -13,37 +13,54 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  // Regression test for https://github.com/dart-lang/pub/issues/1586.
-  integration('Can list the cached lib dir and compute relative paths', () {
-    d.dir('cache', [
+  group('CachedPackage', () {
+    CachedPackage cachedPackage;
+
+    setUpCachedPackage() {
+      d.dir('cache', [
+        d.dir('app', [
+          d.dir('lib', [
+            d.file('cached.txt', 'hello'),
+            d.file('original.txt', 'world'),
+          ]),
+        ]),
+      ]).create();
       d.dir('app', [
         d.dir('lib', [
-          d.file('cached.txt', 'hello'),
-          d.file('original.txt', 'world'),
-        ]),
-      ]),
-    ]).create();
-    d.dir('app', [
-      d.dir('lib', [
-        d.file('original.txt'),
-      ])
-    ]).create();
+          d.file('original.txt'),
+        ])
+      ]).create();
 
-    var cachedPackage = new CachedPackage(
-        new Package(new Pubspec('a'), p.join(d.defaultRoot, 'app')),
-        p.join(d.defaultRoot, 'cache', 'app'));
+      cachedPackage = new CachedPackage(
+          new Package(new Pubspec('a'), p.join(d.defaultRoot, 'app')),
+          p.join(d.defaultRoot, 'cache', 'app'));
+    }
 
-    schedule(() {
-      var paths = cachedPackage.listFiles(beneath: 'lib');
-      expect(
-          paths,
-          unorderedMatches([
-            endsWith('cached.txt'),
-            endsWith('original.txt'),
-          ]));
-      for (var path in paths) {
-        expect(cachedPackage.relative(path), startsWith('lib'));
-      }
+    // Regression test for https://github.com/dart-lang/pub/issues/1586.
+    integration('Can list the cached lib dir and compute relative paths', () {
+      setUpCachedPackage();
+      schedule(() {
+        var paths = cachedPackage.listFiles(beneath: 'lib');
+        expect(
+            paths,
+            unorderedMatches([
+              endsWith('cached.txt'),
+              endsWith('original.txt'),
+            ]));
+        for (var path in paths) {
+          expect(cachedPackage.relative(path), startsWith('lib'));
+        }
+      });
+    });
+
+    integration('Cannot list files outside of lib', () {
+      setUpCachedPackage();
+      schedule(() {
+        expect(() => cachedPackage.listFiles(), throwsUnsupportedError);
+        expect(() => cachedPackage.listFiles(beneath: 'bin'),
+            throwsUnsupportedError);
+        expect(cachedPackage.listFiles(beneath: 'lib'), isNotNull);
+      });
     });
   });
 }
