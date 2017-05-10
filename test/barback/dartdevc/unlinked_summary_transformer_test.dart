@@ -21,7 +21,7 @@ main() {
         d.file(
             "foo.dart",
             """
-  void foo() {};
+  void foo() {}
   """)
       ]),
     ]).create();
