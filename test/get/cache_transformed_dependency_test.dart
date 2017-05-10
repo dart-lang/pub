@@ -55,6 +55,44 @@ class HasInputTransformer extends Transformer {
 }
 """;
 
+const COPY_TRANSFORMER = """
+import 'dart:async';
+
+import 'package:barback/barback.dart';
+
+class CopyTransformer extends Transformer {
+  CopyTransformer.asPlugin();
+
+  bool isPrimary(AssetId id) => true;
+
+  Future apply(Transform transform) async {
+    transform.addOutput(new Asset.fromString(
+      transform.primaryInput.id.addExtension('.copy'),
+      await transform.primaryInput.readAsString()));
+  }
+}
+""";
+
+const LIST_INPUTS_TRANSFORMER = """
+import 'dart:async';
+
+import 'package:barback/barback.dart';
+
+class ListInputsTransformer extends AggregateTransformer {
+  ListInputsTransformer.asPlugin();
+
+  String classifyPrimary(AssetId id) => '';
+
+  Future apply(AggregateTransform transform) async {
+    var inputs = await transform.primaryInputs.toList();
+    var names = inputs.map((asset) => asset.id.toString()).toList();
+    names.sort();
+    transform.addOutput(new Asset.fromString(
+      new AssetId(transform.package, 'lib/inputs.txt'), names.join('\\n')));
+  }
+}
+""";
+
 main() {
   integration("caches a transformed dependency", () {
     servePackages((builder) {
@@ -412,6 +450,48 @@ main() {
     pubGet(output: isNot(contains("Precompiled foo.")));
 
     d.dir(appPath, [d.nothing(".pub/deps/debug/foo")]).validate();
+  });
+
+  // Regression test for https://github.com/dart-lang/pub/issues/1586.
+  integration(
+      "AggregateTransformers can read generated inputs from cached packages",
+      () {
+    servePackages((builder) {
+      builder.serveRealPackage('barback');
+
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo/copy_transformer', 'foo/list_transformer'],
+      }, contents: [
+        d.dir("lib", [
+          d.file("hello.dart", "String get hello => 'hello';"),
+          d.file("copy_transformer.dart", COPY_TRANSFORMER),
+          d.file("list_transformer.dart", LIST_INPUTS_TRANSFORMER),
+        ])
+      ]);
+    });
+
+    d.appDir({"foo": "1.2.3"}).create();
+
+    pubGet(output: contains("Precompiled foo"));
+
+    d.dir(appPath, [
+      d.matcherFile(
+          ".pub/deps/debug/foo/lib/inputs.txt", contains('hello.dart.copy'))
+    ]).validate();
+
+    pubServe();
+    requestShouldSucceed(
+        "packages/foo/inputs.txt",
+        """
+foo|lib/copy_transformer.dart
+foo|lib/copy_transformer.dart.copy
+foo|lib/hello.dart
+foo|lib/hello.dart.copy
+foo|lib/list_transformer.dart
+foo|lib/list_transformer.dart.copy""");
+    endPubServe();
   });
 
   group("with --no-precompile", () {
