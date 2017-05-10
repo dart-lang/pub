@@ -54,8 +54,13 @@ Map<AssetId, Future<Asset>> createLinkedSummaryForModule(
     }));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
-      logError('Error creating linked summaries for module: ${module.id}.\n'
-          '${response.output}');
+      var message =
+          'Error creating linked summaries for module: ${module.id}.\n'
+          '${response.output}';
+      logError(message);
+      outputCompleters.values.forEach((completer) {
+        completer.completeError(message);
+      });
     } else {
       outputCompleters[module.id.linkedSummaryId].complete(new Asset.fromBytes(
           module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync()));
@@ -100,8 +105,13 @@ Map<AssetId, Future<Asset>> createUnlinkedSummaryForModule(
     }));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
-      logError('Error creating unlinked summaries for module: ${module.id}.\n'
-          '${response.output}');
+      var message =
+          'Error creating unlinked summaries for module: ${module.id}.\n'
+          '${response.output}';
+      logError(message);
+      outputCompleters.values.forEach((completer) {
+        completer.completeError(message);
+      });
     } else {
       outputCompleters[module.id.unlinkedSummaryId].complete(
           new Asset.fromBytes(module.id.unlinkedSummaryId,

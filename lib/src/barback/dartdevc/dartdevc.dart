@@ -37,7 +37,7 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     AssetId dartEntrypointId, BarbackMode mode, ModuleReader moduleReader) {
   var bootstrapId = dartEntrypointId.addExtension('.bootstrap.js');
   var jsEntrypointId = dartEntrypointId.addExtension('.js');
-  var jsMapEntrypointId = jsEntrypointId.addExtension('.js.map');
+  var jsMapEntrypointId = jsEntrypointId.addExtension('.map');
 
   var outputCompleters = <AssetId, Completer<Asset>>{
     bootstrapId: new Completer<Asset>(),
@@ -120,8 +120,10 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     logError(String message)) {
   var outputCompleters = <AssetId, Completer<Asset>>{
     module.id.jsId: new Completer<Asset>(),
-    module.id.jsSourceMapId: new Completer<Asset>(),
   };
+  if (mode == BarbackMode.DEBUG) {
+    outputCompleters[module.id.jsSourceMapId] = new Completer<Asset>();
+  }
 
   () async {
     var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
@@ -181,8 +183,12 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     // status code if something failed. Today we just make sure there is an output
     // js file to verify it was successful.
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-      logError(
-          'Error compiling dartdevc module: ${module.id}.\n${response.output}');
+      var message =
+          'Error compiling dartdevc module: ${module.id}.\n${response.output}';
+      logError(message);
+      outputCompleters.values.forEach((completer) {
+        completer.completeError(message);
+      });
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
