@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 
-import 'module.dart';
+import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'workers.dart';
 
@@ -22,16 +22,18 @@ final String unlinkedSummaryExtension = '.unlinked.sum';
 ///
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
-Map<AssetId, Future<Asset>> createLinkedSummaryForModule(
-    Module module,
-    Set<AssetId> unlinkedSummaryIds,
-    ScratchSpace scratchSpace,
-    logError(String message)) {
-  var outputCompleters = <AssetId, Completer<Asset>>{
-    module.id.linkedSummaryId: new Completer<Asset>(),
-  };
-
-  () async {
+Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
+    Stream<List<int>> readAsset(AssetId), logError(String message)) async {
+  assert(id.path.endsWith(linkedSummaryExtension));
+  var module = await moduleReader.moduleFor(id);
+  var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
+  var unlinkedSummaryIds =
+      transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
+  var allAssetIds = new Set<AssetId>()
+    ..addAll(module.assetIds)
+    ..addAll(unlinkedSummaryIds);
+  var scratchSpace = await ScratchSpace.create(allAssetIds, readAsset);
+  try {
     var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
     var request = new WorkRequest();
     // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
@@ -54,37 +56,24 @@ Map<AssetId, Future<Asset>> createLinkedSummaryForModule(
     }));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
-      var message =
-          'Error creating linked summaries for module: ${module.id}.\n'
-          '${response.output}';
-      logError(message);
-      outputCompleters.values.forEach((completer) {
-        completer.completeError(message);
-      });
-    } else {
-      outputCompleters[module.id.linkedSummaryId].complete(new Asset.fromBytes(
-          module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync()));
+      logError('Error creating linked summaries for module: ${module.id}.\n'
+          '${response.output}');
+      return null;
     }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+    return new Asset.fromBytes(
+        module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync());
+  } finally {
+    scratchSpace?.delete();
+  }
 }
 
-/// Creates an unlinked summary for [module].
-///
-/// [scratchSpace] must have the Dart sources for this module available.
-///
-/// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
-/// immediately what assets will be output.
-Map<AssetId, Future<Asset>> createUnlinkedSummaryForModule(
-    Module module, ScratchSpace scratchSpace, logError(String message)) {
-  var outputCompleters = <AssetId, Completer<Asset>>{
-    module.id.unlinkedSummaryId: new Completer<Asset>(),
-  };
-
-  () async {
+/// Creates an unlinked summary at [id].
+Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
+    Stream<List<int>> readAsset(AssetId), logError(String message)) async {
+  assert(id.path.endsWith(unlinkedSummaryExtension));
+  var module = await moduleReader.moduleFor(id);
+  var scratchSpace = await ScratchSpace.create(module.assetIds, readAsset);
+  try {
     var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
     var request = new WorkRequest();
     // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
@@ -105,21 +94,13 @@ Map<AssetId, Future<Asset>> createUnlinkedSummaryForModule(
     }));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
-      var message =
-          'Error creating unlinked summaries for module: ${module.id}.\n'
-          '${response.output}';
-      logError(message);
-      outputCompleters.values.forEach((completer) {
-        completer.completeError(message);
-      });
-    } else {
-      outputCompleters[module.id.unlinkedSummaryId].complete(
-          new Asset.fromBytes(module.id.unlinkedSummaryId,
-              summaryOutputFile.readAsBytesSync()));
+      logError('Error creating unlinked summaries for module: ${module.id}.\n'
+          '${response.output}');
+      return null;
     }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+    return new Asset.fromBytes(
+        module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync());
+  } finally {
+    scratchSpace?.delete();
+  }
 }

@@ -6,19 +6,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
 import 'dartdevc.dart';
+import 'module.dart';
 import 'module_computer.dart';
 import 'module_reader.dart';
-import 'scratch_space.dart';
 import 'summaries.dart';
 
-import '../../dart.dart';
 import '../../io.dart';
+import '../../log.dart' as log;
 import '../../package_graph.dart';
 
 /// Handles running dartdevc on top of a [Barback] instance.
@@ -31,18 +30,59 @@ class DartDevcEnvironment {
   final Map<String, String> _environmentConstants;
   final BarbackMode _mode;
   ModuleReader _moduleReader;
+  final PackageGraph _packageGraph;
 
-  DartDevcEnvironment(this._barback, this._mode, this._environmentConstants,
-      PackageGraph packageGraph)
-      : _assetCache = new _AssetCache(packageGraph) {
+  DartDevcEnvironment(
+      this._barback, this._mode, this._environmentConstants, this._packageGraph)
+      : _assetCache = new _AssetCache(_packageGraph) {
     _moduleReader = new ModuleReader(_readModule);
+  }
+
+  /// Builds all dartdevc files required for all app entrypoints in
+  /// [inputAssets].
+  ///
+  /// Returns only the `.js` files which are required to load the apps.
+  Future<AssetSet> doFullBuild(AssetSet inputAssets,
+      {logError(String message)}) async {
+    var modulesToBuild = new Set<ModuleId>();
+    var jsAssets = new AssetSet();
+    for (var asset in inputAssets) {
+      if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
+      if (asset.id.extension != '.dart') continue;
+      // We only care about real entrypoint modules, we collect those and all
+      // their transitive deps.
+      if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
+      var futureAssets =
+          _buildAsset(asset.id.addExtension('.js'), logError: logError);
+      jsAssets.addAll((await Future.wait(futureAssets.values))
+          .where((asset) => asset != null));
+      var module = await _moduleReader.moduleFor(asset.id);
+      modulesToBuild.add(module.id);
+      modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
+    }
+
+    for (var module in modulesToBuild) {
+      var futureAssets = _buildAsset(module.jsId, logError: logError);
+      jsAssets.addAll((await Future.wait(futureAssets.values))
+          .where((asset) => asset != null));
+    }
+
+    return jsAssets;
   }
 
   /// Attempt to get an [Asset] by [id], completes with an
   /// [AssetNotFoundException] if the asset couldn't be built.
-  Future<Asset> getAssetById(AssetId id) {
+  Future<Asset> getAssetById(AssetId id) async {
     if (_assetCache[id] == null) {
-      _assetCache[id] = _buildAsset(id);
+      if (id.path.endsWith('.dart.js') || id.path.endsWith('.bootstrap.js')) {
+        var dartId = _entrypointDartId(id);
+        if (dartId != null &&
+            await isAppEntryPoint(dartId, _barback.getAssetById)) {
+          _buildAsset(id);
+        }
+      } else {
+        _buildAsset(id);
+      }
     }
     return _assetCache[id];
   }
@@ -55,28 +95,43 @@ class DartDevcEnvironment {
   /// Handles building all assets that we know how to build.
   ///
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
-  Future<Asset> _buildAsset(AssetId id) async {
-    Asset asset;
+  Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
+      {logError(String message)}) {
+    logError ??= log.error;
+    Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
-      asset = await _buildUnlinkedSummary(id);
+      assets = {
+        id: createUnlinkedSummary(id, _moduleReader, _readAsBytes, logError)
+      };
     } else if (id.path.endsWith(linkedSummaryExtension)) {
-      asset = await _buildLinkedSummary(id);
+      assets = {
+        id: createLinkedSummary(id, _moduleReader, _readAsBytes, logError)
+      };
     } else if (id.path.endsWith('.bootstrap.js') ||
         id.path.endsWith('.dart.js')) {
-      asset = await _buildBootstrapJs(id);
+      var dartId = _entrypointDartId(id);
+      if (dartId != null) {
+        assets = bootstrapDartDevcEntrypoint(
+            dartId, _mode, _moduleReader, _barback.getAssetById);
+      }
     } else if (id.path.endsWith('require.js') ||
         id.path.endsWith('dart_sdk.js')) {
-      asset = await _buildJsResource(id);
+      assets = {id: _buildJsResource(id)};
     } else if (id.path.endsWith('require.js.map') ||
         id.path.endsWith('dart_sdk.js.map')) {
-      throw new AssetNotFoundException(id);
+      assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
-      asset = await _buildJsModule(id);
+      assets = createDartdevcModule(id, _moduleReader, _readAsBytes,
+          _environmentConstants, _mode, logError);
     } else if (id.path.endsWith(moduleConfigName)) {
-      asset = await _buildModuleConfig(id);
+      assets = {id: _buildModuleConfig(id)};
     }
-    if (asset == null) throw new AssetNotFoundException(id);
-    return asset;
+    assets ??= <AssetId, Future<Asset>>{};
+
+    for (var id in assets.keys) {
+      _assetCache[id] = assets[id];
+    }
+    return assets;
   }
 
   /// Builds a module config asset at [id].
@@ -93,76 +148,6 @@ class DartDevcEnvironment {
     var modules = await computeModules(moduleMode, moduleAssets);
     var encoded = JSON.encode(modules);
     return new Asset.fromString(id, encoded);
-  }
-
-  /// Builds an unlinked analyzer summary asset at [id].
-  Future<Asset> _buildUnlinkedSummary(AssetId id) async {
-    assert(id.path.endsWith(unlinkedSummaryExtension));
-    var module = await _moduleReader.moduleFor(id);
-    var scratchSpace = await ScratchSpace.create(module.assetIds, _readAsBytes);
-    var assets = createUnlinkedSummaryForModule(module, scratchSpace, print);
-    assets.forEach((id, asset) => _assetCache[id] ??= asset);
-    Future.wait(assets.values).then((_) => scratchSpace.delete());
-    return assets[id];
-  }
-
-  /// Builds a linked analyzer summary asset at [id].
-  Future<Asset> _buildLinkedSummary(AssetId id) async {
-    assert(id.path.endsWith(linkedSummaryExtension));
-    var module = await _moduleReader.moduleFor(id);
-    var transitiveModuleDeps = await _moduleReader.readTransitiveDeps(module);
-    var unlinkedSummaryIds =
-        transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
-    var allAssetIds = new Set<AssetId>()
-      ..addAll(module.assetIds)
-      ..addAll(unlinkedSummaryIds);
-    var scratchSpace = await ScratchSpace.create(allAssetIds, _readAsBytes);
-    var assets = createLinkedSummaryForModule(
-        module, unlinkedSummaryIds, scratchSpace, print);
-    assets.forEach((id, asset) => _assetCache[id] ??= asset);
-    Future.wait(assets.values).then((_) => scratchSpace.delete());
-    return assets[id];
-  }
-
-  /// Builds `.bootstrap.js` and `.dart.js` files that bootstrap dartdevc apps.
-  ///
-  /// Both are always built and cached regardless of which is requested since
-  /// they will both ultimately be needed.
-  Future<Asset> _buildBootstrapJs(AssetId id) async {
-    assert(id.path.endsWith('.bootstrap.js') || id.path.endsWith('.dart.js'));
-    // Skip entrypoints under lib
-    if (topLevelDir(id.path) == 'lib') return null;
-
-    // Remove the `.js` extension.
-    var dartId = id.changeExtension('');
-    // Conditionally change the `.bootstrap` extension to a `.dart` extension.
-    if (dartId.extension == '.bootstrap') dartId.changeExtension('.dart');
-    assert(dartId.extension == '.dart');
-
-    var dartAsset = await _barback.getAssetById(dartId);
-    var parsed = parseCompilationUnit(await dartAsset.readAsString());
-    if (!isEntrypoint(parsed)) return null;
-    var assets = bootstrapDartDevcEntrypoint(dartId, _mode, _moduleReader);
-    assets.forEach((id, asset) => _assetCache[id] ??= asset);
-    return assets[id];
-  }
-
-  /// Builds the js module at [id] using dartdevc.
-  Future<Asset> _buildJsModule(AssetId id) async {
-    assert(id.extension == '.js');
-    var module = await _moduleReader.moduleFor(id);
-    var transitiveModuleDeps = await _moduleReader.readTransitiveDeps(module);
-    var linkedSummaryIds =
-        transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
-    var allAssetIds = new Set<AssetId>()
-      ..addAll(module.assetIds)
-      ..addAll(linkedSummaryIds);
-    var scratchSpace = await ScratchSpace.create(allAssetIds, _readAsBytes);
-    var assets = createDartdevcModule(module, scratchSpace, linkedSummaryIds,
-        _environmentConstants, _mode, print);
-    assets.forEach((id, asset) => _assetCache[id] ??= asset);
-    Future.wait(assets.values).then((_) => scratchSpace.delete());
-    return assets[id];
   }
 
   /// Builds the `dart_sdk.js` or `require.js` assets by copying them from the
@@ -208,6 +193,20 @@ class DartDevcEnvironment {
     }();
     return controller.stream;
   }
+}
+
+/// Gives the dart entrypoint [AssetId] for a bootstrap js [id].
+AssetId _entrypointDartId(AssetId id) {
+  assert(id.path.endsWith('.bootstrap.js') || id.path.endsWith('.dart.js'));
+  // Skip entrypoints under lib
+  if (topLevelDir(id.path) == 'lib') return null;
+
+  // Remove the `.js` extension.
+  var dartId = id.changeExtension('');
+  // Conditionally change the `.bootstrap` extension to a `.dart` extension.
+  if (dartId.extension == '.bootstrap') dartId.changeExtension('.dart');
+  assert(dartId.extension == '.dart');
+  return dartId;
 }
 
 /// Manages a set of cached future [Asset]s.

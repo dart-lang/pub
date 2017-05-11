@@ -147,9 +147,10 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       if (error is! AssetNotFoundException || dartDevcEnvironment == null) {
         throw error;
       }
-      return dartDevcEnvironment
-          .getAssetById(id)
-          .then((asset) => _serveAsset(request, asset));
+      return dartDevcEnvironment.getAssetById(id).then((asset) {
+        if (asset == null) throw new AssetNotFoundException(id);
+        return _serveAsset(request, asset);
+      });
     }).catchError((error, trace) {
       if (error is! AssetNotFoundException) {
         var chain = new Chain.forTrace(trace);
