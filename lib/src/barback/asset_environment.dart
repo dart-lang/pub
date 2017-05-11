@@ -120,14 +120,17 @@ class AssetEnvironment {
   /// The server for the Web Socket API and admin interface.
   AdminServer _adminServer;
 
-  final DartDevcEnvironment dartDevcEnvironment;
-
   /// The public directories in the root package that are included in the asset
   /// environment, keyed by their root directory.
   final _directories = new Map<String, SourceDirectory>();
 
   /// The [Barback] instance used to process assets in this environment.
   final Barback barback;
+
+  /// Manages running the dartdevc compiler on top of [barback].
+  ///
+  /// This is `null` unless `compiler == Compiler.dartDevc`.
+  final DartDevcEnvironment dartDevcEnvironment;
 
   /// The root package being built.
   Package get rootPackage => graph.entrypoint.root;

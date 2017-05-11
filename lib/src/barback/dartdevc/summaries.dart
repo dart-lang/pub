@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 
+import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'workers.dart';
@@ -47,13 +48,8 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
     request.arguments.addAll(unlinkedSummaryIds.map((id) =>
         '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
     // Add all the files to include in the linked summary bundle.
-    request.arguments.addAll(module.assetIds.map((id) {
-      var uri = canonicalUriFor(id);
-      if (!uri.startsWith('package:')) {
-        uri = 'file://$uri';
-      }
-      return '$uri|${scratchSpace.fileFor(id).path}';
-    }));
+    request.arguments
+        .addAll(_analyzerSourceArgsForModule(module, scratchSpace));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
       logError('Error creating linked summaries for module: ${module.id}.\n'
@@ -85,13 +81,8 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
       '--strong',
     ]);
     // Add all the files to include in the unlinked summary bundle.
-    request.arguments.addAll(module.assetIds.map((id) {
-      var uri = canonicalUriFor(id);
-      if (!uri.startsWith('package:')) {
-        uri = 'file://$uri';
-      }
-      return '$uri|${scratchSpace.fileFor(id).path}';
-    }));
+    request.arguments
+        .addAll(_analyzerSourceArgsForModule(module, scratchSpace));
     var response = await analyzerDriver.doWork(request);
     if (response.exitCode == EXIT_CODE_ERROR) {
       logError('Error creating unlinked summaries for module: ${module.id}.\n'
@@ -103,4 +94,15 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
   } finally {
     scratchSpace?.delete();
   }
+}
+
+Iterable<String> _analyzerSourceArgsForModule(
+    Module module, ScratchSpace scratchSpace) {
+  return module.assetIds.map((id) {
+    var uri = canonicalUriFor(id);
+    if (!uri.startsWith('package:')) {
+      uri = 'file:///$uri';
+    }
+    return '$uri|${scratchSpace.fileFor(id).path}';
+  });
 }

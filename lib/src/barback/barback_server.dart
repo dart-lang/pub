@@ -45,6 +45,9 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// If this is `null`, all assets may be served.
   AllowAsset allowAsset;
 
+  /// Manages running the dartdevc compiler on top of barback.
+  ///
+  /// This is `null` unless `environment.compiler == Compiler.dartDevc`.
   final DartDevcEnvironment dartDevcEnvironment;
 
   /// Creates a new server and binds it to [port] of [host].
