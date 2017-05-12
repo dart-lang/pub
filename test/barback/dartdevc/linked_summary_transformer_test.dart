@@ -5,7 +5,7 @@
 import 'package:analyzer/src/summary/idl.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import 'package:pub/src/barback/dartdevc/linked_summary_transformer.dart';
+import 'package:pub/src/barback/dartdevc/summaries.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -20,7 +20,7 @@ main() {
         d.file(
             "foo.dart",
             """
-  void foo() {};
+  void foo() {}
   """)
       ]),
     ]).create();

@@ -5,14 +5,11 @@
 import 'dart:async';
 
 import 'package:barback/barback.dart';
-import 'package:bazel_worker/bazel_worker.dart';
 
 import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
-import 'workers.dart';
-
-final String linkedSummaryExtension = '.linked.sum';
+import 'summaries.dart';
 
 /// Creates linked analyzer summaries given [moduleConfigName] files which
 /// describe a set of [Module]s.
@@ -45,46 +42,15 @@ class LinkedSummaryTransformer extends Transformer {
       // Create a single temp environment for all the modules in this package.
       scratchSpace =
           await ScratchSpace.create(allAssetIds, transform.readInput);
-      await Future.wait(modules.map((m) => _createLinkedSummaryForModule(
-          m, summariesForModule[m.id], scratchSpace, transform)));
+      await Future.wait(modules.map((m) async {
+        var outputs = createLinkedSummaryForModule(
+            m, summariesForModule[m.id], scratchSpace, transform.logger.error);
+
+        await Future.wait(outputs.values.map(
+            (futureAsset) async => transform.addOutput(await futureAsset)));
+      }));
     } finally {
       scratchSpace?.delete();
     }
-  }
-}
-
-Future _createLinkedSummaryForModule(
-    Module module,
-    Set<AssetId> unlinkedSummaryIds,
-    ScratchSpace scratchSpace,
-    Transform transform) async {
-  var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
-  var request = new WorkRequest();
-  // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
-  // but ideally we would do that (pass '--build-summary-only-diet').
-  request.arguments.addAll([
-    '--build-summary-only',
-    '--build-summary-output=${summaryOutputFile.path}',
-    '--strong',
-  ]);
-  // Add all the unlinked summaries as build summary inputs.
-  request.arguments.addAll(unlinkedSummaryIds.map((id) =>
-      '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
-  // Add all the files to include in the linked summary bundle.
-  request.arguments.addAll(module.assetIds.map((id) {
-    var uri = canonicalUriFor(id);
-    if (!uri.startsWith('package:')) {
-      uri = 'file://$uri';
-    }
-    return '$uri|${scratchSpace.fileFor(id).path}';
-  }));
-  var response = await analyzerDriver.doWork(request);
-  if (response.exitCode == EXIT_CODE_ERROR) {
-    transform.logger
-        .error('Error creating linked summaries for module: ${module.id}.\n'
-            '${response.output}');
-  } else {
-    transform.addOutput(new Asset.fromBytes(
-        module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync()));
   }
 }
