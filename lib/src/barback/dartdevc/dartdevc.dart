@@ -31,7 +31,7 @@ Future<bool> isAppEntryPoint(
   return isEntrypoint(parsed);
 }
 
-/// Bootstraps the js module for the entrypoint dart file [dartEntrypointId]
+/// Bootstraps the JS module for the entrypoint dart file [dartEntrypointId]
 /// with two additional JS files:
 ///
 /// * A `$dartEntrypointId.js` file which is the main entrypoint for the app. It
@@ -41,7 +41,7 @@ Future<bool> isAppEntryPoint(
 ///   function from the entrypoint module, after performing some necessary SDK
 ///   setup.
 ///
-/// In debug mode an empty sourcemap will be output for the entrypoint js file
+/// In debug mode an empty sourcemap will be output for the entrypoint JS file
 /// to satisfy the test package runner (there is no original dart file to map it
 /// back to though).
 ///
@@ -57,8 +57,8 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
   var jsMapEntrypointId = jsEntrypointId.addExtension('.map');
 
   var outputCompleters = <AssetId, Completer<Asset>>{
-    bootstrapId: new Completer<Asset>(),
-    jsEntrypointId: new Completer<Asset>(),
+    bootstrapId: new Completer(),
+    jsEntrypointId: new Completer(),
   };
   if (mode == BarbackMode.DEBUG) {
     outputCompleters[jsMapEntrypointId] = new Completer<Asset>();
@@ -67,13 +67,13 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
   () async {
     var module = await moduleReader.moduleFor(dartEntrypointId);
 
-    // The path to the entrypoint js module as it should appear in the call to
+    // The path to the entrypoint JS module as it should appear in the call to
     // `require` in the bootstrap file.
     var moduleDir = topLevelDir(dartEntrypointId.path);
-    var appModulePath = p.relative(p.join(moduleDir, module.id.name),
-        from: p.dirname(dartEntrypointId.path));
+    var appModulePath = p.url.relative(p.url.join(moduleDir, module.id.name),
+        from: p.url.dirname(dartEntrypointId.path));
 
-    // The name of the entrypoint dart library within the entrypoint js module.
+    // The name of the entrypoint dart library within the entrypoint JS module.
     //
     // This is used to invoke `main()` from within the bootstrap script.
     //
@@ -84,8 +84,8 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     // which will allow us to not rely on the naming schemes that dartdevc uses
     // internally, but instead specify our own.
     var appModuleScope = p.url
-        .split(p.withoutExtension(
-            p.relative(dartEntrypointId.path, from: moduleDir)))
+        .split(p.url.withoutExtension(
+            p.url.relative(dartEntrypointId.path, from: moduleDir)))
         .join("__")
         .replaceAll('.', '\$46');
 
@@ -153,10 +153,10 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     logError(String message)) {
   assert(id.extension == '.js');
   var outputCompleters = <AssetId, Completer<Asset>>{
-    id: new Completer<Asset>(),
+    id: new Completer(),
   };
   if (mode == BarbackMode.DEBUG) {
-    outputCompleters[id.addExtension('.map')] = new Completer<Asset>();
+    outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
   () async {
@@ -227,8 +227,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     var response = await dartdevcDriver.doWork(request);
 
     // TODO(jakemac53): Fix the ddc worker mode so it always sends back a bad
-    // status code if something failed. Today we just make sure there is an
-    // output js file to verify it was successful.
+    // status code if something failed. Today we just make sure there is an output
+    // JS file to verify it was successful.
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
       logError('Error compiling dartdevc module: ${module.id}.\n'
           '${response.output}');
