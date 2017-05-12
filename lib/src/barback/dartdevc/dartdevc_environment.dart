@@ -119,6 +119,7 @@ class DartDevcEnvironment {
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
   Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
       {logError(String message)}) {
+    if (_assetCache[id] != null) return {id: _assetCache[id]};
     logError ??= log.error;
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
@@ -145,6 +146,13 @@ class DartDevcEnvironment {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
       assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
           _environmentConstants, _mode, logError);
+      // Pre-emptively start building all transitive js deps under the
+      // assumption they will be needed in the near future.
+      () async {
+        var module = await _moduleReader.moduleFor(jsId);
+        var deps = await _moduleReader.readTransitiveDeps(module);
+        deps.forEach((moduleId) => getAssetById(moduleId.jsId));
+      }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
