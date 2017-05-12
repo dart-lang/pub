@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:barback/barback.dart';
@@ -99,6 +100,17 @@ class ServeCommand extends BarbackCommand {
         basePort: port,
         compiler: compiler,
         environmentConstants: environmentConstants);
+
+    var sigintListener;
+    sigintListener = ProcessSignal.SIGINT.watch().listen((_) {
+      sigintListener.cancel();
+      log.progress('Cleaning up dartdevc temp environment..', () async {
+        await environment.cleanup();
+        // Re-send a SIGINT to ourselves, now that we are done cleaning up.
+        Process.killPid(pid, ProcessSignal.SIGINT);
+      });
+    });
+
     var directoryLength =
         sourceDirectories.map((dir) => dir.length).reduce(math.max);
 

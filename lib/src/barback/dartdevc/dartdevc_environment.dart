@@ -16,6 +16,7 @@ import 'module_computer.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';
+import 'workers.dart';
 
 import '../../io.dart';
 import '../../log.dart' as log;
@@ -41,8 +42,16 @@ class DartDevcEnvironment {
     _scratchSpace = new ScratchSpace(_getAsset);
   }
 
-  /// Deletes the [_scratchSpace].
-  Future cleanup() => _scratchSpace.delete();
+  /// Deletes the [_scratchSpace] and shuts down the workers.
+  Future cleanup() {
+    return Future.wait([
+      _scratchSpace.delete(),
+      // These should get terminated automatically when this process exits, but
+      // we end them explicitly just to be safe.
+      analyzerDriver.terminateWorkers(),
+      dartdevcDriver.terminateWorkers()
+    ]);
+  }
 
   /// Builds all dartdevc files required for all app entrypoints in
   /// [inputAssets].
