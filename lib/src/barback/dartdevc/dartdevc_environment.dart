@@ -38,7 +38,7 @@ class DartDevcEnvironment {
       this._barback, this._mode, this._environmentConstants, this._packageGraph)
       : _assetCache = new _AssetCache(_packageGraph) {
     _moduleReader = new ModuleReader(_readModule);
-    _scratchSpace = new ScratchSpace(_readAsBytes);
+    _scratchSpace = new ScratchSpace(_getAsset);
   }
 
   /// Deletes the [_scratchSpace].
@@ -199,21 +199,16 @@ class DartDevcEnvironment {
     return asset.readAsString();
   }
 
-  /// Reads [id] as a stream of bytese.
+  /// Gets an [Asset] by [id] asynchronously.
   ///
   /// All `.dart` files are read from [_barback], and all other files are read
   /// from [this].
-  Stream<List<int>> _readAsBytes(AssetId id) {
-    var controller = new StreamController<List<int>>();
-    () async {
-      var asset = id.extension == '.dart'
-          ? await _barback.getAssetById(id)
-          : await getAssetById(id);
-      if (asset == null) throw new AssetNotFoundException(id);
-      await controller.addStream(asset.read());
-      controller.close();
-    }();
-    return controller.stream;
+  Future<Asset> _getAsset(AssetId id) async {
+    var asset = id.extension == '.dart'
+        ? await _barback.getAssetById(id)
+        : await getAssetById(id);
+    if (asset == null) throw new AssetNotFoundException(id);
+    return asset;
   }
 }
 

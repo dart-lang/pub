@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
@@ -24,7 +23,7 @@ void main() {
     });
 
     var scratchSpace =
-        new ScratchSpace((id) => new Stream.fromIterable([allAssets[id]]));
+        new ScratchSpace((id) async => new Asset.fromBytes(id, allAssets[id]));
     await scratchSpace.ensureAssets(allAssets.keys);
 
     expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),

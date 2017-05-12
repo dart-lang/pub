@@ -10,25 +10,25 @@ import 'package:path/path.dart' as p;
 
 import '../../io.dart';
 
-typedef Stream<List<int>> AssetReader(AssetId id);
+typedef Future<Asset> AssetReader(AssetId id);
 
 /// An on-disk temporary environment for running executables that don't have
 /// a standard Dart library API.
 class ScratchSpace {
   final Directory tempDir;
   final Directory packagesDir;
-  final AssetReader readAsset;
+  final AssetReader getAsset;
 
   // Assets which have a file created but it is still being written to.
   final _pendingWrites = <AssetId, Future>{};
 
-  ScratchSpace._(Directory tempDir, this.readAsset)
+  ScratchSpace._(Directory tempDir, this.getAsset)
       : packagesDir = new Directory(p.join(tempDir.path, 'packages')),
         this.tempDir = tempDir;
 
-  factory ScratchSpace(Stream<List<int>> readAsset(AssetId id)) {
+  factory ScratchSpace(Future<Asset> getAsset(AssetId id)) {
     var tempDir = new Directory(createSystemTempDir());
-    return new ScratchSpace._(tempDir, readAsset);
+    return new ScratchSpace._(tempDir, getAsset);
   }
 
   /// Copies [assetIds] to [tempDir] if they don't exist.
@@ -45,10 +45,13 @@ class ScratchSpace {
         if (pending != null) futures.add(pending);
       } else {
         file.createSync(recursive: true);
-        var done = readAsset(id).pipe(file.openWrite());
+        var done = () async {
+          var asset = await getAsset(id);
+          await createFileFromStream(asset.read(), file.path);
+          _pendingWrites.remove(id);
+        }();
         _pendingWrites[id] = done;
-        await done;
-        _pendingWrites.remove(id);
+        futures.add(done);
       }
     }
     return Future.wait(futures);
