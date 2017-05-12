@@ -113,6 +113,7 @@ class BuildCommand extends BarbackCommand {
           assets.addAll(await environment.dartDevcEnvironment
               .doFullBuild(assets, logError: logError));
         });
+        await environment.dartDevcEnvironment.cleanup();
       }
 
       if (hasError) {

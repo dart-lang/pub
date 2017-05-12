@@ -14,6 +14,7 @@ import 'dartdevc.dart';
 import 'module.dart';
 import 'module_computer.dart';
 import 'module_reader.dart';
+import 'scratch_space.dart';
 import 'summaries.dart';
 
 import '../../io.dart';
@@ -31,12 +32,17 @@ class DartDevcEnvironment {
   final BarbackMode _mode;
   ModuleReader _moduleReader;
   final PackageGraph _packageGraph;
+  ScratchSpace _scratchSpace;
 
   DartDevcEnvironment(
       this._barback, this._mode, this._environmentConstants, this._packageGraph)
       : _assetCache = new _AssetCache(_packageGraph) {
     _moduleReader = new ModuleReader(_readModule);
+    _scratchSpace = new ScratchSpace(_readAsBytes);
   }
+
+  /// Deletes the [_scratchSpace].
+  Future cleanup() => _scratchSpace.delete();
 
   /// Builds all dartdevc files required for all app entrypoints in
   /// [inputAssets].
@@ -79,7 +85,7 @@ class DartDevcEnvironment {
   /// [AssetNotFoundException] if the asset couldn't be built.
   Future<Asset> getAssetById(AssetId id) async {
     if (_assetCache[id] == null) {
-      if (id.path.endsWith('.dart.js') || id.path.endsWith('.bootstrap.js')) {
+      if (_isEntrypointId(id)) {
         var dartId = _entrypointDartId(id);
         if (dartId != null &&
             await isAppEntryPoint(dartId, _barback.getAssetById)) {
@@ -95,6 +101,8 @@ class DartDevcEnvironment {
   /// Invalidates [package] and all packages that depend on [package].
   void invalidatePackage(String package) {
     _assetCache.invalidatePackage(package);
+    _scratchSpace.deletePackageFiles(
+        package, package == _packageGraph.entrypoint.root.name);
   }
 
   /// Handles building all assets that we know how to build.
@@ -106,16 +114,13 @@ class DartDevcEnvironment {
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
       assets = {
-        id: createUnlinkedSummary(id, _moduleReader, _readAsBytes, logError)
+        id: createUnlinkedSummary(id, _moduleReader, _scratchSpace, logError)
       };
     } else if (id.path.endsWith(linkedSummaryExtension)) {
       assets = {
-        id: createLinkedSummary(id, _moduleReader, _readAsBytes, logError)
+        id: createLinkedSummary(id, _moduleReader, _scratchSpace, logError)
       };
-    } else if (id.path.endsWith('.bootstrap.js') ||
-        id.path.endsWith('.bootstrap.js.map') ||
-        id.path.endsWith('.dart.js') ||
-        id.path.endsWith('.dart.js.map')) {
+    } else if (_isEntrypointId(id)) {
       var dartId = _entrypointDartId(id);
       if (dartId != null) {
         assets = bootstrapDartDevcEntrypoint(
@@ -129,7 +134,7 @@ class DartDevcEnvironment {
       assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
-      assets = createDartdevcModule(jsId, _moduleReader, _readAsBytes,
+      assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
           _environmentConstants, _mode, logError);
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
@@ -177,6 +182,14 @@ class DartDevcEnvironment {
     }
   }
 
+  /// Whether or not this looks like a request for an entrypoint or bootstrap
+  /// file.
+  bool _isEntrypointId(AssetId id) =>
+      id.path.endsWith('.bootstrap.js') ||
+      id.path.endsWith('.bootstrap.js.map') ||
+      id.path.endsWith('.dart.js') ||
+      id.path.endsWith('.dart.js.map');
+
   /// Helper to read a module config file, used by [_moduleReader].
   ///
   /// Skips barback and reads directly from [this] since we create all these
@@ -196,6 +209,7 @@ class DartDevcEnvironment {
       var asset = id.extension == '.dart'
           ? await _barback.getAssetById(id)
           : await getAssetById(id);
+      if (asset == null) throw new AssetNotFoundException(id);
       await controller.addStream(asset.read());
       controller.close();
     }();

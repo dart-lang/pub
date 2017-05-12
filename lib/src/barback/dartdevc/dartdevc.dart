@@ -88,7 +88,23 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
             p.relative(dartEntrypointId.path, from: moduleDir)))
         .join("__")
         .replaceAll('.', '\$46');
+
+    // Modules not under a `packages` directory need custom module paths.
+    var customModulePaths = <String>[];
+    var transitiveDeps = await moduleReader.readTransitiveDeps(module);
+    for (var dep in transitiveDeps) {
+      if (dep.dir != 'lib') {
+        customModulePaths.add('"${dep.dir}/${dep.name}": "${dep.name}"');
+      }
+    }
+
     var bootstrapContent = '''
+require.config({
+    paths: {
+      ${customModulePaths.join(',\n      ')}
+    }
+});
+
 require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
   app.$appModuleScope.main();
@@ -131,7 +147,7 @@ document.head.appendChild(el);
 Map<AssetId, Future<Asset>> createDartdevcModule(
     AssetId id,
     ModuleReader moduleReader,
-    Stream<List<int>> readAsset(AssetId id),
+    ScratchSpace scratchSpace,
     Map<String, String> environmentConstants,
     BarbackMode mode,
     logError(String message)) {
@@ -145,88 +161,86 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
 
   () async {
     var module = await moduleReader.moduleFor(id);
+    if (module == null) {
+      logError('No module found for $id.');
+      outputCompleters.values.forEach((c) => c.complete(null));
+      return;
+    }
     var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
     var linkedSummaryIds =
         transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
     var allAssetIds = new Set<AssetId>()
       ..addAll(module.assetIds)
       ..addAll(linkedSummaryIds);
-    var scratchSpace = await ScratchSpace.create(allAssetIds, readAsset);
-    try {
-      var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
-      var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
-      var request = new WorkRequest();
-      request.arguments.addAll([
-        '--dart-sdk-summary=$sdk_summary',
-        // TODO(jakemac53): Remove when no longer needed,
-        // https://github.com/dart-lang/pub/issues/1583.
-        '--unsafe-angular2-whitelist',
-        '--modules=amd',
-        '--dart-sdk=${sdkDir.path}',
-        '--module-root=${scratchSpace.tempDir.path}',
-        '--library-root=${p.dirname(jsOutputFile.path)}',
-        '--summary-extension=${linkedSummaryExtension.substring(1)}',
-        '--no-summarize',
-        '-o',
-        jsOutputFile.path,
-      ]);
+    await scratchSpace.ensureAssets(allAssetIds);
+    var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
+    var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
+    var request = new WorkRequest();
+    request.arguments.addAll([
+      '--dart-sdk-summary=$sdk_summary',
+      // TODO(jakemac53): Remove when no longer needed,
+      // https://github.com/dart-lang/pub/issues/1583.
+      '--unsafe-angular2-whitelist',
+      '--modules=amd',
+      '--dart-sdk=${sdkDir.path}',
+      '--module-root=${scratchSpace.tempDir.path}',
+      '--library-root=${p.dirname(jsOutputFile.path)}',
+      '--summary-extension=${linkedSummaryExtension.substring(1)}',
+      '--no-summarize',
+      '-o',
+      jsOutputFile.path,
+    ]);
 
-      if (mode == BarbackMode.RELEASE) {
-        request.arguments.add('--no-source-map');
+    if (mode == BarbackMode.RELEASE) {
+      request.arguments.add('--no-source-map');
+    }
+
+    // Add environment constants.
+    environmentConstants.forEach((key, value) {
+      request.arguments.add('-D$key=$value');
+    });
+
+    // Add all the linked summaries as summary inputs.
+    for (var id in linkedSummaryIds) {
+      request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
+    }
+
+    // Add URL mappings for all the package: files to tell DartDevc where to
+    // find them.
+    for (var id in module.assetIds) {
+      var uri = canonicalUriFor(id);
+      if (uri.startsWith('package:')) {
+        request.arguments
+            .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
       }
-
-      // Add environment constants.
-      environmentConstants.forEach((key, value) {
-        request.arguments.add('-D$key=$value');
-      });
-
-      // Add all the linked summaries as summary inputs.
-      for (var id in linkedSummaryIds) {
-        request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
+    }
+    // And finally add all the urls to compile, using the package: path for
+    // files under lib and the full absolute path for other files.
+    request.arguments.addAll(module.assetIds.map((id) {
+      var uri = canonicalUriFor(id);
+      if (uri.startsWith('package:')) {
+        return uri;
       }
+      return scratchSpace.fileFor(id).path;
+    }));
 
-      // Add URL mappings for all the package: files to tell DartDevc where to
-      // find them.
-      for (var id in module.assetIds) {
-        var uri = canonicalUriFor(id);
-        if (uri.startsWith('package:')) {
-          request.arguments
-              .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
-        }
+    var response = await dartdevcDriver.doWork(request);
+
+    // TODO(jakemac53): Fix the ddc worker mode so it always sends back a bad
+    // status code if something failed. Today we just make sure there is an
+    // output js file to verify it was successful.
+    if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
+      logError('Error compiling dartdevc module: ${module.id}.\n'
+          '${response.output}');
+      outputCompleters.values.forEach((c) => c.complete(null));
+    } else {
+      outputCompleters[module.id.jsId].complete(
+          new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
+      if (mode == BarbackMode.DEBUG) {
+        var sourceMapFile = scratchSpace.fileFor(module.id.jsSourceMapId);
+        outputCompleters[module.id.jsSourceMapId].complete(new Asset.fromBytes(
+            module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));
       }
-      // And finally add all the urls to compile, using the package: path for
-      // files under lib and the full absolute path for other files.
-      request.arguments.addAll(module.assetIds.map((id) {
-        var uri = canonicalUriFor(id);
-        if (uri.startsWith('package:')) {
-          return uri;
-        }
-        return scratchSpace.fileFor(id).path;
-      }));
-
-      var response = await dartdevcDriver.doWork(request);
-
-      // TODO(jakemac53): Fix the ddc worker mode so it always sends back a bad
-      // status code if something failed. Today we just make sure there is an
-      // output js file to verify it was successful.
-      if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-        logError('Error compiling dartdevc module: ${module.id}.\n'
-            '${response.output}');
-        outputCompleters.values.forEach((completer) {
-          completer.complete(null);
-        });
-      } else {
-        outputCompleters[module.id.jsId].complete(new Asset.fromBytes(
-            module.id.jsId, jsOutputFile.readAsBytesSync()));
-        if (mode == BarbackMode.DEBUG) {
-          var sourceMapFile = scratchSpace.fileFor(module.id.jsSourceMapId);
-          outputCompleters[module.id.jsSourceMapId].complete(
-              new Asset.fromBytes(
-                  module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));
-        }
-      }
-    } finally {
-      scratchSpace?.delete();
     }
   }();
 

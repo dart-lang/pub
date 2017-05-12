@@ -23,8 +23,9 @@ void main() {
       return assets;
     });
 
-    var scratchSpace = await ScratchSpace.create(
-        allAssets.keys, (id) => new Stream.fromIterable([allAssets[id]]));
+    var scratchSpace =
+        new ScratchSpace((id) => new Stream.fromIterable([allAssets[id]]));
+    await scratchSpace.ensureAssets(allAssets.keys);
 
     expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),
         isTrue);

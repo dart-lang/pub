@@ -10,32 +10,66 @@ import 'package:path/path.dart' as p;
 
 import '../../io.dart';
 
+typedef Stream<List<int>> AssetReader(AssetId id);
+
 /// An on-disk temporary environment for running executables that don't have
 /// a standard Dart library API.
 class ScratchSpace {
   final Directory tempDir;
   final Directory packagesDir;
+  final AssetReader readAsset;
 
-  ScratchSpace._(Directory tempDir)
+  // Assets which have a file created but it is still being written to.
+  final _pendingWrites = <AssetId, Future>{};
+
+  ScratchSpace._(Directory tempDir, this.readAsset)
       : packagesDir = new Directory(p.join(tempDir.path, 'packages')),
         this.tempDir = tempDir;
 
-  /// Creates a new [ScratchSpace] containing [assetIds].
+  factory ScratchSpace(Stream<List<int>> readAsset(AssetId id)) {
+    var tempDir = new Directory(createSystemTempDir());
+    return new ScratchSpace._(tempDir, readAsset);
+  }
+
+  /// Copies [assetIds] to [tempDir] if they don't exist.
   ///
   /// Any [Asset] that is under a `lib` dir will be output under a `packages`
   /// directory corresponding to its package, and any other assets are output
   /// directly under the temp dir using their unmodified path.
-  static Future<ScratchSpace> create(
-      Iterable<AssetId> assetIds, Stream<List<int>> readAsset(AssetId)) async {
-    var tempDir = new Directory(createSystemTempDir());
+  Future ensureAssets(Iterable<AssetId> assetIds) async {
     var futures = <Future>[];
     for (var id in assetIds) {
-      var filePath = p.join(tempDir.path, _relativePathFor(id));
-      var file = new File(filePath)..createSync(recursive: true);
-      await readAsset(id).pipe(file.openWrite());
+      var file = fileFor(id);
+      if (file.existsSync()) {
+        var pending = _pendingWrites[id];
+        if (pending != null) futures.add(pending);
+      } else {
+        file.createSync(recursive: true);
+        var done = readAsset(id).pipe(file.openWrite());
+        _pendingWrites[id] = done;
+        done.then((_) => _pendingWrites.remove(id));
+        futures.add(done);
+      }
     }
-    await Future.wait(futures);
-    return new ScratchSpace._(tempDir);
+    return Future.wait(futures);
+  }
+
+  /// Deletes all files for [package] from the temp dir (synchronously).
+  ///
+  /// This always deletes the [package] dir under [packagesDir].
+  ///
+  /// If [isRootPackage] then this also deletes all top level entities under
+  /// [tempDir] other than the [packagesDir].
+  void deletePackageFiles(String package, bool isRootPackage) {
+    var packageDir = new Directory(p.join(packagesDir.path, package));
+    if (packageDir.existsSync()) packageDir.deleteSync(recursive: true);
+    if (isRootPackage) {
+      var entities = tempDir.listSync(recursive: false);
+      for (var entity in entities) {
+        if (entity.path == packagesDir.path) continue;
+        entity.deleteSync(recursive: true);
+      }
+    }
   }
 
   /// Deletes the temp directory for this environment.
