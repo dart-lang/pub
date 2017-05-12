@@ -5,14 +5,11 @@
 import 'dart:async';
 
 import 'package:barback/barback.dart';
-import 'package:bazel_worker/bazel_worker.dart';
 
-import 'workers.dart';
 import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
-
-final String unlinkedSummaryExtension = '.unlinked.sum';
+import 'summaries.dart';
 
 /// Creates unlinked analyzer summaries given [moduleConfigName] files which
 /// describe a set of [Module]s.
@@ -34,42 +31,16 @@ class UnlinkedSummaryTransformer extends Transformer {
         return allAssets;
       });
       // Create a single temp environment for all the modules in this package.
-      scratchSpace = await ScratchSpace.create(allAssetIds, transform.readInput);
-      await Future.wait(modules
-          .map((m) => _createUnlinkedSummaryForModule(m, scratchSpace, transform)));
+      scratchSpace =
+          await ScratchSpace.create(allAssetIds, transform.readInput);
+      await Future.wait(modules.map((m) async {
+        var outputs = createUnlinkedSummaryForModule(
+            m, scratchSpace, transform.logger.error);
+        await Future.wait(outputs.values.map(
+            (futureAsset) async => transform.addOutput(await futureAsset)));
+      }));
     } finally {
       scratchSpace?.delete();
     }
-  }
-}
-
-Future _createUnlinkedSummaryForModule(
-    Module module, ScratchSpace scratchSpace, Transform transform) async {
-  var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
-  var request = new WorkRequest();
-  // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
-  // but ideally we would do that (pass '--build-summary-only-diet').
-  request.arguments.addAll([
-    '--build-summary-only',
-    '--build-summary-only-unlinked',
-    '--build-summary-output=${summaryOutputFile.path}',
-    '--strong',
-  ]);
-  // Add all the files to include in the unlinked summary bundle.
-  request.arguments.addAll(module.assetIds.map((id) {
-    var uri = canonicalUriFor(id);
-    if (!uri.startsWith('package:')) {
-      uri = 'file://$uri';
-    }
-    return '$uri|${scratchSpace.fileFor(id).path}';
-  }));
-  var response = await analyzerDriver.doWork(request);
-  if (response.exitCode == EXIT_CODE_ERROR) {
-    transform.logger
-        .error('Error creating unlinked summaries for module: ${module.id}.\n'
-            '${response.output}');
-  } else {
-    transform.addOutput(new Asset.fromBytes(
-        module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync()));
   }
 }

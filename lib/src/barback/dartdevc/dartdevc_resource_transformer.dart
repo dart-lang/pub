@@ -3,15 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
-import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
 import '../../dart.dart';
 import '../../io.dart';
+import 'dartdevc.dart';
 
 /// Copies the `dart_sdk.js` and `require.js` AMD files from the SDK into each
 /// entrypoint dir.
@@ -39,21 +38,8 @@ class DartDevcResourceTransformer extends AggregateTransformer
     }
     if (!hasEntrypoint) return;
 
-    var sdk = cli_util.getSdkDir();
-
-    // Copy the dart_sdk.js file for AMD into the output folder.
-    var sdkJsOutputId = new AssetId(
-        transform.package, p.url.join(transform.key, 'dart_sdk.js'));
-    var sdkAmdJsPath = p.url.join(sdk.path, 'lib/dev_compiler/amd/dart_sdk.js');
-    transform
-        .addOutput(new Asset.fromFile(sdkJsOutputId, new File(sdkAmdJsPath)));
-
-    // Copy the require.js file for AMD into the output folder.
-    var requireJsOutputId =
-        new AssetId(transform.package, p.url.join(transform.key, 'require.js'));
-    var requireJsPath = p.url.join(sdk.path, 'lib/dev_compiler/amd/require.js');
-    transform.addOutput(
-        new Asset.fromFile(requireJsOutputId, new File(requireJsPath)));
+    var outputs = copyDartDevcResources(transform.package, transform.key);
+    outputs.values.forEach(transform.addOutput);
   }
 
   @override

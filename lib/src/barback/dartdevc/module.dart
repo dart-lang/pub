@@ -5,8 +5,7 @@
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
-import 'linked_summary_transformer.dart';
-import 'unlinked_summary_transformer.dart';
+import 'summaries.dart';
 
 /// Serializable object that describes a single `module`.
 ///
@@ -73,6 +72,8 @@ class ModuleId {
       _moduleAssetWithExtension(linkedSummaryExtension);
 
   AssetId get jsId => _moduleAssetWithExtension('.js');
+
+  AssetId get jsSourceMapId => jsId.addExtension('.map');
 
   const ModuleId(this.package, this.name, this.dir);
 

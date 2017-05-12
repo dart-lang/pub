@@ -5,14 +5,11 @@
 import 'dart:async';
 
 import 'package:barback/barback.dart';
-import 'package:bazel_worker/bazel_worker.dart';
-import 'package:path/path.dart' as p;
 
-import 'workers.dart';
+import 'dartdevc.dart';
 import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
-import 'linked_summary_transformer.dart';
 
 /// Creates dartdevc modules given [moduleConfigName] files which describe a set
 /// of [Module]s.
@@ -27,7 +24,7 @@ class DartDevcModuleTransformer extends Transformer {
   final BarbackMode mode;
 
   DartDevcModuleTransformer(this.mode, {this.environmentConstants = const {}});
-  
+
   @override
   Future apply(Transform transform) async {
     ScratchSpace scratchSpace;
@@ -46,105 +43,19 @@ class DartDevcModuleTransformer extends Transformer {
       // Create a single temp environment for all the modules in this package.
       scratchSpace =
           await ScratchSpace.create(allAssetIds, transform.readInput);
-      await Future.wait(modules.map((m) => _createDartdevcModule(
-          m,
-          scratchSpace,
-          summariesForModule[m.id],
-          environmentConstants,
-          mode,
-          transform)));
+      // We only log warnings in debug mode for ddc modules because they don't all
+      // need to compile successfully, only the ones imported by an entrypoint do.
+      var logError = mode == BarbackMode.DEBUG
+          ? transform.logger.warning
+          : transform.logger.error;
+      await Future.wait(modules.map((m) async {
+        var outputs = createDartdevcModule(m, scratchSpace,
+            summariesForModule[m.id], environmentConstants, mode, logError);
+        await Future.wait(outputs.values.map(
+            (futureAsset) async => transform.addOutput(await futureAsset)));
+      }));
     } finally {
       scratchSpace?.delete();
-    }
-  }
-}
-
-/// Compiles [module] using the `dartdevc` binary from the SDK to a relative
-/// path under the package that looks like `$outputDir/${module.id.name}.js`.
-Future _createDartdevcModule(
-    Module module,
-    ScratchSpace scratchSpace,
-    Set<AssetId> linkedSummaryIds,
-    Map<String, String> environmentConstants,
-    BarbackMode mode,
-    Transform transform) async {
-  var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
-  var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
-  var request = new WorkRequest();
-  request.arguments.addAll([
-    '--dart-sdk-summary=$sdk_summary',
-    // TODO(jakemac53): Remove when no longer needed,
-    // https://github.com/dart-lang/pub/issues/1583.
-    '--unsafe-angular2-whitelist',
-    '--modules=amd',
-    '--dart-sdk=${sdkDir.path}',
-    '--module-root=${scratchSpace.tempDir.path}',
-    '--library-root=${p.dirname(jsOutputFile.path)}',
-    '--summary-extension=${linkedSummaryExtension.substring(1)}',
-    '--no-summarize',
-    '-o',
-    jsOutputFile.path,
-  ]);
-
-  if (mode == BarbackMode.RELEASE) {
-    request.arguments.add('--no-source-map');
-  }
-
-  // Add environment constants.
-  environmentConstants.forEach((key, value) {
-    request.arguments.add('-D$key=$value');
-  });
-
-  // Add all the linked summaries as summary inputs.
-  for (var id in linkedSummaryIds) {
-    request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
-  }
-
-  // Add URL mappings for all the package: files to tell DartDevc where to find
-  // them.
-  for (var id in module.assetIds) {
-    var uri = canonicalUriFor(id);
-    if (uri.startsWith('package:')) {
-      request.arguments
-          .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
-    }
-  }
-  // And finally add all the urls to compile, using the package: path for files
-  // under lib and the full absolute path for other files.
-  request.arguments.addAll(module.assetIds.map((id) {
-    var uri = canonicalUriFor(id);
-    if (uri.startsWith('package:')) {
-      return uri;
-    }
-    return scratchSpace.fileFor(id).path;
-  }));
-
-  var response = await dartdevcDriver.doWork(request);
-
-  // TODO(jakemac53): Fix the ddc worker mode so it always sends back a bad
-  // status code if something failed. Today we just make sure there is an output
-  // js file to verify it was successful.
-  if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-    var message = 'Error compiling dartdevc module: ${module.id}.\n'
-        '${response.output}';
-    // We only log warnings in debug mode for ddc modules because they don't all
-    // need to compile successfully, only the ones imported by an entrypoint do.
-    switch (mode) {
-      case BarbackMode.DEBUG:
-        transform.logger.warning(message);
-        break;
-      case BarbackMode.RELEASE:
-        transform.logger.error(message);
-        break;
-    }
-  } else {
-    transform.addOutput(
-        new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
-    if (mode == BarbackMode.DEBUG) {
-      var sourceMapOutputId = module.id.jsId.addExtension('.map');
-      var sourceMapFile = scratchSpace.fileFor(sourceMapOutputId);
-      transform.addOutput(new Asset.fromBytes(
-          sourceMapOutputId, sourceMapFile.readAsBytesSync()));
     }
   }
 }
