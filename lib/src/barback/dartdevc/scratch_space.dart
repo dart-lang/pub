@@ -47,8 +47,8 @@ class ScratchSpace {
         file.createSync(recursive: true);
         var done = readAsset(id).pipe(file.openWrite());
         _pendingWrites[id] = done;
-        done.then((_) => _pendingWrites.remove(id));
-        futures.add(done);
+        await done;
+        _pendingWrites.remove(id);
       }
     }
     return Future.wait(futures);
