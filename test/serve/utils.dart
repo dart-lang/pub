@@ -24,6 +24,7 @@ int _adminPort;
 /// The ephemeral ports assigned to the running servers, associated with the
 /// directories they're serving.
 final _ports = new Map<String, int>();
+Map<String, int> get serverPorts => new Map<String, int>.from(_ports);
 
 /// The web socket connection to the running pub process, or `null` if no
 /// connection has been made.
