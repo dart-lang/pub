@@ -188,8 +188,8 @@ class AssetEnvironment {
   /// added to [package].
   ///
   /// Returns `null` if there are none.
-  Iterable<Set> getBuiltInTransformers(Package package) {
-    var transformers = <List>[];
+  Iterable<Set<Transformer>> getBuiltInTransformers(Package package) {
+    var transformers = <List<Transformer>>[];
 
     var isRootPackage = package.name == rootPackage.name;
     switch (compiler) {
