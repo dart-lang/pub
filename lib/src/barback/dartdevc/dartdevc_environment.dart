@@ -148,11 +148,16 @@ class DartDevcEnvironment {
           _environmentConstants, _mode, logError);
       // Pre-emptively start building all transitive js deps under the
       // assumption they will be needed in the near future.
-      () async {
+      runZoned(() async {
         var module = await _moduleReader.moduleFor(jsId);
         var deps = await _moduleReader.readTransitiveDeps(module);
         deps.forEach((moduleId) => getAssetById(moduleId.jsId));
-      }();
+      }, onError: (_) {
+        // Ignore uncaught for now, the cached futures will contain the errors
+        // to respond with for later requests. Since nobody is awaiting these
+        // futures yet they end up bubbling up as uncaught errors unless we trap
+        // them here.
+      });
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
