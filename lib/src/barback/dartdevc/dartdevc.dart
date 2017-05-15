@@ -100,7 +100,7 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
 
     var bootstrapContent = '''
 require.config({
-    waitSeconds : 30,
+    waitSeconds: 30,
     paths: {
       ${customModulePaths.join(',\n      ')}
     }
