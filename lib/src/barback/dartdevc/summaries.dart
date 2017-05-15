@@ -8,6 +8,7 @@ import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 
 import 'module.dart';
+import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'workers.dart';
 
@@ -22,104 +23,77 @@ final String unlinkedSummaryExtension = '.unlinked.sum';
 ///
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
-Map<AssetId, Future<Asset>> createLinkedSummaryForModule(
-    Module module,
-    Set<AssetId> unlinkedSummaryIds,
-    ScratchSpace scratchSpace,
-    logError(String message)) {
-  var outputCompleters = <AssetId, Completer<Asset>>{
-    module.id.linkedSummaryId: new Completer<Asset>(),
-  };
-
-  () async {
-    var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
-    var request = new WorkRequest();
-    // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
-    // but ideally we would do that (pass '--build-summary-only-diet').
-    request.arguments.addAll([
-      '--build-summary-only',
-      '--build-summary-output=${summaryOutputFile.path}',
-      '--strong',
-    ]);
-    // Add all the unlinked summaries as build summary inputs.
-    request.arguments.addAll(unlinkedSummaryIds.map((id) =>
-        '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
-    // Add all the files to include in the linked summary bundle.
-    request.arguments.addAll(module.assetIds.map((id) {
-      var uri = canonicalUriFor(id);
-      if (!uri.startsWith('package:')) {
-        uri = 'file://$uri';
-      }
-      return '$uri|${scratchSpace.fileFor(id).path}';
-    }));
-    var response = await analyzerDriver.doWork(request);
-    if (response.exitCode == EXIT_CODE_ERROR) {
-      var message =
-          'Error creating linked summaries for module: ${module.id}.\n'
-          '${response.output}';
-      logError(message);
-      outputCompleters.values.forEach((completer) {
-        completer.completeError(message);
-      });
-    } else {
-      outputCompleters[module.id.linkedSummaryId].complete(new Asset.fromBytes(
-          module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync()));
-    }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
+    ScratchSpace scratchSpace, logError(String message)) async {
+  assert(id.path.endsWith(linkedSummaryExtension));
+  var module = await moduleReader.moduleFor(id);
+  var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
+  var unlinkedSummaryIds =
+      transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
+  var allAssetIds = new Set<AssetId>()
+    ..addAll(module.assetIds)
+    ..addAll(unlinkedSummaryIds);
+  await scratchSpace.ensureAssets(allAssetIds);
+  var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
+  var request = new WorkRequest();
+  // TODO(jakemac53): Diet parsing results in erroneous errors in later steps,
+  // but ideally we would do that (pass '--build-summary-only-diet').
+  request.arguments.addAll([
+    '--build-summary-only',
+    '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
+  ]);
+  // Add all the unlinked summaries as build summary inputs.
+  request.arguments.addAll(unlinkedSummaryIds.map((id) =>
+      '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
+  // Add all the files to include in the linked summary bundle.
+  request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
+  var response = await analyzerDriver.doWork(request);
+  if (response.exitCode == EXIT_CODE_ERROR) {
+    logError('Error creating linked summaries for module: ${module.id}.\n'
+        '${response.output}\n${request.arguments}');
+    return null;
+  }
+  return new Asset.fromBytes(
+      module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync());
 }
 
-/// Creates an unlinked summary for [module].
-///
-/// [scratchSpace] must have the Dart sources for this module available.
-///
-/// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
-/// immediately what assets will be output.
-Map<AssetId, Future<Asset>> createUnlinkedSummaryForModule(
-    Module module, ScratchSpace scratchSpace, logError(String message)) {
-  var outputCompleters = <AssetId, Completer<Asset>>{
-    module.id.unlinkedSummaryId: new Completer<Asset>(),
-  };
+/// Creates an unlinked summary at [id].
+Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
+    ScratchSpace scratchSpace, logError(String message)) async {
+  assert(id.path.endsWith(unlinkedSummaryExtension));
+  var module = await moduleReader.moduleFor(id);
+  await scratchSpace.ensureAssets(module.assetIds);
+  var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
+  var request = new WorkRequest();
+  // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
+  // but ideally we would do that (pass '--build-summary-only-diet').
+  request.arguments.addAll([
+    '--build-summary-only',
+    '--build-summary-only-unlinked',
+    '--build-summary-output=${summaryOutputFile.path}',
+    '--strong',
+  ]);
+  // Add all the files to include in the unlinked summary bundle.
+  request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
+  var response = await analyzerDriver.doWork(request);
+  if (response.exitCode == EXIT_CODE_ERROR) {
+    logError('Error creating unlinked summaries for module: ${module.id}.\n'
+        '${response.output}');
+    return null;
+  }
+  return new Asset.fromBytes(
+      module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync());
+}
 
-  () async {
-    var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
-    var request = new WorkRequest();
-    // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
-    // but ideally we would do that (pass '--build-summary-only-diet').
-    request.arguments.addAll([
-      '--build-summary-only',
-      '--build-summary-only-unlinked',
-      '--build-summary-output=${summaryOutputFile.path}',
-      '--strong',
-    ]);
-    // Add all the files to include in the unlinked summary bundle.
-    request.arguments.addAll(module.assetIds.map((id) {
-      var uri = canonicalUriFor(id);
-      if (!uri.startsWith('package:')) {
-        uri = 'file://$uri';
-      }
-      return '$uri|${scratchSpace.fileFor(id).path}';
-    }));
-    var response = await analyzerDriver.doWork(request);
-    if (response.exitCode == EXIT_CODE_ERROR) {
-      var message =
-          'Error creating unlinked summaries for module: ${module.id}.\n'
-          '${response.output}';
-      logError(message);
-      outputCompleters.values.forEach((completer) {
-        completer.completeError(message);
-      });
-    } else {
-      outputCompleters[module.id.unlinkedSummaryId].complete(
-          new Asset.fromBytes(module.id.unlinkedSummaryId,
-              summaryOutputFile.readAsBytesSync()));
+Iterable<String> _analyzerSourceArgsForModule(
+    Module module, ScratchSpace scratchSpace) {
+  return module.assetIds.map((id) {
+    var uri = canonicalUriFor(id);
+    var file = scratchSpace.fileFor(id);
+    if (!uri.startsWith('package:')) {
+      uri = file.uri.toString();
     }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+    return '$uri|${file.path}';
+  });
 }

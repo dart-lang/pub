@@ -29,17 +29,8 @@ main() {
         args: ["build", "--compiler=${compiler.name}"],
         output: new RegExp(r'Built [\d]+ files? to "build".'));
 
-    var expectedWebDir;
-    switch (compiler) {
-      case Compiler.dart2JS:
-        expectedWebDir = d.nothing('web');
-        break;
-      case Compiler.dartDevc:
-        expectedWebDir = d.dir('web', [d.file('.moduleConfig', '[]')]);
-        break;
-    }
     d.dir(appPath, [
-      d.dir('build', [expectedWebDir])
+      d.dir('build', [d.nothing('web')])
     ]).validate();
   });
 

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
@@ -13,7 +12,8 @@ import 'package:pub/src/barback/dartdevc/scratch_space.dart';
 import 'package:pub/src/io.dart';
 
 void main() {
-  test('Can create and delete a scratch space', () async {
+  group('ScratchSpace', () {
+    ScratchSpace scratchSpace;
     Map<AssetId, List<int>> allAssets = [
       'dep|lib/dep.dart',
       'myapp|lib/myapp.dart',
@@ -23,35 +23,57 @@ void main() {
       return assets;
     });
 
-    var scratchSpace = await ScratchSpace.create(
-        allAssets.keys, (id) => new Stream.fromIterable([allAssets[id]]));
+    setUp(() async {
+      scratchSpace = new ScratchSpace(
+          (id) async => new Asset.fromBytes(id, allAssets[id]));
+      await scratchSpace.ensureAssets(allAssets.keys);
+    });
 
-    expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),
-        isTrue);
-
-    for (var id in allAssets.keys) {
-      var file = scratchSpace.fileFor(id);
-      expect(file.existsSync(), isTrue);
-      expect(file.readAsStringSync(), equals('$id'));
-
-      var relativeFilePath =
-          p.relative(file.path, from: scratchSpace.tempDir.path);
-      if (topLevelDir(id.path) == 'lib') {
-        var packagesPath =
-            p.join('packages', id.package, p.relative(id.path, from: 'lib'));
-        expect(relativeFilePath, equals(packagesPath));
-      } else {
-        expect(relativeFilePath, equals(id.path));
+    tearDown(() async {
+      await scratchSpace.delete();
+      for (var id in allAssets.keys) {
+        var file = scratchSpace.fileFor(id);
+        expect(file.existsSync(), isFalse);
       }
-    }
+      expect(scratchSpace.tempDir.existsSync(), isFalse);
+    });
 
-    await scratchSpace.delete();
+    test('Can create and delete a scratch space', () async {
+      expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),
+          isTrue);
 
-    for (var id in allAssets.keys) {
-      var file = scratchSpace.fileFor(id);
-      expect(file.existsSync(), isFalse);
-    }
-    expect(scratchSpace.tempDir.existsSync(), isFalse);
+      for (var id in allAssets.keys) {
+        var file = scratchSpace.fileFor(id);
+        expect(file.existsSync(), isTrue);
+        expect(file.readAsStringSync(), equals('$id'));
+
+        var relativeFilePath =
+            p.relative(file.path, from: scratchSpace.tempDir.path);
+        if (topLevelDir(id.path) == 'lib') {
+          var packagesPath =
+              p.join('packages', id.package, p.relative(id.path, from: 'lib'));
+          expect(relativeFilePath, equals(packagesPath));
+        } else {
+          expect(relativeFilePath, equals(id.path));
+        }
+      }
+    });
+
+    test('can delete an individual package from a scratch space', () async {
+      scratchSpace.deletePackageFiles('dep', isRootPackage: false);
+      var depId = new AssetId.parse('dep|lib/dep.dart');
+      expect(scratchSpace.fileFor(depId).existsSync(), isFalse);
+      allAssets.keys.where((id) => id.package == 'myapp').forEach((id) {
+        expect(scratchSpace.fileFor(id).existsSync(), isTrue);
+      });
+
+      await scratchSpace.ensureAssets(allAssets.keys);
+      scratchSpace.deletePackageFiles('myapp', isRootPackage: true);
+      allAssets.keys.where((id) => id.package == 'myapp').forEach((id) {
+        expect(scratchSpace.fileFor(id).existsSync(), isFalse);
+      });
+      expect(scratchSpace.fileFor(depId).existsSync(), isTrue);
+    });
   });
 
   test('canonicalUriFor', () {

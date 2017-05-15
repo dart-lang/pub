@@ -7,7 +7,7 @@ import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  integration("dartdevc resources are copied next to entrypoints only", () {
+  integration("dartdevc resources are copied next to entrypoints", () {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [
@@ -27,8 +27,6 @@ main() {
     requestShouldSucceed('require.js', null);
     requestShouldSucceed('subdir/dart_sdk.js', null);
     requestShouldSucceed('subdir/require.js', null);
-    requestShould404('packages/$appPath/dart_sdk.js');
-    requestShould404('packages/$appPath/require.js');
     endPubServe();
   });
 }

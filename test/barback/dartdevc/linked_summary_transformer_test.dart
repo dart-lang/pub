@@ -53,34 +53,34 @@ void main() {}
     pubServe(args: ['--compiler', 'dartdevc']);
 
     linkedSummaryRequestShouldSucceed('web__main$linkedSummaryExtension', [
-      'file://web/main.dart',
-      'package:myapp/hello.dart',
-      'package:foo/foo.dart'
+      endsWith('web/main.dart'),
+      equals('package:myapp/hello.dart'),
+      equals('package:foo/foo.dart')
     ], [
-      'file://web/main.dart'
+      endsWith('web/main.dart')
     ], [
       endsWith('packages/myapp/lib__hello.unlinked.sum'),
       endsWith('packages/foo/lib__foo.unlinked.sum'),
     ]);
     linkedSummaryRequestShouldSucceed(
         'packages/myapp/lib__hello$linkedSummaryExtension', [
-      'package:myapp/hello.dart',
-      'package:foo/foo.dart'
+      equals('package:myapp/hello.dart'),
+      equals('package:foo/foo.dart')
     ], [
-      'package:myapp/hello.dart'
+      equals('package:myapp/hello.dart')
     ], [
       endsWith('packages/foo/lib__foo.unlinked.sum'),
     ]);
     linkedSummaryRequestShouldSucceed(
         'packages/foo/lib__foo$linkedSummaryExtension',
-        ['package:foo/foo.dart'],
-        ['package:foo/foo.dart']);
+        [equals('package:foo/foo.dart')],
+        [equals('package:foo/foo.dart')]);
     endPubServe();
   });
 }
 
 void linkedSummaryRequestShouldSucceed(String uri,
-    List<String> expectedLinkedUris, List<String> expectedUnlinkedUris,
+    List<Matcher> expectedLinkedUris, List<Matcher> expectedUnlinkedUris,
     [List<Matcher> expectedSummaryDeps = const []]) {
   scheduleRequest(uri).then((response) {
     expect(response.statusCode, 200);

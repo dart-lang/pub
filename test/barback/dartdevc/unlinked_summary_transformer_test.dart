@@ -54,19 +54,19 @@ void main() {}
     pubServe(args: ['--compiler', 'dartdevc']);
 
     unlinkedSummaryRequestShouldSucceed(
-        'web__main$unlinkedSummaryExtension', ['file://web/main.dart']);
+        'web__main$unlinkedSummaryExtension', [endsWith('web/main.dart')]);
     unlinkedSummaryRequestShouldSucceed(
         'packages/myapp/lib__hello$unlinkedSummaryExtension',
-        ['package:myapp/hello.dart']);
+        [equals('package:myapp/hello.dart')]);
     unlinkedSummaryRequestShouldSucceed(
         'packages/foo/lib__foo$unlinkedSummaryExtension',
-        ['package:foo/foo.dart']);
+        [equals('package:foo/foo.dart')]);
     endPubServe();
   });
 }
 
 void unlinkedSummaryRequestShouldSucceed(
-    String uri, List<String> expectedUnlinkedUris) {
+    String uri, List<Matcher> expectedUnlinkedUris) {
   var expected = unorderedMatches(expectedUnlinkedUris);
   scheduleRequest(uri).then((response) {
     expect(response.statusCode, 200);
