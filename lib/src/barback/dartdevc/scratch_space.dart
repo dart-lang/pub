@@ -63,7 +63,8 @@ class ScratchSpace {
   ///
   /// If [isRootPackage] then this also deletes all top level entities under
   /// [tempDir] other than the [packagesDir].
-  void deletePackageFiles(String package, bool isRootPackage) {
+  void deletePackageFiles(String package, {bool isRootPackage}) {
+    isRootPackage ??= false;
     var packageDir = new Directory(p.join(packagesDir.path, package));
     if (packageDir.existsSync()) packageDir.deleteSync(recursive: true);
     if (isRootPackage) {
