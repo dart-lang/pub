@@ -75,6 +75,8 @@ void main() {}
         'packages/foo/lib__foo$linkedSummaryExtension',
         [equals('package:foo/foo.dart')],
         [equals('package:foo/foo.dart')]);
+    requestShould404('invalid$linkedSummaryExtension');
+    requestShould404('packages/foo/invalid$linkedSummaryExtension');
     endPubServe();
   });
 }
