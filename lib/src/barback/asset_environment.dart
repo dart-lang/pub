@@ -185,16 +185,16 @@ class AssetEnvironment {
       {this.dartDevcEnvironment});
 
   /// Performs any necessary cleanup before shutdown.
-  Future cleanup() async {
-    await dartDevcEnvironment?.cleanup();
+  Future cleanUp() async {
+    await dartDevcEnvironment?.cleanUp();
   }
 
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
   /// Returns `null` if there are none.
-  Iterable<Set> getBuiltInTransformers(Package package) {
-    var transformers = <List>[];
+  Iterable<Set<Transformer>> getBuiltInTransformers(Package package) {
+    var transformers = <List<Transformer>>[];
 
     var isRootPackage = package.name == rootPackage.name;
     switch (compiler) {

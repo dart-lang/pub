@@ -60,7 +60,7 @@ void main() {
     });
 
     test('can delete an individual package from a scratch space', () async {
-      scratchSpace.deletePackageFiles('dep', false);
+      scratchSpace.deletePackageFiles('dep', isRootPackage: false);
       var depId = new AssetId.parse('dep|lib/dep.dart');
       expect(scratchSpace.fileFor(depId).existsSync(), isFalse);
       allAssets.keys.where((id) => id.package == 'myapp').forEach((id) {
@@ -68,7 +68,7 @@ void main() {
       });
 
       await scratchSpace.ensureAssets(allAssets.keys);
-      scratchSpace.deletePackageFiles('myapp', true);
+      scratchSpace.deletePackageFiles('myapp', isRootPackage: true);
       allAssets.keys.where((id) => id.package == 'myapp').forEach((id) {
         expect(scratchSpace.fileFor(id).existsSync(), isFalse);
       });
