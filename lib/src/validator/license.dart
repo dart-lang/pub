@@ -16,7 +16,7 @@ class LicenseValidator extends Validator {
   Future validate() {
     return new Future.sync(() {
       var licenseLike =
-          new RegExp(r"^([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)(\..*)?$");
+          new RegExp(r"^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$");
       if (entrypoint.root
           .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)
@@ -25,7 +25,7 @@ class LicenseValidator extends Validator {
       }
 
       errors.add(
-          "You must have a COPYING or LICENSE file in the root directory.\n"
+          "You must have a COPYING, LICENSE or UNLICENSE file in the root directory.\n"
           "An open-source license helps ensure people can legally use your "
           "code.");
     });
