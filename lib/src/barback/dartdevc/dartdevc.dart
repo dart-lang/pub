@@ -5,17 +5,31 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+import '../../dart.dart';
 import '../../io.dart';
-import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';
 import 'workers.dart';
+
+/// Returns whether or not [dartId] is an app entrypoint (basically, whether or
+/// not it has a `main` function).
+Future<bool> isAppEntryPoint(
+    AssetId dartId, Future<Asset> getAsset(AssetId id)) async {
+  assert(dartId.extension == '.dart');
+  var dartAsset = await getAsset(dartId);
+  // Skip reporting errors here, dartdevc will report them later with nicer
+  // formatting.
+  var parsed = parseCompilationUnit(await dartAsset.readAsString(),
+      suppressErrors: true);
+  return isEntrypoint(parsed);
+}
 
 /// Bootstraps the JS module for the entrypoint dart file [dartEntrypointId]
 /// with two additional JS files:
@@ -34,7 +48,10 @@ import 'workers.dart';
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
 Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
-    AssetId dartEntrypointId, BarbackMode mode, ModuleReader moduleReader) {
+    AssetId dartEntrypointId,
+    BarbackMode mode,
+    ModuleReader moduleReader,
+    Future<Asset> getAsset(AssetId id)) {
   var bootstrapId = dartEntrypointId.addExtension('.bootstrap.js');
   var jsEntrypointId = dartEntrypointId.addExtension('.js');
   var jsMapEntrypointId = jsEntrypointId.addExtension('.map');
@@ -63,15 +80,31 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     // TODO(jakemac53): Sane module name creation, this only works in the most
     // basic of cases.
     //
-    // See https://github.com/dart-lang/sdk/issues/27262 for the root issue which
-    // will allow us to not rely on the naming schemes that dartdevc uses
+    // See https://github.com/dart-lang/sdk/issues/27262 for the root issue
+    // which will allow us to not rely on the naming schemes that dartdevc uses
     // internally, but instead specify our own.
     var appModuleScope = p.url
         .split(p.url.withoutExtension(
             p.url.relative(dartEntrypointId.path, from: moduleDir)))
         .join("__")
         .replaceAll('.', '\$46');
+
+    // Modules not under a `packages` directory need custom module paths.
+    var customModulePaths = <String>[];
+    var transitiveDeps = await moduleReader.readTransitiveDeps(module);
+    for (var dep in transitiveDeps) {
+      if (dep.dir != 'lib') {
+        customModulePaths.add('"${dep.dir}/${dep.name}": "${dep.name}"');
+      }
+    }
+
     var bootstrapContent = '''
+require.config({
+    paths: {
+      ${customModulePaths.join(',\n      ')}
+    }
+});
+
 require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
   app.$appModuleScope.main();
@@ -112,20 +145,34 @@ document.head.appendChild(el);
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
 Map<AssetId, Future<Asset>> createDartdevcModule(
-    Module module,
+    AssetId id,
+    ModuleReader moduleReader,
     ScratchSpace scratchSpace,
-    Set<AssetId> linkedSummaryIds,
     Map<String, String> environmentConstants,
     BarbackMode mode,
     logError(String message)) {
+  assert(id.extension == '.js');
   var outputCompleters = <AssetId, Completer<Asset>>{
-    module.id.jsId: new Completer(),
+    id: new Completer(),
   };
   if (mode == BarbackMode.DEBUG) {
-    outputCompleters[module.id.jsSourceMapId] = new Completer();
+    outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
   () async {
+    var module = await moduleReader.moduleFor(id);
+    if (module == null) {
+      logError('No module found for $id.');
+      outputCompleters.values.forEach((c) => c.complete(null));
+      return;
+    }
+    var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
+    var linkedSummaryIds =
+        transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
+    var allAssetIds = new Set<AssetId>()
+      ..addAll(module.assetIds)
+      ..addAll(linkedSummaryIds);
+    await scratchSpace.ensureAssets(allAssetIds);
     var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
     var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
     var request = new WorkRequest();
@@ -158,8 +205,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
       request.arguments.addAll(['-s', scratchSpace.fileFor(id).path]);
     }
 
-    // Add URL mappings for all the package: files to tell DartDevc where to find
-    // them.
+    // Add URL mappings for all the package: files to tell DartDevc where to
+    // find them.
     for (var id in module.assetIds) {
       var uri = canonicalUriFor(id);
       if (uri.startsWith('package:')) {
@@ -167,8 +214,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
             .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
       }
     }
-    // And finally add all the urls to compile, using the package: path for files
-    // under lib and the full absolute path for other files.
+    // And finally add all the urls to compile, using the package: path for
+    // files under lib and the full absolute path for other files.
     request.arguments.addAll(module.assetIds.map((id) {
       var uri = canonicalUriFor(id);
       if (uri.startsWith('package:')) {
@@ -183,12 +230,9 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     // status code if something failed. Today we just make sure there is an output
     // JS file to verify it was successful.
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-      var message =
-          'Error compiling dartdevc module: ${module.id}.\n${response.output}';
-      logError(message);
-      outputCompleters.values.forEach((completer) {
-        completer.completeError(message);
-      });
+      logError('Error compiling dartdevc module: ${module.id}.\n'
+          '${response.output}');
+      outputCompleters.values.forEach((c) => c.complete(null));
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));

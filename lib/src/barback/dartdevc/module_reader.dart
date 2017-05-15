@@ -9,6 +9,7 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import 'module.dart';
+import 'summaries.dart';
 
 typedef FutureOr<String> ReadAsString(AssetId id);
 
@@ -45,7 +46,29 @@ class ModuleReader {
     var moduleConfigId =
         new AssetId(id.package, p.join(parts.first, moduleConfigName));
     await readModules(moduleConfigId);
-    return _modulesByAssetId[id];
+    if (id.extension == '.dart') {
+      return _modulesByAssetId[id];
+    } else {
+      var baseName = p.url.basename(id.path);
+      String moduleName;
+      if (baseName.endsWith('.js')) {
+        moduleName = p.withoutExtension(baseName);
+      } else if (baseName.endsWith('.js.map')) {
+        moduleName = baseName.substring(0, baseName.length - '.js.map'.length);
+      } else if (baseName.endsWith(unlinkedSummaryExtension)) {
+        moduleName = baseName.substring(
+            0, baseName.length - unlinkedSummaryExtension.length);
+      } else if (baseName.endsWith(linkedSummaryExtension)) {
+        moduleName = baseName.substring(
+            0, baseName.length - linkedSummaryExtension.length);
+      }
+      if (moduleName == null) {
+        throw new ArgumentError(
+            'Can only get modules for `.js` or `.dart` files, but got `$id`.');
+      }
+      var moduleId = new ModuleId(id.package, moduleName, parts.first);
+      return _modulesByModuleId[moduleId];
+    }
   }
 
   /// Computes the transitive deps of [id] by reading all the modules for all

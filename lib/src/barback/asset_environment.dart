@@ -18,12 +18,7 @@ import '../package.dart';
 import '../package_graph.dart';
 import '../source/cached.dart';
 import '../utils.dart';
-import 'dartdevc/dartdevc_bootstrap_transformer.dart';
-import 'dartdevc/dartdevc_module_transformer.dart';
-import 'dartdevc/dartdevc_resource_transformer.dart';
-import 'dartdevc/linked_summary_transformer.dart';
-import 'dartdevc/module_config_transformer.dart';
-import 'dartdevc/unlinked_summary_transformer.dart';
+import 'dartdevc/dartdevc_environment.dart';
 import 'admin_server.dart';
 import 'barback_server.dart';
 import 'compiler.dart';
@@ -87,10 +82,16 @@ class AssetEnvironment {
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
       var barback = new Barback(new PubPackageProvider(graph, compiler));
+      DartDevcEnvironment dartDevcEnvironment;
+      if (compiler == Compiler.dartDevc) {
+        dartDevcEnvironment =
+            new DartDevcEnvironment(barback, mode, environmentConstants, graph);
+      }
       barback.log.listen(_log);
 
       var environment = new AssetEnvironment._(graph, barback, mode,
-          watcherType, hostname, basePort, environmentConstants, compiler);
+          watcherType, hostname, basePort, environmentConstants, compiler,
+          dartDevcEnvironment: dartDevcEnvironment);
 
       await environment._load(entrypoints: entrypoints);
       return environment;
@@ -125,6 +126,11 @@ class AssetEnvironment {
 
   /// The [Barback] instance used to process assets in this environment.
   final Barback barback;
+
+  /// Manages running the dartdevc compiler on top of [barback].
+  ///
+  /// This is `null` unless `compiler == Compiler.dartDevc`.
+  final DartDevcEnvironment dartDevcEnvironment;
 
   /// The root package being built.
   Package get rootPackage => graph.entrypoint.root;
@@ -175,35 +181,18 @@ class AssetEnvironment {
   final Compiler compiler;
 
   AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
-      this._hostname, this._basePort, this.environmentConstants, this.compiler);
+      this._hostname, this._basePort, this.environmentConstants, this.compiler,
+      {this.dartDevcEnvironment});
 
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
   /// Returns `null` if there are none.
-  Iterable<Set> getBuiltInTransformers(Package package) {
-    var transformers = <List>[];
+  Iterable<Set<Transformer>> getBuiltInTransformers(Package package) {
+    var transformers = <List<Transformer>>[];
 
     var isRootPackage = package.name == rootPackage.name;
     switch (compiler) {
-      case Compiler.dartDevc:
-        var firstPhase = <dynamic>[new ModuleConfigTransformer()];
-        var lastPhase = <dynamic>[
-          new DartDevcModuleTransformer(mode,
-              environmentConstants: environmentConstants)
-        ];
-        if (isRootPackage) {
-          firstPhase.add(new DartDevcResourceTransformer());
-          lastPhase.add(new DartDevcBootstrapTransformer(mode));
-        }
-
-        transformers.addAll([
-          firstPhase,
-          [new UnlinkedSummaryTransformer()],
-          [new LinkedSummaryTransformer()],
-          lastPhase,
-        ]);
-        break;
       case Compiler.dart2JS:
         // the dart2js transformer only runs on the root package.
         if (isRootPackage) {
@@ -286,7 +275,8 @@ class AssetEnvironment {
 
     sourceDirectory.watchSubscription =
         await _provideDirectorySources(rootPackage, rootDirectory);
-    return await sourceDirectory.serve();
+    return await sourceDirectory.serve(
+        dartDevcEnvironment: dartDevcEnvironment);
   }
 
   /// Binds a new port to serve assets from within the "bin" directory of
@@ -465,6 +455,11 @@ class AssetEnvironment {
     assert(_modifiedSources != null);
 
     barback.updateSources(_modifiedSources);
+    if (dartDevcEnvironment != null) {
+      var modifiedPackages = new Set<String>()
+        ..addAll(_modifiedSources.map((id) => id.package));
+      modifiedPackages.forEach(dartDevcEnvironment.invalidatePackage);
+    }
     _modifiedSources = null;
   }
 
@@ -478,9 +473,6 @@ class AssetEnvironment {
   /// If [Compiler.dart2JS], then the [Dart2JSTransformer] is implicitly
   /// added to end of the root package's transformer phases.
   ///
-  /// if [Compiler.dartDevc], then the [DevCompilerTransformer] is
-  /// implicitly added to the end of all package's transformer phases.
-  ///
   /// If [entrypoints] is passed, only transformers necessary to run those
   /// entrypoints will be loaded.
   ///
@@ -489,7 +481,8 @@ class AssetEnvironment {
   Future _load({Iterable<AssetId> entrypoints}) {
     return log.progress("Initializing barback", () async {
       // Bind a server that we can use to load the transformers.
-      var transformerServer = await BarbackServer.bind(this, _hostname, 0);
+      var transformerServer = await BarbackServer.bind(this, _hostname, 0,
+          dartDevcEnvironment: dartDevcEnvironment);
 
       var errorStream = barback.errors.map((error) {
         // Even most normally non-fatal barback errors should take down pub if
@@ -578,6 +571,7 @@ class AssetEnvironment {
     var ids = _listDirectorySources(package, dir);
     if (_modifiedSources == null) {
       barback.updateSources(ids);
+      dartDevcEnvironment?.invalidatePackage(package.name);
     } else {
       _modifiedSources.addAll(ids);
     }
@@ -588,6 +582,7 @@ class AssetEnvironment {
     var ids = _listDirectorySources(rootPackage, dir);
     if (_modifiedSources == null) {
       barback.removeSources(ids);
+      dartDevcEnvironment?.invalidatePackage(rootPackage.name);
     } else {
       _modifiedSources.removeAll(ids);
     }
@@ -662,11 +657,13 @@ class AssetEnvironment {
           _modifiedSources.remove(id);
         } else {
           barback.removeSources([id]);
+          dartDevcEnvironment?.invalidatePackage(package.name);
         }
       } else if (_modifiedSources != null) {
         _modifiedSources.add(id);
       } else {
         barback.updateSources([id]);
+        dartDevcEnvironment?.invalidatePackage(package.name);
       }
     });
 

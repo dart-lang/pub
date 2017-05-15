@@ -70,9 +70,9 @@ class BuildCommand extends BarbackCommand {
           environmentConstants: environmentConstants, compiler: compiler);
 
       var hasError = false;
-      // Show in-progress errors, but not results. Those get handled
-      // implicitly by getAllAssets().
-      environment.barback.errors.listen((error) {
+
+      // Unified error handler for barback and dartdevc.
+      logError(error) {
         log.error(log.red("Build error:\n$error"));
         hasError = true;
 
@@ -81,7 +81,11 @@ class BuildCommand extends BarbackCommand {
           // more properties later.
           errorsJson.add({"error": error.toString()});
         }
-      });
+      }
+
+      // Show in-progress errors, but not results. Those get handled
+      // implicitly by getAllAssets().
+      environment.barback.errors.listen(logError);
 
       // If we're using JSON output, the regular server logging is disabled.
       // Instead, we collect it here to include in the final JSON result.
@@ -102,16 +106,15 @@ class BuildCommand extends BarbackCommand {
         return environment.barback.getAllAssets();
       });
 
-      // Find all of the JS entrypoints we built.
-      var dart2JSEntrypoints = assets
-          .where((asset) => asset.id.path.endsWith(".dart.js"))
-          .map((asset) => asset.id);
-
-      await Future.wait(assets.map(_writeAsset));
-      await _copyBrowserJsFiles(dart2JSEntrypoints, assets);
-
-      log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
-          'to "$outputDirectory".');
+      // Add all the js assets from dartdevc to the build, we don't need the
+      // rest once a build is complete.
+      if (environment.dartDevcEnvironment != null) {
+        await log.progress("Building dartdevc modules", () async {
+          assets.addAll(await environment.dartDevcEnvironment
+              .doFullBuild(assets, logError: logError));
+        });
+        await environment.dartDevcEnvironment.cleanUp();
+      }
 
       if (hasError) {
         log.error(log.red("Build failed."));
@@ -119,6 +122,16 @@ class BuildCommand extends BarbackCommand {
             {"buildResult": "failure", "errors": errorsJson, "log": logJson});
         return flushThenExit(exit_codes.DATA);
       } else {
+        // Find all of the JS entrypoints we built.
+        var dart2JSEntrypoints = assets
+            .where((asset) => asset.id.path.endsWith(".dart.js"))
+            .map((asset) => asset.id);
+
+        await Future.wait(assets.map(_writeAsset));
+        await _copyBrowserJsFiles(dart2JSEntrypoints, assets);
+
+        log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
+            'to "$outputDirectory".');
         log.json.message({
           "buildResult": "success",
           "outputDirectory": outputDirectory,
