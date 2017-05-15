@@ -185,7 +185,7 @@ class AssetEnvironment {
       {this.dartDevcEnvironment});
 
   /// Performs any necessary cleanup before shutdown.
-  Future cleanup() async {
+  Future cleanUp() async {
     await dartDevcEnvironment?.cleanUp();
   }
 

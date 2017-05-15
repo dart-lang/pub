@@ -117,7 +117,7 @@ class BuildCommand extends BarbackCommand {
       }
 
       // Clean up the environment before exiting.
-      await environment.cleanup();
+      await environment.cleanUp();
 
       if (hasError) {
         log.error(log.red("Build failed."));
