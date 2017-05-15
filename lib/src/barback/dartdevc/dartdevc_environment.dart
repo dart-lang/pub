@@ -66,7 +66,7 @@ class DartDevcEnvironment {
       // We only care about real entrypoint modules, we collect those and all
       // their transitive deps.
       if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
-      // Build the entrypoint js files, and collect the set of transitive
+      // Build the entrypoint JS files, and collect the set of transitive
       // modules that are required (will be built later).
       var futureAssets =
           _buildAsset(asset.id.addExtension('.js'), logError: logError);
@@ -118,6 +118,7 @@ class DartDevcEnvironment {
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
   Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
       {logError(String message)}) {
+    if (_assetCache[id] != null) return {id: _assetCache[id]};
     logError ??= log.error;
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
@@ -144,6 +145,18 @@ class DartDevcEnvironment {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
       assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
           _environmentConstants, _mode, logError);
+      // Pre-emptively start building all transitive JS deps under the
+      // assumption they will be needed in the near future.
+      runZoned(() async {
+        var module = await _moduleReader.moduleFor(jsId);
+        var deps = await _moduleReader.readTransitiveDeps(module);
+        deps.forEach((moduleId) => getAssetById(moduleId.jsId));
+      }, onError: (_) {
+        // Ignore uncaught for now, the cached futures will contain the errors
+        // to respond with for later requests. Since nobody is awaiting these
+        // futures yet they end up bubbling up as uncaught errors unless we trap
+        // them here.
+      });
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
@@ -221,7 +234,7 @@ class DartDevcEnvironment {
   }
 }
 
-/// Gives the dart entrypoint [AssetId] for a bootstrap js [id].
+/// Gives the dart entrypoint [AssetId] for a bootstrap JS [id].
 AssetId _entrypointDartId(AssetId id) {
   if (id.extension == '.map') id = id.changeExtension('');
   assert(id.path.endsWith('.bootstrap.js') || id.path.endsWith('.dart.js'));
