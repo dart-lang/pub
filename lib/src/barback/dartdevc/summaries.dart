@@ -27,6 +27,9 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
     ScratchSpace scratchSpace, logError(String message)) async {
   assert(id.path.endsWith(linkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
+  if (module == null) {
+    throw new AssetNotFoundException(id);
+  }
   var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
   var unlinkedSummaryIds =
       transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();

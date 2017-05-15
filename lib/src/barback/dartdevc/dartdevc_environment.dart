@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
@@ -92,7 +93,7 @@ class DartDevcEnvironment {
   /// Attempt to get an [Asset] by [id], completes with an
   /// [AssetNotFoundException] if the asset couldn't be built.
   Future<Asset> getAssetById(AssetId id) async {
-    if (_assetCache[id] == null) {
+    if (!_assetCache.containsKey(id)) {
       if (_isEntrypointId(id)) {
         var dartId = _entrypointDartId(id);
         if (dartId != null &&
@@ -103,6 +104,7 @@ class DartDevcEnvironment {
         _buildAsset(id);
       }
     }
+    if (!_assetCache.containsKey(id)) throw new AssetNotFoundException(id);
     return _assetCache[id];
   }
 
@@ -147,16 +149,12 @@ class DartDevcEnvironment {
           _environmentConstants, _mode, logError);
       // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
-      runZoned(() async {
+      () async {
         var module = await _moduleReader.moduleFor(jsId);
+        if (module == null) return;
         var deps = await _moduleReader.readTransitiveDeps(module);
         deps.forEach((moduleId) => getAssetById(moduleId.jsId));
-      }, onError: (_) {
-        // Ignore uncaught for now, the cached futures will contain the errors
-        // to respond with for later requests. Since nobody is awaiting these
-        // futures yet they end up bubbling up as uncaught errors unless we trap
-        // them here.
-      });
+      }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
@@ -253,23 +251,25 @@ AssetId _entrypointDartId(AssetId id) {
 class _AssetCache {
   /// [Asset]s are indexed first by package and then path, this allows us to
   /// invalidate whole packages efficiently.
-  final _assets = <String, Map<String, Future<Asset>>>{};
+  final _assets = <String, Map<String, Future<Result<Asset>>>>{};
 
   final PackageGraph _packageGraph;
 
   _AssetCache(this._packageGraph);
 
   Future<Asset> operator [](AssetId id) {
-    var packageCache = _assets[id.package];
-    if (packageCache == null) return null;
-    return packageCache[id.path];
+    var futureResult = _getResult(id);
+    if (futureResult == null) return null;
+    return Result.release(futureResult);
   }
 
   void operator []=(AssetId id, Future<Asset> asset) {
-    var packageCache =
-        _assets.putIfAbsent(id.package, () => <String, Future<Asset>>{});
-    packageCache[id.path] = asset;
+    var packageCache = _assets.putIfAbsent(
+        id.package, () => <String, Future<Result<Asset>>>{});
+    packageCache[id.path] = Result.capture(asset);
   }
+
+  bool containsKey(AssetId id) => _getResult(id) != null;
 
   /// Invalidates [package] and all packages that depend on [package].
   void invalidatePackage(String packageNameToInvalidate) {
@@ -284,5 +284,14 @@ class _AssetCache {
         _assets.remove(packageName);
       }
     }
+  }
+
+  /// Reads a [Result] from the actual underlying caches, or returns `null`.
+  Future<Result> _getResult(AssetId id) {
+    var packageCache = _assets[id.package];
+    if (packageCache == null) return null;
+    var futureResult = packageCache[id.path];
+    if (futureResult == null) return null;
+    return futureResult;
   }
 }
