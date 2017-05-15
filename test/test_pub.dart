@@ -836,5 +836,16 @@ class _PairMatcher extends Matcher {
   }
 }
 
+/// Returns a matcher that asserts that a string contains [times] distinct
+/// occurrences of [pattern], which must be a regular expression pattern.
+Matcher matchesMultiple(String pattern, int times) {
+  var buffer = new StringBuffer(pattern);
+  for (var i = 1; i < times; i++) {
+    buffer.write(r"(.|\n)*");
+    buffer.write(pattern);
+  }
+  return matches(buffer.toString());
+}
+
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => inOrder(output.split("\n"));

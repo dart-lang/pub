@@ -14,6 +14,7 @@ import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exe;
+import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
@@ -172,7 +173,14 @@ class GlobalPackages {
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.
-    await Future.wait(result.packages.map(_cacheDependency));
+    await Future.wait(result.packages.map((id) {
+      return http.withDependencyType(root.dependencyType(id.name), () async {
+        if (id.isRoot) return;
+
+        var source = cache.source(id.source);
+        if (source is CachedSource) await source.downloadToSystemCache(id);
+      });
+    }));
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
@@ -254,14 +262,6 @@ class GlobalPackages {
     });
 
     return environment.precompileExecutables(package.name, dir);
-  }
-
-  /// Downloads [id] into the system cache if it's a cached package.
-  Future _cacheDependency(PackageId id) async {
-    if (id.isRoot) return;
-
-    var source = cache.source(id.source);
-    if (source is CachedSource) await source.downloadToSystemCache(id);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.

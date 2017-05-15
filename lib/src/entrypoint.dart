@@ -14,6 +14,7 @@ import 'barback/asset_environment.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'flutter.dart' as flutter;
+import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
@@ -492,18 +493,20 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id, {bool packagesDir: false}) async {
-    if (id.isRoot) return;
+  Future _get(PackageId id, {bool packagesDir: false}) {
+    return http.withDependencyType(root.dependencyType(id.name), () async {
+      if (id.isRoot) return;
 
-    var source = cache.source(id.source);
-    if (!packagesDir) {
-      if (source is CachedSource) await source.downloadToSystemCache(id);
-      return;
-    }
+      var source = cache.source(id.source);
+      if (!packagesDir) {
+        if (source is CachedSource) await source.downloadToSystemCache(id);
+        return;
+      }
 
-    var packagePath = p.join(packagesPath, id.name);
-    if (entryExists(packagePath)) deleteEntry(packagePath);
-    await source.get(id, packagePath);
+      var packagePath = p.join(packagesPath, id.name);
+      if (entryExists(packagePath)) deleteEntry(packagePath);
+      await source.get(id, packagePath);
+    });
   }
 
   /// Throws a [DataError] if the `.packages` file doesn't exist or if it's
