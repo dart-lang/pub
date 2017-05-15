@@ -116,6 +116,9 @@ class BuildCommand extends BarbackCommand {
         await environment.dartDevcEnvironment.cleanUp();
       }
 
+      // Clean up the environment before exiting.
+      await environment.cleanUp();
+
       if (hasError) {
         log.error(log.red("Build failed."));
         log.json.message(
