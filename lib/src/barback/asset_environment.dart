@@ -184,6 +184,11 @@ class AssetEnvironment {
       this._hostname, this._basePort, this.environmentConstants, this.compiler,
       {this.dartDevcEnvironment});
 
+  /// Performs any necessary cleanup before shutdown.
+  Future cleanUp() async {
+    await dartDevcEnvironment?.cleanUp();
+  }
+
   /// Gets the built-in [Transformer]s or [AggregateTransformer]s that should be
   /// added to [package].
   ///
