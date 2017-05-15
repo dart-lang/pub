@@ -245,7 +245,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
       if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
         logError('Error compiling dartdevc module: ${module.id}.\n'
             '${response.output}');
-        outputCompleters.values.forEach((c) => c.complete(null));
+        outputCompleters.values
+            .forEach((c) => c.completeError(new AssetNotFoundException(id)));
       } else {
         outputCompleters[module.id.jsId].complete(new Asset.fromBytes(
             module.id.jsId, jsOutputFile.readAsBytesSync()));

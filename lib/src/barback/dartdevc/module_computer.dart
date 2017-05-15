@@ -47,11 +47,11 @@ enum ModuleMode {
 /// It is guaranteed that no asset will be added to more than one [Module].
 Future<List<Module>> computeModules(
     ModuleMode mode, Iterable<Asset> srcAssets) async {
-  var dir = topLevelDir(srcAssets.first.id.path);
-
   // Validate `srcAssets`, must be non-empty and all under the same dir.
-  if (srcAssets.isEmpty)
+  if (srcAssets.isEmpty) {
     throw new ArgumentError('Got unexpected empty `srcs`.');
+  }
+  var dir = topLevelDir(srcAssets.first.id.path);
   if (!srcAssets.every((src) => topLevelDir(src.id.path) == dir)) {
     throw new ArgumentError(
         'All srcs must live in the same top level directory.');

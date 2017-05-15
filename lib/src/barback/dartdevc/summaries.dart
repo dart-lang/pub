@@ -27,9 +27,7 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
     ScratchSpace scratchSpace, logError(String message)) async {
   assert(id.path.endsWith(linkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
-  if (module == null) {
-    throw new AssetNotFoundException(id);
-  }
+  if (module == null) throw new AssetNotFoundException(id);
   var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
   var unlinkedSummaryIds =
       transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
@@ -66,6 +64,7 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
     ScratchSpace scratchSpace, logError(String message)) async {
   assert(id.path.endsWith(unlinkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
+  if (module == null) throw new AssetNotFoundException(id);
   await scratchSpace.ensureAssets(module.assetIds);
   var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();

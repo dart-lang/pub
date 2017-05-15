@@ -120,7 +120,7 @@ class DartDevcEnvironment {
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
   Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
       {logError(String message)}) {
-    if (_assetCache[id] != null) return {id: _assetCache[id]};
+    if (_assetCache.containsKey(id)) return {id: _assetCache[id]};
     logError ??= log.error;
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
@@ -150,18 +150,21 @@ class DartDevcEnvironment {
       // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
       () async {
-        var module = await _moduleReader.moduleFor(jsId);
-        if (module == null) return;
-        var deps = await _moduleReader.readTransitiveDeps(module);
-        deps.forEach((moduleId) => getAssetById(moduleId.jsId));
+        try {
+          var module = await _moduleReader.moduleFor(jsId);
+          if (module == null) return;
+          var deps = await _moduleReader.readTransitiveDeps(module);
+          await Future
+              .wait(deps.map((moduleId) => getAssetById(moduleId.jsId)));
+        } on AssetNotFoundException catch (_) {}
       }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
     assets ??= <AssetId, Future<Asset>>{};
 
-    for (var id in assets.keys) {
-      _assetCache[id] = assets[id];
+    for (var assetId in assets.keys) {
+      _assetCache[assetId] = assets[assetId];
     }
     return assets;
   }
@@ -175,6 +178,7 @@ class DartDevcEnvironment {
         asset.id.package == id.package &&
         asset.id.extension == '.dart' &&
         topLevelDir(asset.id.path) == moduleDir);
+    if (moduleAssets.isEmpty) throw new AssetNotFoundException(id);
     var moduleMode =
         moduleDir == 'lib' ? ModuleMode.public : ModuleMode.private;
     var modules = await computeModules(moduleMode, moduleAssets);
