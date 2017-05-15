@@ -23,8 +23,8 @@ final String unlinkedSummaryExtension = '.unlinked.sum';
 ///
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
-Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
-    ScratchSpace scratchSpace, logError(String message)) async {
+Future<Asset> createLinkedSummary(
+    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace) async {
   assert(id.path.endsWith(linkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
   var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
@@ -50,17 +50,16 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
   request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
   var response = await analyzerDriver.doWork(request);
   if (response.exitCode == EXIT_CODE_ERROR) {
-    logError('Error creating linked summaries for module: ${module.id}.\n'
-        '${response.output}\n${request.arguments}');
-    return null;
+    throw 'Error creating linked summaries for module: ${module.id}\n'
+        '${response.output}';
   }
   return new Asset.fromBytes(
       module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync());
 }
 
 /// Creates an unlinked summary at [id].
-Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
-    ScratchSpace scratchSpace, logError(String message)) async {
+Future<Asset> createUnlinkedSummary(
+    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace) async {
   assert(id.path.endsWith(unlinkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
   await scratchSpace.ensureAssets(module.assetIds);
@@ -78,9 +77,8 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
   request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
   var response = await analyzerDriver.doWork(request);
   if (response.exitCode == EXIT_CODE_ERROR) {
-    logError('Error creating unlinked summaries for module: ${module.id}.\n'
-        '${response.output}');
-    return null;
+    throw 'Error creating unlinked summaries for module: ${module.id}.\n'
+        '${response.output}';
   }
   return new Asset.fromBytes(
       module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync());

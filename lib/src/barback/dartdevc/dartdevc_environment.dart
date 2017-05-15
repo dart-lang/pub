@@ -56,54 +56,118 @@ class DartDevcEnvironment {
   /// [inputAssets].
   ///
   /// Returns only the `.js` files which are required to load the apps.
-  Future<AssetSet> doFullBuild(AssetSet inputAssets,
-      {logError(String message)}) async {
-    var modulesToBuild = new Set<ModuleId>();
+  Future<AssetSet> doFullBuild(AssetSet inputAssets, logError(error)) {
+    var completer = new Completer<AssetSet>();
     var jsAssets = new AssetSet();
-    for (var asset in inputAssets) {
-      if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
-      if (asset.id.extension != '.dart') continue;
-      // We only care about real entrypoint modules, we collect those and all
-      // their transitive deps.
-      if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
-      // Build the entrypoint js files, and collect the set of transitive
-      // modules that are required (will be built later).
-      var futureAssets =
-          _buildAsset(asset.id.addExtension('.js'), logError: logError);
-      var assets = await Future.wait(futureAssets.values);
-      jsAssets.addAll(assets.where((asset) => asset != null));
-      var module = await _moduleReader.moduleFor(asset.id);
-      modulesToBuild.add(module.id);
-      modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
-    }
+    runZoned(() async {
+      try {
+        var modulesToBuild = new Set<ModuleId>();
+        for (var asset in inputAssets) {
+          try {
+            if (asset.id.package != _packageGraph.entrypoint.root.name) {
+              continue;
+            }
+            if (asset.id.extension != '.dart') continue;
+            // We only care about real entrypoint modules, we collect those and all
+            // their transitive deps.
+            if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) {
+              continue;
+            }
 
-    // Build all required modules for the apps that were discovered.
-    var allFutureAssets = <Future<Asset>>[];
-    for (var module in modulesToBuild) {
-      allFutureAssets
-          .addAll(_buildAsset(module.jsId, logError: logError).values);
-    }
-    var assets = await Future.wait(allFutureAssets);
-    jsAssets.addAll(assets.where((asset) => asset != null));
+            // Build the entrypoint js files, and collect the set of transitive
+            // modules that are required (will be built later).
+            var futureAssets = _buildAsset(asset.id.addExtension('.js'));
+            jsAssets.addAll(await Future.wait(futureAssets.values));
+            var module = await _moduleReader.moduleFor(asset.id);
+            modulesToBuild.add(module.id);
+            modulesToBuild
+                .addAll(await _moduleReader.readTransitiveDeps(module));
+          } catch (e) {
+            logError(e);
+          }
+        }
 
-    return jsAssets;
+        // Build all required modules for the apps that were discovered.
+        var allFutureAssets = <Future<Asset>>[];
+        for (var module in modulesToBuild) {
+          var futureAssets = _buildAsset(module.jsId).values;
+          allFutureAssets.addAll(futureAssets);
+          // Add explicit listeners on all `Future`s to make sure we log all
+          // errors. The `Future.wait` below only captures the first error.
+          for (var futureAsset in futureAssets) {
+            futureAsset.catchError(logError);
+          }
+        }
+        jsAssets.addAll(await Future.wait(allFutureAssets));
+      } finally {
+        // Wait to complete until the last moment possible so that we log all
+        // errors that are encountered.
+        completer.complete(jsAssets);
+      }
+    }, onError: (e) {
+      logError(e);
+    });
+
+    return completer.future;
   }
 
   /// Attempt to get an [Asset] by [id], completes with an
   /// [AssetNotFoundException] if the asset couldn't be built.
-  Future<Asset> getAssetById(AssetId id) async {
-    if (_assetCache[id] == null) {
-      if (_isEntrypointId(id)) {
-        var dartId = _entrypointDartId(id);
-        if (dartId != null &&
-            await isAppEntryPoint(dartId, _barback.getAssetById)) {
+  Future<Asset> getAssetById(AssetId id) {
+    var completer = new Completer<Asset>();
+    var loggedErrors = new Set<dynamic>();
+
+    // Handles errors in a uniform way:
+    //   * logs all errors that aren't `AssetNotFoundException`s.
+    //   * makes sure to only log an error once.
+    //   * converts all errors to `AssetNotFoundException`s if they weren't
+    //     already.
+    handleError(e, s) {
+      if (e is! AssetNotFoundException) {
+        if (!loggedErrors.contains(e)) {
+          loggedErrors.add(e);
+          log.error(log.red('Error creating $id'), e, s);
+        }
+        e = new AssetNotFoundException(id);
+      }
+      return e;
+    }
+
+    runZoned(() async {
+      if (_assetCache[id] == null) {
+        if (_isEntrypointId(id)) {
+          var dartId = _entrypointDartId(id);
+          if (dartId != null &&
+              await isAppEntryPoint(dartId, _barback.getAssetById)) {
+            _buildAsset(id);
+          }
+        } else {
           _buildAsset(id);
         }
-      } else {
-        _buildAsset(id);
       }
-    }
-    return _assetCache[id];
+      _assetCache[id].then((asset) {
+        if (completer.isCompleted) return;
+        if (asset == null) throw new AssetNotFoundException(id);
+        completer.complete(asset);
+      }).catchError((e, s) {
+        e = handleError(e, s);
+        if (completer.isCompleted) return;
+        completer.completeError(e);
+      });
+    }, onError: (e, s) {
+      e = handleError(e, s);
+      if (completer.isCompleted) return;
+      // In the general case we want to just return the value from the cache
+      // which will complete with an error (possibly this one).
+      //
+      // However, if we failed to insert an item in the cache for `id` then we
+      // will likely never complete properly, so we complete with this error.
+      if (_assetCache[id] == null) {
+        completer.completeError(e);
+      }
+    });
+
+    return completer.future;
   }
 
   /// Invalidates [package] and all packages that depend on [package].
@@ -116,19 +180,13 @@ class DartDevcEnvironment {
   /// Handles building all assets that we know how to build.
   ///
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
-  Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
-      {logError(String message)}) {
+  Map<AssetId, Future<Asset>> _buildAsset(AssetId id) {
     if (_assetCache[id] != null) return {id: _assetCache[id]};
-    logError ??= log.error;
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
-      assets = {
-        id: createUnlinkedSummary(id, _moduleReader, _scratchSpace, logError)
-      };
+      assets = {id: createUnlinkedSummary(id, _moduleReader, _scratchSpace)};
     } else if (id.path.endsWith(linkedSummaryExtension)) {
-      assets = {
-        id: createLinkedSummary(id, _moduleReader, _scratchSpace, logError)
-      };
+      assets = {id: createLinkedSummary(id, _moduleReader, _scratchSpace)};
     } else if (_isEntrypointId(id)) {
       var dartId = _entrypointDartId(id);
       if (dartId != null) {
@@ -143,20 +201,15 @@ class DartDevcEnvironment {
       assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
-      assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
-          _environmentConstants, _mode, logError);
+      assets = createDartdevcModule(
+          jsId, _moduleReader, _scratchSpace, _environmentConstants, _mode);
       // Pre-emptively start building all transitive js deps under the
       // assumption they will be needed in the near future.
-      runZoned(() async {
+      () async {
         var module = await _moduleReader.moduleFor(jsId);
         var deps = await _moduleReader.readTransitiveDeps(module);
         deps.forEach((moduleId) => getAssetById(moduleId.jsId));
-      }, onError: (_) {
-        // Ignore uncaught for now, the cached futures will contain the errors
-        // to respond with for later requests. Since nobody is awaiting these
-        // futures yet they end up bubbling up as uncaught errors unless we trap
-        // them here.
-      });
+      }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }

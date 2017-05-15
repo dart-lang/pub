@@ -64,7 +64,7 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     outputCompleters[jsMapEntrypointId] = new Completer<Asset>();
   }
 
-  () async {
+  runZoned(() async {
     var module = await moduleReader.moduleFor(dartEntrypointId);
 
     // The path to the entrypoint JS module as it should appear in the call to
@@ -73,7 +73,8 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     var appModulePath = p.url.relative(p.url.join(moduleDir, module.id.name),
         from: p.url.dirname(dartEntrypointId.path));
 
-    // The name of the entrypoint dart library within the entrypoint JS module.
+    // The name of the entrypoint dart library within the entrypoint JS
+    // module.
     //
     // This is used to invoke `main()` from within the bootstrap script.
     //
@@ -81,8 +82,8 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     // basic of cases.
     //
     // See https://github.com/dart-lang/sdk/issues/27262 for the root issue
-    // which will allow us to not rely on the naming schemes that dartdevc uses
-    // internally, but instead specify our own.
+    // which will allow us to not rely on the naming schemes that dartdevc
+    // uses internally, but instead specify our own.
     var appModuleScope = p.url
         .split(p.url.withoutExtension(
             p.url.relative(dartEntrypointId.path, from: moduleDir)))
@@ -129,10 +130,14 @@ document.head.appendChild(el);
     if (mode == BarbackMode.DEBUG) {
       outputCompleters[jsMapEntrypointId].complete(new Asset.fromString(
           jsMapEntrypointId,
-          '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
-          '"file":""}'));
+          '{"version":3,"sourceRoot":"","sources":[],"names":[],'
+          '"mappings":"","file":""}'));
     }
-  }();
+  }, onError: (e, s) {
+    outputCompleters.values.forEach((c) {
+      if (!c.isCompleted) c.completeError(e, s);
+    });
+  });
 
   var outputFutures = <AssetId, Future<Asset>>{};
   outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
@@ -149,8 +154,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     ModuleReader moduleReader,
     ScratchSpace scratchSpace,
     Map<String, String> environmentConstants,
-    BarbackMode mode,
-    logError(String message)) {
+    BarbackMode mode) {
   assert(id.extension == '.js');
   var outputCompleters = <AssetId, Completer<Asset>>{
     id: new Completer(),
@@ -159,13 +163,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
-  () async {
+  runZoned(() async {
     var module = await moduleReader.moduleFor(id);
-    if (module == null) {
-      logError('No module found for $id.');
-      outputCompleters.values.forEach((c) => c.complete(null));
-      return;
-    }
     var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
     var linkedSummaryIds =
         transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
@@ -230,9 +229,9 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     // status code if something failed. Today we just make sure there is an output
     // JS file to verify it was successful.
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-      logError('Error compiling dartdevc module: ${module.id}.\n'
-          '${response.output}');
-      outputCompleters.values.forEach((c) => c.complete(null));
+      outputCompleters.values.forEach((c) =>
+          c.completeError('Error compiling dartdevc module: ${module.id}.\n'
+              '${response.output}'));
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
@@ -242,7 +241,11 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
             module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));
       }
     }
-  }();
+  }, onError: (e, s) {
+    outputCompleters.values.forEach((c) {
+      if (!c.isCompleted) c.completeError(e, s);
+    });
+  });
 
   var outputFutures = <AssetId, Future<Asset>>{};
   outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
