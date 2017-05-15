@@ -315,14 +315,16 @@ class BoundHostedSource extends CachedSource {
   /// Always throws an error, either the original one or a better one.
   void _throwFriendlyError(
       error, StackTrace stackTrace, String package, String url) {
-
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw new PackageNotFoundException(
             "Could not find package $package at $url.", error, stackTrace);
       }
 
-      fail("Got \"$error\" trying to find package $package at $url", error,
+      fail(
+          "${error.response.statusCode} ${error.response.reasonPhrase} trying "
+          "to find package $package at $url.",
+          error,
           stackTrace);
     }
 
