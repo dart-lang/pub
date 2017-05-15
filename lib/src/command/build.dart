@@ -111,7 +111,7 @@ class BuildCommand extends BarbackCommand {
       if (environment.dartDevcEnvironment != null) {
         await log.progress("Building dartdevc modules", () async {
           assets.addAll(await environment.dartDevcEnvironment
-              .doFullBuild(assets, logError: logError));
+              .doFullBuild(assets, logError));
         });
         await environment.dartDevcEnvironment.cleanUp();
       }
