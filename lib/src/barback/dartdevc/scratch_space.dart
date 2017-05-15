@@ -77,7 +77,9 @@ class ScratchSpace {
   }
 
   /// Deletes the temp directory for this environment.
-  Future delete() => tempDir.delete(recursive: true);
+  Future delete() async {
+    if (await tempDir.exists()) return tempDir.delete(recursive: true);
+  }
 
   /// Returns the actual [File] in this environment corresponding to [id].
   ///
