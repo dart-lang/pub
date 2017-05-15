@@ -101,11 +101,11 @@ class ServeCommand extends BarbackCommand {
         compiler: compiler,
         environmentConstants: environmentConstants);
 
-    var sigintListener;
+    StreamSubscription<ProcessSignal> sigintListener;
     sigintListener = ProcessSignal.SIGINT.watch().listen((_) {
       sigintListener.cancel();
-      log.progress('Cleaning up dartdevc temp environment..', () async {
-        await environment.cleanup();
+      log.progress('Cleaning up dartdevc temp environment', () async {
+        await environment.cleanUp();
         // Re-send a SIGINT to ourselves, now that we are done cleaning up.
         Process.killPid(pid, ProcessSignal.SIGINT);
       });

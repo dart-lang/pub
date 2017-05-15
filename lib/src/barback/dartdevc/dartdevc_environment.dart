@@ -10,6 +10,9 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
+import '../../io.dart';
+import '../../log.dart' as log;
+import '../../package_graph.dart';
 import 'dartdevc.dart';
 import 'module.dart';
 import 'module_computer.dart';
@@ -17,10 +20,6 @@ import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';
 import 'workers.dart';
-
-import '../../io.dart';
-import '../../log.dart' as log;
-import '../../package_graph.dart';
 
 /// Handles running dartdevc on top of a [Barback] instance.
 ///
@@ -43,7 +42,7 @@ class DartDevcEnvironment {
   }
 
   /// Deletes the [_scratchSpace] and shuts down the workers.
-  Future cleanup() {
+  Future cleanUp() {
     return Future.wait([
       _scratchSpace.delete(),
       // These should get terminated automatically when this process exits, but
@@ -71,8 +70,8 @@ class DartDevcEnvironment {
       // modules that are required (will be built later).
       var futureAssets =
           _buildAsset(asset.id.addExtension('.js'), logError: logError);
-      jsAssets.addAll((await Future.wait(futureAssets.values))
-          .where((asset) => asset != null));
+      var assets = await Future.wait(futureAssets.values);
+      jsAssets.addAll(assets.where((asset) => asset != null));
       var module = await _moduleReader.moduleFor(asset.id);
       modulesToBuild.add(module.id);
       modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
@@ -84,8 +83,8 @@ class DartDevcEnvironment {
       allFutureAssets
           .addAll(_buildAsset(module.jsId, logError: logError).values);
     }
-    jsAssets.addAll(
-        (await Future.wait(allFutureAssets)).where((asset) => asset != null));
+    var assets = await Future.wait(allFutureAssets);
+    jsAssets.addAll(assets.where((asset) => asset != null));
 
     return jsAssets;
   }
@@ -110,8 +109,8 @@ class DartDevcEnvironment {
   /// Invalidates [package] and all packages that depend on [package].
   void invalidatePackage(String package) {
     _assetCache.invalidatePackage(package);
-    _scratchSpace.deletePackageFiles(
-        package, package == _packageGraph.entrypoint.root.name);
+    _scratchSpace.deletePackageFiles(package,
+        isRootPackage: package == _packageGraph.entrypoint.root.name);
   }
 
   /// Handles building all assets that we know how to build.
@@ -181,7 +180,7 @@ class DartDevcEnvironment {
   }
 
   /// Builds the `dart_sdk.js` or `require.js` assets by copying them from the
-  /// sdk.
+  /// SDK.
   Future<Asset> _buildJsResource(AssetId id) async {
     var sdk = cli_util.getSdkDir();
 
@@ -189,7 +188,7 @@ class DartDevcEnvironment {
       case 'dart_sdk.js':
         var sdkAmdJsPath =
             p.url.join(sdk.path, 'lib/dev_compiler/amd/dart_sdk.js');
-        return new Asset.fromFile(id, new File(sdkAmdJsPath));
+        return new Asset.fromPath(id, sdkAmdJsPath);
       case 'require.js':
         var requireJsPath =
             p.url.join(sdk.path, 'lib/dev_compiler/amd/require.js');
@@ -219,7 +218,8 @@ class DartDevcEnvironment {
   /// Gets an [Asset] by [id] asynchronously.
   ///
   /// All `.dart` files are read from [_barback], and all other files are read
-  /// from [this].
+  /// from [this]. This is because the only files we care about from barback are
+  /// `.dart` files.
   Future<Asset> _getAsset(AssetId id) async {
     var asset = id.extension == '.dart'
         ? await _barback.getAssetById(id)
@@ -233,7 +233,7 @@ class DartDevcEnvironment {
 AssetId _entrypointDartId(AssetId id) {
   if (id.extension == '.map') id = id.changeExtension('');
   assert(id.path.endsWith('.bootstrap.js') || id.path.endsWith('.dart.js'));
-  // Skip entrypoints under lib
+  // Skip entrypoints under lib.
   if (topLevelDir(id.path) == 'lib') return null;
 
   // Remove the `.js` extension.

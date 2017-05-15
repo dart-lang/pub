@@ -63,7 +63,8 @@ class ScratchSpace {
   ///
   /// If [isRootPackage] then this also deletes all top level entities under
   /// [tempDir] other than the [packagesDir].
-  void deletePackageFiles(String package, bool isRootPackage) {
+  void deletePackageFiles(String package, {bool isRootPackage}) {
+    isRootPackage ??= false;
     var packageDir = new Directory(p.join(packagesDir.path, package));
     if (packageDir.existsSync()) packageDir.deleteSync(recursive: true);
     if (isRootPackage) {
@@ -76,7 +77,9 @@ class ScratchSpace {
   }
 
   /// Deletes the temp directory for this environment.
-  Future delete() => tempDir.delete(recursive: true);
+  Future delete() async {
+    if (await tempDir.exists()) return tempDir.delete(recursive: true);
+  }
 
   /// Returns the actual [File] in this environment corresponding to [id].
   ///
