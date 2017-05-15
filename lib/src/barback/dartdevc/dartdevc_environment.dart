@@ -66,7 +66,7 @@ class DartDevcEnvironment {
       // We only care about real entrypoint modules, we collect those and all
       // their transitive deps.
       if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
-      // Build the entrypoint js files, and collect the set of transitive
+      // Build the entrypoint JS files, and collect the set of transitive
       // modules that are required (will be built later).
       var futureAssets =
           _buildAsset(asset.id.addExtension('.js'), logError: logError);
@@ -145,7 +145,7 @@ class DartDevcEnvironment {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
       assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
           _environmentConstants, _mode, logError);
-      // Pre-emptively start building all transitive js deps under the
+      // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
       runZoned(() async {
         var module = await _moduleReader.moduleFor(jsId);
@@ -234,7 +234,7 @@ class DartDevcEnvironment {
   }
 }
 
-/// Gives the dart entrypoint [AssetId] for a bootstrap js [id].
+/// Gives the dart entrypoint [AssetId] for a bootstrap JS [id].
 AssetId _entrypointDartId(AssetId id) {
   if (id.extension == '.map') id = id.changeExtension('');
   assert(id.path.endsWith('.bootstrap.js') || id.path.endsWith('.dart.js'));
