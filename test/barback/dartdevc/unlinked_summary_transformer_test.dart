@@ -61,6 +61,8 @@ void main() {}
     unlinkedSummaryRequestShouldSucceed(
         'packages/foo/lib__foo$unlinkedSummaryExtension',
         [equals('package:foo/foo.dart')]);
+    requestShould404('invalid$unlinkedSummaryExtension');
+    requestShould404('packages/foo/invalid$unlinkedSummaryExtension');
     endPubServe();
   });
 }
