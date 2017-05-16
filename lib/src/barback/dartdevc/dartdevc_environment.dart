@@ -87,14 +87,13 @@ class DartDevcEnvironment {
       allFutureAssets
           .addAll(_buildAsset(module.jsId, logError: logError).values);
     }
-    // Copy all js resoureces for each of the app dirs that were discovered.
+    // Copy all JS resoureces for each of the app dirs that were discovered.
     for (var dir in appDirs) {
-      allFutureAssets.addAll([
-        _buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
-            p.url.join(dir, 'dart_sdk.js'))),
-        _buildJsResource(new AssetId(
-            _packageGraph.entrypoint.root.name, p.url.join(dir, 'require.js'))),
-      ]);
+      allFutureAssets
+        ..add(_buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
+            p.url.join(dir, 'dart_sdk.js'))))
+        ..add(_buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
+            p.url.join(dir, 'require.js'))));
     }
     var assets = await Future.wait(allFutureAssets);
     jsAssets.addAll(assets.where((asset) => asset != null));
