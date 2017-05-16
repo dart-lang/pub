@@ -39,7 +39,9 @@ void main() {
     });
 
     test('Can create and delete a scratch space', () async {
-      expect(p.isWithin(Directory.systemTemp.path, scratchSpace.tempDir.path),
+      expect(
+          p.isWithin(Directory.systemTemp.resolveSymbolicLinksSync(),
+              scratchSpace.tempDir.resolveSymbolicLinksSync()),
           isTrue);
 
       for (var id in allAssets.keys) {
