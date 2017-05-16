@@ -70,7 +70,7 @@ main() {}
     moduleRequestShouldSucceed('packages/foo/$moduleConfigName', [
       makeModule(package: 'foo', name: 'lib__foo', srcs: ['foo|lib/foo.dart'])
     ]);
-
+    requestShould404('packages/invalid/$moduleConfigName');
     endPubServe();
   });
 }

@@ -59,6 +59,8 @@ void main() {
     requestShouldSucceed('packages/foo/lib__foo.js', contains('message'));
     requestShouldSucceed(
         'packages/foo/lib__foo.js.map', contains('lib__foo.js'));
+    requestShould404('invalid.js');
+    requestShould404('packages/foo/invalid.js');
     endPubServe();
   });
 }

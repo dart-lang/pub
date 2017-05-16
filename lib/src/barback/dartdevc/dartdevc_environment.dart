@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
@@ -58,41 +59,46 @@ class DartDevcEnvironment {
   /// Returns only the `.js` files which are required to load the apps.
   Future<AssetSet> doFullBuild(AssetSet inputAssets,
       {logError(String message)}) async {
-    var modulesToBuild = new Set<ModuleId>();
-    var jsAssets = new AssetSet();
-    for (var asset in inputAssets) {
-      if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
-      if (asset.id.extension != '.dart') continue;
-      // We only care about real entrypoint modules, we collect those and all
-      // their transitive deps.
-      if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
-      // Build the entrypoint JS files, and collect the set of transitive
-      // modules that are required (will be built later).
-      var futureAssets =
-          _buildAsset(asset.id.addExtension('.js'), logError: logError);
-      var assets = await Future.wait(futureAssets.values);
+    try {
+      var modulesToBuild = new Set<ModuleId>();
+      var jsAssets = new AssetSet();
+      for (var asset in inputAssets) {
+        if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
+        if (asset.id.extension != '.dart') continue;
+        // We only care about real entrypoint modules, we collect those and all
+        // their transitive deps.
+        if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
+        // Build the entrypoint JS files, and collect the set of transitive
+        // modules that are required (will be built later).
+        var futureAssets =
+            _buildAsset(asset.id.addExtension('.js'), logError: logError);
+        var assets = await Future.wait(futureAssets.values);
+        jsAssets.addAll(assets.where((asset) => asset != null));
+        var module = await _moduleReader.moduleFor(asset.id);
+        modulesToBuild.add(module.id);
+        modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
+      }
+
+      // Build all required modules for the apps that were discovered.
+      var allFutureAssets = <Future<Asset>>[];
+      for (var module in modulesToBuild) {
+        allFutureAssets
+            .addAll(_buildAsset(module.jsId, logError: logError).values);
+      }
+      var assets = await Future.wait(allFutureAssets);
       jsAssets.addAll(assets.where((asset) => asset != null));
-      var module = await _moduleReader.moduleFor(asset.id);
-      modulesToBuild.add(module.id);
-      modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
-    }
 
-    // Build all required modules for the apps that were discovered.
-    var allFutureAssets = <Future<Asset>>[];
-    for (var module in modulesToBuild) {
-      allFutureAssets
-          .addAll(_buildAsset(module.jsId, logError: logError).values);
+      return jsAssets;
+    } catch (e) {
+      logError(e);
+      return new AssetSet();
     }
-    var assets = await Future.wait(allFutureAssets);
-    jsAssets.addAll(assets.where((asset) => asset != null));
-
-    return jsAssets;
   }
 
   /// Attempt to get an [Asset] by [id], completes with an
   /// [AssetNotFoundException] if the asset couldn't be built.
   Future<Asset> getAssetById(AssetId id) async {
-    if (_assetCache[id] == null) {
+    if (!_assetCache.containsKey(id)) {
       if (_isEntrypointId(id)) {
         var dartId = _entrypointDartId(id);
         if (dartId != null &&
@@ -103,6 +109,7 @@ class DartDevcEnvironment {
         _buildAsset(id);
       }
     }
+    if (!_assetCache.containsKey(id)) throw new AssetNotFoundException(id);
     return _assetCache[id];
   }
 
@@ -118,7 +125,7 @@ class DartDevcEnvironment {
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
   Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
       {logError(String message)}) {
-    if (_assetCache[id] != null) return {id: _assetCache[id]};
+    if (_assetCache.containsKey(id)) return {id: _assetCache[id]};
     logError ??= log.error;
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
@@ -147,23 +154,22 @@ class DartDevcEnvironment {
           _environmentConstants, _mode, logError);
       // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
-      runZoned(() async {
-        var module = await _moduleReader.moduleFor(jsId);
-        var deps = await _moduleReader.readTransitiveDeps(module);
-        deps.forEach((moduleId) => getAssetById(moduleId.jsId));
-      }, onError: (_) {
-        // Ignore uncaught for now, the cached futures will contain the errors
-        // to respond with for later requests. Since nobody is awaiting these
-        // futures yet they end up bubbling up as uncaught errors unless we trap
-        // them here.
-      });
+      () async {
+        try {
+          var module = await _moduleReader.moduleFor(jsId);
+          if (module == null) return;
+          var deps = await _moduleReader.readTransitiveDeps(module);
+          await Future
+              .wait(deps.map((moduleId) => getAssetById(moduleId.jsId)));
+        } on AssetNotFoundException catch (_) {}
+      }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
     }
     assets ??= <AssetId, Future<Asset>>{};
 
-    for (var id in assets.keys) {
-      _assetCache[id] = assets[id];
+    for (var assetId in assets.keys) {
+      _assetCache[assetId] = assets[assetId];
     }
     return assets;
   }
@@ -177,6 +183,7 @@ class DartDevcEnvironment {
         asset.id.package == id.package &&
         asset.id.extension == '.dart' &&
         topLevelDir(asset.id.path) == moduleDir);
+    if (moduleAssets.isEmpty) throw new AssetNotFoundException(id);
     var moduleMode =
         moduleDir == 'lib' ? ModuleMode.public : ModuleMode.private;
     var modules = await computeModules(moduleMode, moduleAssets);
@@ -253,23 +260,25 @@ AssetId _entrypointDartId(AssetId id) {
 class _AssetCache {
   /// [Asset]s are indexed first by package and then path, this allows us to
   /// invalidate whole packages efficiently.
-  final _assets = <String, Map<String, Future<Asset>>>{};
+  final _assets = <String, Map<String, Future<Result<Asset>>>>{};
 
   final PackageGraph _packageGraph;
 
   _AssetCache(this._packageGraph);
 
   Future<Asset> operator [](AssetId id) {
-    var packageCache = _assets[id.package];
-    if (packageCache == null) return null;
-    return packageCache[id.path];
+    var futureResult = _getResult(id);
+    if (futureResult == null) return null;
+    return Result.release(futureResult);
   }
 
   void operator []=(AssetId id, Future<Asset> asset) {
-    var packageCache =
-        _assets.putIfAbsent(id.package, () => <String, Future<Asset>>{});
-    packageCache[id.path] = asset;
+    var packageCache = _assets.putIfAbsent(
+        id.package, () => <String, Future<Result<Asset>>>{});
+    packageCache[id.path] = Result.capture(asset);
   }
+
+  bool containsKey(AssetId id) => _getResult(id) != null;
 
   /// Invalidates [package] and all packages that depend on [package].
   void invalidatePackage(String packageNameToInvalidate) {
@@ -284,5 +293,14 @@ class _AssetCache {
         _assets.remove(packageName);
       }
     }
+  }
+
+  /// Reads a [Result] from the actual underlying caches, or returns `null`.
+  Future<Result> _getResult(AssetId id) {
+    var packageCache = _assets[id.package];
+    if (packageCache == null) return null;
+    var futureResult = packageCache[id.path];
+    if (futureResult == null) return null;
+    return futureResult;
   }
 }

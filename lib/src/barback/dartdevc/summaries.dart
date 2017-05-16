@@ -27,6 +27,7 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
     ScratchSpace scratchSpace, logError(String message)) async {
   assert(id.path.endsWith(linkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
+  if (module == null) throw new AssetNotFoundException(id);
   var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
   var unlinkedSummaryIds =
       transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
@@ -52,7 +53,7 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
   if (response.exitCode == EXIT_CODE_ERROR) {
     logError('Error creating linked summaries for module: ${module.id}.\n'
         '${response.output}\n${request.arguments}');
-    return null;
+    throw new AssetNotFoundException(id);
   }
   return new Asset.fromBytes(
       module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync());
@@ -63,6 +64,7 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
     ScratchSpace scratchSpace, logError(String message)) async {
   assert(id.path.endsWith(unlinkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
+  if (module == null) throw new AssetNotFoundException(id);
   await scratchSpace.ensureAssets(module.assetIds);
   var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();
@@ -80,7 +82,7 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
   if (response.exitCode == EXIT_CODE_ERROR) {
     logError('Error creating unlinked summaries for module: ${module.id}.\n'
         '${response.output}');
-    return null;
+    throw new AssetNotFoundException(id);
   }
   return new Asset.fromBytes(
       module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync());
