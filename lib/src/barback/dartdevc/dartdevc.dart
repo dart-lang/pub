@@ -64,8 +64,9 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     outputCompleters[jsMapEntrypointId] = new Completer<Asset>();
   }
 
-  () async {
+  return _ensureComplete(outputCompleters, () async {
     var module = await moduleReader.moduleFor(dartEntrypointId);
+    if (module == null) return;
 
     // The path to the entrypoint JS module as it should appear in the call to
     // `require` in the bootstrap file.
@@ -143,11 +144,7 @@ document.head.appendChild(el);
           '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
           '"file":""}'));
     }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+  });
 }
 
 /// Compiles [module] using the `dartdevc` binary from the SDK to a relative
@@ -170,13 +167,9 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
-  () async {
+  return _ensureComplete(outputCompleters, () async {
     var module = await moduleReader.moduleFor(id);
-    if (module == null) {
-      logError('No module found for $id.');
-      outputCompleters.values.forEach((c) => c.complete(null));
-      return;
-    }
+    if (module == null) return;
     var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
     var linkedSummaryIds =
         transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
@@ -243,7 +236,6 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
       logError('Error compiling dartdevc module: ${module.id}.\n'
           '${response.output}');
-      outputCompleters.values.forEach((c) => c.complete(null));
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
@@ -253,11 +245,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
             module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));
       }
     }
-  }();
-
-  var outputFutures = <AssetId, Future<Asset>>{};
-  outputCompleters.forEach((k, v) => outputFutures[k] = v.future);
-  return outputFutures;
+  });
 }
 
 /// Copies the `dart_sdk.js` and `require.js` AMD files from the SDK into
@@ -283,4 +271,36 @@ Map<AssetId, Asset> copyDartDevcResources(String package, String outputDir) {
       new Asset.fromFile(requireJsOutputId, new File(requireJsPath));
 
   return outputs;
+}
+
+/// Runs [fn], and then ensures that all [completers] are completed.
+///
+/// If an error is caught, then all [completers] that weren't completed are
+/// completed with that error and stack trace.
+///
+/// If no error was caught then all [completers] that weren't completed are
+/// completed with an [AssetNotFoundException].
+///
+/// Synchronously returns a `Map<AssetId, Future<Asset>` which is derived from
+/// the original [completers].
+Map<AssetId, Future<Asset>> _ensureComplete(
+    Map<AssetId, Completer<Asset>> completers, Future fn()) {
+  var futures = <AssetId, Future<Asset>>{};
+  completers.forEach((k, v) => futures[k] = v.future);
+  () async {
+    try {
+      await fn();
+    } catch (e, s) {
+      for (var completer in completers.values) {
+        if (!completer.isCompleted) completer.completeError(e, s);
+      }
+    } finally {
+      for (var id in completers.keys) {
+        if (!completers[id].isCompleted) {
+          completers[id].completeError(new AssetNotFoundException(id));
+        }
+      }
+    }
+  }();
+  return futures;
 }
