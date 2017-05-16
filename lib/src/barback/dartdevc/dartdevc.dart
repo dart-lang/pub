@@ -95,7 +95,17 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     var transitiveDeps = await moduleReader.readTransitiveDeps(module);
     for (var dep in transitiveDeps) {
       if (dep.dir != 'lib') {
-        customModulePaths.add('"${dep.dir}/${dep.name}": "${dep.name}"');
+        var relativePath = p.url.relative(p.url.join(moduleDir, dep.name),
+            from: p.url.dirname(bootstrapId.path));
+        customModulePaths.add('"${dep.dir}/${dep.name}": "$relativePath"');
+      } else {
+        var jsModuleName = 'packages/${dep.package}/${dep.name}';
+        var actualModulePath = p.url.relative(
+            p.url.join(moduleDir, jsModuleName),
+            from: p.url.dirname(bootstrapId.path));
+        if (jsModuleName != actualModulePath) {
+          customModulePaths.add('"$jsModuleName": "$actualModulePath"');
+        }
       }
     }
 
