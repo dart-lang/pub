@@ -60,12 +60,16 @@ class DartDevcEnvironment {
       {logError(String message)}) async {
     var modulesToBuild = new Set<ModuleId>();
     var jsAssets = new AssetSet();
+    // All the dirs that we found app entrypoints under, we need to copy the
+    // static dartdevc resources into each of these directories as well.
+    var appDirs = new Set<String>();
     for (var asset in inputAssets) {
       if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
       if (asset.id.extension != '.dart') continue;
       // We only care about real entrypoint modules, we collect those and all
       // their transitive deps.
       if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
+      appDirs.add(p.url.dirname(asset.id.path));
       // Build the entrypoint JS files, and collect the set of transitive
       // modules that are required (will be built later).
       var futureAssets =
@@ -82,6 +86,15 @@ class DartDevcEnvironment {
     for (var module in modulesToBuild) {
       allFutureAssets
           .addAll(_buildAsset(module.jsId, logError: logError).values);
+    }
+    // Copy all js resoureces for each of the app dirs that were discovered.
+    for (var dir in appDirs) {
+      allFutureAssets.addAll([
+        _buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
+            p.url.join(dir, 'dart_sdk.js'))),
+        _buildJsResource(new AssetId(
+            _packageGraph.entrypoint.root.name, p.url.join(dir, 'require.js'))),
+      ]);
     }
     var assets = await Future.wait(allFutureAssets);
     jsAssets.addAll(assets.where((asset) => asset != null));
