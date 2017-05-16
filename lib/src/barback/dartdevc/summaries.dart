@@ -53,7 +53,7 @@ Future<Asset> createLinkedSummary(AssetId id, ModuleReader moduleReader,
   if (response.exitCode == EXIT_CODE_ERROR) {
     logError('Error creating linked summaries for module: ${module.id}.\n'
         '${response.output}\n${request.arguments}');
-    return null;
+    throw new AssetNotFoundException(id);
   }
   return new Asset.fromBytes(
       module.id.linkedSummaryId, summaryOutputFile.readAsBytesSync());
@@ -82,7 +82,7 @@ Future<Asset> createUnlinkedSummary(AssetId id, ModuleReader moduleReader,
   if (response.exitCode == EXIT_CODE_ERROR) {
     logError('Error creating unlinked summaries for module: ${module.id}.\n'
         '${response.output}');
-    return null;
+    throw new AssetNotFoundException(id);
   }
   return new Asset.fromBytes(
       module.id.unlinkedSummaryId, summaryOutputFile.readAsBytesSync());

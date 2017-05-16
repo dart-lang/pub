@@ -59,35 +59,40 @@ class DartDevcEnvironment {
   /// Returns only the `.js` files which are required to load the apps.
   Future<AssetSet> doFullBuild(AssetSet inputAssets,
       {logError(String message)}) async {
-    var modulesToBuild = new Set<ModuleId>();
-    var jsAssets = new AssetSet();
-    for (var asset in inputAssets) {
-      if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
-      if (asset.id.extension != '.dart') continue;
-      // We only care about real entrypoint modules, we collect those and all
-      // their transitive deps.
-      if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
-      // Build the entrypoint JS files, and collect the set of transitive
-      // modules that are required (will be built later).
-      var futureAssets =
-          _buildAsset(asset.id.addExtension('.js'), logError: logError);
-      var assets = await Future.wait(futureAssets.values);
+    try {
+      var modulesToBuild = new Set<ModuleId>();
+      var jsAssets = new AssetSet();
+      for (var asset in inputAssets) {
+        if (asset.id.package != _packageGraph.entrypoint.root.name) continue;
+        if (asset.id.extension != '.dart') continue;
+        // We only care about real entrypoint modules, we collect those and all
+        // their transitive deps.
+        if (!await isAppEntryPoint(asset.id, _barback.getAssetById)) continue;
+        // Build the entrypoint JS files, and collect the set of transitive
+        // modules that are required (will be built later).
+        var futureAssets =
+            _buildAsset(asset.id.addExtension('.js'), logError: logError);
+        var assets = await Future.wait(futureAssets.values);
+        jsAssets.addAll(assets.where((asset) => asset != null));
+        var module = await _moduleReader.moduleFor(asset.id);
+        modulesToBuild.add(module.id);
+        modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
+      }
+
+      // Build all required modules for the apps that were discovered.
+      var allFutureAssets = <Future<Asset>>[];
+      for (var module in modulesToBuild) {
+        allFutureAssets
+            .addAll(_buildAsset(module.jsId, logError: logError).values);
+      }
+      var assets = await Future.wait(allFutureAssets);
       jsAssets.addAll(assets.where((asset) => asset != null));
-      var module = await _moduleReader.moduleFor(asset.id);
-      modulesToBuild.add(module.id);
-      modulesToBuild.addAll(await _moduleReader.readTransitiveDeps(module));
-    }
 
-    // Build all required modules for the apps that were discovered.
-    var allFutureAssets = <Future<Asset>>[];
-    for (var module in modulesToBuild) {
-      allFutureAssets
-          .addAll(_buildAsset(module.jsId, logError: logError).values);
+      return jsAssets;
+    } catch (e) {
+      logError(e);
+      return new AssetSet();
     }
-    var assets = await Future.wait(allFutureAssets);
-    jsAssets.addAll(assets.where((asset) => asset != null));
-
-    return jsAssets;
   }
 
   /// Attempt to get an [Asset] by [id], completes with an
