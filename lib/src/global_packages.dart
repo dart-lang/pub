@@ -10,7 +10,7 @@ import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
-import 'barback/compiler.dart';
+import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';

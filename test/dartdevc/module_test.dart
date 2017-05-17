@@ -6,7 +6,7 @@ import 'dart:convert';
 
 import 'package:test/test.dart';
 
-import 'package:pub/src/barback/dartdevc/module.dart';
+import 'package:pub/src/dartdevc/module.dart';
 
 import 'util.dart';
 

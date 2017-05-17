@@ -5,7 +5,7 @@
 import 'package:scheduled_test/scheduled_stream.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import 'package:pub/src/barback/dartdevc/module_reader.dart';
+import 'package:pub/src/dartdevc/module_reader.dart';
 import 'package:pub/src/exit_codes.dart';
 
 import '../descriptor.dart' as d;

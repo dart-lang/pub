@@ -11,8 +11,8 @@ import 'package:bazel_worker/bazel_worker.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
-import '../../dart.dart';
-import '../../io.dart';
+import '../dart.dart';
+import '../io.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';

@@ -6,11 +6,11 @@ import 'dart:async';
 
 import 'package:barback/barback.dart';
 
+import '../compiler.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'asset_environment.dart';
 import 'barback_server.dart';
-import 'compiler.dart';
 import 'dart2js_transformer.dart';
 import 'excluding_transformer.dart';
 import 'transformer_config.dart';

@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 
-import '../barback/compiler.dart';
+import '../compiler.dart';
 import '../command.dart';
 import '../io.dart';
 import '../log.dart' as log;

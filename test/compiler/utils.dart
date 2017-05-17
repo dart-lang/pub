@@ -2,12 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/barback/compiler.dart';
+import 'package:pub/src/compiler.dart';
 
 import '../test_pub.dart';
 
 // For convenience, otherwise we need this import in pretty much all tests.
-export 'package:pub/src/barback/compiler.dart';
+export 'package:pub/src/compiler.dart';
 
 /// Runs an integration test once for each [Compiler] in [compilers], defaulting
 /// to [Compiler.dart2JS] and [Compiler.dartDevc].

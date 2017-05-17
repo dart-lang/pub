@@ -5,8 +5,8 @@
 import 'package:barback/barback.dart';
 import 'package:test/test.dart';
 
-import 'package:pub/src/barback/dartdevc/module.dart';
-import 'package:pub/src/barback/dartdevc/module_reader.dart';
+import 'package:pub/src/dartdevc/module.dart';
+import 'package:pub/src/dartdevc/module_reader.dart';
 
 import 'util.dart';
 

@@ -11,9 +11,9 @@ import 'package:barback/barback.dart';
 import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
-import '../../io.dart';
-import '../../log.dart' as log;
-import '../../package_graph.dart';
+import '../io.dart';
+import '../log.dart' as log;
+import '../package_graph.dart';
 import 'dartdevc.dart';
 import 'module.dart';
 import 'module_computer.dart';

@@ -4,9 +4,9 @@
 
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../descriptor.dart' as d;
-import '../../test_pub.dart';
-import '../../serve/utils.dart';
+import '../descriptor.dart' as d;
+import '../test_pub.dart';
+import '../serve/utils.dart';
 
 main() {
   integration("can compile js files for modules under lib and web", () {
@@ -61,6 +61,29 @@ void main() {
         'packages/foo/lib__foo.js.map', contains('lib__foo.js'));
     requestShould404('invalid.js');
     requestShould404('packages/foo/invalid.js');
+    endPubServe();
+  });
+
+  integration("dartdevc resources are copied next to entrypoints", () {
+    d.dir(appPath, [
+      d.appPubspec(),
+      d.dir("lib", [
+        d.file("main.dart", 'void main() {}'),
+      ]),
+      d.dir("web", [
+        d.file("main.dart", 'void main() {}'),
+        d.dir("subdir", [
+          d.file("main.dart", 'void main() {}'),
+        ]),
+      ]),
+    ]).create();
+
+    pubGet();
+    pubServe(args: ['--compiler', 'dartdevc']);
+    requestShouldSucceed('dart_sdk.js', null);
+    requestShouldSucceed('require.js', null);
+    requestShouldSucceed('subdir/dart_sdk.js', null);
+    requestShouldSucceed('subdir/require.js', null);
     endPubServe();
   });
 }

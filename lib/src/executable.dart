@@ -10,7 +10,7 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import 'barback/asset_environment.dart';
-import 'barback/compiler.dart';
+import 'compiler.dart';
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
