@@ -24,7 +24,10 @@ main() {
             contains("X-Pub-Command: ${command.name}"),
             contains("X-Pub-Session-ID:"),
             isNot(contains("X-Pub-Environment")),
-            contains("X-Pub-Reason: direct"),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple("X-Pub-Reason: direct", 2),
             isNot(contains("X-Pub-Reason: dev")),
           ]));
     });
@@ -47,7 +50,10 @@ main() {
             contains("X-Pub-Command: ${command.name}"),
             contains("X-Pub-Session-ID:"),
             isNot(contains("X-Pub-Environment")),
-            contains("X-Pub-Reason: dev"),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple("X-Pub-Reason: dev", 2),
             isNot(contains("X-Pub-Reason: direct")),
           ]));
     });
