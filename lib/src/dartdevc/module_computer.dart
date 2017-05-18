@@ -33,9 +33,8 @@ enum ModuleMode {
 /// strongly connected component with another entrypoint in which case a
 /// single [Module] is created for the strongly connected component.
 ///
-/// Note that only entrypoints are guaranteed to exist in any [Module], if
-/// an asset exists in [assetIds] but is not reachable from any entrypoint
-/// then it will not be contained in any [Module].
+/// If a source is not imported by any entrypoint then it will end up in its own
+/// module, (or possibly merged into a strongly connected component module).
 ///
 /// An entrypoint is defined as follows:
 ///
@@ -328,12 +327,9 @@ class _ModuleComputer {
 
       // The entry points that transitively import this module.
       var entrypointIds = modulesToEntryPoints[moduleId];
-      if (entrypointIds == null || entrypointIds.isEmpty) {
-        throw new StateError(
-            'Internal error, found a module that is not depended on by any '
-            'entrypoints. Please file an issue at '
-            'https://github.com/dart-lang/pub/issues/new');
-      }
+
+      // If no entrypoint imports the module, just leave it alone.
+      if (entrypointIds == null || entrypointIds.isEmpty) continue;
 
       // Create a new module based off the name of all entrypoints or merge into
       // an existing one by that name.
@@ -417,7 +413,7 @@ class _ModuleComputer {
       }
     }
 
-    for (var node in entrypoints.map((e) => nodesById[e])) {
+    for (var node in nodesById.values) {
       if (node.discoveryIndex != null) continue;
       stronglyConnect(node);
     }
