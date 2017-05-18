@@ -8,7 +8,7 @@ import 'package:watcher/watcher.dart';
 
 import 'asset_environment.dart';
 import 'barback_server.dart';
-import 'dartdevc/dartdevc_environment.dart';
+import '../dartdevc/dartdevc_environment.dart';
 
 /// A directory in the entrypoint package whose contents have been made
 /// available to barback and that are bound to a server.

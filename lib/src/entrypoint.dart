@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
-import 'barback/compiler.dart';
+import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'flutter.dart' as flutter;

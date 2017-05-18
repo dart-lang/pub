@@ -4,13 +4,13 @@
 
 import 'dart:convert';
 
-import 'package:pub/src/barback/dartdevc/module.dart';
-import 'package:pub/src/barback/dartdevc/module_reader.dart';
+import 'package:pub/src/dartdevc/module.dart';
+import 'package:pub/src/dartdevc/module_reader.dart';
 import 'package:scheduled_test/scheduled_test.dart';
 
-import '../../descriptor.dart' as d;
-import '../../test_pub.dart';
-import '../../serve/utils.dart';
+import '../descriptor.dart' as d;
+import '../test_pub.dart';
+import '../serve/utils.dart';
 import 'util.dart';
 
 main() {

@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:pub/src/barback/compiler.dart';
+import 'package:pub/src/compiler.dart';
 import 'package:pub/src/utils.dart';
 import 'package:scheduled_test/scheduled_process.dart';
 import 'package:scheduled_test/scheduled_stream.dart';

@@ -12,7 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:package_resolver/package_resolver.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import 'compiler.dart';
+import '../compiler.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_graph.dart';

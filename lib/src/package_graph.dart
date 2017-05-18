@@ -4,8 +4,8 @@
 
 import 'package:collection/collection.dart';
 
-import 'barback/compiler.dart';
 import 'barback/transformer_cache.dart';
+import 'compiler.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';

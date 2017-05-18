@@ -13,13 +13,12 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:stack_trace/stack_trace.dart';
 
 import '../barback.dart';
+import '../dartdevc/dartdevc_environment.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'base_server.dart';
 import 'asset_environment.dart';
-
-import 'dartdevc/dartdevc_environment.dart';
 
 /// Callback for determining if an asset with [id] should be served or not.
 typedef bool AllowAsset(AssetId id);

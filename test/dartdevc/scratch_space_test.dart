@@ -8,7 +8,7 @@ import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import 'package:pub/src/barback/dartdevc/scratch_space.dart';
+import 'package:pub/src/dartdevc/scratch_space.dart';
 import 'package:pub/src/io.dart';
 
 void main() {

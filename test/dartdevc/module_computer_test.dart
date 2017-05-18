@@ -4,7 +4,7 @@
 
 import 'package:test/test.dart';
 
-import 'package:pub/src/barback/dartdevc/module_computer.dart';
+import 'package:pub/src/dartdevc/module_computer.dart';
 
 import 'util.dart';
 

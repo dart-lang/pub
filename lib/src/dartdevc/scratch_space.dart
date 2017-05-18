@@ -8,7 +8,7 @@ import 'dart:io';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
-import '../../io.dart';
+import '../io.dart';
 
 typedef Future<Asset> AssetReader(AssetId id);
 
