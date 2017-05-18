@@ -138,7 +138,7 @@ class DartDevcEnvironment {
   Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
       {logError(String message)}) {
     if (_assetCache.containsKey(id)) return {id: _assetCache[id]};
-    logError ??= log.error;
+    logError ??= (String message) => log.error(log.red(message));
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
       assets = {
