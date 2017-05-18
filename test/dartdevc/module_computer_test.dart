@@ -134,14 +134,10 @@ main() {
         expect(modules, unorderedMatches(expectedModules));
       });
 
-      test('ignores non-reachable assets in lib/src/ and external assets',
-          () async {
+      test('ignores external assets', () async {
         var assets = makeAssets({
           'myapp|lib/a.dart': '''
             import 'package:b/b.dart';
-          ''',
-          // Not imported by any public entry point, should be ignored.
-          'myapp|lib/src/c.dart': '''
           ''',
         });
 
@@ -292,6 +288,40 @@ main() {
         });
         expect(computeModules(ModuleMode.public, assets.values),
             throwsArgumentError);
+      });
+
+      test('libs that aren\'t imported by entrypoints get their own modules',
+          () async {
+        var assets = makeAssets({
+          'myapp|lib/a.dart': '',
+          'myapp|lib/src/a.dart': '''
+            import 'c.dart';
+          ''',
+          'myapp|lib/src/b.dart': '''
+            import 'c.dart';
+          ''',
+          'myapp|lib/src/c.dart': '''
+            import 'b.dart';
+          ''',
+        });
+
+        var expectedModules = [
+          equalsModule(makeModule(
+              package: 'myapp', name: 'lib__a', srcs: ['myapp|lib/a.dart'])),
+          equalsModule(makeModule(
+              package: 'myapp',
+              name: 'lib__src__a',
+              srcs: ['myapp|lib/src/a.dart'],
+              directDependencies: ['myapp|lib/src/c.dart'])),
+          equalsModule(makeModule(
+              package: 'myapp',
+              name: 'lib__src__b',
+              srcs: ['myapp|lib/src/b.dart', 'myapp|lib/src/c.dart'])),
+        ];
+
+        var modules = await computeModules(ModuleMode.public, assets.values);
+
+        expect(modules, unorderedMatches(expectedModules));
       });
     });
 
