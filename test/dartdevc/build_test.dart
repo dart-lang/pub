@@ -69,6 +69,8 @@ void main() => other.main();
           d.matcherFile('dart_sdk.js', isNot(isEmpty)),
           d.matcherFile('require.js', isNot(isEmpty)),
           d.matcherFile('web__main.js', isNot(isEmpty)),
+          d.matcherFile('dart_stack_trace_mapper.js', isNot(isEmpty)),
+          d.matcherFile('ddc_web_compiler.js', isNot(isEmpty)),
           d.dir('packages', [
             d.dir('foo', [d.matcherFile('lib__foo.js', isNot(isEmpty))]),
             d.dir(appPath, [d.matcherFile('lib__hello.js', isNot(isEmpty))]),
@@ -86,6 +88,8 @@ void main() => other.main();
                 )),
             d.matcherFile('dart_sdk.js', isNot(isEmpty)),
             d.matcherFile('require.js', isNot(isEmpty)),
+            d.matcherFile('dart_stack_trace_mapper.js', isNot(isEmpty)),
+            d.matcherFile('ddc_web_compiler.js', isNot(isEmpty)),
           ]),
         ]),
       ]),

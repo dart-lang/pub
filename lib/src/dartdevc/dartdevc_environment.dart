@@ -35,6 +35,14 @@ class DartDevcEnvironment {
   final PackageGraph _packageGraph;
   ScratchSpace _scratchSpace;
 
+  static final _sdkResources = <String, String>{
+    'dart_sdk.js': 'lib/dev_compiler/amd/dart_sdk.js',
+    'require.js': 'lib/dev_compiler/amd/require.js',
+    'dart_stack_trace_mapper.js':
+        'lib/dev_compiler/web/dart_stack_trace_mapper.js',
+    'ddc_web_compiler.js': 'lib/dev_compiler/web/ddc_web_compiler.js',
+  };
+
   DartDevcEnvironment(
       this._barback, this._mode, this._environmentConstants, this._packageGraph)
       : _assetCache = new _AssetCache(_packageGraph) {
@@ -91,11 +99,10 @@ class DartDevcEnvironment {
       }
       // Copy all JS resoureces for each of the app dirs that were discovered.
       for (var dir in appDirs) {
-        allFutureAssets
-          ..add(_buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
-              p.url.join(dir, 'dart_sdk.js'))))
-          ..add(_buildJsResource(new AssetId(_packageGraph.entrypoint.root.name,
-              p.url.join(dir, 'require.js'))));
+        for (var name in _sdkResources.keys) {
+          allFutureAssets.add(_buildJsResource(new AssetId(
+              _packageGraph.entrypoint.root.name, p.url.join(dir, name))));
+        }
       }
       var assets = await Future.wait(allFutureAssets);
       jsAssets.addAll(assets.where((asset) => asset != null));
@@ -154,8 +161,7 @@ class DartDevcEnvironment {
         assets = bootstrapDartDevcEntrypoint(
             dartId, _mode, _moduleReader, _barback.getAssetById);
       }
-    } else if (id.path.endsWith('require.js') ||
-        id.path.endsWith('dart_sdk.js')) {
+    } else if (_hasJsResource(id)) {
       assets = {id: _buildJsResource(id)};
     } else if (id.path.endsWith('require.js.map') ||
         id.path.endsWith('dart_sdk.js.map')) {
@@ -203,23 +209,16 @@ class DartDevcEnvironment {
     return new Asset.fromString(id, encoded);
   }
 
-  /// Builds the `dart_sdk.js` or `require.js` assets by copying them from the
-  /// SDK.
+  bool _hasJsResource(AssetId id) =>
+      _sdkResources.containsKey(p.url.basename(id.path));
+
+  /// Builds [_sdkResources] assets by copying them from the SDK.
   Future<Asset> _buildJsResource(AssetId id) async {
     var sdk = cli_util.getSdkDir();
-
-    switch (p.url.basename(id.path)) {
-      case 'dart_sdk.js':
-        var sdkAmdJsPath =
-            p.url.join(sdk.path, 'lib/dev_compiler/amd/dart_sdk.js');
-        return new Asset.fromPath(id, sdkAmdJsPath);
-      case 'require.js':
-        var requireJsPath =
-            p.url.join(sdk.path, 'lib/dev_compiler/amd/require.js');
-        return new Asset.fromFile(id, new File(requireJsPath));
-      default:
-        return null;
-    }
+    var basename = p.url.basename(id.path);
+    var resourcePath = _sdkResources[basename];
+    if (resourcePath == null) return null;
+    return new Asset.fromPath(id, p.url.join(sdk.path, resourcePath));
   }
 
   /// Whether or not this looks like a request for an entrypoint or bootstrap

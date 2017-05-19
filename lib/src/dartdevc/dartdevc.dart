@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert' show JsonEncoder;
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
@@ -13,10 +14,41 @@ import 'package:path/path.dart' as p;
 
 import '../dart.dart';
 import '../io.dart';
+import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';
 import 'workers.dart';
+
+// JavaScript snippet to determine the directory a script was run from.
+final _currentDirectoryScript = r'''
+var _currentDirectory = (function () {
+  var _url;
+  var lines = new Error().stack.split('\n');
+  function lookupUrl() {
+    if (lines.length > 2) {
+      var match = lines[1].match(/^\s+at (.+):\d+:\d+$/);
+      // Chrome.
+      if (match) return match[1];
+      // Chrome nested eval case.
+      match = lines[1].match(/^\s+at eval [(](.+):\d+:\d+[)]$/);
+      if (match) return match[1];
+      // Edge.
+      match = lines[1].match(/^\s+at.+\((.+):\d+:\d+\)$/);
+      if (match) return match[1];
+      // Firefox.
+      return lines[0].match(/[<][@](.+):\d+:\d+$/)[1];
+    }
+    // Safari.
+    return lines[0].match(/(.+):\d+:\d+$/)[1];
+  }
+  _url = lookupUrl();
+  var lastSlash = _url.lastIndexOf('/');
+  if (lastSlash == -1) return _url;
+  var currentDirectory = _url.substring(0, lastSlash + 1);
+  return currentDirectory;
+})();
+''';
 
 /// Returns whether or not [dartId] is an app entrypoint (basically, whether or
 /// not it has a `main` function).
@@ -60,7 +92,9 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     bootstrapId: new Completer(),
     jsEntrypointId: new Completer(),
   };
-  if (mode == BarbackMode.DEBUG) {
+  var debugMode = mode == BarbackMode.DEBUG;
+
+  if (debugMode) {
     outputCompleters[jsMapEntrypointId] = new Completer<Asset>();
   }
 
@@ -90,55 +124,130 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
         .join("__")
         .replaceAll('.', '\$46');
 
-    // Modules not under a `packages` directory need custom module paths.
-    var customModulePaths = <String>[];
+    // Map from module name to module path.
+    // Modules outside of the `packages` directory have different module path
+    // and module names.
+    var modulePaths = new Map<String, String>();
+    modulePaths[appModulePath] = appModulePath;
+    modulePaths['dart_sdk'] = 'dart_sdk';
+
     var transitiveDeps = await moduleReader.readTransitiveDeps(module);
     for (var dep in transitiveDeps) {
       if (dep.dir != 'lib') {
         var relativePath = p.url.relative(p.url.join(moduleDir, dep.name),
             from: p.url.dirname(bootstrapId.path));
-        customModulePaths.add('"${dep.dir}/${dep.name}": "$relativePath"');
+        var jsModuleName = '${dep.dir}/${dep.name}';
+
+        modulePaths[jsModuleName] = relativePath;
       } else {
         var jsModuleName = 'packages/${dep.package}/${dep.name}';
         var actualModulePath = p.url.relative(
             p.url.join(moduleDir, jsModuleName),
             from: p.url.dirname(bootstrapId.path));
-        if (jsModuleName != actualModulePath) {
-          customModulePaths.add('"$jsModuleName": "$actualModulePath"');
-        }
+        modulePaths[jsModuleName] = actualModulePath;
       }
     }
+    var bootstrapContent = new StringBuffer('(function() {\n');
+    if (debugMode) {
+      bootstrapContent.write('''
+$_currentDirectoryScript
+let modulePaths = ${const JsonEncoder.withIndent(" ").convert(modulePaths)};
 
-    var bootstrapContent = '''
+if(!window.\$dartLoader) {
+   window.\$dartLoader = {
+     moduleIdToUrl: new Map(),
+     urlToModuleId: new Map(),
+     rootDirectories: new Set(),
+   };
+}
+
+let customModulePaths = {};
+window.\$dartLoader.rootDirectories.add(_currentDirectory);
+for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
+  let modulePath = modulePaths[moduleName];
+  if (modulePath != moduleName) {
+    customModulePaths[moduleName] = modulePath;
+  }
+  var src = _currentDirectory + modulePath + '.js';
+  if (window.\$dartLoader.moduleIdToUrl.has(moduleName)) {
+    continue;
+  }
+  \$dartLoader.moduleIdToUrl.set(moduleName, src);
+  \$dartLoader.urlToModuleId.set(src, moduleName);
+}
+''');
+    } else {
+      var customModulePaths = new Map<String, String>();
+      modulePaths.forEach((name, path) {
+        if (name != path) customModulePaths[name] = path;
+      });
+      var json = const JsonEncoder.withIndent(" ").convert(customModulePaths);
+      bootstrapContent.write('let customModulePaths = ${json};\n');
+    }
+
+    bootstrapContent.write('''
 require.config({
     waitSeconds: 30,
-    paths: {
-      ${customModulePaths.join(',\n      ')}
-    }
+    paths: customModulePaths
 });
 
 require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
+''');
+
+    if (debugMode) {
+      bootstrapContent.write('''
+  dart_sdk._debugger.registerDevtoolsFormatter();
+
+  if (window.\$dartStackTraceUtility && !window.\$dartStackTraceUtility.ready) {
+    window.\$dartStackTraceUtility.ready = true;
+    let dart = dart_sdk.dart;
+    window.\$dartStackTraceUtility.setSourceMapProvider(
+      function(url) {
+        var module = window.\$dartLoader.urlToModuleId.get(url);
+        if (!module) return null;
+        return dart.getSourceMap(module);
+      });
+  }
+  window.postMessage({ type: "DDC_STATE_CHANGE", state: "start" }, "*");
+''');
+    }
+
+    bootstrapContent.write('''
   app.$appModuleScope.main();
 });
-''';
-    outputCompleters[bootstrapId]
-        .complete(new Asset.fromString(bootstrapId, bootstrapContent));
+})();
+''');
+    outputCompleters[bootstrapId].complete(
+        new Asset.fromString(bootstrapId, bootstrapContent.toString()));
 
     var bootstrapModuleName = p.withoutExtension(
         p.relative(bootstrapId.path, from: p.dirname(dartEntrypointId.path)));
-    var entrypointJsContent = '''
-var el = document.createElement("script");
+    var entrypointJsContent = new StringBuffer('''
+var el;
+''');
+    if (debugMode) {
+      entrypointJsContent.write('''
+el = document.createElement("script");
+el.defer = true;
+el.async = false;
+el.src = "dart_stack_trace_mapper.js";
+document.head.appendChild(el);
+''');
+    }
+
+    entrypointJsContent.write('''
+el = document.createElement("script");
 el.defer = true;
 el.async = false;
 el.src = "require.js";
 el.setAttribute("data-main", "$bootstrapModuleName");
 document.head.appendChild(el);
-''';
-    outputCompleters[jsEntrypointId]
-        .complete(new Asset.fromString(jsEntrypointId, entrypointJsContent));
+''');
+    outputCompleters[jsEntrypointId].complete(
+        new Asset.fromString(jsEntrypointId, entrypointJsContent.toString()));
 
-    if (mode == BarbackMode.DEBUG) {
+    if (debugMode) {
       outputCompleters[jsMapEntrypointId].complete(new Asset.fromString(
           jsMapEntrypointId,
           '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
@@ -163,7 +272,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
   var outputCompleters = <AssetId, Completer<Asset>>{
     id: new Completer(),
   };
-  if (mode == BarbackMode.DEBUG) {
+  var debugMode = mode == BarbackMode.DEBUG;
+  if (debugMode) {
     outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
@@ -195,7 +305,13 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
       jsOutputFile.path,
     ]);
 
-    if (mode == BarbackMode.RELEASE) {
+    if (debugMode) {
+      request.arguments.addAll([
+        '--source-map',
+        '--source-map-comment',
+        '--inline-source-map',
+      ]);
+    } else {
       request.arguments.add('--no-source-map');
     }
 
@@ -239,7 +355,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
-      if (mode == BarbackMode.DEBUG) {
+      if (debugMode) {
         var sourceMapFile = scratchSpace.fileFor(module.id.jsSourceMapId);
         outputCompleters[module.id.jsSourceMapId].complete(new Asset.fromBytes(
             module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));
