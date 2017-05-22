@@ -1,0 +1,20 @@
+language: dart
+sudo: false
+dart:
+  - dev
+  - stable
+cache:
+  directories:
+    - $HOME/.pub-cache
+dart_task:
+  - test: --platform vm
+matrix:
+  include:
+    # Only validate formatting using the dev release
+    - dart: dev
+      dart_task: dartfmt
+    # Analyzer should be clean for dev and stable
+    - dart: dev
+      dart_task: dartanalyzer
+    - dart: stable
+      dart_task: dartanalyzer
