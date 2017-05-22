@@ -1,0 +1,6 @@
+presets:
+  e2e:
+    paths: [test/e2e]
+    platforms:
+      - chrome
+    pub_serve: 8080
