@@ -9,6 +9,8 @@ cache:
   directories:
     - $HOME/.pub-cache
 dart_task:
-  - test: --platform vm
+  # TODO(jakemac): Enable once issues are resolved.
+  # https://github.com/dart-lang/pub/issues/1614
+  # - test: --platform vm
   - dartanalyzer: --fatal-warnings .
   - dartfmt
