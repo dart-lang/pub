@@ -8,5 +8,5 @@ cache:
     - $HOME/.pub-cache
 dart_task:
   - test: --platform vm
-  - dartanalyzer: --fatal-warnings
+  - dartanalyzer: --fatal-warnings .
   - dartfmt
