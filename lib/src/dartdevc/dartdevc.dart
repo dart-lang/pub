@@ -123,10 +123,7 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     // Map from module name to module path.
     // Modules outside of the `packages` directory have different module path
     // and module names.
-    var modulePaths = {
-      appModulePath: appModulePath,
-      'dart_sdk': 'dart_sdk'
-    };
+    var modulePaths = {appModulePath: appModulePath, 'dart_sdk': 'dart_sdk'};
     var transitiveDeps = await moduleReader.readTransitiveDeps(module);
     for (var dep in transitiveDeps) {
       if (dep.dir != 'lib') {
@@ -190,7 +187,7 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
-        console.log(this.responseText);
+        console.error(this.responseText);
       }
     };
     xhr.open("GET", e.originalError.srcElement.src + ".errors", true);
