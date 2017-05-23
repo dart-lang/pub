@@ -151,15 +151,10 @@ class DartDevcEnvironment {
       if (dartId != null) {
         assets = bootstrapDartDevcEntrypoint(dartId, _mode, _moduleReader);
       }
-    } else if (_hasJsResource(id) || _hasJsResource(id.changeExtension(''))) {
-      if (id.extension == '.map') {
-        // None of these resources have sourcemaps.
-        assets = {id: new Future.error(new AssetNotFoundException(id))};
-      } else {
-        assets = {id: _buildJsResource(id)};
-      }
-    } else if (id.path.endsWith('require.js.map') ||
-        id.path.endsWith('dart_sdk.js.map')) {
+    } else if (_hasJsResource(id)) {
+      assets = {id: _buildJsResource(id)};
+    } else if (id.extension == '.map' &&  _hasJsResource(id.changeExtension(''))) {
+      // None of these resources have sourcemaps.
       assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
