@@ -14,7 +14,7 @@ import 'package:path/path.dart' as p;
 
 import '../dart.dart';
 import '../io.dart';
-import 'module.dart';
+import 'errors.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';
@@ -80,10 +80,7 @@ Future<bool> isAppEntryPoint(
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
 Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
-    AssetId dartEntrypointId,
-    BarbackMode mode,
-    ModuleReader moduleReader,
-    Future<Asset> getAsset(AssetId id)) {
+    AssetId dartEntrypointId, BarbackMode mode, ModuleReader moduleReader) {
   var bootstrapId = dartEntrypointId.addExtension('.bootstrap.js');
   var jsEntrypointId = dartEntrypointId.addExtension('.js');
   var jsMapEntrypointId = jsEntrypointId.addExtension('.map');
@@ -100,7 +97,6 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
 
   return _ensureComplete(outputCompleters, () async {
     var module = await moduleReader.moduleFor(dartEntrypointId);
-    if (module == null) return;
 
     // The path to the entrypoint JS module as it should appear in the call to
     // `require` in the bootstrap file.
@@ -186,6 +182,24 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
     }
 
     bootstrapContent.write('''
+// Whenever we fail to load a js module, try and request the corresponding
+// `.errors` file, and log it to the console.
+(function() {
+  var oldOnError = requirejs.onError;
+  requirejs.onError = function(e) {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        console.log(this.responseText);
+      }
+    };
+    xhr.open("GET", e.originalError.srcElement.src + ".errors", true);
+    xhr.send();
+    // Also handle errors the normal way.
+    if (oldOnError) oldOnError(e);
+  };
+}());
+
 require.config({
     waitSeconds: 30,
     paths: customModulePaths
@@ -266,8 +280,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     ModuleReader moduleReader,
     ScratchSpace scratchSpace,
     Map<String, String> environmentConstants,
-    BarbackMode mode,
-    logError(String message)) {
+    BarbackMode mode) {
   assert(id.extension == '.js');
   var outputCompleters = <AssetId, Completer<Asset>>{
     id: new Completer(),
@@ -279,7 +292,6 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
 
   return _ensureComplete(outputCompleters, () async {
     var module = await moduleReader.moduleFor(id);
-    if (module == null) return;
     var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
     var linkedSummaryIds =
         transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
@@ -350,8 +362,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     // status code if something failed. Today we just make sure there is an output
     // JS file to verify it was successful.
     if (response.exitCode != EXIT_CODE_OK || !jsOutputFile.existsSync()) {
-      logError('Error compiling dartdevc module: ${module.id}.\n'
-          '${response.output}');
+      outputCompleters[module.id.jsId].completeError(
+          new DartDevcCompilationException(module.id.jsId, response.output));
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));

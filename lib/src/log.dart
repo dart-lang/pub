@@ -201,8 +201,9 @@ class Entry {
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
 void error(message, [error, StackTrace trace]) {
+  message ??= '';
   if (error != null) {
-    message = "$message: $error";
+    message = message.isEmpty ? "$error" : "$message: $error";
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.ERROR, message);
