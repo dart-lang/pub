@@ -12,10 +12,11 @@ import 'package:scheduled_test/scheduled_stream.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
+import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("reports Dart parse errors", (compiler) {
+  setUp(() {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [
@@ -26,39 +27,11 @@ main() {
     ]).create();
 
     pubGet();
+  });
+
+  integrationWithCompiler("Pub build reports Dart parse errors", (compiler) {
     var pub = startPub(args: ["build", "--compiler", compiler.name]);
-    pub.stdout.expect(startsWith("Loading source assets..."));
-    pub.stdout.expect(startsWith("Building myapp..."));
-
-    var consumeFile;
-    var consumeSubfile;
-    switch (compiler) {
-      case Compiler.dart2JS:
-        consumeFile = consumeThrough(inOrder([
-          "[Error from Dart2JS]:",
-          startsWith(p.join("web", "file.dart") + ":")
-        ]));
-        consumeSubfile = consumeThrough(inOrder([
-          "[Error from Dart2JS]:",
-          startsWith(p.join("web", "subdir", "subfile.dart") + ":")
-        ]));
-        break;
-      case Compiler.dartDevc:
-        consumeFile = consumeThrough(inOrder([
-          startsWith("Error compiling dartdevc module:"),
-          contains(p.join("web", "file.dart"))
-        ]));
-        consumeSubfile = consumeThrough(inOrder([
-          startsWith("Error compiling dartdevc module:"),
-          contains(p.join("web", "subdir", "subfile.dart"))
-        ]));
-        break;
-    }
-
-    // It's nondeterministic what order the dart2js transformers start running,
-    // so we allow the error messages to be emitted in either order.
-    pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
-        inOrder([consumeSubfile, consumeFile])));
+    _expectErrors(pub, compiler);
 
     pub.shouldExit(exit_codes.DATA);
 
@@ -67,4 +40,69 @@ main() {
       d.dir('build', [d.nothing('web')])
     ]).validate();
   });
+
+  integrationWithCompiler("Pub serve reports Dart parse errors", (compiler) {
+    var pub = pubServe(args: ["--compiler", compiler.name]);
+
+    switch (compiler) {
+      case Compiler.dartDevc:
+        requestShould404('web__file.js');
+        requestShouldSucceed(
+            'web__file.js.errors',
+            allOf(contains('Error compiling dartdevc module'),
+                contains('web/file.dart')));
+        requestShould404('web__subdir__subfile.js');
+        requestShouldSucceed(
+            'web__subdir__subfile.js.errors',
+            allOf(contains('Error compiling dartdevc module'),
+                contains('web/subdir/subfile.dart')));
+        break;
+      case Compiler.dart2JS:
+        requestShould404('file.dart.js');
+        requestShould404('subdir/subfile.dart.js');
+        break;
+    }
+
+    endPubServe();
+    _expectErrors(pub, compiler, isBuild: false);
+  });
+}
+
+void _expectErrors(PubProcess pub, Compiler compiler, {bool isBuild = true}) {
+  if (isBuild) {
+    pub.stdout.expect(startsWith("Loading source assets..."));
+    pub.stdout.expect(startsWith("Building myapp..."));
+  }
+
+  var consumeFile;
+  var consumeSubfile;
+  switch (compiler) {
+    case Compiler.dart2JS:
+      consumeFile = consumeThrough(inOrder([
+        "[Error from Dart2JS]:",
+        startsWith(p.join("web", "file.dart") + ":")
+      ]));
+      consumeSubfile = consumeThrough(inOrder([
+        "[Error from Dart2JS]:",
+        startsWith(p.join("web", "subdir", "subfile.dart") + ":")
+      ]));
+      break;
+    case Compiler.dartDevc:
+      consumeFile = consumeThrough(inOrder([
+        startsWith("Error compiling dartdevc module:"),
+        anything,
+        contains(p.join("web", "file.dart"))
+      ]));
+      consumeSubfile = consumeThrough(inOrder([
+        startsWith("Error compiling dartdevc module:"),
+        anything,
+        contains(p.join("web", "subdir", "subfile.dart"))
+      ]));
+      break;
+  }
+
+  // It's nondeterministic what order the dart2js transformers start running,
+  // so we allow the error messages to be emitted in either order.
+  pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
+      inOrder([consumeSubfile, consumeFile])));
 }

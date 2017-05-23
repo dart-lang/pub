@@ -15,7 +15,6 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../package_graph.dart';
 import 'dartdevc.dart';
-import 'errors.dart';
 import 'module.dart';
 import 'module_computer.dart';
 import 'module_reader.dart';
