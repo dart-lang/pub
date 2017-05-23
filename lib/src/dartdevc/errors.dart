@@ -4,32 +4,33 @@
 
 import 'package:barback/barback.dart';
 
-/// An [Exception] that is thrown when the analyzer fails to create a summary.
-class AnalyzerSummaryException implements Exception {
-  /// The module that couldn't be compiled.
-  final AssetId assetId;
+/// An [Exception] that is thrown when a worker returns an error.
+abstract class _WorkerException implements Exception {
+  final AssetId failedAsset;
 
-  /// The error response from the dartdevc worker.
   final String error;
 
-  AnalyzerSummaryException(this.assetId, this.error);
+  /// A message to prepend to [toString] output.
+  String get message;
 
-  String toString() => 'Error creating summary for module: $assetId\n\n'
-      '$error';
+  _WorkerException(this.failedAsset, this.error);
+
+  String toString() => '$message:$failedAsset\n\n$error';
+}
+
+/// An [Exception] that is thrown when the analyzer fails to create a summary.
+class AnalyzerSummaryException extends _WorkerException {
+  final String message = 'Error creating summary for module';
+
+  AnalyzerSummaryException(AssetId summaryId, String error)
+      : super(summaryId, error);
 }
 
 /// An [Exception] that is thrown when dartdevc compilation fails.
-class DartDevcCompilationException implements Exception {
-  /// The js module that couldn't be compiled.
-  final AssetId assetId;
+class DartDevcCompilationException extends _WorkerException {
+  final String message = 'Error compiling dartdevc module';
 
-  /// The error response from the dartdevc worker.
-  final String error;
-
-  DartDevcCompilationException(this.assetId, this.error);
-
-  String toString() => 'Error compiling dartdevc module: $assetId\n\n'
-      '$error';
+  DartDevcCompilationException(AssetId jsId, String error) : super(jsId, error);
 }
 
 /// An [Exception] that is thrown when a module is not found for an [AssetId].

@@ -179,7 +179,7 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
     }
 
     bootstrapContent.write('''
-// Whenever we fail to load a js module, try and request the corresponding
+// Whenever we fail to load a JS module, try to request the corresponding
 // `.errors` file, and log it to the console.
 (function() {
   var oldOnError = requirejs.onError;
