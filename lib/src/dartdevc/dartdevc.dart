@@ -14,7 +14,6 @@ import 'package:path/path.dart' as p;
 
 import '../dart.dart';
 import '../io.dart';
-import 'module.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
 import 'summaries.dart';

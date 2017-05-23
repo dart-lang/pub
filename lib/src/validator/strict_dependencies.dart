@@ -109,7 +109,7 @@ class _Usage {
   /// Returns a formatted error message highlighting [directive] in [file].
   static String errorMessage(String message, String file, String contents,
       UriBasedDirective directive) {
-    return new SourceFile(contents, url: file)
+    return new SourceFile.fromString(contents, url: file)
         .span(directive.offset, directive.offset + directive.length)
         .message(message);
   }
