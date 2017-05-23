@@ -72,8 +72,8 @@ class BuildCommand extends BarbackCommand {
       var hasError = false;
 
       // Unified error handler for barback and dartdevc.
-      logError(error) {
-        log.error(log.red("Build error:\n$error"));
+      logError(error, {bool logToStdError = true}) {
+        if (logToStdError) log.error(log.red("Build error:\n$error"));
         hasError = true;
 
         if (log.json.enabled) {
@@ -110,8 +110,9 @@ class BuildCommand extends BarbackCommand {
       // rest once a build is complete.
       if (environment.dartDevcEnvironment != null) {
         await log.progress("Building dartdevc modules", () async {
-          assets.addAll(await environment.dartDevcEnvironment
-              .doFullBuild(assets, logError: logError));
+          assets.addAll(await environment.dartDevcEnvironment.doFullBuild(
+              assets,
+              logError: (e) => logError(e, logToStdError: false)));
         });
         await environment.dartDevcEnvironment.cleanUp();
       }

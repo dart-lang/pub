@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
+import 'errors.dart';
 import 'module.dart';
 import 'summaries.dart';
 
@@ -37,6 +38,8 @@ class ModuleReader {
   ///
   ///   id -> myapp|test/stuff/thing.dart
   ///   config -> myapp|test/.moduleConfig
+  ///
+  /// Throws a [MissingModuleException] if it can't find a module for [id].
   Future<Module> moduleFor(AssetId id) async {
     var parts = p.split(p.dirname(id.path));
     if (parts.isEmpty) {
@@ -46,8 +49,9 @@ class ModuleReader {
     var moduleConfigId =
         new AssetId(id.package, p.join(parts.first, moduleConfigName));
     await readModules(moduleConfigId);
+    Module module;
     if (id.extension == '.dart') {
-      return _modulesByAssetId[id];
+      module = _modulesByAssetId[id];
     } else {
       var baseName = p.url.basename(id.path);
       String moduleName;
@@ -67,8 +71,10 @@ class ModuleReader {
             'Can only get modules for `.js` or `.dart` files, but got `$id`.');
       }
       var moduleId = new ModuleId(id.package, moduleName, parts.first);
-      return _modulesByModuleId[moduleId];
+      module = _modulesByModuleId[moduleId];
     }
+    if (module == null) throw new MissingModuleException(id);
+    return module;
   }
 
   /// Computes the transitive deps of [id] by reading all the modules for all

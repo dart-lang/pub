@@ -81,8 +81,7 @@ class DartDevcEnvironment {
         appDirs.add(p.url.dirname(asset.id.path));
         // Build the entrypoint JS files, and collect the set of transitive
         // modules that are required (will be built later).
-        var futureAssets =
-            _buildAsset(asset.id.addExtension('.js'), logError: logError);
+        var futureAssets = _buildAsset(asset.id.addExtension('.js'));
         var assets = await Future.wait(futureAssets.values);
         jsAssets.addAll(assets.where((asset) => asset != null));
         var module = await _moduleReader.moduleFor(asset.id);
@@ -93,10 +92,9 @@ class DartDevcEnvironment {
       // Build all required modules for the apps that were discovered.
       var allFutureAssets = <Future<Asset>>[];
       for (var module in modulesToBuild) {
-        allFutureAssets
-            .addAll(_buildAsset(module.jsId, logError: logError).values);
+        allFutureAssets.addAll(_buildAsset(module.jsId).values);
       }
-      // Copy all JS resoureces for each of the app dirs that were discovered.
+      // Copy all JS resources for each of the app dirs that were discovered.
       for (var dir in appDirs) {
         for (var name in _sdkResources.keys) {
           allFutureAssets.add(_buildJsResource(new AssetId(
@@ -141,24 +139,17 @@ class DartDevcEnvironment {
   /// Handles building all assets that we know how to build.
   ///
   /// Completes with an [AssetNotFoundException] if the asset couldn't be built.
-  Map<AssetId, Future<Asset>> _buildAsset(AssetId id,
-      {logError(String message)}) {
+  Map<AssetId, Future<Asset>> _buildAsset(AssetId id) {
     if (_assetCache.containsKey(id)) return {id: _assetCache[id]};
-    logError ??= (String message) => log.error(log.red(message));
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
-      assets = {
-        id: createUnlinkedSummary(id, _moduleReader, _scratchSpace, logError)
-      };
+      assets = {id: createUnlinkedSummary(id, _moduleReader, _scratchSpace)};
     } else if (id.path.endsWith(linkedSummaryExtension)) {
-      assets = {
-        id: createLinkedSummary(id, _moduleReader, _scratchSpace, logError)
-      };
+      assets = {id: createLinkedSummary(id, _moduleReader, _scratchSpace)};
     } else if (_isEntrypointId(id)) {
       var dartId = _entrypointDartId(id);
       if (dartId != null) {
-        assets = bootstrapDartDevcEntrypoint(
-            dartId, _mode, _moduleReader, _barback.getAssetById);
+        assets = bootstrapDartDevcEntrypoint(dartId, _mode, _moduleReader);
       }
     } else if (_hasJsResource(id)) {
       assets = {id: _buildJsResource(id)};
@@ -167,21 +158,24 @@ class DartDevcEnvironment {
       assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
-      assets = createDartdevcModule(jsId, _moduleReader, _scratchSpace,
-          _environmentConstants, _mode, logError);
+      assets = createDartdevcModule(
+          jsId, _moduleReader, _scratchSpace, _environmentConstants, _mode);
       // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
       () async {
         try {
           var module = await _moduleReader.moduleFor(jsId);
-          if (module == null) return;
           var deps = await _moduleReader.readTransitiveDeps(module);
           await Future
               .wait(deps.map((moduleId) => getAssetById(moduleId.jsId)));
-        } on AssetNotFoundException catch (_) {}
+        } catch (_) {
+          // Errors will be returned later when requests are made.
+        }
       }();
     } else if (id.path.endsWith(moduleConfigName)) {
       assets = {id: _buildModuleConfig(id)};
+    } else if (id.extension == '.errors') {
+      assets = {id: _cachedAsset(id)};
     }
     assets ??= <AssetId, Future<Asset>>{};
 
@@ -206,6 +200,15 @@ class DartDevcEnvironment {
     var modules = await computeModules(moduleMode, moduleAssets);
     var encoded = JSON.encode(modules);
     return new Asset.fromString(id, encoded);
+  }
+
+  /// Returns a cached asset for [id] if one exists, otherwise throws an
+  /// [AssetNotFoundException].
+  Future<Asset> _cachedAsset(AssetId id) async {
+    if (_assetCache.containsKey(id)) {
+      return _assetCache[id];
+    }
+    throw new AssetNotFoundException(id);
   }
 
   /// Whether [_sdkResources] has an asset matching [id].
@@ -286,7 +289,18 @@ class _AssetCache {
   void operator []=(AssetId id, Future<Asset> asset) {
     var packageCache = _assets.putIfAbsent(
         id.package, () => <String, Future<Result<Asset>>>{});
-    packageCache[id.path] = Result.capture(asset);
+    packageCache[id.path] = Result.capture(asset.catchError((e, s) {
+      // Log the error eagerly, and only once.
+      log.error(null, log.red(e), s);
+      // Create an asset that contains the errors, the app may use this to get
+      // information about any failed request.
+      var errorAssetId = id.addExtension('.errors');
+      this[errorAssetId] =
+          new Future.value(new Asset.fromString(errorAssetId, '$e'));
+      // Convert the error into an `AssetNotFoundException` which the server
+      // knows how to handle.
+      throw new AssetNotFoundException(id);
+    }, test: (e) => e is! AssetNotFoundException));
   }
 
   bool containsKey(AssetId id) => _getResult(id) != null;
