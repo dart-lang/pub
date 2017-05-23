@@ -4,8 +4,6 @@
 
 import 'package:barback/barback.dart';
 
-import 'module.dart';
-
 /// An [Exception] that is thrown when the analyzer fails to create a summary.
 class AnalyzerSummaryException implements Exception {
   /// The module that couldn't be compiled.
