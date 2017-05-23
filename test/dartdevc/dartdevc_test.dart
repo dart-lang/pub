@@ -82,8 +82,20 @@ void main() {
     pubServe(args: ['--compiler', 'dartdevc']);
     requestShouldSucceed('dart_sdk.js', null);
     requestShouldSucceed('require.js', null);
+    requestShouldSucceed('dart_stack_trace_mapper.js', null);
+    requestShouldSucceed('ddc_web_compiler.js', null);
+    requestShould404('dart_sdk.js.map');
+    requestShould404('require.js.map');
+    requestShould404('dart_stack_trace_mapper.js.map');
+    requestShould404('ddc_web_compiler.js.map');
     requestShouldSucceed('subdir/dart_sdk.js', null);
     requestShouldSucceed('subdir/require.js', null);
+    requestShouldSucceed('subdir/dart_stack_trace_mapper.js', null);
+    requestShouldSucceed('subdir/ddc_web_compiler.js', null);
+    requestShould404('subdir/dart_sdk.js.map');
+    requestShould404('subdir/require.js.map');
+    requestShould404('subdir/dart_stack_trace_mapper.js.map');
+    requestShould404('subdir/ddc_web_compiler.js.map');
     endPubServe();
   });
 }

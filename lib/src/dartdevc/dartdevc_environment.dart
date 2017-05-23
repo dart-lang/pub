@@ -153,8 +153,9 @@ class DartDevcEnvironment {
       }
     } else if (_hasJsResource(id)) {
       assets = {id: _buildJsResource(id)};
-    } else if (id.path.endsWith('require.js.map') ||
-        id.path.endsWith('dart_sdk.js.map')) {
+    } else if (id.extension == '.map' &&
+        _hasJsResource(id.changeExtension(''))) {
+      // None of these resources have sourcemaps.
       assets = {id: new Future.error(new AssetNotFoundException(id))};
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
