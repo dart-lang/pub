@@ -20,7 +20,7 @@ import 'scratch_space.dart';
 import 'summaries.dart';
 import 'workers.dart';
 
-// JavaScript snippet to determine the directory a script was run from.
+/// JavaScript snippet to determine the directory a script was run from.
 final _currentDirectoryScript = r'''
 var _currentDirectory = (function () {
   var _url;
@@ -92,9 +92,9 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     bootstrapId: new Completer(),
     jsEntrypointId: new Completer(),
   };
-  var debugMode = mode == BarbackMode.DEBUG;
+  var isDebug = mode == BarbackMode.DEBUG;
 
-  if (debugMode) {
+  if (isDebug) {
     outputCompleters[jsMapEntrypointId] = new Completer<Asset>();
   }
 
@@ -127,10 +127,10 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
     // Map from module name to module path.
     // Modules outside of the `packages` directory have different module path
     // and module names.
-    var modulePaths = new Map<String, String>();
-    modulePaths[appModulePath] = appModulePath;
-    modulePaths['dart_sdk'] = 'dart_sdk';
-
+    var modulePaths = {
+      appModulePath: appModulePath,
+      'dart_sdk': 'dart_sdk'
+    };
     var transitiveDeps = await moduleReader.readTransitiveDeps(module);
     for (var dep in transitiveDeps) {
       if (dep.dir != 'lib') {
@@ -148,7 +148,7 @@ Map<AssetId, Future<Asset>> bootstrapDartDevcEntrypoint(
       }
     }
     var bootstrapContent = new StringBuffer('(function() {\n');
-    if (debugMode) {
+    if (isDebug) {
       bootstrapContent.write('''
 $_currentDirectoryScript
 let modulePaths = ${const JsonEncoder.withIndent(" ").convert(modulePaths)};
@@ -177,7 +177,7 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
 }
 ''');
     } else {
-      var customModulePaths = new Map<String, String>();
+      var customModulePaths = <String, String>{};
       modulePaths.forEach((name, path) {
         if (name != path) customModulePaths[name] = path;
       });
@@ -195,7 +195,7 @@ require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk._isolate_helper.startRootIsolate(() => {}, []);
 ''');
 
-    if (debugMode) {
+    if (isDebug) {
       bootstrapContent.write('''
   dart_sdk._debugger.registerDevtoolsFormatter();
 
@@ -226,7 +226,7 @@ require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
     var entrypointJsContent = new StringBuffer('''
 var el;
 ''');
-    if (debugMode) {
+    if (isDebug) {
       entrypointJsContent.write('''
 el = document.createElement("script");
 el.defer = true;
@@ -247,7 +247,7 @@ document.head.appendChild(el);
     outputCompleters[jsEntrypointId].complete(
         new Asset.fromString(jsEntrypointId, entrypointJsContent.toString()));
 
-    if (debugMode) {
+    if (isDebug) {
       outputCompleters[jsMapEntrypointId].complete(new Asset.fromString(
           jsMapEntrypointId,
           '{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"",'
@@ -272,8 +272,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
   var outputCompleters = <AssetId, Completer<Asset>>{
     id: new Completer(),
   };
-  var debugMode = mode == BarbackMode.DEBUG;
-  if (debugMode) {
+  var isDebug = mode == BarbackMode.DEBUG;
+  if (isDebug) {
     outputCompleters[id.addExtension('.map')] = new Completer();
   }
 
@@ -305,7 +305,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
       jsOutputFile.path,
     ]);
 
-    if (debugMode) {
+    if (isDebug) {
       request.arguments.addAll([
         '--source-map',
         '--source-map-comment',
@@ -355,7 +355,7 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     } else {
       outputCompleters[module.id.jsId].complete(
           new Asset.fromBytes(module.id.jsId, jsOutputFile.readAsBytesSync()));
-      if (debugMode) {
+      if (isDebug) {
         var sourceMapFile = scratchSpace.fileFor(module.id.jsSourceMapId);
         outputCompleters[module.id.jsSourceMapId].complete(new Asset.fromBytes(
             module.id.jsSourceMapId, sourceMapFile.readAsBytesSync()));

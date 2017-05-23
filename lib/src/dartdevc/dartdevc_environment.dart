@@ -209,6 +209,7 @@ class DartDevcEnvironment {
     return new Asset.fromString(id, encoded);
   }
 
+  /// Whether [_sdkResources] has an asset matching [id].
   bool _hasJsResource(AssetId id) =>
       _sdkResources.containsKey(p.url.basename(id.path));
 
