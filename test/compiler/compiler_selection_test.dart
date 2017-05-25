@@ -14,7 +14,8 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("js flag switches compilers", (compiler) {
+  integrationWithCompiler("--web-compiler option switches compilers",
+      (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [
@@ -63,7 +64,7 @@ main() {
     endPubServe();
   }, compilers: Compiler.all);
 
-  integration("invalid js flag gives an error", () {
+  integration("invalid --web-compiler option gives an error", () {
     d.dir(appPath, [
       d.appPubspec(),
     ]).create();
@@ -96,7 +97,7 @@ main() {
     }
   });
 
-  integrationWithCompiler("js_compiler can be set in the pubspec", (compiler) {
+  integrationWithCompiler("web compiler can be set in the pubspec", (compiler) {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
