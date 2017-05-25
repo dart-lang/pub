@@ -8,6 +8,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'barback/transformer_config.dart';
+import 'compiler.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'package.dart';
@@ -353,6 +354,50 @@ class Pubspec {
   }
 
   Map<String, String> _executables;
+
+  /// The options for which JS compiler to use in which mode.
+  ///
+  /// It is a map of strings to string. Each key is the name of a mode, and
+  /// the value is the name of the JS compiler to use in that mode.
+  ///
+  /// Valid compiler values are all of [Compiler.names].
+  Map<String, String> get jsCompiler {
+    if (_jsCompiler != null) return _jsCompiler;
+
+    _jsCompiler = {};
+    var yaml = fields['js_compiler'];
+    if (yaml == null) return {};
+
+    if (yaml is! Map) {
+      _error('"js_compiler" field must be a map.',
+          fields.nodes['js_compiler'].span);
+    }
+
+    yaml.nodes.forEach((key, value) {
+      if (key.value is! String) {
+        _error('"js_compiler" keys must be strings.', key.span);
+      }
+
+      final keyPattern = new RegExp(r"^[a-zA-Z0-9_-]+$");
+      if (!keyPattern.hasMatch(key.value)) {
+        _error(
+            '"js_compiler" keys may only contain letters, '
+            'numbers, hyphens and underscores.',
+            key.span);
+      }
+
+      if (!Compiler.names.contains(value.value)) {
+        _error('"js_compiler" values must be one of ${Compiler.names}.',
+            value.span);
+      }
+
+      _jsCompiler[key.value] = value.value;
+    });
+
+    return _jsCompiler;
+  }
+
+  Map<String, String> _jsCompiler;
 
   /// Whether the package is private and cannot be published.
   ///

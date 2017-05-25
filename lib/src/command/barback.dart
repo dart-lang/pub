@@ -27,23 +27,25 @@ abstract class BarbackCommand extends PubCommand {
 
   /// The current compiler mode.
   Compiler get compiler {
-    if (argResults.options.contains('dart2js') &&
-        argResults.wasParsed('dart2js')) {
-      if (argResults.options.contains("compiler") &&
-          argResults.wasParsed("compiler")) {
-        usageException(
-            "The --dart2js flag can't be used with the --compiler arg. "
-            "Prefer using the --compiler arg as --[no]-dart2js is deprecated.");
+    if (argResults.options.contains("dart2js") &&
+        argResults.wasParsed("dart2js")) {
+      if (argResults.options.contains("js") && argResults.wasParsed("js")) {
+        usageException("The --dart2js flag can't be used with the --js arg. "
+            "Prefer using the --js arg as --[no]-dart2js is deprecated.");
       }
       if (argResults['dart2js']) {
         return Compiler.dart2JS;
       } else {
         return Compiler.none;
       }
-    } else if (argResults.options.contains("compiler")) {
-      return Compiler.byName(argResults["compiler"]);
+    } else if (argResults.options.contains("js") &&
+        argResults.wasParsed("js")) {
+      return Compiler.byName(argResults["js"]);
     } else {
-      return Compiler.dart2JS;
+      var compilerName = entrypoint.root.pubspec.jsCompiler[mode.name];
+      return compilerName != null
+          ? Compiler.byName(compilerName)
+          : Compiler.dart2JS;
     }
   }
 
@@ -68,7 +70,7 @@ abstract class BarbackCommand extends PubCommand {
         defaultsTo: false,
         negatable: false);
 
-    argParser.addOption("compiler",
+    argParser.addOption("js",
         allowed: Compiler.names,
         defaultsTo: 'dart2js',
         help: 'The JavaScript compiler to use to build the app.');

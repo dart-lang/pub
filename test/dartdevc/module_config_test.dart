@@ -51,7 +51,7 @@ main() {}
     ]).create();
 
     pubGet();
-    pubServe(args: ['--compiler', 'dartdevc']);
+    pubServe(args: ['--js', 'dartdevc']);
 
     moduleRequestShouldSucceed(moduleConfigName, [
       makeModule(

@@ -30,7 +30,7 @@ main() {
   });
 
   integrationWithCompiler("Pub build reports Dart parse errors", (compiler) {
-    var pub = startPub(args: ["build", "--compiler", compiler.name]);
+    var pub = startPub(args: ["build", "--js", compiler.name]);
     _expectErrors(pub, compiler);
 
     pub.shouldExit(exit_codes.DATA);
@@ -42,7 +42,7 @@ main() {
   });
 
   integrationWithCompiler("Pub serve reports Dart parse errors", (compiler) {
-    var pub = pubServe(args: ["--compiler", compiler.name]);
+    var pub = pubServe(args: ["--js", compiler.name]);
 
     switch (compiler) {
       case Compiler.dartDevc:

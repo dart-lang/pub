@@ -42,7 +42,7 @@ main() {
       "benchmark",
       "foo",
       "web",
-      "--compiler=${compiler.name}"
+      "--js=${compiler.name}"
     ], output: new RegExp(r'Built [\d]+ files to "build".'));
 
     d.dir(appPath, [

@@ -25,7 +25,7 @@ main() {
   integrationWithCompiler("build ignores Dart entrypoints in lib", (compiler) {
     pubGet();
     schedulePub(
-        args: ["build", "--all", "--compiler=${compiler.name}"],
+        args: ["build", "--all", "--js=${compiler.name}"],
         output: new RegExp(r'Built [\d]+ files? to "build".'));
 
     d.dir(appPath, [

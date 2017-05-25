@@ -14,7 +14,7 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("compiler flag switches compilers", (compiler) {
+  integrationWithCompiler("js flag switches compilers", (compiler) {
     d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [
@@ -63,36 +63,97 @@ main() {
     endPubServe();
   }, compilers: Compiler.all);
 
-  integration("invalid compiler flag gives an error", () {
+  integration("invalid js flag gives an error", () {
     d.dir(appPath, [
       d.appPubspec(),
     ]).create();
 
     pubGet();
-    var process = startPubServe(args: ['--compiler', 'invalid']);
+    var process = startPubServe(args: ['--js', 'invalid']);
     process.shouldExit(USAGE);
-    process.stderr.expect(consumeThrough(
-        '"invalid" is not an allowed value for option "compiler".'));
+    process.stderr.expect(
+        consumeThrough('"invalid" is not an allowed value for option "js".'));
   });
 
-  integration("--dart2js with --compiler is invalid", () {
+  integration("--dart2js with --js is invalid", () {
     d.dir(appPath, [
       d.appPubspec(),
     ]).create();
 
     pubGet();
     var argCombos = [
-      ['--dart2js', '--compiler=dartdevc'],
-      ['--no-dart2js', '--compiler=dartdevc'],
-      ['--dart2js', '--compiler=dart2js'],
-      ['--no-dart2js', '--compiler=dart2js'],
+      ['--dart2js', '--js=dartdevc'],
+      ['--no-dart2js', '--js=dartdevc'],
+      ['--dart2js', '--js=dart2js'],
+      ['--no-dart2js', '--js=dart2js'],
     ];
     for (var args in argCombos) {
       var process = startPubServe(args: args);
       process.shouldExit(USAGE);
       process.stderr.expect(consumeThrough(
-          "The --dart2js flag can't be used with the --compiler arg. Prefer "
-          "using the --compiler arg as --[no]-dart2js is deprecated."));
+          "The --dart2js flag can't be used with the --js arg. Prefer "
+          "using the --js arg as --[no]-dart2js is deprecated."));
     }
+  });
+
+  integrationWithCompiler("js_compiler can be set in the pubspec", (compiler) {
+    d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'js_compiler': {'debug': compiler.name}
+      }),
+      d.dir('web', [
+        d.file(
+            'main.dart',
+            '''
+          void main() => print('hello');
+        '''),
+      ]),
+    ]).create();
+
+    pubGet();
+    pubServe(args: ['--mode', 'debug']);
+    switch (compiler) {
+      case Compiler.dartDevc:
+        requestShouldSucceed(moduleConfigName, contains('web__main'));
+        requestShouldSucceed('web__main.js', contains('hello'));
+        break;
+      case Compiler.dart2JS:
+        requestShouldSucceed('main.dart.js', contains('hello'));
+        requestShould404('web__main.js');
+        break;
+    }
+    endPubServe();
+  });
+
+  integrationWithCompiler("--js flag overrides pubspec js_compiler config",
+      (compiler) {
+    d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'js_compiler': {'debug': Compiler.none.name}
+      }),
+      d.dir('web', [
+        d.file(
+            'main.dart',
+            '''
+          void main() => print('hello');
+        '''),
+      ]),
+    ]).create();
+
+    pubGet();
+    pubServe(compiler: compiler, args: ['--mode', 'debug']);
+    switch (compiler) {
+      case Compiler.dartDevc:
+        requestShouldSucceed(moduleConfigName, contains('web__main'));
+        requestShouldSucceed('web__main.js', contains('hello'));
+        break;
+      case Compiler.dart2JS:
+        requestShouldSucceed('main.dart.js', contains('hello'));
+        requestShould404('web__main.js');
+        break;
+    }
+    endPubServe();
   });
 }

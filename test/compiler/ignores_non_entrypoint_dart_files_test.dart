@@ -26,7 +26,7 @@ main() {
       (compiler) {
     pubGet();
     schedulePub(
-        args: ["build", "--compiler=${compiler.name}"],
+        args: ["build", "--js=${compiler.name}"],
         output: new RegExp(r'Built [\d]+ files? to "build".'));
 
     d.dir(appPath, [
