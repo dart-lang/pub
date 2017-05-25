@@ -48,7 +48,7 @@ void main() {
     ]).create();
 
     pubGet();
-    pubServe(args: ['--js', 'dartdevc']);
+    pubServe(args: ['--web-compiler', 'dartdevc']);
     // Just confirm some basic things are present indicating that the module
     // was compiled. The goal here is not to test dartdevc itself.
     requestShouldSucceed('web__main.js', contains('main'));
@@ -79,7 +79,7 @@ void main() {
     ]).create();
 
     pubGet();
-    pubServe(args: ['--js', 'dartdevc']);
+    pubServe(args: ['--web-compiler', 'dartdevc']);
     requestShouldSucceed('dart_sdk.js', null);
     requestShouldSucceed('require.js', null);
     requestShouldSucceed('dart_stack_trace_mapper.js', null);

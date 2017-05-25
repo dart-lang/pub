@@ -15,6 +15,6 @@ void integrationWithCompiler(String name, void testFn(Compiler compiler),
     {List<Compiler> compilers}) {
   compilers ??= [Compiler.dart2JS, Compiler.dartDevc];
   for (var compiler in compilers) {
-    integration('--js=${compiler.name} $name', () => testFn(compiler));
+    integration('--web-compiler=${compiler.name} $name', () => testFn(compiler));
   }
 }

@@ -9,7 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("pub build --js=dartdevc creates all required sources", () {
+  integration("pub build --web-compiler=dartdevc creates all required sources", () {
     d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
@@ -58,7 +58,7 @@ void main() => other.main();
 
     pubGet();
     schedulePub(
-        args: ["build", "web", "--js=${Compiler.dartDevc.name}"],
+        args: ["build", "web", "--web-compiler=${Compiler.dartDevc.name}"],
         output: new RegExp(r'Built [\d]+ files to "build".'));
 
     d.dir(appPath, [

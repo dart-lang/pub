@@ -89,7 +89,7 @@ class _CachedPubspec implements Pubspec {
   bool get isPrivate => _inner.isPrivate;
   bool get isEmpty => _inner.isEmpty;
   List<PubspecException> get allErrors => _inner.allErrors;
-  Map<String, String> get jsCompiler => _inner.jsCompiler;
+  Map<String, String> get webCompiler => _inner.webCompiler;
 
   List<Set<TransformerConfig>> get transformers => const [];
 

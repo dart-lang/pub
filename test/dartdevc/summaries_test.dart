@@ -50,7 +50,7 @@ void main() {}
     ]).create();
 
     pubGet();
-    pubServe(args: ['--js', 'dartdevc']);
+    pubServe(args: ['--web-compiler', 'dartdevc']);
 
     linkedSummaryRequestShouldSucceed('web__main$linkedSummaryExtension', [
       endsWith('web/main.dart'),
@@ -119,7 +119,7 @@ void main() {}
     ]).create();
 
     pubGet();
-    pubServe(args: ['--js', 'dartdevc']);
+    pubServe(args: ['--web-compiler', 'dartdevc']);
 
     unlinkedSummaryRequestShouldSucceed(
         'web__main$unlinkedSummaryExtension', [endsWith('web/main.dart')]);

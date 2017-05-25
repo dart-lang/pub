@@ -355,49 +355,56 @@ class Pubspec {
 
   Map<String, String> _executables;
 
-  /// The options for which JS compiler to use in which mode.
+  /// The settings for which web compiler to use in which mode.
   ///
   /// It is a map of strings to string. Each key is the name of a mode, and
-  /// the value is the name of the JS compiler to use in that mode.
+  /// the value is the name of the web compiler to use in that mode.
   ///
   /// Valid compiler values are all of [Compiler.names].
-  Map<String, String> get jsCompiler {
-    if (_jsCompiler != null) return _jsCompiler;
+  Map<String, String> get webCompiler {
+    if (_webCompiler != null) return _webCompiler;
 
-    _jsCompiler = {};
-    var yaml = fields['js_compiler'];
-    if (yaml == null) return {};
+    _webCompiler = {};
+    var webYaml = fields.nodes['web'];
+    if (webYaml == null) return _webCompiler;
 
-    if (yaml is! Map) {
-      _error('"js_compiler" field must be a map.',
-          fields.nodes['js_compiler'].span);
+    if (webYaml is! Map) {
+      _error('"web" field must be a map.', webYaml.span);
     }
 
-    yaml.nodes.forEach((key, value) {
+    var compilerYaml = (webYaml as YamlMap)['compiler'];
+    if (compilerYaml == null) return _webCompiler;
+
+    if (compilerYaml is! Map) {
+      _error('"compiler" field must be a map.',
+          (webYaml as YamlMap).nodes['compiler'].span);
+    }
+
+    compilerYaml.nodes.forEach((key, value) {
       if (key.value is! String) {
-        _error('"js_compiler" keys must be strings.', key.span);
+        _error('"compiler" keys must be strings.', key.span);
       }
 
       final keyPattern = new RegExp(r"^[a-zA-Z0-9_-]+$");
       if (!keyPattern.hasMatch(key.value)) {
         _error(
-            '"js_compiler" keys may only contain letters, '
+            '"compiler" keys may only contain letters, '
             'numbers, hyphens and underscores.',
             key.span);
       }
 
       if (!Compiler.names.contains(value.value)) {
-        _error('"js_compiler" values must be one of ${Compiler.names}.',
-            value.span);
+        _error(
+            '"compiler" values must be one of ${Compiler.names}.', value.span);
       }
 
-      _jsCompiler[key.value] = value.value;
+      _webCompiler[key.value] = value.value;
     });
 
-    return _jsCompiler;
+    return _webCompiler;
   }
 
-  Map<String, String> _jsCompiler;
+  Map<String, String> _webCompiler;
 
   /// Whether the package is private and cannot be published.
   ///

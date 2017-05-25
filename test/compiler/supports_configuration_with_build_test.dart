@@ -71,7 +71,7 @@ main() {
     pubGet();
 
     schedulePub(
-        args: ["build", "--js", compiler.name],
+        args: ["build", "--web-compiler", compiler.name],
         output: new RegExp(r'Built \d+ files? to "build".'),
         exitCode: 0);
 

@@ -593,51 +593,59 @@ executables:
       });
     });
 
-    group("js_compiler", () {
-      test("defaults to an empty map if omitted", () {
-        var pubspec = new Pubspec.parse('', sources);
-        expect(pubspec.jsCompiler, isEmpty);
+    group("web", () {
+      test("can be empty", () {
+        var pubspec = new Pubspec.parse('web: {}', sources);
+        expect(pubspec.webCompiler, isEmpty);
       });
 
-      test("allows simple names for keys and valid compilers in values", () {
-        var pubspec = new Pubspec.parse(
-            '''
-js_compiler:
-  abcDEF-123_: none
-  debug: dartdevc
-  release: dart2js
+      group("compiler", () {
+        test("defaults to an empty map if omitted", () {
+          var pubspec = new Pubspec.parse('', sources);
+          expect(pubspec.webCompiler, isEmpty);
+        });
+
+        test("allows simple names for keys and valid compilers in values", () {
+          var pubspec = new Pubspec.parse(
+              '''
+web:
+  compiler:
+    abcDEF-123_: none
+    debug: dartdevc
+    release: dart2js
 ''',
-            sources);
-        expect(pubspec.jsCompiler['abcDEF-123_'], equals('none'));
-        expect(pubspec.jsCompiler['debug'], equals('dartdevc'));
-        expect(pubspec.jsCompiler['release'], equals('dart2js'));
-      });
+              sources);
+          expect(pubspec.webCompiler['abcDEF-123_'], equals('none'));
+          expect(pubspec.webCompiler['debug'], equals('dartdevc'));
+          expect(pubspec.webCompiler['release'], equals('dart2js'));
+        });
 
-      test("throws if not a map", () {
-        expectPubspecException(
-            'js_compiler: dartdevc', (pubspec) => pubspec.jsCompiler);
-        expectPubspecException(
-            'js_compiler: [dartdevc]', (pubspec) => pubspec.jsCompiler);
-      });
+        test("throws if not a map", () {
+          expectPubspecException(
+              'web: {compiler: dartdevc}', (pubspec) => pubspec.webCompiler);
+          expectPubspecException(
+              'web: {compiler: [dartdevc]}', (pubspec) => pubspec.webCompiler);
+        });
 
-      test("throws if key is not a string", () {
-        expectPubspecException(
-            'js_compiler: {123: dartdevc}', (pubspec) => pubspec.jsCompiler);
-      });
+        test("throws if key is not a string", () {
+          expectPubspecException('web: {compiler: {123: dartdevc}}',
+              (pubspec) => pubspec.webCompiler);
+        });
 
-      test("throws if a key isn't a simple name", () {
-        expectPubspecException('js_compiler: {funny/name: dartdevc}',
-            (pubspec) => pubspec.jsCompiler);
-      });
+        test("throws if a key isn't a simple name", () {
+          expectPubspecException('web: {compiler: {funny/name: dartdevc}}',
+              (pubspec) => pubspec.webCompiler);
+        });
 
-      test("throws if a value is not a supported compiler", () {
-        expectPubspecException(
-            'js_compiler: {debug: frog}', (pubspec) => pubspec.jsCompiler);
-      });
+        test("throws if a value is not a supported compiler", () {
+          expectPubspecException('web: {compiler: {debug: frog}}',
+              (pubspec) => pubspec.webCompiler);
+        });
 
-      test("throws if the value is null", () {
-        expectPubspecException(
-            'js_compiler:\n  debug:', (pubspec) => pubspec.jsCompiler);
+        test("throws if the value is null", () {
+          expectPubspecException(
+              'web: {compiler: {debug: }}', (pubspec) => pubspec.webCompiler);
+        });
       });
     });
   });

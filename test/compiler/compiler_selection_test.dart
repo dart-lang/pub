@@ -69,30 +69,30 @@ main() {
     ]).create();
 
     pubGet();
-    var process = startPubServe(args: ['--js', 'invalid']);
+    var process = startPubServe(args: ['--web-compiler', 'invalid']);
     process.shouldExit(USAGE);
-    process.stderr.expect(
-        consumeThrough('"invalid" is not an allowed value for option "js".'));
+    process.stderr.expect(consumeThrough(
+        '"invalid" is not an allowed value for option "web-compiler".'));
   });
 
-  integration("--dart2js with --js is invalid", () {
+  integration("--dart2js with --web-compiler is invalid", () {
     d.dir(appPath, [
       d.appPubspec(),
     ]).create();
 
     pubGet();
     var argCombos = [
-      ['--dart2js', '--js=dartdevc'],
-      ['--no-dart2js', '--js=dartdevc'],
-      ['--dart2js', '--js=dart2js'],
-      ['--no-dart2js', '--js=dart2js'],
+      ['--dart2js', '--web-compiler=dartdevc'],
+      ['--no-dart2js', '--web-compiler=dartdevc'],
+      ['--dart2js', '--web-compiler=dart2js'],
+      ['--no-dart2js', '--web-compiler=dart2js'],
     ];
     for (var args in argCombos) {
       var process = startPubServe(args: args);
       process.shouldExit(USAGE);
       process.stderr.expect(consumeThrough(
-          "The --dart2js flag can't be used with the --js arg. Prefer "
-          "using the --js arg as --[no]-dart2js is deprecated."));
+          "The --dart2js flag can't be used with the --web-compiler arg. Prefer "
+          "using the --web-compiler arg as --[no]-dart2js is deprecated."));
     }
   });
 
@@ -100,7 +100,9 @@ main() {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'js_compiler': {'debug': compiler.name}
+        'web': {
+          'compiler': {'debug': compiler.name}
+        },
       }),
       d.dir('web', [
         d.file(
@@ -126,12 +128,14 @@ main() {
     endPubServe();
   });
 
-  integrationWithCompiler("--js flag overrides pubspec js_compiler config",
+  integrationWithCompiler("--web-compiler flag overrides pubspec config",
       (compiler) {
     d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'js_compiler': {'debug': Compiler.none.name}
+        'web': {
+          'compiler': {'debug': Compiler.none.name}
+        },
       }),
       d.dir('web', [
         d.file(
