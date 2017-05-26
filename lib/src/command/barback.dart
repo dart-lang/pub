@@ -35,20 +35,20 @@ abstract class BarbackCommand extends PubCommand {
             "The --dart2js flag can't be used with the --web-compiler arg. "
             "Prefer using the --web-compiler arg as --[no]-dart2js is "
             "deprecated.");
+      } else {
+        log.warning("The --dart2js flag is deprecated, please use "
+            "--web-compiler=dart2js option instead.");
       }
-      if (argResults['dart2js']) {
+      if (argResults["dart2js"]) {
         return Compiler.dart2JS;
       } else {
         return Compiler.none;
       }
-    } else if (argResults.options.contains("web-compiler") &&
-        argResults.wasParsed("web-compiler")) {
+    } else if (argResults.options.contains("web-compiler")) {
       return Compiler.byName(argResults["web-compiler"]);
     } else {
-      var compilerName = entrypoint.root.pubspec.webCompiler[mode.name];
-      return compilerName != null
-          ? Compiler.byName(compilerName)
-          : Compiler.dart2JS;
+      var compiler = entrypoint.root.pubspec.webCompiler[mode.name];
+      return compiler ?? Compiler.dart2JS;
     }
   }
 

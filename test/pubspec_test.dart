@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source.dart';
@@ -615,12 +616,13 @@ web:
     release: dart2js
 ''',
               sources);
-          expect(pubspec.webCompiler['abcDEF-123_'], equals('none'));
-          expect(pubspec.webCompiler['debug'], equals('dartdevc'));
-          expect(pubspec.webCompiler['release'], equals('dart2js'));
+          expect(pubspec.webCompiler['abcDEF-123_'], equals(Compiler.none));
+          expect(pubspec.webCompiler['debug'], equals(Compiler.dartDevc));
+          expect(pubspec.webCompiler['release'], equals(Compiler.dart2JS));
         });
 
         test("throws if not a map", () {
+          expectPubspecException('web:', (pubspec) => pubspec.webCompiler);
           expectPubspecException(
               'web: {compiler: dartdevc}', (pubspec) => pubspec.webCompiler);
           expectPubspecException(
@@ -629,11 +631,6 @@ web:
 
         test("throws if key is not a string", () {
           expectPubspecException('web: {compiler: {123: dartdevc}}',
-              (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if a key isn't a simple name", () {
-          expectPubspecException('web: {compiler: {funny/name: dartdevc}}',
               (pubspec) => pubspec.webCompiler);
         });
 

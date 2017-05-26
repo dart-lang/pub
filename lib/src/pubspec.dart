@@ -357,14 +357,14 @@ class Pubspec {
 
   /// The settings for which web compiler to use in which mode.
   ///
-  /// It is a map of strings to string. Each key is the name of a mode, and
-  /// the value is the name of the web compiler to use in that mode.
+  /// It is a map of [String] to [Compiler]. Each key is the name of a mode, and
+  /// the value is the web compiler to use in that mode.
   ///
   /// Valid compiler values are all of [Compiler.names].
-  Map<String, String> get webCompiler {
+  Map<String, Compiler> get webCompiler {
     if (_webCompiler != null) return _webCompiler;
 
-    _webCompiler = {};
+    _webCompiler = <String, Compiler>{};
     var webYaml = fields.nodes['web'];
     if (webYaml == null) return _webCompiler;
 
@@ -385,26 +385,18 @@ class Pubspec {
         _error('"compiler" keys must be strings.', key.span);
       }
 
-      final keyPattern = new RegExp(r"^[a-zA-Z0-9_-]+$");
-      if (!keyPattern.hasMatch(key.value)) {
-        _error(
-            '"compiler" keys may only contain letters, '
-            'numbers, hyphens and underscores.',
-            key.span);
-      }
-
       if (!Compiler.names.contains(value.value)) {
         _error(
             '"compiler" values must be one of ${Compiler.names}.', value.span);
       }
 
-      _webCompiler[key.value] = value.value;
+      _webCompiler[key.value] = Compiler.byName(value.value);
     });
 
     return _webCompiler;
   }
 
-  Map<String, String> _webCompiler;
+  Map<String, Compiler> _webCompiler;
 
   /// Whether the package is private and cannot be published.
   ///
