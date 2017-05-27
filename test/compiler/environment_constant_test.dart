@@ -30,7 +30,7 @@ main() {
         "build",
         "--define",
         "name=fblthp",
-        "--compiler=${compiler.name}"
+        "--web-compiler=${compiler.name}"
       ], output: new RegExp(r'Built [\d]+ file[s]? to "build".'));
 
       var expectedFile;

@@ -8,6 +8,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'barback/transformer_config.dart';
+import 'compiler.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'package.dart';
@@ -353,6 +354,49 @@ class Pubspec {
   }
 
   Map<String, String> _executables;
+
+  /// The settings for which web compiler to use in which mode.
+  ///
+  /// It is a map of [String] to [Compiler]. Each key is the name of a mode, and
+  /// the value is the web compiler to use in that mode.
+  ///
+  /// Valid compiler values are all of [Compiler.names].
+  Map<String, Compiler> get webCompiler {
+    if (_webCompiler != null) return _webCompiler;
+
+    _webCompiler = <String, Compiler>{};
+    var webYaml = fields.nodes['web'];
+    if (webYaml?.value == null) return _webCompiler;
+
+    if (webYaml is! Map) {
+      _error('"web" field must be a map.', webYaml.span);
+    }
+
+    var compilerYaml = (webYaml as YamlMap)['compiler'];
+    if (compilerYaml == null) return _webCompiler;
+
+    if (compilerYaml is! Map) {
+      _error('"compiler" field must be a map.',
+          (webYaml as YamlMap).nodes['compiler'].span);
+    }
+
+    compilerYaml.nodes.forEach((key, value) {
+      if (key.value is! String) {
+        _error('"compiler" keys must be strings.', key.span);
+      }
+
+      if (!Compiler.names.contains(value.value)) {
+        _error(
+            '"compiler" values must be one of ${Compiler.names}.', value.span);
+      }
+
+      _webCompiler[key.value] = Compiler.byName(value.value);
+    });
+
+    return _webCompiler;
+  }
+
+  Map<String, Compiler> _webCompiler;
 
   /// Whether the package is private and cannot be published.
   ///

@@ -27,23 +27,28 @@ abstract class BarbackCommand extends PubCommand {
 
   /// The current compiler mode.
   Compiler get compiler {
-    if (argResults.options.contains('dart2js') &&
-        argResults.wasParsed('dart2js')) {
-      if (argResults.options.contains("compiler") &&
-          argResults.wasParsed("compiler")) {
+    if (argResults.options.contains("dart2js") &&
+        argResults.wasParsed("dart2js")) {
+      if (argResults.options.contains("web-compiler") &&
+          argResults.wasParsed("web-compiler")) {
         usageException(
-            "The --dart2js flag can't be used with the --compiler arg. "
-            "Prefer using the --compiler arg as --[no]-dart2js is deprecated.");
+            "The --dart2js flag can't be used with the --web-compiler arg. "
+            "Prefer using the --web-compiler arg as --[no]-dart2js is "
+            "deprecated.");
+      } else {
+        log.warning("The --dart2js flag is deprecated, please use "
+            "--web-compiler=dart2js option instead.");
       }
-      if (argResults['dart2js']) {
+      if (argResults["dart2js"]) {
         return Compiler.dart2JS;
       } else {
         return Compiler.none;
       }
-    } else if (argResults.options.contains("compiler")) {
-      return Compiler.byName(argResults["compiler"]);
+    } else if (argResults.options.contains("web-compiler")) {
+      return Compiler.byName(argResults["web-compiler"]);
     } else {
-      return Compiler.dart2JS;
+      var compiler = entrypoint.root.pubspec.webCompiler[mode.name];
+      return compiler ?? Compiler.dart2JS;
     }
   }
 
@@ -68,9 +73,8 @@ abstract class BarbackCommand extends PubCommand {
         defaultsTo: false,
         negatable: false);
 
-    argParser.addOption("compiler",
+    argParser.addOption("web-compiler",
         allowed: Compiler.names,
-        defaultsTo: 'dart2js',
         help: 'The JavaScript compiler to use to build the app.');
   }
 
