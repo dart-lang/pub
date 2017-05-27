@@ -366,7 +366,7 @@ class Pubspec {
 
     _webCompiler = <String, Compiler>{};
     var webYaml = fields.nodes['web'];
-    if (webYaml == null) return _webCompiler;
+    if (webYaml?.value == null) return _webCompiler;
 
     if (webYaml is! Map) {
       _error('"web" field must be a map.', webYaml.span);

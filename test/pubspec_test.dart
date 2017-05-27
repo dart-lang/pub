@@ -606,6 +606,16 @@ executables:
           expect(pubspec.webCompiler, isEmpty);
         });
 
+        test("defaults to an empty map if web is null", () {
+          var pubspec = new Pubspec.parse('web:', sources);
+          expect(pubspec.webCompiler, isEmpty);
+        });
+
+        test("defaults to an empty map if compiler is null", () {
+          var pubspec = new Pubspec.parse('web: {compiler:}', sources);
+          expect(pubspec.webCompiler, isEmpty);
+        });
+
         test("allows simple names for keys and valid compilers in values", () {
           var pubspec = new Pubspec.parse(
               '''
@@ -622,7 +632,6 @@ web:
         });
 
         test("throws if not a map", () {
-          expectPubspecException('web:', (pubspec) => pubspec.webCompiler);
           expectPubspecException(
               'web: {compiler: dartdevc}', (pubspec) => pubspec.webCompiler);
           expectPubspecException(
