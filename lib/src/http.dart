@@ -177,7 +177,7 @@ class _PubHttpClient extends http.BaseClient {
       }
     }
 
-    log.fine(requestLog.toString().trim());
+    log.io(requestLog.toString().trim());
   }
 
   /// Logs the fact that [response] was received, and information about it.
@@ -194,7 +194,7 @@ class _PubHttpClient extends http.BaseClient {
     response.headers
         .forEach((name, value) => responseLog.writeln(_logField(name, value)));
 
-    log.fine(responseLog.toString().trim());
+    log.io(responseLog.toString().trim());
   }
 
   /// Returns a log-formatted string for the HTTP field or header with the given
