@@ -38,7 +38,7 @@ dependencies:
   yaml: "^2.0.0"
 
 dev_dependencies:
-  shelf_test_handler: "1.0.0-rc.1"
+  shelf_test_handler: "^1.0.0"
   test: "^0.12.20"
   test_descriptor: "^1.0.0"
   test_process: "^1.0.0"

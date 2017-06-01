@@ -1,0 +1,23 @@
+language: dart
+sudo: false
+
+dart:
+  - dev
+
+dart_task:
+  - test
+  - dartfmt
+  - dartanalyzer
+
+# Create a snapshot to improve startup time. Tests will automatically use this
+# snapshot if it's available.
+before_script:
+  - dart --no-checked --snapshot=bin/pub.dart.snapshot --snapshot-kind=app-jit bin/pub.dart --help
+
+# Only building master means that we don't run two builds for each pull request.
+branches:
+  only: [master, travis]
+
+cache:
+  directories:
+    - $HOME/.pub-cache
