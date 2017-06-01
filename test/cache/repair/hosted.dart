@@ -48,7 +48,7 @@ main() {
           contains("X-Pub-OS: ${Platform.operatingSystem}"),
           contains("X-Pub-Command: cache repair"),
           contains("X-Pub-Session-ID:"),
-          isNot(contains("X-Pub-Environment")),
+          contains("X-Pub-Environment: test-environment"),
           isNot(contains("X-Pub-Reason")),
         ]));
 
