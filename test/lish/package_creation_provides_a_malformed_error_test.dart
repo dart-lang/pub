@@ -4,9 +4,9 @@
 
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -15,22 +15,22 @@ import 'utils.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('package creation provides a malformed error', () {
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server);
+  test('package creation provides a malformed error', () async {
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server);
 
-    confirmPublish(pub);
+    await confirmPublish(pub);
     handleUploadForm(server);
     handleUpload(server);
 
     var body = {'error': 'Your package was too boring.'};
-    server.handle('GET', '/create', (request) {
+    server.handler.expect('GET', '/create', (request) {
       return new shelf.Response.notFound(JSON.encode(body));
     });
 
-    pub.stderr.expect('Invalid server response:');
-    pub.stderr.expect(JSON.encode(body));
-    pub.shouldExit(1);
+    expect(pub.stderr, emits('Invalid server response:'));
+    expect(pub.stderr, emits(JSON.encode(body)));
+    await pub.shouldExit(1);
   });
 }

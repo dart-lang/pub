@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  setUp(() {
-    d.dir(appPath, [
+  setUp(() async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bar', [d.file('file.txt', 'bar')]),
       d.dir('foo', [d.file('file.txt', 'foo')]),
@@ -18,15 +18,15 @@ main() {
       d.dir('web', [d.file('file.txt', 'web')])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
-  integration("builds only the given directories", () {
-    schedulePub(
+  test("builds only the given directories", () async {
+    await runPub(
         args: ["build", "foo", "bar"],
         output: new RegExp(r'Built 2 files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('bar', [d.file('file.txt', 'bar')]),
         d.dir('foo', [d.file('file.txt', 'foo')]),
@@ -36,14 +36,14 @@ main() {
     ]).validate();
   });
 
-  integration("serves only the given directories", () {
-    pubServe(args: ["foo", "bar"]);
+  test("serves only the given directories", () async {
+    await pubServe(args: ["foo", "bar"]);
 
-    requestShouldSucceed("file.txt", "bar", root: "bar");
-    requestShouldSucceed("file.txt", "foo", root: "foo");
+    await requestShouldSucceed("file.txt", "bar", root: "bar");
+    await requestShouldSucceed("file.txt", "foo", root: "foo");
     expectNotServed("test");
     expectNotServed("web");
 
-    endPubServe();
+    await endPubServe();
   });
 }

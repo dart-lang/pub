@@ -3,26 +3,28 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('errors if the local package does not exist', () {
-    d.dir("foo", [
+  test('errors if the local package does not exist', () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
 
-    schedule(() => deleteEntry(p.join(sandboxDir, "foo")));
+    deleteEntry(p.join(d.sandbox, "foo"));
 
-    var pub = pubRun(global: true, args: ["foo"]);
-    var path = canonicalize(p.join(sandboxDir, "foo"));
-    pub.stderr.expect('Could not find a file named "pubspec.yaml" in "$path".');
-    pub.shouldExit(1);
+    var pub = await pubRun(global: true, args: ["foo"]);
+    var path = canonicalize(p.join(d.sandbox, "foo"));
+    expect(pub.stderr,
+        emits('Could not find a file named "pubspec.yaml" in "$path".'));
+    await pub.shouldExit(1);
   });
 }

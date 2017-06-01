@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  setUp(() {
-    servePackages((builder) {
+  setUp(() async {
+    await servePackages((builder) {
       builder.serve("normal", "1.2.3",
           deps: {"transitive": "any", "circular_a": "any"});
       builder.serve("transitive", "1.2.3", deps: {"shared": "any"});
@@ -25,10 +25,10 @@ main() {
       builder.serve("circular_b", "1.2.3", deps: {"circular_a": "any"});
     });
 
-    d.dir("from_path",
+    await d.dir("from_path",
         [d.libDir("from_path"), d.libPubspec("from_path", "1.2.3")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -43,9 +43,9 @@ main() {
   });
 
   group("lists all dependencies", () {
-    integration("in compact form", () {
-      pubGet();
-      schedulePub(
+    test("in compact form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps', '-s', 'compact'],
           output: '''
           myapp 0.0.0
@@ -72,9 +72,9 @@ main() {
           ''');
     });
 
-    integration("in list form", () {
-      pubGet();
-      schedulePub(
+    test("in list form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps', '--style', 'list'],
           output: '''
           myapp 0.0.0
@@ -110,9 +110,9 @@ main() {
           ''');
     });
 
-    integration("lists dependencies in tree form", () {
-      pubGet();
-      schedulePub(
+    test("lists dependencies in tree form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps'],
           output: '''
           myapp 0.0.0
@@ -135,9 +135,9 @@ main() {
   });
 
   group("lists non-dev dependencies", () {
-    integration("in compact form", () {
-      pubGet();
-      schedulePub(
+    test("in compact form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps', '-s', 'compact', '--no-dev'],
           output: '''
           myapp 0.0.0
@@ -160,9 +160,9 @@ main() {
           ''');
     });
 
-    integration("in list form", () {
-      pubGet();
-      schedulePub(
+    test("in list form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps', '--style', 'list', '--no-dev'],
           output: '''
           myapp 0.0.0
@@ -192,9 +192,9 @@ main() {
           ''');
     });
 
-    integration("in tree form", () {
-      pubGet();
-      schedulePub(
+    test("in tree form", () async {
+      await pubGet();
+      await runPub(
           args: ['deps', '--no-dev'],
           output: '''
           myapp 0.0.0

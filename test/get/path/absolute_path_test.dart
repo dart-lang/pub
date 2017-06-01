@@ -2,23 +2,26 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as path;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('path dependency with absolute path', () {
-    d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+  test('path dependency with absolute path', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": path.join(sandboxDir, "foo")}
+        "foo": {"path": path.join(d.sandbox, "foo")}
       })
     ]).create();
 
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.appPackagesFile({"foo": path.join(sandboxDir, "foo")}).validate();
+    await d.appPackagesFile({"foo": path.join(d.sandbox, "foo")}).validate();
   });
 }

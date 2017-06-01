@@ -2,45 +2,40 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("invalidates cache if asset changed", () {
-    d.dir(appPath, [
+  test("invalidates cache if asset changed", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file("file.txt", "stuff"),
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
+    await pubGet();
+    await pubServe();
 
-    String etag;
-    schedule(() async {
-      var response = await scheduleRequest("file.txt");
-      expect(response.statusCode, equals(200));
-      expect(response.body, equals("stuff"));
-      etag = response.headers["etag"];
-    });
+    var response = await requestFromPub("file.txt");
+    expect(response.statusCode, equals(200));
+    expect(response.body, equals("stuff"));
+    var etag = response.headers["etag"];
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("web", [d.file("file.txt", "new stuff")])
     ]).create();
 
-    waitForBuildSuccess();
+    await waitForBuildSuccess();
 
-    schedule(() async {
-      var response =
-          await scheduleRequest("file.txt", headers: {"if-none-match": etag});
-      expect(response.statusCode, equals(200));
-      expect(response.body, equals("new stuff"));
-    });
+    response =
+        await requestFromPub("file.txt", headers: {"if-none-match": etag});
+    expect(response.statusCode, equals(200));
+    expect(response.body, equals("new stuff"));
 
-    endPubServe();
+    await endPubServe();
   });
 }

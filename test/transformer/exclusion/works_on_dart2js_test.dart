@@ -2,18 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../../serve/utils.dart';
 
 main() {
-  integration("works on the dart2js transformer", () {
-    serveBarback();
+  test("works on the dart2js transformer", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -33,18 +32,20 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    var server = pubServe();
+    await pubGet();
+    var server = await pubServe();
     // Dart2js should remain lazy.
-    server.stdout.expect("Build completed successfully");
+    expect(server.stdout, emits("Build completed successfully"));
 
-    requestShould404("a.dart.js");
-    requestShouldSucceed("b.dart.js", isNot(isEmpty));
-    server.stdout.expect(consumeThrough(emitsLines("[Info from Dart2JS]:\n"
-        "Compiling myapp|web/b.dart...")));
-    server.stdout.expect(consumeThrough("Build completed successfully"));
+    await requestShould404("a.dart.js");
+    await requestShouldSucceed("b.dart.js", isNot(isEmpty));
+    expect(
+        server.stdout,
+        emitsThrough(emitsLines("[Info from Dart2JS]:\n"
+            "Compiling myapp|web/b.dart...")));
+    expect(server.stdout, emitsThrough("Build completed successfully"));
 
-    requestShould404("c.dart.js");
-    endPubServe();
+    await requestShould404("c.dart.js");
+    await endPubServe();
   });
 }

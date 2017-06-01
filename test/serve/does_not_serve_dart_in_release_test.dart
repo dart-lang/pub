@@ -2,13 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("does not serve .dart files in release mode", () {
-    d.dir("foo", [
+  test("does not serve .dart files in release mode", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
         d.file(
@@ -20,7 +22,7 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -40,12 +42,12 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--mode", "release"]);
-    requestShould404("file.dart");
-    requestShould404("packages/myapp/lib.dart");
-    requestShould404("packages/foo/foo.dart");
-    requestShould404("sub/sub.dart");
-    endPubServe();
+    await pubGet();
+    await pubServe(args: ["--mode", "release"]);
+    await requestShould404("file.dart");
+    await requestShould404("packages/myapp/lib.dart");
+    await requestShould404("packages/foo/foo.dart");
+    await requestShould404("sub/sub.dart");
+    await endPubServe();
   });
 }

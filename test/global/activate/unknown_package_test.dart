@@ -3,15 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
 main() {
-  integration('errors if the package could not be found', () {
-    serveNoPackages();
+  test('errors if the package could not be found', () async {
+    await serveNoPackages();
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "foo"],
         error: startsWith("Could not find package foo at"),
         exitCode: exit_codes.UNAVAILABLE);

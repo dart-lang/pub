@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("doesn't crash if an unused .dart file has a syntax error", () {
-    serveBarback();
+  test("doesn't crash if an unused .dart file has a syntax error", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -25,9 +27,9 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.out", "foo.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.out", "foo.out");
+    await endPubServe();
   });
 }

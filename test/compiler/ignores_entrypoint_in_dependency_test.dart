@@ -8,22 +8,22 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("ignores a Dart entrypoint in a dependency",
-      (compiler) {
-    d.dir("foo", [
+  testWithCompiler("ignores a Dart entrypoint in a dependency",
+      (compiler) async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [d.file("lib.dart", "main() => print('foo');")])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       })
     ]).create();
 
-    pubGet();
-    pubServe(compiler: compiler);
-    requestShould404("web/packages/foo/lib.dart.js");
-    endPubServe();
+    await pubGet();
+    await pubServe(compiler: compiler);
+    await requestShould404("web/packages/foo/lib.dart.js");
+    await endPubServe();
   });
 }

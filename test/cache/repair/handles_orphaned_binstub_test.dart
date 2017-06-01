@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -18,12 +18,12 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 """;
 
 main() {
-  integration('handles an orphaned binstub script', () {
-    d.dir(cachePath, [
+  test('handles an orphaned binstub script', () async {
+    await d.dir(cachePath, [
       d.dir('bin', [d.file(binStubName('script'), _ORPHANED_BINSTUB)])
     ]).create();
 
-    schedulePub(
+    await runPub(
         args: ["cache", "repair"],
         error: allOf([
           contains('Binstubs exist for non-activated packages:'),

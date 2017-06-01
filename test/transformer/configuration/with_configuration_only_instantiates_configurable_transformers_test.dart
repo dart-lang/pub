@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'dart:convert';
 
 import '../../descriptor.dart' as d;
@@ -45,16 +47,16 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  integration(
+  test(
       "with configuration, only instantiates configurable "
-      "transformers", () {
-    serveBarback();
+      "transformers", () async {
+    await serveBarback();
 
     var configuration = {
       "param": ["list", "of", "values"]
     };
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -68,10 +70,10 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.json", JSON.encode(configuration));
-    requestShould404("foo.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.json", JSON.encode(configuration));
+    await requestShould404("foo.out");
+    await endPubServe();
   });
 }

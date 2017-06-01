@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("runs a local transformer on a dependency", () {
-    serveBarback();
+  test("runs a local transformer on a dependency", () async {
+    await serveBarback();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "0.0.1",
@@ -23,15 +25,15 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/foo/foo.out", "foo.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("packages/foo/foo.out", "foo.out");
+    await endPubServe();
   });
 }

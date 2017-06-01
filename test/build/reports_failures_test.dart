@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -22,11 +24,11 @@ class FailingTransformer extends Transformer {
 """;
 
 main() {
-  integration("reports failures in transformers which don't output dart", () {
+  test("reports failures in transformers which don't output dart", () async {
     // Test for https://github.com/dart-lang/pub/issues/1336
-    serveBarback();
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -39,7 +41,7 @@ main() {
           [d.file("foo.txt", "foo"), d.file("main.dart", "void main() {}")])
     ]).create();
 
-    pubGet();
-    schedulePub(args: ["build"], exitCode: 65);
+    await pubGet();
+    await runPub(args: ["build"], exitCode: 65);
   });
 }

@@ -5,8 +5,9 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -26,10 +27,10 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  integration("outputs error to JSON in a failed build", () {
-    serveBarback();
+  test("outputs error to JSON in a failed build", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp"],
@@ -39,8 +40,8 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    schedulePub(args: [
+    await pubGet();
+    await runPub(args: [
       "build",
       "--format",
       "json"

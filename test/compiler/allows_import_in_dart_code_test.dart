@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -10,8 +10,8 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("handles imports in the Dart code", (compiler) {
-    d.dir("foo", [
+  testWithCompiler("handles imports in the Dart code", (compiler) async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
         d.file(
@@ -22,7 +22,7 @@ foo() => 'footext';
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -47,22 +47,26 @@ void main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe(compiler: compiler);
+    await pubGet();
+    await pubServe(compiler: compiler);
     switch (compiler) {
       case Compiler.dart2JS:
-        requestShouldSucceed("main.dart.js", contains("footext"));
-        requestShouldSucceed("main.dart.js", contains("libtext"));
+        await requestShouldSucceed("main.dart.js", contains("footext"));
+        await requestShouldSucceed("main.dart.js", contains("libtext"));
         break;
       case Compiler.dartDevc:
-        requestShouldSucceed("main.dart.js", contains("main.dart.bootstrap"));
-        requestShouldSucceed("main.dart.bootstrap.js", contains("web__main"));
-        requestShouldSucceed(
+        await requestShouldSucceed(
+            "main.dart.js", contains("main.dart.bootstrap"));
+        await requestShouldSucceed(
+            "main.dart.bootstrap.js", contains("web__main"));
+        await requestShouldSucceed(
             "web__main.js", allOf(contains("foo"), contains("lib")));
-        requestShouldSucceed("packages/foo/lib__foo.js", contains("footext"));
-        requestShouldSucceed("packages/myapp/lib__lib.js", contains("libtext"));
+        await requestShouldSucceed(
+            "packages/foo/lib__foo.js", contains("footext"));
+        await requestShouldSucceed(
+            "packages/myapp/lib__lib.js", contains("libtext"));
         break;
     }
-    endPubServe();
+    await endPubServe();
   });
 }

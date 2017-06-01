@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("creates binstubs for each executable in the pubspec", () {
-    servePackages((builder) {
+  test("creates binstubs for each executable in the pubspec", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
         "executables": {"one": null, "two-renamed": "second"}
       }, contents: [
@@ -21,14 +21,14 @@ main() {
       ]);
     });
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "foo"],
         output: contains("Installed executables one and two-renamed."));
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir("bin", [
-        d.matcherFile(binStubName("one"), contains("one")),
-        d.matcherFile(binStubName("two-renamed"), contains("second")),
+        d.file(binStubName("one"), contains("one")),
+        d.file(binStubName("two-renamed"), contains("second")),
         d.nothing(binStubName("two")),
         d.nothing(binStubName("nope"))
       ])

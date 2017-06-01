@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
@@ -9,8 +11,8 @@ import '../test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('fails gracefully if the url does not resolve', () {
-      d.dir(appPath, [
+    test('fails gracefully if the url does not resolve', () async {
+      await d.dir(appPath, [
         d.appPubspec({
           "foo": {
             "hosted": {"name": "foo", "url": "http://pub.invalid"}
@@ -18,7 +20,7 @@ main() {
         })
       ]).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           error: 'Could not resolve URL "http://pub.invalid".',
           exitCode: exit_codes.UNAVAILABLE);
     });

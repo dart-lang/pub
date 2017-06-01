@@ -2,11 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:test/test.dart';
 
 import 'package:pub/src/dartdevc/module.dart';
 import 'package:pub/src/dartdevc/module_reader.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,8 +16,8 @@ import '../serve/utils.dart';
 import 'util.dart';
 
 main() {
-  integration("can output modules under lib and web and for deps", () {
-    d.dir("foo", [
+  test("can output modules under lib and web and for deps", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
         d.file(
@@ -26,7 +28,7 @@ main() {
       ]),
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -50,38 +52,38 @@ main() {}
       ])
     ]).create();
 
-    pubGet();
-    pubServe(args: ['--web-compiler', 'dartdevc']);
+    await pubGet();
+    await pubServe(args: ['--web-compiler', 'dartdevc']);
 
-    moduleRequestShouldSucceed(moduleConfigName, [
+    await moduleRequestShouldSucceed(moduleConfigName, [
       makeModule(
           package: 'myapp',
           name: 'web__main',
           srcs: ['myapp|web/main.dart'],
           directDependencies: ['myapp|lib/hello.dart'])
     ]);
-    moduleRequestShouldSucceed('packages/myapp/$moduleConfigName', [
+    await moduleRequestShouldSucceed('packages/myapp/$moduleConfigName', [
       makeModule(
           package: 'myapp',
           name: 'lib__hello',
           srcs: ['myapp|lib/hello.dart'],
           directDependencies: ['foo|lib/foo.dart'])
     ]);
-    moduleRequestShouldSucceed('packages/foo/$moduleConfigName', [
+    await moduleRequestShouldSucceed('packages/foo/$moduleConfigName', [
       makeModule(package: 'foo', name: 'lib__foo', srcs: ['foo|lib/foo.dart'])
     ]);
-    requestShould404('packages/invalid/$moduleConfigName');
-    endPubServe();
+    await requestShould404('packages/invalid/$moduleConfigName');
+    await endPubServe();
   });
 }
 
-void moduleRequestShouldSucceed(String uri, List<Module> expectedModules) {
+Future moduleRequestShouldSucceed(
+    String uri, List<Module> expectedModules) async {
   var expected = unorderedMatches(
       expectedModules.map((module) => equalsModule(module)).toList());
-  scheduleRequest(uri).then((response) {
-    var json = JSON.decode(response.body);
-    var modules =
-        json.map((serialized) => new Module.fromJson(serialized)).toList();
-    expect(modules, expected);
-  });
+  var response = await requestFromPub(uri);
+  var json = JSON.decode(response.body);
+  var modules =
+      json.map((serialized) => new Module.fromJson(serialized)).toList();
+  expect(modules, expected);
 }

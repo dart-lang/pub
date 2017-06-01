@@ -3,41 +3,40 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("upgrades a snapshot when a git dependency is upgraded", () {
-    ensureGit();
+  test("upgrades a snapshot when a git dependency is upgraded", () async {
+    await ensureGit();
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.pubspec({"name": "foo", "version": "0.0.1"}),
       d.dir("bin", [d.file("hello.dart", "void main() => print('Hello!');")])
     ]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo.git"}
     }).create();
 
-    pubGet(output: contains("Precompiled foo:hello."));
+    await pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
-        [d.matcherFile('hello.dart.snapshot', contains('Hello!'))]).validate();
+    await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        [d.file('hello.dart.snapshot', contains('Hello!'))]).validate();
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.dir("bin", [d.file("hello.dart", "void main() => print('Goodbye!');")])
     ]).commit();
 
-    pubUpgrade(output: contains("Precompiled foo:hello."));
+    await pubUpgrade(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin', 'foo'), [
-      d.matcherFile('hello.dart.snapshot', contains('Goodbye!'))
-    ]).validate();
+    await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        [d.file('hello.dart.snapshot', contains('Goodbye!'))]).validate();
 
-    var process = pubRun(args: ['foo:hello']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
+    var process = await pubRun(args: ['foo:hello']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
   });
 }

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'dart:convert';
 
 import '../../descriptor.dart' as d;
@@ -32,10 +34,10 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-  integration("configuration defaults to an empty map", () {
-    serveBarback();
+  test("configuration defaults to an empty map", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -47,9 +49,9 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.json", JSON.encode({}));
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.json", JSON.encode({}));
+    await endPubServe();
   });
 }

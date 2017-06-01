@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_stream.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -36,10 +36,10 @@ class GetInputTransformer extends Transformer {
 """;
 
 main() {
-  integration("AssetNotFoundExceptions are detectable", () {
-    serveBarback();
+  test("AssetNotFoundExceptions are detectable", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -51,14 +51,14 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    var server = pubServe();
-    requestShouldSucceed(
+    await pubGet();
+    var server = await pubServe();
+    await requestShouldSucceed(
         "foo.txt", JSON.encode({"package": "myapp", "path": "nonexistent"}));
-    endPubServe();
+    await endPubServe();
 
     // Since the AssetNotFoundException was caught and handled, the server
     // shouldn't print any error information for it.
-    server.stderr.expect(isDone);
+    expect(server.stderr, emitsDone);
   });
 }

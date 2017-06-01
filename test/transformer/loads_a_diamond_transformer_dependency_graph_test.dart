@@ -2,22 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("loads a diamond transformer dependency graph", () {
-    serveBarback();
+  test("loads a diamond transformer dependency graph", () async {
+    await serveBarback();
 
-    d.dir("top", [
+    await d.dir("top", [
       d.pubspec({"name": "top", "version": "1.0.0"}),
       d.dir("lib", [
         d.file("transformer.dart", dartTransformer('top')),
       ])
     ]).create();
 
-    d.dir("left", [
+    await d.dir("left", [
       d.pubspec({
         "name": "left",
         "version": "1.0.0",
@@ -32,7 +34,7 @@ main() {
       ])
     ]).create();
 
-    d.dir("right", [
+    await d.dir("right", [
       d.pubspec({
         "name": "right",
         "version": "1.0.0",
@@ -47,7 +49,7 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -65,12 +67,12 @@ main() {
       d.dir("web", [d.file("main.dart", 'const TOKEN = "main.dart";')])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed(
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed(
         "main.dart",
         'const TOKEN = "(((main.dart, (left, top)), (right, top)), ((myapp, '
         '(left, top)), (right, top)))";');
-    endPubServe();
+    await endPubServe();
   });
 }

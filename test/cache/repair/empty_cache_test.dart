@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../test_pub.dart';
 
 main() {
-  integration('does nothing if the cache is empty', () {
+  test('does nothing if the cache is empty', () {
     // Repair them.
-    schedulePub(
+    return runPub(
         args: ["cache", "repair"],
         output: "No packages in cache, so nothing to repair.");
   });

@@ -2,21 +2,23 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("preserves .htaccess as a special case", () {
-    d.dir(appPath, [
+  test("preserves .htaccess as a special case", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [d.file('.htaccess', 'fblthp'), d.file('.hidden', 'asdfgh')])
     ]).create();
 
-    pubGet();
-    schedulePub(
+    await pubGet();
+    await runPub(
         args: ["build"], output: new RegExp(r'Built \d+ files? to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('web', [d.file('.htaccess', 'fblthp'), d.nothing('.hidden')])
       ])

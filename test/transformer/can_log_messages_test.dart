@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -36,10 +36,10 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  integration("can log messages", () {
-    serveBarback();
+  test("can log messages", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -51,17 +51,17 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    var pub = startPub(args: ["build"]);
-    pub.stdout.expect(startsWith("Loading source assets..."));
-    pub.stdout.expect(consumeWhile(matches("Loading .* transformers...")));
-    pub.stdout.expect(startsWith("Building myapp..."));
+    await pubGet();
+    var pub = await startPub(args: ["build"]);
+    expect(pub.stdout, emits(startsWith("Loading source assets...")));
+    expect(pub.stdout, mayEmitMultiple(matches("Loading .* transformers...")));
+    expect(pub.stdout, emits(startsWith("Building myapp...")));
 
-    pub.stdout.expect(emitsLines("""
+    expect(pub.stdout, emitsLines("""
 [Rewrite on myapp|web/foo.txt]:
 info!"""));
 
-    pub.stderr.expect(emitsLines("""
+    expect(pub.stderr, emitsLines("""
 [Rewrite on myapp|web/foo.txt with input myapp|web/foo.foo]:
 Warning!
 [Rewrite on myapp|web/foo.txt]:"""));
@@ -69,19 +69,21 @@ Warning!
     // The details of the analyzer's error message change pretty frequently,
     // so instead of validating the entire line, just look for a couple of
     // salient bits of information.
-    pub.stderr.expect(allOf([
-      contains("2"), // The line number.
-      contains("1"), // The column number.
-      contains("http://fake.com/not_real.dart"), // The library.
-      contains("ERROR"), // That it's an error.
-    ]));
+    expect(
+        pub.stderr,
+        emits(allOf([
+          contains("2"), // The line number.
+          contains("1"), // The column number.
+          contains("http://fake.com/not_real.dart"), // The library.
+          contains("ERROR"), // That it's an error.
+        ])));
 
     // In barback >=0.15.0, the span will point to the location where the error
     // occurred.
-    pub.stderr.expect(allow(inOrder(["d", "^"])));
+    expect(pub.stderr, mayEmit(emitsInOrder(["d", "^"])));
 
-    pub.stderr.expect("Build failed.");
+    expect(pub.stderr, emits("Build failed."));
 
-    pub.shouldExit(exit_codes.DATA);
+    await pub.shouldExit(exit_codes.DATA);
   });
 }

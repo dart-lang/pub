@@ -2,13 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
   // Regression test for issue 23113
-  integration('runs a named Dart application in a dependency', () {
-    servePackages((builder) {
+  test('runs a named Dart application in a dependency', () async {
+    await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         'name': 'foo',
         'version': '1.0.0'
@@ -17,22 +19,22 @@ main() {
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({"foo": null})
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    var pub = pubRun(args: ["foo:bar"]);
-    pub.stdout.expect("foobar");
-    pub.shouldExit();
+    var pub = await pubRun(args: ["foo:bar"]);
+    expect(pub.stdout, emits("foobar"));
+    await pub.shouldExit();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "2.0.0"),
       d.dir("bin", [d.file("bar.dart", "main() => print('different');")])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -41,10 +43,10 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    pub = pubRun(args: ["foo:bar"]);
-    pub.stdout.expect("different");
-    pub.shouldExit();
+    pub = await pubRun(args: ["foo:bar"]);
+    expect(pub.stdout, emits("different"));
+    await pub.shouldExit();
   });
 }

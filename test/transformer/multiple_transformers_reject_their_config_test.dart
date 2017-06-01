@@ -2,8 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -25,12 +24,12 @@ class RejectConfigTransformer extends Transformer {
 """;
 
 main() {
-  integration(
+  test(
       "multiple transformers in the same phase reject their "
-      "configurations", () {
-    serveBarback();
+      "configurations", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -53,14 +52,16 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
     // We should see three instances of the error message, once for each
     // use of the transformer.
-    var pub = startPubServe();
+    var pub = await startPubServe();
     for (var i = 0; i < 3; i++) {
-      pub.stderr.expect(consumeThrough(endsWith('Error loading transformer: '
-          'I hate these settings!')));
+      expect(
+          pub.stderr,
+          emitsThrough(endsWith('Error loading transformer: '
+              'I hate these settings!')));
     }
-    pub.shouldExit(1);
+    await pub.shouldExit(1);
   });
 }

@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("passes along environment constants", () {
-    d.dir(appPath, [
+  test("passes along environment constants", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -34,9 +34,9 @@ void main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("main.dart.js", contains("hello"));
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("main.dart.js", contains("hello"));
+    await endPubServe();
   });
 }

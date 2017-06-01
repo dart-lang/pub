@@ -2,26 +2,32 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as p;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("errors if an executable's script can't be found", () {
-    d.dir("foo", [
+  test("errors if an executable's script can't be found", () async {
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "executables": {"missing": "not_here", "nope": null}
       })
     ]).create();
 
-    var pub = startPub(args: ["global", "activate", "-spath", "../foo"]);
+    var pub = await startPub(args: ["global", "activate", "-spath", "../foo"]);
 
-    pub.stderr.expect('Warning: Executable "missing" runs '
-        '"${p.join('bin', 'not_here.dart')}", which was not found in foo.');
-    pub.stderr.expect('Warning: Executable "nope" runs '
-        '"${p.join('bin', 'nope.dart')}", which was not found in foo.');
-    pub.shouldExit();
+    expect(
+        pub.stderr,
+        emits('Warning: Executable "missing" runs '
+            '"${p.join('bin', 'not_here.dart')}", which was not found in foo.'));
+    expect(
+        pub.stderr,
+        emits('Warning: Executable "nope" runs '
+            '"${p.join('bin', 'nope.dart')}", which was not found in foo.'));
+    await pub.shouldExit();
   });
 }

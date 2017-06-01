@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -13,16 +13,18 @@ import '../test_pub.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('package validation has an error', () {
+  test('package validation has an error', () async {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg.remove("homepage");
-    d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    var server = new ScheduledServer();
-    var pub = startPublish(server);
+    var server = await ShelfTestServer.create();
+    var pub = await startPublish(server);
 
-    pub.shouldExit(exit_codes.DATA);
-    pub.stderr.expect(consumeThrough("Sorry, your package is missing a "
-        "requirement and can't be published yet."));
+    await pub.shouldExit(exit_codes.DATA);
+    expect(
+        pub.stderr,
+        emitsThrough("Sorry, your package is missing a "
+            "requirement and can't be published yet."));
   });
 }

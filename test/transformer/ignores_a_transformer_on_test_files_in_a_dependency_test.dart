@@ -2,14 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
   // Regression test for issue 23480
-  integration("ignores a transformer on test files in a dependency", () {
-    servePackages((builder) {
+  test("ignores a transformer on test files in a dependency", () async {
+    await servePackages((builder) {
       builder.serveRealPackage('barback');
 
       builder.serve("bar", "1.2.3", contents: [
@@ -34,7 +36,7 @@ main() {
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "any"}
@@ -42,10 +44,10 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    pubServe();
-    requestShouldSucceed("foo.txt", "foo");
-    endPubServe();
+    await pubServe();
+    await requestShouldSucceed("foo.txt", "foo");
+    await endPubServe();
   });
 }

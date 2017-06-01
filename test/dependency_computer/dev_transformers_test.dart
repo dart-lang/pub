@@ -2,14 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("doesn't return a dependency's transformer that can't run on lib",
-      () {
-    d.dir(appPath, [
+  test("doesn't return a dependency's transformer that can't run on lib",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -18,7 +20,7 @@ void main() {
       })
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
@@ -35,10 +37,10 @@ void main() {
     expectDependencies({});
   });
 
-  integration(
+  test(
       "does return the root package's transformer that can't run on "
-      "lib", () {
-    d.dir(appPath, [
+      "lib", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -54,10 +56,10 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration(
+  test(
       "does return a dependency's transformer that the root package "
-      "uses", () {
-    d.dir(appPath, [
+      "uses", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -72,7 +74,7 @@ void main() {
       d.dir("test", [d.file("myapp_test.dart", "")])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -80,9 +82,9 @@ void main() {
     expectDependencies({"foo": []});
   });
 
-  integration("doesn't return a dependency's transformer that can run on bin",
-      () {
-    d.dir(appPath, [
+  test("doesn't return a dependency's transformer that can run on bin",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -91,7 +93,7 @@ void main() {
       })
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
@@ -109,10 +111,10 @@ void main() {
   });
 
   // Regression test for #1291
-  integration(
+  test(
       "doesn't return a dependency's transformer that can't run on lib "
-      "when the app's transformer imports the dependency's", () {
-    d.dir(appPath, [
+      "when the app's transformer imports the dependency's", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -125,7 +127,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",

@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -13,21 +13,23 @@ import '../test_pub.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('preview package validation has a warning', () {
+  test('preview package validation has a warning', () async {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["author"] = "Natalie Weizenbaum";
-    d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    var server = new ScheduledServer();
-    var pub = startPublish(server, args: ['--dry-run']);
+    var server = await ShelfTestServer.create();
+    var pub = await startPublish(server, args: ['--dry-run']);
 
-    pub.shouldExit(exit_codes.DATA);
-    pub.stderr.expect(consumeThrough('Suggestions:'));
-    pub.stderr.expect(emitsLines(
-        '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
-        'address\n'
-        '  (e.g. "name <email>").\n'
-        '\n'
-        'Package has 1 warning.'));
+    await pub.shouldExit(exit_codes.DATA);
+    expect(pub.stderr, emitsThrough('Suggestions:'));
+    expect(
+        pub.stderr,
+        emitsLines(
+            '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
+            'address\n'
+            '  (e.g. "name <email>").\n'
+            '\n'
+            'Package has 1 warning.'));
   });
 }

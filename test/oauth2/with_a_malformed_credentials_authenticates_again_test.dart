@@ -2,28 +2,28 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration(
+  test(
       'with a malformed credentials.json, authenticates again and '
-      'saves credentials.json', () {
-    d.validPackage.create();
+      'saves credentials.json', () async {
+    await d.validPackage.create();
 
-    var server = new ScheduledServer();
-    d.dir(cachePath, [d.file('credentials.json', '{bad json')]).create();
+    var server = await ShelfTestServer.create();
+    await d.dir(cachePath, [d.file('credentials.json', '{bad json')]).create();
 
-    var pub = startPublish(server);
-    confirmPublish(pub);
-    authorizePub(pub, server, "new access token");
+    var pub = await startPublish(server);
+    await confirmPublish(pub);
+    await authorizePub(pub, server, "new access token");
 
-    server.handle('GET', '/api/packages/versions/new', (request) {
+    server.handler.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -32,8 +32,8 @@ main() {
 
     // After we give pub an invalid response, it should crash. We wait for it to
     // do so rather than killing it so it'll write out the credentials file.
-    pub.shouldExit(1);
+    await pub.shouldExit(1);
 
-    d.credentialsFile(server, 'new access token').validate();
+    await d.credentialsFile(server, 'new access token').validate();
   });
 }

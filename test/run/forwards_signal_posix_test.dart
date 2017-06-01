@@ -6,7 +6,7 @@
 @TestOn('!windows')
 import 'dart:io';
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -34,21 +34,21 @@ main() {
 """;
 
 main() {
-  integration('forwards signals to the inner script', () {
-    d.dir(appPath, [
+  test('forwards signals to the inner script', () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/script"]);
+    await pubGet();
+    var pub = await pubRun(args: ["bin/script"]);
 
-    pub.stdout.expect("ready");
+    await expectLater(pub.stdout, emits("ready"));
     for (var signal in _catchableSignals) {
       pub.signal(signal);
-      pub.stdout.expect(signal.toString());
+      await expectLater(pub.stdout, emits(signal.toString()));
     }
 
-    pub.kill();
+    await pub.kill();
   });
 }

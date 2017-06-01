@@ -4,36 +4,33 @@
 
 import 'dart:async';
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  integration(
+  test(
       "binds a directory to a new port and immediately binds that "
-      "directory again", () {
-    d.dir(appPath, [
+      "directory again", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("test", [d.file("index.html", "<test body>")]),
       d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["web"]);
+    await pubGet();
+    await pubServe(args: ["web"]);
 
-    schedule(() {
-      return Future.wait([
-        webSocketRequest("serveDirectory", {"path": "test"}),
-        webSocketRequest("serveDirectory", {"path": "test"})
-      ]).then((results) {
-        expect(results[0], contains("result"));
-        expect(results[1], contains("result"));
-        expect(results[0]["result"], equals(results[1]["result"]));
-      });
-    });
+    var results = await Future.wait([
+      webSocketRequest("serveDirectory", {"path": "test"}),
+      webSocketRequest("serveDirectory", {"path": "test"})
+    ]);
+    expect(results[0], contains("result"));
+    expect(results[1], contains("result"));
+    expect(results[0]["result"], equals(results[1]["result"]));
 
-    endPubServe();
+    await endPubServe();
   });
 }

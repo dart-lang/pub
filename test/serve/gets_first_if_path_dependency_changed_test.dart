@@ -2,34 +2,36 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration(
+  test(
       "gets first if a path dependency's path doesn't match the one in "
-      "the lock file", () {
-    d.dir("foo-before",
+      "the lock file", () async {
+    await d.dir("foo-before",
         [d.libPubspec("foo", "0.0.1"), d.libDir("foo", "before")]).create();
 
-    d.dir("foo-after",
+    await d.dir("foo-after",
         [d.libPubspec("foo", "0.0.1"), d.libDir("foo", "after")]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"path": "../foo-before"}
     }).create();
 
-    pubGet();
+    await pubGet();
 
     // Change the path in the pubspec.
-    d.appDir({
+    await d.appDir({
       "foo": {"path": "../foo-after"}
     }).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
+    await endPubServe();
   });
 }

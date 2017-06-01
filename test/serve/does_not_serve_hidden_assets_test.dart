@@ -2,13 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("doesn't serve hidden assets", () {
-    d.dir(appPath, [
+  test("doesn't serve hidden assets", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file(".outer.txt", "outer contents"),
@@ -18,10 +20,10 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShould404(".outer.txt");
-    requestShould404(".dir/inner.txt");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShould404(".outer.txt");
+    await requestShould404(".dir/inner.txt");
+    await endPubServe();
   });
 }

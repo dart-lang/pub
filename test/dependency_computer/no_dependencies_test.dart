@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("reports no dependencies if no transformers are used", () {
-    d.dir(appPath, [
+  test("reports no dependencies if no transformers are used", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -19,15 +19,15 @@ void main() {
       })
     ]).create();
 
-    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
     expectDependencies({});
   });
 
-  integration(
+  test(
       "reports no dependencies if a transformer is used in a "
-      "package that doesn't expose a transformer", () {
-    d.dir(appPath, [
+      "package that doesn't expose a transformer", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -37,7 +37,7 @@ void main() {
       })
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -45,8 +45,8 @@ void main() {
     expectDependencies({"foo": []});
   });
 
-  integration("reports no dependencies for non-file/package imports", () {
-    d.dir(appPath, [
+  test("reports no dependencies for non-file/package imports", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -60,7 +60,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -68,8 +68,8 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration("reports no dependencies for a single self transformer", () {
-    d.dir(appPath, [
+  test("reports no dependencies for a single self transformer", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp"]
@@ -80,10 +80,10 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration(
+  test(
       "reports no dependencies if a transformer applies to files that "
-      "aren't used by the exposed transformer", () {
-    d.dir(appPath, [
+      "aren't used by the exposed transformer", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -103,7 +103,7 @@ void main() {
           [d.file("myapp.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -111,10 +111,11 @@ void main() {
     expectDependencies({"myapp": [], "foo": []});
   });
 
-  integration(
+  test(
       "reports no dependencies if a transformer applies to a "
-      "dependency's files that aren't used by the exposed transformer", () {
-    d.dir(appPath, [
+      "dependency's files that aren't used by the exposed transformer",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -128,7 +129,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
@@ -145,8 +146,8 @@ void main() {
     expectDependencies({'myapp': [], 'foo': []});
   });
 
-  test("reports no dependencies on transformers in future phases", () {
-    d.dir(appPath, [
+  test("reports no dependencies on transformers in future phases", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [

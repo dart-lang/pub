@@ -3,8 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,23 +15,22 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  integration(
+  test(
       "stop serving a file that is removed when using the native "
-      "watcher", () {
-    d.dir(appPath, [
+      "watcher", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--no-force-poll"]);
-    requestShouldSucceed("index.html", "body");
+    await pubGet();
+    await pubServe(args: ["--no-force-poll"]);
+    await requestShouldSucceed("index.html", "body");
 
-    schedule(
-        () => deleteEntry(path.join(sandboxDir, appPath, "web", "index.html")));
+    deleteEntry(path.join(d.sandbox, appPath, "web", "index.html"));
 
-    waitForBuildSuccess();
-    requestShould404("index.html");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShould404("index.html");
+    await endPubServe();
   });
 }

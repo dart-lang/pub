@@ -4,21 +4,21 @@
 
 import 'dart:io';
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('sends metadata headers for a direct dependency', () {
-      servePackages((builder) {
+    test('sends metadata headers for a direct dependency', () async {
+      await servePackages((builder) {
         builder.serve("foo", "1.0.0");
       });
 
-      d.appDir({"foo": "1.0.0"}).create();
+      await d.appDir({"foo": "1.0.0"}).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           silent: allOf([
             contains("X-Pub-OS: ${Platform.operatingSystem}"),
             contains("X-Pub-Command: ${command.name}"),
@@ -32,19 +32,19 @@ main() {
           ]));
     });
 
-    integration('sends metadata headers for a dev dependency', () {
-      servePackages((builder) {
+    test('sends metadata headers for a dev dependency', () async {
+      await servePackages((builder) {
         builder.serve("foo", "1.0.0");
       });
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
           "dev_dependencies": {"foo": "1.0.0"}
         })
       ]).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           silent: allOf([
             contains("X-Pub-OS: ${Platform.operatingSystem}"),
             contains("X-Pub-Command: ${command.name}"),
@@ -58,20 +58,20 @@ main() {
           ]));
     });
 
-    integration('sends metadata headers for a transitive dependency', () {
-      servePackages((builder) {
+    test('sends metadata headers for a transitive dependency', () async {
+      await servePackages((builder) {
         builder.serve("bar", "1.0.0");
       });
 
-      d.appDir({
+      await d.appDir({
         "foo": {"path": "../foo"}
       }).create();
 
-      d.dir("foo", [
+      await d.dir("foo", [
         d.libPubspec("foo", "1.0.0", deps: {"bar": "1.0.0"})
       ]).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           silent: allOf([
             contains("X-Pub-OS: ${Platform.operatingSystem}"),
             contains("X-Pub-Command: ${command.name}"),
@@ -81,22 +81,19 @@ main() {
           ]));
     });
 
-    integration("doesn't send metadata headers to a foreign server", () {
-      var server = new PackageServer((builder) {
+    test("doesn't send metadata headers to a foreign server", () async {
+      var server = await PackageServer.start((builder) {
         builder.serve("foo", "1.0.0");
       });
 
-      d.appDir({
+      await d.appDir({
         "foo": {
           "version": "1.0.0",
-          "hosted": {
-            "name": "foo",
-            "url": server.port.then((port) => "http://localhost:$port")
-          }
+          "hosted": {"name": "foo", "url": "http://localhost:${server.port}"}
         }
       }).create();
 
-      pubCommand(command, silent: isNot(contains("X-Pub-")));
+      await pubCommand(command, silent: isNot(contains("X-Pub-")));
     });
   });
 }

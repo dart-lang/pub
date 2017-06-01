@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -28,68 +28,63 @@ class ReplaceTransformer extends Transformer {
 }
 """;
 
-// TODO(nweiz): Currently scheduled_test.setUp doesn't play well with test_pub,
-// since it only assigns the sandbox directory once the main test body has
-// run. Fix this and move this to a real setUp call.
-void setUp() {
-  servePackages((builder) {
-    builder.serveRealPackage('barback');
+main() {
+  setUp(() async {
+    await servePackages((builder) {
+      builder.serveRealPackage('barback');
 
-    builder.serve("foo", "1.2.3", deps: {
-      'barback': 'any'
-    }, contents: [
-      d.dir("lib",
-          [d.file("transformer.dart", replaceTransformer("Hello", "Goodbye"))])
-    ]);
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, contents: [
+        d.dir("lib", [
+          d.file("transformer.dart", replaceTransformer("Hello", "Goodbye"))
+        ])
+      ]);
 
-    builder.serve("bar", "1.2.3", deps: {
-      'barback': 'any'
-    }, contents: [
-      d.dir("lib",
-          [d.file("transformer.dart", replaceTransformer("Goodbye", "See ya"))])
-    ]);
+      builder.serve("bar", "1.2.3", deps: {
+        'barback': 'any'
+      }, contents: [
+        d.dir("lib", [
+          d.file("transformer.dart", replaceTransformer("Goodbye", "See ya"))
+        ])
+      ]);
 
-    builder.serve("baz", "1.2.3");
+      builder.serve("baz", "1.2.3");
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
+        "transformers": ["foo"]
+      }),
+      d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
+    ]).create();
+
+    await pubGet();
   });
 
-  d.dir(appPath, [
-    d.pubspec({
-      "name": "myapp",
-      "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
-      "transformers": ["foo"]
-    }),
-    d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
-  ]).create();
+  test("caches a transformer snapshot", () async {
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
-  pubGet();
-}
-
-main() {
-  integration("caches a transformer snapshot", () {
-    setUp();
-
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
-
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
 
     // Run the executable again to make sure loading the transformer from the
     // cache works.
-    process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
   });
 
-  integration("recaches if the SDK version is out-of-date", () {
-    setUp();
-
-    d.dir(appPath, [
+  test("recaches if the SDK version is out-of-date", () async {
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         // The version 0.0.1 is different than the test version 0.1.2+3.
         d.file("manifest.txt", "0.0.1\nfoo"),
@@ -97,33 +92,31 @@ main() {
       ])
     ]).create();
 
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
   });
 
-  integration("recaches if the transformers change", () {
-    setUp();
+  test("recaches if the transformers change", () async {
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
-
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
@@ -132,34 +125,32 @@ main() {
       d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
-    pubGet();
-    process = pubRun(args: ['myapp']);
-    process.stdout.expect("See ya!");
-    process.shouldExit();
+    await pubGet();
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("See ya!"));
+    await process.shouldExit();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nbar,foo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
   });
 
-  integration("recaches if the transformer version changes", () {
-    setUp();
+  test("recaches if the transformer version changes", () async {
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
-
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
 
-    globalPackageServer.add((builder) {
+    await globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {
         'barback': 'any'
       }, contents: [
@@ -168,7 +159,7 @@ main() {
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "any"},
@@ -176,22 +167,22 @@ main() {
       })
     ]).create();
 
-    pubUpgrade();
+    await pubUpgrade();
 
-    process = pubRun(args: ['myapp']);
-    process.stdout.expect("New!");
-    process.shouldExit();
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("New!"));
+    await process.shouldExit();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
   });
 
-  integration("recaches if a transitive dependency version changes", () {
-    servePackages((builder) {
+  test("recaches if a transitive dependency version changes", () async {
+    await servePackages((builder) {
       builder.serveRealPackage('barback');
 
       builder.serve("foo", "1.2.3", deps: {
@@ -207,7 +198,7 @@ main() {
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "1.2.3"},
@@ -216,19 +207,19 @@ main() {
       d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
-    globalPackageServer.add((builder) {
+    await globalPackageServer.add((builder) {
       builder.serve("bar", "2.0.0", contents: [
         d.dir("lib", [d.file("bar.dart", "final replacement = 'See ya';")])
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "any"},
@@ -236,18 +227,16 @@ main() {
       })
     ]).create();
 
-    pubUpgrade();
+    await pubUpgrade();
 
-    process = pubRun(args: ['myapp']);
-    process.stdout.expect("See ya!");
-    process.shouldExit();
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("See ya!"));
+    await process.shouldExit();
   });
 
   // Issue 21298.
-  integration("doesn't recache when a transformer is removed", () {
-    setUp();
-
-    d.dir(appPath, [
+  test("doesn't recache when a transformer is removed", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "1.2.3", "bar": "1.2.3"},
@@ -256,11 +245,11 @@ main() {
       d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
-    var process = pubRun(args: ['myapp']);
-    process.stdout.expect("See ya!");
-    process.shouldExit();
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("See ya!"));
+    await process.shouldExit();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -274,17 +263,17 @@ main() {
       d.dir("bin", [d.file("myapp.dart", "main() => print('Hello!');")])
     ]).create();
 
-    pubGet();
-    process = pubRun(args: ['myapp']);
-    process.stdout.expect("Goodbye!");
-    process.shouldExit();
+    await pubGet();
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
 
     // "bar" should still be in the manifest, since there's no reason to
     // recompile the cache.
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir(".pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nbar,foo"),
-        d.matcherFile("transformers.snapshot", isNot(isEmpty))
+        d.file("transformers.snapshot", isNot(isEmpty))
       ])
     ]).validate();
   });

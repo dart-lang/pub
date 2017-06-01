@@ -2,16 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  integration("includes root package's dev dependencies", () {
-    d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+  test("includes root package's dev dependencies", () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dev_dependencies": {
@@ -21,22 +25,23 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
+    await d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
   });
 
-  integration("includes dev dependency's transitive dependencies", () {
-    d.dir('foo', [
+  test("includes dev dependency's transitive dependencies", () async {
+    await d.dir('foo', [
       d.libDir('foo'),
       d.libPubspec('foo', '0.0.1', deps: {
         "bar": {"path": "../bar"}
       })
     ]).create();
 
-    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dev_dependencies": {
@@ -45,13 +50,13 @@ main() {
       })
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
+    await d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
   });
 
-  integration("ignores transitive dependency's dev dependencies", () {
-    d.dir('foo', [
+  test("ignores transitive dependency's dev dependencies", () async {
+    await d.dir('foo', [
       d.libDir('foo'),
       d.pubspec({
         "name": "foo",
@@ -62,16 +67,17 @@ main() {
       })
     ]).create();
 
-    d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       })
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({"foo": "../foo"}).validate();
+    await d.appPackagesFile({"foo": "../foo"}).validate();
   });
 }

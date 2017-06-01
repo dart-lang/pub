@@ -2,43 +2,41 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  integration("binds a directory to a new port", () {
-    d.dir(appPath, [
+  test("binds a directory to a new port", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("test", [d.file("index.html", "<test body>")]),
       d.dir("web", [d.file("index.html", "<body>")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["web"]);
+    await pubGet();
+    await pubServe(args: ["web"]);
 
     // Bind the new directory.
-    schedule(() async {
-      var response = await expectWebSocketResult("serveDirectory",
-          {"path": "test"}, {"url": matches(r"http://localhost:\d+")});
+    var response = await expectWebSocketResult("serveDirectory",
+        {"path": "test"}, {"url": matches(r"http://localhost:\d+")});
 
-      var url = Uri.parse(response["url"]);
-      registerServerPort("test", url.port);
-    });
+    var url = Uri.parse(response["url"]);
+    registerServerPort("test", url.port);
 
     // It should be served now.
-    requestShouldSucceed("index.html", "<test body>", root: "test");
+    await requestShouldSucceed("index.html", "<test body>", root: "test");
 
     // And watched.
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("test", [d.file("index.html", "after")])
     ]).create();
 
-    waitForBuildSuccess();
-    requestShouldSucceed("index.html", "after", root: "test");
+    await waitForBuildSuccess();
+    await requestShouldSucceed("index.html", "after", root: "test");
 
-    endPubServe();
+    await endPubServe();
   });
 }

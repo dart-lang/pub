@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("doesn't choke on an explicit dart2js transformer", () {
-    d.dir(appPath, [
+  test("doesn't choke on an explicit dart2js transformer", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [r"$dart2js"]
@@ -15,9 +17,9 @@ main() {
       d.dir("bin", [d.file("script.dart", "main() => print('Hello!');")])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/script"]);
-    pub.stdout.expect("Hello!");
-    pub.shouldExit(0);
+    await pubGet();
+    var pub = await pubRun(args: ["bin/script"]);
+    expect(pub.stdout, emits("Hello!"));
+    await pub.shouldExit(0);
   });
 }

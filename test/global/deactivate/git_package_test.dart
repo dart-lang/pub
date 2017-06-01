@@ -2,21 +2,23 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('deactivates an active Git package', () {
+  test('deactivates an active Git package', () async {
     ensureGit();
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),
       d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"]);
+    await runPub(args: ["global", "activate", "-sgit", "../foo.git"]);
 
-    schedulePub(
+    await runPub(
         args: ["global", "deactivate", "foo"],
         output:
             'Deactivated package foo 1.0.0 from Git repository "../foo.git".');

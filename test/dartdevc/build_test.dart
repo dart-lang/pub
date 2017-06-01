@@ -3,14 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/compiler.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("pub build --web-compiler=dartdevc creates all required sources", () {
-    d.dir("foo", [
+  test("pub build --web-compiler=dartdevc creates all required sources",
+      () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
         d.file(
@@ -21,7 +22,7 @@ main() {
       ]),
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -56,29 +57,29 @@ void main() => other.main();
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(
+    await pubGet();
+    await runPub(
         args: ["build", "web", "--web-compiler=${Compiler.dartDevc.name}"],
         output: new RegExp(r'Built [\d]+ files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('web', [
-          d.matcherFile('main.dart.js', isNot(isEmpty)),
-          d.matcherFile('main.dart.bootstrap.js', isNot(isEmpty)),
-          d.matcherFile('dart_sdk.js', isNot(isEmpty)),
-          d.matcherFile('require.js', isNot(isEmpty)),
-          d.matcherFile('web__main.js', isNot(isEmpty)),
-          d.matcherFile('dart_stack_trace_mapper.js', isNot(isEmpty)),
-          d.matcherFile('ddc_web_compiler.js', isNot(isEmpty)),
+          d.file('main.dart.js', isNot(isEmpty)),
+          d.file('main.dart.bootstrap.js', isNot(isEmpty)),
+          d.file('dart_sdk.js', isNot(isEmpty)),
+          d.file('require.js', isNot(isEmpty)),
+          d.file('web__main.js', isNot(isEmpty)),
+          d.file('dart_stack_trace_mapper.js', isNot(isEmpty)),
+          d.file('ddc_web_compiler.js', isNot(isEmpty)),
           d.dir('packages', [
-            d.dir('foo', [d.matcherFile('lib__foo.js', isNot(isEmpty))]),
-            d.dir(appPath, [d.matcherFile('lib__hello.js', isNot(isEmpty))]),
+            d.dir('foo', [d.file('lib__foo.js', isNot(isEmpty))]),
+            d.dir(appPath, [d.file('lib__hello.js', isNot(isEmpty))]),
           ]),
-          d.matcherFile('web__subdir__subfile.js', isNot(isEmpty)),
+          d.file('web__subdir__subfile.js', isNot(isEmpty)),
           d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
-            d.matcherFile(
+            d.file('subfile.dart.js', isNot(isEmpty)),
+            d.file(
                 'subfile.dart.bootstrap.js',
                 allOf(
                   contains('"web/web__main": '
@@ -86,10 +87,10 @@ void main() => other.main();
                   contains(
                       '"packages/foo/lib__foo": "../packages/foo/lib__foo"'),
                 )),
-            d.matcherFile('dart_sdk.js', isNot(isEmpty)),
-            d.matcherFile('require.js', isNot(isEmpty)),
-            d.matcherFile('dart_stack_trace_mapper.js', isNot(isEmpty)),
-            d.matcherFile('ddc_web_compiler.js', isNot(isEmpty)),
+            d.file('dart_sdk.js', isNot(isEmpty)),
+            d.file('require.js', isNot(isEmpty)),
+            d.file('dart_stack_trace_mapper.js', isNot(isEmpty)),
+            d.file('ddc_web_compiler.js', isNot(isEmpty)),
           ]),
         ]),
       ]),

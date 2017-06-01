@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -11,12 +11,12 @@ import 'utils.dart';
 
 main() {
   // This is a regression test for issue #17198.
-  integrationWithCompiler(
+  testWithCompiler(
       "compiles a Dart file that imports a generated file to JS "
-      "outside web/", (compiler) {
-    serveBarback();
+      "outside web/", (compiler) async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "version": "0.0.1",
@@ -39,18 +39,18 @@ const TOKEN = "before";
       ])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["test"], compiler: compiler);
+    await pubGet();
+    await pubServe(args: ["test"], compiler: compiler);
     switch (compiler) {
       case Compiler.dart2JS:
-        requestShouldSucceed("main.dart.js", contains("(before, munge)"),
+        await requestShouldSucceed("main.dart.js", contains("(before, munge)"),
             root: "test");
         break;
       case Compiler.dartDevc:
-        requestShouldSucceed("test__main.js", contains("(before, munge)"),
+        await requestShouldSucceed("test__main.js", contains("(before, munge)"),
             root: "test");
         break;
     }
-    endPubServe();
+    await endPubServe();
   });
 }

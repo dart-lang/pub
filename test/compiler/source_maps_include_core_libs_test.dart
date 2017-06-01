@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -12,8 +12,8 @@ main() {
   // not precise as to which source libraries will actually be referenced in
   // the source map. But this tries to use a type in the core library
   // (Duration) and validate that its source ends up in the source map.
-  integration("Dart core libraries are available to source maps", () {
-    d.dir(appPath, [
+  test("Dart core libraries are available to source maps", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file("main.dart", "main() => new Duration().toString();"),
@@ -22,27 +22,26 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(
+    await pubGet();
+    await runPub(
         args: ["build", "--mode", "debug"],
         output: new RegExp(r'Built \d+ files to "build".'),
         exitCode: 0);
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("build", [
         d.dir("web", [
-          d.matcherFile("main.dart.js.map",
+          d.file("main.dart.js.map",
               contains(r"packages/$sdk/lib/core/duration.dart")),
           d.dir("sub", [
-            d.matcherFile("main.dart.js.map",
+            d.file("main.dart.js.map",
                 contains(r"../packages/$sdk/lib/core/duration.dart"))
           ]),
           d.dir("packages", [
             d.dir(r"$sdk", [
               d.dir("lib", [
-                d.dir(r"core", [
-                  d.matcherFile("duration.dart", contains("class Duration"))
-                ])
+                d.dir(r"core",
+                    [d.file("duration.dart", contains("class Duration"))])
               ])
             ])
           ])

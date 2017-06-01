@@ -2,15 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("does not overwrite an existing binstub", () {
-    d.dir("foo", [
+  test("does not overwrite an existing binstub", () async {
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "executables": {"foo": "foo", "collide1": "foo", "collide2": "foo"}
@@ -18,7 +17,7 @@ main() {
       d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    d.dir("bar", [
+    await d.dir("bar", [
       d.pubspec({
         "name": "bar",
         "executables": {"bar": "bar", "collide1": "bar", "collide2": "bar"}
@@ -26,22 +25,26 @@ main() {
       d.dir("bin", [d.file("bar.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-spath", "../foo"]);
+    await runPub(args: ["global", "activate", "-spath", "../foo"]);
 
-    var pub = startPub(args: ["global", "activate", "-spath", "../bar"]);
-    pub.stdout.expect(consumeThrough("Installed executable bar."));
-    pub.stderr.expect("Executable collide1 was already installed from foo.");
-    pub.stderr.expect("Executable collide2 was already installed from foo.");
-    pub.stderr.expect("Deactivate the other package(s) or activate bar using "
-        "--overwrite.");
-    pub.shouldExit();
+    var pub = await startPub(args: ["global", "activate", "-spath", "../bar"]);
+    expect(pub.stdout, emitsThrough("Installed executable bar."));
+    expect(pub.stderr,
+        emits("Executable collide1 was already installed from foo."));
+    expect(pub.stderr,
+        emits("Executable collide2 was already installed from foo."));
+    expect(
+        pub.stderr,
+        emits("Deactivate the other package(s) or activate bar using "
+            "--overwrite."));
+    await pub.shouldExit();
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir("bin", [
-        d.matcherFile(binStubName("foo"), contains("foo:foo")),
-        d.matcherFile(binStubName("bar"), contains("bar:bar")),
-        d.matcherFile(binStubName("collide1"), contains("foo:foo")),
-        d.matcherFile(binStubName("collide2"), contains("foo:foo"))
+        d.file(binStubName("foo"), contains("foo:foo")),
+        d.file(binStubName("bar"), contains("bar:bar")),
+        d.file(binStubName("collide1"), contains("foo:foo")),
+        d.file(binStubName("collide2"), contains("foo:foo"))
       ])
     ]).validate();
   });

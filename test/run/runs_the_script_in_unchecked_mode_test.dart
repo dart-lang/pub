@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -15,13 +15,13 @@ main() {
 """;
 
 main() {
-  integration('runs the script in unchecked mode by default', () {
-    d.dir(appPath, [
+  test('runs the script in unchecked mode by default', () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    schedulePub(args: ["run", "bin/script"], output: contains("no checks"));
+    await pubGet();
+    await runPub(args: ["run", "bin/script"], output: contains("no checks"));
   });
 }

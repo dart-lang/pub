@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
+import 'package:test/test.dart';
+
 import 'dart:convert';
 
 import 'descriptor.dart' as d;
@@ -9,45 +11,46 @@ import 'test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('fails gracefully on a dependency from an unknown source', () {
-      d.appDir({
+    test('fails gracefully on a dependency from an unknown source', () async {
+      await d.appDir({
         "foo": {"bad": "foo"}
       }).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           error: 'Package myapp depends on foo from unknown source "bad".');
     });
 
-    integration(
+    test(
         'fails gracefully on transitive dependency from an unknown '
-        'source', () {
-      d.dir('foo', [
+        'source', () async {
+      await d.dir('foo', [
         d.libDir('foo', 'foo 0.0.1'),
         d.libPubspec('foo', '0.0.1', deps: {
           "bar": {"bad": "bar"}
         })
       ]).create();
 
-      d.appDir({
+      await d.appDir({
         "foo": {"path": "../foo"}
       }).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           error: 'Package foo depends on bar from unknown source "bad".');
     });
 
-    integration('ignores unknown source in lockfile', () {
-      d.dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    test('ignores unknown source in lockfile', () async {
+      await d
+          .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
       // Depend on "foo" from a valid source.
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.appPubspec({
           "foo": {"path": "../foo"}
         })
       ]).create();
 
       // But lock it to a bad one.
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.file(
             "pubspec.lock",
             JSON.encode({
@@ -61,10 +64,10 @@ main() {
             }))
       ]).create();
 
-      pubCommand(command);
+      await pubCommand(command);
 
       // Should upgrade to the new one.
-      d.appPackagesFile({"foo": "../foo"}).validate();
+      await d.appPackagesFile({"foo": "../foo"}).validate();
     });
   });
 }

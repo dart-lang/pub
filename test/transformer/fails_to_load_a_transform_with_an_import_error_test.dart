@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -11,10 +11,10 @@ import '../serve/utils.dart';
 main() {
   // An import error will cause the isolate API to fail synchronously while
   // loading the transformer.
-  integration("fails to load a transform with an import error", () {
-    serveBarback();
+  test("fails to load a transform with an import error", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -26,10 +26,10 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    var pub = startPubServe();
-    pub.stderr.expect("Unable to spawn isolate: Unhandled exception:");
-    pub.stderr.expect(startsWith('Could not import "'));
-    pub.shouldExit(1);
+    await pubGet();
+    var pub = await startPubServe();
+    expect(pub.stderr, emits("Unable to spawn isolate: Unhandled exception:"));
+    expect(pub.stderr, emits(startsWith('Could not import "')));
+    await pub.shouldExit(1);
   });
 }

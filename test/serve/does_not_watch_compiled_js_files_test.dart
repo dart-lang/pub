@@ -2,23 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("does not watch changes to compiled JS files in the package", () {
-    d.dir(appPath, [
+  test("does not watch changes to compiled JS files in the package", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    waitForBuildSuccess();
-    requestShouldSucceed("index.html", "body");
-
-    d.dir(appPath, [
+    await pubGet();
+    await pubServe();
+    await waitForBuildSuccess();
+    await requestShouldSucceed("index.html", "body");
+    await d.dir(appPath, [
       d.dir("web", [
         d.file('file.dart', 'void main() => print("hello");'),
         d.file("other.dart.js", "should be ignored"),
@@ -27,11 +28,11 @@ main() {
       ])
     ]).create();
 
-    waitForBuildSuccess();
-    requestShouldSucceed("file.dart", 'void main() => print("hello");');
-    requestShould404("other.dart.js");
-    requestShould404("other.dart.js.map");
-    requestShould404("other.dart.precompiled.js");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShouldSucceed("file.dart", 'void main() => print("hello");');
+    await requestShould404("other.dart.js");
+    await requestShould404("other.dart.js.map");
+    await requestShould404("other.dart.precompiled.js");
+    await endPubServe();
   });
 }

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// Pub-specific scheduled_test descriptors.
 import "dart:io" show File;
 import "dart:async" show Future;
 import "dart:convert" show UTF8;
@@ -10,8 +9,8 @@ import "dart:convert" show UTF8;
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:scheduled_test/descriptor.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 import '../test_pub.dart';
 
@@ -27,53 +26,42 @@ class PackagesFileDescriptor extends Descriptor {
   /// are located on disk.
   PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
-  Future create([String parent]) => schedule(() {
-        if (parent == null) parent = defaultRoot;
-        var contents = const <int>[];
-        if (_dependencies != null) {
-          var mapping = <String, Uri>{};
-          _dependencies.forEach((package, version) {
-            var packagePath;
-            if (_isSemver(version)) {
-              // It's a cache reference.
-              packagePath = p.join(cachePath, "$package-$version");
-            } else {
-              // Otherwise it's a path relative to the pubspec file,
-              // which is also relative to the .packages file.
-              packagePath = p.fromUri(version);
-            }
-            mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
-          });
-          var buffer = new StringBuffer();
-          packages_file.write(buffer, mapping);
-          contents = UTF8.encode(buffer.toString());
+  Future create([String parent]) {
+    var contents = const <int>[];
+    if (_dependencies != null) {
+      var mapping = <String, Uri>{};
+      _dependencies.forEach((package, version) {
+        var packagePath;
+        if (_isSemver(version)) {
+          // It's a cache reference.
+          packagePath = p.join(cachePath, "$package-$version");
+        } else {
+          // Otherwise it's a path relative to the pubspec file,
+          // which is also relative to the .packages file.
+          packagePath = p.fromUri(version);
         }
-        return new File(p.join(parent, name)).writeAsBytes(contents);
-      }, "creating file '$name'");
-
-  Future validate([String parent]) =>
-      schedule(() => validateNow(parent), "validating file '$name'");
-
-  Future validateNow([String parent]) {
-    // Copied from FileDescriptor in scheduled_test.
-    if (parent == null) parent = defaultRoot;
-    var fullPath = p.join(parent, name);
-    if (!new File(fullPath).existsSync()) {
-      fail("File not found: '$fullPath'.");
+        mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
+      });
+      var buffer = new StringBuffer();
+      packages_file.write(buffer, mapping);
+      contents = UTF8.encode(buffer.toString());
     }
-    return new File(fullPath)
-        .readAsBytes()
-        .then((bytes) => _validateNow(bytes, fullPath));
+    return new File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
   }
 
-  /// A function that throws an error if [binaryContents] doesn't match the
-  /// expected contents of the descriptor.
-  void _validateNow(List<int> binaryContents, String fullPath) {
+  Future validate([String parent]) async {
+    var fullPath = p.join(parent ?? sandbox, name);
+    if (!await new File(fullPath).exists()) {
+      fail("File not found: '$fullPath'.");
+    }
+
+    var bytes = await new File(fullPath).readAsBytes();
+
     // Resolve against a dummy URL so that we can test whether the URLs in
     // the package file are themselves relative. We can't resolve against just
     // "." due to sdk#23809.
     var base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
-    var map = packages_file.parse(binaryContents, Uri.parse(base));
+    var map = packages_file.parse(bytes, Uri.parse(base));
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {

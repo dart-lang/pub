@@ -5,7 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -13,12 +13,12 @@ import 'utils.dart';
 
 main() {
   // This is a regression test for http://dartbug.com/21402.
-  integration(
+  test(
       "picks up files replaced after serving started when using the "
-      "native watcher", () {
-    serveBarback();
+      "native watcher", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -33,23 +33,21 @@ main() {
       d.file("other", "after")
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--no-force-poll"]);
-    waitForBuildSuccess();
-    requestShouldSucceed("file.out", "before.out");
+    await pubGet();
+    await pubServe(args: ["--no-force-poll"]);
+    await waitForBuildSuccess();
+    await requestShouldSucceed("file.out", "before.out");
 
-    schedule(() {
-      // Replace file.txt by renaming other on top of it.
-      return new File(p.join(sandboxDir, appPath, "other"))
-          .rename(p.join(sandboxDir, appPath, "web", "file.txt"));
-    });
+    // Replace file.txt by renaming other on top of it.
+    new File(p.join(d.sandbox, appPath, "other"))
+        .renameSync(p.join(d.sandbox, appPath, "web", "file.txt"));
 
     // Read the transformed file to ensure the change is actually noticed by
     // pub and not that we just get the new file contents piped through
     // without pub realizing they've changed.
-    waitForBuildSuccess();
-    requestShouldSucceed("file.out", "after.out");
+    await waitForBuildSuccess();
+    await requestShouldSucceed("file.out", "after.out");
 
-    endPubServe();
+    await endPubServe();
   });
 }

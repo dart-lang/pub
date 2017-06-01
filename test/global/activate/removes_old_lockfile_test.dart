@@ -2,18 +2,18 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('removes the 1.6-style lockfile', () {
-    servePackages((builder) {
+  test('removes the 1.6-style lockfile', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0");
     });
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.file(
             'foo.lock',
@@ -22,12 +22,12 @@ main() {
       ])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.nothing('foo.lock'),
-        d.dir('foo', [d.matcherFile('pubspec.lock', contains('1.0.0'))])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.0.0'))])
       ])
     ]).validate();
   });

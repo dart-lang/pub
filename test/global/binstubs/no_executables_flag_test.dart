@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("does not create binstubs if --no-executables is passed", () {
-    d.dir("foo", [
+  test("does not create binstubs if --no-executables is passed", () async {
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "executables": {"one": null}
@@ -15,9 +17,9 @@ main() {
       d.dir("bin", [d.file("one.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
 
-    schedulePub(args: [
+    await runPub(args: [
       "global",
       "activate",
       "--source",
@@ -27,7 +29,7 @@ main() {
     ]);
 
     // Should still delete old one.
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir("bin", [d.nothing(binStubName("one"))])
     ]).validate();
   });

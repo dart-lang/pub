@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
@@ -10,23 +12,23 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  integration("watches modifications to files when using the native watcher",
-      () {
-    d.dir(appPath, [
+  test("watches modifications to files when using the native watcher",
+      () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("index.html", "before")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--no-force-poll"]);
-    requestShouldSucceed("index.html", "before");
+    await pubGet();
+    await pubServe(args: ["--no-force-poll"]);
+    await requestShouldSucceed("index.html", "before");
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("web", [d.file("index.html", "after")])
     ]).create();
 
-    waitForBuildSuccess();
-    requestShouldSucceed("index.html", "after");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShouldSucceed("index.html", "after");
+    await endPubServe();
   });
 }

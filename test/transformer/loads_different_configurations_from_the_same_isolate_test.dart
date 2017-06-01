@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("loads different configurations from the same isolate", () {
+  test("loads different configurations from the same isolate", () async {
     // If different configurations are loaded from different isolates, a
     // transformer can end up being loaded twice. It's even possible for the
     // second load to use code that's transformed by the first, which is
@@ -25,9 +27,9 @@ main() {
     // code than the previous instance. This tests asserts that that doesn't
     // happen.
 
-    serveBarback();
+    await serveBarback();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
@@ -45,7 +47,7 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -75,18 +77,18 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
+    await pubGet();
+    await pubServe();
 
     // The version of foo/first used on myapp should have myapp's
     // configuration and shouldn't be transformed by foo/second.
-    requestShouldSucceed(
+    await requestShouldSucceed(
         "first.dart", 'const TOKEN = "(myapp/first, foo/first in myapp)";');
 
     // foo/second should be transformed by only foo/first.
-    requestShouldSucceed("second.dart",
+    await requestShouldSucceed("second.dart",
         'const TOKEN = "(myapp/second, (foo/second, foo/first in foo))";');
 
-    endPubServe();
+    await endPubServe();
   });
 }

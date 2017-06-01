@@ -8,10 +8,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -21,18 +22,18 @@ Validator dependency(Entrypoint entrypoint) =>
     new DependencyValidator(entrypoint);
 
 expectDependencyValidationError(String error) {
-  expect(schedulePackageValidation(dependency),
+  expect(validatePackage(dependency),
       completion(pairOf(anyElement(contains(error)), isEmpty)));
 }
 
 expectDependencyValidationWarning(String warning) {
-  expect(schedulePackageValidation(dependency),
+  expect(validatePackage(dependency),
       completion(pairOf(isEmpty, anyElement(contains(warning)))));
 }
 
 /// Sets up a test package with dependency [dep] and mocks a server with
 /// [hostedVersions] of the package available.
-setUpDependency(Map dep, {List<String> hostedVersions}) {
+Future setUpDependency(Map dep, {List<String> hostedVersions}) {
   useMockClient(new MockClient((request) {
     expect(request.method, equals("GET"));
     expect(request.url.path, equals("/api/packages/foo"));
@@ -53,28 +54,28 @@ setUpDependency(Map dep, {List<String> hostedVersions}) {
     }
   }));
 
-  d.dir(appPath, [
+  return d.dir(appPath, [
     d.libPubspec("test_pkg", "1.0.0", deps: {"foo": dep})
   ]).create();
 }
 
 main() {
   group('should consider a package valid if it', () {
-    integration('looks normal', () {
-      d.validPackage.create();
+    test('looks normal', () async {
+      await d.validPackage.create();
       expectNoValidationError(dependency);
     });
 
-    integration('has a ^ constraint with an appropriate SDK constraint', () {
-      d.dir(appPath, [
+    test('has a ^ constraint with an appropriate SDK constraint', () async {
+      await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0",
             deps: {"foo": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0")
       ]).create();
       expectNoValidationError(dependency);
     });
 
-    integration('depends on Flutter from an SDK source', () {
-      d.dir(appPath, [
+    test('depends on Flutter from an SDK source', () async {
+      await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {
           "flutter": {"sdk": ">=1.2.3 <2.0.0"}
         })
@@ -89,42 +90,42 @@ main() {
 
     group('has a git dependency', () {
       group('where a hosted version exists', () {
-        integration("and should suggest the hosted primary version", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+        test("and should suggest the hosted primary version", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
           expectDependencyValidationWarning('  foo: ">=2.0.0 <3.0.0"');
         });
 
-        integration(
+        test(
             "and should suggest the hosted prerelease version if "
-            "it's the only version available", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+            "it's the only version available", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
           expectDependencyValidationWarning('  foo: ">=3.0.0-pre <4.0.0"');
         });
 
-        integration(
+        test(
             "and should suggest a tighter constraint if primary is "
-            "pre-1.0.0", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+            "pre-1.0.0", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["0.0.1", "0.0.2"]);
           expectDependencyValidationWarning('  foo: ">=0.0.2 <0.1.0"');
         });
       });
 
       group('where no hosted version exists', () {
-        integration("and should use the other source's version", () {
-          setUpDependency({
+        test("and should use the other source's version", () async {
+          await setUpDependency({
             'git': 'git://github.com/dart-lang/foo',
             'version': '>=1.0.0 <2.0.0'
           });
           expectDependencyValidationWarning('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration(
+        test(
             "and should use the other source's unquoted version if "
-            "concrete", () {
-          setUpDependency(
+            "concrete", () async {
+          await setUpDependency(
               {'git': 'git://github.com/dart-lang/foo', 'version': '0.2.3'});
           expectDependencyValidationWarning('  foo: 0.2.3');
         });
@@ -133,43 +134,43 @@ main() {
 
     group('has a path dependency', () {
       group('where a hosted version exists', () {
-        integration("and should suggest the hosted primary version", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+        test("and should suggest the hosted primary version", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
           expectDependencyValidationError('  foo: ">=2.0.0 <3.0.0"');
         });
 
-        integration(
+        test(
             "and should suggest the hosted prerelease version if "
-            "it's the only version available", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+            "it's the only version available", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
           expectDependencyValidationError('  foo: ">=3.0.0-pre <4.0.0"');
         });
 
-        integration(
+        test(
             "and should suggest a tighter constraint if primary is "
-            "pre-1.0.0", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+            "pre-1.0.0", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["0.0.1", "0.0.2"]);
           expectDependencyValidationError('  foo: ">=0.0.2 <0.1.0"');
         });
       });
 
       group('where no hosted version exists', () {
-        integration("and should use the other source's version", () {
-          setUpDependency({
-            'path': path.join(sandboxDir, 'foo'),
+        test("and should use the other source's version", () async {
+          await setUpDependency({
+            'path': path.join(d.sandbox, 'foo'),
             'version': '>=1.0.0 <2.0.0'
           });
           expectDependencyValidationError('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration(
+        test(
             "and should use the other source's unquoted version if "
-            "concrete", () {
-          setUpDependency(
-              {'path': path.join(sandboxDir, 'foo'), 'version': '0.2.3'});
+            "concrete", () async {
+          await setUpDependency(
+              {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
           expectDependencyValidationError('  foo: 0.2.3');
         });
       });
@@ -177,21 +178,21 @@ main() {
 
     group('has an unconstrained dependency', () {
       group('and it should not suggest a version', () {
-        integration("if there's no lockfile", () {
-          d.dir(appPath, [
+        test("if there's no lockfile", () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"})
           ]).create();
 
           expect(
-              schedulePackageValidation(dependency),
+              validatePackage(dependency),
               completion(
                   pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration(
+        test(
             "if the lockfile doesn't have an entry for the "
-            "dependency", () {
-          d.dir(appPath, [
+            "dependency", () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
@@ -210,17 +211,17 @@ main() {
           ]).create();
 
           expect(
-              schedulePackageValidation(dependency),
+              validatePackage(dependency),
               completion(
                   pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration(
+        test(
             'and it should suggest a constraint based on the locked '
-            'version', () {
-          d.dir(appPath, [
+            'version', () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
@@ -241,10 +242,10 @@ main() {
           expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
         });
 
-        integration(
+        test(
             'and it should suggest a concrete constraint if the locked '
-            'version is pre-1.0.0', () {
-          d.dir(appPath, [
+            'version is pre-1.0.0', () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
@@ -267,10 +268,10 @@ main() {
       });
     });
 
-    integration(
+    test(
         'with a single-version dependency and it should suggest a '
-        'constraint based on the version', () {
-      d.dir(appPath, [
+        'constraint based on the version', () async {
+      await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "1.2.3"})
       ]).create();
 
@@ -279,21 +280,21 @@ main() {
 
     group('has a dependency without a lower bound', () {
       group('and it should not suggest a version', () {
-        integration("if there's no lockfile", () {
-          d.dir(appPath, [
+        test("if there's no lockfile", () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"})
           ]).create();
 
           expect(
-              schedulePackageValidation(dependency),
+              validatePackage(dependency),
               completion(
                   pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration(
+        test(
             "if the lockfile doesn't have an entry for the "
-            "dependency", () {
-          d.dir(appPath, [
+            "dependency", () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
             d.file(
                 "pubspec.lock",
@@ -312,17 +313,17 @@ main() {
           ]).create();
 
           expect(
-              schedulePackageValidation(dependency),
+              validatePackage(dependency),
               completion(
                   pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration(
+        test(
             'and it should suggest a constraint based on the locked '
-            'version', () {
-          d.dir(appPath, [
+            'version', () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
             d.file(
                 "pubspec.lock",
@@ -343,8 +344,8 @@ main() {
           expectDependencyValidationWarning('  foo: ">=1.2.3 <3.0.0"');
         });
 
-        integration('and it should preserve the upper-bound operator', () {
-          d.dir(appPath, [
+        test('and it should preserve the upper-bound operator', () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=3.0.0"}),
             d.file(
                 "pubspec.lock",
@@ -365,10 +366,10 @@ main() {
           expectDependencyValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
         });
 
-        integration(
+        test(
             'and it should expand the suggested constraint if the '
-            'locked version matches the upper bound', () {
-          d.dir(appPath, [
+            'locked version matches the upper bound', () async {
+          await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=1.2.3"}),
             d.file(
                 "pubspec.lock",
@@ -392,17 +393,17 @@ main() {
     });
 
     group('with a dependency without an upper bound', () {
-      integration('and it should suggest a constraint based on the lower bound',
-          () {
-        d.dir(appPath, [
+      test('and it should suggest a constraint based on the lower bound',
+          () async {
+        await d.dir(appPath, [
           d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">=1.2.3"})
         ]).create();
 
         expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
       });
 
-      integration('and it should preserve the lower-bound operator', () {
-        d.dir(appPath, [
+      test('and it should preserve the lower-bound operator', () async {
+        await d.dir(appPath, [
           d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">1.2.3"})
         ]).create();
 
@@ -411,16 +412,16 @@ main() {
     });
 
     group('has a ^ dependency', () {
-      integration("without an SDK constraint", () {
-        d.dir(appPath, [
+      test("without an SDK constraint", () async {
+        await d.dir(appPath, [
           d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
         ]).create();
 
         expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
       });
 
-      integration("with a too-broad SDK constraint", () {
-        d.dir(appPath, [
+      test("with a too-broad SDK constraint", () async {
+        await d.dir(appPath, [
           d.libPubspec("test_pkg", "1.0.0",
               deps: {"foo": "^1.2.3"}, sdk: ">=1.5.0 <2.0.0")
         ]).create();
@@ -429,8 +430,8 @@ main() {
       });
     });
 
-    integration('depends on Flutter from a non-SDK source', () {
-      d.dir(appPath, [
+    test('depends on Flutter from a non-SDK source', () async {
+      await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {"flutter": ">=1.2.3 <2.0.0"})
       ]).create();
 

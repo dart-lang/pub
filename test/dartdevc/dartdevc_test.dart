@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("can compile js files for modules under lib and web", () {
-    d.dir("foo", [
+  test("can compile js files for modules under lib and web", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
         d.file(
@@ -21,7 +21,7 @@ main() {
       ]),
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -47,25 +47,26 @@ void main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe(args: ['--web-compiler', 'dartdevc']);
+    await pubGet();
+    await pubServe(args: ['--web-compiler', 'dartdevc']);
     // Just confirm some basic things are present indicating that the module
     // was compiled. The goal here is not to test dartdevc itself.
-    requestShouldSucceed('web__main.js', contains('main'));
-    requestShouldSucceed('web__main.js.map', contains('web__main.js'));
-    requestShouldSucceed('packages/myapp/lib__hello.js', contains('hello'));
-    requestShouldSucceed(
+    await requestShouldSucceed('web__main.js', contains('main'));
+    await requestShouldSucceed('web__main.js.map', contains('web__main.js'));
+    await requestShouldSucceed(
+        'packages/myapp/lib__hello.js', contains('hello'));
+    await requestShouldSucceed(
         'packages/myapp/lib__hello.js.map', contains('lib__hello.js'));
-    requestShouldSucceed('packages/foo/lib__foo.js', contains('message'));
-    requestShouldSucceed(
+    await requestShouldSucceed('packages/foo/lib__foo.js', contains('message'));
+    await requestShouldSucceed(
         'packages/foo/lib__foo.js.map', contains('lib__foo.js'));
-    requestShould404('invalid.js');
-    requestShould404('packages/foo/invalid.js');
-    endPubServe();
+    await requestShould404('invalid.js');
+    await requestShould404('packages/foo/invalid.js');
+    await endPubServe();
   });
 
-  integration("dartdevc resources are copied next to entrypoints", () {
-    d.dir(appPath, [
+  test("dartdevc resources are copied next to entrypoints", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [
         d.file("main.dart", 'void main() {}'),
@@ -78,24 +79,24 @@ void main() {
       ]),
     ]).create();
 
-    pubGet();
-    pubServe(args: ['--web-compiler', 'dartdevc']);
-    requestShouldSucceed('dart_sdk.js', null);
-    requestShouldSucceed('require.js', null);
-    requestShouldSucceed('dart_stack_trace_mapper.js', null);
-    requestShouldSucceed('ddc_web_compiler.js', null);
-    requestShould404('dart_sdk.js.map');
-    requestShould404('require.js.map');
-    requestShould404('dart_stack_trace_mapper.js.map');
-    requestShould404('ddc_web_compiler.js.map');
-    requestShouldSucceed('subdir/dart_sdk.js', null);
-    requestShouldSucceed('subdir/require.js', null);
-    requestShouldSucceed('subdir/dart_stack_trace_mapper.js', null);
-    requestShouldSucceed('subdir/ddc_web_compiler.js', null);
-    requestShould404('subdir/dart_sdk.js.map');
-    requestShould404('subdir/require.js.map');
-    requestShould404('subdir/dart_stack_trace_mapper.js.map');
-    requestShould404('subdir/ddc_web_compiler.js.map');
-    endPubServe();
+    await pubGet();
+    await pubServe(args: ['--web-compiler', 'dartdevc']);
+    await requestShouldSucceed('dart_sdk.js', null);
+    await requestShouldSucceed('require.js', null);
+    await requestShouldSucceed('dart_stack_trace_mapper.js', null);
+    await requestShouldSucceed('ddc_web_compiler.js', null);
+    await requestShould404('dart_sdk.js.map');
+    await requestShould404('require.js.map');
+    await requestShould404('dart_stack_trace_mapper.js.map');
+    await requestShould404('ddc_web_compiler.js.map');
+    await requestShouldSucceed('subdir/dart_sdk.js', null);
+    await requestShouldSucceed('subdir/require.js', null);
+    await requestShouldSucceed('subdir/dart_stack_trace_mapper.js', null);
+    await requestShouldSucceed('subdir/ddc_web_compiler.js', null);
+    await requestShould404('subdir/dart_sdk.js.map');
+    await requestShould404('subdir/require.js.map');
+    await requestShould404('subdir/dart_stack_trace_mapper.js.map');
+    await requestShould404('subdir/ddc_web_compiler.js.map');
+    await endPubServe();
   });
 }

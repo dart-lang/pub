@@ -5,17 +5,17 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("compiles dart.js and interop.js next to entrypoints", () {
-    serveBrowserPackage();
+  test("compiles dart.js and interop.js next to entrypoints", () async {
+    await serveBrowserPackage();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({"browser": "1.0.0"}),
       d.dir('foo', [
         d.file('file.dart', 'void main() => print("hello");'),
@@ -29,16 +29,16 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    schedulePub(
+    await runPub(
         args: ["build", "foo", "web"],
         output: new RegExp(r'Built 12 files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('foo', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
+          d.file('file.dart.js', isNot(isEmpty)),
           d.dir('packages', [
             d.dir('browser', [
               d.file('dart.js', 'contents of dart.js'),
@@ -52,11 +52,11 @@ main() {
                 d.file('interop.js', 'contents of interop.js')
               ])
             ]),
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+            d.file('subfile.dart.js', isNot(isEmpty)),
           ])
         ]),
         d.dir('web', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
+          d.file('file.dart.js', isNot(isEmpty)),
           d.dir('packages', [
             d.dir('browser', [
               d.file('dart.js', 'contents of dart.js'),
@@ -70,7 +70,7 @@ main() {
                 d.file('interop.js', 'contents of interop.js')
               ])
             ]),
-            d.matcherFile('subfile.dart.js', isNot(isEmpty))
+            d.file('subfile.dart.js', isNot(isEmpty))
           ])
         ])
       ])

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
@@ -9,12 +11,12 @@ import '../test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('fails gracefully if the package does not exist', () {
-      serveNoPackages();
+    test('fails gracefully if the package does not exist', () async {
+      await serveNoPackages();
 
-      d.appDir({"foo": "1.2.3"}).create();
+      await d.appDir({"foo": "1.2.3"}).create();
 
-      pubCommand(command,
+      await pubCommand(command,
           error: new RegExp(
               r"""
 Could not find package foo at http://localhost:\d+\.

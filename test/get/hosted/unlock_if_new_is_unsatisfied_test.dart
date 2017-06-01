@@ -2,25 +2,27 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       "unlocks dependencies if necessary to ensure that a new "
-      "dependency is satisfied", () {
-    servePackages((builder) {
+      "dependency is satisfied", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"bar": "<2.0.0"});
       builder.serve("bar", "1.0.0", deps: {"baz": "<2.0.0"});
       builder.serve("baz", "1.0.0", deps: {"qux": "<2.0.0"});
       builder.serve("qux", "1.0.0");
     });
 
-    d.appDir({"foo": "any"}).create();
+    await d.appDir({"foo": "any"}).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({
+    await d.appPackagesFile({
       "foo": "1.0.0",
       "bar": "1.0.0",
       "baz": "1.0.0",
@@ -35,11 +37,11 @@ main() {
       builder.serve("newdep", "2.0.0", deps: {"baz": ">=1.5.0"});
     });
 
-    d.appDir({"foo": "any", "newdep": "any"}).create();
+    await d.appDir({"foo": "any", "newdep": "any"}).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({
+    await d.appPackagesFile({
       "foo": "2.0.0",
       "bar": "2.0.0",
       "baz": "2.0.0",

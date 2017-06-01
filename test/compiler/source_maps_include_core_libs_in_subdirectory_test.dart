@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
@@ -14,10 +14,10 @@ main() {
   // not precise as to which source libraries will actually be referenced in
   // the source map. But this tries to use a type in the core library
   // (Duration) and validate that its source ends up in the source map.
-  integration(
+  test(
       "Dart core libraries are available to source maps when the "
-      "build directory is a subdirectory", () {
-    d.dir(appPath, [
+      "build directory is a subdirectory", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.dir("sub",
@@ -25,18 +25,18 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
     var webSub = path.join("web", "sub");
-    pubServe(args: [webSub]);
+    await pubServe(args: [webSub]);
 
-    requestShouldSucceed(
+    await requestShouldSucceed(
         "main.dart.js.map", contains(r"packages/$sdk/lib/core/duration.dart"),
         root: webSub);
-    requestShouldSucceed(
+    await requestShouldSucceed(
         r"packages/$sdk/lib/core/duration.dart", contains("class Duration"),
         root: webSub);
 
-    endPubServe();
+    await endPubServe();
   });
 }

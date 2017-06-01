@@ -5,7 +5,7 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
@@ -15,7 +15,7 @@ import 'utils.dart';
 main() {
   group("passes environment constants to", () {
     setUp(() {
-      d.dir(appPath, [
+      return d.dir(appPath, [
         d.appPubspec(),
         d.dir('web', [
           d.file('file.dart',
@@ -24,9 +24,9 @@ main() {
       ]).create();
     });
 
-    integrationWithCompiler('from "pub build"', (compiler) {
-      pubGet();
-      schedulePub(args: [
+    testWithCompiler('from "pub build"', (compiler) async {
+      await pubGet();
+      await runPub(args: [
         "build",
         "--define",
         "name=fblthp",
@@ -36,37 +36,37 @@ main() {
       var expectedFile;
       switch (compiler) {
         case Compiler.dart2JS:
-          expectedFile = d.matcherFile('file.dart.js', contains('fblthp'));
+          expectedFile = d.file('file.dart.js', contains('fblthp'));
           break;
         case Compiler.dartDevc:
-          expectedFile = d.matcherFile('web__file.js', contains('fblthp'));
+          expectedFile = d.file('web__file.js', contains('fblthp'));
           break;
       }
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.dir('build', [
           d.dir('web', [expectedFile])
         ])
       ]).validate();
     });
 
-    integrationWithCompiler('from "pub serve"', (compiler) {
-      pubGet();
-      pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
+    testWithCompiler('from "pub serve"', (compiler) async {
+      await pubGet();
+      await pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
       switch (compiler) {
         case Compiler.dart2JS:
-          requestShouldSucceed("file.dart.js", contains("fblthp"));
+          await requestShouldSucceed("file.dart.js", contains("fblthp"));
           break;
         case Compiler.dartDevc:
-          requestShouldSucceed("web__file.js", contains("fblthp"));
+          await requestShouldSucceed("web__file.js", contains("fblthp"));
           break;
       }
-      endPubServe();
+      await endPubServe();
     });
 
-    integrationWithCompiler('which takes precedence over the pubspec',
-        (compiler) {
-      d.dir(appPath, [
+    testWithCompiler('which takes precedence over the pubspec',
+        (compiler) async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
           "transformers": [
@@ -79,19 +79,19 @@ main() {
         })
       ]).create();
 
-      pubGet();
-      pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
+      await pubGet();
+      await pubServe(args: ["--define", "name=fblthp"], compiler: compiler);
       switch (compiler) {
         case Compiler.dart2JS:
-          requestShouldSucceed("file.dart.js",
+          await requestShouldSucceed("file.dart.js",
               allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
           break;
         case Compiler.dartDevc:
-          requestShouldSucceed("web__file.js",
+          await requestShouldSucceed("web__file.js",
               allOf([contains("fblthp"), isNot(contains("slartibartfast"))]));
           break;
       }
-      endPubServe();
+      await endPubServe();
     });
   });
 }

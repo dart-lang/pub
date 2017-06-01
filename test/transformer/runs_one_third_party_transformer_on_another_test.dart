@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("runs one third-party transformer on another", () {
-    serveBarback();
+  test("runs one third-party transformer on another", () async {
+    await serveBarback();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
@@ -21,7 +23,7 @@ main() {
       ])
     ]).create();
 
-    d.dir("bar", [
+    await d.dir("bar", [
       d.pubspec({
         "name": "bar",
         "version": "1.0.0",
@@ -36,7 +38,7 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["bar/transformer"],
@@ -47,10 +49,10 @@ main() {
       d.dir("web", [d.file("main.dart", 'const TOKEN = "main.dart";')])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed(
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed(
         "main.dart", 'const TOKEN = "(main.dart, (bar, foo))";');
-    endPubServe();
+    await endPubServe();
   });
 }

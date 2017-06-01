@@ -4,9 +4,9 @@
 
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,20 +14,20 @@ import '../test_pub.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('upload form provides an error', () {
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server);
+  test('upload form provides an error', () async {
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server);
 
-    confirmPublish(pub);
+    await confirmPublish(pub);
 
-    server.handle('GET', '/api/packages/versions/new', (request) {
+    server.handler.expect('GET', '/api/packages/versions/new', (request) {
       return new shelf.Response.notFound(JSON.encode({
         'error': {'message': 'your request sucked'}
       }));
     });
 
-    pub.stderr.expect('your request sucked');
-    pub.shouldExit(1);
+    expect(pub.stderr, emits('your request sucked'));
+    await pub.shouldExit(1);
   });
 }

@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("responds with a 404 on incomplete special URLs", () {
-    d.dir("foo", [d.libPubspec("foo", "0.0.1")]).create();
+  test("responds with a 404 on incomplete special URLs", () async {
+    await d.dir("foo", [d.libPubspec("foo", "0.0.1")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -22,16 +24,16 @@ main() {
       d.dir("web", [d.file("packages")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShould404("packages");
-    requestShould404("packages/");
-    requestShould404("packages/myapp");
-    requestShould404("packages/myapp/");
-    requestShould404("packages/foo");
-    requestShould404("packages/foo/");
-    requestShould404("packages/unknown");
-    requestShould404("packages/unknown/");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShould404("packages");
+    await requestShould404("packages/");
+    await requestShould404("packages/myapp");
+    await requestShould404("packages/myapp/");
+    await requestShould404("packages/foo");
+    await requestShould404("packages/foo/");
+    await requestShould404("packages/unknown");
+    await requestShould404("packages/unknown/");
+    await endPubServe();
   });
 }

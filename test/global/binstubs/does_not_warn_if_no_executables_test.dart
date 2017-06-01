@@ -2,21 +2,21 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("does not warn if the package has no executables", () {
-    servePackages((builder) {
+  test("does not warn if the package has no executables", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir(
             "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "foo"],
         output: isNot(contains("is not on your path")));
   });

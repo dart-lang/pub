@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('uses the 1.6-style lockfile if necessary', () {
-    servePackages((builder) {
+  test('uses the 1.6-style lockfile if necessary', () async {
+    await servePackages((builder) {
       builder.serve("bar", "1.0.0");
       builder.serve("foo", "1.0.0", deps: {
         "bar": "any"
@@ -25,10 +25,10 @@ main() {
       ]);
     });
 
-    schedulePub(args: ["cache", "add", "foo"]);
-    schedulePub(args: ["cache", "add", "bar"]);
+    await runPub(args: ["cache", "add", "foo"]);
+    await runPub(args: ["cache", "add", "bar"]);
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.file(
             'foo.lock',
@@ -45,14 +45,14 @@ packages:
       ])
     ]).create();
 
-    var pub = pubRun(global: true, args: ["foo:script"]);
-    pub.stdout.expect("bar 1.0.0");
-    pub.shouldExit();
+    var pub = await pubRun(global: true, args: ["foo:script"]);
+    expect(pub.stdout, emits("bar 1.0.0"));
+    await pub.shouldExit();
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.nothing('foo.lock'),
-        d.dir('foo', [d.matcherFile('pubspec.lock', contains('1.0.0'))])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.0.0'))])
       ])
     ]).validate();
   });
