@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -45,10 +47,10 @@ class LoggingTransformer extends Transformer implements LazyTransformer {
 """;
 
 main() {
-  integration('displays transformer log messages', () {
-    serveBarback();
+  test('displays transformer log messages', () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -61,25 +63,25 @@ main() {
       d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/script"]);
+    await pubGet();
+    var pub = await pubRun(args: ["bin/script"]);
 
     // Note that the info log is only displayed here because the test
     // harness runs pub in verbose mode. By default, only the warning would
     // be shown.
-    pub.stdout.expect("[Info from Logging]:");
-    pub.stdout.expect("myapp|bin/script.dart.");
+    expect(pub.stdout, emits("[Info from Logging]:"));
+    expect(pub.stdout, emits("myapp|bin/script.dart."));
 
-    pub.stderr.expect("[Warning from Logging]:");
-    pub.stderr.expect("myapp|bin/script.dart.");
+    expect(pub.stderr, emits("[Warning from Logging]:"));
+    expect(pub.stderr, emits("myapp|bin/script.dart."));
 
-    pub.stdout.expect("[Info from Logging]:");
-    pub.stdout.expect("myapp|lib/lib.dart.");
+    expect(pub.stdout, emits("[Info from Logging]:"));
+    expect(pub.stdout, emits("myapp|lib/lib.dart."));
 
-    pub.stderr.expect("[Warning from Logging]:");
-    pub.stderr.expect("myapp|lib/lib.dart.");
+    expect(pub.stderr, emits("[Warning from Logging]:"));
+    expect(pub.stderr, emits("myapp|lib/lib.dart."));
 
-    pub.stdout.expect("lib");
+    expect(pub.stdout, emits("lib"));
     pub.shouldExit();
   });
 }

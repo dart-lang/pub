@@ -2,30 +2,32 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       "does not show how many newer versions are available for "
-      "packages that are locked and not being upgraded", () {
-    servePackages((builder) {
+      "packages that are locked and not being upgraded", () async {
+    await servePackages((builder) {
       builder.serve("a", "1.0.0");
       builder.serve("b", "1.0.0");
       builder.serve("c", "2.0.0");
     });
 
-    d.appDir({"a": "any"}).create();
+    await d.appDir({"a": "any"}).create();
 
     // One dependency changed.
-    pubUpgrade(output: new RegExp(r"Changed 1 dependency!$"));
+    await pubUpgrade(output: new RegExp(r"Changed 1 dependency!$"));
 
     // Remove one and add two.
-    d.appDir({"b": "any", "c": "any"}).create();
+    await d.appDir({"b": "any", "c": "any"}).create();
 
-    pubUpgrade(output: new RegExp(r"Changed 3 dependencies!$"));
+    await pubUpgrade(output: new RegExp(r"Changed 3 dependencies!$"));
 
     // Don't change anything.
-    pubUpgrade(output: new RegExp(r"No dependencies changed.$"));
+    await pubUpgrade(output: new RegExp(r"No dependencies changed.$"));
   });
 }

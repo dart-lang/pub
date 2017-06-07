@@ -2,11 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'test_pub.dart';
 
 main() {
-  integration('running pub with no command displays usage', () {
-    schedulePub(
+  test('running pub with no command displays usage', () {
+    return runPub(
         args: [],
         output: """
         Pub is a package manager for Dart.
@@ -48,7 +50,7 @@ main() {
         """);
   });
 
-  integration('running pub with just --version displays version', () {
-    schedulePub(args: ['--version'], output: 'Pub 0.1.2+3');
+  test('running pub with just --version displays version', () {
+    return runPub(args: ['--version'], output: 'Pub 0.1.2+3');
   });
 }

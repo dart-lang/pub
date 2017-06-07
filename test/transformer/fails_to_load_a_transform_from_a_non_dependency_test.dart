@@ -2,25 +2,26 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("fails to load a transform from a non-dependency", () {
-    d.dir(appPath, [
+  test("fails to load a transform from a non-dependency", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["foo"]
       })
     ]).create();
 
-    pubGet();
-    var pub = startPubServe();
-    pub.stderr.expect(contains('"foo" is not a dependency.'));
-    pub.shouldExit(exit_codes.DATA);
+    await pubGet();
+    var pub = await startPubServe();
+    expect(pub.stderr, emits(contains('"foo" is not a dependency.')));
+    await pub.shouldExit(exit_codes.DATA);
   });
 }

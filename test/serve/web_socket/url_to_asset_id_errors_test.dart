@@ -2,35 +2,35 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  setUp(() {
-    d.dir(appPath, [d.appPubspec()]).create();
-    pubGet();
+  setUp(() async {
+    await d.dir(appPath, [d.appPubspec()]).create();
+    await pubGet();
   });
 
-  integration("responds with NOT_SERVED for an unknown domain", () {
-    pubServe();
-    expectWebSocketError(
+  test("responds with NOT_SERVED for an unknown domain", () async {
+    await pubServe();
+    await expectWebSocketError(
         "urlToAssetId",
         {"url": "http://example.com:80/index.html"},
         NOT_SERVED,
         '"example.com:80" is not being served by pub.');
-    endPubServe();
+    await endPubServe();
   });
 
-  integration("responds with NOT_SERVED for an unknown port", () {
-    pubServe();
-    expectWebSocketError(
+  test("responds with NOT_SERVED for an unknown port", () async {
+    await pubServe();
+    await expectWebSocketError(
         "urlToAssetId",
         {"url": "http://localhost:80/index.html"},
         NOT_SERVED,
         '"localhost:80" is not being served by pub.');
-    endPubServe();
+    await endPubServe();
   });
 }

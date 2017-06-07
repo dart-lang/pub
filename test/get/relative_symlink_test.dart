@@ -2,40 +2,40 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
+// Pub uses NTFS junction points to create links in the packages directory.
+// These (unlike the symlinks that are supported in Vista and later) do not
+// support relative paths. So this test, by design, will not pass on Windows.
+// So just skip it.
+@TestOn("!windows")
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  // Pub uses NTFS junction points to create links in the packages directory.
-  // These (unlike the symlinks that are supported in Vista and later) do not
-  // support relative paths. So this test, by design, will not pass on Windows.
-  // So just skip it.
-  if (Platform.operatingSystem == "windows") return;
+  test('uses a relative symlink for the self link', () async {
+    await d.dir(appPath, [d.appPubspec(), d.libDir('foo')]).create();
 
-  integration('uses a relative symlink for the self link', () {
-    d.dir(appPath, [d.appPubspec(), d.libDir('foo')]).create();
+    await pubGet(args: ["--packages-dir"]);
 
-    pubGet(args: ["--packages-dir"]);
+    renameInSandbox(appPath, "moved");
 
-    scheduleRename(appPath, "moved");
-
-    d.dir("moved", [
+    await d.dir("moved", [
       d.dir("packages", [
         d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])
       ])
     ]).validate();
   });
 
-  integration('uses a relative symlink for secondary packages directory', () {
-    d.dir(appPath, [d.appPubspec(), d.libDir('foo'), d.dir("bin")]).create();
+  test('uses a relative symlink for secondary packages directory', () async {
+    await d
+        .dir(appPath, [d.appPubspec(), d.libDir('foo'), d.dir("bin")]).create();
 
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    scheduleRename(appPath, "moved");
+    renameInSandbox(appPath, "moved");
 
-    d.dir("moved", [
+    await d.dir("moved", [
       d.dir("bin", [
         d.dir("packages", [
           d.dir("myapp", [d.file('foo.dart', 'main() => "foo";')])

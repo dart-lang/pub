@@ -7,10 +7,11 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
+
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -29,10 +30,10 @@ import 'utils.dart';
 const _pathMax = 260 - 1;
 
 main() {
-  integration(
+  test(
       'archives and uploads a package with more files than can fit on '
-      'the command line', () {
-    d.validPackage.create();
+      'the command line', () async {
+    await d.validPackage.create();
 
     var argMax;
     if (Platform.isWindows) {
@@ -50,48 +51,46 @@ main() {
       argMax = int.parse(result.stdout);
     }
 
-    schedule(() {
-      var appRoot = p.join(sandboxDir, appPath);
+    var appRoot = p.join(d.sandbox, appPath);
 
-      // We'll make the filenames as long as possible to reduce the number of
-      // files we have to create to hit the maximum. However, the tar process
-      // uses relative paths, which means we can't count the root as part of the
-      // length.
-      var lengthPerFile = _pathMax - appRoot.length;
+    // We'll make the filenames as long as possible to reduce the number of
+    // files we have to create to hit the maximum. However, the tar process
+    // uses relative paths, which means we can't count the root as part of the
+    // length.
+    var lengthPerFile = _pathMax - appRoot.length;
 
-      // Create enough files to hit [argMax]. This may be a slight overestimate,
-      // since other options are passed to the tar command line, but we don't
-      // know how long those will be.
-      var filesToCreate = (argMax / lengthPerFile).ceil();
+    // Create enough files to hit [argMax]. This may be a slight overestimate,
+    // since other options are passed to the tar command line, but we don't
+    // know how long those will be.
+    var filesToCreate = (argMax / lengthPerFile).ceil();
 
-      for (var i = 0; i < filesToCreate; i++) {
-        var iString = i.toString();
+    for (var i = 0; i < filesToCreate; i++) {
+      var iString = i.toString();
 
-        // The file name contains "x"s to make the path hit [_pathMax],
-        // followed by a number to distinguish different files.
-        var fileName =
-            "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
+      // The file name contains "x"s to make the path hit [_pathMax],
+      // followed by a number to distinguish different files.
+      var fileName =
+          "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
 
-        new File(p.join(appRoot, fileName)).writeAsStringSync("");
-      }
-    });
+      new File(p.join(appRoot, fileName)).writeAsStringSync("");
+    }
 
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server);
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server);
 
-    confirmPublish(pub);
+    await confirmPublish(pub);
     handleUploadForm(server);
     handleUpload(server);
 
-    server.handle('GET', '/create', (request) {
+    server.handler.expect('GET', '/create', (request) {
       return new shelf.Response.ok(JSON.encode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });
 
-    pub.stdout.expect(startsWith('Uploading...'));
-    pub.stdout.expect('Package test_pkg 1.0.0 uploaded!');
-    pub.shouldExit(exit_codes.SUCCESS);
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    await pub.shouldExit(exit_codes.SUCCESS);
   });
 }

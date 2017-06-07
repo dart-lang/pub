@@ -2,32 +2,35 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as path;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       "generates a symlink with an absolute path if the dependency "
-      "path was absolute", () {
-    d.dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
+      "path was absolute", () async {
+    await d
+        .dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": path.join(sandboxDir, "foo")}
+        "foo": {"path": path.join(d.sandbox, "foo")}
       })
     ]).create();
 
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir("moved").create();
+    await d.dir("moved").create();
 
     // Move the app but not the package. Since the symlink is absolute, it
     // should still be able to find it.
-    scheduleRename(appPath, path.join("moved", appPath));
+    renameInSandbox(appPath, path.join("moved", appPath));
 
-    d.dir("moved", [
+    await d.dir("moved", [
       d.dir(packagesPath, [
         d.dir("foo", [d.file("foo.dart", 'main() => "foo";')])
       ])

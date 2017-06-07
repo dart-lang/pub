@@ -7,17 +7,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
+
 import 'package:pub/src/compiler.dart';
-import 'package:pub/src/utils.dart';
-import 'package:scheduled_test/scheduled_process.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 /// The pub process running "pub serve".
-ScheduledProcess _pubServer;
+TestProcess _pubServer;
 
 /// The ephemeral port assign to the running admin server.
 int _adminPort;
@@ -25,10 +24,6 @@ int _adminPort;
 /// The ephemeral ports assigned to the running servers, associated with the
 /// directories they're serving.
 final _ports = new Map<String, int>();
-
-/// A completer that completes when the server has been started and the served
-/// ports are known.
-Completer _portsCompleter;
 
 /// The web socket connection to the running pub process, or `null` if no
 /// connection has been made.
@@ -141,14 +136,14 @@ class DartTransformer extends Transformer {
 """;
 }
 
-/// Schedules starting the `pub serve` process.
+/// Starts the `pub serve` process.
 ///
 /// Unlike [pubServe], this doesn't determine the port number of the server, and
 /// so may be used to test for errors in the initialization process.
 ///
 /// Returns the `pub serve` process.
-ScheduledProcess startPubServe(
-    {Iterable<String> args, bool createWebDir: true, Compiler compiler}) {
+Future<TestProcess> startPubServe(
+    {Iterable<String> args, bool createWebDir: true, Compiler compiler}) async {
   var pubArgs = [
     "serve",
     "--port=0", // Use port 0 to get an ephemeral port.
@@ -162,25 +157,25 @@ ScheduledProcess startPubServe(
 
   if (args != null) pubArgs.addAll(args);
 
-  if (createWebDir) d.dir(appPath, [d.dir("web")]).create();
-  return startPub(args: pubArgs);
+  if (createWebDir) await d.dir(appPath, [d.dir("web")]).create();
+  return await startPub(args: pubArgs);
 }
 
-/// Schedules starting the "pub serve" process and records its port number for
-/// future requests.
+/// Starts the "pub serve" process and records its port number for future
+/// requests.
+///
+/// The port can be retrieved by calling [getServerUrl].
 ///
 /// If [createWebDir] is `true`, creates a `web/` directory if one doesn't exist
 /// so pub doesn't complain about having nothing to serve.
 ///
 /// Returns the `pub serve` process.
-ScheduledProcess pubServe(
-    {bool createWebDir: true, Iterable<String> args, Compiler compiler}) {
-  _pubServer =
-      startPubServe(args: args, createWebDir: createWebDir, compiler: compiler);
-  _portsCompleter = new Completer();
+Future<TestProcess> pubServe(
+    {bool createWebDir: true, Iterable<String> args, Compiler compiler}) async {
+  _pubServer = await startPubServe(
+      args: args, createWebDir: createWebDir, compiler: compiler);
 
-  currentSchedule.onComplete.schedule(() {
-    _portsCompleter = null;
+  addTearDown(() {
     _ports.clear();
 
     if (_webSocket != null) {
@@ -190,18 +185,18 @@ ScheduledProcess pubServe(
     }
   });
 
-  _pubServer.stdout.expect(startsWith("Loading source assets..."));
-  _pubServer.stdout.expect(consumeWhile(matches("Loading .* transformers...")));
+  await expectLater(
+      _pubServer.stdout, emits(startsWith("Loading source assets...")));
+  await expectLater(_pubServer.stdout,
+      mayEmitMultiple(matches("Loading .* transformers...")));
 
-  _pubServer.stdout.expect(predicate(_parseAdminPort));
+  _adminPort = _parseAdminPort(await _pubServer.stdout.next);
 
   // The server should emit one or more ports.
-  _pubServer.stdout
-      .expect(consumeWhile(predicate(_parsePort, 'emits server url')));
-  schedule(() {
-    expect(_ports, isNot(isEmpty));
-    _portsCompleter.complete();
-  });
+  while (_parsePort(await _pubServer.stdout.peek)) {
+    await _pubServer.stdout.next;
+  }
+  expect(_ports, isNotEmpty);
 
   return _pubServer;
 }
@@ -212,16 +207,18 @@ final _parsePortRegExp = new RegExp(r"([^ ]+) +on http://localhost:(\d+)");
 
 /// Parses the port number from the "Running admin server on localhost:1234"
 /// line printed by pub serve.
-bool _parseAdminPort(String line) {
+int _parseAdminPort(String line) {
   expect(line, startsWith('Running admin server on'));
+  expect(line, contains(_parsePortRegExp));
+
   var match = _parsePortRegExp.firstMatch(line);
-  if (match == null) return false;
-  _adminPort = int.parse(match[2]);
-  return true;
+  return int.parse(match[2]);
 }
 
 /// Parses the port number from the "Serving blah on localhost:1234" line
-/// printed by pub serve.
+/// printed by pub serve and adds it to [_ports].
+///
+/// Returns whether parsing succeeded.
 bool _parsePort(String line) {
   var match = _parsePortRegExp.firstMatch(line);
   if (match == null) return false;
@@ -229,84 +226,70 @@ bool _parsePort(String line) {
   return true;
 }
 
-void endPubServe() {
-  _pubServer.kill();
-}
+Future endPubServe() => _pubServer.kill();
 
-/// Schedules an HTTP request to the running pub server with [urlPath] and
-/// invokes [callback] with the response.
+/// Makes an HTTP request to the running pub server with [urlPath] and returns
+/// the response.
 ///
 /// [root] indicates which server should be accessed, and defaults to "web".
-Future<http.Response> scheduleRequest(String urlPath,
-    {String root, Map<String, String> headers}) {
-  return schedule/*<Future<http.Response>>*/(() {
-    return http.get(_getServerUrlSync(root, urlPath), headers: headers);
-  }, "request $urlPath");
-}
+Future<http.Response> requestFromPub(String urlPath,
+        {String root, Map<String, String> headers}) =>
+    http.get(getServerUrl(root, urlPath), headers: headers);
 
-/// Schedules an HTTP request to the running pub server with [urlPath] and
+/// Makes an HTTP request to the running pub server with [urlPath] and
 /// verifies that it responds with a body that matches [expectation].
 ///
 /// [expectation] may either be a [Matcher] or a string to match an exact body.
 /// [root] indicates which server should be accessed, and defaults to "web".
 /// [headers] may be either a [Matcher] or a map to match an exact headers map.
-void requestShouldSucceed(String urlPath, expectation, {String root, headers}) {
-  scheduleRequest(urlPath, root: root).then((response) {
-    expect(response.statusCode, equals(200));
-    if (expectation != null) expect(response.body, expectation);
-    if (headers != null) expect(response.headers, headers);
-  });
+Future requestShouldSucceed(String urlPath, expectation,
+    {String root, headers}) async {
+  var response = await requestFromPub(urlPath, root: root);
+  expect(response.statusCode, equals(200));
+  if (expectation != null) expect(response.body, expectation);
+  if (headers != null) expect(response.headers, headers);
 }
 
-/// Schedules an HTTP request to the running pub server with [urlPath] and
-/// verifies that it responds with a 404.
+/// Makes an HTTP request to the running pub server with [urlPath] and verifies
+/// that it responds with a 404.
 ///
 /// [root] indicates which server should be accessed, and defaults to "web".
-void requestShould404(String urlPath, {String root}) {
-  scheduleRequest(urlPath, root: root).then((response) {
-    expect(response.statusCode, equals(404));
-  });
+Future requestShould404(String urlPath, {String root}) async {
+  var response = await requestFromPub(urlPath, root: root);
+  expect(response.statusCode, equals(404));
 }
 
-/// Schedules an HTTP request to the running pub server with [urlPath] and
-/// verifies that it responds with a redirect to the given [redirectTarget].
+/// Makes an HTTP request to the running pub server with [urlPath] and verifies
+/// that it responds with a redirect to the given [redirectTarget].
 ///
 /// [redirectTarget] may be either a [Matcher] or a string to match an exact
 /// URL. [root] indicates which server should be accessed, and defaults to
 /// "web".
-void requestShouldRedirect(String urlPath, redirectTarget, {String root}) {
-  schedule(() {
-    var request =
-        new http.Request("GET", Uri.parse(_getServerUrlSync(root, urlPath)));
-    request.followRedirects = false;
-    return request.send().then((response) {
-      expect(response.statusCode ~/ 100, equals(3));
-      expect(response.headers, containsPair('location', redirectTarget));
-    });
-  }, "request $urlPath");
+Future requestShouldRedirect(String urlPath, redirectTarget,
+    {String root}) async {
+  var request = new http.Request("GET", Uri.parse(getServerUrl(root, urlPath)));
+  request.followRedirects = false;
+  var response = await request.send();
+  expect(response.statusCode ~/ 100, equals(3));
+  expect(response.headers, containsPair('location', redirectTarget));
 }
 
-/// Schedules an HTTP POST to the running pub server with [urlPath] and verifies
+/// Makes an HTTP POST to the running pub server with [urlPath] and verifies
 /// that it responds with a 405.
 ///
 /// [root] indicates which server should be accessed, and defaults to "web".
-void postShould405(String urlPath, {String root}) {
-  schedule(() {
-    return http.post(_getServerUrlSync(root, urlPath)).then((response) {
-      expect(response.statusCode, equals(405));
-    });
-  }, "request $urlPath");
+Future postShould405(String urlPath, {String root}) async {
+  var response = await http.post(getServerUrl(root, urlPath));
+  expect(response.statusCode, equals(405));
 }
 
-/// Schedules an HTTP request to the (theoretically) running pub server with
+/// Makes an HTTP request to the (theoretically) running pub server with
 /// [urlPath] and verifies that it cannot be connected to.
 ///
 /// [root] indicates which server should be accessed, and defaults to "web".
-void requestShouldNotConnect(String urlPath, {String root}) {
-  schedule(() {
-    return expect(http.get(_getServerUrlSync(root, urlPath)),
-        throwsA(new isInstanceOf<SocketException>()));
-  }, "request $urlPath");
+Future requestShouldNotConnect(String urlPath, {String root}) {
+  return expectLater(http.get(getServerUrl(root, urlPath)),
+      throwsA(new isInstanceOf<SocketException>()));
 }
 
 /// Reads lines from pub serve's stdout until it prints the build success
@@ -314,91 +297,62 @@ void requestShouldNotConnect(String urlPath, {String root}) {
 ///
 /// The schedule will not proceed until the output is found. If not found, it
 /// will eventually time out.
-void waitForBuildSuccess() =>
-    _pubServer.stdout.expect(consumeThrough(contains("successfully")));
+Future waitForBuildSuccess() =>
+    expectLater(_pubServer.stdout, emitsThrough(contains("successfully")));
 
-/// Schedules opening a web socket connection to the currently running pub
-/// serve.
-Future _ensureWebSocket() {
+/// Opening a web socket connection to the currently running pub serve.
+Future _ensureWebSocket() async {
   // Use the existing one if already connected.
-  if (_webSocket != null) return new Future.value();
+  if (_webSocket != null) return;
 
   // Server should already be running.
   expect(_pubServer, isNotNull);
   expect(_adminPort, isNotNull);
 
-  return WebSocket.connect("ws://localhost:$_adminPort").then((socket) {
-    _webSocket = socket;
-    // TODO(rnystrom): Works around #13913.
-    _webSocketBroadcastStream = _webSocket.map(JSON.decode).asBroadcastStream();
-  });
+  var socket = await WebSocket.connect("ws://localhost:$_adminPort");
+  _webSocket = socket;
+  // TODO(rnystrom): Works around #13913.
+  _webSocketBroadcastStream = _webSocket.map(JSON.decode).asBroadcastStream();
 }
 
-/// Schedules closing the web socket connection to the currently-running pub
-/// serve.
-void closeWebSocket() {
-  schedule(() {
-    return _ensureWebSocket()
-        .then((_) => _webSocket.close())
-        .then((_) => _webSocket = null);
-  }, "closing web socket");
+/// Closes the web socket connection to the currently-running pub serve.
+Future closeWebSocket() async {
+  await _ensureWebSocket();
+  await _webSocket.close();
+  _webSocket = null;
 }
 
 /// Sends a JSON RPC 2.0 request to the running pub serve's web socket
 /// connection.
 ///
 /// This calls a method named [method] with the given [params] (or no
-/// parameters, if it's not passed). [params] may contain Futures, in which case
-/// this will wait until they've completed before sending the request.
+/// parameters, if it's not passed).
 ///
-/// This schedules the request, but doesn't block the schedule on the response.
-/// It returns the response as a [Future].
-Future<Map> webSocketRequest(String method, [Map params]) {
-  var completer = new Completer<Map>();
-  schedule(() {
-    return Future.wait([
-      _ensureWebSocket(),
-      awaitObject(params),
-    ]).then((results) {
-      var resolvedParams = results[1];
-      chainToCompleter(_jsonRpcRequest(method, resolvedParams), completer);
-    });
-  }, "send $method with $params to web socket");
-  return completer.future;
+/// Returns the result of the RPC call.
+Future<Map> webSocketRequest(String method, [Map params]) async {
+  await _ensureWebSocket();
+  return await _jsonRpcRequest(method, params);
 }
 
 /// Sends a JSON RPC 2.0 request to the running pub serve's web socket
 /// connection, waits for a reply, then verifies the result.
 ///
-/// This calls a method named [method] with the given [params]. [params] may
-/// contain Futures, in which case this will wait until they've completed before
-/// sending the request.
+/// This calls a method named [method] with the given [params].
 ///
 /// The result is validated using [result], which may be a [Matcher] or a [Map]
-/// containing [Matcher]s and [Future]s. This will wait until any futures are
-/// completed before sending the request.
+/// containing [Matcher]s.
 ///
-/// Returns a [Future] that completes to the call's result.
-Future<Map> expectWebSocketResult(String method, Map params, result) {
-  return schedule/*<Future<Map>>*/(() {
-    return Future.wait([
-      webSocketRequest(method, params),
-      awaitObject(result),
-    ]).then((results) {
-      var response = results[0];
-      var resolvedResult = results[1];
-      expect(response["result"], resolvedResult);
-      return response["result"];
-    });
-  }, "send $method with $params to web socket and expect $result");
+/// Returns the result of the RPC call.
+Future<Map> expectWebSocketResult(String method, Map params, result) async {
+  var response = await webSocketRequest(method, params);
+  expect(response["result"], result);
+  return response["result"];
 }
 
 /// Sends a JSON RPC 2.0 request to the running pub serve's web socket
 /// connection, waits for a reply, then verifies the error response.
 ///
-/// This calls a method named [method] with the given [params]. [params] may
-/// contain Futures, in which case this will wait until they've completed before
-/// sending the request.
+/// This calls a method named [method] with the given [params].
 ///
 /// The error response is validated using [errorCode] and [errorMessage]. Both
 /// of these must be provided. The error code is checked against [errorCode] and
@@ -408,28 +362,23 @@ Future<Map> expectWebSocketResult(String method, Map params, result) {
 /// If [data] is provided, it is a JSON value or matcher used to validate the
 /// "data" value of the error response.
 ///
-/// Returns a [Future] that completes to the error's [data] field.
+/// Returns the result of the RPC call.
 Future expectWebSocketError(String method, Map params, errorCode, errorMessage,
-    {data}) {
-  return schedule(() {
-    return webSocketRequest(method, params).then((response) {
-      expect(response["error"]["code"], errorCode);
-      expect(response["error"]["message"], errorMessage);
+    {data}) async {
+  var response = await webSocketRequest(method, params);
+  expect(response["error"]["code"], errorCode);
+  expect(response["error"]["message"], errorMessage);
 
-      if (data != null) {
-        expect(response["error"]["data"], data);
-      }
+  if (data != null) {
+    expect(response["error"]["data"], data);
+  }
 
-      return response["error"]["data"];
-    });
-  }, "send $method with $params to web socket and expect error $errorCode");
+  return response["error"]["data"];
 }
 
 /// Validates that [root] was not bound to a port when pub serve started.
-Future expectNotServed(String root) {
-  return schedule(() {
-    expect(_ports.containsKey(root), isFalse);
-  });
+void expectNotServed(String root) {
+  expect(_ports.containsKey(root), isFalse);
 }
 
 /// The next id to use for a JSON-RPC 2.0 request.
@@ -438,50 +387,38 @@ var _rpcId = 0;
 /// Sends a JSON-RPC 2.0 request calling [method] with [params].
 ///
 /// Returns the response object.
-Future<Map> _jsonRpcRequest(String method, [Map params]) {
+Future<Map> _jsonRpcRequest(String method, [Map params]) async {
   var id = _rpcId++;
   var message = {"jsonrpc": "2.0", "method": method, "id": id};
   if (params != null) message["params"] = params;
   _webSocket.add(JSON.encode(message));
 
-  return _webSocketBroadcastStream
-      .firstWhere((response) => response["id"] == id)
-      .then((value) {
-    currentSchedule
-        .addDebugInfo("Web Socket request $method with params $params\n"
-            "Result: $value");
+  var value = await _webSocketBroadcastStream
+      .firstWhere((response) => response["id"] == id);
+  printOnFailure("Web Socket request $method with params $params\n"
+      "Result: $value");
 
-    expect(value["id"], equals(id));
-    return value;
-  });
+  expect(value["id"], equals(id));
+  return value;
 }
 
-/// Returns a [Future] that completes to a URL string for the server serving
-/// [path] from [root].
+/// Returns the URL for the server serving [path] from [root].
 ///
 /// If [root] is omitted, defaults to "web". If [path] is omitted, no path is
 /// included. The Future will complete once the server is up and running and
 /// the bound ports are known.
-Future<String> getServerUrl([String root, String path]) =>
-    _portsCompleter.future.then((_) => _getServerUrlSync(root, path));
-
-/// Records that [root] has been bound to [port].
-///
-/// Used for testing the Web Socket API for binding new root directories to
-/// ports after pub serve has been started.
-registerServerPort(String root, int port) {
-  _ports[root] = port;
-}
-
-/// Returns a URL string for the server serving [path] from [root].
-///
-/// If [root] is omitted, defaults to "web". If [path] is omitted, no path is
-/// included. Unlike [getServerUrl], this should only be called after the ports
-/// are known.
-String _getServerUrlSync([String root, String path]) {
+String getServerUrl([String root, String path]) {
   if (root == null) root = 'web';
   expect(_ports, contains(root));
   var url = "http://localhost:${_ports[root]}";
   if (path != null) url = "$url/$path";
   return url;
+}
+
+/// Records that [root] has been bound to [port].
+///
+/// Used for testing the Web Socket API for binding new root directories to
+/// ports after pub serve has been started.
+void registerServerPort(String root, int port) {
+  _ports[root] = port;
 }

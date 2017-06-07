@@ -2,21 +2,21 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('activates a package from a Git repo', () {
+  test('activates a package from a Git repo', () async {
     ensureGit();
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),
       d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf(
             startsWith('Resolving dependencies...\n'

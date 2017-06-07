@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
 main() {
-  integration('fails if the package cound not be found on the source', () {
-    serveNoPackages();
+  test('fails if the package cound not be found on the source', () async {
+    await serveNoPackages();
 
-    schedulePub(
+    await runPub(
         args: ["cache", "add", "foo"],
         error: new RegExp(r"Could not find package foo at http://.*"),
         exitCode: exit_codes.UNAVAILABLE);

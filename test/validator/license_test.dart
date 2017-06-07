@@ -3,11 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/license.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -19,51 +20,51 @@ main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    integration('looks normal', () => expectNoValidationError(license));
+    test('looks normal', () => expectNoValidationError(license));
 
-    integration('has a COPYING file', () {
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
-      d.file(path.join(appPath, 'COPYING'), '').create();
+    test('has a COPYING file', () async {
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'COPYING'), '').create();
       expectNoValidationError(license);
     });
 
-    integration('has an UNLICENSE file', () {
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
-      d.file(path.join(appPath, 'UNLICENSE'), '').create();
+    test('has an UNLICENSE file', () async {
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'UNLICENSE'), '').create();
       expectNoValidationError(license);
     });
 
-    integration('has a prefixed LICENSE file', () {
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
-      d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
+    test('has a prefixed LICENSE file', () async {
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
       expectNoValidationError(license);
     });
 
-    integration('has a suffixed LICENSE file', () {
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
-      d.file(path.join(appPath, 'LICENSE.md'), '').create();
+    test('has a suffixed LICENSE file', () async {
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'LICENSE.md'), '').create();
       expectNoValidationError(license);
     });
   });
 
   group('should consider a package invalid if it', () {
-    integration('has no LICENSE file', () {
-      d.validPackage.create();
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
+    test('has no LICENSE file', () async {
+      await d.validPackage.create();
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       expectValidationError(license);
     });
 
-    integration('has a prefixed UNLICENSE file', () {
-      d.validPackage.create();
-      schedule(() => deleteEntry(path.join(sandboxDir, appPath, 'LICENSE')));
+    test('has a prefixed UNLICENSE file', () async {
+      await d.validPackage.create();
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       d.file(path.join(appPath, 'MIT_UNLICENSE'), '').create();
       expectValidationError(license);
     });
 
-    integration('has a .gitignored LICENSE file', () {
+    test('has a .gitignored LICENSE file', () async {
       var repo = d.git(appPath, [d.file(".gitignore", "LICENSE")]);
-      d.validPackage.create();
-      repo.create();
+      await d.validPackage.create();
+      await repo.create();
       expectValidationError(license);
     });
   });

@@ -4,32 +4,31 @@
 
 import 'dart:convert';
 
-import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
-void handleUploadForm(ScheduledServer server, [Map body]) {
-  server.handle('GET', '/api/packages/versions/new', (request) {
-    return server.url.then((url) {
-      expect(request.headers,
-          containsPair('authorization', 'Bearer access token'));
+import 'package:pub/src/io.dart';
 
-      if (body == null) {
-        body = {
-          'url': url.resolve('/upload').toString(),
-          'fields': {'field1': 'value1', 'field2': 'value2'}
-        };
-      }
+void handleUploadForm(ShelfTestServer server, [Map body]) {
+  server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    expect(
+        request.headers, containsPair('authorization', 'Bearer access token'));
 
-      return new shelf.Response.ok(JSON.encode(body),
-          headers: {'content-type': 'application/json'});
-    });
+    if (body == null) {
+      body = {
+        'url': server.url.resolve('/upload').toString(),
+        'fields': {'field1': 'value1', 'field2': 'value2'}
+      };
+    }
+
+    return new shelf.Response.ok(JSON.encode(body),
+        headers: {'content-type': 'application/json'});
   });
 }
 
-void handleUpload(ScheduledServer server) {
-  server.handle('POST', '/upload', (request) {
+void handleUpload(ShelfTestServer server) {
+  server.handler.expect('POST', '/upload', (request) {
     // TODO(nweiz): Once a multipart/form-data parser in Dart exists, validate
     // that the request body is correctly formatted. See issue 6952.
     return drainStream(request.read())

@@ -5,8 +5,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/validator/size.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -19,12 +20,12 @@ ValidatorCreator size(int size) {
 main() {
   setUp(d.validPackage.create);
 
-  integration('considers a package valid if it is <= 100 MB', () {
+  test('considers a package valid if it is <= 100 MB', () {
     expectNoValidationError(size(100));
     expectNoValidationError(size(100 * math.pow(2, 20)));
   });
 
-  integration('considers a package invalid if it is more than 100 MB', () {
+  test('considers a package invalid if it is more than 100 MB', () {
     expectValidationError(size(100 * math.pow(2, 20) + 1));
   });
 }

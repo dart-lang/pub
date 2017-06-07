@@ -5,10 +5,12 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
+import 'dart:async';
+
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -16,8 +18,8 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  setUp(() {
-    d.dir(appPath, [
+  setUp(() async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir('web', [
         d.file('file.txt', 'contents'),
@@ -26,74 +28,76 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
-  integrationWithCompiler("Pub build reports Dart parse errors", (compiler) {
-    var pub = startPub(args: ["build", "--web-compiler", compiler.name]);
-    _expectErrors(pub, compiler);
+  testWithCompiler("Pub build reports Dart parse errors", (compiler) async {
+    var pub = await startPub(args: ["build", "--web-compiler", compiler.name]);
+    await _expectErrors(pub, compiler);
 
-    pub.shouldExit(exit_codes.DATA);
+    await pub.shouldExit(exit_codes.DATA);
 
     // Doesn't output anything if an error occurred.
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [d.nothing('web')])
     ]).validate();
   });
 
-  integrationWithCompiler("Pub serve reports Dart parse errors", (compiler) {
-    var pub = pubServe(args: ["--web-compiler", compiler.name]);
+  testWithCompiler("Pub serve reports Dart parse errors", (compiler) async {
+    var pub = await pubServe(args: ["--web-compiler", compiler.name]);
 
     switch (compiler) {
       case Compiler.dartDevc:
-        requestShould404('web__file.js');
-        requestShouldSucceed(
+        await requestShould404('web__file.js');
+        await requestShouldSucceed(
             'web__file.js.errors',
             allOf(contains('Error compiling dartdevc module'),
                 contains('web/file.dart')));
-        requestShould404('web__subdir__subfile.js');
-        requestShouldSucceed(
+        await requestShould404('web__subdir__subfile.js');
+        await requestShouldSucceed(
             'web__subdir__subfile.js.errors',
             allOf(contains('Error compiling dartdevc module'),
                 contains('web/subdir/subfile.dart')));
         break;
       case Compiler.dart2JS:
-        requestShould404('file.dart.js');
-        requestShould404('subdir/subfile.dart.js');
+        await requestShould404('file.dart.js');
+        await requestShould404('subdir/subfile.dart.js');
         break;
     }
 
-    endPubServe();
-    _expectErrors(pub, compiler, isBuild: false);
+    await endPubServe();
+    await _expectErrors(pub, compiler, isBuild: false);
   });
 }
 
-void _expectErrors(PubProcess pub, Compiler compiler, {bool isBuild = true}) {
+Future _expectErrors(PubProcess pub, Compiler compiler,
+    {bool isBuild = true}) async {
   if (isBuild) {
-    pub.stdout.expect(startsWith("Loading source assets..."));
-    pub.stdout.expect(startsWith("Building myapp..."));
+    await expectLater(
+        pub.stdout, emits(startsWith("Loading source assets...")));
+    await expectLater(pub.stdout, emits(startsWith("Building myapp...")));
   }
 
   var consumeFile;
   var consumeSubfile;
   switch (compiler) {
     case Compiler.dart2JS:
-      consumeFile = consumeThrough(inOrder([
+      consumeFile = emitsThrough(emitsInOrder([
         "[Error from Dart2JS]:",
         startsWith(p.join("web", "file.dart") + ":")
       ]));
-      consumeSubfile = consumeThrough(inOrder([
+      consumeSubfile = emitsThrough(emitsInOrder([
         "[Error from Dart2JS]:",
         startsWith(p.join("web", "subdir", "subfile.dart") + ":")
       ]));
       break;
     case Compiler.dartDevc:
-      consumeFile = consumeThrough(inOrder([
+      consumeFile = emitsThrough(emitsInOrder([
         startsWith("Error compiling dartdevc module:"),
         anything,
         contains(p.join("web", "file.dart"))
       ]));
-      consumeSubfile = consumeThrough(inOrder([
+      consumeSubfile = emitsThrough(emitsInOrder([
         startsWith("Error compiling dartdevc module:"),
         anything,
         contains(p.join("web", "subdir", "subfile.dart"))
@@ -103,6 +107,5 @@ void _expectErrors(PubProcess pub, Compiler compiler, {bool isBuild = true}) {
 
   // It's nondeterministic what order the dart2js transformers start running,
   // so we allow the error messages to be emitted in either order.
-  pub.stderr.expect(either(inOrder([consumeFile, consumeSubfile]),
-      inOrder([consumeSubfile, consumeFile])));
+  await expectLater(pub.stderr, emitsInAnyOrder([consumeFile, consumeSubfile]));
 }

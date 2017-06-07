@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
@@ -14,10 +16,10 @@ main() {
 """;
 
 main() {
-  integration('runs transformers in the entrypoint package', () {
-    serveBarback();
+  test('runs transformers in the entrypoint package', () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -30,10 +32,9 @@ main() {
       d.dir("bin", [d.file("hi.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/hi"]);
-
-    pub.stdout.expect("(hi, transformed)");
-    pub.shouldExit();
+    await pubGet();
+    var pub = await pubRun(args: ["bin/hi"]);
+    expect(pub.stdout, emits("(hi, transformed)"));
+    await pub.shouldExit();
   });
 }

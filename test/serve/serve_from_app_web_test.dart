@@ -2,13 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("finds files in the app's web directory", () {
-    d.dir(appPath, [
+  test("finds files in the app's web directory", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file("index.html", "<body>"),
@@ -20,12 +22,12 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("index.html", "<body>");
-    requestShouldSucceed("file.dart", "main() => print('hello');");
-    requestShouldSucceed("sub/file.html", "<body>in subdir</body>");
-    requestShouldSucceed("sub/lib.dart", "main() => 'foo';");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("index.html", "<body>");
+    await requestShouldSucceed("file.dart", "main() => print('hello');");
+    await requestShouldSucceed("sub/file.html", "<body>in subdir</body>");
+    await requestShouldSucceed("sub/lib.dart", "main() => 'foo';");
+    await endPubServe();
   });
 }

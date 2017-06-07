@@ -5,16 +5,16 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("compiles Dart entrypoints in root package to JS",
-      (compiler) {
-    d.dir(appPath, [
+  testWithCompiler("compiles Dart entrypoints in root package to JS",
+      (compiler) async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir('benchmark', [
         d.file('file.dart', 'void main() => print("hello");'),
@@ -36,8 +36,8 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(args: [
+    await pubGet();
+    await runPub(args: [
       "build",
       "benchmark",
       "foo",
@@ -45,32 +45,32 @@ main() {
       "--web-compiler=${compiler.name}"
     ], output: new RegExp(r'Built [\d]+ files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('benchmark', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
+          d.file('file.dart.js', isNot(isEmpty)),
           d.nothing('file.dart'),
           d.nothing('lib.dart'),
           d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+            d.file('subfile.dart.js', isNot(isEmpty)),
             d.nothing('subfile.dart')
           ])
         ]),
         d.dir('foo', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
+          d.file('file.dart.js', isNot(isEmpty)),
           d.nothing('file.dart'),
           d.nothing('lib.dart'),
           d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+            d.file('subfile.dart.js', isNot(isEmpty)),
             d.nothing('subfile.dart')
           ])
         ]),
         d.dir('web', [
-          d.matcherFile('file.dart.js', isNot(isEmpty)),
+          d.file('file.dart.js', isNot(isEmpty)),
           d.nothing('file.dart'),
           d.nothing('lib.dart'),
           d.dir('subdir', [
-            d.matcherFile('subfile.dart.js', isNot(isEmpty)),
+            d.file('subfile.dart.js', isNot(isEmpty)),
             d.nothing('subfile.dart')
           ])
         ])

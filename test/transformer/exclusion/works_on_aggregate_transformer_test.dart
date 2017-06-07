@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../../serve/utils.dart';
@@ -34,10 +36,10 @@ class ManyToOneTransformer extends AggregateTransformer {
 """;
 
 main() {
-  integration("works on an aggregate transformer", () {
-    serveBarback();
+  test("works on an aggregate transformer", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -61,9 +63,9 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("out.txt", "b\nc");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("out.txt", "b\nc");
+    await endPubServe();
   });
 }

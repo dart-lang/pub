@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -16,16 +18,16 @@ main() {
 """;
 
 main() {
-  integration('allows a ".dart" extension on the argument', () {
-    d.dir(appPath, [
+  test('allows a ".dart" extension on the argument', () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [d.file("script.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["script.dart"]);
-    pub.stdout.expect("stdout output");
-    pub.stderr.expect("stderr output");
-    pub.shouldExit(123);
+    await pubGet();
+    var pub = await pubRun(args: ["script.dart"]);
+    expect(pub.stdout, emits("stdout output"));
+    expect(pub.stderr, emits("stderr output"));
+    await pub.shouldExit(123);
   });
 }

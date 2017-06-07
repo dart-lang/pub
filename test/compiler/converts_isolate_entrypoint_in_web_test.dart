@@ -5,7 +5,7 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -13,9 +13,9 @@ import '../serve/utils.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("converts a Dart isolate entrypoint in web to JS",
-      (compiler) {
-    d.dir(appPath, [
+  testWithCompiler("converts a Dart isolate entrypoint in web to JS",
+      (compiler) async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file(
@@ -27,16 +27,16 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe(compiler: compiler);
+    await pubGet();
+    await pubServe(compiler: compiler);
     switch (compiler) {
       case Compiler.dart2JS:
-        requestShouldSucceed("isolate.dart.js", contains("hello"));
+        await requestShouldSucceed("isolate.dart.js", contains("hello"));
         break;
       case Compiler.dartDevc:
-        requestShouldSucceed("web__isolate.js", contains("hello"));
+        await requestShouldSucceed("web__isolate.js", contains("hello"));
         break;
     }
-    endPubServe();
+    await endPubServe();
   });
 }

@@ -3,35 +3,37 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("gets first if a transitive dependency is not installed", () {
-    servePackages((builder) => builder.serve("bar", "1.2.3"));
+  test("gets first if a transitive dependency is not installed", () async {
+    await servePackages((builder) => builder.serve("bar", "1.2.3"));
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0", deps: {"bar": "any"}),
       d.libDir("foo")
     ]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"path": "../foo"}
     }).create();
 
     // Run pub to install everything.
-    pubGet();
+    await pubGet();
 
     // Delete the system cache so bar isn't installed any more.
-    schedule(() => deleteEntry(path.join(sandboxDir, cachePath)));
+    deleteEntry(path.join(d.sandbox, cachePath));
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/bar/bar.dart", 'main() => "bar 1.2.3";');
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed(
+        "packages/bar/bar.dart", 'main() => "bar 1.2.3";');
+    await endPubServe();
   });
 }

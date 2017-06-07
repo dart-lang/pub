@@ -2,45 +2,47 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("shows how package changed from previous lockfile", () {
-    servePackages((builder) {
+  test("shows how package changed from previous lockfile", () async {
+    await servePackages((builder) {
       builder.serve("unchanged", "1.0.0");
       builder.serve("version_changed", "1.0.0");
       builder.serve("version_changed", "2.0.0");
       builder.serve("source_changed", "1.0.0");
     });
 
-    d.dir("source_changed", [
+    await d.dir("source_changed", [
       d.libDir("source_changed"),
       d.libPubspec("source_changed", "2.0.0")
     ]).create();
 
-    d.dir("description_changed_1", [
+    await d.dir("description_changed_1", [
       d.libDir("description_changed"),
       d.libPubspec("description_changed", "1.0.0")
     ]).create();
 
-    d.dir("description_changed_2", [
+    await d.dir("description_changed_2", [
       d.libDir("description_changed"),
       d.libPubspec("description_changed", "1.0.0")
     ]).create();
 
     // Create the first lockfile.
-    d.appDir({
+    await d.appDir({
       "unchanged": "any",
       "version_changed": "1.0.0",
       "source_changed": "any",
       "description_changed": {"path": "../description_changed_1"}
     }).create();
 
-    pubGet();
+    await pubGet();
 
     // Change the pubspec.
-    d.appDir({
+    await d.appDir({
       "unchanged": "any",
       "version_changed": "any",
       "source_changed": {"path": "../source_changed"},
@@ -48,7 +50,7 @@ main() {
     }).create();
 
     // Upgrade everything.
-    pubUpgrade(
+    await pubUpgrade(
         output: new RegExp(
             r"""
 Resolving dependencies\.\.\..*

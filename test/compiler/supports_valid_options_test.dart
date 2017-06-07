@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("supports most dart2js command-line options", () {
-    d.dir(appPath, [
+  test("supports most dart2js command-line options", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
@@ -35,11 +35,11 @@ main() {
       d.dir("web", [d.file("main.dart", "void main() => print('Hello!');")])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
     // None of these options should be rejected, either by pub or by dart2js.
-    pubServe();
-    requestShouldSucceed("main.dart.js", isNot(isEmpty));
-    endPubServe();
+    await pubServe();
+    await requestShouldSucceed("main.dart.js", isNot(isEmpty));
+    await endPubServe();
   });
 }

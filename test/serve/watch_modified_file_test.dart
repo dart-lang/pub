@@ -2,27 +2,29 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("watches modifications to files", () {
-    d.dir(appPath, [
+  test("watches modifications to files", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("index.html", "before")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("index.html", "before");
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("index.html", "before");
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("web", [d.file("index.html", "after")])
     ]).create();
 
-    waitForBuildSuccess();
-    requestShouldSucceed("index.html", "after");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShouldSucceed("index.html", "after");
+    await endPubServe();
   });
 }

@@ -2,41 +2,44 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       'upgrades a locked Git package with a new incompatible '
-      'constraint', () {
+      'constraint', () async {
     ensureGit();
 
-    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '0.5.0')]).create();
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '0.5.0')]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo.git"}
     }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
+    await d.dir(packagesPath, [
       d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
-    d.git('foo.git',
+    await d.git('foo.git',
         [d.libDir('foo', 'foo 1.0.0'), d.libPubspec("foo", "1.0.0")]).commit();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo.git", "version": ">=1.0.0"}
     }).create();
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
+    await d.dir(packagesPath, [
       d.dir('foo', [d.file('foo.dart', 'main() => "foo 1.0.0";')])
     ]).validate();
   });

@@ -2,31 +2,33 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       "upgrades one locked pub server package's dependencies if it's "
-      "necessary", () {
-    servePackages((builder) {
+      "necessary", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", deps: {"foo_dep": "any"});
       builder.serve("foo_dep", "1.0.0");
     });
 
-    d.appDir({"foo": "any"}).create();
+    await d.appDir({"foo": "any"}).create();
 
-    pubGet();
+    await pubGet();
 
-    d.appPackagesFile({"foo": "1.0.0", "foo_dep": "1.0.0"}).validate();
+    await d.appPackagesFile({"foo": "1.0.0", "foo_dep": "1.0.0"}).validate();
 
-    globalPackageServer.add((builder) {
+    await globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"foo_dep": ">1.0.0"});
       builder.serve("foo_dep", "2.0.0");
     });
 
-    pubUpgrade(args: ['foo']);
+    await pubUpgrade(args: ['foo']);
 
-    d.appPackagesFile({"foo": "2.0.0", "foo_dep": "2.0.0"}).validate();
+    await d.appPackagesFile({"foo": "2.0.0", "foo_dep": "2.0.0"}).validate();
   });
 }

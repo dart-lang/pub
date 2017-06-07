@@ -2,60 +2,56 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('sends the correct Accept header', () {
-      var server = new ScheduledServer();
+    test('sends the correct Accept header', () async {
+      var server = await ShelfTestServer.create();
 
-      d.appDir({
+      await d.appDir({
         "foo": {
-          "hosted": {
-            "name": "foo",
-            "url": server.url.then((url) => url.toString())
-          }
+          "hosted": {"name": "foo", "url": server.url.toString()}
         }
       }).create();
 
-      var pub = startPub(args: [command.name]);
+      var pub = await startPub(args: [command.name]);
 
-      server.handle('GET', '/api/packages/foo', (request) {
+      server.handler.expect('GET', '/api/packages/foo', (request) {
         expect(
             request.headers['accept'], equals('application/vnd.pub.v2+json'));
         return new shelf.Response(200);
       });
 
-      pub.kill();
+      await pub.kill();
     });
 
-    integration('prints a friendly error if the version is out-of-date', () {
-      var server = new ScheduledServer();
+    test('prints a friendly error if the version is out-of-date', () async {
+      var server = await ShelfTestServer.create();
 
-      d.appDir({
+      await d.appDir({
         "foo": {
-          "hosted": {
-            "name": "foo",
-            "url": server.url.then((url) => url.toString())
-          }
+          "hosted": {"name": "foo", "url": server.url.toString()}
         }
       }).create();
 
-      var pub = startPub(args: [command.name]);
+      var pub = await startPub(args: [command.name]);
 
-      server.handle(
+      server.handler.expect(
           'GET', '/api/packages/foo', (request) => new shelf.Response(406));
 
-      pub.shouldExit(1);
+      await pub.shouldExit(1);
 
-      pub.stderr.expect(emitsLines(
-          "Pub 0.1.2+3 is incompatible with the current version of localhost.\n"
-          "Upgrade pub to the latest version and try again."));
+      expect(
+          pub.stderr,
+          emitsLines(
+              "Pub 0.1.2+3 is incompatible with the current version of localhost.\n"
+              "Upgrade pub to the latest version and try again."));
     });
   });
 }

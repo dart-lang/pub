@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -10,8 +10,8 @@ import 'test_pub.dart';
 main() {
   forBothPubGetAndUpgrade((command) {
     group("without --packages-dir", () {
-      integration("removes package directories near entrypoints", () {
-        d.dir(appPath, [
+      test("removes package directories near entrypoints", () async {
+        await d.dir(appPath, [
           d.appPubspec(),
           d.dir("packages"),
           d.dir("bin/packages"),
@@ -19,9 +19,9 @@ main() {
           d.dir("web/subdir/packages")
         ]).create();
 
-        pubCommand(command);
+        await pubCommand(command);
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.nothing("packages"),
           d.nothing("bin/packages"),
           d.nothing("web/packages"),
@@ -29,19 +29,19 @@ main() {
         ]).validate();
       });
 
-      integration(
+      test(
           "doesn't remove package directories that pub wouldn't "
-          "generate", () {
-        d.dir(appPath, [
+          "generate", () async {
+        await d.dir(appPath, [
           d.appPubspec(),
           d.dir("packages"),
           d.dir("bin/subdir/packages"),
           d.dir("lib/packages")
         ]).create();
 
-        pubCommand(command);
+        await pubCommand(command);
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.nothing("packages"),
           d.dir("bin/subdir/packages"),
           d.dir("lib/packages")

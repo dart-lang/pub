@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
 import '../test_pub.dart';
 
 main() {
-  setUp(() {
-    d.dir(appPath, [
+  setUp(() async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir('benchmark', [d.file('file.txt', 'benchmark')]),
       d.dir('bin', [d.file('file.txt', 'bin')]),
@@ -20,15 +20,15 @@ main() {
       d.dir('unknown', [d.file('file.txt', 'unknown')])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
-  integration("build --all finds assets in default source directories", () {
-    schedulePub(
+  test("build --all finds assets in default source directories", () async {
+    await runPub(
         args: ["build", "--all"],
         output: new RegExp(r'Built 5 files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('benchmark', [d.file('file.txt', 'benchmark')]),
         d.dir('bin', [d.file('file.txt', 'bin')]),
@@ -41,17 +41,17 @@ main() {
     ]).validate();
   });
 
-  integration("serve --all finds assets in default source directories", () {
-    pubServe(args: ["--all"]);
+  test("serve --all finds assets in default source directories", () async {
+    await pubServe(args: ["--all"]);
 
-    requestShouldSucceed("file.txt", "benchmark", root: "benchmark");
-    requestShouldSucceed("file.txt", "bin", root: "bin");
-    requestShouldSucceed("file.txt", "example", root: "example");
-    requestShouldSucceed("file.txt", "test", root: "test");
-    requestShouldSucceed("file.txt", "web", root: "web");
+    await requestShouldSucceed("file.txt", "benchmark", root: "benchmark");
+    await requestShouldSucceed("file.txt", "bin", root: "bin");
+    await requestShouldSucceed("file.txt", "example", root: "example");
+    await requestShouldSucceed("file.txt", "test", root: "test");
+    await requestShouldSucceed("file.txt", "web", root: "web");
 
-    expectNotServed("unknown");
+    await expectNotServed("unknown");
 
-    endPubServe();
+    await endPubServe();
   });
 }

@@ -4,28 +4,28 @@
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('activating a hosted package deactivates the path one', () {
-    servePackages((builder) {
+  test('activating a hosted package deactivates the path one', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir("bin", [d.file("foo.dart", "main(args) => print('hosted');")])
       ]);
     });
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.libPubspec("foo", "2.0.0"),
       d.dir("bin", [d.file("foo.dart", "main() => print('path');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    var path = canonicalize(p.join(sandboxDir, "foo"));
-    schedulePub(
+    var path = canonicalize(p.join(d.sandbox, "foo"));
+    await runPub(
         args: ["global", "activate", "-spath", "../foo"],
         output: allOf([
           contains("Package foo is currently active at version 1.0.0."),
@@ -33,8 +33,8 @@ main() {
         ]));
 
     // Should now run the path one.
-    var pub = pubRun(global: true, args: ["foo"]);
-    pub.stdout.expect("path");
-    pub.shouldExit();
+    var pub = await pubRun(global: true, args: ["foo"]);
+    expect(pub.stdout, emits("path"));
+    await pub.shouldExit();
   });
 }

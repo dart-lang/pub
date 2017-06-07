@@ -8,7 +8,7 @@ dependencies:
   # will be hosted dependencies.
   analyzer: ">=0.25.0 <0.30.0"
   args: "^0.13.5"
-  async: "^1.5.0"
+  async: "^1.12.0"
   barback: "^0.15.2"
   bazel_worker: "^0.1.4"
   cli_util: "^0.0.1"
@@ -38,8 +38,11 @@ dependencies:
   yaml: "^2.0.0"
 
 dev_dependencies:
-  scheduled_test: "^0.12.0"
-  test: "^0.12.3+3"
+  shelf_test_handler: "1.0.0-rc.1"
+  test: "^0.12.20"
+  test_descriptor: "^1.0.0"
+  test_process: "1.0.0-rc.2"
 
 environment:
   sdk: ">=1.24.0-dev.2.0 <2.0.0"
+

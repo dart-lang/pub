@@ -2,10 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/sdk_constraint.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -16,21 +17,21 @@ Validator sdkConstraint(Entrypoint entrypoint) =>
 
 main() {
   group('should consider a package valid if it', () {
-    integration('has no SDK constraint', () {
-      d.validPackage.create();
+    test('has no SDK constraint', () async {
+      await d.validPackage.create();
       expectNoValidationError(sdkConstraint);
     });
 
-    integration('has an SDK constraint without ^', () {
-      d.dir(appPath,
+    test('has an SDK constraint without ^', () async {
+      await d.dir(appPath,
           [d.libPubspec("test_pkg", "1.0.0", sdk: ">=1.8.0 <2.0.0")]).create();
       expectNoValidationError(sdkConstraint);
     });
 
-    integration(
+    test(
         'has a Flutter SDK constraint with an appropriate Dart SDK '
-        'constraint', () {
-      d.dir(appPath, [
+        'constraint', () async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
@@ -42,19 +43,19 @@ main() {
   });
 
   group("should consider a package invalid if it", () {
-    integration("has an SDK constraint with ^", () {
-      d.dir(
+    test("has an SDK constraint with ^", () async {
+      await d.dir(
           appPath, [d.libPubspec("test_pkg", "1.0.0", sdk: "^1.8.0")]).create();
       expect(
-          schedulePackageValidation(sdkConstraint),
+          validatePackage(sdkConstraint),
           completion(
               pairOf(anyElement(contains('">=1.8.0 <2.0.0"')), isEmpty)));
     });
 
-    integration(
+    test(
         "has a Flutter SDK constraint with a too-broad SDK "
-        "constraint", () {
-      d.dir(appPath, [
+        "constraint", () async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
@@ -62,15 +63,15 @@ main() {
         })
       ]).create();
       expect(
-          schedulePackageValidation(sdkConstraint),
+          validatePackage(sdkConstraint),
           completion(
               pairOf(anyElement(contains('">=1.19.0 <1.50.0"')), isEmpty)));
     });
 
-    integration(
+    test(
         "has a Flutter SDK constraint with no SDK "
-        "constraint", () {
-      d.dir(appPath, [
+        "constraint", () async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
@@ -78,7 +79,7 @@ main() {
         })
       ]).create();
       expect(
-          schedulePackageValidation(sdkConstraint),
+          validatePackage(sdkConstraint),
           completion(
               pairOf(anyElement(contains('">=1.19.0 <2.0.0"')), isEmpty)));
     });

@@ -3,14 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('an immutable application sees a file: package config', () {
-    servePackages((builder) {
+  test('an immutable application sees a file: package config', () async {
+    await servePackages((builder) {
       builder.serve("bar", "1.0.0");
 
       builder.serve("foo", "1.0.0", deps: {
@@ -35,37 +35,31 @@ main() async {
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    var pub = pubRun(global: true, args: ["foo:script"]);
+    var pub = await pubRun(global: true, args: ["foo:script"]);
 
-    pub.stdout.expect("null");
+    expect(pub.stdout, emits("null"));
 
     var packageConfigPath =
-        p.join(sandboxDir, cachePath, "global_packages/foo/.packages");
-    pub.stdout.expect(p.toUri(packageConfigPath).toString());
+        p.join(d.sandbox, cachePath, "global_packages/foo/.packages");
+    expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    schedule(() async {
-      var fooResourcePath = p.join(
-          await globalPackageServer.pathInCache('foo', '1.0.0'),
-          "lib/resource.txt");
-      pub.stdout.expect(p.toUri(fooResourcePath).toString());
-    });
+    var fooResourcePath = p.join(
+        globalPackageServer.pathInCache('foo', '1.0.0'), "lib/resource.txt");
+    expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
-    schedule(() async {
-      var barResourcePath = p.join(
-          await globalPackageServer.pathInCache('bar', '1.0.0'),
-          "lib/resource.txt");
-      pub.stdout.expect(p.toUri(barResourcePath).toString());
-    });
-    pub.shouldExit(0);
+    var barResourcePath = p.join(
+        globalPackageServer.pathInCache('bar', '1.0.0'), "lib/resource.txt");
+    expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
+    await pub.shouldExit(0);
   });
 
-  integration('a mutable untransformed application sees a file: package root',
-      () {
-    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+  test('a mutable untransformed application sees a file: package root',
+      () async {
+    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -87,34 +81,30 @@ main() async {
       ])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-s", "path", "."]);
+    await runPub(args: ["global", "activate", "-s", "path", "."]);
 
-    var pub = pubRun(global: true, args: ["myapp:script"]);
+    var pub = await pubRun(global: true, args: ["myapp:script"]);
 
-    pub.stdout.expect("null");
+    expect(pub.stdout, emits("null"));
 
-    var packageConfigPath = p.join(sandboxDir, "myapp/.packages");
-    pub.stdout.expect(p.toUri(packageConfigPath).toString());
+    var packageConfigPath = p.join(d.sandbox, "myapp/.packages");
+    expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    schedule(() async {
-      var myappResourcePath = p.join(sandboxDir, "myapp/lib/resource.txt");
-      pub.stdout.expect(p.toUri(myappResourcePath).toString());
-    });
+    var myappResourcePath = p.join(d.sandbox, "myapp/lib/resource.txt");
+    expect(pub.stdout, emits(p.toUri(myappResourcePath).toString()));
 
-    schedule(() async {
-      var fooResourcePath = p.join(sandboxDir, "foo/lib/resource.txt");
-      pub.stdout.expect(p.toUri(fooResourcePath).toString());
-    });
-    pub.shouldExit(0);
+    var fooResourcePath = p.join(d.sandbox, "foo/lib/resource.txt");
+    expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
+    await pub.shouldExit(0);
   });
 
-  integration('a mutable transformed application sees an http: package root',
-      () {
-    serveBarback();
+  test('a mutable transformed application sees an http: package root',
+      () async {
+    await serveBarback();
 
-    d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -162,17 +152,21 @@ main() async {
       ])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-s", "path", "."]);
+    await runPub(args: ["global", "activate", "-s", "path", "."]);
 
-    var pub = pubRun(global: true, args: ["myapp:script"]);
+    var pub = await pubRun(global: true, args: ["myapp:script"]);
 
-    pub.stdout
-        .expect(allOf(startsWith("http://localhost:"), endsWith("/packages/")));
-    pub.stdout.expect("null");
-    pub.stdout.expect(allOf(startsWith("http://localhost:"),
-        endsWith("/packages/myapp/resource.txt")));
-    pub.stdout.expect(allOf(startsWith("http://localhost:"),
-        endsWith("/packages/foo/resource.txt")));
-    pub.shouldExit(0);
+    expect(pub.stdout,
+        emits(allOf(startsWith("http://localhost:"), endsWith("/packages/"))));
+    expect(pub.stdout, emits("null"));
+    expect(
+        pub.stdout,
+        emits(allOf(startsWith("http://localhost:"),
+            endsWith("/packages/myapp/resource.txt"))));
+    expect(
+        pub.stdout,
+        emits(allOf(startsWith("http://localhost:"),
+            endsWith("/packages/foo/resource.txt"))));
+    await pub.shouldExit(0);
   });
 }

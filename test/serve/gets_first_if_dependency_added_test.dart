@@ -2,28 +2,31 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("gets first if a dependency is not in the lock file", () {
-    d.dir("foo", [d.libPubspec("foo", "0.0.1"), d.libDir("foo")]).create();
+  test("gets first if a dependency is not in the lock file", () async {
+    await d
+        .dir("foo", [d.libPubspec("foo", "0.0.1"), d.libDir("foo")]).create();
 
     // Create a lock file without "foo".
-    d.dir(appPath, [d.appPubspec()]).create();
-    pubGet();
+    await d.dir(appPath, [d.appPubspec()]).create();
+    await pubGet();
 
     // Add it to the pubspec.
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       })
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/foo/foo.dart", 'main() => "foo";');
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("packages/foo/foo.dart", 'main() => "foo";');
+    await endPubServe();
   });
 }

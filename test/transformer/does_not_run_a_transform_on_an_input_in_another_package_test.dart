@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("does not run a transform on an input in another package", () {
-    serveBarback();
+  test("does not run a transform on an input in another package", () async {
+    await serveBarback();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "0.0.1",
@@ -23,16 +25,16 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
       d.dir("lib", [d.file("bar.txt", "bar")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShould404("packages/myapp/bar.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShould404("packages/myapp/bar.out");
+    await endPubServe();
   });
 }

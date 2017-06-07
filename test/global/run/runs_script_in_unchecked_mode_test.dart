@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
@@ -13,17 +15,17 @@ main() {
 """;
 
 main() {
-  integration('runs a script in unchecked mode by default', () {
-    servePackages((builder) {
+  test('runs a script in unchecked mode by default', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir("bin", [d.file("script.dart", SCRIPT)])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    var pub = pubRun(global: true, args: ["foo:script"]);
-    pub.stdout.expect("no checks");
-    pub.shouldExit();
+    var pub = await pubRun(global: true, args: ["foo:script"]);
+    expect(pub.stdout, emits("no checks"));
+    await pub.shouldExit();
   });
 }

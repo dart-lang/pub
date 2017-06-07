@@ -2,19 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('an explicit --server argument overrides a "publish_to" url', () {
+  test('an explicit --server argument overrides a "publish_to" url', () async {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["publish_to"] = "http://pubspec.com";
-    d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    schedulePub(
+    await runPub(
         args: ["lish", "--dry-run", "--server", "http://arg.com"],
         output: contains("http://arg.com"),
         exitCode: exit_codes.DATA);

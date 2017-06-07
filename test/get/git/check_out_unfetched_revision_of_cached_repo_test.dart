@@ -3,53 +3,52 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
   // Regression test for issue 20947.
-  integration(
+  test(
       'checks out an unfetched and locked revision of a cached '
-      'repository', () {
+      'repository', () async {
     ensureGit();
 
     // In order to get a lockfile that refers to a newer revision than is in the
     // cache, we'll switch between two caches. First we ensure that the repo is
     // in the first cache.
-    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo.git"}
     }).create();
 
-    pubGet();
+    await pubGet();
 
     // Switch to a new cache.
-    schedule(() => renameDir(
-        p.join(sandboxDir, cachePath), p.join(sandboxDir, "$cachePath.old")));
+    renameInSandbox(cachePath, "$cachePath.old");
 
     // Make the lockfile point to a new revision of the git repository.
-    d.git('foo.git',
+    await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    pubUpgrade(output: contains("Changed 1 dependency!"));
+    await pubUpgrade(output: contains("Changed 1 dependency!"));
 
     // Switch back to the old cache.
-    schedule(() {
-      var cacheDir = p.join(sandboxDir, cachePath);
-      deleteEntry(cacheDir);
-      renameDir(p.join(sandboxDir, "$cachePath.old"), cacheDir);
-    });
+    var cacheDir = p.join(d.sandbox, cachePath);
+    deleteEntry(cacheDir);
+    renameInSandbox("$cachePath.old", cacheDir);
 
     // Get the updated version of the git dependency based on the lockfile.
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
@@ -57,7 +56,7 @@ main() {
       ])
     ]).validate();
 
-    d.dir(packagesPath, [
+    await d.dir(packagesPath, [
       d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')])
     ]).validate();
   });

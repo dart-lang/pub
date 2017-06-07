@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
+import 'package:test/test.dart';
+
 import 'package:json_rpc_2/error_code.dart' as rpc_error_code;
 import 'package:path/path.dart' as p;
 
@@ -11,13 +15,13 @@ import '../utils.dart';
 
 main() {
   // TODO(rnystrom): Split into independent tests.
-  integration("pathToUrls errors on bad inputs", () {
-    d.dir("foo", [
+  test("pathToUrls errors on bad inputs", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -30,18 +34,18 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
+    await pubGet();
+    await pubServe();
 
     // Bad arguments.
-    expectWebSocketError(
+    await expectWebSocketError(
         "pathToUrls",
         {"path": 123},
         rpc_error_code.INVALID_PARAMS,
         'Parameter "path" for method "pathToUrls" must be a string, but was '
         '123.');
 
-    expectWebSocketError(
+    await expectWebSocketError(
         "pathToUrls",
         {"path": "main.dart", "line": 12.34},
         rpc_error_code.INVALID_PARAMS,
@@ -49,16 +53,16 @@ main() {
         '12.34.');
 
     // Unserved directories.
-    expectNotServed(p.join('bin', 'foo.txt'));
-    expectNotServed(p.join('nope', 'foo.txt'));
-    expectNotServed(p.join("..", "bar", "lib", "bar.txt"));
-    expectNotServed(p.join("..", "foo", "web", "foo.txt"));
+    await expectNotServed(p.join('bin', 'foo.txt'));
+    await expectNotServed(p.join('nope', 'foo.txt'));
+    await expectNotServed(p.join("..", "bar", "lib", "bar.txt"));
+    await expectNotServed(p.join("..", "foo", "web", "foo.txt"));
 
-    endPubServe();
+    await endPubServe();
   });
 }
 
-void expectNotServed(String path) {
-  expectWebSocketError("pathToUrls", {"path": path}, NOT_SERVED,
+Future expectNotServed(String path) {
+  return expectWebSocketError("pathToUrls", {"path": path}, NOT_SERVED,
       'Asset path "$path" is not currently being served.');
 }

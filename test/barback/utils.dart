@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../test_pub.dart';
 
@@ -41,15 +42,15 @@ void pubBuildAndServeShouldFail(String description,
         allOf(startsWith(serveExpectation), contains("Usage: pub serve"));
   }
 
-  integration("build fails $description", () {
-    schedulePub(
+  test("build fails $description", () {
+    return runPub(
         args: ["build"]..addAll(args),
         error: buildExpectation,
         exitCode: exitCode);
   });
 
-  integration("build --format json fails $description", () {
-    schedulePub(
+  test("build --format json fails $description", () {
+    return runPub(
         args: ["build", "--format", "json"]..addAll(args),
         outputJson: {
           "error": buildError // No usage in JSON output.
@@ -57,8 +58,8 @@ void pubBuildAndServeShouldFail(String description,
         exitCode: exitCode);
   });
 
-  integration("serve fails $description", () {
-    schedulePub(
+  test("serve fails $description", () {
+    return runPub(
         args: ["serve"]..addAll(args),
         error: serveExpectation,
         exitCode: exitCode);

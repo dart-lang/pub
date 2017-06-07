@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 
@@ -11,13 +13,13 @@ import '../utils.dart';
 
 main() {
   // TODO(rnystrom): Split into independent tests.
-  integration("pathToUrls converts asset ids to matching URL paths", () {
-    d.dir("foo", [
+  test("pathToUrls converts asset ids to matching URL paths", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [d.file("foo.dart", "foo() => null;")])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -37,44 +39,44 @@ main() {
       d.dir("randomdir", [d.file("index.html", "<body>")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["test", "web", "randomdir"]);
+    await pubGet();
+    await pubServe(args: ["test", "web", "randomdir"]);
 
     // Paths in web/.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("web", "index.html")
     }, {
       "urls": [getServerUrl("web", "index.html")]
     });
 
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("web", "sub", "bar.html")
     }, {
       "urls": [getServerUrl("web", "sub/bar.html")]
     });
 
     // Paths in test/.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("test", "index.html")
     }, {
       "urls": [getServerUrl("test", "index.html")]
     });
 
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("test", "sub", "bar.html")
     }, {
       "urls": [getServerUrl("test", "sub/bar.html")]
     });
 
     // A non-default directory.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("randomdir", "index.html")
     }, {
       "urls": [getServerUrl("randomdir", "index.html")]
     });
 
     // A path in lib/.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("lib", "app.dart")
     }, {
       "urls": [
@@ -85,7 +87,7 @@ main() {
     });
 
     // A path to this package in packages/.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("packages", "myapp", "app.dart")
     }, {
       "urls": [
@@ -96,7 +98,7 @@ main() {
     });
 
     // A path to another package in packages/.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("packages", "foo", "foo.dart")
     }, {
       "urls": [
@@ -107,7 +109,7 @@ main() {
     });
 
     // A relative path to another package's lib/ directory.
-    expectWebSocketResult("pathToUrls", {
+    await expectWebSocketResult("pathToUrls", {
       "path": p.join("..", "foo", "lib", "foo.dart")
     }, {
       "urls": [
@@ -123,8 +125,8 @@ main() {
     // need to accomodate that.
 
     // An absolute path to another package's lib/ directory.
-    expectWebSocketResult("pathToUrls", {
-      "path": canonicalize(p.join(sandboxDir, "foo", "lib", "foo.dart"))
+    await expectWebSocketResult("pathToUrls", {
+      "path": canonicalize(p.join(d.sandbox, "foo", "lib", "foo.dart"))
     }, {
       "urls": [
         getServerUrl("test", "packages/foo/foo.dart"),
@@ -133,6 +135,6 @@ main() {
       ]
     });
 
-    endPubServe();
+    await endPubServe();
   });
 }

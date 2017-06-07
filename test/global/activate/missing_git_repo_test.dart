@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
 main() {
-  integration('fails if the Git repo does not exist', () {
+  test('fails if the Git repo does not exist', () async {
     ensureGit();
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "-sgit", "../nope.git"],
         error: contains("repository '../nope.git' does not exist"),
         exitCode: 1);

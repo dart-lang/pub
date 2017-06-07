@@ -4,23 +4,23 @@
 
 import 'dart:io';
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration(
+  test(
       'adds the latest version of the package matching the '
-      'version constraint', () {
-    servePackages((builder) {
+      'version constraint', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.2.2");
       builder.serve("foo", "1.2.3");
       builder.serve("foo", "2.0.0-dev");
       builder.serve("foo", "2.0.0");
     });
 
-    schedulePub(
+    await runPub(
         args: ["cache", "add", "foo", "-v", ">=1.0.0 <2.0.0"],
         output: 'Downloading foo 1.2.3...',
         silent: allOf([
@@ -31,8 +31,8 @@ main() {
           isNot(contains("X-Pub-Reason")),
         ]));
 
-    d.cacheDir({"foo": "1.2.3"}).validate();
-    d.hostedCache([
+    await d.cacheDir({"foo": "1.2.3"}).validate();
+    await d.hostedCache([
       d.nothing("foo-1.2.2"),
       d.nothing("foo-2.0.0-dev"),
       d.nothing("foo-2.0.0")

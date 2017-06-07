@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("shows how many newer versions are available", () {
-    servePackages((builder) {
+  test("shows how many newer versions are available", () async {
+    await servePackages((builder) {
       builder.serve("multiple_newer", "1.0.0");
       builder.serve("multiple_newer", "1.0.1-unstable.1");
       builder.serve("multiple_newer", "1.0.1");
@@ -26,7 +28,7 @@ main() {
     });
 
     // Constraint everything to the first version.
-    d.appDir({
+    await d.appDir({
       "multiple_newer": "1.0.0",
       "multiple_newer_stable": "1.0.0",
       "multiple_newer_unstable": "1.0.0",
@@ -36,7 +38,7 @@ main() {
     }).create();
 
     // Upgrade everything.
-    pubUpgrade(
+    await pubUpgrade(
         output: new RegExp(
             r"""
 Resolving dependencies\.\.\..*

@@ -2,47 +2,46 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as path;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  setUp(() {
+  setUp(() async {
     // Create two cached revisions of foo.
-    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo.git"}
     }).create();
-    pubGet();
+    await pubGet();
 
-    d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.1')]).commit();
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.1')]).commit();
 
-    pubUpgrade();
+    await pubUpgrade();
   });
 
-  integration('reinstalls previously cached git packages', () {
-    // Break them.
-    List fooDirs;
-    schedule(() {
-      // Find the cached foo packages for each revision.
-      var gitCacheDir = path.join(sandboxDir, cachePath, "git");
-      fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-"))
-          .toList();
+  test('reinstalls previously cached git packages', () async {
+    // Find the cached foo packages for each revision.
+    var gitCacheDir = path.join(d.sandbox, cachePath, "git");
+    var fooDirs = listDir(gitCacheDir)
+        .where((dir) => path.basename(dir).startsWith("foo-"))
+        .toList();
 
-      // Delete "foo.dart" from them.
-      for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, "lib", "foo.dart"));
-      }
-    });
+    // Delete "foo.dart" from them.
+    for (var dir in fooDirs) {
+      deleteEntry(path.join(dir, "lib", "foo.dart"));
+    }
 
     // Repair them.
-    schedulePub(
+    await runPub(
         args: ["cache", "repair"],
         output: '''
           Resetting Git repository for foo 1.0.0...
@@ -50,32 +49,27 @@ main() {
           Reinstalled 2 packages.''');
 
     // The missing libraries should have been replaced.
-    schedule(() {
-      var fooLibs = fooDirs.map((dir) {
-        var fooDirName = path.basename(dir);
-        return d.dir(fooDirName, [
-          d.dir("lib", [d.file("foo.dart", 'main() => "foo";')])
-        ]);
-      }).toList();
+    var fooLibs = fooDirs.map((dir) {
+      var fooDirName = path.basename(dir);
+      return d.dir(fooDirName, [
+        d.dir("lib", [d.file("foo.dart", 'main() => "foo";')])
+      ]);
+    }).toList();
 
-      d.dir(cachePath, [d.dir("git", fooLibs)]).validate();
-    });
+    await d.dir(cachePath, [d.dir("git", fooLibs)]).validate();
   });
 
-  integration('deletes packages without pubspecs', () {
-    List<String> fooDirs;
-    schedule(() {
-      var gitCacheDir = path.join(sandboxDir, cachePath, "git");
-      fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-"))
-          .toList();
+  test('deletes packages without pubspecs', () async {
+    var gitCacheDir = path.join(d.sandbox, cachePath, "git");
+    var fooDirs = listDir(gitCacheDir)
+        .where((dir) => path.basename(dir).startsWith("foo-"))
+        .toList();
 
-      for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, "pubspec.yaml"));
-      }
-    });
+    for (var dir in fooDirs) {
+      deleteEntry(path.join(dir, "pubspec.yaml"));
+    }
 
-    schedulePub(
+    await runPub(
         args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
@@ -89,27 +83,22 @@ main() {
         ]),
         exitCode: exit_codes.UNAVAILABLE);
 
-    schedule(() {
-      d.dir(cachePath, [
-        d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
-      ]).validate();
-    });
+    await d.dir(cachePath, [
+      d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
+    ]).validate();
   });
 
-  integration('deletes packages with invalid pubspecs', () {
-    List<String> fooDirs;
-    schedule(() {
-      var gitCacheDir = path.join(sandboxDir, cachePath, "git");
-      fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith("foo-"))
-          .toList();
+  test('deletes packages with invalid pubspecs', () async {
+    var gitCacheDir = path.join(d.sandbox, cachePath, "git");
+    var fooDirs = listDir(gitCacheDir)
+        .where((dir) => path.basename(dir).startsWith("foo-"))
+        .toList();
 
-      for (var dir in fooDirs) {
-        writeTextFile(path.join(dir, "pubspec.yaml"), "{");
-      }
-    });
+    for (var dir in fooDirs) {
+      writeTextFile(path.join(dir, "pubspec.yaml"), "{");
+    }
 
-    schedulePub(
+    await runPub(
         args: ["cache", "repair"],
         error: allOf([
           contains('Failed to load package:'),
@@ -123,10 +112,8 @@ main() {
         ]),
         exitCode: exit_codes.UNAVAILABLE);
 
-    schedule(() {
-      d.dir(cachePath, [
-        d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
-      ]).validate();
-    });
+    await d.dir(cachePath, [
+      d.dir("git", fooDirs.map((dir) => d.nothing(path.basename(dir))))
+    ]).validate();
   });
 }

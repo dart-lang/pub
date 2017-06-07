@@ -3,29 +3,29 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("stop serving a file that is removed", () {
-    d.dir(appPath, [
+  test("stop serving a file that is removed", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("index.html", "body");
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("index.html", "body");
 
-    schedule(
-        () => deleteEntry(path.join(sandboxDir, appPath, "web", "index.html")));
+    deleteEntry(path.join(d.sandbox, appPath, "web", "index.html"));
 
-    waitForBuildSuccess();
-    requestShould404("index.html");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShould404("index.html");
+    await endPubServe();
   });
 }

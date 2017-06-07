@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
@@ -27,10 +29,10 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-  integration("a transform can use readInputAsString", () {
-    serveBarback();
+  test("a transform can use readInputAsString", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -42,9 +44,9 @@ main() {
       d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.out", "foo.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.out", "foo.out");
+    await endPubServe();
   });
 }

@@ -6,33 +6,31 @@ import 'dart:async';
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/descriptor.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a tar file and its contents.
-class TarFileDescriptor extends DirectoryDescriptor
-    implements ReadableDescriptor {
-  TarFileDescriptor(String name, List<Descriptor> contents)
-      : super(name, contents);
+class TarFileDescriptor extends FileDescriptor {
+  final List<Descriptor> contents;
+
+  TarFileDescriptor(String name, Iterable<Descriptor> contents)
+      : contents = contents.toList(),
+        super.protected(name);
 
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
-  Future<String> create([String parent]) {
-    return schedule/*<Future<String>>*/(() async {
-      if (parent == null) parent = defaultRoot;
-      return await withTempDir((tempDir) async {
-        await Future.wait(contents.map((entry) => entry.create(tempDir)));
+  Future create([String parent]) {
+    return withTempDir((tempDir) async {
+      await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-        var createdContents = listDir(tempDir,
-            recursive: true, includeHidden: true, includeDirs: false);
-        var bytes =
-            await createTarGz(createdContents, baseDir: tempDir).toBytes();
+      var createdContents = listDir(tempDir,
+          recursive: true, includeHidden: true, includeDirs: false);
+      var bytes =
+          await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
-        var file = path.join(parent, name);
-        writeBinaryFile(file, bytes);
-        return file;
-      });
-    }, 'creating tar file:\n${describe()}');
+      var file = path.join(parent ?? sandbox, name);
+      writeBinaryFile(file, bytes);
+      return file;
+    });
   }
 
   /// Validates that the `.tar.gz` file at [path] contains the expected
@@ -41,10 +39,13 @@ class TarFileDescriptor extends DirectoryDescriptor
     throw new UnimplementedError("TODO(nweiz): implement this");
   }
 
-  Stream<List<int>> read() {
-    return new Stream<List<int>>.fromFuture(withTempDir((tempDir) {
-      return create(tempDir)
-          .then((_) => readBinaryFile(path.join(tempDir, name)));
+  Future<String> read() =>
+      throw new UnsupportedError("TarFileDescriptor.read() is not supported.");
+
+  Stream<List<int>> readAsBytes() {
+    return new Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
+      await create(tempDir);
+      return await readBinaryFile(path.join(tempDir, name));
     }));
   }
 }

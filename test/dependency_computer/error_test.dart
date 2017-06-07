@@ -3,16 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:analyzer/analyzer.dart';
+import 'package:test/test.dart';
+
 import 'package:pub/src/exceptions.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("fails if an unknown package is imported", () {
-    d.dir(appPath, [
+  test("fails if an unknown package is imported", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp"]
@@ -32,8 +33,8 @@ void main() {
     }));
   });
 
-  integration("fails on a syntax error", () {
-    d.dir(appPath, [
+  test("fails on a syntax error", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp"]

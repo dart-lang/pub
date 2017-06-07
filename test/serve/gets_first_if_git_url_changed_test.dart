@@ -2,34 +2,36 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration(
+  test(
       "gets first if a git dependency's url doesn't match the one in "
-      "the lock file", () {
-    d.git("foo-before.git",
+      "the lock file", () async {
+    await d.git("foo-before.git",
         [d.libPubspec("foo", "1.0.0"), d.libDir("foo", "before")]).create();
 
-    d.git("foo-after.git",
+    await d.git("foo-after.git",
         [d.libPubspec("foo", "1.0.0"), d.libDir("foo", "after")]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo-before.git"}
     }).create();
 
-    pubGet();
+    await pubGet();
 
     // Change the path in the pubspec.
-    d.appDir({
+    await d.appDir({
       "foo": {"git": "../foo-after.git"}
     }).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("packages/foo/foo.dart", 'main() => "after";');
+    await endPubServe();
   });
 }

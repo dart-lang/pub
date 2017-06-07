@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler("omits source maps from a release build", (compiler) {
-    d.dir(appPath, [
+  testWithCompiler("omits source maps from a release build", (compiler) async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [d.file("message.dart", "String get message => 'hello';")]),
       d.dir("web", [
@@ -23,15 +23,15 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(
+    await pubGet();
+    await runPub(
         args: ["build", "--web-compiler=${compiler.name}"],
         output: new RegExp(r'Built \d+ files? to "build".'),
         exitCode: 0);
 
     switch (compiler) {
       case Compiler.dart2JS:
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.dir('build', [
             d.dir('web', [
               d.nothing('main.dart.js.map'),
@@ -40,12 +40,12 @@ main() {
         ]).validate();
         break;
       case Compiler.dartDevc:
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.dir('build', [
             d.dir('web', [
               d.dir('packages', [
                 d.dir(appPath, [
-                  d.matcherFile(
+                  d.file(
                       'lib__message.js',
                       isNot(
                           contains("# sourceMappingURL=lib__message.js.map"))),

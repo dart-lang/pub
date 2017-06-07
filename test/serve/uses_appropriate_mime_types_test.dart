@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("uses appropriate mime types", () {
-    d.dir(appPath, [
+  test("uses appropriate mime types", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.file("index.html", "<body>"),
@@ -20,16 +20,16 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("index.html", anything,
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("index.html", anything,
         headers: containsPair('content-type', 'text/html'));
-    requestShouldSucceed("file.dart", anything,
+    await requestShouldSucceed("file.dart", anything,
         headers: containsPair('content-type', 'application/dart'));
-    requestShouldSucceed("file.js", anything,
+    await requestShouldSucceed("file.js", anything,
         headers: containsPair('content-type', 'application/javascript'));
-    requestShouldSucceed("file.css", anything,
+    await requestShouldSucceed("file.css", anything,
         headers: containsPair('content-type', 'text/css'));
-    endPubServe();
+    await endPubServe();
   });
 }

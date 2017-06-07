@@ -2,19 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('preview shows an error if the package is private', () {
+  test('preview shows an error if the package is private', () async {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["publish_to"] = "none";
-    d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    schedulePub(
+    await runPub(
         args: ["lish", "--dry-run"],
         error: startsWith("A private package cannot be published."),
         exitCode: exit_codes.DATA);

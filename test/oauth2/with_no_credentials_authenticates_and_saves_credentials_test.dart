@@ -2,26 +2,26 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration(
+  test(
       'with no credentials.json, authenticates and saves '
-      'credentials.json', () {
-    d.validPackage.create();
+      'credentials.json', () async {
+    await d.validPackage.create();
 
-    var server = new ScheduledServer();
-    var pub = startPublish(server);
-    confirmPublish(pub);
-    authorizePub(pub, server);
+    var server = await ShelfTestServer.create();
+    var pub = await startPublish(server);
+    await confirmPublish(pub);
+    await authorizePub(pub, server);
 
-    server.handle('GET', '/api/packages/versions/new', (request) {
+    server.handler.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer access token'));
 
@@ -30,8 +30,8 @@ main() {
 
     // After we give pub an invalid response, it should crash. We wait for it to
     // do so rather than killing it so it'll write out the credentials file.
-    pub.shouldExit(1);
+    await pub.shouldExit(1);
 
-    d.credentialsFile(server, 'access token').validate();
+    await d.credentialsFile(server, 'access token').validate();
   });
 }

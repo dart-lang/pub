@@ -3,16 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("responds with a 404 for missing source files", () {
-    d.dir(appPath, [
+  test("responds with a 404 for missing source files", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("lib", [d.file("nope.dart", "nope")]),
       d.dir("web", [
@@ -22,23 +23,21 @@ main() {
 
     // Start the server with the files present so that it creates barback
     // assets for them.
-    pubGet();
-    pubServe();
+    await pubGet();
+    await pubServe();
 
     // Now delete them.
-    schedule(() {
-      deleteEntry(path.join(sandboxDir, appPath, "lib", "nope.dart"));
-      deleteEntry(path.join(sandboxDir, appPath, "web", "index.html"));
-    }, "delete files");
+    deleteEntry(path.join(d.sandbox, appPath, "lib", "nope.dart"));
+    deleteEntry(path.join(d.sandbox, appPath, "web", "index.html"));
 
     // Now request them.
     // TODO(rnystrom): It's possible for these requests to happen quickly
     // enough that the file system hasn't notified for the deletions yet. If
     // that happens, we can probably just add a short delay here.
 
-    requestShould404("index.html");
-    requestShould404("packages/myapp/nope.dart");
-    requestShould404("dir/packages/myapp/nope.dart");
-    endPubServe();
+    await requestShould404("index.html");
+    await requestShould404("packages/myapp/nope.dart");
+    await requestShould404("dir/packages/myapp/nope.dart");
+    await endPubServe();
   });
 }

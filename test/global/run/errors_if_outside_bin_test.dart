@@ -2,21 +2,23 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('errors if the script is in a subdirectory.', () {
-    servePackages((builder) {
+  test('errors if the script is in a subdirectory.', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir("example", [d.file("script.dart", "main(args) => print('ok');")])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
-    schedulePub(
+    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(
         args: ["global", "run", "foo:example/script"],
         error: """
 Cannot run an executable in a subdirectory of a global package.

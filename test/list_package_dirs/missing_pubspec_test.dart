@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 
@@ -10,16 +12,16 @@ import '../test_pub.dart';
 
 main() {
   // This is a regression test for #20065.
-  integration("reports a missing pubspec error using JSON", () {
-    d.dir(appPath).create();
+  test("reports a missing pubspec error using JSON", () async {
+    await d.dir(appPath).create();
 
-    schedulePub(args: [
+    await runPub(args: [
       "list-package-dirs",
       "--format=json"
     ], outputJson: {
       "error": 'Could not find a file named "pubspec.yaml" in "'
-          '${canonicalize(path.join(sandboxDir, appPath))}".',
-      "path": canonicalize(path.join(sandboxDir, appPath, "pubspec.yaml"))
+          '${canonicalize(path.join(d.sandbox, appPath))}".',
+      "path": canonicalize(path.join(d.sandbox, appPath, "pubspec.yaml"))
     }, exitCode: 1);
   });
 }

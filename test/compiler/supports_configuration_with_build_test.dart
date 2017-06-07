@@ -7,17 +7,17 @@
 @Timeout.factor(3)
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integrationWithCompiler(
+  testWithCompiler(
       "compiles dart.js and interop.js next to entrypoints when "
-      "dartjs is explicitly configured", (compiler) {
-    serve([
+      "dartjs is explicitly configured", (compiler) async {
+    await serve([
       d.dir('api', [
         d.dir('packages', [
           d.file(
@@ -53,7 +53,7 @@ main() {
       ])
     ]);
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"browser": "1.0.0"},
@@ -68,17 +68,17 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    schedulePub(
+    await runPub(
         args: ["build", "--web-compiler", compiler.name],
         output: new RegExp(r'Built \d+ files? to "build".'),
         exitCode: 0);
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('web', [
-          d.matcherFile('file.dart.js', isMinifiedDart2JSOutput),
+          d.file('file.dart.js', isMinifiedDart2JSOutput),
           d.dir('packages', [
             d.dir('browser', [
               d.file('dart.js', 'contents of dart.js'),

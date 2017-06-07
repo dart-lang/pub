@@ -3,21 +3,21 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("doesn't re-fetch a repository if nothing changes", () {
-    ensureGit();
+  test("doesn't re-fetch a repository if nothing changes", () async {
+    await ensureGit();
 
-    var repo =
-        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
-    repo.create();
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    d.appDir({
+    await d.appDir({
       "foo": {
         "git": {"url": "../foo.git"}
       }
@@ -25,21 +25,21 @@ main() {
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
+    await d.dir(packagesPath, [
       d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.
-    schedule(() => deleteEntry(p.join(sandboxDir, 'foo.git')));
+    deleteEntry(p.join(d.sandbox, 'foo.git'));
 
     // TODO(rnystrom): Remove "--packages-dir" and validate using the
     // ".packages" file instead of looking in the "packages" directory.
-    pubGet(args: ["--packages-dir"]);
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
+    await d.dir(packagesPath, [
       d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });

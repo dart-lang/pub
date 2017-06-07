@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -12,19 +14,19 @@ main(List<String> args) {
 """;
 
 main() {
-  integration('passes arguments to the spawned script', () {
-    d.dir(appPath, [
+  test('passes arguments to the spawned script', () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("bin", [d.file("args.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub = pubRun(args: ["bin/args", "--verbose", "-m", "--", "help"]);
+    var pub = await pubRun(args: ["bin/args", "--verbose", "-m", "--", "help"]);
 
-    pub.stdout.expect("--verbose -m -- help");
-    pub.shouldExit();
+    expect(pub.stdout, emits("--verbose -m -- help"));
+    await pub.shouldExit();
   });
 }

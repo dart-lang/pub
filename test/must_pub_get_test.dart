@@ -6,34 +6,34 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  setUp(() {
-    servePackages((builder) {
+  setUp(() async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0");
       builder.serve("foo", "2.0.0");
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", []),
       d.dir("bin", [d.file("script.dart", "main() => print('hello!');")])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
   group("requires the user to run pub get first if", () {
     group("there's no lockfile", () {
       setUp(() {
-        schedule(() => deleteEntry(p.join(sandboxDir, "myapp/pubspec.lock")));
+        deleteEntry(p.join(d.sandbox, "myapp/pubspec.lock"));
       });
 
       _requiresPubGet(
@@ -42,24 +42,24 @@ main() {
 
     group("there's no package spec", () {
       setUp(() {
-        schedule(() => deleteEntry(p.join(sandboxDir, "myapp/.packages")));
+        deleteEntry(p.join(d.sandbox, "myapp/.packages"));
       });
 
       _requiresPubGet('No .packages file found, please run "pub get" first.');
     });
 
     group("the pubspec has a new dependency", () {
-      setUp(() {
-        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+      setUp(() async {
+        await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../foo"}
           })
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -67,17 +67,17 @@ main() {
     });
 
     group("the lockfile has a dependency from the wrong source", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        createLockFile(appPath, sandbox: ["foo"]);
+        await createLockFile(appPath, sandbox: ["foo"]);
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -85,14 +85,14 @@ main() {
     });
 
     group("the lockfile has a dependency from an unknown source", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.file(
               "pubspec.lock",
               yaml({
@@ -107,7 +107,7 @@ main() {
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -115,21 +115,21 @@ main() {
     });
 
     group("the lockfile has a dependency with the wrong description", () {
-      setUp(() {
-        d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
+      setUp(() async {
+        await d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../bar"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        createLockFile(appPath, sandbox: ["foo"]);
+        await createLockFile(appPath, sandbox: ["foo"]);
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -137,19 +137,19 @@ main() {
     });
 
     group("the pubspec has an incompatible version of a dependency", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({"foo": "2.0.0"})
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -159,17 +159,17 @@ main() {
     group(
         "the lockfile is pointing to an unavailable package with a newer "
         "pubspec", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        schedule(() => deleteEntry(p.join(sandboxDir, cachePath)));
+        deleteEntry(p.join(d.sandbox, cachePath));
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
@@ -179,17 +179,17 @@ main() {
     group(
         "the lockfile is pointing to an unavailable package with an older "
         ".packages", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        schedule(() => deleteEntry(p.join(sandboxDir, cachePath)));
+        deleteEntry(p.join(d.sandbox, cachePath));
 
         // Ensure that the lockfile looks newer than the .packages file.
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
@@ -197,21 +197,21 @@ main() {
     });
 
     group("the lockfile has a package that the .packages file doesn't", () {
-      setUp(() {
-        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+      setUp(() async {
+        await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../foo"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        createPackagesFile(appPath);
+        await createPackagesFile(appPath);
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
@@ -219,18 +219,18 @@ main() {
     });
 
     group("the .packages file has a package with a non-file URI", () {
-      setUp(() {
-        d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+      setUp(() async {
+        await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../foo"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.file(
               ".packages",
               """
@@ -240,7 +240,7 @@ foo:http://example.com/
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
@@ -248,21 +248,21 @@ foo:http://example.com/
     });
 
     group("the .packages file points to the wrong place", () {
-      setUp(() {
-        d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
+      setUp(() async {
+        await d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../bar"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        createPackagesFile(appPath, sandbox: ["foo"]);
+        await createPackagesFile(appPath, sandbox: ["foo"]);
 
         // Ensure that the pubspec looks newer than the lockfile.
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
@@ -270,7 +270,7 @@ foo:http://example.com/
     });
 
     group("the lock file's SDK constraint doesn't match the current SDK", () {
-      setUp(() {
+      setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
         globalPackageServer.add((builder) {
@@ -279,20 +279,20 @@ foo:http://example.com/
           });
         });
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({"foo": "3.0.0"})
         ]).create();
 
-        pubGet(environment: {"_PUB_TEST_SDK_VERSION": "1.2.3+4"});
+        await pubGet(environment: {"_PUB_TEST_SDK_VERSION": "1.2.3+4"});
       });
 
       _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
           "SDK constraints. Please run \"pub get\" again.");
     });
 
-    integration(
+    test(
         "the lock file's Flutter SDK constraint doesn't match the "
-        "current Flutter SDK", () {
+        "current Flutter SDK", () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       globalPackageServer.add((builder) {
@@ -301,42 +301,42 @@ foo:http://example.com/
         });
       });
 
-      d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.appPubspec({"foo": "3.0.0"})
       ]).create();
 
-      pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
+      await pubGet(environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
 
       d.dir('flutter', [d.file('version', '2.4.6')]).create();
 
       // Run pub manually here because otherwise we don't have access to
-      // sandboxDir.
-      schedulePub(
+      // d.sandbox.
+      await runPub(
           args: ["run", "script"],
-          environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')},
+          environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')},
           error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
               "constraints. Please run \"pub get\" again.",
           exitCode: exit_codes.DATA);
     });
 
     group("a path dependency's dependency doesn't match the lockfile", () {
-      setUp(() {
-        d.dir("bar", [
+      setUp(() async {
+        await d.dir("bar", [
           d.libPubspec("bar", "1.0.0", deps: {"foo": "1.0.0"})
         ]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "bar": {"path": "../bar"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
         // Update bar's pubspec without touching the app's.
-        d.dir("bar", [
+        await d.dir("bar", [
           d.libPubspec("bar", "1.0.0", deps: {"foo": "2.0.0"})
         ]).create();
       });
@@ -351,27 +351,27 @@ foo:http://example.com/
     group(
         "the pubspec is older than the lockfile which is older than the "
         "packages file, even if the contents are wrong", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        _touch("pubspec.lock");
-        _touch(".packages");
+        await _touch("pubspec.lock");
+        await _touch(".packages");
       });
 
       _runsSuccessfully(runDeps: false);
     });
 
     group("the pubspec is newer than the lockfile, but they're up-to-date", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        _touch("pubspec.yaml");
+        await _touch("pubspec.yaml");
       });
 
       _runsSuccessfully();
@@ -379,64 +379,64 @@ foo:http://example.com/
 
     // Regression test for #1416
     group("a path dependency has a dependency on the root package", () {
-      setUp(() {
-        d.dir("foo", [
+      setUp(() async {
+        await d.dir("foo", [
           d.libPubspec("foo", "1.0.0", deps: {"myapp": "any"})
         ]).create();
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.appPubspec({
             "foo": {"path": "../foo"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _runsSuccessfully();
     });
 
     group("the lockfile is newer than .packages, but they're up-to-date", () {
-      setUp(() {
-        d.dir(appPath, [
+      setUp(() async {
+        await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _runsSuccessfully();
     });
 
     group("an overridden dependency's SDK constraint is unmatched", () {
-      setUp(() {
+      setUp(() async {
         globalPackageServer.add((builder) {
           builder.serve("bar", "1.0.0", pubspec: {
             "environment": {"sdk": "0.0.0-fake"}
           });
         });
 
-        d.dir(appPath, [
+        await d.dir(appPath, [
           d.pubspec({
             "name": "myapp",
             "dependency_overrides": {"bar": "1.0.0"}
           })
         ]).create();
 
-        pubGet();
+        await pubGet();
 
-        _touch("pubspec.lock");
+        await _touch("pubspec.lock");
       });
 
       _runsSuccessfully();
     });
 
-    integration("the lock file has a Flutter SDK but Flutter is unavailable",
-        () {
+    test("the lock file has a Flutter SDK but Flutter is unavailable",
+        () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       globalPackageServer.add((builder) {
@@ -445,19 +445,19 @@ foo:http://example.com/
         });
       });
 
-      d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.appPubspec({"foo": "3.0.0"})
       ]).create();
 
-      pubGet(environment: {"FLUTTER_ROOT": p.join(sandboxDir, 'flutter')});
+      await pubGet(environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
 
-      d.dir('flutter', [d.file('version', '2.4.6')]).create();
+      await d.dir('flutter', [d.file('version', '2.4.6')]).create();
 
       // Run pub manually here because otherwise we don't have access to
-      // sandboxDir.
-      schedulePub(args: ["run", "bin/script.dart"]);
+      // d.sandbox.
+      await runPub(args: ["run", "bin/script.dart"]);
     });
   });
 }
@@ -469,11 +469,11 @@ foo:http://example.com/
 /// the OS environment for the pub commands.
 void _requiresPubGet(String message) {
   for (var command in ["build", "serve", "run", "deps"]) {
-    integration("for pub $command", () {
+    test("for pub $command", () {
       var args = [command];
       if (command == "run") args.add("script");
 
-      schedulePub(
+      return runPub(
           args: args, error: contains(message), exitCode: exit_codes.DATA);
     });
   }
@@ -489,45 +489,41 @@ void _runsSuccessfully({bool runDeps: true}) {
   if (runDeps) commands.add("deps");
 
   for (var command in commands) {
-    integration("for pub $command", () {
+    test("for pub $command", () async {
       var args = [command];
       if (command == "run") args.add("bin/script.dart");
       if (command == "serve") ;
 
       if (command != "serve") {
-        schedulePub(args: args);
+        await runPub(args: args);
       } else {
-        var pub = startPub(args: ["serve", "--port=0"]);
-        pub.stdout.expect(consumeThrough(startsWith("Serving myapp web")));
+        var pub = await startPub(args: ["serve", "--port=0"]);
+        await expectLater(
+            pub.stdout, emitsThrough(startsWith("Serving myapp web")));
         pub.kill();
       }
 
-      schedule(() {
-        // If pub determines that everything is up-to-date, it should set the
-        // mtimes to indicate that.
-        var pubspecModified = new File(p.join(sandboxDir, "myapp/pubspec.yaml"))
-            .lastModifiedSync();
-        var lockFileModified =
-            new File(p.join(sandboxDir, "myapp/pubspec.lock"))
-                .lastModifiedSync();
-        var packagesModified =
-            new File(p.join(sandboxDir, "myapp/.packages")).lastModifiedSync();
+      // If pub determines that everything is up-to-date, it should set the
+      // mtimes to indicate that.
+      var pubspecModified =
+          new File(p.join(d.sandbox, "myapp/pubspec.yaml")).lastModifiedSync();
+      var lockFileModified =
+          new File(p.join(d.sandbox, "myapp/pubspec.lock")).lastModifiedSync();
+      var packagesModified =
+          new File(p.join(d.sandbox, "myapp/.packages")).lastModifiedSync();
 
-        expect(!pubspecModified.isAfter(lockFileModified), isTrue);
-        expect(!lockFileModified.isAfter(packagesModified), isTrue);
-      }, "testing last-modified times");
+      expect(!pubspecModified.isAfter(lockFileModified), isTrue);
+      expect(!lockFileModified.isAfter(packagesModified), isTrue);
     });
   }
 }
 
 /// Schedules a non-semantic modification to [path].
-void _touch(String path) {
-  schedule(() async {
-    // Delay a bit to make sure the modification times are noticeably different.
-    // 1s seems to be the finest granularity that dart:io reports.
-    await new Future.delayed(new Duration(seconds: 1));
+Future _touch(String path) async {
+  // Delay a bit to make sure the modification times are noticeably different.
+  // 1s seems to be the finest granularity that dart:io reports.
+  await new Future.delayed(new Duration(seconds: 1));
 
-    path = p.join(sandboxDir, "myapp", path);
-    touch(path);
-  }, "touching $path");
+  path = p.join(d.sandbox, "myapp", path);
+  touch(path);
 }

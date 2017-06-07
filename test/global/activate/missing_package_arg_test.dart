@@ -2,14 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../test_pub.dart';
 
 main() {
-  integration('fails if no package was given', () {
-    schedulePub(
+  test('fails if no package was given', () {
+    return runPub(
         args: ["global", "activate"],
         error: contains("No package to activate given."),
         exitCode: exit_codes.USAGE);

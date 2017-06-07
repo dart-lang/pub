@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -24,10 +26,10 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-  integration('runs a script generated from scratch by a transformer', () {
-    serveBarback();
+  test('runs a script generated from scratch by a transformer', () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
@@ -39,10 +41,9 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/script"]);
-
-    pub.stdout.expect("generated");
-    pub.shouldExit();
+    await pubGet();
+    var pub = await pubRun(args: ["bin/script"]);
+    expect(pub.stdout, emits("generated"));
+    await pub.shouldExit();
   });
 }

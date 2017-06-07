@@ -2,24 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('activating a Git package installs its dependencies', () {
-    servePackages((builder) {
+  test('activating a Git package installs its dependencies', () async {
+    await servePackages((builder) {
       builder.serve("bar", "1.0.0", deps: {"baz": "any"});
       builder.serve("baz", "1.0.0");
     });
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0", deps: {"bar": "any"}),
       d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
     ]).create();
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf([
           contains("Downloading bar 1.0.0..."),

@@ -16,8 +16,12 @@ import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:package_resolver/package_resolver.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart' hide fail;
+import 'package:test_process/test_process.dart';
+
 import 'package:pub/src/entrypoint.dart';
-import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
 // with the git descriptor method. Maybe we should try to clean up the top level
@@ -31,11 +35,6 @@ import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
-import 'package:pub_semver/pub_semver.dart';
-import 'package:scheduled_test/scheduled_process.dart';
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart' hide fail;
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
@@ -58,10 +57,6 @@ final _entrypoint = new Entrypoint(pubRoot, new SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
 String yaml(value) => JSON.encode(value);
-
-/// The full path to the created sandbox directory for an integration test.
-String get sandboxDir => _sandboxDir;
-String _sandboxDir;
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
@@ -112,8 +107,8 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
   group(RunCommand.upgrade.name, () => callback(RunCommand.upgrade));
 }
 
-/// Schedules an invocation of pub [command] and validates that it completes
-/// in an expected way.
+/// Invokes the pub [command] and validates that it completes in an expected
+/// way.
 ///
 /// By default, this validates that the command completes successfully and
 /// understands the normal output of a successful pub command. If [warning] is
@@ -124,14 +119,14 @@ void forBothPubGetAndUpgrade(void callback(RunCommand command)) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-void pubCommand(RunCommand command,
+Future pubCommand(RunCommand command,
     {Iterable<String> args,
     output,
     error,
     silent,
     warning,
     int exitCode,
-    Map<String, String> environment}) {
+    Map<String, String> environment}) async {
   if (error != null && warning != null) {
     throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -147,7 +142,7 @@ void pubCommand(RunCommand command,
   if (error != null) output = null;
   if (warning != null) error = warning;
 
-  schedulePub(
+  await runPub(
       args: allArgs,
       output: output,
       error: error,
@@ -156,53 +151,50 @@ void pubCommand(RunCommand command,
       environment: environment);
 }
 
-void pubGet(
-    {Iterable<String> args,
-    output,
-    error,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) {
-  pubCommand(RunCommand.get,
-      args: args,
-      output: output,
-      error: error,
-      warning: warning,
-      exitCode: exitCode,
-      environment: environment);
-}
+Future pubGet(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.get,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
 
-void pubUpgrade(
-    {Iterable<String> args,
-    output,
-    error,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) {
-  pubCommand(RunCommand.upgrade,
-      args: args,
-      output: output,
-      error: error,
-      warning: warning,
-      exitCode: exitCode,
-      environment: environment);
-}
+Future pubUpgrade(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.upgrade,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
 
-void pubDowngrade(
-    {Iterable<String> args,
-    output,
-    error,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) {
-  pubCommand(RunCommand.downgrade,
-      args: args,
-      output: output,
-      error: error,
-      warning: warning,
-      exitCode: exitCode,
-      environment: environment);
-}
+Future pubDowngrade(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.downgrade,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
 
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
@@ -211,70 +203,30 @@ void pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-PubProcess pubRun({bool global: false, Iterable<String> args}) {
+Future<PubProcess> pubRun({bool global: false, Iterable<String> args}) async {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
-  var pub = startPub(args: pubArgs);
+  var pub = await startPub(args: pubArgs);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
-  pub.stdout.expect(consumeWhile(startsWith("Loading")));
+  expect(pub.stdout, mayEmitMultiple(startsWith("Loading")));
 
   return pub;
 }
 
-/// Defines an integration test.
-///
-/// The [body] should schedule a series of operations which will be run
-/// asynchronously.
-void integration(String description, void body(),
-    {String testOn,
-    Timeout timeout,
-    skip,
-    tags,
-    Map<String, dynamic> onPlatform}) {
-  test(description, () {
-    _sandboxDir = createSystemTempDir();
-    d.defaultRoot = sandboxDir;
-    currentSchedule.onComplete.schedule(() {
-      try {
-        deleteEntry(_sandboxDir);
-      } on ApplicationException catch (_) {
-        // Silently swallow exceptions on Windows. If the test failed, there may
-        // still be lingering processes that have files in the sandbox open,
-        // which will cause this to fail on Windows.
-        if (!Platform.isWindows) rethrow;
-      }
-    }, 'deleting the sandbox directory');
-
-    // Schedule the test.
-    body();
-  },
-      testOn: testOn,
-      timeout: timeout,
-      skip: skip,
-      onPlatform: onPlatform,
-      tags: tags);
-}
-
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
-/// are assumed to be relative to [sandboxDir].
-void scheduleRename(String from, String to) {
-  schedule(() => renameDir(p.join(sandboxDir, from), p.join(sandboxDir, to)),
-      'renaming $from to $to');
+/// are assumed to be relative to [d.sandbox].
+void renameInSandbox(String from, String to) {
+  renameDir(_pathInSandbox(from), _pathInSandbox(to));
 }
 
 /// Schedules creating a symlink at path [symlink] that points to [target],
-/// both of which are assumed to be relative to [sandboxDir].
-void scheduleSymlink(String target, String symlink) {
-  schedule(
-      () => createSymlink(
-          p.join(sandboxDir, target), p.join(sandboxDir, symlink)),
-      'symlinking $target to $symlink');
+/// both of which are assumed to be relative to [d.sandbox].
+void symlinkInSandbox(String target, String symlink) {
+  createSymlink(_pathInSandbox(target), _pathInSandbox(symlink));
 }
 
-/// Schedules a call to the Pub command-line utility.
-///
 /// Runs Pub with [args] and validates that its results match [output] (or
 /// [outputJson]), [error], [silent] (for logs that are silent by default), and
 /// [exitCode].
@@ -287,19 +239,19 @@ void scheduleSymlink(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-void schedulePub(
-    {List args,
+Future runPub(
+    {List<String> args,
     output,
     error,
     outputJson,
     silent,
     int exitCode: exit_codes.SUCCESS,
-    environment}) {
+    Map<String, String> environment}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
-  var pub = startPub(args: args, environment: environment);
-  pub.shouldExit(exitCode);
+  var pub = await startPub(args: args, environment: environment);
+  await pub.shouldExit(exitCode);
 
   expect(() async {
     var actualOutput = (await pub.stdoutStream().toList()).join("\n");
@@ -310,8 +262,7 @@ void schedulePub(
     if (outputJson == null) {
       _validateOutput(failures, 'stdout', output, actualOutput);
     } else {
-      _validateOutputJson(
-          failures, 'stdout', await awaitObject(outputJson), actualOutput);
+      _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
     }
 
     _validateOutput(failures, 'stderr', error, actualError);
@@ -326,49 +277,48 @@ void schedulePub(
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-PubProcess startPublish(ScheduledServer server, {List args}) {
-  var tokenEndpoint =
-      server.url.then((url) => url.resolve('/token').toString());
+Future<PubProcess> startPublish(ShelfTestServer server,
+    {List<String> args}) async {
+  var tokenEndpoint = server.url.resolve('/token').toString();
   if (args == null) args = [];
   args = ['lish', '--server', tokenEndpoint]..addAll(args);
-  return startPub(args: args, tokenEndpoint: tokenEndpoint);
+  return await startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
 ///
 /// Ensures that the right output is shown and then enters "y" to confirm the
 /// upload.
-void confirmPublish(ScheduledProcess pub) {
+Future confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
-  pub.stdout.expect(startsWith('Publishing test_pkg 1.0.0 to '));
-  pub.stdout.expect(consumeThrough(
-      "Looks great! Are you ready to upload your package (y/n)?"));
-  pub.writeLine("y");
+  await expectLater(
+      pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
+  await expectLater(pub.stdout,
+      emitsThrough("Looks great! Are you ready to upload your package (y/n)?"));
+  await pub.stdin.writeln("y");
 }
 
 /// Gets the absolute path to [relPath], which is a relative path in the test
 /// sandbox.
-String _pathInSandbox(String relPath) {
-  return p.join(p.absolute(sandboxDir), relPath);
-}
+String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
 /// Gets the environment variables used to run pub in a test context.
-Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
-  var environment = {};
-  environment['_PUB_TESTING'] = 'true';
-  environment['PUB_CACHE'] = await schedule(() => _pathInSandbox(cachePath));
+Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
+  var environment = {
+    '_PUB_TESTING': 'true',
+    'PUB_CACHE': _pathInSandbox(cachePath),
 
-  // Ensure a known SDK version is set for the tests that rely on that.
-  environment['_PUB_TEST_SDK_VERSION'] = "0.1.2+3";
+    // Ensure a known SDK version is set for the tests that rely on that.
+    '_PUB_TEST_SDK_VERSION': "0.1.2+3"
+  };
 
   if (tokenEndpoint != null) {
-    environment['_PUB_TEST_TOKEN_ENDPOINT'] = tokenEndpoint.toString();
+    environment['_PUB_TEST_TOKEN_ENDPOINT'] = tokenEndpoint;
   }
 
   if (globalServer != null) {
-    environment['PUB_HOSTED_URL'] =
-        "http://localhost:${await globalServer.port}";
+    environment['PUB_HOSTED_URL'] = "http://localhost:${globalServer.port}";
   }
 
   return environment;
@@ -381,15 +331,13 @@ Future<Map> getPubTestEnvironment([String tokenEndpoint]) async {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-PubProcess startPub(
-    {List args,
-    Future<String> tokenEndpoint,
-    Map<String, String> environment}) {
+Future<PubProcess> startPub(
+    {Iterable<String> args,
+    String tokenEndpoint,
+    Map<String, String> environment}) async {
   args ??= [];
 
-  schedule(() {
-    ensureDir(_pathInSandbox(appPath));
-  }, "ensuring $appPath exists");
+  ensureDir(_pathInSandbox(appPath));
 
   // Find a Dart executable we can use to spawn. Use the same one that was
   // used to run this script itself.
@@ -409,59 +357,64 @@ PubProcess startPub(
   var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
   if (fileExists('$pubPath.snapshot')) pubPath += '.snapshot';
 
-  var dartArgs = <dynamic>[
-    PackageResolver.current.processArgument,
+  var dartArgs = [
+    await PackageResolver.current.processArgument,
     pubPath,
     '--verbose'
   ]..addAll(args);
 
-  if (tokenEndpoint == null) tokenEndpoint = new Future.value();
-  var environmentFuture = () async {
-    var pubEnvironment = await getPubTestEnvironment(await tokenEndpoint);
-    if (environment != null) {
-      pubEnvironment.addAll(await awaitObject(environment));
-    }
-    return pubEnvironment;
-  }();
-
-  return new PubProcess.start(dartBin, dartArgs,
-      environment: environmentFuture,
-      workingDirectory: schedule(() => _pathInSandbox(appPath)),
+  return await PubProcess.start(dartBin, dartArgs,
+      environment: getPubTestEnvironment(tokenEndpoint)
+        ..addAll(environment ?? {}),
+      workingDirectory: _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
 }
 
-/// A subclass of [ScheduledProcess] that parses pub's verbose logging output
-/// and makes [stdout] and [stderr] work as though pub weren't running in
-/// verbose mode.
-class PubProcess extends ScheduledProcess {
-  Stream<Pair<log.Level, String>> _log;
-  Stream<String> _stdout;
-  Stream<String> _stderr;
-  Stream<String> _silent;
+/// A subclass of [TestProcess] that parses pub's verbose logging output and
+/// makes [stdout] and [stderr] work as though pub weren't running in verbose
+/// mode.
+class PubProcess extends TestProcess {
+  StreamSplitter<Pair<log.Level, String>> get _logSplitter {
+    __logSplitter ??= new StreamSplitter(StreamGroup.merge([
+      _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
+      _outputToLog(super.stderrStream(), log.Level.ERROR)
+    ]));
+    return __logSplitter;
+  }
 
-  PubProcess.start(executable, arguments,
-      {workingDirectory,
-      environment,
+  StreamSplitter<Pair<log.Level, String>> __logSplitter;
+
+  static Future<PubProcess> start(String executable, Iterable<String> arguments,
+      {String workingDirectory,
+      Map<String, String> environment,
+      bool includeParentEnvironment: true,
+      bool runInShell: false,
       String description,
-      Encoding encoding: UTF8})
-      : super.start(executable, arguments,
-            workingDirectory: workingDirectory,
-            environment: environment,
-            description: description,
-            encoding: encoding);
+      Encoding encoding,
+      bool forwardStdio: false}) async {
+    var process = await Process.start(executable, arguments.toList(),
+        workingDirectory: workingDirectory,
+        environment: environment,
+        includeParentEnvironment: includeParentEnvironment,
+        runInShell: runInShell);
 
-  Stream<Pair<log.Level, String>> _logStream() {
-    if (_log == null) {
-      _log = StreamGroup.merge([
-        _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
-        _outputToLog(super.stderrStream(), log.Level.ERROR)
-      ]);
+    if (description == null) {
+      var humanExecutable = p.isWithin(p.current, executable)
+          ? p.relative(executable)
+          : executable;
+      description = "$humanExecutable ${arguments.join(" ")}";
     }
 
-    var logs = StreamSplitter.splitFrom(_log);
-    _log = logs.first;
-    return logs.last;
+    encoding ??= UTF8;
+    return new PubProcess(process, description,
+        encoding: encoding, forwardStdio: forwardStdio);
   }
+
+  /// This is protected.
+  PubProcess(process, description,
+      {Encoding encoding, bool forwardStdio: false})
+      : super(process, description,
+            encoding: encoding, forwardStdio: forwardStdio) {}
 
   final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
   final Map<String, log.Level> _logLevels = [
@@ -491,48 +444,29 @@ class PubProcess extends ScheduledProcess {
   }
 
   Stream<String> stdoutStream() {
-    if (_stdout == null) {
-      _stdout = _logStream().expand((entry) {
-        if (entry.first != log.Level.MESSAGE) return [];
-        return [entry.last];
-      });
-    }
-
-    var stdouts = StreamSplitter.splitFrom(_stdout);
-    _stdout = stdouts.first;
-    return stdouts.last;
+    return _logSplitter.split().expand((entry) {
+      if (entry.first != log.Level.MESSAGE) return [];
+      return [entry.last];
+    });
   }
 
   Stream<String> stderrStream() {
-    if (_stderr == null) {
-      _stderr = _logStream().expand((entry) {
-        if (entry.first != log.Level.ERROR &&
-            entry.first != log.Level.WARNING) {
-          return [];
-        }
-        return [entry.last];
-      });
-    }
-
-    var stderrs = StreamSplitter.splitFrom(_stderr);
-    _stderr = stderrs.first;
-    return stderrs.last;
+    return _logSplitter.split().expand((entry) {
+      if (entry.first != log.Level.ERROR && entry.first != log.Level.WARNING) {
+        return [];
+      }
+      return [entry.last];
+    });
   }
 
   /// A stream of log messages that are silent by default.
   Stream<String> silentStream() {
-    if (_silent == null) {
-      _silent = _logStream().expand((entry) {
-        if (entry.first == log.Level.MESSAGE) return [];
-        if (entry.first == log.Level.ERROR) return [];
-        if (entry.first == log.Level.WARNING) return [];
-        return [entry.last];
-      });
-    }
-
-    var silents = StreamSplitter.splitFrom(_silent);
-    _silent = silents.first;
-    return silents.last;
+    return _logSplitter.split().expand((entry) {
+      if (entry.first == log.Level.MESSAGE) return [];
+      if (entry.first == log.Level.ERROR) return [];
+      if (entry.first == log.Level.WARNING) return [];
+      return [entry.last];
+    });
   }
 }
 
@@ -545,9 +479,7 @@ class PubProcess extends ScheduledProcess {
 /// This also increases the [Schedule] timeout to 30 seconds on Windows,
 /// where Git runs really slowly.
 void ensureGit() {
-  if (!gitlib.isInstalled) {
-    throw new Exception("Git must be installed to run this test.");
-  }
+  if (!gitlib.isInstalled) fail("Git must be installed to run this test.");
 }
 
 /// Creates a lock file for [package] without running `pub get`.
@@ -559,33 +491,29 @@ void ensureGit() {
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-void createLockFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) {
-  schedule(() async {
-    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
+Future createLockFile(String package,
+    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
 
-    var lockFile =
-        _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile =
+      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
 
-    await d.dir(package, [
-      d.file('pubspec.lock', lockFile.serialize(null)),
-      d.file('.packages', lockFile.packagesFile(cache, package))
-    ]).create();
-  }, "creating lockfile for $package");
+  await d.dir(package, [
+    d.file('pubspec.lock', lockFile.serialize(null)),
+    d.file('.packages', lockFile.packagesFile(cache, package))
+  ]).create();
 }
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
-void createPackagesFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) {
-  schedule(() async {
-    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
-    var lockFile =
-        _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+Future createPackagesFile(String package,
+    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
+  var lockFile =
+      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
 
-    await d.dir(package,
-        [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
-  }, "creating .packages for $package");
+  await d.dir(package,
+      [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
 }
 
 /// Creates a lock file for [package] without running `pub get`.
@@ -647,9 +575,9 @@ String packagePath(String package) {
 void useMockClient(MockClient client) {
   var oldInnerClient = innerHttpClient;
   innerHttpClient = client;
-  currentSchedule.onComplete.schedule(() {
+  addTearDown(() {
     innerHttpClient = oldInnerClient;
-  }, 'de-activating the mock client');
+  });
 }
 
 /// Describes a map representing a library package with the given [name],
@@ -805,14 +733,12 @@ typedef Validator ValidatorCreator(Entrypoint entrypoint);
 ///
 /// Returns a scheduled Future that contains the errors and warnings produced
 /// by that validator.
-Future<Pair<List<String>, List<String>>> schedulePackageValidation(
-    ValidatorCreator fn) {
-  return schedule/*<Future<Pair<List<String>, List<String>>>>*/(() async {
-    var cache = new SystemCache(rootDir: p.join(sandboxDir, cachePath));
-    var validator = fn(new Entrypoint(p.join(sandboxDir, appPath), cache));
-    await validator.validate();
-    return new Pair(validator.errors, validator.warnings);
-  }, "validating package");
+Future<Pair<List<String>, List<String>>> validatePackage(
+    ValidatorCreator fn) async {
+  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
+  var validator = fn(new Entrypoint(_pathInSandbox(appPath), cache));
+  await validator.validate();
+  return new Pair(validator.errors, validator.warnings);
 }
 
 /// A matcher that matches a Pair.
@@ -848,4 +774,4 @@ Matcher matchesMultiple(String pattern, int times) {
 }
 
 /// A [StreamMatcher] that matches multiple lines of output.
-StreamMatcher emitsLines(String output) => inOrder(output.split("\n"));
+StreamMatcher emitsLines(String output) => emitsInOrder(output.split("\n"));

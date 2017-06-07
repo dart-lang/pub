@@ -2,20 +2,22 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import '../serve/utils.dart';
 
 main() {
-  integration("does not compile if dart2js is disabled", () {
-    d.dir(appPath, [
+  test("does not compile if dart2js is disabled", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [d.file("main.dart", "void main() => print('hello');")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--no-dart2js"]);
-    requestShould404("main.dart.js");
-    endPubServe();
+    await pubGet();
+    await pubServe(args: ["--no-dart2js"]);
+    await requestShould404("main.dart.js");
+    await endPubServe();
   });
 }

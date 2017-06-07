@@ -2,29 +2,29 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('activating a Git package deactivates the hosted one', () {
+  test('activating a Git package deactivates the hosted one', () async {
     ensureGit();
 
-    servePackages((builder) {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
         d.dir("bin", [d.file("foo.dart", "main(args) => print('hosted');")])
       ]);
     });
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),
       d.dir("bin", [d.file("foo.dart", "main() => print('git');")])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf(
             startsWith('Package foo is currently active at version 1.0.0.\n'
@@ -36,8 +36,8 @@ main() {
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
     // Should now run the git one.
-    var pub = pubRun(global: true, args: ["foo"]);
-    pub.stdout.expect("git");
-    pub.shouldExit();
+    var pub = await pubRun(global: true, args: ["foo"]);
+    expect(pub.stdout, emits("git"));
+    await pub.shouldExit();
   });
 }

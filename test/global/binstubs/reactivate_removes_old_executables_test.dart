@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("removes previous binstubs when reactivating a package", () {
-    d.dir("foo", [
+  test("removes previous binstubs when reactivating a package", () async {
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "executables": {"one": null, "two": null}
@@ -20,9 +20,9 @@ main() {
       ])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "executables": {
@@ -32,12 +32,12 @@ main() {
       }),
     ]).create();
 
-    schedulePub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir("bin", [
         d.nothing(binStubName("one")),
-        d.matcherFile(binStubName("two"), contains("two"))
+        d.file(binStubName("two"), contains("two"))
       ])
     ]).validate();
   });

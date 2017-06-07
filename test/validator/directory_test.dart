@@ -2,10 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/directory.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -18,10 +19,10 @@ main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    integration('looks normal', () => expectNoValidationError(directory));
+    test('looks normal', () => expectNoValidationError(directory));
 
-    integration('has a nested directory named "tools"', () {
-      d.dir(appPath, [
+    test('has a nested directory named "tools"', () async {
+      await d.dir(appPath, [
         d.dir("foo", [d.dir("tools")])
       ]).create();
       expectNoValidationError(directory);
@@ -44,8 +45,8 @@ main() {
     ];
 
     for (var name in names) {
-      integration('"$name"', () {
-        d.dir(appPath, [d.dir(name)]).create();
+      test('"$name"', () async {
+        await d.dir(appPath, [d.dir(name)]).create();
         expectValidationWarning(directory);
       });
     }

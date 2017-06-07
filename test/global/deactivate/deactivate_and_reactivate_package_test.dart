@@ -2,24 +2,26 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../test_pub.dart';
 
 main() {
-  integration('activates a different version after deactivating', () {
-    servePackages((builder) {
+  test('activates a different version after deactivating', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0");
       builder.serve("foo", "2.0.0");
     });
 
     // Activate an old version.
-    schedulePub(args: ["global", "activate", "foo", "1.0.0"]);
+    await runPub(args: ["global", "activate", "foo", "1.0.0"]);
 
-    schedulePub(
+    await runPub(
         args: ["global", "deactivate", "foo"],
         output: "Deactivated package foo 1.0.0.");
 
     // Activating again should forget the old version.
-    schedulePub(
+    await runPub(
         args: ["global", "activate", "foo"],
         output: """
         Resolving dependencies...
