@@ -6,12 +6,12 @@ version: 1.0.0-unreleased
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
-  analyzer: ">=0.25.0 <0.30.0"
+  analyzer: ">=0.25.0 <0.31.0"
   args: "^0.13.5"
   async: "^1.12.0"
   barback: "^0.15.2"
   bazel_worker: "^0.1.4"
-  cli_util: "^0.0.1"
+  cli_util: ">=0.0.1 <0.2.0"
   collection: "^1.8.0"
   compiler_unsupported: "^1.22.0"
   crypto: ">=1.0.0 <3.0.0"
@@ -41,7 +41,7 @@ dev_dependencies:
   shelf_test_handler: "1.0.0-rc.1"
   test: "^0.12.20"
   test_descriptor: "^1.0.0"
-  test_process: "1.0.0-rc.2"
+  test_process: "^1.0.0"
 
 environment:
   sdk: ">=1.24.0-dev.2.0 <2.0.0"
