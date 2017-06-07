@@ -5,8 +5,8 @@
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 main() {
   test("does not compile until its output is requested", () async {

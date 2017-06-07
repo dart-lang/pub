@@ -8,8 +8,8 @@ import 'package:pub/src/dartdevc/module_reader.dart';
 import 'package:pub/src/exit_codes.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 import 'utils.dart';
 
 main() {

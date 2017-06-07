@@ -268,7 +268,7 @@ Future runPub(
     _validateOutput(failures, 'stderr', error, actualError);
     _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (!failures.isEmpty) throw new TestFailure(failures.join('\n'));
+    if (failures.isNotEmpty) throw new TestFailure(failures.join('\n'));
   }(), completes);
 }
 
@@ -414,7 +414,7 @@ class PubProcess extends TestProcess {
   PubProcess(process, description,
       {Encoding encoding, bool forwardStdio: false})
       : super(process, description,
-            encoding: encoding, forwardStdio: forwardStdio) {}
+            encoding: encoding, forwardStdio: forwardStdio);
 
   final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
   final Map<String, log.Level> _logLevels = [

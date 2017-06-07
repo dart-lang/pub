@@ -5,8 +5,8 @@
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 /// The code for a transformer that renames ".js" files to ".out".
 const JS_REWRITE_TRANSFORMER = """

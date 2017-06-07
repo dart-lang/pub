@@ -9,14 +9,14 @@ import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
-import 'descriptor/tar.dart';
 import 'descriptor/packages.dart';
+import 'descriptor/tar.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
 export 'descriptor/git.dart';
-export 'descriptor/tar.dart';
 export 'descriptor/packages.dart';
+export 'descriptor/tar.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
 GitRepoDescriptor git(String name, [Iterable<Descriptor> contents]) =>

@@ -6,8 +6,8 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
 import 'entrypoint.dart';
-import 'log.dart' as log;
 import 'global_packages.dart';
+import 'log.dart' as log;
 import 'system_cache.dart';
 
 /// The base class for commands for the pub executable.

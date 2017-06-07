@@ -413,8 +413,8 @@ class BacktrackingSolver {
       }
     });
 
-    if (!_versions.isEmpty) _attemptedSolutions++;
-    return !_versions.isEmpty;
+    if (_versions.isNotEmpty) _attemptedSolutions++;
+    return _versions.isNotEmpty;
   }
 
   /// Rewinds [queue] until it reaches a version that's valid relative to the

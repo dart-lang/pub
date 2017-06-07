@@ -10,13 +10,13 @@ import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
 import 'package.dart';
+import 'source.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
-import 'source.dart';
 import 'source_registry.dart';
 
 /// The system-wide cache of downloaded packages.
