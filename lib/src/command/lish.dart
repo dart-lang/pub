@@ -6,9 +6,9 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
+import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../exit_codes.dart' as exit_codes;
-import '../ascii_tree.dart' as tree;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -160,7 +160,7 @@ class LishCommand extends PubCommand {
     var errors = pair.first;
     var warnings = pair.last;
 
-    if (!errors.isEmpty) {
+    if (errors.isNotEmpty) {
       log.error("Sorry, your package is missing "
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
@@ -178,7 +178,7 @@ class LishCommand extends PubCommand {
 
     var message = '\nLooks great! Are you ready to upload your package';
 
-    if (!warnings.isEmpty) {
+    if (warnings.isNotEmpty) {
       var s = warnings.length == 1 ? '' : 's';
       message = "\nPackage has ${warnings.length} warning$s. Upload anyway";
     }

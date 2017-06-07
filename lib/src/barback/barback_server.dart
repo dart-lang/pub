@@ -17,8 +17,8 @@ import '../dartdevc/dartdevc_environment.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
-import 'base_server.dart';
 import 'asset_environment.dart';
+import 'base_server.dart';
 
 /// Callback for determining if an asset with [id] should be served or not.
 typedef bool AllowAsset(AssetId id);

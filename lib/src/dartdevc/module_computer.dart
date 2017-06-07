@@ -10,10 +10,10 @@ import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
-import 'module.dart';
 import '../barback.dart';
-import '../io.dart';
 import '../dart.dart' show isEntrypoint, isPart;
+import '../io.dart';
+import 'module.dart';
 
 /// There are two "types" of modules, `public` and `private`.
 ///

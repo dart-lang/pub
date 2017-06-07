@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import "dart:io" show File;
 import "dart:async" show Future;
 import "dart:convert" show UTF8;
+import "dart:io" show File;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;

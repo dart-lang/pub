@@ -238,7 +238,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   var _verbose = false;
 
   /// Whether an exception should be thrown on an error to stop compilation.
-  var _throwOnError = false;
+  final _throwOnError = false;
 
   /// This gets set after a fatal error is reported to quash any subsequent
   /// errors.
@@ -246,7 +246,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
 
   final bool generateSourceMaps;
 
-  compiler.Diagnostic _lastKind = null;
+  compiler.Diagnostic _lastKind;
 
   static final int _FATAL =
       compiler.Diagnostic.CRASH.ordinal | compiler.Diagnostic.ERROR.ordinal;

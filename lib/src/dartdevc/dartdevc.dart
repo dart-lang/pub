@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert' show JsonEncoder;
+import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';

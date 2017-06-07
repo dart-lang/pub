@@ -12,8 +12,8 @@ import 'package:stack_trace/stack_trace.dart';
 
 import '../asset/dart/serialize.dart';
 import '../barback.dart';
-import '../exceptions.dart';
 import '../dart.dart' as dart;
+import '../exceptions.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'asset_environment.dart';

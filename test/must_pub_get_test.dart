@@ -492,7 +492,6 @@ void _runsSuccessfully({bool runDeps: true}) {
     test("for pub $command", () async {
       var args = [command];
       if (command == "run") args.add("bin/script.dart");
-      if (command == "serve") ;
 
       if (command != "serve") {
         await runPub(args: args);

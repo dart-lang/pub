@@ -68,7 +68,7 @@ class PackageServer {
   /// package to serve.
   ///
   /// This is preserved so that additional packages can be added.
-  var _builder = new PackageServerBuilder._();
+  final _builder = new PackageServerBuilder._();
 
   /// A future that will complete to the port used for the server.
   int get port => _inner.port;

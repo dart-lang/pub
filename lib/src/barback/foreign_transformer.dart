@@ -8,8 +8,8 @@ import 'dart:isolate';
 import 'package:barback/barback.dart';
 
 import '../asset/dart/serialize.dart';
-import 'excluding_transformer.dart';
 import 'excluding_aggregate_transformer.dart';
+import 'excluding_transformer.dart';
 import 'transformer_config.dart';
 
 /// A wrapper for a transformer that's in a different isolate.

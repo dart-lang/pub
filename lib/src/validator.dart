@@ -82,7 +82,7 @@ abstract class Validator {
       var warnings =
           validators.expand((validator) => validator.warnings).toList();
 
-      if (!errors.isEmpty) {
+      if (errors.isNotEmpty) {
         log.error("Missing requirements:");
         for (var error in errors) {
           log.error("* ${error.split('\n').join('\n  ')}");
@@ -90,7 +90,7 @@ abstract class Validator {
         log.error("");
       }
 
-      if (!warnings.isEmpty) {
+      if (warnings.isNotEmpty) {
         log.warning("Suggestions:");
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");

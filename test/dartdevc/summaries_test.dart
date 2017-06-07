@@ -10,8 +10,8 @@ import 'package:test/test.dart';
 import 'package:pub/src/dartdevc/summaries.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 main() {
   test("can output linked analyzer summaries for modules under lib and web",

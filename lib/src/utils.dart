@@ -512,7 +512,7 @@ Stream<String> streamToLines(Stream<String> stream) {
     var lines = splitLines(chunk);
     var leftover = lines.removeLast();
     for (var line in lines) {
-      if (!buffer.isEmpty) {
+      if (buffer.isNotEmpty) {
         buffer.write(line);
         line = buffer.toString();
         buffer = new StringBuffer();
@@ -522,7 +522,7 @@ Stream<String> streamToLines(Stream<String> stream) {
     }
     buffer.write(leftover);
   }, handleDone: (sink) {
-    if (!buffer.isEmpty) sink.add(buffer.toString());
+    if (buffer.isNotEmpty) sink.add(buffer.toString());
     sink.close();
   }));
 }
@@ -757,7 +757,7 @@ String yamlToString(data) {
     // serialization.
 
     // Use indentation for (non-empty) maps.
-    if (data is Map && !data.isEmpty) {
+    if (data is Map && data.isNotEmpty) {
       if (isMapValue) {
         buffer.writeln();
         indent += '  ';

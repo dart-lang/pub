@@ -15,9 +15,9 @@ import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import 'exit_codes.dart' as exit_codes;
-import 'exceptions.dart';
 import 'error_group.dart';
+import 'exceptions.dart';
+import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
 import 'sdk.dart' as sdk;
 import 'utils.dart';
@@ -67,7 +67,7 @@ String canonicalize(String pathString) {
   // Move through the components of the path, resolving each one's symlinks as
   // necessary. A resolved component may also add new components that need to be
   // resolved in turn.
-  while (!components.isEmpty) {
+  while (components.isNotEmpty) {
     seen.add(path.join(newPath, path.joinAll(components)));
     var resolvedPath =
         resolveLink(path.join(newPath, components.removeFirst()));
@@ -1126,7 +1126,7 @@ class PubProcessResult {
   // TODO(rnystrom): Remove this and change to returning one string.
   static List<String> _toLines(String output) {
     var lines = splitLines(output);
-    if (!lines.isEmpty && lines.last == "") lines.removeLast();
+    if (lines.isNotEmpty && lines.last == "") lines.removeLast();
     return lines;
   }
 

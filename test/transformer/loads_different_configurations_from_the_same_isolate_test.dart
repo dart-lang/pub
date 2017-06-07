@@ -5,8 +5,8 @@
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 main() {
   test("loads different configurations from the same isolate", () async {

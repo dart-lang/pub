@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 main() {
   test("fails to load a pubspec with reserved transformer", () async {
