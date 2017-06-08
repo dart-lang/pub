@@ -308,7 +308,6 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
     '_PUB_TESTING': 'true',
     'PUB_CACHE': _pathInSandbox(cachePath),
-    'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',
 
     // Ensure a known SDK version is set for the tests that rely on that.
