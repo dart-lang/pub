@@ -1,0 +1,16 @@
+language: dart
+sudo: false
+dart:
+  - dev
+  # TODO(jakemac): Enable once 1.24 is stable,
+  # https://github.com/dart-lang/pub/issues/1613
+  # - stable
+cache:
+  directories:
+    - $HOME/.pub-cache
+dart_task:
+  # TODO(jakemac): Enable once issues are resolved.
+  # https://github.com/dart-lang/pub/issues/1614
+  # - test: --platform vm
+  - dartanalyzer: --fatal-warnings .
+  - dartfmt
