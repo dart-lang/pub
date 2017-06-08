@@ -1047,9 +1047,13 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         args.addAll(["--files-from", "/dev/stdin"]);
         stdin = contents.join("\n");
 
-        // The ustar format doesn't support large UIDs. We don't care about
-        // preserving ownership anyway, so we just set them to "pub".
-        args.addAll(["--owner=pub", "--group=pub"]);
+        /// Travis's version of tar apparently doesn't support passing unknown
+        /// values to the --owner and --group flags for some reason.
+        if (!isTravis) {
+          // The ustar format doesn't support large UIDs. We don't care about
+          // preserving ownership anyway, so we just set them to "pub".
+          args.addAll(["--owner=pub", "--group=pub"]);
+        }
       } else {
         // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
         // 2.8.3). We use this to set the uname and gname, since it doesn't have

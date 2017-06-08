@@ -1,0 +1,8 @@
+presets:
+  travis:
+    # Travis is sloooow.
+    timeout: 3x
+
+    # Pub has a huge number of small suites, which means test is frequently
+    # loading new ones. Keeping concurrency low helps limit load timeouts.
+    concurrency: 4
