@@ -5,7 +5,7 @@ dart:
   - dev
 
 dart_task:
-  - test
+  - test: --preset travis
   - dartfmt
   - dartanalyzer
 
