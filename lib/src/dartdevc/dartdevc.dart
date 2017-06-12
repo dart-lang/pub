@@ -37,7 +37,8 @@ var _currentDirectory = (function () {
       match = lines[1].match(/^\s+at.+\((.+):\d+:\d+\)$/);
       if (match) return match[1];
       // Firefox.
-      return lines[0].match(/[<][@](.+):\d+:\d+$/)[1];
+      match = lines[0].match(/[<][@](.+):\d+:\d+$/)
+      if (match) return match[1];
     }
     // Safari.
     return lines[0].match(/(.+):\d+:\d+$/)[1];
@@ -301,9 +302,6 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     var request = new WorkRequest();
     request.arguments.addAll([
       '--dart-sdk-summary=$sdk_summary',
-      // TODO(jakemac53): Remove when no longer needed,
-      // https://github.com/dart-lang/pub/issues/1583.
-      '--unsafe-angular2-whitelist',
       '--modules=amd',
       '--dart-sdk=${sdkDir.path}',
       '--module-root=${scratchSpace.tempDir.path}',
