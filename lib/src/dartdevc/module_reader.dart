@@ -121,7 +121,7 @@ class ModuleReader {
         _modulesByModuleId[module.id] = module;
         for (var id in module.assetIds) {
           if (_modulesByAssetId.containsKey(id)) {
-            throw new StateError('Assets can only exist in one module, but $id'
+            throw new StateError('Assets can only exist in one module, but $id '
                 'was found in both ${_modulesByAssetId[id].id} and '
                 '${module.id}');
           }
@@ -130,5 +130,20 @@ class ModuleReader {
       }
       return modules;
     });
+  }
+
+  /// Invalidates all [Module]s for [package].
+  void invalidatePackage(String package) {
+    // `map` must be of type <AssetId|ModuleId, dynamic>
+    removePackage(String package, Map map) {
+      var idsToRemove = map.keys.where((id) => id.package == package).toList();
+      for (var id in idsToRemove) {
+        map.remove(id);
+      }
+    }
+
+    removePackage(package, _moduleConfigFutures);
+    removePackage(package, _modulesByModuleId);
+    removePackage(package, _modulesByAssetId);
   }
 }

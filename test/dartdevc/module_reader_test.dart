@@ -46,6 +46,18 @@ void main() {
         var deps = await moduleReader.readTransitiveDeps(modules.first);
         expect(deps, isEmpty);
       });
+
+      test('invalidatePackage', () async {
+        var originalModules =
+            await moduleReader.readModules(originalModuleConfig);
+        moduleReader.invalidatePackage(originalModuleConfig.package);
+        var newModule = makeModule(package: originalModuleConfig.package);
+        var newModuleConfig = configManager.addConfig([newModule]);
+        expect(newModuleConfig, equals(originalModuleConfig));
+        var newModules = await moduleReader.readModules(originalModuleConfig);
+        expect(originalModules.map((m) => m.id),
+            isNot(unorderedEquals(newModules.map((m) => m.id))));
+      });
     });
 
     group('multiple configs with transitive deps', () {
@@ -156,6 +168,26 @@ void main() {
               packageBModuleB.id,
               packageCLibModule.id,
             ]));
+      });
+
+      test('invalidatePackage', () async {
+        var modules = await moduleReader.readModules(packageAModuleConfig);
+        expect(
+            modules
+                .firstWhere((m) => m.id == packageAModuleC.id)
+                .directDependencies,
+            isNot(contains(packageAModuleB.assetIds.first)));
+
+        packageAModuleC.directDependencies.add(packageAModuleB.assetIds.first);
+        packageAModuleConfig = configManager.addConfig(packageAModules);
+        moduleReader.invalidatePackage(packageAModuleC.id.package);
+
+        modules = await moduleReader.readModules(packageAModuleConfig);
+        expect(
+            modules
+                .firstWhere((m) => m.id == packageAModuleC.id)
+                .directDependencies,
+            contains(packageAModuleB.assetIds.first));
       });
     });
   });
