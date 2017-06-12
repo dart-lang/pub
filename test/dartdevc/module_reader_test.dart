@@ -55,8 +55,8 @@ void main() {
         var newModuleConfig = configManager.addConfig([newModule]);
         expect(newModuleConfig, equals(originalModuleConfig));
         var newModules = await moduleReader.readModules(originalModuleConfig);
-        expect(originalModules.map((m) => m.id),
-            isNot(unorderedEquals(newModules.map((m) => m.id))));
+        expect(originalModules.map((module) => module.id),
+            isNot(unorderedEquals(newModules.map((module) => module.id))));
       });
     });
 
@@ -174,7 +174,7 @@ void main() {
         var modules = await moduleReader.readModules(packageAModuleConfig);
         expect(
             modules
-                .firstWhere((m) => m.id == packageAModuleC.id)
+                .firstWhere((module) => module.id == packageAModuleC.id)
                 .directDependencies,
             isNot(contains(packageAModuleB.assetIds.first)));
 
@@ -185,7 +185,7 @@ void main() {
         modules = await moduleReader.readModules(packageAModuleConfig);
         expect(
             modules
-                .firstWhere((m) => m.id == packageAModuleC.id)
+                .firstWhere((module) => module.id == packageAModuleC.id)
                 .directDependencies,
             contains(packageAModuleB.assetIds.first));
       });

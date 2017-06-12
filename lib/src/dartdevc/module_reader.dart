@@ -135,15 +135,15 @@ class ModuleReader {
   /// Invalidates all [Module]s for [package].
   void invalidatePackage(String package) {
     // `map` must be of type <AssetId|ModuleId, dynamic>
-    removePackage(String package, Map map) {
+    removePackage(Map map) {
       var idsToRemove = map.keys.where((id) => id.package == package).toList();
       for (var id in idsToRemove) {
         map.remove(id);
       }
     }
 
-    removePackage(package, _moduleConfigFutures);
-    removePackage(package, _modulesByModuleId);
-    removePackage(package, _modulesByAssetId);
+    removePackage(_moduleConfigFutures);
+    removePackage(_modulesByModuleId);
+    removePackage(_modulesByAssetId);
   }
 }
