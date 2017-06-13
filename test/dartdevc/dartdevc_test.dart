@@ -142,38 +142,50 @@ void main() {
     });
   });
 
-  test("dartdevc resources are copied next to entrypoints", () async {
-    await d.dir(appPath, [
-      d.appPubspec(),
-      d.dir("lib", [
-        d.file("main.dart", 'void main() {}'),
-      ]),
-      d.dir("web", [
-        d.file("main.dart", 'void main() {}'),
-        d.dir("subdir", [
+  group('basic app', () {
+    setUp(() async {
+      await d.dir(appPath, [
+        d.appPubspec(),
+        d.dir("lib", [
           d.file("main.dart", 'void main() {}'),
         ]),
-      ]),
-    ]).create();
+        d.dir("web", [
+          d.file("main.dart", 'void main() {}'),
+          d.dir("subdir", [
+            d.file("main.dart", 'void main() {}'),
+          ]),
+        ]),
+      ]).create();
 
-    await pubGet();
-    await pubServe(args: ['--web-compiler', 'dartdevc']);
-    await requestShouldSucceed('dart_sdk.js', null);
-    await requestShouldSucceed('require.js', null);
-    await requestShouldSucceed('dart_stack_trace_mapper.js', null);
-    await requestShouldSucceed('ddc_web_compiler.js', null);
-    await requestShould404('dart_sdk.js.map');
-    await requestShould404('require.js.map');
-    await requestShould404('dart_stack_trace_mapper.js.map');
-    await requestShould404('ddc_web_compiler.js.map');
-    await requestShouldSucceed('subdir/dart_sdk.js', null);
-    await requestShouldSucceed('subdir/require.js', null);
-    await requestShouldSucceed('subdir/dart_stack_trace_mapper.js', null);
-    await requestShouldSucceed('subdir/ddc_web_compiler.js', null);
-    await requestShould404('subdir/dart_sdk.js.map');
-    await requestShould404('subdir/require.js.map');
-    await requestShould404('subdir/dart_stack_trace_mapper.js.map');
-    await requestShould404('subdir/ddc_web_compiler.js.map');
-    await endPubServe();
+      await pubGet();
+      await pubServe(args: ['--web-compiler', 'dartdevc']);
+    });
+
+    test("dartdevc resources are copied next to entrypoints", () async {
+      await requestShouldSucceed('dart_sdk.js', null);
+      await requestShouldSucceed('require.js', null);
+      await requestShouldSucceed('dart_stack_trace_mapper.js', null);
+      await requestShouldSucceed('ddc_web_compiler.js', null);
+      await requestShould404('dart_sdk.js.map');
+      await requestShould404('require.js.map');
+      await requestShould404('dart_stack_trace_mapper.js.map');
+      await requestShould404('ddc_web_compiler.js.map');
+      await requestShouldSucceed('subdir/dart_sdk.js', null);
+      await requestShouldSucceed('subdir/require.js', null);
+      await requestShouldSucceed('subdir/dart_stack_trace_mapper.js', null);
+      await requestShouldSucceed('subdir/ddc_web_compiler.js', null);
+      await requestShould404('subdir/dart_sdk.js.map');
+      await requestShould404('subdir/require.js.map');
+      await requestShould404('subdir/dart_stack_trace_mapper.js.map');
+      await requestShould404('subdir/ddc_web_compiler.js.map');
+      await endPubServe();
+    });
+
+    // Regression test for https://github.com/dart-lang/pub/issues/1638.
+    test("can request the bootstrap.js file before the dart.js file", () async {
+      await requestShouldSucceed('subdir/main.dart.bootstrap.js', null);
+      await requestShouldSucceed('subdir/main.dart.js', null);
+      await endPubServe();
+    });
   });
 }
