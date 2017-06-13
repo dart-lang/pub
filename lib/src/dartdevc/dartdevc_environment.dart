@@ -265,8 +265,8 @@ AssetId _entrypointDartId(AssetId id) {
 
   // Remove the `.js` extension.
   var dartId = id.changeExtension('');
-  // Conditionally change the `.bootstrap` extension to a `.dart` extension.
-  if (dartId.extension == '.bootstrap') dartId.changeExtension('.dart');
+  // Conditionally remove the `.bootstrap` extension.
+  if (dartId.extension == '.bootstrap') dartId = dartId.changeExtension('');
   assert(dartId.extension == '.dart');
   return dartId;
 }
