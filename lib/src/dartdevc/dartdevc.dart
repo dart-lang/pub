@@ -185,14 +185,16 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
 (function() {
   var oldOnError = requirejs.onError;
   requirejs.onError = function(e) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        console.error(this.responseText);
-      }
-    };
-    xhr.open("GET", e.originalError.srcElement.src + ".errors", true);
-    xhr.send();
+    if (e.originalError && e.originalError.srcElement) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          console.error(this.responseText);
+        }
+      };
+      xhr.open("GET", e.originalError.srcElement.src + ".errors", true);
+      xhr.send();
+    }
     // Also handle errors the normal way.
     if (oldOnError) oldOnError(e);
   };
