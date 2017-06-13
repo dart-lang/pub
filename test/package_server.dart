@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
@@ -184,10 +185,15 @@ class PackageServerBuilder {
       // while testing.
       pubspec.remove('environment');
 
-      _packages[name].add(new _ServedPackage(pubspec, [
+      var packageDirs = [
         d.file('pubspec.yaml', yaml(pubspec)),
         new d.DirectoryDescriptor.fromFilesystem('lib', p.join(root, 'lib'))
-      ]));
+      ];
+      if (new Directory(p.join(root, 'bin')).existsSync()) {
+        packageDirs.add(new d.DirectoryDescriptor.fromFilesystem(
+            'bin', p.join(root, 'bin')));
+      }
+      _packages[name].add(new _ServedPackage(pubspec, packageDirs));
 
       if (pubspec.containsKey('dependencies')) {
         pubspec['dependencies'].keys.forEach(_addPackage);
