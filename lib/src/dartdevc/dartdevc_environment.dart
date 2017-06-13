@@ -132,6 +132,7 @@ class DartDevcEnvironment {
   /// Invalidates [package] and all packages that depend on [package].
   void invalidatePackage(String package) {
     _assetCache.invalidatePackage(package);
+    _moduleReader.invalidatePackage(package);
     _scratchSpace.deletePackageFiles(package,
         isRootPackage: package == _packageGraph.entrypoint.root.name);
   }
