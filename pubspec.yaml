@@ -7,7 +7,7 @@ dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
   analyzer: ">=0.25.0 <0.31.0"
-  args: "^0.13.5"
+  args: ">=0.13.5 <2.0.0"
   async: "^1.12.0"
   barback: "^0.15.2"
   bazel_worker: "^0.1.4"
