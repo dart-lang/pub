@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
-import 'package.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
 
@@ -32,7 +32,7 @@ import 'system_cache.dart';
 /// All [Source]s should extend this class and all [BoundSource]s should extend
 /// [BoundSource]. In addition to defining the behavior of various methods,
 /// sources define the structure of package descriptions used in [PackageRef]s,
-/// [PackageDep]s, and [PackageId]s. There are three distinct types of
+/// [PackageRange]s, and [PackageId]s. There are three distinct types of
 /// description, although in practice most sources use the same format for one
 /// or more of these:
 ///
@@ -41,7 +41,7 @@ import 'system_cache.dart';
 ///   optimize for ease of authoring.
 ///
 /// * Reference descriptions. These are the descriptions in [PackageRef]s and
-///   [PackageDep]. They're parsed directly from user descriptions using
+///   [PackageRange]. They're parsed directly from user descriptions using
 ///   [parseRef], and so add no additional information.
 ///
 /// * ID descriptions. These are the descriptions in [PackageId]s, which

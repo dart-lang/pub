@@ -20,6 +20,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_name.dart';
 import 'package_graph.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
@@ -616,7 +617,7 @@ class Entrypoint {
   }
 
   /// Returns whether the locked version of [dep] matches the dependency.
-  bool _isDependencyUpToDate(PackageDep dep) {
+  bool _isDependencyUpToDate(PackageRange dep) {
     if (dep.name == root.name) return true;
 
     var locked = lockFile.packages[dep.name];

@@ -10,6 +10,7 @@ import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_name.dart';
 import 'source.dart';
 import 'source/cached.dart';
 import 'source/git.dart';

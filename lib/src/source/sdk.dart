@@ -9,7 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../exceptions.dart';
 import '../flutter.dart' as flutter;
 import '../io.dart';
-import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';

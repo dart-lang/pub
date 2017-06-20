@@ -20,6 +20,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
@@ -156,7 +157,7 @@ class GlobalPackages {
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
-  Future _installInCache(PackageDep dep, List<String> executables,
+  Future _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = new Package.inMemory(new Pubspec("pub global activate",

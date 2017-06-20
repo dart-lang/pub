@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:collection' show Queue;
 
-import '../package.dart';
+import '../package_name.dart';
 
 /// A function that asynchronously returns a sequence of package IDs.
 typedef Future<Iterable<PackageId>> PackageIdGenerator();

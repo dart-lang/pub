@@ -11,8 +11,8 @@ import 'package:pub_semver/pub_semver.dart';
 import 'barback/transformer_id.dart';
 import 'git.dart' as git;
 import 'io.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
-import 'source.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
@@ -49,19 +49,19 @@ class Package {
   final Pubspec pubspec;
 
   /// The immediate dependencies this package specifies in its pubspec.
-  List<PackageDep> get dependencies => pubspec.dependencies;
+  List<PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
-  List<PackageDep> get devDependencies => pubspec.devDependencies;
+  List<PackageRange> get devDependencies => pubspec.devDependencies;
 
   /// The dependency overrides this package specifies in its pubspec.
-  List<PackageDep> get dependencyOverrides => pubspec.dependencyOverrides;
+  List<PackageRange> get dependencyOverrides => pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
-  List<PackageDep> get immediateDependencies {
-    var deps = <String, PackageDep>{};
+  List<PackageRange> get immediateDependencies {
+    var deps = <String, PackageRange>{};
 
     addToMap(dep) {
       deps[dep.name] = dep;
@@ -326,179 +326,6 @@ class Package {
 
   /// Returns a debug string for the package.
   String toString() => '$name $version ($dir)';
-}
-
-/// The base class of [PackageRef], [PackageId], and [PackageDep].
-abstract class PackageName {
-  /// The name of the package being identified.
-  final String name;
-
-  /// The [Source] used to look up this package.
-  ///
-  /// If this is a root package, this will be `null`.
-  final Source source;
-
-  /// The metadata used by the package's [source] to identify and locate it.
-  ///
-  /// It contains whatever [Source]-specific data it needs to be able to get
-  /// the package. For example, the description of a git sourced package might
-  /// by the URL "git://github.com/dart/uilib.git".
-  final description;
-
-  /// Whether this is a name for a magic package.
-  ///
-  /// Magic packages are unversioned pub constructs that have special semantics.
-  /// For example, a magic package named "pub itself" is inserted into the
-  /// dependency graph when any package depends on barback. This packages has
-  /// dependencies that represent the versions of barback and related packages
-  /// that pub is compatible with.
-  final bool isMagic;
-
-  /// Whether this package is the root package.
-  bool get isRoot => source == null && !isMagic;
-
-  PackageName._(this.name, this.source, this.description) : isMagic = false;
-
-  PackageName._magic(this.name)
-      : source = null,
-        description = null,
-        isMagic = true;
-
-  String toString() {
-    if (isRoot) return "$name (root)";
-    if (isMagic) return name;
-    return "$name from $source";
-  }
-
-  /// Returns a [PackageRef] with this one's [name], [source], and
-  /// [description].
-  PackageRef toRef() => isMagic
-      ? new PackageRef.magic(name)
-      : new PackageRef(name, source, description);
-
-  /// Returns a [PackageDep] for this package with the given version constraint.
-  PackageDep withConstraint(VersionConstraint constraint) =>
-      new PackageDep(name, source, constraint, description);
-
-  /// Returns whether this refers to the same package as [other].
-  ///
-  /// This doesn't compare any constraint information; it's equivalent to
-  /// `this.toRef() == other.toRef()`.
-  bool samePackage(PackageName other) {
-    if (other.name != name) return false;
-    if (source == null) return other.source == null;
-
-    return other.source == source &&
-        source.descriptionsEqual(description, other.description);
-  }
-
-  int get hashCode {
-    if (source == null) return name.hashCode;
-    return name.hashCode ^
-        source.hashCode ^
-        source.hashDescription(description);
-  }
-}
-
-/// A reference to a [Package], but not any particular version(s) of it.
-class PackageRef extends PackageName {
-  /// Creates a reference to a package with the given [name], [source], and
-  /// [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses. A reference
-  /// can be obtained from a user-supplied description using [Source.parseRef].
-  PackageRef(String name, Source source, description)
-      : super._(name, source, description);
-
-  /// Creates a reference to a magic package (see [isMagic]).
-  PackageRef.magic(String name) : super._magic(name);
-
-  bool operator ==(other) => other is PackageRef && samePackage(other);
-}
-
-/// A reference to a specific version of a package.
-///
-/// A package ID contains enough information to correctly get the package.
-///
-/// It's possible for multiple distinct package IDs to point to different
-/// packages that have identical contents. For example, the same package may be
-/// available from multiple sources. As far as Pub is concerned, those packages
-/// are different.
-///
-/// Note that a package ID's [description] field has a different structure than
-/// the [PackageRef.description] or [PackageDep.description] fields for some
-/// sources. For example, the `git` source adds revision information to the
-/// description to ensure that the same ID always points to the same source.
-class PackageId extends PackageName {
-  /// The package's version.
-  final Version version;
-
-  /// Creates an ID for a package with the given [name], [source], [version],
-  /// and [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses.
-  PackageId(String name, Source source, this.version, description)
-      : super._(name, source, description);
-
-  /// Creates an ID for a magic package (see [isMagic]).
-  PackageId.magic(String name)
-      : version = Version.none,
-        super._magic(name);
-
-  /// Creates an ID for the given root package.
-  PackageId.root(Package package)
-      : version = package.version,
-        super._(package.name, null, package.name);
-
-  int get hashCode => super.hashCode ^ version.hashCode;
-
-  bool operator ==(other) =>
-      other is PackageId && samePackage(other) && other.version == version;
-
-  String toString() {
-    if (isRoot) return "$name $version (root)";
-    if (isMagic) return name;
-    return "$name $version from $source";
-  }
-}
-
-/// A reference to a constrained range of versions of one package.
-class PackageDep extends PackageName {
-  /// The allowed package versions.
-  final VersionConstraint constraint;
-
-  /// Creates a reference to package with the given [name], [source],
-  /// [constraint], and [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses.
-  PackageDep(String name, Source source, this.constraint, description)
-      : super._(name, source, description);
-
-  PackageDep.magic(String name)
-      : constraint = Version.none,
-        super._magic(name);
-
-  String toString() {
-    if (isRoot) return "$name $constraint (root)";
-    if (isMagic) return name;
-    return "$name $constraint from $source ($description)";
-  }
-
-  /// Whether [id] satisfies this dependency.
-  ///
-  /// Specifically, whether [id] refers to the same package as [this] *and*
-  /// [constraint] allows `id.version`.
-  bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
-
-  int get hashCode => super.hashCode ^ constraint.hashCode;
-
-  bool operator ==(other) =>
-      other is PackageDep &&
-      samePackage(other) &&
-      other.constraint == constraint;
 }
 
 /// The type of dependency from one package to another.

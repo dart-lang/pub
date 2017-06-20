@@ -44,6 +44,7 @@ import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart' as sdk;
 import '../source/unknown.dart';
@@ -80,7 +81,7 @@ class BacktrackingSolver {
   ///
   /// Any dependency on a package that appears in this map will be overriden
   /// to use the one here.
-  final _overrides = new Map<String, PackageDep>();
+  final _overrides = new Map<String, PackageRange>();
 
   /// The package versions currently selected by the solver, along with the
   /// versions which are remaining to be tried.
@@ -141,7 +142,7 @@ class BacktrackingSolver {
 
   /// Creates [_implicitPubspec].
   static Pubspec _makeImplicitPubspec(SystemCache systemCache) {
-    var dependencies = <PackageDep>[];
+    var dependencies = <PackageRange>[];
     barback.pubConstraints.forEach((name, constraint) {
       dependencies.add(
           systemCache.sources.hosted.refFor(name).withConstraint(constraint));
@@ -563,7 +564,7 @@ class BacktrackingSolver {
   /// Returns the dependencies of the package identified by [id].
   ///
   /// This takes overrides and dev dependencies into account when neccessary.
-  Future<Set<PackageDep>> depsFor(PackageId id) async {
+  Future<Set<PackageRange>> depsFor(PackageId id) async {
     var pubspec = await _getPubspec(id);
     var deps = pubspec.dependencies.toSet();
     if (id.isRoot) {
@@ -601,7 +602,7 @@ class BacktrackingSolver {
       }
 
       if (dep.name == 'barback') {
-        deps.add(new PackageDep.magic('pub itself'));
+        deps.add(new PackageRange.magic('pub itself'));
       }
     }
 
