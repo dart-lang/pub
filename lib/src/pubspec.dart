@@ -112,37 +112,37 @@ class Pubspec {
   Version _version;
 
   /// The additional packages this package depends on.
-  List<PackageDep> get dependencies {
+  List<PackageRange> get dependencies {
     if (_dependencies != null) return _dependencies;
     _dependencies = _parseDependencies('dependencies');
     _checkDependencyOverlap(_dependencies, _devDependencies);
     return _dependencies;
   }
 
-  List<PackageDep> _dependencies;
+  List<PackageRange> _dependencies;
 
   /// The packages this package depends on when it is the root package.
-  List<PackageDep> get devDependencies {
+  List<PackageRange> get devDependencies {
     if (_devDependencies != null) return _devDependencies;
     _devDependencies = _parseDependencies('dev_dependencies');
     _checkDependencyOverlap(_dependencies, _devDependencies);
     return _devDependencies;
   }
 
-  List<PackageDep> _devDependencies;
+  List<PackageRange> _devDependencies;
 
   /// The dependency constraints that this package overrides when it is the
   /// root package.
   ///
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
-  List<PackageDep> get dependencyOverrides {
+  List<PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides;
     _dependencyOverrides = _parseDependencies('dependency_overrides');
     return _dependencyOverrides;
   }
 
-  List<PackageDep> _dependencyOverrides;
+  List<PackageRange> _dependencyOverrides;
 
   /// The configurations of the transformers to use for this package.
   List<Set<TransformerConfig>> get transformers {
@@ -430,9 +430,9 @@ class Pubspec {
 
   Pubspec(this._name,
       {Version version,
-      Iterable<PackageDep> dependencies,
-      Iterable<PackageDep> devDependencies,
-      Iterable<PackageDep> dependencyOverrides,
+      Iterable<PackageRange> dependencies,
+      Iterable<PackageRange> devDependencies,
+      Iterable<PackageRange> dependencyOverrides,
       VersionConstraint dartSdkConstraint,
       VersionConstraint flutterSdkConstraint,
       Iterable<Iterable<TransformerConfig>> transformers,
@@ -456,8 +456,8 @@ class Pubspec {
       : _sources = null,
         _name = null,
         _version = Version.none,
-        _dependencies = <PackageDep>[],
-        _devDependencies = <PackageDep>[],
+        _dependencies = <PackageRange>[],
+        _devDependencies = <PackageRange>[],
         _dartSdkConstraint = VersionConstraint.any,
         _flutterSdkConstraint = null,
         _transformers = <Set<TransformerConfig>>[],
@@ -538,8 +538,8 @@ class Pubspec {
 
   /// Parses the dependency field named [field], and returns the corresponding
   /// list of dependencies.
-  List<PackageDep> _parseDependencies(String field) {
-    var dependencies = <PackageDep>[];
+  List<PackageRange> _parseDependencies(String field) {
+    var dependencies = <PackageRange>[];
 
     var yaml = fields[field];
     // Allow an empty dependencies key.
@@ -633,7 +633,7 @@ class Pubspec {
   /// Makes sure the same package doesn't appear as both a regular and dev
   /// dependency.
   void _checkDependencyOverlap(
-      List<PackageDep> dependencies, List<PackageDep> devDependencies) {
+      List<PackageRange> dependencies, List<PackageRange> devDependencies) {
     if (dependencies == null) return;
     if (devDependencies == null) return;
 
@@ -648,7 +648,7 @@ class Pubspec {
         .firstWhere((key) => collisions.contains(key.value))
         .span;
 
-    // TODO(nweiz): associate source range info with PackageDeps and use it
+    // TODO(nweiz): associate source range info with PackageRanges and use it
     // here.
     _error(
         '${pluralize('Package', collisions.length)} '

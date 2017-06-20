@@ -49,19 +49,19 @@ class Package {
   final Pubspec pubspec;
 
   /// The immediate dependencies this package specifies in its pubspec.
-  List<PackageDep> get dependencies => pubspec.dependencies;
+  List<PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
-  List<PackageDep> get devDependencies => pubspec.devDependencies;
+  List<PackageRange> get devDependencies => pubspec.devDependencies;
 
   /// The dependency overrides this package specifies in its pubspec.
-  List<PackageDep> get dependencyOverrides => pubspec.dependencyOverrides;
+  List<PackageRange> get dependencyOverrides => pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
-  List<PackageDep> get immediateDependencies {
-    var deps = <String, PackageDep>{};
+  List<PackageRange> get immediateDependencies {
+    var deps = <String, PackageRange>{};
 
     addToMap(dep) {
       deps[dep.name] = dep;

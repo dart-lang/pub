@@ -38,7 +38,7 @@ class DependencyValidator extends Validator {
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    var caretDeps = <PackageDep>[];
+    var caretDeps = <PackageRange>[];
 
     for (var dependency in entrypoint.root.pubspec.dependencies) {
       var constraint = dependency.constraint;
@@ -69,7 +69,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn about improper dependencies on Flutter.
-  void _warnAboutFlutterSdk(PackageDep dep) {
+  void _warnAboutFlutterSdk(PackageRange dep) {
     if (dep.source is SdkSource) return;
 
     errors.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
@@ -83,7 +83,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn that dependencies should use the hosted source.
-  Future _warnAboutSource(PackageDep dep) async {
+  Future _warnAboutSource(PackageRange dep) async {
     List<Version> versions;
     try {
       var ids = await entrypoint.cache.hosted
@@ -118,7 +118,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn that dependencies should have version constraints.
-  void _warnAboutNoConstraint(PackageDep dep) {
+  void _warnAboutNoConstraint(PackageRange dep) {
     var message = 'Your dependency on "${dep.name}" should have a version '
         'constraint.';
     var locked = entrypoint.lockFile.packages[dep.name];
@@ -134,7 +134,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn that dependencies should allow more than a single version.
-  void _warnAboutSingleVersionConstraint(PackageDep dep) {
+  void _warnAboutSingleVersionConstraint(PackageRange dep) {
     warnings.add(
         'Your dependency on "${dep.name}" should allow more than one version. '
         'For example:\n'
@@ -148,7 +148,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn that dependencies should have lower bounds on their constraints.
-  void _warnAboutNoConstraintLowerBound(PackageDep dep) {
+  void _warnAboutNoConstraintLowerBound(PackageRange dep) {
     var message = 'Your dependency on "${dep.name}" should have a lower bound.';
     var locked = entrypoint.lockFile.packages[dep.name];
     if (locked != null) {
@@ -170,7 +170,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Warn that dependencies should have upper bounds on their constraints.
-  void _warnAboutNoConstraintUpperBound(PackageDep dep) {
+  void _warnAboutNoConstraintUpperBound(PackageRange dep) {
     var constraint;
     if ((dep.constraint as VersionRange).includeMin) {
       constraint = _constraintForVersion((dep.constraint as VersionRange).min);
@@ -192,7 +192,7 @@ class DependencyValidator extends Validator {
 
   /// Emits an error for any version constraints that use `^` without an
   /// appropriate SDK constraint.
-  void _errorAboutCaretConstraints(List<PackageDep> caretDeps) {
+  void _errorAboutCaretConstraints(List<PackageRange> caretDeps) {
     var newSdkConstraint = entrypoint.root.pubspec.dartSdkConstraint
         .intersect(_postCaretPubVersions);
 

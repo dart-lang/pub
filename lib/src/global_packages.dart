@@ -157,7 +157,7 @@ class GlobalPackages {
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
-  Future _installInCache(PackageDep dep, List<String> executables,
+  Future _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = new Package.inMemory(new Pubspec("pub global activate",

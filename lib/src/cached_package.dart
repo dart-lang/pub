@@ -81,9 +81,9 @@ class _CachedPubspec implements Pubspec {
   YamlMap get fields => _inner.fields;
   String get name => _inner.name;
   Version get version => _inner.version;
-  List<PackageDep> get dependencies => _inner.dependencies;
-  List<PackageDep> get devDependencies => _inner.devDependencies;
-  List<PackageDep> get dependencyOverrides => _inner.dependencyOverrides;
+  List<PackageRange> get dependencies => _inner.dependencies;
+  List<PackageRange> get devDependencies => _inner.devDependencies;
+  List<PackageRange> get dependencyOverrides => _inner.dependencyOverrides;
   VersionConstraint get dartSdkConstraint => _inner.dartSdkConstraint;
   VersionConstraint get flutterSdkConstraint => _inner.flutterSdkConstraint;
   String get publishTo => _inner.publishTo;

@@ -7,7 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package.dart';
 import 'source.dart';
 
-/// The base class of [PackageRef], [PackageId], and [PackageDep].
+/// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
   /// The name of the package being identified.
   final String name;
@@ -55,9 +55,9 @@ abstract class PackageName {
       ? new PackageRef.magic(name)
       : new PackageRef(name, source, description);
 
-  /// Returns a [PackageDep] for this package with the given version constraint.
-  PackageDep withConstraint(VersionConstraint constraint) =>
-      new PackageDep(name, source, constraint, description);
+  /// Returns a [PackageRange] for this package with the given version constraint.
+  PackageRange withConstraint(VersionConstraint constraint) =>
+      new PackageRange(name, source, constraint, description);
 
   /// Returns whether this refers to the same package as [other].
   ///
@@ -106,7 +106,7 @@ class PackageRef extends PackageName {
 /// are different.
 ///
 /// Note that a package ID's [description] field has a different structure than
-/// the [PackageRef.description] or [PackageDep.description] fields for some
+/// the [PackageRef.description] or [PackageRange.description] fields for some
 /// sources. For example, the `git` source adds revision information to the
 /// description to ensure that the same ID always points to the same source.
 class PackageId extends PackageName {
@@ -144,7 +144,7 @@ class PackageId extends PackageName {
 }
 
 /// A reference to a constrained range of versions of one package.
-class PackageDep extends PackageName {
+class PackageRange extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
@@ -153,10 +153,10 @@ class PackageDep extends PackageName {
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageDep(String name, Source source, this.constraint, description)
+  PackageRange(String name, Source source, this.constraint, description)
       : super._(name, source, description);
 
-  PackageDep.magic(String name)
+  PackageRange.magic(String name)
       : constraint = Version.none,
         super._magic(name);
 
@@ -175,7 +175,7 @@ class PackageDep extends PackageName {
   int get hashCode => super.hashCode ^ constraint.hashCode;
 
   bool operator ==(other) =>
-      other is PackageDep &&
+      other is PackageRange &&
       samePackage(other) &&
       other.constraint == constraint;
 }

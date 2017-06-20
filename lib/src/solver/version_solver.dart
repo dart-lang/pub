@@ -53,7 +53,7 @@ class SolveResult {
   final List<PackageId> packages;
 
   /// The dependency overrides that were used in the solution.
-  final List<PackageDep> overrides;
+  final List<PackageRange> overrides;
 
   /// A map from package names to the pubspecs for the versions of those
   /// packages that were installed, or `null` if the solver failed.
@@ -276,7 +276,7 @@ class Dependency {
   final PackageId depender;
 
   /// The package being depended on.
-  final PackageDep dep;
+  final PackageRange dep;
 
   Dependency(this.depender, this.dep);
 
@@ -350,7 +350,7 @@ abstract class SolveFailure implements ApplicationException {
   /// Describes a dependency's reference in the output message.
   ///
   /// Override this to highlight which aspect of [dep] led to the failure.
-  String _describeDependency(PackageDep dep) =>
+  String _describeDependency(PackageRange dep) =>
       "depends on version ${dep.constraint}";
 }
 
@@ -425,7 +425,7 @@ class SourceMismatchException extends SolveFailure {
   SourceMismatchException(String package, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
-  String _describeDependency(PackageDep dep) =>
+  String _describeDependency(PackageRange dep) =>
       "depends on it from source ${dep.source}";
 }
 
@@ -450,7 +450,7 @@ class DescriptionMismatchException extends SolveFailure {
       String package, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
-  String _describeDependency(PackageDep dep) {
+  String _describeDependency(PackageRange dep) {
     // TODO(nweiz): Dump descriptions to YAML when that's supported.
     return "depends on it with description ${JSON.encode(dep.description)}";
   }
@@ -471,5 +471,5 @@ class DependencyNotFoundException extends SolveFailure {
   /// The failure isn't because of the version of description of the package,
   /// it's the package itself that can't be found, so just show the name and no
   /// descriptive details.
-  String _describeDependency(PackageDep dep) => "";
+  String _describeDependency(PackageRange dep) => "";
 }
