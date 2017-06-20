@@ -20,6 +20,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_name.dart';
 import 'package_graph.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';

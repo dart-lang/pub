@@ -11,7 +11,7 @@ import 'barback/transformer_config.dart';
 import 'compiler.dart';
 import 'exceptions.dart';
 import 'io.dart';
-import 'package.dart';
+import 'package_name.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 

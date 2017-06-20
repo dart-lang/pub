@@ -44,6 +44,7 @@ import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart' as sdk;
 import '../source/unknown.dart';

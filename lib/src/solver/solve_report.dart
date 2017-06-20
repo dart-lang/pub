@@ -7,6 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../source_registry.dart';
 import '../utils.dart';
 import 'version_solver.dart';

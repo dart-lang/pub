@@ -13,6 +13,7 @@ import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
 import '../system_cache.dart';

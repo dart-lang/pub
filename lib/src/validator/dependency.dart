@@ -9,7 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
-import '../package.dart';
+import '../package_name.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart';

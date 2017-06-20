@@ -10,6 +10,7 @@ import 'barback/transformer_config.dart';
 import 'compiler.dart';
 import 'io.dart';
 import 'package.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 
 /// A [Package] whose `lib` directory has been precompiled and cached.

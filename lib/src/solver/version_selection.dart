@@ -7,7 +7,7 @@ import 'dart:collection';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../package.dart';
+import '../package_name.dart';
 import 'backtracking_solver.dart';
 import 'unselected_package_queue.dart';
 import 'version_solver.dart';

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/package.dart';
+import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';

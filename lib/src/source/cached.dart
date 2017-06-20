@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../utils.dart';

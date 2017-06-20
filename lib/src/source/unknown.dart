@@ -6,7 +6,7 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';

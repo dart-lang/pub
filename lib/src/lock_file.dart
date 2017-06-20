@@ -11,7 +11,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
-import 'package.dart';
+import 'package_name.dart';
 import 'source_registry.dart';
 import 'system_cache.dart';
 import 'utils.dart';
