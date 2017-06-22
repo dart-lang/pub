@@ -171,7 +171,7 @@ class BacktrackingSolver {
       var rootID = new PackageId.root(root);
       await _selection.select(rootID);
 
-      _validateSdkConstraint(root.pubspec);
+      _checkPubspecMatchesSdkConstraint(root.pubspec);
 
       logSolve();
       var packages = await _solve();
@@ -454,6 +454,31 @@ class BacktrackingSolver {
   ///
   /// If it's not, throws a [SolveFailure] explaining why.
   Future _checkVersion(PackageId id) async {
+    _checkVersionMatchesConstraint(id);
+
+    var pubspec;
+    try {
+      pubspec = await _getPubspec(id);
+    } on PubspecException catch (error) {
+      // The lockfile for the pubspec couldn't be parsed,
+      log.fine("Failed to parse pubspec for $id:\n$error");
+      throw new NoVersionException(id.name, null, id.version, []);
+    } on PackageNotFoundException {
+      // We can only get here if the lockfile refers to a specific package
+      // version that doesn't exist (probably because it was yanked).
+      throw new NoVersionException(id.name, null, id.version, []);
+    }
+
+    _checkPubspecMatchesSdkConstraint(pubspec);
+    _checkPubspecMatchesFeatures(pubspec);
+    await _checkDependencies(id, await depsFor(id));
+
+    return true;
+  }
+
+  /// Throws a [SolveFailure] if [id] doesn't match existing version constraints
+  /// on the package.
+  void _checkVersionMatchesConstraint(PackageId id) {
     var constraint = _selection.getConstraint(id.name);
     if (!constraint.allows(id.version)) {
       var deps = _selection.getDependenciesOn(id.name);
@@ -469,86 +494,157 @@ class BacktrackingSolver {
       throw new NoVersionException(
           id.name, id.version, constraint, deps.toList());
     }
+  }
 
-    var pubspec;
-    try {
-      pubspec = await _getPubspec(id);
-    } on PubspecException catch (error) {
-      // The lockfile for the pubspec couldn't be parsed,
-      log.fine("Failed to parse pubspec for $id:\n$error");
-      throw new NoVersionException(id.name, null, id.version, []);
-    } on PackageNotFoundException {
-      // We can only get here if the lockfile refers to a specific package
-      // version that doesn't exist (probably because it was yanked).
-      throw new NoVersionException(id.name, null, id.version, []);
+  /// Throws a [SolveFailure] if [pubspec]'s SDK constraint isn't compatible
+  /// with the current SDK.
+  void _checkPubspecMatchesSdkConstraint(Pubspec pubspec) {
+    if (_overrides.containsKey(pubspec.name)) return;
+
+    if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
+      throw new BadSdkVersionException(
+          pubspec.name,
+          'Package ${pubspec.name} requires SDK version '
+          '${pubspec.dartSdkConstraint} but the current SDK is '
+          '${sdk.version}.');
     }
 
-    _validateSdkConstraint(pubspec);
+    if (pubspec.flutterSdkConstraint != null) {
+      if (!flutter.isAvailable) {
+        throw new BadSdkVersionException(
+            pubspec.name,
+            'Package ${pubspec.name} requires the Flutter SDK, which is not '
+            'available.');
+      }
 
-    for (var dep in await depsFor(id)) {
+      if (!pubspec.flutterSdkConstraint.allows(flutter.version)) {
+        throw new BadSdkVersionException(
+            pubspec.name,
+            'Package ${pubspec.name} requires Flutter SDK version '
+            '${pubspec.flutterSdkConstraint} but the current SDK is '
+            '${flutter.version}.');
+      }
+    }
+  }
+
+  /// Throws a [SolveFailure] if [pubspec] doesn't have features that are
+  /// required for its package.
+  void _checkPubspecMatchesFeatures(Pubspec pubspec) {
+    for (var feature in _selection.featuresForPackage(pubspec.name)) {
+      if (pubspec.features.containsKey(feature)) continue;
+
+      throw new MissingFeatureException(pubspec.name, pubspec.version, feature,
+          _selection.getDependenciesOn(pubspec.name));
+    }
+  }
+
+  /// Throws a [SolveFailure] if [deps] are inconsistent with the existing state
+  /// of the version solver.
+  Future _checkDependencies(
+      PackageId depender, Iterable<PackageRange> deps) async {
+    for (var dep in deps) {
       if (dep.isMagic) continue;
 
-      var dependency = new Dependency(id, dep);
+      var dependency = new Dependency(depender, dep);
       var allDeps = _selection.getDependenciesOn(dep.name).toList();
       allDeps.add(dependency);
 
-      var depConstraint = _selection.getConstraint(dep.name);
-      if (!depConstraint.allowsAny(dep.constraint)) {
-        for (var otherDep in _selection.getDependenciesOn(dep.name)) {
-          if (otherDep.dep.constraint.allowsAny(dep.constraint)) continue;
-          _fail(otherDep.depender.name);
-        }
+      _checkDependencyMatchesMetadata(dependency, allDeps);
+      await _checkDependencyMatchesSelection(dependency, allDeps);
+      _checkDependencyMatchesConstraint(dependency, allDeps);
+    }
+  }
 
-        logSolve('inconsistent constraints on ${dep.name}:\n'
-            '  $dependency\n' +
-            _selection.describeDependencies(dep.name));
-        throw new DisjointConstraintException(dep.name, allDeps);
+  /// Throws a [SolveFailure] if [dep] is inconsistent with existing
+  /// dependencies on the same package.
+  void _checkDependencyMatchesConstraint(
+      Dependency dep, List<Dependency> allDeps) {
+    var depConstraint = _selection.getConstraint(dep.dep.name);
+    if (!depConstraint.allowsAny(dep.dep.constraint)) {
+      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
+        if (otherDep.dep.constraint.allowsAny(dep.dep.constraint)) continue;
+        _fail(otherDep.depender.name);
       }
 
-      var selected = _selection.selected(dep.name);
-      if (selected != null && !dep.constraint.allows(selected.version)) {
-        _fail(dep.name);
+      logSolve('inconsistent constraints on ${dep.dep.name}:\n'
+          '  $dep\n' +
+          _selection.describeDependencies(dep.dep.name));
+      throw new DisjointConstraintException(dep.dep.name, allDeps);
+    }
+  }
 
-        logSolve(
-            "constraint doesn't match selected version ${selected.version} of "
-            "${dep.name}:\n"
-            "  $dependency");
-        throw new NoVersionException(
-            dep.name, selected.version, dep.constraint, allDeps);
+  /// Throws a [SolveFailure] if the source and description of [dep] doesn't
+  /// match the existing dependencies on the same package.
+  void _checkDependencyMatchesMetadata(
+      Dependency dep, List<Dependency> allDeps) {
+    var required = _selection.getRequiredDependency(dep.dep.name);
+    if (required == null) return;
+
+    if (dep.dep.source != required.dep.source) {
+      // Mark the dependers as failing rather than the package itself, because
+      // no version from this source will be compatible.
+      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
+        _fail(otherDep.depender.name);
       }
 
-      var required = _selection.getRequiredDependency(dep.name);
-      if (required == null) continue;
-
-      if (dep.source != required.dep.source) {
-        // Mark the dependers as failing rather than the package itself, because
-        // no version from this source will be compatible.
-        for (var otherDep in _selection.getDependenciesOn(dep.name)) {
-          _fail(otherDep.depender.name);
-        }
-
-        logSolve('inconsistent source "${dep.source}" for ${dep.name}:\n'
-            '  $dependency\n' +
-            _selection.describeDependencies(dep.name));
-        throw new SourceMismatchException(dep.name, allDeps);
-      }
-
-      if (!dep.samePackage(required.dep)) {
-        // Mark the dependers as failing rather than the package itself, because
-        // no version with this description will be compatible.
-        for (var otherDep in _selection.getDependenciesOn(dep.name)) {
-          _fail(otherDep.depender.name);
-        }
-
-        logSolve(
-            'inconsistent description "${dep.description}" for ${dep.name}:\n'
-                '  $dependency\n' +
-                _selection.describeDependencies(dep.name));
-        throw new DescriptionMismatchException(dep.name, allDeps);
-      }
+      logSolve('inconsistent source "${dep.dep.source}" for ${dep.dep.name}:\n'
+          '  $dep\n' +
+          _selection.describeDependencies(dep.dep.name));
+      throw new SourceMismatchException(dep.dep.name, allDeps);
     }
 
-    return true;
+    if (!dep.dep.samePackage(required.dep)) {
+      // Mark the dependers as failing rather than the package itself, because
+      // no version with this description will be compatible.
+      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
+        _fail(otherDep.depender.name);
+      }
+
+      logSolve(
+          'inconsistent description "${dep.dep.description}" for ${dep.dep.name}:\n'
+              '  $dep\n' +
+              _selection.describeDependencies(dep.dep.name));
+      throw new DescriptionMismatchException(dep.dep.name, allDeps);
+    }
+  }
+
+  /// Throws a [SolveFailure] if [dep] doesn't match the version of the package
+  /// that has already been selected.
+  Future _checkDependencyMatchesSelection(
+      Dependency dep, List<Dependency> allDeps) async {
+    var selected = _selection.selected(dep.dep.name);
+    if (selected == null) return;
+
+    if (!dep.dep.constraint.allows(selected.version)) {
+      _fail(dep.dep.name);
+
+      logSolve(
+          "constraint doesn't match selected version ${selected.version} of "
+          "${dep.dep.name}:\n"
+          "  $dep");
+      throw new NoVersionException(
+          dep.dep.name, selected.version, dep.dep.constraint, allDeps);
+    }
+
+    var pubspec = await _getPubspec(selected);
+    for (var feature in dep.dep.features) {
+      var featureDeps = pubspec.features[feature];
+      if (featureDeps == null) {
+        _fail(dep.dep.name);
+
+        logSolve("selected version of ${dep.dep.name} doesn't have feature "
+            "$feature:\n"
+            "  $dep");
+        throw new MissingFeatureException(
+            dep.dep.name, selected.version, feature, allDeps);
+      }
+
+      // Verify that any new features of existing packages selected by [dep] are
+      // satisfiable.
+      if (!_selection.isFeatureEnabled(dep.dep.name, feature)) {
+        await _checkDependencies(selected, featureDeps);
+      }
+    }
   }
 
   /// Marks the package named [name] as having failed.
@@ -563,10 +659,18 @@ class BacktrackingSolver {
 
   /// Returns the dependencies of the package identified by [id].
   ///
-  /// This takes overrides and dev dependencies into account when neccessary.
+  /// This takes overrides, dev dependencies, and features into account when
+  /// neccessary.
   Future<Set<PackageRange>> depsFor(PackageId id) async {
     var pubspec = await _getPubspec(id);
     var deps = pubspec.dependencies.toSet();
+
+    for (var feature in _selection.featuresForPackage(id.name)) {
+      // If we're here, we should already have verified that the pubspec exposes
+      // this feature.
+      deps.addAll(pubspec.features[feature]);
+    }
+
     if (id.isRoot) {
       // Include dev dependencies of the root package.
       deps.addAll(pubspec.devDependencies);
@@ -574,7 +678,29 @@ class BacktrackingSolver {
       // Add all overrides. This ensures a dependency only present as an
       // override is still included.
       deps.addAll(_overrides.values);
+    }
 
+    _processDependencies(id, deps);
+
+    return deps;
+  }
+
+  /// Returns the dependencies of the given [feature] of the package identified
+  /// by [id].
+  Future<Set<PackageRange>> depsForFeature(PackageId id, String feature) async {
+    var pubspec = await _getPubspec(id);
+    var deps = pubspec.features[feature].toSet();
+    assert(deps != null);
+
+    _processDependencies(id, deps);
+
+    return deps;
+  }
+
+  /// Destructively post-process [deps] before returning it from [depsFor] or
+  /// [depsForFeature].
+  void _processDependencies(PackageId id, Set<PackageRange> deps) {
+    if (id.isRoot) {
       // Replace any overridden dependencies.
       deps = deps.map((dep) {
         var override = _overrides[dep.name];
@@ -605,8 +731,6 @@ class BacktrackingSolver {
         deps.add(new PackageRange.magic('pub itself'));
       }
     }
-
-    return deps;
   }
 
   /// Loads and returns the pubspec for [id].
@@ -653,38 +777,5 @@ class BacktrackingSolver {
 
     // Indent for the previous selections.
     log.solver(prefixLines(message, prefix: '| ' * _versions.length));
-  }
-
-  /// Ensures that if [pubspec] has an SDK constraint, then it is compatible
-  /// with the current SDK.
-  ///
-  /// Throws a [SolveFailure] if not.
-  void _validateSdkConstraint(Pubspec pubspec) {
-    if (_overrides.containsKey(pubspec.name)) return;
-
-    if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
-      throw new BadSdkVersionException(
-          pubspec.name,
-          'Package ${pubspec.name} requires SDK version '
-          '${pubspec.dartSdkConstraint} but the current SDK is '
-          '${sdk.version}.');
-    }
-
-    if (pubspec.flutterSdkConstraint != null) {
-      if (!flutter.isAvailable) {
-        throw new BadSdkVersionException(
-            pubspec.name,
-            'Package ${pubspec.name} requires the Flutter SDK, which is not '
-            'available.');
-      }
-
-      if (!pubspec.flutterSdkConstraint.allows(flutter.version)) {
-        throw new BadSdkVersionException(
-            pubspec.name,
-            'Package ${pubspec.name} requires Flutter SDK version '
-            '${pubspec.flutterSdkConstraint} but the current SDK is '
-            '${flutter.version}.');
-      }
-    }
   }
 }

@@ -166,6 +166,20 @@ dependencies:
       expect(foo.source, equals(sources['unknown']));
     });
 
+    test("allows a default source", () {
+      var pubspec = new Pubspec.parse(
+          '''
+dependencies:
+  foo:
+    version: 1.2.3
+''',
+          sources);
+
+      var foo = pubspec.dependencies[0];
+      expect(foo.name, equals('foo'));
+      expect(foo.source, equals(sources['hosted']));
+    });
+
     test("throws if a package is in dependencies and dev_dependencies", () {
       expectPubspecException(
           '''
@@ -244,16 +258,6 @@ dependencies:
   foo:
     mock: ok
     version: not constraint
-''',
-          (pubspec) => pubspec.dependencies);
-    });
-
-    test("throws if there's no source", () {
-      expectPubspecException(
-          '''
-dependencies:
-  foo:
-    version: 1.2.3
 ''',
           (pubspec) => pubspec.dependencies);
     });
@@ -652,6 +656,67 @@ web:
           expectPubspecException(
               'web: {compiler: {debug: }}', (pubspec) => pubspec.webCompiler);
         });
+      });
+    });
+
+    group("features", () {
+      test("can be null", () {
+        var pubspec = new Pubspec.parse('features:', sources);
+        expect(pubspec.features, isEmpty);
+      });
+
+      test("throws if it's not a map", () {
+        expectPubspecException('features: 12', (pubspec) => pubspec.features);
+      });
+
+      test("throws if it has non-string keys", () {
+        expectPubspecException('features: {1: {}}', (pubspec) => pubspec.features);
+      });
+
+      test("throws if a key isn't a Dart identifier", () {
+        expectPubspecException('features: {foo-bar: {}}', (pubspec) => pubspec.features);
+      });
+
+      test("allows null values", () {
+        var pubspec = new Pubspec.parse('''
+features:
+  foobar:
+''', sources);
+        expect(pubspec.features, equals({'foobar': []}));
+      });
+
+      test("throws if the value isn't a map", () {
+        expectPubspecException('features: {foobar: 1}', (pubspec) => pubspec.features);
+      });
+
+      test("throws if the value's dependencies aren't valid", () {
+        expectPubspecException('''
+features:
+  foobar:
+    dependencies:
+      baz: not a version range
+''', (pubspec) => pubspec.features);
+      });
+
+      test("parses valid dependency specifications", () {
+        var pubspec = new Pubspec.parse('''
+features:
+  foobar:
+    dependencies:
+      baz: 1.0.0
+      qux: ^2.0.0
+''', sources);
+
+        
+        expect(pubspec.features, contains('foobar'));
+
+        var ranges = pubspec.features['foobar'];
+        expect(ranges, hasLength(2));
+
+        expect(ranges.first.name, equals('baz'));
+        expect(ranges.first.constraint, equals(new Version(1, 0, 0)));
+        expect(ranges.last.name, equals('qux'));
+        expect(ranges.last.constraint, equals(new VersionConstraint.parse('^2.0.0')));
       });
     });
   });
