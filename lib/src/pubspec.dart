@@ -11,6 +11,7 @@ import 'package:yaml/yaml.dart';
 import 'barback/transformer_config.dart';
 import 'compiler.dart';
 import 'exceptions.dart';
+import 'feature.dart';
 import 'io.dart';
 import 'package_name.dart';
 import 'source_registry.dart';
@@ -148,7 +149,7 @@ class Pubspec {
 
   List<PackageRange> _dependencyOverrides;
 
-  Map<String, List<PackageRange>> get features {
+  Map<String, Feature> get features {
     if (_features != null) return _features;
     var features = fields['features'];
     if (features == null) {
@@ -162,20 +163,31 @@ class Pubspec {
 
     _features = mapMap(features.nodes,
         key: (nameNode, _) => _validateFeatureName(nameNode),
-        value: (_, specNode) {
-          if (specNode.value == null) return const [];
+        value: (nameNode, specNode) {
+          if (specNode.value == null) {
+            return new Feature(nameNode.value, const []);
+          }
 
           if (specNode is! Map) {
             _error('A feature specification must be a map.', specNode.span);
           }
 
-          return _parseDependencies(
+          var onByDefault = specNode['default'] ?? true;
+          if (onByDefault is! bool) {
+            _error('Default must be true or false.',
+                specNode.nodes['default'].span);
+          }
+
+          var dependencies = _parseDependencies(
               'dependencies', specNode.nodes['dependencies']);
+
+          return new Feature(nameNode.value, dependencies,
+              onByDefault: onByDefault);
         });
     return _features;
   }
 
-  Map<String, List<PackageRange>> _features;
+  Map<String, Feature> _features;
 
   /// The configurations of the transformers to use for this package.
   List<Set<TransformerConfig>> get transformers {
@@ -600,7 +612,7 @@ class Pubspec {
       var sourceName;
 
       var versionConstraint = new VersionRange();
-      Set<String> features = const UnmodifiableSetView.empty();
+      Map<String, bool> features = const {};
       if (spec == null) {
         descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
@@ -620,8 +632,7 @@ class Pubspec {
 
         if (spec.containsKey('features')) {
           spec.remove('features');
-          features =
-              _parseDependencyFeatures(specMap.nodes['features']).keys.toSet();
+          features = _parseDependencyFeatures(specMap.nodes['features']);
         }
 
         var sourceNames = spec.keys.toList();
@@ -684,8 +695,8 @@ class Pubspec {
         key: (nameNode, _) => _validateFeatureName(nameNode),
         value: (_, valueNode) {
           var value = valueNode.value;
-          if (value is bool && value) return value;
-          _error('Features must be set to true.', valueNode.span);
+          if (value is bool) return value;
+          _error('Features must be true or false.', valueNode.span);
         });
   }
 

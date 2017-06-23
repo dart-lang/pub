@@ -10,7 +10,7 @@ import 'source.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
-final _featureEquality = const SetEquality<String>();
+final _featureEquality = const MapEquality<String, bool>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
@@ -153,8 +153,8 @@ class PackageRange extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
-  /// The features that are required.
-  final Set<String> features;
+  /// Which features are required and which are opted out.
+  final Map<String, bool> features;
 
   /// Creates a reference to package with the given [name], [source],
   /// [constraint], and [description].
@@ -162,30 +162,53 @@ class PackageRange extends PackageName {
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
   PackageRange(String name, Source source, this.constraint, description,
-      {Iterable<String> features})
+      {Map<String, bool> features})
       : features = features == null
-            ? const UnmodifiableSetView.empty()
-            : new UnmodifiableSetView(features.toSet()),
+            ? const {}
+            : new UnmodifiableMapView(new Map.from(features)),
         super._(name, source, description);
 
   PackageRange.magic(String name)
       : constraint = Version.none,
-        features = const UnmodifiableSetView.empty(),
+        features = const {},
         super._magic(name);
+
+  /// Returns a description of [features], or the empty string if [features] is
+  /// empty.
+  String get featureDescription {
+    if (features.isEmpty) return "";
+
+    var enabledFeatures = <String>[];
+    var disabledFeatures = <String>[];
+    features.forEach((name, enabled) {
+      (enabled ? enabledFeatures : disabledFeatures).add(name);
+    });
+
+    var description = "";
+    if (enabledFeatures.isNotEmpty) {
+      description += "with ${toSentence(enabledFeatures)}";
+      if (disabledFeatures.isNotEmpty) description += ", ";
+    }
+
+    if (disabledFeatures.isNotEmpty) {
+      description += "without ${toSentence(disabledFeatures)}";
+    }
+    return description;
+  }
 
   String toString() {
     if (isRoot) return "$name $constraint (root)";
     if (isMagic) return name;
     var prefix = "$name $constraint from $source";
-    if (features.isNotEmpty) prefix += " with ${toSentence(features)}";
+    if (features.isNotEmpty) prefix += " $featureDescription";
     return "$prefix ($description)";
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
-  PackageRange withFeatures(Set<String> features) {
+  PackageRange withFeatures(Map<String, bool> features) {
     if (features.isEmpty) return this;
     return new PackageRange(name, source, constraint, description,
-        features: this.features.union(features));
+        features: new Map.from(this.features)..addAll(features));
   }
 
   /// Whether [id] satisfies this dependency.
