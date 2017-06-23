@@ -670,44 +670,52 @@ web:
       });
 
       test("throws if it has non-string keys", () {
-        expectPubspecException('features: {1: {}}', (pubspec) => pubspec.features);
+        expectPubspecException(
+            'features: {1: {}}', (pubspec) => pubspec.features);
       });
 
       test("throws if a key isn't a Dart identifier", () {
-        expectPubspecException('features: {foo-bar: {}}', (pubspec) => pubspec.features);
+        expectPubspecException(
+            'features: {foo-bar: {}}', (pubspec) => pubspec.features);
       });
 
       test("allows null values", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 features:
   foobar:
-''', sources);
+''',
+            sources);
         expect(pubspec.features, equals({'foobar': []}));
       });
 
       test("throws if the value isn't a map", () {
-        expectPubspecException('features: {foobar: 1}', (pubspec) => pubspec.features);
+        expectPubspecException(
+            'features: {foobar: 1}', (pubspec) => pubspec.features);
       });
 
       test("throws if the value's dependencies aren't valid", () {
-        expectPubspecException('''
+        expectPubspecException(
+            '''
 features:
   foobar:
     dependencies:
       baz: not a version range
-''', (pubspec) => pubspec.features);
+''',
+            (pubspec) => pubspec.features);
       });
 
       test("parses valid dependency specifications", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = new Pubspec.parse(
+            '''
 features:
   foobar:
     dependencies:
       baz: 1.0.0
       qux: ^2.0.0
-''', sources);
+''',
+            sources);
 
-        
         expect(pubspec.features, contains('foobar'));
 
         var ranges = pubspec.features['foobar'];
@@ -716,7 +724,8 @@ features:
         expect(ranges.first.name, equals('baz'));
         expect(ranges.first.constraint, equals(new Version(1, 0, 0)));
         expect(ranges.last.name, equals('qux'));
-        expect(ranges.last.constraint, equals(new VersionConstraint.parse('^2.0.0')));
+        expect(ranges.last.constraint,
+            equals(new VersionConstraint.parse('^2.0.0')));
       });
     });
   });
