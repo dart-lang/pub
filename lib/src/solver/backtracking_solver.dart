@@ -680,9 +680,7 @@ class BacktrackingSolver {
       deps.addAll(_overrides.values);
     }
 
-    _processDependencies(id, deps);
-
-    return deps;
+    return _processDependencies(id, deps);
   }
 
   /// Returns the dependencies of the given [feature] of the package identified
@@ -692,14 +690,14 @@ class BacktrackingSolver {
     var deps = pubspec.features[feature].toSet();
     assert(deps != null);
 
-    _processDependencies(id, deps);
-
-    return deps;
+    return _processDependencies(id, deps);
   }
 
-  /// Destructively post-process [deps] before returning it from [depsFor] or
+  /// Post-processes [deps] before returning it from [depsFor] or
   /// [depsForFeature].
-  void _processDependencies(PackageId id, Set<PackageRange> deps) {
+  ///
+  /// This may modify [deps].
+  Set<PackageRange> _processDependencies(PackageId id, Set<PackageRange> deps) {
     if (id.isRoot) {
       // Replace any overridden dependencies.
       deps = deps.map((dep) {
@@ -731,6 +729,8 @@ class BacktrackingSolver {
         deps.add(new PackageRange.magic('pub itself'));
       }
     }
+
+    return deps;
   }
 
   /// Loads and returns the pubspec for [id].
