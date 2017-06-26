@@ -28,8 +28,11 @@ class GitSource extends Source {
   /// Returns a reference to a git package with the given [name] and [url].
   ///
   /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
-  PackageRef refFor(String name, String url, {String reference}) =>
-      new PackageRef(name, this, {'url': url, 'ref': reference ?? 'HEAD'});
+  PackageRef refFor(String name, String url, {String reference, String path}) {
+    if (path != null) assert(p.url.isRelative(path));
+    return new PackageRef(name, this,
+        {'url': url, 'ref': reference ?? 'HEAD', 'path': path ?? '.'});
+  }
 
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
@@ -57,8 +60,21 @@ class GitSource extends Source {
           "string.");
     }
 
+    var path = description["path"];
+    if (path != null) {
+      if (path is! String) {
+        throw new FormatException(
+            "The 'path' field of the description must be a string.");
+      } else if (!p.url.isRelative(path)) {
+        throw new FormatException(
+            "The 'path' field of the description must be relative.");
+      }
+
+      _validateUrl(path);
+    }
+
     return new PackageRef(name, this,
-        {"url": description["url"], "ref": description["ref"] ?? "HEAD"});
+        {"url": description["url"], "ref": ref ?? "HEAD", "path": path ?? "."});
   }
 
   PackageId parseId(String name, Version version, description) {
@@ -85,10 +101,24 @@ class GitSource extends Source {
           "must be a string.");
     }
 
+    var path = description["path"];
+    if (path != null) {
+      if (path is! String) {
+        throw new FormatException(
+            "The 'path' field of the description must be a string.");
+      } else if (!p.url.isRelative(path)) {
+        throw new FormatException(
+            "The 'path' field of the description must be relative.");
+      }
+
+      _validateUrl(path);
+    }
+
     return new PackageId(name, this, version, {
       "url": description["url"],
-      "ref": description["ref"] ?? "HEAD",
-      "resolved-ref": description["resolved-ref"]
+      "ref": ref ?? "HEAD",
+      "resolved-ref": description["resolved-ref"],
+      "path": path ?? "."
     });
   }
 
@@ -108,8 +138,10 @@ class GitSource extends Source {
   /// version.
   String formatDescription(String containingPath, description) {
     if (description is Map && description.containsKey('resolved-ref')) {
-      return "${description['url']} at "
+      var result = "${description['url']} at "
           "${description['resolved-ref'].substring(0, 6)}";
+      if (description["path"] != ".") result += " in ${description["path"]}";
+      return result;
     } else {
       return super.formatDescription(containingPath, description);
     }
@@ -123,6 +155,7 @@ class GitSource extends Source {
     // doesn't? If not, how do we handle that case in the version solver?
     if (description1['url'] != description2['url']) return false;
     if (description1['ref'] != description2['ref']) return false;
+    if (description1['path'] != description2['path']) return false;
 
     if (description1.containsKey('resolved-ref') &&
         description2.containsKey('resolved-ref')) {
@@ -135,7 +168,9 @@ class GitSource extends Source {
   int hashDescription(description) {
     // Don't include the resolved ref in the hash code because we ignore it in
     // [descriptionsEqual] if only one description defines it.
-    return description['url'].hashCode ^ description['ref'].hashCode;
+    return description['url'].hashCode ^
+        description['ref'].hashCode ^
+        description['path'].hashCode;
   }
 }
 
@@ -145,11 +180,18 @@ class BoundGitSource extends CachedSource {
 
   final SystemCache systemCache;
 
-  BoundGitSource(this.source, this.systemCache);
+  /// A map from revision cache locations to futures that will complete once
+  /// they're finished being cloned.
+  ///
+  /// This lets us avoid race conditions when getting multiple different
+  /// packages from the same repository.
+  final _revisionCacheClones = <String, Future>{};
 
   /// The paths to the canonical clones of repositories for which "git fetch"
   /// has already been run during this run of pub.
   final _updatedRepos = new Set<String>();
+
+  BoundGitSource(this.source, this.systemCache);
 
   /// Given a Git repo that contains a pub package, gets the name of the pub
   /// package.
@@ -166,34 +208,41 @@ class BoundGitSource extends CachedSource {
     await _ensureRepoCache(ref);
     var path = _repoCachePath(ref);
     var revision = await _firstRevision(path, ref.description['ref']);
-    var pubspec = await _describeUncached(ref, revision);
+    var pubspec =
+        await _describeUncached(ref, revision, ref.description['path']);
 
     return [
       new PackageId(ref.name, source, pubspec.version, {
         'url': ref.description['url'],
         'ref': ref.description['ref'],
-        'resolved-ref': revision
+        'resolved-ref': revision,
+        'path': ref.description['path']
       })
     ];
   }
 
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
-  Future<Pubspec> describeUncached(PackageId id) =>
-      _describeUncached(id.toRef(), id.description['resolved-ref']);
+  Future<Pubspec> describeUncached(PackageId id) => _describeUncached(
+      id.toRef(), id.description['resolved-ref'], id.description['path']);
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
   /// rather than a single ID.
-  Future<Pubspec> _describeUncached(PackageRef ref, String revision) async {
+  Future<Pubspec> _describeUncached(
+      PackageRef ref, String revision, String path) async {
     await _ensureRevision(ref, revision);
-    var path = _repoCachePath(ref);
+    var repoPath = _repoCachePath(ref);
+
+    // Normalize the path because Git treats "./" at the beginning of a path
+    // specially.
+    var pubspecPath = p.normalize(p.join(p.fromUri(path), 'pubspec.yaml'));
 
     var lines;
     try {
-      lines =
-          await git.run(["show", "$revision:pubspec.yaml"], workingDir: path);
+      lines = await git
+          .run(["show", "$revision:$pubspecPath"], workingDir: repoPath);
     } on git.GitException catch (_) {
-      fail('Could not find a file named "pubspec.yaml" in '
+      fail('Could not find a file named "$pubspecPath" in '
           '${ref.description['url']} $revision.');
     }
 
@@ -223,18 +272,21 @@ class BoundGitSource extends CachedSource {
     ensureDir(p.join(systemCacheRoot, 'cache'));
     await _ensureRevision(ref, id.description['resolved-ref']);
 
-    var revisionCachePath = getDirectory(id);
-    if (!entryExists(revisionCachePath)) {
-      await _clone(_repoCachePath(ref), revisionCachePath);
-      await _checkOut(revisionCachePath, id.description['resolved-ref']);
-    }
+    var revisionCachePath = _revisionCachePath(id);
+    await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
+      if (!entryExists(revisionCachePath)) {
+        await _clone(_repoCachePath(ref), revisionCachePath);
+        await _checkOut(revisionCachePath, id.description['resolved-ref']);
+      }
+    });
 
-    return new Package.load(id.name, revisionCachePath, systemCache.sources);
+    return new Package.load(id.name,
+        p.join(revisionCachePath, id.description['path']), systemCache.sources);
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) => p.join(
-      systemCacheRoot, "${_repoName(id)}-${id.description['resolved-ref']}");
+  String getDirectory(PackageId id) =>
+      p.join(_revisionCachePath(id), id.description['path']);
 
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
@@ -389,6 +441,9 @@ class BoundGitSource extends CachedSource {
     return git
         .run(["checkout", ref], workingDir: repoPath).then((result) => null);
   }
+
+  String _revisionCachePath(PackageId id) => p.join(
+      systemCacheRoot, "${_repoName(id)}-${id.description['resolved-ref']}");
 
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).

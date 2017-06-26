@@ -74,21 +74,23 @@ Descriptor libDir(String name, [String code]) {
   return dir("lib", [file("$name.dart", 'main() => "$code";')]);
 }
 
+/// Describes a directory whose name ends with a hyphen followed by an
+/// alphanumeric hash.
+Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
+    new RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
+
 /// Describes a directory for a Git package. This directory is of the form
 /// found in the revision cache of the global package cache.
 Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
   var value = name;
   if (modifier != null) value = "$name $modifier";
-  return pattern(new RegExp("$name${r'-[a-f0-9]+'}"),
-      (dirName) => dir(dirName, [libDir(name, value)]));
+  return hashDir(name, [libDir(name, value)]);
 }
 
 /// Describes a directory for a Git package. This directory is of the form
 /// found in the repo cache of the global package cache.
-Descriptor gitPackageRepoCacheDir(String name) {
-  return pattern(new RegExp("$name${r'-[a-f0-9]+'}"),
-      (dirName) => dir(dirName, [dir('objects'), dir('refs')]));
-}
+Descriptor gitPackageRepoCacheDir(String name) =>
+    hashDir(name, [dir('objects'), dir('refs')]);
 
 /// Describes the `packages/` directory containing all the given [packages],
 /// which should be name/version pairs. The packages will be validated against
