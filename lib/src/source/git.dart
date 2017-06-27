@@ -233,8 +233,8 @@ class BoundGitSource extends CachedSource {
   }
 
   /// Returns the path to the revision-specific cache of [id].
-  String getDirectory(PackageId id) =>
-      p.join(systemCacheRoot, "${id.name}-${id.description['resolved-ref']}");
+  String getDirectory(PackageId id) => p.join(
+      systemCacheRoot, "${_repoName(id)}-${id.description['resolved-ref']}");
 
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
@@ -393,7 +393,16 @@ class BoundGitSource extends CachedSource {
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).
   String _repoCachePath(PackageRef ref) {
-    var repoCacheName = '${ref.name}-${sha1(ref.description['url'])}';
+    var repoCacheName = '${_repoName(ref)}-${sha1(ref.description['url'])}';
     return p.join(systemCacheRoot, 'cache', repoCacheName);
+  }
+
+  /// Returns a short, human-readable name for the repository URL in [packageName].
+  ///
+  /// This name is not guaranteed to be unique.
+  String _repoName(PackageName packageName) {
+    var name = p.url.basename(packageName.description['url']);
+    if (name.endsWith('.git')) name = name.substring(0, name.length - 4);
+    return name;
   }
 }
