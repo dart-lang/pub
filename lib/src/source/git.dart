@@ -277,6 +277,9 @@ class BoundGitSource extends CachedSource {
       if (!entryExists(revisionCachePath)) {
         await _clone(_repoCachePath(ref), revisionCachePath);
         await _checkOut(revisionCachePath, id.description['resolved-ref']);
+        _writePackageList(revisionCachePath, [id.description['path']]);
+      } else {
+        _updatePackageList(revisionCachePath, id.description['path']);
       }
     });
 
@@ -304,16 +307,23 @@ class BoundGitSource extends CachedSource {
 
     var packages = listDir(systemCacheRoot)
         .where((entry) => dirExists(p.join(entry, ".git")))
-        .map((packageDir) {
-          try {
-            return new Package.load(null, packageDir, systemCache.sources);
-          } catch (error, stackTrace) {
-            log.error("Failed to load package", error, stackTrace);
-            var name = p.basename(packageDir).split('-').first;
-            failures.add(new PackageId(name, source, Version.none, '???'));
-            tryDeleteEntry(packageDir);
-            return null;
-          }
+        .expand((revisionCachePath) {
+          return _readPackageList(revisionCachePath).map((relative) {
+            // If we've already failed to load another package from this
+            // repository, ignore it.
+            if (!dirExists(revisionCachePath)) return null;
+
+            var packageDir = p.join(revisionCachePath, relative);
+            try {
+              return new Package.load(null, packageDir, systemCache.sources);
+            } catch (error, stackTrace) {
+              log.error("Failed to load package", error, stackTrace);
+              var name = p.basename(revisionCachePath).split('-').first;
+              failures.add(new PackageId(name, source, Version.none, '???'));
+              tryDeleteEntry(revisionCachePath);
+              return null;
+            }
+          });
         })
         .where((package) => package != null)
         .toList();
@@ -323,6 +333,10 @@ class BoundGitSource extends CachedSource {
     packages.sort(Package.orderByNameAndVersion);
 
     for (var package in packages) {
+      // If we've already failed to repair another package in this repository,
+      // ignore it.
+      if (!dirExists(package.dir)) continue;
+
       var id = new PackageId(package.name, source, package.version, null);
 
       log.message("Resetting Git repository for "
@@ -343,7 +357,8 @@ class BoundGitSource extends CachedSource {
         log.fine(stackTrace);
         failures.add(id);
 
-        tryDeleteEntry(package.dir);
+        // Delete the revision cache path, not the subdirectory that contains the package.
+        tryDeleteEntry(getDirectory(id));
       }
     }
 
@@ -401,6 +416,37 @@ class BoundGitSource extends CachedSource {
     await git.run(["fetch"], workingDir: path);
     _updatedRepos.add(path);
   }
+
+  /// Updates the package list file in [revisionCachePath] to include [path], if
+  /// necessary.
+  void _updatePackageList(String revisionCachePath, String path) {
+    var packages = _readPackageList(revisionCachePath);
+    if (packages.contains(path)) return;
+
+    _writePackageList(revisionCachePath, packages..add(path));
+  }
+
+  /// Returns the list of packages in [revisionCachePath].
+  List<String> _readPackageList(String revisionCachePath) {
+    var path = _packageListPath(revisionCachePath);
+
+    // If there's no pubspec list file, this cache was created by an older
+    // version of pub where pubspecs were only allowed at the root of the
+    // repository.
+    if (!fileExists(path)) return ['./pubspec.yaml'];
+    return readTextFile(path).split("\n");
+  }
+
+  /// Writes a package list indicating that we care about [packages] exist in
+  /// [revisionCachePath].
+  void _writePackageList(String revisionCachePath, List<String> packages) {
+    writeTextFile(_packageListPath(revisionCachePath), packages.join('\n'));
+  }
+
+  /// The path in a revision cache repository in which we keep a list of the
+  /// packages in the repository.
+  String _packageListPath(String revisionCachePath) =>
+      p.join(revisionCachePath, '.git/pub-packages');
 
   /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
