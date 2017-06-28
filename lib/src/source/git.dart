@@ -68,6 +68,10 @@ class GitSource extends Source {
       } else if (!p.url.isRelative(path)) {
         throw new FormatException(
             "The 'path' field of the description must be relative.");
+      } else if (!p.url.isWithin('.', path)) {
+        throw new FormatException(
+            "The 'path' field of the description must not reach outside the "
+            "repository.");
       }
 
       _validateUrl(path);
@@ -430,14 +434,14 @@ class BoundGitSource extends CachedSource {
   List<String> _readPackageList(String revisionCachePath) {
     var path = _packageListPath(revisionCachePath);
 
-    // If there's no pubspec list file, this cache was created by an older
+    // If there's no package list file, this cache was created by an older
     // version of pub where pubspecs were only allowed at the root of the
     // repository.
-    if (!fileExists(path)) return ['./pubspec.yaml'];
+    if (!fileExists(path)) return ['.'];
     return readTextFile(path).split("\n");
   }
 
-  /// Writes a package list indicating that we care about [packages] exist in
+  /// Writes a package list indicating that [packages] exist in
   /// [revisionCachePath].
   void _writePackageList(String revisionCachePath, List<String> packages) {
     writeTextFile(_packageListPath(revisionCachePath), packages.join('\n'));
@@ -503,7 +507,9 @@ class BoundGitSource extends CachedSource {
   /// This name is not guaranteed to be unique.
   String _repoName(PackageName packageName) {
     var name = p.url.basename(packageName.description['url']);
-    if (name.endsWith('.git')) name = name.substring(0, name.length - 4);
+    if (name.endsWith('.git')) {
+      name = name.substring(0, name.length - '.git'.length);
+    }
     return name;
   }
 }

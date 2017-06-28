@@ -41,6 +41,37 @@ main() {
     }).validate();
   });
 
+  test('depends on a package in a deep subdirectory', () async {
+    ensureGit();
+
+    var repo = d.git('foo.git', [
+      d.dir('sub', [d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])])
+    ]);
+    await repo.create();
+
+    await d.appDir({
+      "sub": {
+        "git": {"url": "../foo.git", "path": "sub/dir"}
+      }
+    }).create();
+
+    await pubGet();
+
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+        d.hashDir('foo', [
+          d.dir('sub', [
+          d.dir('dir', [d.libDir('sub', '1.0.0')])])
+        ])
+      ])
+    ]).validate();
+
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')
+    }).validate();
+  });
+
   test('depends on multiple packages in subdirectories', () async {
     ensureGit();
 

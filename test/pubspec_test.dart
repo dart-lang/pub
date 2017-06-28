@@ -457,6 +457,46 @@ dependencies:
           'pubspec.');
     });
 
+    group("git dependencies", () {
+      test("path must be a string", () {
+        expectPubspecException('''
+dependencies:
+  foo:
+    git:
+      url: git://github.com/dart-lang/foo
+      path: 12
+''', (pubspec) => pubspec.dependencies);
+      });
+
+      test("path must be relative", () {
+        expectPubspecException('''
+dependencies:
+  foo:
+    git:
+      url: git://github.com/dart-lang/foo
+      path: git://github.com/dart-lang/foo/bar
+''', (pubspec) => pubspec.dependencies);
+
+        expectPubspecException('''
+dependencies:
+  foo:
+    git:
+      url: git://github.com/dart-lang/foo
+      path: /foo
+''', (pubspec) => pubspec.dependencies);
+      });
+
+      test("path must be within the repository", () {
+        expectPubspecException('''
+dependencies:
+  foo:
+    git:
+      url: git://github.com/dart-lang/foo
+      path: foo/../../bar
+''', (pubspec) => pubspec.dependencies);
+      });
+    });
+
     group("environment", () {
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('', sources);

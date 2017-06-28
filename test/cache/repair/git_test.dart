@@ -147,7 +147,7 @@ main() {
           .where((dir) => path.basename(dir).startsWith("foo-"))
           .toList();
 
-      // Delete "foo.dart" from them.
+      // Delete "sub.dart" from them.
       for (var dir in fooDirs) {
         deleteEntry(path.join(dir, "subdir/lib/sub.dart"));
       }
