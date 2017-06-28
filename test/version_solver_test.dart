@@ -1306,7 +1306,7 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1322,7 +1322,7 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1333,7 +1333,7 @@ void features() {
     await d.appDir({
       'foo': {
         'version': '1.0.0',
-        'features': {'feature': true}
+        'features': {'stuff': true}
       }
     }).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
@@ -1343,7 +1343,7 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1355,7 +1355,7 @@ void features() {
     await d.appDir({
       'foo': {
         'version': '1.0.0',
-        'features': {'feature': true}
+        'features': {'stuff': true}
       }
     }).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
@@ -1365,14 +1365,14 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
       });
       builder.serve('foo', '1.1.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '2.0.0'}
           }
         }
@@ -1384,28 +1384,31 @@ void features() {
     await d.appDir({
       'foo': {
         'version': '^1.0.0',
-        'features': {'feature': true}
+        'features': {'stuff': true}
       },
       'bar': '1.0.0'
     }).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
-  test("doesn't select a version with a transitively incompatible feature",
+  test("backtracks if a feature is transitively incompatible feature",
       () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
       });
       builder.serve('foo', '1.1.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {
-              'bar': {'version': '1.0.0', 'feature': 'bar_feature'}
+              'bar': {
+                'version': '1.0.0',
+                'features': {'stuff': true}
+              }
             }
           }
         }
@@ -1413,7 +1416,7 @@ void features() {
 
       builder.serve('bar', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'baz': '1.0.0'}
           }
         }
@@ -1426,12 +1429,12 @@ void features() {
     await d.appDir({
       'foo': {
         'version': '^1.0.0',
-        'features': {'feature': true}
+        'features': {'stuff': true}
       },
       'baz': '2.0.0'
     }).create();
     await expectResolves(
-        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '2.0.0'});
+        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '2.0.0'}, tries: 2);
   });
 
   test("backtracks if a feature's dependencies are transitively incompatible",
@@ -1439,14 +1442,14 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '1.0.0'}
           }
         }
       });
       builder.serve('foo', '1.1.0', pubspec: {
         "features": {
-          "feature": {
+          "stuff": {
             "dependencies": {'bar': '2.0.0'}
           }
         }
@@ -1462,7 +1465,7 @@ void features() {
     await d.appDir({
       'foo': {
         'version': '^1.0.0',
-        'features': {'feature': true}
+        'features': {'stuff': true}
       },
       'baz': '1.0.0'
     }).create();
@@ -1481,7 +1484,7 @@ void features() {
         'name': 'myapp',
         'dependencies': {'foo': '^1.0.0'},
         'features': {
-          'feature': {
+          'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
@@ -1494,7 +1497,7 @@ void features() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {
         'myapp': {
-          'features': {'feature': true}
+          'features': {'stuff': true}
         }
       });
       builder.serve('bar', '1.0.0');
@@ -1505,7 +1508,7 @@ void features() {
         'name': 'myapp',
         'dependencies': {'foo': '^1.0.0'},
         'features': {
-          'feature': {
+          'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
@@ -1525,14 +1528,14 @@ void features() {
         'dependencies': {
           'foo': {
             'version': '^1.0.0',
-            'features': {'feature': true}
+            'features': {'stuff': true}
           }
         }
       })
     ]).create();
     await expectResolves(
-        error: "foo 1.0.0 doesn't have a feature named feature:\n"
-            "- myapp depends on version ^1.0.0 with feature");
+        error: "foo 1.0.0 doesn't have a feature named stuff:\n"
+            "- myapp depends on version ^1.0.0 with stuff");
   });
 }
 
