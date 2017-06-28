@@ -10,6 +10,7 @@ import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart';
@@ -17,6 +18,9 @@ import '../validator.dart';
 
 /// The first Dart SDK version that supported caret constraints.
 final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
+
+/// The first Dart SDK version that supported Git path dependencies.
+final _firstGitPathVersion = new Version.parse("1.25.0-dev.4.0");
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
@@ -31,6 +35,12 @@ class DependencyValidator extends Validator {
         _warnAboutFlutterSdk(dependency);
       } else if (dependency.source is! HostedSource) {
         await _warnAboutSource(dependency);
+
+        if (dependency.source is GitSource &&
+            dependency.description['path'] != '.') {
+          validateSdkConstraint(_firstGitPathVersion,
+              "Older versions of pub don't support Git path dependencies.");
+        }
       } else if (constraint.isAny) {
         _warnAboutNoConstraint(dependency);
       } else if (constraint is Version) {

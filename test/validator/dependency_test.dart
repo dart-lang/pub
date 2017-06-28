@@ -74,6 +74,25 @@ main() {
       expectNoValidationError(dependency);
     });
 
+    test('has a git path dependency with an appropriate SDK constraint',
+        () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {
+              "foo": {
+                "git": {
+                  "url": "git://github.com/dart-lang/foo",
+                  "path": "subdir"
+                }
+              }
+            },
+            sdk: ">=1.25.0 <2.0.0")
+      ]).create();
+
+      // We should get a warning for using a git dependency, but not an error.
+      expectDependencyValidationWarning('  foo: any');
+    });
+
     test('depends on Flutter from an SDK source', () async {
       await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {
@@ -427,6 +446,43 @@ main() {
         ]).create();
 
         expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+      });
+    });
+
+    group('has a git path dependency', () {
+      test("without an SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0", deps: {
+            "foo": {
+              "git": {"url": "git://github.com/dart-lang/foo", "path": "subdir"}
+            }
+          })
+        ]).create();
+
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=1.25.0 <2.0.0"')),
+                anyElement(contains('  foo: any')))));
+      });
+
+      test("with a too-broad SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0",
+              deps: {
+                "foo": {
+                  "git": {
+                    "url": "git://github.com/dart-lang/foo",
+                    "path": "subdir"
+                  }
+                }
+              },
+              sdk: ">=1.24.0 <2.0.0")
+        ]).create();
+
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=1.25.0 <2.0.0"')),
+                anyElement(contains('  foo: any')))));
       });
     });
 
