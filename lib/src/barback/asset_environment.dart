@@ -655,7 +655,13 @@ class AssetEnvironment {
     }
   }
 
+  /// An update that is scheduled to happen sometime in the future, or `null`.
   CancelableOperation _scheduledUpdate;
+
+  /// Schedules a cancellable update for [_buildDelay]ms in the future.
+  ///
+  /// If one is already scheduled then it is cancelled, and this one takes its
+  /// place.
   void _scheduleUpdate() {
     if (_paused) return;
     if (_buildDelay == 0) {
