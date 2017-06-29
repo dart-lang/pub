@@ -79,11 +79,13 @@ class GlobalPackages {
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
   ///
-  /// if [overwriteBinStubs] is `true`, any binstubs that collide with
+  /// The [features] map controls which features of the package to activate.
+  ///
+  /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future activateGit(String repo, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
     // Call this just to log what the current active package is, if any.
     _describeActive(name);
@@ -95,13 +97,15 @@ class GlobalPackages {
     await _installInCache(
         cache.git.source
             .refFor(name, repo)
-            .withConstraint(VersionConstraint.any),
+            .withConstraint(VersionConstraint.any).withFeatures(features ?? const {}),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }
 
   /// Finds the latest version of the hosted package with [name] that matches
   /// [constraint] and makes it the active global version.
+  ///
+  /// The [features] map controls which features of the package to activate.
   ///
   /// [executables] is the names of the executables that should have binstubs.
   /// If `null`, all executables in the package will get binstubs. If empty, no
@@ -112,10 +116,10 @@ class GlobalPackages {
   /// Otherwise, the previous ones will be preserved.
   Future activateHosted(
       String name, VersionConstraint constraint, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     _describeActive(name);
     await _installInCache(
-        cache.hosted.source.refFor(name).withConstraint(constraint),
+        cache.hosted.source.refFor(name).withConstraint(constraint).withFeatures(features ?? const {}),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }
