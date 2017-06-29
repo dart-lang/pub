@@ -299,6 +299,9 @@ Future confirmPublish(TestProcess pub) async {
   await pub.stdin.writeln("y");
 }
 
+/// Resolves [path] relative to the package cache in the sandbox.
+String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
+
 /// Gets the absolute path to [relPath], which is a relative path in the test
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);

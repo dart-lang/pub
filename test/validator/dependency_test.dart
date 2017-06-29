@@ -74,6 +74,25 @@ main() {
       expectNoValidationError(dependency);
     });
 
+    test('has a git path dependency with an appropriate SDK constraint',
+        () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {
+              "foo": {
+                "git": {
+                  "url": "git://github.com/dart-lang/foo",
+                  "path": "subdir"
+                }
+              }
+            },
+            sdk: ">=1.25.0 <2.0.0")
+      ]).create();
+
+      // We should get a warning for using a git dependency, but not an error.
+      expectDependencyValidationWarning('  foo: any');
+    });
+
     test('depends on Flutter from an SDK source', () async {
       await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0", deps: {
@@ -93,7 +112,7 @@ main() {
         test("and should suggest the hosted primary version", () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
-          expectDependencyValidationWarning('  foo: ">=2.0.0 <3.0.0"');
+          expectDependencyValidationWarning('  foo: ^2.0.0');
         });
 
         test(
@@ -101,7 +120,7 @@ main() {
             "it's the only version available", () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
-          expectDependencyValidationWarning('  foo: ">=3.0.0-pre <4.0.0"');
+          expectDependencyValidationWarning('  foo: ^3.0.0-pre');
         });
 
         test(
@@ -109,7 +128,7 @@ main() {
             "pre-1.0.0", () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["0.0.1", "0.0.2"]);
-          expectDependencyValidationWarning('  foo: ">=0.0.2 <0.1.0"');
+          expectDependencyValidationWarning('  foo: ^0.0.2');
         });
       });
 
@@ -137,7 +156,7 @@ main() {
         test("and should suggest the hosted primary version", () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
-          expectDependencyValidationError('  foo: ">=2.0.0 <3.0.0"');
+          expectDependencyValidationError('  foo: ^2.0.0');
         });
 
         test(
@@ -145,7 +164,7 @@ main() {
             "it's the only version available", () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
-          expectDependencyValidationError('  foo: ">=3.0.0-pre <4.0.0"');
+          expectDependencyValidationError('  foo: ^3.0.0-pre');
         });
 
         test(
@@ -153,7 +172,7 @@ main() {
             "pre-1.0.0", () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["0.0.1", "0.0.2"]);
-          expectDependencyValidationError('  foo: ">=0.0.2 <0.1.0"');
+          expectDependencyValidationError('  foo: ^0.0.2');
         });
       });
 
@@ -239,7 +258,7 @@ main() {
                 }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+          expectDependencyValidationWarning('  foo: ^1.2.3');
         });
 
         test(
@@ -263,7 +282,7 @@ main() {
                 }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=0.1.2 <0.2.0"');
+          expectDependencyValidationWarning('  foo: ^0.1.2');
         });
       });
     });
@@ -275,7 +294,7 @@ main() {
         d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "1.2.3"})
       ]).create();
 
-      expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+      expectDependencyValidationWarning('  foo: ^1.2.3');
     });
 
     group('has a dependency without a lower bound', () {
@@ -387,7 +406,7 @@ main() {
                 }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+          expectDependencyValidationWarning('  foo: ^1.2.3');
         });
       });
     });
@@ -399,7 +418,7 @@ main() {
           d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">=1.2.3"})
         ]).create();
 
-        expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+        expectDependencyValidationWarning('  foo: ^1.2.3');
       });
 
       test('and it should preserve the lower-bound operator', () async {
@@ -417,7 +436,7 @@ main() {
           d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
         ]).create();
 
-        expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
       });
 
       test("with a too-broad SDK constraint", () async {
@@ -426,7 +445,44 @@ main() {
               deps: {"foo": "^1.2.3"}, sdk: ">=1.5.0 <2.0.0")
         ]).create();
 
-        expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+      });
+    });
+
+    group('has a git path dependency', () {
+      test("without an SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0", deps: {
+            "foo": {
+              "git": {"url": "git://github.com/dart-lang/foo", "path": "subdir"}
+            }
+          })
+        ]).create();
+
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=1.25.0 <2.0.0"')),
+                anyElement(contains('  foo: any')))));
+      });
+
+      test("with a too-broad SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0",
+              deps: {
+                "foo": {
+                  "git": {
+                    "url": "git://github.com/dart-lang/foo",
+                    "path": "subdir"
+                  }
+                }
+              },
+              sdk: ">=1.24.0 <2.0.0")
+        ]).create();
+
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=1.25.0 <2.0.0"')),
+                anyElement(contains('  foo: any')))));
       });
     });
 

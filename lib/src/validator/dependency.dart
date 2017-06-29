@@ -10,35 +10,24 @@ import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart';
 import '../validator.dart';
 
-/// The range of all pub versions that don't support `^` version constraints.
-///
-/// This is the actual range of pub versions, whereas [_postCaretPubVersions] is
-/// the nicer-looking range that doesn't include a prerelease tag.
-final _preCaretPubVersions = new VersionConstraint.parse("<1.8.0-dev.3.0");
+/// The first Dart SDK version that supported caret constraints.
+final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
 
-/// The range of all pub versions that do support `^` version constraints.
-///
-/// This is intersected with the user's SDK constraint to provide a suggested
-/// constraint.
-final _postCaretPubVersions = new VersionConstraint.parse("^1.8.0");
+/// The first Dart SDK version that supported Git path dependencies.
+final _firstGitPathVersion = new Version.parse("1.25.0-dev.5.0");
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
-  /// Whether the SDK constraint guarantees that `^` version constraints are
-  /// safe.
-  bool get _caretAllowed => entrypoint.root.pubspec.dartSdkConstraint
-      .intersect(_preCaretPubVersions)
-      .isEmpty;
-
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    var caretDeps = <PackageRange>[];
+    var hasCaretDep = false;
 
     for (var dependency in entrypoint.root.pubspec.dependencies) {
       var constraint = dependency.constraint;
@@ -46,6 +35,12 @@ class DependencyValidator extends Validator {
         _warnAboutFlutterSdk(dependency);
       } else if (dependency.source is! HostedSource) {
         await _warnAboutSource(dependency);
+
+        if (dependency.source is GitSource &&
+            dependency.description['path'] != '.') {
+          validateSdkConstraint(_firstGitPathVersion,
+              "Older versions of pub don't support Git path dependencies.");
+        }
       } else if (constraint.isAny) {
         _warnAboutNoConstraint(dependency);
       } else if (constraint is Version) {
@@ -57,14 +52,13 @@ class DependencyValidator extends Validator {
           _warnAboutNoConstraintUpperBound(dependency);
         }
 
-        if (constraint.toString().startsWith("^")) {
-          caretDeps.add(dependency);
-        }
+        hasCaretDep = hasCaretDep || constraint.toString().startsWith("^");
       }
     }
 
-    if (caretDeps.isNotEmpty && !_caretAllowed) {
-      _errorAboutCaretConstraints(caretDeps);
+    if (hasCaretDep) {
+      validateSdkConstraint(_firstCaretVersion,
+          "Older versions of pub don't support ^ version constraints.");
     }
   }
 
@@ -96,7 +90,7 @@ class DependencyValidator extends Validator {
     var constraint;
     var primary = Version.primary(versions);
     if (primary != null) {
-      constraint = _constraintForVersion(primary);
+      constraint = "^$primary";
     } else {
       constraint = dep.constraint.toString();
       if (!dep.constraint.isAny && dep.constraint is! Version) {
@@ -126,7 +120,7 @@ class DependencyValidator extends Validator {
       message = '$message For example:\n'
           '\n'
           'dependencies:\n'
-          '  ${dep.name}: ${_constraintForVersion(locked.version)}\n';
+          '  ${dep.name}: ^${locked.version}\n';
     }
     warnings.add("$message\n"
         'Without a constraint, you\'re promising to support ${log.bold("all")} '
@@ -140,7 +134,7 @@ class DependencyValidator extends Validator {
         'For example:\n'
         '\n'
         'dependencies:\n'
-        '  ${dep.name}: ${_constraintForVersion(dep.constraint)}\n'
+        '  ${dep.name}: ^${dep.constraint}\n'
         '\n'
         'Constraints that are too tight will make it difficult for people to '
         'use your package\n'
@@ -154,7 +148,7 @@ class DependencyValidator extends Validator {
     if (locked != null) {
       var constraint;
       if (locked.version == (dep.constraint as VersionRange).max) {
-        constraint = _constraintForVersion(locked.version);
+        constraint = "^${locked.version}";
       } else {
         constraint = '">=${locked.version} ${dep.constraint}"';
       }
@@ -173,7 +167,7 @@ class DependencyValidator extends Validator {
   void _warnAboutNoConstraintUpperBound(PackageRange dep) {
     var constraint;
     if ((dep.constraint as VersionRange).includeMin) {
-      constraint = _constraintForVersion((dep.constraint as VersionRange).min);
+      constraint = "^${(dep.constraint as VersionRange).min}";
     } else {
       constraint = '"${dep.constraint} '
           '<${(dep.constraint as VersionRange).min.nextBreaking}"';
@@ -188,46 +182,5 @@ class DependencyValidator extends Validator {
             '\n'
             'Without an upper bound, you\'re promising to support '
             '${log.bold("all")} future versions of ${dep.name}.');
-  }
-
-  /// Emits an error for any version constraints that use `^` without an
-  /// appropriate SDK constraint.
-  void _errorAboutCaretConstraints(List<PackageRange> caretDeps) {
-    var newSdkConstraint = entrypoint.root.pubspec.dartSdkConstraint
-        .intersect(_postCaretPubVersions);
-
-    if (newSdkConstraint.isEmpty) newSdkConstraint = _postCaretPubVersions;
-
-    var buffer = new StringBuffer(
-        "Older versions of pub don't support ^ version constraints.\n"
-        "Make sure your SDK constraint excludes those old versions:\n"
-        "\n"
-        "environment:\n"
-        "  sdk: \"$newSdkConstraint\"\n"
-        "\n");
-
-    if (caretDeps.length == 1) {
-      buffer.writeln("Or use a fully-expanded constraint:");
-    } else {
-      buffer.writeln("Or use fully-expanded constraints:");
-    }
-
-    buffer.writeln();
-    buffer.writeln("dependencies:");
-
-    caretDeps.forEach((dep) {
-      VersionRange constraint = dep.constraint;
-      buffer
-          .writeln("  ${dep.name}: \">=${constraint.min} <${constraint.max}\"");
-    });
-
-    errors.add(buffer.toString().trim());
-  }
-
-  /// Returns the suggested version constraint for a dependency that was tested
-  /// against [version].
-  String _constraintForVersion(Version version) {
-    if (_caretAllowed) return "^$version";
-    return '">=$version <${version.nextBreaking}"';
   }
 }

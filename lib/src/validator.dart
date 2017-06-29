@@ -4,6 +4,9 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+import 'package:pub_semver/pub_semver.dart';
+
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'utils.dart';
@@ -47,6 +50,36 @@ abstract class Validator {
   /// Validates the entrypoint, adding any errors and warnings to [errors] and
   /// [warnings], respectively.
   Future validate();
+
+  /// Adds an error if the package's SDK constraint doesn't exclude Dart SDK
+  /// versions older than [firstSdkVersion].
+  @protected
+  void validateSdkConstraint(Version firstSdkVersion, String message) {
+    // If the SDK constraint disallowed all versions before [firstSdkVersion],
+    // no error is necessary.
+    if (entrypoint.root.pubspec.dartSdkConstraint
+        .intersect(new VersionRange(max: firstSdkVersion))
+        .isEmpty) {
+      return;
+    }
+
+    // Suggest that users use a non-dev SDK constraint, even if there were some
+    // dev versions that are allowed.
+    var nextNonDevVersion = firstSdkVersion.isPreRelease
+        ? firstSdkVersion.nextMinor
+        : firstSdkVersion;
+    var allowedSdks = new VersionConstraint.compatibleWith(nextNonDevVersion);
+
+    var newSdkConstraint =
+        entrypoint.root.pubspec.dartSdkConstraint.intersect(allowedSdks);
+    if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
+
+    errors.add("$message\n"
+        "Make sure your SDK constraint excludes old versions:\n"
+        "\n"
+        "environment:\n"
+        "  sdk: \"$newSdkConstraint\"");
+  }
 
   /// Run all validators on the [entrypoint] package and print their results.
   ///
