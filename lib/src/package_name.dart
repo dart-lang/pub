@@ -10,7 +10,7 @@ import 'source.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
-final _featureEquality = const MapEquality<String, bool>();
+final _featureEquality = const MapEquality<String, FeatureDependency>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
@@ -153,8 +153,8 @@ class PackageRange extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
-  /// Which features are required and which are opted out.
-  final Map<String, bool> features;
+  /// The dependencies declared on features of the target package.
+  final Map<String, FeatureDependency> features;
 
   /// Creates a reference to package with the given [name], [source],
   /// [constraint], and [description].
@@ -162,7 +162,7 @@ class PackageRange extends PackageName {
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
   PackageRange(String name, Source source, this.constraint, description,
-      {Map<String, bool> features})
+      {Map<String, FeatureDependency> features})
       : features = features == null
             ? const {}
             : new UnmodifiableMapView(new Map.from(features)),
@@ -180,8 +180,12 @@ class PackageRange extends PackageName {
 
     var enabledFeatures = <String>[];
     var disabledFeatures = <String>[];
-    features.forEach((name, enabled) {
-      (enabled ? enabledFeatures : disabledFeatures).add(name);
+    features.forEach((name, type) {
+      if (type == FeatureDependency.unused) {
+        disabledFeatures.add(name);
+      } else {
+        enabledFeatures.add(name);
+      }
     });
 
     var description = "";
@@ -211,7 +215,7 @@ class PackageRange extends PackageName {
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
-  PackageRange withFeatures(Map<String, bool> features) {
+  PackageRange withFeatures(Map<String, FeatureDependency> features) {
     if (features.isEmpty) return this;
     return new PackageRange(name, source, constraint, description,
         features: new Map.from(this.features)..addAll(features));
@@ -231,4 +235,27 @@ class PackageRange extends PackageName {
       samePackage(other) &&
       other.constraint == constraint &&
       _featureEquality.equals(other.features, features);
+}
+
+/// An enum of types of dependencies on a [Feature].
+class FeatureDependency {
+  /// The feature must exist and be enabled for this dependency to be satisfied.
+  static const required = const FeatureDependency._("required");
+
+  /// The feature must be enabled if it exists, but is not required to exist for
+  /// this dependency to be satisfied.
+  static const ifAvailable = const FeatureDependency._("if available");
+
+  /// The feature is neither required to exist or be enabled for this feature to
+  /// be satisfied.
+  static const unused = const FeatureDependency._("unused");
+
+  final String _name;
+
+  /// Whether this type of dependency enables the feature it depends on.
+  bool get isEnabled => this != unused;
+
+  const FeatureDependency._(this._name);
+
+  String toString() => _name;
 }
