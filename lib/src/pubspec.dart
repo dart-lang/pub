@@ -565,6 +565,7 @@ class Pubspec {
     _getError(() => this.devDependencies);
     _getError(() => this.transformers);
     _getError(() => this.publishTo);
+    _getError(() => this.features);
     _getError(() => this._parseEnvironment());
     return errors;
   }
