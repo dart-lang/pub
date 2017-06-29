@@ -459,41 +459,49 @@ dependencies:
 
     group("git dependencies", () {
       test("path must be a string", () {
-        expectPubspecException('''
+        expectPubspecException(
+            '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: 12
-''', (pubspec) => pubspec.dependencies);
+''',
+            (pubspec) => pubspec.dependencies);
       });
 
       test("path must be relative", () {
-        expectPubspecException('''
+        expectPubspecException(
+            '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: git://github.com/dart-lang/foo/bar
-''', (pubspec) => pubspec.dependencies);
+''',
+            (pubspec) => pubspec.dependencies);
 
-        expectPubspecException('''
+        expectPubspecException(
+            '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: /foo
-''', (pubspec) => pubspec.dependencies);
+''',
+            (pubspec) => pubspec.dependencies);
       });
 
       test("path must be within the repository", () {
-        expectPubspecException('''
+        expectPubspecException(
+            '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: foo/../../bar
-''', (pubspec) => pubspec.dependencies);
+''',
+            (pubspec) => pubspec.dependencies);
       });
     });
 

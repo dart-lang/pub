@@ -45,7 +45,9 @@ main() {
     ensureGit();
 
     var repo = d.git('foo.git', [
-      d.dir('sub', [d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])])
+      d.dir('sub', [
+        d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
+      ])
     ]);
     await repo.create();
 
@@ -62,7 +64,8 @@ main() {
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.hashDir('foo', [
           d.dir('sub', [
-          d.dir('dir', [d.libDir('sub', '1.0.0')])])
+            d.dir('dir', [d.libDir('sub', '1.0.0')])
+          ])
         ])
       ])
     ]).validate();
