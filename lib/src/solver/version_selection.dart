@@ -32,6 +32,9 @@ class VersionSelection {
   List<PackageId> get ids => new UnmodifiableListView<PackageId>(_ids);
   final _ids = <PackageId>[];
 
+  /// The new dependencies added by each id in [_ids].
+  final _dependenciesForIds = <Set<Dependency>>[];
+
   /// Tracks all of the dependencies on a given package.
   ///
   /// Each key is a package. Its value is the list of dependencies placed on
@@ -54,12 +57,17 @@ class VersionSelection {
   Future select(PackageId id) async {
     _unselected.remove(id.toRef());
     _ids.add(id);
-    await _addDependencies(id, await _solver.depsFor(id));
+
+    _dependenciesForIds
+        .add(await _addDependencies(id, await _solver.depsFor(id)));
   }
 
   /// Adds dependencies from [depender] on [ranges].
-  Future _addDependencies(
+  ///
+  /// Returns the set of dependencies that have been added due to [depender].
+  Future<Set<Dependency>> _addDependencies(
       PackageId depender, Iterable<PackageRange> ranges) async {
+    var newDeps = new Set<Dependency>.identity();
     for (var range in ranges) {
       var deps = getDependenciesOn(range.name);
       var isNewDep = deps.isEmpty && range.name != _solver.root.name;
@@ -68,7 +76,9 @@ class VersionSelection {
           : deps.fold(range.features,
               (features, dep) => features.difference(dep.dep.features));
 
-      deps.add(new Dependency(depender, range));
+      var dep = new Dependency(depender, range);
+      deps.add(dep);
+      newDeps.add(dep);
 
       if (isNewDep) {
         // If this is the first dependency on this package, add it to the
@@ -79,10 +89,12 @@ class VersionSelection {
         // features that are enabled by [dep].
         for (var feature in newFeatures) {
           var id = selected(range.name);
-          await _addDependencies(id, await _solver.depsForFeature(id, feature));
+          newDeps.addAll(await _addDependencies(
+              id, await _solver.depsForFeature(id, feature)));
         }
       }
     }
+    return newDeps;
   }
 
   /// Removes the most recently selected package from the selection.
@@ -90,13 +102,14 @@ class VersionSelection {
     var id = _ids.removeLast();
     await _unselected.add(id.toRef());
 
-    for (var dep in await _solver.depsFor(id)) {
-      var deps = getDependenciesOn(dep.name);
-      deps.removeLast();
-
-      if (deps.isEmpty) {
-        _unselected.remove(dep.toRef());
+    var removedDeps = _dependenciesForIds.removeLast();
+    for (var dep in removedDeps) {
+      var deps = getDependenciesOn(dep.dep.name);
+      while (deps.isNotEmpty && removedDeps.contains(deps.last)) {
+        deps.removeLast();
       }
+
+      if (deps.isEmpty) _unselected.remove(dep.dep.toRef());
     }
   }
 

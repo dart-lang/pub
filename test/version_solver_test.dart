@@ -1473,6 +1473,41 @@ void features() {
         result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}, tries: 2);
   });
 
+  test("disables a feature when it backtracks", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'myapp': '0.0.0'});
+      builder.serve('foo', '1.1.0', deps: {
+        // This is a transitively incompatible dependency with myapp, which will
+        // force the solver to backtrack and unselect foo 1.1.0.
+        'bar': '1.0.0',
+        'myapp': {
+          'version': '0.0.0',
+          'features': {'stuff': true}
+        }
+      });
+
+      builder.serve('bar', '1.0.0', deps: {'baz': '2.0.0'});
+
+      builder.serve('baz', '1.0.0');
+      builder.serve('baz', '2.0.0');
+
+      builder.serve('qux', '1.0.0');
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
+        'features': {
+          'stuff': {
+            'dependencies': {'qux': '1.0.0'}
+          }
+        }
+      })
+    ]).create();
+    await expectResolves(result: {'foo': '1.0.0', 'baz': '1.0.0'}, tries: 2);
+  });
+
   test("the root package's features are disabled by default", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');
