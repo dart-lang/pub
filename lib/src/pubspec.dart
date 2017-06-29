@@ -181,7 +181,11 @@ class Pubspec {
           var dependencies = _parseDependencies(
               'dependencies', specNode.nodes['dependencies']);
 
+          var sdkConstraints = _parseEnvironment(specNode);
+
           return new Feature(nameNode.value, dependencies,
+              dartSdkConstraint: sdkConstraints.first,
+              flutterSdkConstraint: sdkConstraints.last,
               onByDefault: onByDefault);
         });
     return _features;
@@ -279,7 +283,7 @@ class Pubspec {
   /// The constraint on the Dart SDK, or [VersionConstraint.any] if none is
   /// specified.
   VersionConstraint get dartSdkConstraint {
-    _parseEnvironment();
+    _ensureEnvironment();
     return _dartSdkConstraint;
   }
 
@@ -287,32 +291,40 @@ class Pubspec {
 
   /// The constraint on the Flutter SDK, or `null` if none is specified.
   VersionConstraint get flutterSdkConstraint {
-    _parseEnvironment();
+    _ensureEnvironment();
     return _flutterSdkConstraint;
   }
 
   VersionConstraint _flutterSdkConstraint;
 
-  /// Parses the "environment" field and sets [_dartSdkConstraint] and
-  /// [_flutterSdkConstraint] accordingly.
-  void _parseEnvironment() {
+  /// Ensures that the top-level "environment" field has been parsed and
+  /// [_dartSdkConstraint] and [_flutterSdkConstraint] are set accordingly.
+  void _ensureEnvironment() {
     if (_dartSdkConstraint != null) return;
 
-    var yaml = fields['environment'];
+    var pair = _parseEnvironment(fields);
+    _dartSdkConstraint = pair.first;
+    _flutterSdkConstraint = pair.last;
+  }
+
+  /// Parses the "environment" field in [parent] and returns the Dart and
+  /// Flutter SDK constraints, respectively.
+  Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
+    var yaml = parent['environment'];
     if (yaml == null) {
-      _dartSdkConstraint = VersionConstraint.any;
-      return;
+      return new Pair(VersionConstraint.any, null);
     }
 
     if (yaml is! Map) {
       _error('"environment" field must be a map.',
-          fields.nodes['environment'].span);
+          parent.nodes['environment'].span);
     }
 
-    _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk']);
-    _flutterSdkConstraint = yaml.containsKey('flutter')
-        ? _parseVersionConstraint(yaml.nodes['flutter'])
-        : null;
+    return new Pair(
+        _parseVersionConstraint(yaml.nodes['sdk']),
+        yaml.containsKey('flutter')
+            ? _parseVersionConstraint(yaml.nodes['flutter'])
+            : null);
   }
 
   /// The URL of the server that the package should default to being published
@@ -578,7 +590,7 @@ class Pubspec {
     _getError(() => this.transformers);
     _getError(() => this.publishTo);
     _getError(() => this.features);
-    _getError(() => this._parseEnvironment());
+    _getError(() => this._ensureEnvironment());
     return errors;
   }
 

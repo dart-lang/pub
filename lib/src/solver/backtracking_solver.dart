@@ -40,6 +40,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../barback.dart' as barback;
 import '../exceptions.dart';
+import '../feature.dart';
 import '../flutter.dart' as flutter;
 import '../http.dart';
 import '../lock_file.dart';
@@ -472,6 +473,12 @@ class BacktrackingSolver {
 
     _checkPubspecMatchesSdkConstraint(pubspec);
     _checkPubspecMatchesFeatures(pubspec);
+
+    for (var feature in pubspec.features.values) {
+      if (!_selection.isFeatureEnabled(id.name, feature)) continue;
+      _checkFeatureMatchesSdk(id, feature);
+    }
+
     await _checkDependencies(id, await depsFor(id));
 
     return true;
@@ -642,6 +649,7 @@ class BacktrackingSolver {
       // If [dep] doesn't enable the feature, don't check its dependencies.
       if (!feature.isEnabled(dep.dep.features)) continue;
 
+      _checkFeatureMatchesSdk(selected, feature);
       await _checkDependencies(selected, feature.dependencies);
     }
 
@@ -658,6 +666,37 @@ class BacktrackingSolver {
       throw new MissingFeatureException(
           dep.dep.name, selected.version, featureName, allDeps);
     });
+  }
+
+  /// Throws a [SolveFailure] if [feature]'s SDK constraints aren't compatible
+  /// with the current SDK.
+  void _checkFeatureMatchesSdk(PackageId id, Feature feature) {
+    if (_overrides.containsKey(id.name)) return;
+
+    if (!feature.dartSdkConstraint.allows(sdk.version)) {
+      throw new BadSdkVersionException(
+          id.name,
+          'Package ${id.name} feature ${feature.name} requires SDK version '
+          '${feature.dartSdkConstraint} but the current SDK is '
+          '${sdk.version}.');
+    }
+
+    if (feature.flutterSdkConstraint != null) {
+      if (!flutter.isAvailable) {
+        throw new BadSdkVersionException(
+            id.name,
+            'Package ${id.name} feature ${feature.name} requires the Flutter '
+            'SDK, which is not available.');
+      }
+
+      if (!feature.flutterSdkConstraint.allows(flutter.version)) {
+        throw new BadSdkVersionException(
+            id.name,
+            'Package ${id.name} feature ${feature.name} requires Flutter SDK '
+            'version ${feature.flutterSdkConstraint} but the current SDK is '
+            '${flutter.version}.');
+      }
+    }
   }
 
   /// Marks the package named [name] as having failed.
