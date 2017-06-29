@@ -201,7 +201,7 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
 }());
 
 require.config({
-    waitSeconds: 30,
+    waitSeconds: 0,
     paths: customModulePaths
 });
 
