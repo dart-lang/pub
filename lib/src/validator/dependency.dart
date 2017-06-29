@@ -20,7 +20,7 @@ import '../validator.dart';
 final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
 
 /// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = new Version.parse("1.25.0-dev.4.0");
+final _firstGitPathVersion = new Version.parse("1.25.0-dev.5.0");
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
