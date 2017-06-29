@@ -79,13 +79,13 @@ class AssetEnvironment {
       Iterable<AssetId> entrypoints,
       Map<String, String> environmentConstants,
       Compiler compiler,
-      int buildDelay}) {
+      Duration buildDelay}) {
     watcherType ??= WatcherType.NONE;
     hostname ??= "localhost";
     basePort ??= 0;
     environmentConstants ??= {};
     compiler ??= Compiler.dart2JS;
-    buildDelay ??= 0;
+    buildDelay ??= new Duration();
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -140,8 +140,9 @@ class AssetEnvironment {
   /// environment, keyed by their root directory.
   final _directories = new Map<String, SourceDirectory>();
 
-  /// The servers associated with each [SourceDirectory] in [_directories].
-  final _servers = new Map<SourceDirectory, BarbackServer>();
+  /// The barback servers associated with [_directories], keyed by their root
+  /// directory.
+  final _servers = new Map<String, BarbackServer>();
 
   /// The [Barback] instance used to process assets in this environment.
   final Barback barback;
@@ -192,14 +193,16 @@ class AssetEnvironment {
   /// servers before barback starts building and producing results
   /// asynchronously.
   ///
-  /// If this is `null`, then the environment is "live" and all updates will
-  /// go to barback immediately.
+  /// Similarly, builds may be delayed based on [_buildDelay] and this holds any
+  /// pending changes.
   final _modifiedSources = <AssetId, ChangeType>{};
 
   /// The amount of time to wait in between file system events before running
-  /// a new build. Servers will be paused after the first event is received
-  /// until the next build is started.
-  final int _buildDelay;
+  /// a new build.
+  ///
+  /// Servers will be paused after the first event is received until the next
+  /// build is started.
+  final Duration _buildDelay;
 
   /// The compiler mode for this environment.
   final Compiler compiler;
@@ -214,7 +217,12 @@ class AssetEnvironment {
       this.environmentConstants,
       this.compiler,
       this._buildDelay,
-      {this.dartDevcEnvironment});
+      {this.dartDevcEnvironment}) {
+    _buildTimer = new RestartableTimer(_buildDelay, () {
+      _doUpdate();
+      _resumeServers();
+    });
+  }
 
   /// Performs any necessary cleanup before shutdown.
   Future cleanUp() async {
@@ -314,7 +322,7 @@ class AssetEnvironment {
         await _provideDirectorySources(rootPackage, rootDirectory);
     var server =
         await sourceDirectory.serve(dartDevcEnvironment: dartDevcEnvironment);
-    _servers[sourceDirectory] = server;
+    _servers[rootDirectory] = server;
     return server;
   }
 
@@ -375,7 +383,7 @@ class AssetEnvironment {
   Future<Uri> unserveDirectory(String rootDirectory) async {
     log.fine("Unserving $rootDirectory.");
     var directory = _directories.remove(rootDirectory);
-    _servers.remove(directory);
+    _servers.remove(rootDirectory);
     if (directory == null) return new Future.value();
 
     var url = (await directory.server).url;
@@ -411,7 +419,7 @@ class AssetEnvironment {
         .where((dir) => path.isWithin(dir.directory, assetPath))
         .map((dir) {
       var relativePath = path.relative(assetPath, from: dir.directory);
-      return _servers[dir].url.resolveUri(path.toUri(relativePath));
+      return _servers[dir.directory].url.resolveUri(path.toUri(relativePath));
     }).toList();
   }
 
@@ -421,7 +429,8 @@ class AssetEnvironment {
     if (components.first != "packages") return [];
     if (!graph.packages.containsKey(components[1])) return [];
     return _directories.values
-        .map((dir) => _servers[dir].url.resolveUri(path.toUri(assetPath)))
+        .map((dir) =>
+            _servers[dir.directory].url.resolveUri(path.toUri(assetPath)))
         .toList();
   }
 
@@ -445,7 +454,7 @@ class AssetEnvironment {
       }
 
       return _directories.values.map((dir) {
-        return _servers[dir].url.resolveUri(uri);
+        return _servers[dir.directory].url.resolveUri(uri);
       }).toList();
     }
 
@@ -473,17 +482,30 @@ class AssetEnvironment {
     return directories.any((dir) => path.isWithin(dir, sourcePath));
   }
 
+  /// Whether or not are currently pausing updates, based on a call to
+  /// [pauseUpdates].
+  ///
+  /// Can be resumed with a call to [resumeUpdates].
+  bool _updatesPaused = false;
+
   /// Pauses sending source asset updates to barback.
   void pauseUpdates() {
-    assert(_paused == false);
-    _paused = true;
+    assert(_updatesPaused == false);
+    _updatesPaused = true;
+
+    /// Cancel any pending scheduled updates.
+    if (_buildTimer.isActive) {
+      _buildTimer.cancel();
+      _resumeServers();
+    }
   }
 
   /// Sends any pending source updates to barback and begins the asynchronous
   /// build process.
   void resumeUpdates() {
-    assert(_paused == true);
-    _paused = false;
+    assert(_updatesPaused == true);
+    _updatesPaused = false;
+    _doUpdate();
   }
 
   /// Loads the assets and transformers for this environment.
@@ -628,21 +650,6 @@ class AssetEnvironment {
     });
   }
 
-  bool __paused = false;
-  bool get _paused => __paused;
-  void set _paused(bool newState) {
-    __paused = newState;
-    if (_paused) {
-      if (_scheduledUpdate != null) {
-        _scheduledUpdate.cancel();
-        _scheduledUpdate = null;
-        _resumeServers();
-      }
-    } else {
-      _doUpdate();
-    }
-  }
-
   void _pauseServers() {
     for (var server in _servers.values) {
       server.pause();
@@ -655,59 +662,53 @@ class AssetEnvironment {
     }
   }
 
-  /// An update that is scheduled to happen sometime in the future, or `null`.
-  CancelableOperation _scheduledUpdate;
+  /// A timer which is reset any time a file system event is seen.
+  ///
+  /// When the timer completes then a build will be started.
+  RestartableTimer _buildTimer;
 
   /// Schedules a cancellable update for [_buildDelay]ms in the future.
   ///
   /// If one is already scheduled then it is cancelled, and this one takes its
   /// place.
   void _scheduleUpdate() {
-    if (_paused) return;
-    if (_buildDelay == 0) {
+    if (_updatesPaused) return;
+    if (_buildDelay.inMilliseconds == 0) {
       _doUpdate();
       return;
     }
 
-    if (_scheduledUpdate == null) _pauseServers();
-    _scheduledUpdate?.cancel();
-    var cancelled = false;
-    _scheduledUpdate = new CancelableOperation.fromFuture(
-        new Future.delayed(new Duration(milliseconds: _buildDelay), () {
-          if (cancelled) return;
-          _scheduledUpdate = null;
-          _doUpdate();
-          _resumeServers();
-        }), onCancel: () {
-      cancelled = true;
-    });
+    if (!_buildTimer.isActive) _pauseServers();
+    _buildTimer.reset();
   }
 
   /// Immediately updates all pending srcs with all environments.
   void _doUpdate() {
-    if (_paused) return;
-    if (_scheduledUpdate != null) {
-      _scheduledUpdate.cancel();
-      _scheduledUpdate = null;
+    if (_updatesPaused) return;
+    if (_buildTimer.isActive) {
+      _buildTimer.cancel();
       _resumeServers();
     }
+
     var updates = <AssetId>[];
     var deletes = <AssetId>[];
-    var packages = new Set<String>();
-    for (var id in _modifiedSources.keys) {
-      var type = _modifiedSources[id];
-      if (type == ChangeType.REMOVE) {
+    var changedPackages = new Set<String>();
+
+    _modifiedSources.forEach((id, changeType) {
+      if (changeType == ChangeType.REMOVE) {
         deletes.add(id);
       } else {
         updates.add(id);
       }
-      packages.add(id.package);
-    }
+      changedPackages.add(id.package);
+    });
+
     barback.updateSources(updates);
     barback.removeSources(deletes);
     if (dartDevcEnvironment != null) {
-      packages.forEach(dartDevcEnvironment.invalidatePackage);
+      changedPackages.forEach(dartDevcEnvironment.invalidatePackage);
     }
+
     _modifiedSources.clear();
   }
 
@@ -751,15 +752,15 @@ class AssetEnvironment {
 
       var idPath = package.relative(event.path);
       var id = new AssetId(package.name, path.toUri(idPath).toString());
-      var prev = _modifiedSources[id];
+      var previousModification = _modifiedSources[id];
       if (event.type == ChangeType.REMOVE) {
-        if (prev == ChangeType.ADD) {
+        if (previousModification == ChangeType.ADD) {
           _modifiedSources.remove(id);
         } else {
           _modifiedSources[id] = ChangeType.REMOVE;
         }
       } else if (event.type == ChangeType.ADD) {
-        if (prev == ChangeType.REMOVE) {
+        if (previousModification == ChangeType.REMOVE) {
           _modifiedSources.remove(id);
         } else {
           _modifiedSources[id] = ChangeType.ADD;

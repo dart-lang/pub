@@ -104,7 +104,8 @@ class ServeCommand extends BarbackCommand {
         basePort: port,
         compiler: compiler,
         environmentConstants: environmentConstants,
-        buildDelay: parseInt(argResults['build-delay'], 'build-delay'));
+        buildDelay: new Duration(
+            milliseconds: parseInt(argResults['build-delay'], 'build-delay')));
 
     StreamSubscription<ProcessSignal> sigintListener;
     sigintListener = ProcessSignal.SIGINT.watch().listen((_) {
