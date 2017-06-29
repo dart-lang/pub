@@ -122,7 +122,7 @@ main() {
           'subdir', [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')])
     ]);
     await repo.create();
-    var revision = await repo.revParse('HEAD');
+    var oldRevision = await repo.revParse('HEAD');
 
     deleteEntry(p.join(d.sandbox, 'foo.git', 'subdir'));
 
@@ -130,10 +130,11 @@ main() {
       d.dir(
           'subdir', [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')])
     ]).commit();
+    var newRevision = await repo.revParse('HEAD');
 
     await d.appDir({
       "sub1": {
-        "git": {"url": "../foo.git", "path": "subdir", "ref": revision}
+        "git": {"url": "../foo.git", "path": "subdir", "ref": oldRevision}
       },
       "sub2": {
         "git": {"url": "../foo.git", "path": "subdir"}
@@ -145,18 +146,18 @@ main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.hashDir('foo', [
+        d.dir('foo-$oldRevision', [
           d.dir('subdir', [d.libDir('sub1', '1.0.0')])
         ]),
-        d.hashDir('foo', [
+        d.dir('foo-$newRevision', [
           d.dir('subdir', [d.libDir('sub2', '1.0.0')])
         ])
       ])
     ]).validate();
 
     await d.appPackagesFile({
-      'sub1': pathInCache('git/foo-$revision/subdir'),
-      'sub2': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
+      'sub1': pathInCache('git/foo-$oldRevision/subdir'),
+      'sub2': pathInCache('git/foo-$newRevision/subdir')
     }).validate();
   });
 }
