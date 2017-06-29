@@ -44,6 +44,8 @@ abstract class BaseServer<T> {
         _server,
         const shelf.Pipeline()
             .addMiddleware(shelf.createMiddleware(errorHandler: _handleError))
+            .addMiddleware(shelf.createMiddleware(
+                requestHandler: (_) => _pausedCompleter?.future))
             .addHandler(handleRequest));
   }
 
@@ -119,5 +121,19 @@ abstract class BaseServer<T> {
     _resultsController.addError(error, stackTrace);
     close();
     return new shelf.Response.internalServerError();
+  }
+
+  /// If paused, this will be non-null and complete when the server should
+  /// resume serving requests.
+  Completer<Null> _pausedCompleter;
+
+  void pause() {
+    _pausedCompleter ??= new Completer<Null>();
+  }
+
+  void resume() {
+    if (_pausedCompleter?.isCompleted == true) return;
+    _pausedCompleter?.complete();
+    _pausedCompleter = null;
   }
 }

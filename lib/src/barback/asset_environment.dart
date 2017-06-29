@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:path/path.dart' as path;
 import 'package:watcher/watcher.dart';
@@ -62,6 +63,11 @@ class AssetEnvironment {
   /// If [environmentConstants] is passed, the constants it defines are passed
   /// on to the built-in dart2js transformer.
   ///
+  /// If [buildDelay] is passed then it waits until [buildDelay]ms have elapsed
+  /// between subsequent file events before scheduling a new build. All servers
+  /// will also be paused as soon as the first event is received, until the new
+  /// build is started.
+  ///
   /// Returns a [Future] that completes to the environment once the inputs,
   /// transformers, and server are loaded and ready.
   static Future<AssetEnvironment> create(
@@ -72,12 +78,14 @@ class AssetEnvironment {
       Iterable<String> packages,
       Iterable<AssetId> entrypoints,
       Map<String, String> environmentConstants,
-      Compiler compiler}) {
+      Compiler compiler,
+      int buildDelay}) {
     watcherType ??= WatcherType.NONE;
     hostname ??= "localhost";
     basePort ??= 0;
     environmentConstants ??= {};
     compiler ??= Compiler.dart2JS;
+    buildDelay ??= 0;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -89,8 +97,16 @@ class AssetEnvironment {
       }
       barback.log.listen(_log);
 
-      var environment = new AssetEnvironment._(graph, barback, mode,
-          watcherType, hostname, basePort, environmentConstants, compiler,
+      var environment = new AssetEnvironment._(
+          graph,
+          barback,
+          mode,
+          watcherType,
+          hostname,
+          basePort,
+          environmentConstants,
+          compiler,
+          buildDelay,
           dartDevcEnvironment: dartDevcEnvironment);
 
       await environment._load(entrypoints: entrypoints);
@@ -123,6 +139,9 @@ class AssetEnvironment {
   /// The public directories in the root package that are included in the asset
   /// environment, keyed by their root directory.
   final _directories = new Map<String, SourceDirectory>();
+
+  /// The servers associated with each [SourceDirectory] in [_directories].
+  final _servers = new Map<SourceDirectory, BarbackServer>();
 
   /// The [Barback] instance used to process assets in this environment.
   final Barback barback;
@@ -175,13 +194,26 @@ class AssetEnvironment {
   ///
   /// If this is `null`, then the environment is "live" and all updates will
   /// go to barback immediately.
-  Set<AssetId> _modifiedSources;
+  final _modifiedSources = <AssetId, ChangeType>{};
+
+  /// The amount of time to wait in between file system events before running
+  /// a new build. Servers will be paused after the first event is received
+  /// until the next build is started.
+  final int _buildDelay;
 
   /// The compiler mode for this environment.
   final Compiler compiler;
 
-  AssetEnvironment._(this.graph, this.barback, this.mode, this._watcherType,
-      this._hostname, this._basePort, this.environmentConstants, this.compiler,
+  AssetEnvironment._(
+      this.graph,
+      this.barback,
+      this.mode,
+      this._watcherType,
+      this._hostname,
+      this._basePort,
+      this.environmentConstants,
+      this.compiler,
+      this._buildDelay,
       {this.dartDevcEnvironment});
 
   /// Performs any necessary cleanup before shutdown.
@@ -280,8 +312,10 @@ class AssetEnvironment {
 
     sourceDirectory.watchSubscription =
         await _provideDirectorySources(rootPackage, rootDirectory);
-    return await sourceDirectory.serve(
-        dartDevcEnvironment: dartDevcEnvironment);
+    var server =
+        await sourceDirectory.serve(dartDevcEnvironment: dartDevcEnvironment);
+    _servers[sourceDirectory] = server;
+    return server;
   }
 
   /// Binds a new port to serve assets from within the "bin" directory of
@@ -341,6 +375,7 @@ class AssetEnvironment {
   Future<Uri> unserveDirectory(String rootDirectory) async {
     log.fine("Unserving $rootDirectory.");
     var directory = _directories.remove(rootDirectory);
+    _servers.remove(directory);
     if (directory == null) return new Future.value();
 
     var url = (await directory.server).url;
@@ -369,32 +404,30 @@ class AssetEnvironment {
 
   /// Look up [assetPath] in the root directories of servers running in the
   /// entrypoint package.
-  Future<List<Uri>> _lookUpPathInServerRoot(String assetPath) {
+  List<Uri> _lookUpPathInServerRoot(String assetPath) {
     // Find all of the servers whose root directories contain the asset and
     // generate appropriate URLs for each.
-    return Future.wait(_directories.values
+    return _directories.values
         .where((dir) => path.isWithin(dir.directory, assetPath))
         .map((dir) {
       var relativePath = path.relative(assetPath, from: dir.directory);
-      return dir.server
-          .then((server) => server.url.resolveUri(path.toUri(relativePath)));
-    }));
+      return _servers[dir].url.resolveUri(path.toUri(relativePath));
+    }).toList();
   }
 
   /// Look up [assetPath] in the "packages" directory in the entrypoint package.
-  Future<List<Uri>> _lookUpPathInPackagesDirectory(String assetPath) {
+  List<Uri> _lookUpPathInPackagesDirectory(String assetPath) {
     var components = path.split(path.relative(assetPath));
-    if (components.first != "packages") return new Future.value([]);
-    if (!graph.packages.containsKey(components[1])) return new Future.value([]);
-    return Future.wait(_directories.values.map((dir) {
-      return dir.server
-          .then((server) => server.url.resolveUri(path.toUri(assetPath)));
-    }));
+    if (components.first != "packages") return [];
+    if (!graph.packages.containsKey(components[1])) return [];
+    return _directories.values
+        .map((dir) => _servers[dir].url.resolveUri(path.toUri(assetPath)))
+        .toList();
   }
 
   /// Look up [assetPath] in the "lib" or "asset" directory of a dependency
   /// package.
-  Future<List<Uri>> _lookUpPathInDependency(String assetPath) {
+  List<Uri> _lookUpPathInDependency(String assetPath) {
     for (var packageName in graph.packages.keys) {
       var package = graph.packages[packageName];
       var libDir = package.path('lib');
@@ -411,12 +444,12 @@ class AssetEnvironment {
         continue;
       }
 
-      return Future.wait(_directories.values.map((dir) {
-        return dir.server.then((server) => server.url.resolveUri(uri));
-      }));
+      return _directories.values.map((dir) {
+        return _servers[dir].url.resolveUri(uri);
+      }).toList();
     }
 
-    return new Future.value([]);
+    return [];
   }
 
   /// Given a URL to an asset served by this environment, returns the ID of the
@@ -424,17 +457,12 @@ class AssetEnvironment {
   ///
   /// If no server can serve [url], completes to `null`.
   Future<AssetId> getAssetIdForUrl(Uri url) {
-    return Future
-        .wait(_directories.values.map((dir) => dir.server))
-        .then((servers) {
-      var server = servers.firstWhere((server) {
-        if (server.port != url.port) return false;
-        return isLoopback(server.address.host) == isLoopback(url.host) ||
-            server.address.host == url.host;
-      }, orElse: () => null);
-      if (server == null) return null;
-      return server.urlToId(url);
-    });
+    var server = _servers.values.firstWhere((server) {
+      if (server.port != url.port) return false;
+      return isLoopback(server.address.host) == isLoopback(url.host) ||
+          server.address.host == url.host;
+    }, orElse: () => null);
+    return new Future.value(server?.urlToId(url));
   }
 
   /// Determines if [sourcePath] is contained within any of the directories in
@@ -447,25 +475,15 @@ class AssetEnvironment {
 
   /// Pauses sending source asset updates to barback.
   void pauseUpdates() {
-    // Cannot pause while already paused.
-    assert(_modifiedSources == null);
-
-    _modifiedSources = new Set<AssetId>();
+    assert(_paused == false);
+    _paused = true;
   }
 
   /// Sends any pending source updates to barback and begins the asynchronous
   /// build process.
   void resumeUpdates() {
-    // Cannot resume while not paused.
-    assert(_modifiedSources != null);
-
-    barback.updateSources(_modifiedSources);
-    if (dartDevcEnvironment != null) {
-      var modifiedPackages = new Set<String>()
-        ..addAll(_modifiedSources.map((id) => id.package));
-      modifiedPackages.forEach(dartDevcEnvironment.invalidatePackage);
-    }
-    _modifiedSources = null;
+    assert(_paused == true);
+    _paused = false;
   }
 
   /// Loads the assets and transformers for this environment.
@@ -574,23 +592,15 @@ class AssetEnvironment {
   /// Updates barback with all of the files in [dir] inside [package].
   void _updateDirectorySources(Package package, String dir) {
     var ids = _listDirectorySources(package, dir);
-    if (_modifiedSources == null) {
-      barback.updateSources(ids);
-      dartDevcEnvironment?.invalidatePackage(package.name);
-    } else {
-      _modifiedSources.addAll(ids);
-    }
+    ids.forEach((id) => _modifiedSources[id] = ChangeType.MODIFY);
+    _doUpdate();
   }
 
   /// Removes all of the files in [dir] in the root package from barback.
   void _removeDirectorySources(String dir) {
     var ids = _listDirectorySources(rootPackage, dir);
-    if (_modifiedSources == null) {
-      barback.removeSources(ids);
-      dartDevcEnvironment?.invalidatePackage(rootPackage.name);
-    } else {
-      _modifiedSources.removeAll(ids);
-    }
+    ids.forEach((id) => _modifiedSources[id] = ChangeType.REMOVE);
+    _doUpdate();
   }
 
   /// Lists all of the source assets in [dir] inside [package].
@@ -618,6 +628,83 @@ class AssetEnvironment {
     });
   }
 
+  bool __paused = false;
+  bool get _paused => __paused;
+  void set _paused(bool newState) {
+    __paused = newState;
+    if (_paused) {
+      if (_scheduledUpdate != null) {
+        _scheduledUpdate.cancel();
+        _scheduledUpdate = null;
+        _resumeServers();
+      }
+    } else {
+      _doUpdate();
+    }
+  }
+
+  void _pauseServers() {
+    for (var server in _servers.values) {
+      server.pause();
+    }
+  }
+
+  void _resumeServers() {
+    for (var server in _servers.values) {
+      server.resume();
+    }
+  }
+
+  CancelableOperation _scheduledUpdate;
+  void _scheduleUpdate() {
+    if (_paused) return;
+    if (_buildDelay == 0) {
+      _doUpdate();
+      return;
+    }
+
+    if (_scheduledUpdate == null) _pauseServers();
+    _scheduledUpdate?.cancel();
+    var cancelled = false;
+    _scheduledUpdate = new CancelableOperation.fromFuture(
+        new Future.delayed(new Duration(milliseconds: _buildDelay), () {
+          if (cancelled) return;
+          _scheduledUpdate = null;
+          _doUpdate();
+          _resumeServers();
+        }), onCancel: () {
+      cancelled = true;
+    });
+  }
+
+  /// Immediately updates all pending srcs with all environments.
+  void _doUpdate() {
+    if (_paused) return;
+    if (_scheduledUpdate != null) {
+      _scheduledUpdate.cancel();
+      _scheduledUpdate = null;
+      _resumeServers();
+    }
+    var updates = <AssetId>[];
+    var deletes = <AssetId>[];
+    var packages = new Set<String>();
+    for (var id in _modifiedSources.keys) {
+      var type = _modifiedSources[id];
+      if (type == ChangeType.REMOVE) {
+        deletes.add(id);
+      } else {
+        updates.add(id);
+      }
+      packages.add(id.package);
+    }
+    barback.updateSources(updates);
+    barback.removeSources(deletes);
+    if (dartDevcEnvironment != null) {
+      packages.forEach(dartDevcEnvironment.invalidatePackage);
+    }
+    _modifiedSources.clear();
+  }
+
   /// Adds a file watcher for [dir] within [package], if the directory exists
   /// and the package needs watching.
   Future<StreamSubscription<WatchEvent>> _watchDirectorySources(
@@ -636,6 +723,7 @@ class AssetEnvironment {
 
     // TODO(nweiz): close this watcher when [barback] is closed.
     var watcher = _watcherType.create(subdirectory);
+
     var subscription = watcher.events.listen((event) {
       // Don't watch files symlinked into these directories.
       // TODO(rnystrom): If pub gets rid of symlinks, remove this.
@@ -657,19 +745,23 @@ class AssetEnvironment {
 
       var idPath = package.relative(event.path);
       var id = new AssetId(package.name, path.toUri(idPath).toString());
+      var prev = _modifiedSources[id];
       if (event.type == ChangeType.REMOVE) {
-        if (_modifiedSources != null) {
+        if (prev == ChangeType.ADD) {
           _modifiedSources.remove(id);
         } else {
-          barback.removeSources([id]);
-          dartDevcEnvironment?.invalidatePackage(package.name);
+          _modifiedSources[id] = ChangeType.REMOVE;
         }
-      } else if (_modifiedSources != null) {
-        _modifiedSources.add(id);
+      } else if (event.type == ChangeType.ADD) {
+        if (prev == ChangeType.REMOVE) {
+          _modifiedSources.remove(id);
+        } else {
+          _modifiedSources[id] = ChangeType.ADD;
+        }
       } else {
-        barback.updateSources([id]);
-        dartDevcEnvironment?.invalidatePackage(package.name);
+        _modifiedSources[id] = ChangeType.MODIFY;
       }
+      _scheduleUpdate();
     });
 
     return watcher.ready.then((_) => subscription);
