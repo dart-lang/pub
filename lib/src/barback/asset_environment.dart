@@ -63,7 +63,7 @@ class AssetEnvironment {
   /// If [environmentConstants] is passed, the constants it defines are passed
   /// on to the built-in dart2js transformer.
   ///
-  /// If [buildDelay] is passed then it waits until [buildDelay]ms have elapsed
+  /// If [buildDelay] is passed then it waits until [buildDelay] has elapsed
   /// between subsequent file events before scheduling a new build. All servers
   /// will also be paused as soon as the first event is received, until the new
   /// build is started.
@@ -85,7 +85,7 @@ class AssetEnvironment {
     basePort ??= 0;
     environmentConstants ??= {};
     compiler ??= Compiler.dart2JS;
-    buildDelay ??= new Duration();
+    buildDelay ??= Duration.ZERO;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -204,6 +204,11 @@ class AssetEnvironment {
   /// build is started.
   final Duration _buildDelay;
 
+  /// A timer which is reset any time a file system event is seen.
+  ///
+  /// When the timer completes then a build will be started.
+  RestartableTimer _buildTimer;
+
   /// The compiler mode for this environment.
   final Compiler compiler;
 
@@ -222,6 +227,7 @@ class AssetEnvironment {
       _doUpdate();
       _resumeServers();
     });
+    _buildTimer.cancel();
   }
 
   /// Performs any necessary cleanup before shutdown.
@@ -486,11 +492,11 @@ class AssetEnvironment {
   /// [pauseUpdates].
   ///
   /// Can be resumed with a call to [resumeUpdates].
-  bool _updatesPaused = false;
+  var _updatesPaused = false;
 
   /// Pauses sending source asset updates to barback.
   void pauseUpdates() {
-    assert(_updatesPaused == false);
+    assert(!_updatesPaused);
     _updatesPaused = true;
 
     /// Cancel any pending scheduled updates.
@@ -503,7 +509,7 @@ class AssetEnvironment {
   /// Sends any pending source updates to barback and begins the asynchronous
   /// build process.
   void resumeUpdates() {
-    assert(_updatesPaused == true);
+    assert(_updatesPaused);
     _updatesPaused = false;
     _doUpdate();
   }
@@ -650,22 +656,19 @@ class AssetEnvironment {
     });
   }
 
+  /// Pauses all the [BarbackServer]s in [_servers] synchronously.
   void _pauseServers() {
     for (var server in _servers.values) {
       server.pause();
     }
   }
 
+  /// Resumes all the [BarbackServer]s in [_servers] synchronously.
   void _resumeServers() {
     for (var server in _servers.values) {
       server.resume();
     }
   }
-
-  /// A timer which is reset any time a file system event is seen.
-  ///
-  /// When the timer completes then a build will be started.
-  RestartableTimer _buildTimer;
 
   /// Schedules a cancellable update for [_buildDelay]ms in the future.
   ///
@@ -673,7 +676,7 @@ class AssetEnvironment {
   /// place.
   void _scheduleUpdate() {
     if (_updatesPaused) return;
-    if (_buildDelay.inMilliseconds == 0) {
+    if (_buildDelay == Duration.ZERO) {
       _doUpdate();
       return;
     }

@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
+import 'package:pub/src/io.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  File libFile;
+  String libFilePath;
 
   setUp(() async {
     await d.dir(appPath, [
@@ -24,7 +24,7 @@ main() {
     ]).create();
 
     await pubGet();
-    libFile = new File(p.join(d.sandbox, appPath, "lib", "lib.dart"));
+    libFilePath = p.join(d.sandbox, appPath, "lib", "lib.dart");
   });
 
   test("setting build-delay to zero causes a build per edit", () async {
@@ -36,8 +36,9 @@ main() {
 
     // Flush here as that helps to make sure we get multiple modify events,
     // otherwise we tend to only get one.
-    libFile.writeAsStringSync("foo() => 'bar';", flush: true);
-    libFile.writeAsStringSync("foo() => 'baz';", flush: true);
+    writeTextFile(libFilePath, "foo() => 'bar';");
+    await new Future(() {});
+    writeTextFile(libFilePath, "foo() => 'baz';");
 
     // Should see multiple builds.
     expect(pubServeProcess.stdout,
@@ -57,9 +58,9 @@ main() {
         emitsThrough(contains('Build completed successfully')));
     await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
 
-    await libFile.writeAsString("foo() => 'bar';");
+    writeTextFile(libFilePath, "foo() => 'bar';");
     await new Future.delayed(new Duration(milliseconds: 500));
-    await libFile.writeAsString("foo() => 'baz';");
+    writeTextFile(libFilePath, "foo() => 'baz';");
 
     // Should only see one build.
     expect(pubServeProcess.stdout,
@@ -79,7 +80,7 @@ main() {
     await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
 
     for (var i = 0; i < 10; i++) {
-      await libFile.writeAsString("foo() => '$i';");
+      writeTextFile(libFilePath, "foo() => '$i';");
       await new Future.delayed(new Duration(milliseconds: 50));
     }
 
@@ -89,6 +90,33 @@ main() {
     expect(pubServeProcess.stdout, neverEmits('Build completed successfully'));
 
     await requestShouldSucceed("packages/myapp/lib.dart", "foo() => '9';");
+
+    await endPubServe();
+  });
+
+  // Regression test for https://github.com/dart-lang/sdk/issues/29890
+  test("editors safe write features shouldn't cause failed builds", () async {
+    var pubServeProcess = await pubServe(forcePoll: false);
+    expect(pubServeProcess.stdout,
+        emitsThrough(contains('Build completed successfully')));
+    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
+
+    // Simulate the safe-write feature from many editors:
+    //   - Create a backup file
+    //   - Edit original file
+    //   - Delete backup file
+    var backupFilePath = p.join(d.sandbox, appPath, "lib", "lib.dart.bak");
+    writeTextFile(backupFilePath, "foo() => 'foo';");
+    // Allow pub to schedule a new build.
+    await new Future(() {});
+    writeTextFile(libFilePath, "foo() => 'bar';");
+    deleteEntry(backupFilePath);
+
+    expect(pubServeProcess.stderr, neverEmits(contains("Build error")));
+    expect(pubServeProcess.stdout,
+        emitsThrough(contains('Build completed successfully')));
+    await requestShould404("packages/myapp/lib.dart.bak");
+    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'bar';");
 
     await endPubServe();
   });
