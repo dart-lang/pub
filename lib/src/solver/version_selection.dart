@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../package_name.dart';
@@ -31,6 +32,9 @@ class VersionSelection {
   List<PackageId> get ids => new UnmodifiableListView<PackageId>(_ids);
   final _ids = <PackageId>[];
 
+  /// The new dependencies added by each id in [_ids].
+  final _dependenciesForIds = <Set<Dependency>>[];
+
   /// Tracks all of the dependencies on a given package.
   ///
   /// Each key is a package. Its value is the list of dependencies placed on
@@ -54,20 +58,43 @@ class VersionSelection {
     _unselected.remove(id.toRef());
     _ids.add(id);
 
-    // TODO(nweiz): Use a real for loop when issue 23394 is fixed.
+    _dependenciesForIds
+        .add(await _addDependencies(id, await _solver.depsFor(id)));
+  }
 
-    // Add all of [id]'s dependencies to [_dependencies], as well as to
-    // [_unselected] if necessary.
-    await Future.forEach(await _solver.depsFor(id), (dep) async {
-      var deps = getDependenciesOn(dep.name);
-      deps.add(new Dependency(id, dep));
+  /// Adds dependencies from [depender] on [ranges].
+  ///
+  /// Returns the set of dependencies that have been added due to [depender].
+  Future<Set<Dependency>> _addDependencies(
+      PackageId depender, Iterable<PackageRange> ranges) async {
+    var newDeps = new Set<Dependency>.identity();
+    for (var range in ranges) {
+      var deps = getDependenciesOn(range.name);
+      var isNewDep = deps.isEmpty && range.name != _solver.root.name;
+      var newFeatures = isNewDep
+          ? const UnmodifiableSetView.empty()
+          : deps.fold(range.features,
+              (features, dep) => features.difference(dep.dep.features));
 
-      // If this is the first dependency on this package, add it to the
-      // unselected queue.
-      if (deps.length == 1 && dep.name != _solver.root.name) {
-        await _unselected.add(dep.toRef());
+      var dep = new Dependency(depender, range);
+      deps.add(dep);
+      newDeps.add(dep);
+
+      if (isNewDep) {
+        // If this is the first dependency on this package, add it to the
+        // unselected queue.
+        await _unselected.add(range.toRef());
+      } else {
+        // If this is an existing dependency, add any dependencies from new
+        // features that are enabled by [dep].
+        for (var feature in newFeatures) {
+          var id = selected(range.name);
+          newDeps.addAll(await _addDependencies(
+              id, await _solver.depsForFeature(id, feature)));
+        }
       }
-    });
+    }
+    return newDeps;
   }
 
   /// Removes the most recently selected package from the selection.
@@ -75,13 +102,14 @@ class VersionSelection {
     var id = _ids.removeLast();
     await _unselected.add(id.toRef());
 
-    for (var dep in await _solver.depsFor(id)) {
-      var deps = getDependenciesOn(dep.name);
-      deps.removeLast();
-
-      if (deps.isEmpty) {
-        _unselected.remove(dep.toRef());
+    var removedDeps = _dependenciesForIds.removeLast();
+    for (var dep in removedDeps) {
+      var deps = getDependenciesOn(dep.dep.name);
+      while (deps.isNotEmpty && removedDeps.contains(deps.last)) {
+        deps.removeLast();
       }
+
+      if (deps.isEmpty) _unselected.remove(dep.dep.toRef());
     }
   }
 
@@ -118,6 +146,16 @@ class VersionSelection {
 
     return constraint;
   }
+
+  /// Returns whether the [feature] of [package] is already enabled by an
+  /// existing dependency.
+  bool isFeatureEnabled(String package, String feature) =>
+      getDependenciesOn(package)
+          .any((dep) => dep.dep.features.contains(feature));
+
+  /// Returns the set of features that are enabled by dependencies on [package].
+  Set<String> featuresForPackage(String package) => getDependenciesOn(package)
+      .fold(new Set(), (features, dep) => features..addAll(dep.dep.features));
 
   /// Returns a string description of the dependencies on [name].
   String describeDependencies(String name) =>
