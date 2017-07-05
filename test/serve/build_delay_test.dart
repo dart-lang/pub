@@ -34,10 +34,8 @@ main() {
         emitsThrough(contains('Build completed successfully')));
     await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
 
-    // Flush here as that helps to make sure we get multiple modify events,
-    // otherwise we tend to only get one.
     writeTextFile(libFilePath, "foo() => 'bar';");
-    await new Future(() {});
+    await new Future.delayed(new Duration(milliseconds: 25));
     writeTextFile(libFilePath, "foo() => 'baz';");
 
     // Should see multiple builds.
@@ -81,7 +79,7 @@ main() {
 
     for (var i = 0; i < 10; i++) {
       writeTextFile(libFilePath, "foo() => '$i';");
-      await new Future.delayed(new Duration(milliseconds: 50));
+      await new Future.delayed(new Duration(milliseconds: 15));
     }
 
     // Should only see one build.
@@ -96,7 +94,9 @@ main() {
 
   // Regression test for https://github.com/dart-lang/sdk/issues/29890
   test("editors safe write features shouldn't cause failed builds", () async {
-    var pubServeProcess = await pubServe(forcePoll: false);
+    // Increase default build delay to reduce flakyness on slow bots.
+    var pubServeProcess =
+        await pubServe(forcePoll: false, args: ['--build-delay', '250']);
     expect(pubServeProcess.stdout,
         emitsThrough(contains('Build completed successfully')));
     await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
