@@ -2,10 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
+import 'utils.dart';
+
+/// The equality to use when comparing the feature sets of two package names.
+final _featureEquality = const SetEquality<String>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
@@ -148,22 +153,39 @@ class PackageRange extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
+  /// The features that are required.
+  final Set<String> features;
+
   /// Creates a reference to package with the given [name], [source],
   /// [constraint], and [description].
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageRange(String name, Source source, this.constraint, description)
-      : super._(name, source, description);
+  PackageRange(String name, Source source, this.constraint, description,
+      {Iterable<String> features})
+      : features = features == null
+            ? const UnmodifiableSetView.empty()
+            : new UnmodifiableSetView(features.toSet()),
+        super._(name, source, description);
 
   PackageRange.magic(String name)
       : constraint = Version.none,
+        features = const UnmodifiableSetView.empty(),
         super._magic(name);
 
   String toString() {
     if (isRoot) return "$name $constraint (root)";
     if (isMagic) return name;
-    return "$name $constraint from $source ($description)";
+    var prefix = "$name $constraint from $source";
+    if (features.isNotEmpty) prefix += " with ${toSentence(features)}";
+    return "$prefix ($description)";
+  }
+
+  /// Returns a new [PackageRange] with [features] merged with [this.features].
+  PackageRange withFeatures(Set<String> features) {
+    if (features.isEmpty) return this;
+    return new PackageRange(name, source, constraint, description,
+        features: this.features.union(features));
   }
 
   /// Whether [id] satisfies this dependency.
@@ -172,10 +194,12 @@ class PackageRange extends PackageName {
   /// [constraint] allows `id.version`.
   bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
 
-  int get hashCode => super.hashCode ^ constraint.hashCode;
+  int get hashCode =>
+      super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
 
   bool operator ==(other) =>
       other is PackageRange &&
       samePackage(other) &&
-      other.constraint == constraint;
+      other.constraint == constraint &&
+      _featureEquality.equals(other.features, features);
 }

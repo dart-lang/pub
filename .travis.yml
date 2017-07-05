@@ -16,7 +16,7 @@ before_script:
 
 # Only building master means that we don't run two builds for each pull request.
 branches:
-  only: [master, travis]
+  only: [master, travis, features]
 
 cache:
   directories:
