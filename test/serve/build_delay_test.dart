@@ -27,28 +27,6 @@ main() {
     libFilePath = p.join(d.sandbox, appPath, "lib", "lib.dart");
   });
 
-  test("setting build-delay to zero causes a build per edit", () async {
-    var pubServeProcess =
-        await pubServe(forcePoll: false, args: ['--build-delay', '0']);
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
-
-    writeTextFile(libFilePath, "foo() => 'bar';");
-    await new Future.delayed(new Duration(milliseconds: 25));
-    writeTextFile(libFilePath, "foo() => 'baz';");
-
-    // Should see multiple builds.
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'baz';");
-
-    await endPubServe();
-  });
-
   test("setting a long build-delay works", () async {
     var pubServeProcess =
         await pubServe(forcePoll: false, args: ['--build-delay', '1000']);
@@ -71,6 +49,7 @@ main() {
   });
 
   test("continual fast edits won't cause multiple builds", () async {
+    // Set a larg-ish delay of 100ms to reduce flakyness on bots.
     var pubServeProcess =
         await pubServe(forcePoll: false, args: ['--build-delay', '100']);
     expect(pubServeProcess.stdout,
@@ -79,6 +58,9 @@ main() {
 
     for (var i = 0; i < 10; i++) {
       writeTextFile(libFilePath, "foo() => '$i';");
+      // A 15ms delay is well under the 100ms limit set, but multiplied by 10 is
+      // longer. This confirms that as long as edits continue happening the
+      // build will remain paused, and should reduce bot flakyness.
       await new Future.delayed(new Duration(milliseconds: 15));
     }
 
