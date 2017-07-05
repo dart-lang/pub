@@ -4,9 +4,15 @@
 
 import 'dart:async';
 
+import 'package:barback/barback.dart';
+import 'package:pub/src/compiler.dart';
+import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/barback/asset_environment.dart';
 import 'package:pub/src/io.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:watcher/watcher.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -48,58 +54,107 @@ main() {
     await endPubServe();
   });
 
-  test("continual fast edits won't cause multiple builds", () async {
-    // Set a larg-ish delay of 100ms to reduce flakyness on bots.
-    var pubServeProcess =
-        await pubServe(forcePoll: false, args: ['--build-delay', '100']);
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
+  group('unit tests', () {
+    Barback barback;
+    List<BuildResult> barbackResults;
+    AssetEnvironment environment;
+    final libAssetId = new AssetId('myapp', 'lib/lib.dart');
+    _MockDirectoryWatcher libWatcher;
+    _MockWatcherType watcherType;
 
-    for (var i = 0; i < 10; i++) {
-      writeTextFile(libFilePath, "foo() => '$i';");
-      // A 15ms delay is well under the 100ms limit set, but multiplied by 10 is
-      // longer. This confirms that as long as edits continue happening the
-      // build will remain paused, and should reduce bot flakyness.
-      await new Future.delayed(new Duration(milliseconds: 15));
+    setUp(() async {
+      var entrypoint =
+          new Entrypoint(p.join(d.sandbox, appPath), new SystemCache());
+      watcherType = new _MockWatcherType();
+      environment = await AssetEnvironment.create(entrypoint, BarbackMode.DEBUG,
+          watcherType: watcherType,
+          buildDelay: new Duration(milliseconds: 50),
+          compiler: Compiler.none);
+      barback = environment.barback;
+      libWatcher = watcherType.watchers[p.join(d.sandbox, appPath, 'lib')];
+      // Collect build results.
+      barbackResults = <BuildResult>[];
+      barback.results.listen(barbackResults.add);
+    });
+
+    tearDown(() async {
+      await environment.cleanUp();
+    });
+
+    // Attempts to wait for all pending barback builds.
+    Future _waitForBarback() async {
+      // First, wait for the next build to complete.
+      await barback.results.first;
+      // Then wait for all assets, which should capture additional builds if
+      // they occur.
+      await barback.getAllAssets();
+      // Give the stream a chance to deliver a new build if one did occur.
+      await new Future(() {});
     }
 
-    // Should only see one build.
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    expect(pubServeProcess.stdout, neverEmits('Build completed successfully'));
+    test("continual fast edits won't cause multiple builds", () async {
+      expect(await (await barback.getAssetById(libAssetId)).readAsString(),
+          "foo() => 'foo';");
 
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => '9';");
+      for (var i = 0; i < 10; i++) {
+        writeTextFile(libFilePath, "foo() => '$i';");
+        libWatcher.addEvent(new WatchEvent(ChangeType.MODIFY, libFilePath));
+        await new Future.delayed(new Duration(milliseconds: 15));
+      }
 
-    await endPubServe();
+      // Should get exactly one build result.
+      await _waitForBarback();
+      expect(barbackResults.length, 1);
+      expect(await (await barback.getAssetById(libAssetId)).readAsString(),
+          "foo() => '9';");
+    });
+
+    // Regression test for https://github.com/dart-lang/sdk/issues/29890
+    test("editors safe write features shouldn't cause failed builds", () async {
+      // Simulate the safe-write feature from many editors:
+      //   - Create a backup file
+      //   - Edit original file
+      //   - Delete backup file
+      var backupFilePath = p.join(d.sandbox, appPath, "lib", "lib.dart.bak");
+      writeTextFile(backupFilePath, "foo() => 'foo';");
+      libWatcher.addEvent(new WatchEvent(ChangeType.ADD, backupFilePath));
+      await new Future(() {});
+      deleteEntry(backupFilePath);
+      libWatcher.addEvent(new WatchEvent(ChangeType.REMOVE, backupFilePath));
+
+      // Should get a single successful build result.
+      await _waitForBarback();
+      expect(barbackResults.length, 1);
+      expect(barbackResults.first.succeeded, isTrue);
+    });
   });
+}
 
-  // Regression test for https://github.com/dart-lang/sdk/issues/29890
-  test("editors safe write features shouldn't cause failed builds", () async {
-    // Increase default build delay to reduce flakyness on slow bots.
-    var pubServeProcess =
-        await pubServe(forcePoll: false, args: ['--build-delay', '250']);
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'foo';");
+/// Mock [WatcherType] that creates [_MockDirectoryWatcher]s and gives you
+/// access to them.
+class _MockWatcherType implements WatcherType {
+  final watchers = <String, _MockDirectoryWatcher>{};
 
-    // Simulate the safe-write feature from many editors:
-    //   - Create a backup file
-    //   - Edit original file
-    //   - Delete backup file
-    var backupFilePath = p.join(d.sandbox, appPath, "lib", "lib.dart.bak");
-    writeTextFile(backupFilePath, "foo() => 'foo';");
-    // Allow pub to schedule a new build.
-    await new Future(() {});
-    writeTextFile(libFilePath, "foo() => 'bar';");
-    deleteEntry(backupFilePath);
+  _MockDirectoryWatcher create(String dir) {
+    var watcher = new _MockDirectoryWatcher(dir);
+    watchers[dir] = watcher;
+    return watcher;
+  }
+}
 
-    expect(pubServeProcess.stderr, neverEmits(contains("Build error")));
-    expect(pubServeProcess.stdout,
-        emitsThrough(contains('Build completed successfully')));
-    await requestShould404("packages/myapp/lib.dart.bak");
-    await requestShouldSucceed("packages/myapp/lib.dart", "foo() => 'bar';");
+/// Mock [DirectoryWatcher] that you add events to manually using [addEvent].
+class _MockDirectoryWatcher implements DirectoryWatcher {
+  final _eventsController = new StreamController<WatchEvent>();
+  Stream<WatchEvent> get events => _eventsController.stream;
 
-    await endPubServe();
-  });
+  final String path;
+  String get directory => path;
+
+  final _readyCompleter = new Completer<Null>()..complete();
+  Future<Null> get ready => _readyCompleter.future;
+  bool get isReady => _readyCompleter.isCompleted;
+
+  _MockDirectoryWatcher(this.path);
+
+  void addEvent(WatchEvent event) => _eventsController.add(event);
 }
