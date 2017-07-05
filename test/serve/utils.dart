@@ -143,14 +143,18 @@ class DartTransformer extends Transformer {
 ///
 /// Returns the `pub serve` process.
 Future<TestProcess> startPubServe(
-    {Iterable<String> args, bool createWebDir: true, Compiler compiler}) async {
+    {Iterable<String> args,
+    bool createWebDir: true,
+    Compiler compiler,
+    bool forcePoll}) async {
+  forcePoll ??= true;
   var pubArgs = [
     "serve",
     "--port=0", // Use port 0 to get an ephemeral port.
-    "--force-poll",
     "--admin-port=0", // Use port 0 to get an ephemeral port.
     "--log-admin-url",
   ];
+  if (forcePoll) pubArgs.add("--force-poll");
   if (compiler != null) {
     pubArgs.add("--web-compiler=${compiler.name}");
   }
@@ -171,9 +175,15 @@ Future<TestProcess> startPubServe(
 ///
 /// Returns the `pub serve` process.
 Future<TestProcess> pubServe(
-    {bool createWebDir: true, Iterable<String> args, Compiler compiler}) async {
+    {bool createWebDir: true,
+    Iterable<String> args,
+    Compiler compiler,
+    bool forcePoll}) async {
   _pubServer = await startPubServe(
-      args: args, createWebDir: createWebDir, compiler: compiler);
+      args: args,
+      createWebDir: createWebDir,
+      compiler: compiler,
+      forcePoll: forcePoll);
 
   addTearDown(() {
     _ports.clear();

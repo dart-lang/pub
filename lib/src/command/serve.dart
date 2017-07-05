@@ -70,6 +70,10 @@ class ServeCommand extends BarbackCommand {
 
     // TODO(nweiz): Make this public when issue 16954 is fixed.
     argParser.addOption('admin-port', hide: true);
+    argParser.addOption('build-delay',
+        defaultsTo: '50',
+        help: 'Amount of time to wait for file change events to settle before '
+            'scheduling a new build, specified in milliseconds.');
 
     argParser.addFlag('dart2js',
         defaultsTo: true,
@@ -99,7 +103,9 @@ class ServeCommand extends BarbackCommand {
         hostname: hostname,
         basePort: port,
         compiler: compiler,
-        environmentConstants: environmentConstants);
+        environmentConstants: environmentConstants,
+        buildDelay: new Duration(
+            milliseconds: parseInt(argResults['build-delay'], 'build-delay')));
 
     StreamSubscription<ProcessSignal> sigintListener;
     sigintListener = ProcessSignal.SIGINT.watch().listen((_) {
