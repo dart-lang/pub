@@ -59,6 +59,7 @@ main() {
     List<BuildResult> barbackResults;
     AssetEnvironment environment;
     final libAssetId = new AssetId('myapp', 'lib/lib.dart');
+    // Watcher for the lib dir.
     _MockDirectoryWatcher libWatcher;
     _MockWatcherType watcherType;
 
@@ -82,7 +83,7 @@ main() {
     });
 
     // Attempts to wait for all pending barback builds.
-    Future _waitForBarback() async {
+    Future waitForBarback() async {
       // First, wait for the next build to complete.
       await barback.results.first;
       // Then wait for all assets, which should capture additional builds if
@@ -92,18 +93,18 @@ main() {
       await new Future(() {});
     }
 
-    test("continual fast edits won't cause multiple builds", () async {
+    test("continual fast edits don't cause multiple builds", () async {
       expect(await (await barback.getAssetById(libAssetId)).readAsString(),
           "foo() => 'foo';");
 
       for (var i = 0; i < 10; i++) {
         writeTextFile(libFilePath, "foo() => '$i';");
         libWatcher.addEvent(new WatchEvent(ChangeType.MODIFY, libFilePath));
-        await new Future.delayed(new Duration(milliseconds: 15));
+        await new Future.delayed(new Duration(milliseconds: 10));
       }
 
       // Should get exactly one build result.
-      await _waitForBarback();
+      await waitForBarback();
       expect(barbackResults.length, 1);
       expect(await (await barback.getAssetById(libAssetId)).readAsString(),
           "foo() => '9';");
@@ -123,7 +124,7 @@ main() {
       libWatcher.addEvent(new WatchEvent(ChangeType.REMOVE, backupFilePath));
 
       // Should get a single successful build result.
-      await _waitForBarback();
+      await waitForBarback();
       expect(barbackResults.length, 1);
       expect(barbackResults.first.succeeded, isTrue);
     });
@@ -150,9 +151,8 @@ class _MockDirectoryWatcher implements DirectoryWatcher {
   final String path;
   String get directory => path;
 
-  final _readyCompleter = new Completer<Null>()..complete();
-  Future<Null> get ready => _readyCompleter.future;
-  bool get isReady => _readyCompleter.isCompleted;
+  final ready = new Future<Null>(() {});
+  bool get isReady => true;
 
   _MockDirectoryWatcher(this.path);
 
