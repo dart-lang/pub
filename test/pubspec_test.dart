@@ -710,6 +710,31 @@ features:
             (pubspec) => pubspec.features);
       });
 
+      test("throws if the environment value isn't a map", () {
+        expectPubspecException(
+            'features: {foobar: 1}', (pubspec) => pubspec.features);
+      });
+
+      test("allows a valid environment", () {
+        var pubspec = new Pubspec.parse(
+            '''
+features:
+  foobar:
+    environment:
+      sdk: ^1.0.0
+      flutter: ^2.0.0
+''',
+            sources);
+
+        expect(pubspec.features, contains('foobar'));
+
+        var feature = pubspec.features['foobar'];
+        expect(feature.dartSdkConstraint,
+            equals(new VersionConstraint.parse("^1.0.0")));
+        expect(feature.flutterSdkConstraint,
+            equals(new VersionConstraint.parse("^2.0.0")));
+      });
+
       test("throws if the default value isn't a boolean", () {
         expectPubspecException(
             'features: {foobar: {default: 12}}', (pubspec) => pubspec.features);

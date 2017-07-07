@@ -4,6 +4,8 @@
 
 import 'dart:collection';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import 'package_name.dart';
 
 /// A feature declared by a package.
@@ -20,9 +22,20 @@ class Feature {
   /// The additional dependencies added by this feature.
   final List<PackageRange> dependencies;
 
+  /// This feature's constraint on the Dart SDK, or [VersionConstraint.any] if
+  /// none is specified.
+  final VersionConstraint dartSdkConstraint;
+
+  /// This feature's constraint on the Flutter SDK, or `null` if none is
+  /// specified.
+  final VersionConstraint flutterSdkConstraint;
+
   Feature(this.name, Iterable<PackageRange> dependencies,
-      {this.onByDefault: true})
-      : dependencies = new UnmodifiableListView(dependencies.toList());
+      {VersionConstraint dartSdkConstraint,
+      this.flutterSdkConstraint,
+      this.onByDefault: true})
+      : dependencies = new UnmodifiableListView(dependencies.toList()),
+        dartSdkConstraint = dartSdkConstraint ?? VersionConstraint.any;
 
   /// Returns whether this feature should be enabled, given both [onByDefault]
   /// and a [features] map that may override it.
