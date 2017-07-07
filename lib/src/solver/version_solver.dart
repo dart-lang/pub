@@ -352,9 +352,7 @@ abstract class SolveFailure implements ApplicationException {
   /// Override this to highlight which aspect of [dep] led to the failure.
   String _describeDependency(PackageRange dep) {
     var description = "depends on version ${dep.constraint}";
-    if (dep.features.isNotEmpty) {
-      description += " with ${toSentence(dep.features)}";
-    }
+    if (dep.features.isNotEmpty) description += " ${dep.featureDescription}";
     return description;
   }
 }

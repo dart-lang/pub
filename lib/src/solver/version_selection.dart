@@ -8,6 +8,7 @@ import 'dart:collection';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../feature.dart';
 import '../package_name.dart';
 import 'backtracking_solver.dart';
 import 'unselected_package_queue.dart';
@@ -70,28 +71,21 @@ class VersionSelection {
     var newDeps = new Set<Dependency>.identity();
     for (var range in ranges) {
       var deps = getDependenciesOn(range.name);
-      var isNewDep = deps.isEmpty && range.name != _solver.root.name;
-      var newFeatures = isNewDep
-          ? const UnmodifiableSetView.empty()
-          : deps.fold(range.features,
-              (features, dep) => features.difference(dep.dep.features));
+
+      var id = selected(range.name);
+      if (id != null) {
+        newDeps.addAll(await _addDependencies(
+            id, await _solver.newDepsFor(id, range.features)));
+      }
 
       var dep = new Dependency(depender, range);
       deps.add(dep);
       newDeps.add(dep);
 
-      if (isNewDep) {
+      if (deps.length == 1 && range.name != _solver.root.name) {
         // If this is the first dependency on this package, add it to the
         // unselected queue.
         await _unselected.add(range.toRef());
-      } else {
-        // If this is an existing dependency, add any dependencies from new
-        // features that are enabled by [dep].
-        for (var feature in newFeatures) {
-          var id = selected(range.name);
-          newDeps.addAll(await _addDependencies(
-              id, await _solver.depsForFeature(id, feature)));
-        }
       }
     }
     return newDeps;
@@ -149,13 +143,16 @@ class VersionSelection {
 
   /// Returns whether the [feature] of [package] is already enabled by an
   /// existing dependency.
-  bool isFeatureEnabled(String package, String feature) =>
-      getDependenciesOn(package)
-          .any((dep) => dep.dep.features.contains(feature));
-
-  /// Returns the set of features that are enabled by dependencies on [package].
-  Set<String> featuresForPackage(String package) => getDependenciesOn(package)
-      .fold(new Set(), (features, dep) => features..addAll(dep.dep.features));
+  bool isFeatureEnabled(String package, Feature feature) {
+    if (feature.onByDefault) {
+      var dependencies = getDependenciesOn(package);
+      return dependencies.isEmpty ||
+          dependencies.any((dep) => dep.dep.features[feature.name] != false);
+    } else {
+      return getDependenciesOn(package)
+          .any((dep) => dep.dep.features[feature.name] == true);
+    }
+  }
 
   /// Returns a string description of the dependencies on [name].
   String describeDependencies(String name) =>

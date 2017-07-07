@@ -35,6 +35,7 @@
 /// speculative choices have been exhausted.
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../barback.dart' as barback;
@@ -530,11 +531,15 @@ class BacktrackingSolver {
   /// Throws a [SolveFailure] if [pubspec] doesn't have features that are
   /// required for its package.
   void _checkPubspecMatchesFeatures(Pubspec pubspec) {
-    for (var feature in _selection.featuresForPackage(pubspec.name)) {
-      if (pubspec.features.containsKey(feature)) continue;
+    var dependencies = _selection.getDependenciesOn(pubspec.name);
+    for (var dep in dependencies) {
+      dep.dep.features.forEach((featureName, enabled) {
+        if (!enabled) return;
+        if (pubspec.features.containsKey(featureName)) return;
 
-      throw new MissingFeatureException(pubspec.name, pubspec.version, feature,
-          _selection.getDependenciesOn(pubspec.name));
+        throw new MissingFeatureException(
+            pubspec.name, pubspec.version, featureName, dependencies);
+      });
     }
   }
 
@@ -627,24 +632,32 @@ class BacktrackingSolver {
     }
 
     var pubspec = await _getPubspec(selected);
-    for (var feature in dep.dep.features) {
-      var featureDeps = pubspec.features[feature];
-      if (featureDeps == null) {
-        _fail(dep.dep.name);
 
-        logSolve("selected version of ${dep.dep.name} doesn't have feature "
-            "$feature:\n"
-            "  $dep");
-        throw new MissingFeatureException(
-            dep.dep.name, selected.version, feature, allDeps);
-      }
+    // Verify that any features enabled by [dep] have valid dependencies.
+    for (var feature in pubspec.features.values) {
+      // If the feature is already enabled, we don't need to re-check its
+      // dependencies.
+      if (_selection.isFeatureEnabled(dep.dep.name, feature)) continue;
 
-      // Verify that any new features of existing packages selected by [dep] are
-      // satisfiable.
-      if (!_selection.isFeatureEnabled(dep.dep.name, feature)) {
-        await _checkDependencies(selected, featureDeps);
-      }
+      // If [dep] doesn't enable the feature, don't check its dependencies.
+      if (!feature.isEnabled(dep.dep.features)) continue;
+
+      await _checkDependencies(selected, feature.dependencies);
     }
+
+    // Verify that all features that are depended on actually exist in the package.
+    dep.dep.features.forEach((featureName, enabled) {
+      if (!enabled) return;
+      if (pubspec.features.containsKey(featureName)) return;
+
+      _fail(dep.dep.name);
+
+      logSolve("selected version of ${dep.dep.name} doesn't have feature "
+          "$featureName:\n"
+          "  $dep");
+      throw new MissingFeatureException(
+          dep.dep.name, selected.version, featureName, allDeps);
+    });
   }
 
   /// Marks the package named [name] as having failed.
@@ -665,10 +678,9 @@ class BacktrackingSolver {
     var pubspec = await _getPubspec(id);
     var deps = pubspec.dependencies.toSet();
 
-    for (var feature in _selection.featuresForPackage(id.name)) {
-      // If we're here, we should already have verified that the pubspec exposes
-      // this feature.
-      deps.addAll(pubspec.features[feature]);
+    for (var feature in pubspec.features.values) {
+      if (!_selection.isFeatureEnabled(id.name, feature)) continue;
+      deps.addAll(feature.dependencies);
     }
 
     if (id.isRoot) {
@@ -683,12 +695,21 @@ class BacktrackingSolver {
     return _processDependencies(id, deps);
   }
 
-  /// Returns the dependencies of the given [feature] of the package identified
-  /// by [id].
-  Future<Set<PackageRange>> depsForFeature(PackageId id, String feature) async {
+  /// Returns the dependencies of package identified by [id] that are
+  /// newly-activated by [features].
+  Future<Set<PackageRange>> newDepsFor(
+      PackageId id, Map<String, bool> features) async {
     var pubspec = await _getPubspec(id);
-    var deps = pubspec.features[feature].toSet();
-    assert(deps != null);
+    if (pubspec.features.isEmpty) return const UnmodifiableSetView.empty();
+
+    var deps = new Set();
+    for (var feature in pubspec.features.values) {
+      // Only enable features that weren't already enabled.
+      if ((features[feature.name] ?? feature.onByDefault) &&
+          !_selection.isFeatureEnabled(id.name, feature)) {
+        deps.addAll(feature.dependencies);
+      }
+    }
 
     return _processDependencies(id, deps);
   }
