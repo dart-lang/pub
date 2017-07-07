@@ -686,7 +686,12 @@ features:
   foobar:
 ''',
             sources);
-        expect(pubspec.features, equals({'foobar': []}));
+        expect(pubspec.features, contains('foobar'));
+
+        var feature = pubspec.features['foobar'];
+        expect(feature.name, equals('foobar'));
+        expect(feature.onByDefault, isTrue);
+        expect(feature.dependencies, isEmpty);
       });
 
       test("throws if the value isn't a map", () {
@@ -705,6 +710,19 @@ features:
             (pubspec) => pubspec.features);
       });
 
+      test("throws if the default value isn't a boolean", () {
+        expectPubspecException(
+            'features: {foobar: {default: 12}}', (pubspec) => pubspec.features);
+      });
+
+      test("allows a default boolean", () {
+        var pubspec =
+            new Pubspec.parse('features: {foobar: {default: false}}', sources);
+
+        expect(pubspec.features, contains('foobar'));
+        expect(pubspec.features['foobar'].onByDefault, isFalse);
+      });
+
       test("parses valid dependency specifications", () {
         var pubspec = new Pubspec.parse(
             '''
@@ -718,13 +736,16 @@ features:
 
         expect(pubspec.features, contains('foobar'));
 
-        var ranges = pubspec.features['foobar'];
-        expect(ranges, hasLength(2));
+        var feature = pubspec.features['foobar'];
+        expect(feature.name, equals('foobar'));
+        expect(feature.onByDefault, isTrue);
+        expect(feature.dependencies, hasLength(2));
 
-        expect(ranges.first.name, equals('baz'));
-        expect(ranges.first.constraint, equals(new Version(1, 0, 0)));
-        expect(ranges.last.name, equals('qux'));
-        expect(ranges.last.constraint,
+        expect(feature.dependencies.first.name, equals(equals('baz')));
+        expect(feature.dependencies.first.constraint,
+            equals(new Version(1, 0, 0)));
+        expect(feature.dependencies.last.name, equals('qux'));
+        expect(feature.dependencies.last.constraint,
             equals(new VersionConstraint.parse('^2.0.0')));
       });
     });

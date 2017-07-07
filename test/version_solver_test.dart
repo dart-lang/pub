@@ -1302,7 +1302,41 @@ void downgrade() {
 }
 
 void features() {
-  test("doesn't enable a feature by default", () async {
+  test("doesn't enable an opt-in feature by default", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        "features": {
+          "stuff": {
+            "default": false,
+            "dependencies": {'bar': '1.0.0'}
+          }
+        }
+      });
+      builder.serve('bar', '1.0.0');
+    });
+
+    await d.appDir({'foo': '1.0.0'}).create();
+    await expectResolves(result: {'foo': '1.0.0'});
+  });
+
+  test("enables an opt-out feature by default", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        "features": {
+          "stuff": {
+            "default": true,
+            "dependencies": {'bar': '1.0.0'}
+          }
+        }
+      });
+      builder.serve('bar', '1.0.0');
+    });
+
+    await d.appDir({'foo': '1.0.0'}).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+  });
+
+  test("features are opt-out by default", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
@@ -1315,14 +1349,15 @@ void features() {
     });
 
     await d.appDir({'foo': '1.0.0'}).create();
-    await expectResolves(result: {'foo': '1.0.0'});
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
-  test("enables a feature if it's required", () async {
+  test("enables an opt-in feature if it's required", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1339,11 +1374,90 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
+  test("doesn't enable an opt-out feature if it's disabled", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        "features": {
+          "stuff": {
+            "dependencies": {'bar': '1.0.0'}
+          }
+        }
+      });
+      builder.serve('bar', '1.0.0');
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.0.0',
+        'features': {'stuff': false}
+      }
+    }).create();
+    await expectResolves(result: {'foo': '1.0.0'});
+  });
+
+  test("opting in takes precedence over opting out", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        "features": {
+          "stuff": {
+            "dependencies": {'bar': '1.0.0'}
+          }
+        }
+      });
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0', deps: {
+        'foo': {
+          'version': '1.0.0',
+          'features': {'stuff': true}
+        }
+      });
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.0.0',
+        'features': {'stuff': false}
+      },
+      'baz': '1.0.0'
+    }).create();
+    await expectResolves(
+        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
+  });
+
+  test("implicitly opting in takes precedence over opting out", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        "features": {
+          "stuff": {
+            "dependencies": {'bar': '1.0.0'}
+          }
+        }
+      });
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0', deps: {
+        'foo': {
+          'version': '1.0.0',
+        }
+      });
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.0.0',
+        'features': {'stuff': false}
+      },
+      'baz': '1.0.0'
+    }).create();
+    await expectResolves(
+        result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
+  });
+
   test("doesn't select a version with an unavailable feature", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1366,6 +1480,7 @@ void features() {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1373,6 +1488,7 @@ void features() {
       builder.serve('foo', '1.1.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '2.0.0'}
           }
         }
@@ -1391,33 +1507,36 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
-  test("backtracks if a feature is transitively incompatible feature",
-      () async {
+  test(
+      "backtracks if a feature is transitively incompatible with another "
+      "feature", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'bar': '1.0.0'}
-          }
-        }
-      });
-      builder.serve('foo', '1.1.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {
               'bar': {
                 'version': '1.0.0',
-                'features': {'stuff': true}
+                'features': {'stuff': false}
               }
             }
           }
         }
       });
+      builder.serve('foo', '1.1.0', pubspec: {
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
+          }
+        }
+      });
 
       builder.serve('bar', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'baz': '1.0.0'}
+        'features': {
+          'stuff': {
+            'dependencies': {'baz': '1.0.0'}
           }
         }
       });
@@ -1443,6 +1562,7 @@ void features() {
       builder.serve('foo', '1.0.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '1.0.0'}
           }
         }
@@ -1450,6 +1570,7 @@ void features() {
       builder.serve('foo', '1.1.0', pubspec: {
         "features": {
           "stuff": {
+            "default": false,
             "dependencies": {'bar': '2.0.0'}
           }
         }
@@ -1500,6 +1621,7 @@ void features() {
         'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
         'features': {
           'stuff': {
+            'default': false,
             'dependencies': {'qux': '1.0.0'}
           }
         }
@@ -1508,7 +1630,7 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0', 'baz': '1.0.0'}, tries: 2);
   });
 
-  test("the root package's features are disabled by default", () async {
+  test("the root package's features are opt-out by default", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');
       builder.serve('bar', '1.0.0');
@@ -1525,7 +1647,57 @@ void features() {
         }
       })
     ]).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+  });
+
+  test("the root package's features can be made opt-in", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('bar', '1.0.0');
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'},
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
+          }
+        }
+      })
+    ]).create();
     await expectResolves(result: {'foo': '1.0.0'});
+  });
+
+  // We have to enable the root dependency's default-on features during the
+  // initial solve. If a dependency could later disable that feature, that would
+  // break the solver's guarantee that each new selected package monotonically
+  // increases the total number of dependencies.
+  test("the root package's features can't be disabled by dependencies",
+      () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {
+        'myapp': {
+          'features': {'stuff': false}
+        }
+      });
+      builder.serve('bar', '1.0.0');
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'},
+        'features': {
+          'stuff': {
+            'dependencies': {'bar': '1.0.0'}
+          }
+        }
+      })
+    ]).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test("the root package's features can be enabled by dependencies", () async {
@@ -1544,6 +1716,7 @@ void features() {
         'dependencies': {'foo': '^1.0.0'},
         'features': {
           'stuff': {
+            'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
