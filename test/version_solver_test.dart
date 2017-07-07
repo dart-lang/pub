@@ -1745,6 +1745,201 @@ void features() {
         error: "foo 1.0.0 doesn't have a feature named stuff:\n"
             "- myapp depends on version ^1.0.0 with stuff");
   });
+
+  group('with SDK constraints:', () {
+    setUp(() {
+      return d.dir('flutter', [d.file('version', '1.2.3')]).create();
+    });
+
+    group("succeeds when", () {
+      test("a Dart SDK constraint is matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'sdk': '^0.1.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(result: {'foo': '1.0.0'});
+      });
+
+      test("a Flutter SDK constraint is matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'flutter': '^1.0.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+            result: {'foo': '1.0.0'});
+      });
+    });
+
+    group("doesn't choose a version because", () {
+      test("a Dart SDK constraint isn't matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0');
+          builder.serve('foo', '1.1.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'sdk': '0.0.1'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(result: {'foo': '1.0.0'});
+      });
+
+      test("Flutter isn't available", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0');
+          builder.serve('foo', '1.1.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'flutter': '1.0.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(result: {'foo': '1.0.0'});
+      });
+
+      test("a Flutter SDK constraint isn't matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0');
+          builder.serve('foo', '1.1.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'flutter': '^2.0.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+            result: {'foo': '1.0.0'});
+      });
+    });
+
+    group("resolution fails because", () {
+      test("a Dart SDK constraint isn't matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'sdk': '0.0.1'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            error:
+                "Package foo feature stuff requires SDK version 0.0.1 but the "
+                "current SDK is 0.1.2+3.");
+      });
+
+      test("Flutter isn't available", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'flutter': '1.0.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            error: "Package foo feature stuff requires the Flutter SDK, which "
+                "is not available.");
+      });
+
+      test("a Flutter SDK constraint isn't matched", () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0', pubspec: {
+            'features': {
+              'stuff': {
+                'environment': {'flutter': '^2.0.0'}
+              }
+            }
+          });
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+            error: "Package foo feature stuff requires Flutter SDK version "
+                "^2.0.0 but the current SDK is 1.2.3.");
+      });
+    });
+  });
 }
 
 /// Runs "pub get" and makes assertions about its results.
