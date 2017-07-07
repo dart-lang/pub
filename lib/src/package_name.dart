@@ -197,9 +197,15 @@ class PackageRange extends PackageName {
   }
 
   String toString() {
-    if (isRoot) return "$name $constraint (root)";
-    if (isMagic) return name;
-    var prefix = "$name $constraint from $source";
+    String prefix;
+    if (isRoot) {
+      prefix = "$name $constraint (root)";
+    } else if (isMagic) {
+      prefix = name;
+    } else {
+      prefix = "$name $constraint from $source";
+    }
+
     if (features.isNotEmpty) prefix += " $featureDescription";
     return "$prefix ($description)";
   }
