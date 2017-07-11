@@ -24,9 +24,10 @@ class GlobalActivateCommand extends PubCommand {
         defaultsTo: "hosted");
 
     argParser.addOption("features",
-        abbr: "f",
-        help: "Feature(s) to enable, or disable with - prefix.",
-        allowMultiple: true);
+        abbr: "f", help: "Feature(s) to enable.", allowMultiple: true);
+
+    argParser.addOption("omit-features",
+        abbr: "F", help: "Feature(s) to disable.", allowMultiple: true);
 
     argParser.addFlag("no-executables",
         negatable: false, help: "Do not put executables on PATH.");
@@ -57,11 +58,10 @@ class GlobalActivateCommand extends PubCommand {
 
     var features = <String, FeatureDependency>{};
     for (var feature in argResults["features"] ?? []) {
-      if (feature.startsWith("-")) {
-        features[feature.substring(1)] = FeatureDependency.unused;
-      } else {
-        features[feature] = FeatureDependency.required;
-      }
+      features[feature] = FeatureDependency.required;
+    }
+    for (var feature in argResults["omit-features"] ?? []) {
+      features[feature] = FeatureDependency.unused;
     }
 
     var overwrite = argResults["overwrite"];
@@ -87,8 +87,7 @@ class GlobalActivateCommand extends PubCommand {
         // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
         return globals.activateGit(repo, executables,
-            features: features,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "hosted":
         var package = readArg("No package to activate given.");
@@ -105,8 +104,7 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(package, constraint, executables,
-            features: features,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "path":
         if (features.isNotEmpty) {

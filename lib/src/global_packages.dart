@@ -97,7 +97,8 @@ class GlobalPackages {
     await _installInCache(
         cache.git.source
             .refFor(name, repo)
-            .withConstraint(VersionConstraint.any).withFeatures(features ?? const {}),
+            .withConstraint(VersionConstraint.any)
+            .withFeatures(features ?? const {}),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }
@@ -119,7 +120,10 @@ class GlobalPackages {
       {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     _describeActive(name);
     await _installInCache(
-        cache.hosted.source.refFor(name).withConstraint(constraint).withFeatures(features ?? const {}),
+        cache.hosted.source
+            .refFor(name)
+            .withConstraint(constraint)
+            .withFeatures(features ?? const {}),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }

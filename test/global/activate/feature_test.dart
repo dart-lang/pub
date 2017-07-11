@@ -26,9 +26,7 @@ main() {
       builder.serve("baz", "1.0.0");
     });
 
-    await runPub(
-        args: ["global", "activate", "foo"],
-        output: contains("""
+    await runPub(args: ["global", "activate", "foo"], output: contains("""
 Resolving dependencies...
 + bar 1.0.0
 + foo 1.0.0
