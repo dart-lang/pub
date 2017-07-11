@@ -80,7 +80,7 @@ Downloading"""));
     });
 
     await runPub(
-        args: ["global", "activate", "foo", "--features", "-stuff"],
+        args: ["global", "activate", "foo", "--omit-features", "stuff"],
         output: contains("""
 Resolving dependencies...
 + foo 1.0.0
@@ -88,6 +88,35 @@ Downloading"""));
   });
 
   test('supports multiple arguments', () async {
+    await servePackages((builder) {
+      builder.serve("foo", "1.0.0", pubspec: {
+        "features": {
+          "stuff": {
+            "default": false,
+            "dependencies": {"bar": "1.0.0"}
+          },
+          "things": {
+            "default": false,
+            "dependencies": {"baz": "1.0.0"}
+          }
+        }
+      });
+
+      builder.serve("bar", "1.0.0");
+      builder.serve("baz", "1.0.0");
+    });
+
+    await runPub(
+        args: ["global", "activate", "foo", "--features", "things,stuff"],
+        output: contains("""
+Resolving dependencies...
++ bar 1.0.0
++ baz 1.0.0
++ foo 1.0.0
+Downloading"""));
+  });
+
+  test('can both enable and disable', () async {
     await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
         "features": {
@@ -105,9 +134,15 @@ Downloading"""));
       builder.serve("baz", "1.0.0");
     });
 
-    await runPub(
-        args: ["global", "activate", "foo", "--features", "things,-stuff"],
-        output: contains("""
+    await runPub(args: [
+      "global",
+      "activate",
+      "foo",
+      "--features",
+      "things",
+      "--omit-features",
+      "stuff"
+    ], output: contains("""
 Resolving dependencies...
 + baz 1.0.0
 + foo 1.0.0
