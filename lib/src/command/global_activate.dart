@@ -61,6 +61,10 @@ class GlobalActivateCommand extends PubCommand {
       features[feature] = FeatureDependency.required;
     }
     for (var feature in argResults["omit-features"] ?? []) {
+      if (features.containsKey(feature)) {
+        usageException("Cannot both enable and disable $feature.");
+      }
+
       features[feature] = FeatureDependency.unused;
     }
 
@@ -108,7 +112,10 @@ class GlobalActivateCommand extends PubCommand {
 
       case "path":
         if (features.isNotEmpty) {
-          usageException("--features may not be used with the path source.");
+          // Globally-activated path packages just use the existing lockfile, so
+          // we can't change the feature selection.
+          usageException("--features and --omit-features may not be used with "
+              "the path source.");
         }
 
         var path = readArg("No package to activate given.");
