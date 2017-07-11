@@ -147,10 +147,11 @@ class VersionSelection {
     if (feature.onByDefault) {
       var dependencies = getDependenciesOn(package);
       return dependencies.isEmpty ||
-          dependencies.any((dep) => dep.dep.features[feature.name] != false);
+          dependencies.any((dep) =>
+              dep.dep.features[feature.name] != FeatureDependency.unused);
     } else {
       return getDependenciesOn(package)
-          .any((dep) => dep.dep.features[feature.name] == true);
+          .any((dep) => dep.dep.features[feature.name]?.isEnabled == true);
     }
   }
 

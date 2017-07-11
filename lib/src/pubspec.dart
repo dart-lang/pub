@@ -624,7 +624,7 @@ class Pubspec {
       var sourceName;
 
       var versionConstraint = new VersionRange();
-      Map<String, bool> features = const {};
+      Map<String, FeatureDependency> features = const {};
       if (spec == null) {
         descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
@@ -699,7 +699,7 @@ class Pubspec {
 
   /// Parses [node] to a map from feature names to whether those features are
   /// enabled.
-  Map<String, bool> _parseDependencyFeatures(YamlNode node) {
+  Map<String, FeatureDependency> _parseDependencyFeatures(YamlNode node) {
     if (node?.value == null) return const {};
     if (node is! YamlMap) _error('Features must be a map.', node.span);
 
@@ -707,8 +707,16 @@ class Pubspec {
         key: (nameNode, _) => _validateFeatureName(nameNode),
         value: (_, valueNode) {
           var value = valueNode.value;
-          if (value is bool) return value;
-          _error('Features must be true or false.', valueNode.span);
+          if (value is bool) {
+            return value
+                ? FeatureDependency.required
+                : FeatureDependency.unused;
+          } else if (value is String && value == "if available") {
+            return FeatureDependency.ifAvailable;
+          } else {
+            _error('Features must be true, false, or "if available".',
+                valueNode.span);
+          }
         });
   }
 

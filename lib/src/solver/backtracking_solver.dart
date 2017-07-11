@@ -540,8 +540,8 @@ class BacktrackingSolver {
   void _checkPubspecMatchesFeatures(Pubspec pubspec) {
     var dependencies = _selection.getDependenciesOn(pubspec.name);
     for (var dep in dependencies) {
-      dep.dep.features.forEach((featureName, enabled) {
-        if (!enabled) return;
+      dep.dep.features.forEach((featureName, type) {
+        if (type != FeatureDependency.required) return;
         if (pubspec.features.containsKey(featureName)) return;
 
         throw new MissingFeatureException(
@@ -654,8 +654,8 @@ class BacktrackingSolver {
     }
 
     // Verify that all features that are depended on actually exist in the package.
-    dep.dep.features.forEach((featureName, enabled) {
-      if (!enabled) return;
+    dep.dep.features.forEach((featureName, type) {
+      if (type != FeatureDependency.required) return;
       if (pubspec.features.containsKey(featureName)) return;
 
       _fail(dep.dep.name);
@@ -737,14 +737,14 @@ class BacktrackingSolver {
   /// Returns the dependencies of package identified by [id] that are
   /// newly-activated by [features].
   Future<Set<PackageRange>> newDepsFor(
-      PackageId id, Map<String, bool> features) async {
+      PackageId id, Map<String, FeatureDependency> features) async {
     var pubspec = await _getPubspec(id);
     if (pubspec.features.isEmpty) return const UnmodifiableSetView.empty();
 
     var deps = new Set();
     for (var feature in pubspec.features.values) {
       // Only enable features that weren't already enabled.
-      if ((features[feature.name] ?? feature.onByDefault) &&
+      if ((features[feature.name]?.isEnabled ?? feature.onByDefault) &&
           !_selection.isFeatureEnabled(id.name, feature)) {
         deps.addAll(feature.dependencies);
       }
