@@ -246,8 +246,8 @@ class FeatureDependency {
   /// this dependency to be satisfied.
   static const ifAvailable = const FeatureDependency._("if available");
 
-  /// The feature is neither required to exist or be enabled for this feature to
-  /// be satisfied.
+  /// The feature is neither required to exist nor to be enabled for this
+  /// feature to be satisfied.
   static const unused = const FeatureDependency._("unused");
 
   final String _name;
