@@ -118,7 +118,6 @@ class Pubspec {
     if (_dependencies != null) return _dependencies;
     _dependencies =
         _parseDependencies('dependencies', fields.nodes['dependencies']);
-    _checkDependencyOverlap(_dependencies, _devDependencies);
     return _dependencies;
   }
 
@@ -129,7 +128,6 @@ class Pubspec {
     if (_devDependencies != null) return _devDependencies;
     _devDependencies = _parseDependencies(
         'dev_dependencies', fields.nodes['dev_dependencies']);
-    _checkDependencyOverlap(_dependencies, _devDependencies);
     return _devDependencies;
   }
 
@@ -731,33 +729,6 @@ class Pubspec {
     }
 
     return name;
-  }
-
-  /// Makes sure the same package doesn't appear as both a regular and dev
-  /// dependency.
-  void _checkDependencyOverlap(
-      List<PackageRange> dependencies, List<PackageRange> devDependencies) {
-    if (dependencies == null) return;
-    if (devDependencies == null) return;
-
-    var dependencyNames = dependencies.map((dep) => dep.name).toSet();
-    var collisions = dependencyNames
-        .intersection(devDependencies.map((dep) => dep.name).toSet());
-    if (collisions.isEmpty) return;
-
-    var span = fields["dependencies"]
-        .nodes
-        .keys
-        .firstWhere((key) => collisions.contains(key.value))
-        .span;
-
-    // TODO(nweiz): associate source range info with PackageRanges and use it
-    // here.
-    _error(
-        '${pluralize('Package', collisions.length)} '
-        '${toSentence(collisions.map((package) => '"$package"'))} cannot '
-        'appear in both "dependencies" and "dev_dependencies".',
-        span);
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a

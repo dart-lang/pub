@@ -180,23 +180,6 @@ dependencies:
       expect(foo.source, equals(sources['hosted']));
     });
 
-    test("throws if a package is in dependencies and dev_dependencies", () {
-      expectPubspecException(
-          '''
-dependencies:
-  foo:
-    mock: ok
-dev_dependencies:
-  foo:
-    mock: ok
-''', (pubspec) {
-        // This check only triggers if both [dependencies] and [devDependencies]
-        // are accessed.
-        pubspec.dependencies;
-        pubspec.devDependencies;
-      });
-    });
-
     test("throws if it dependes on itself", () {
       expectPubspecException(
           '''
