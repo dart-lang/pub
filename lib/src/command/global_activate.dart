@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -21,6 +22,12 @@ class GlobalActivateCommand extends PubCommand {
         help: "The source used to find the package.",
         allowed: ["git", "hosted", "path"],
         defaultsTo: "hosted");
+
+    argParser.addOption("features",
+        abbr: "f", help: "Feature(s) to enable.", allowMultiple: true);
+
+    argParser.addOption("omit-features",
+        abbr: "F", help: "Feature(s) to disable.", allowMultiple: true);
 
     argParser.addFlag("no-executables",
         negatable: false, help: "Do not put executables on PATH.");
@@ -49,6 +56,18 @@ class GlobalActivateCommand extends PubCommand {
       executables = [];
     }
 
+    var features = <String, FeatureDependency>{};
+    for (var feature in argResults["features"] ?? []) {
+      features[feature] = FeatureDependency.required;
+    }
+    for (var feature in argResults["omit-features"] ?? []) {
+      if (features.containsKey(feature)) {
+        usageException("Cannot both enable and disable $feature.");
+      }
+
+      features[feature] = FeatureDependency.unused;
+    }
+
     var overwrite = argResults["overwrite"];
     var args = argResults.rest;
 
@@ -72,7 +91,7 @@ class GlobalActivateCommand extends PubCommand {
         // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
         return globals.activateGit(repo, executables,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "hosted":
         var package = readArg("No package to activate given.");
@@ -89,9 +108,16 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(package, constraint, executables,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "path":
+        if (features.isNotEmpty) {
+          // Globally-activated path packages just use the existing lockfile, so
+          // we can't change the feature selection.
+          usageException("--features and --omit-features may not be used with "
+              "the path source.");
+        }
+
         var path = readArg("No package to activate given.");
         validateNoExtraArgs();
         return globals.activatePath(path, executables,
