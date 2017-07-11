@@ -39,7 +39,8 @@ class Feature {
 
   /// Returns whether this feature should be enabled, given both [onByDefault]
   /// and a [features] map that may override it.
-  bool isEnabled(Map<String, bool> features) => features[name] ?? onByDefault;
+  bool isEnabled(Map<String, FeatureDependency> features) =>
+      features[name]?.isEnabled ?? onByDefault;
 
   String toString() => name;
 }

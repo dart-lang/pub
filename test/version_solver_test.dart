@@ -1746,6 +1746,44 @@ void features() {
             "- myapp depends on version ^1.0.0 with stuff");
   });
 
+  group('an "if available" dependency', () {
+    test("enables an opt-in feature", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "stuff": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'stuff': 'if available'}
+        }
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+    });
+
+    test("is compatible with a feature that doesn't exist", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'stuff': 'if available'}
+        }
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0'});
+    });
+  });
+
   group('with SDK constraints:', () {
     setUp(() {
       return d.dir('flutter', [d.file('version', '1.2.3')]).create();
