@@ -436,7 +436,7 @@ main() {
           d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
         ]).create();
 
-        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0-dev.infinity"');
       });
 
       test("with a too-broad SDK constraint", () async {
@@ -461,7 +461,8 @@ main() {
 
         expect(
             validatePackage(dependency),
-            completion(pairOf(anyElement(contains('  sdk: ">=1.25.0 <2.0.0"')),
+            completion(pairOf(
+                anyElement(contains('  sdk: ">=1.25.0 <2.0.0-dev.infinity"')),
                 anyElement(contains('  foo: any')))));
       });
 

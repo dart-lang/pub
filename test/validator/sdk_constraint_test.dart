@@ -68,9 +68,7 @@ main() {
               pairOf(anyElement(contains('">=1.19.0 <1.50.0"')), isEmpty)));
     });
 
-    test(
-        "has a Flutter SDK constraint with no SDK "
-        "constraint", () async {
+    test("has a Flutter SDK constraint with no SDK constraint", () async {
       await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
@@ -80,8 +78,9 @@ main() {
       ]).create();
       expect(
           validatePackage(sdkConstraint),
-          completion(
-              pairOf(anyElement(contains('">=1.19.0 <2.0.0"')), isEmpty)));
+          completion(pairOf(
+              anyElement(contains('">=1.19.0 <2.0.0-dev.infinity"')),
+              isEmpty)));
     });
   });
 }
