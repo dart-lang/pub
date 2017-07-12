@@ -288,7 +288,9 @@ void devDependency() {
   group("with both a dev and regular dependency", () {
     test("succeeds when both are satisfied", () async {
       await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
         builder.serve('foo', '2.0.0');
+        builder.serve('foo', '3.0.0');
       });
 
       await d.dir(appPath, [
@@ -2153,7 +2155,7 @@ void features() {
           "dependencies": {
             'bar': {
               'version': '1.0.0',
-              'features': {'stuff': true}
+              'features': {'stuff': false}
             },
           },
           "features": {
