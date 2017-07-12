@@ -15,9 +15,7 @@ main() {
       d.appPubspec(),
       d.dir("lib", [d.file("message.dart", "String get message => 'hello';")]),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
         import "package:$appPath/message.dart";
         void main() => print(message);
         """)

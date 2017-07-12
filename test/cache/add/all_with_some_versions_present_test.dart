@@ -26,9 +26,7 @@ main() {
         output: 'Downloading foo 1.2.3...');
 
     // They should show up as already installed now.
-    await runPub(
-        args: ["cache", "add", "foo", "--all"],
-        output: '''
+    await runPub(args: ["cache", "add", "foo", "--all"], output: '''
           Already cached foo 1.2.1.
           Downloading foo 1.2.2...
           Already cached foo 1.2.3.

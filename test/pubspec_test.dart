@@ -72,14 +72,12 @@ main() {
     });
 
     test("allows a version constraint for dependencies", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dependencies:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''',
-          sources);
+''', sources);
 
       var foo = pubspec.dependencies[0];
       expect(foo.name, equals('foo'));
@@ -89,24 +87,20 @@ dependencies:
     });
 
     test("allows an empty dependencies map", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dependencies:
-''',
-          sources);
+''', sources);
 
       expect(pubspec.dependencies, isEmpty);
     });
 
     test("allows a version constraint for dev dependencies", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dev_dependencies:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''',
-          sources);
+''', sources);
 
       var foo = pubspec.devDependencies[0];
       expect(foo.name, equals('foo'));
@@ -116,24 +110,20 @@ dev_dependencies:
     });
 
     test("allows an empty dev dependencies map", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dev_dependencies:
-''',
-          sources);
+''', sources);
 
       expect(pubspec.devDependencies, isEmpty);
     });
 
     test("allows a version constraint for dependency overrides", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dependency_overrides:
   foo:
     mock: ok
     version: ">=1.2.3 <3.4.5"
-''',
-          sources);
+''', sources);
 
       var foo = pubspec.dependencyOverrides[0];
       expect(foo.name, equals('foo'));
@@ -143,23 +133,19 @@ dependency_overrides:
     });
 
     test("allows an empty dependency overrides map", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dependency_overrides:
-''',
-          sources);
+''', sources);
 
       expect(pubspec.dependencyOverrides, isEmpty);
     });
 
     test("allows an unknown source", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 dependencies:
   foo:
     unknown: blah
-''',
-          sources);
+''', sources);
 
       var foo = pubspec.dependencies[0];
       expect(foo.name, equals('foo'));
@@ -167,8 +153,7 @@ dependencies:
     });
 
     test("throws if a package is in dependencies and dev_dependencies", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 dependencies:
   foo:
     mock: ok
@@ -184,78 +169,64 @@ dev_dependencies:
     });
 
     test("throws if it dependes on itself", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 name: myapp
 dependencies:
   myapp:
     mock: ok
-''',
-          (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if it has a dev dependency on itself", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 name: myapp
 dev_dependencies:
   myapp:
     mock: ok
-''',
-          (pubspec) => pubspec.devDependencies);
+''', (pubspec) => pubspec.devDependencies);
     });
 
     test("throws if it has an override on itself", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 name: myapp
 dependency_overrides:
   myapp:
     mock: ok
-''',
-          (pubspec) => pubspec.dependencyOverrides);
+''', (pubspec) => pubspec.dependencyOverrides);
     });
 
     test("throws if the description isn't valid", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 dependencies:
   foo:
     mock: bad
-''',
-          (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if dependency version is not a string", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 dependencies:
   foo:
     mock: ok
     version: 1.2
-''',
-          (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if version is not a version constraint", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 dependencies:
   foo:
     mock: ok
     version: not constraint
-''',
-          (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if there's no source", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 dependencies:
   foo:
     version: 1.2.3
-''',
-          (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if 'name' is not a string", () {
@@ -313,24 +284,20 @@ dependencies:
     test(
         "throws if a transformer's configuration contains an unknown "
         "reserved key at the top level", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 name: pkg
-transformers: [{pkg: {\$key: "value"}}]''',
-          (pubspec) => pubspec.transformers,
+transformers: [{pkg: {\$key: "value"}}]''', (pubspec) => pubspec.transformers,
           'Invalid transformer config: Unknown reserved field.');
     });
 
     test(
         "doesn't throw if a transformer's configuration contains a "
         "non-top-level key beginning with a dollar sign", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 name: pkg
 transformers:
 - pkg: {outer: {\$inner: value}}
-''',
-          sources);
+''', sources);
 
       var pkg = pubspec.transformers[0].single;
       expect(pkg.configuration["outer"]["\$inner"], equals("value"));
@@ -381,66 +348,55 @@ transformers:
     });
 
     test("throws if a transformer is not from a dependency", () {
-      expectPubspecException(
-          '''
+      expectPubspecException('''
 name: pkg
 transformers: [foo]
-''',
-          (pubspec) => pubspec.transformers,
-          '"foo" is not a dependency.');
+''', (pubspec) => pubspec.transformers, '"foo" is not a dependency.');
     });
 
     test("allows a transformer from a normal dependency", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 name: pkg
 dependencies:
   foo:
     mock: ok
 transformers:
-- foo''',
-          sources);
+- foo''', sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows a transformer from a dev dependency", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 name: pkg
 dev_dependencies:
   foo:
     mock: ok
 transformers:
-- foo''',
-          sources);
+- foo''', sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows a transformer from a dependency override", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 name: pkg
 dependency_overrides:
   foo:
     mock: ok
 transformers:
-- foo''',
-          sources);
+- foo''', sources);
 
       expect(pubspec.transformers[0].single.id.package, equals("foo"));
     });
 
     test("allows comment-only files", () {
-      var pubspec = new Pubspec.parse(
-          '''
+      var pubspec = new Pubspec.parse('''
 # No external dependencies yet
 # Including for completeness
 # ...and hoping the spec expands to include details about author, version, etc
 # See http://www.dartlang.org/docs/pub-package-manager/ for details
-''',
-          sources);
+''', sources);
       expect(pubspec.version, equals(Version.none));
       expect(pubspec.dependencies, isEmpty);
     });
@@ -459,49 +415,41 @@ dependencies:
 
     group("git dependencies", () {
       test("path must be a string", () {
-        expectPubspecException(
-            '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: 12
-''',
-            (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
       });
 
       test("path must be relative", () {
-        expectPubspecException(
-            '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: git://github.com/dart-lang/foo/bar
-''',
-            (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
 
-        expectPubspecException(
-            '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: /foo
-''',
-            (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
       });
 
       test("path must be within the repository", () {
-        expectPubspecException(
-            '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: foo/../../bar
-''',
-            (pubspec) => pubspec.dependencies);
+''', (pubspec) => pubspec.dependencies);
       });
     });
 
@@ -518,13 +466,11 @@ dependencies:
       });
 
       test("allows a version constraint for the SDKs", () {
-        var pubspec = new Pubspec.parse(
-            '''
+        var pubspec = new Pubspec.parse('''
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
-''',
-            sources);
+''', sources);
         expect(pubspec.dartSdkConstraint,
             equals(new VersionConstraint.parse(">=1.2.3 <2.3.4")));
         expect(pubspec.flutterSdkConstraint,
@@ -562,20 +508,16 @@ environment:
       });
 
       test("allows a URL", () {
-        var pubspec = new Pubspec.parse(
-            '''
+        var pubspec = new Pubspec.parse('''
 publish_to: http://example.com
-''',
-            sources);
+''', sources);
         expect(pubspec.publishTo, equals("http://example.com"));
       });
 
       test("allows none", () {
-        var pubspec = new Pubspec.parse(
-            '''
+        var pubspec = new Pubspec.parse('''
 publish_to: none
-''',
-            sources);
+''', sources);
         expect(pubspec.publishTo, equals("none"));
       });
 
@@ -592,12 +534,10 @@ publish_to: none
       });
 
       test("allows simple names for keys and most characters in values", () {
-        var pubspec = new Pubspec.parse(
-            '''
+        var pubspec = new Pubspec.parse('''
 executables:
   abcDEF-123_: "abc DEF-123._"
-''',
-            sources);
+''', sources);
         expect(pubspec.executables['abcDEF-123_'], equals('abc DEF-123._'));
       });
 
@@ -632,12 +572,10 @@ executables:
       });
 
       test("uses the key if the value is null", () {
-        var pubspec = new Pubspec.parse(
-            '''
+        var pubspec = new Pubspec.parse('''
 executables:
   command:
-''',
-            sources);
+''', sources);
         expect(pubspec.executables['command'], equals('command'));
       });
     });
@@ -665,15 +603,13 @@ executables:
         });
 
         test("allows simple names for keys and valid compilers in values", () {
-          var pubspec = new Pubspec.parse(
-              '''
+          var pubspec = new Pubspec.parse('''
 web:
   compiler:
     abcDEF-123_: none
     debug: dartdevc
     release: dart2js
-''',
-              sources);
+''', sources);
           expect(pubspec.webCompiler['abcDEF-123_'], equals(Compiler.none));
           expect(pubspec.webCompiler['debug'], equals(Compiler.dartDevc));
           expect(pubspec.webCompiler['release'], equals(Compiler.dart2JS));

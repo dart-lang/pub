@@ -21,17 +21,13 @@ main() {
       await d.dir("foo", [
         d.libPubspec("foo", "1.0.0"),
         d.dir("lib", [
-          d.file(
-              "foo.dart",
-              """
+          d.file("foo.dart", """
   String get message => 'hello';
   """)
         ]),
       ]).create();
 
-      appHelloFile = d.file(
-          "hello.dart",
-          """
+      appHelloFile = d.file("hello.dart", """
 import 'package:foo/foo.dart';
 
 hello() => message;
@@ -43,9 +39,7 @@ hello() => message;
         }),
         appLibDir,
         d.dir("web", [
-          d.file(
-              "main.dart",
-              """
+          d.file("main.dart", """
 import 'package:myapp/hello.dart';
 
 void main() {
@@ -81,9 +75,7 @@ void main() {
     // Creates a world.dart file under lib/src for the main app.
     Future _addWorldDotDart() async {
       var srcDir = d.dir('src', [
-        d.file(
-            "world.dart",
-            """
+        d.file("world.dart", """
   world() => "world";
   """)
       ]);

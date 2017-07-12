@@ -18,9 +18,7 @@ main() {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
-        d.file(
-            "isolate.dart",
-            """
+        d.file("isolate.dart", """
               import 'dart:isolate';
               void main(List<String> args, SendPort sendPort) => print('hello');
             """)

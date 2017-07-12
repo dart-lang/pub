@@ -14,9 +14,7 @@ main() {
     await d.dir("foo", [
       d.libPubspec("foo", "1.0.0"),
       d.dir("lib", [
-        d.file(
-            "foo.dart",
-            """
+        d.file("foo.dart", """
   String get message => 'hello';
   """)
       ]),
@@ -27,18 +25,14 @@ main() {
         "foo": {"path": "../foo"}
       }),
       d.dir("lib", [
-        d.file(
-            "hello.dart",
-            """
+        d.file("hello.dart", """
 import 'package:foo/foo.dart';
 
 hello() => message;
 """)
       ]),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
 import 'package:myapp/hello.dart';
 
 void main() {
@@ -46,9 +40,7 @@ void main() {
 }
 """),
         d.dir("subdir", [
-          d.file(
-              "subfile.dart",
-              """
+          d.file("subfile.dart", """
 import '../main.dart' as other;
 
 void main() => other.main();

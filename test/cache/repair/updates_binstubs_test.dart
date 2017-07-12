@@ -35,9 +35,7 @@ main() {
     ]).create();
 
     // Repair them.
-    await runPub(
-        args: ["cache", "repair"],
-        output: '''
+    await runPub(args: ["cache", "repair"], output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.
           Reactivating foo 1.0.0...

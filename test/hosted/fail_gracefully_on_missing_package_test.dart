@@ -16,14 +16,10 @@ main() {
 
       await d.appDir({"foo": "1.2.3"}).create();
 
-      await pubCommand(command,
-          error: new RegExp(
-              r"""
+      await pubCommand(command, error: new RegExp(r"""
 Could not find package foo at http://localhost:\d+\.
 Depended on by:
-- myapp""",
-              multiLine: true),
-          exitCode: exit_codes.UNAVAILABLE);
+- myapp""", multiLine: true), exitCode: exit_codes.UNAVAILABLE);
     });
   });
 }
