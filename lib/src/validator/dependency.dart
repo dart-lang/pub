@@ -20,16 +20,46 @@ import '../validator.dart';
 final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
 
 /// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = new Version.parse("1.25.0-dev.5.0");
+final _firstGitPathVersion = new Version.parse("2.0.0-dev.1.0");
+
+/// The first Dart SDK version that supported package features.
+final _firstFeatureVersion = new Version.parse("2.0.0-dev.1.0");
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
+  /// Whether any dependency has a caret constraint.
+  var _hasCaretDep = false;
+
+  /// Whether any dependency depends on package features.
+  var _hasFeatures = false;
+
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    var hasCaretDep = false;
+    await _validateDependencies(entrypoint.root.pubspec.dependencies);
 
-    for (var dependency in entrypoint.root.pubspec.dependencies) {
+    for (var feature in entrypoint.root.pubspec.features.values) {
+      // Allow off-by-default features, since older pubs will just ignore them
+      // anyway.
+      _hasFeatures = _hasFeatures || feature.onByDefault;
+
+      await _validateDependencies(feature.dependencies);
+    }
+
+    if (_hasCaretDep) {
+      validateSdkConstraint(_firstCaretVersion,
+          "Older versions of pub don't support ^ version constraints.");
+    }
+
+    if (_hasFeatures) {
+      validateSdkConstraint(_firstFeatureVersion,
+          "Older versions of pub don't support package features.");
+    }
+  }
+
+  /// Validates all dependencies in [dependencies].
+  Future _validateDependencies(List<PackageRange> dependencies) async {
+    for (var dependency in dependencies) {
       var constraint = dependency.constraint;
       if (dependency.name == "flutter") {
         _warnAboutFlutterSdk(dependency);
@@ -52,13 +82,10 @@ class DependencyValidator extends Validator {
           _warnAboutNoConstraintUpperBound(dependency);
         }
 
-        hasCaretDep = hasCaretDep || constraint.toString().startsWith("^");
+        _hasCaretDep = _hasCaretDep || constraint.toString().startsWith("^");
       }
-    }
 
-    if (hasCaretDep) {
-      validateSdkConstraint(_firstCaretVersion,
-          "Older versions of pub don't support ^ version constraints.");
+      _hasFeatures = _hasFeatures || dependency.features.isNotEmpty;
     }
   }
 
