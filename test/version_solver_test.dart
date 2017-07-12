@@ -284,6 +284,132 @@ void devDependency() {
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
+
+  group("with both a dev and regular dependency", () {
+    test("succeeds when both are satisfied", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+        builder.serve('foo', '2.0.0');
+        builder.serve('foo', '3.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '>=1.0.0 <3.0.0'},
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
+        })
+      ]).create();
+
+      await expectResolves(result: {'foo': '2.0.0'});
+    });
+
+    test("fails when main dependency isn't satisfied", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '3.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '>=1.0.0 <3.0.0'},
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
+        })
+      ]).create();
+
+      await expectResolves(
+          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
+              "derived from:\n"
+              "- myapp depends on version >=1.0.0 <3.0.0\n"
+              "- myapp depends on version >=2.0.0 <4.0.0");
+    });
+
+    test("fails when dev dependency isn't satisfied", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '>=1.0.0 <3.0.0'},
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
+        })
+      ]).create();
+
+      await expectResolves(
+          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
+              "derived from:\n"
+              "- myapp depends on version >=1.0.0 <3.0.0\n"
+              "- myapp depends on version >=2.0.0 <4.0.0");
+    });
+
+    test("fails when dev and main constraints are incompatible", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '>=1.0.0 <2.0.0'},
+          'dev_dependencies': {'foo': '>=2.0.0 <3.0.0'}
+        })
+      ]).create();
+
+      await expectResolves(
+          error:
+              "Package foo has no versions that match <empty> derived from:\n"
+              "- myapp depends on version >=1.0.0 <2.0.0\n"
+              "- myapp depends on version >=2.0.0 <3.0.0");
+    });
+
+    test("fails when dev and main sources are incompatible", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '>=1.0.0 <2.0.0'},
+          'dev_dependencies': {
+            'foo': {'path': '../foo'}
+          }
+        })
+      ]).create();
+
+      await expectResolves(
+          error: "Incompatible dependencies on foo:\n"
+              "- myapp depends on it from source hosted\n"
+              "- myapp depends on it from source path");
+    });
+
+    test("fails when dev and main descriptions are incompatible", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': {'path': 'foo'}
+          },
+          'dev_dependencies': {
+            'foo': {'path': '../foo'}
+          }
+        })
+      ]).create();
+
+      await expectResolves(
+          error: 'Incompatible dependencies on foo:\n'
+              '- myapp depends on it with description '
+              '{"path":"foo","relative":true}\n'
+              '- myapp depends on it with description '
+              '{"path":"../foo","relative":true}');
+    });
+  });
 }
 
 void unsolvable() {
@@ -1976,6 +2102,94 @@ void features() {
             error: "Package foo feature stuff requires Flutter SDK version "
                 "^2.0.0 but the current SDK is 1.2.3.");
       });
+    });
+  });
+
+  group("with overlapping dependencies", () {
+    test("can enable extra features", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "dependencies": {'bar': '1.0.0'},
+          "features": {
+            "stuff": {
+              "default": false,
+              "dependencies": {
+                'bar': {
+                  'features': {'stuff': true}
+                }
+              }
+            }
+          }
+        });
+
+        builder.serve('bar', '1.0.0', pubspec: {
+          "features": {
+            "stuff": {
+              "default": false,
+              "dependencies": {'baz': '1.0.0'}
+            }
+          }
+        });
+
+        builder.serve('baz', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {'version': '1.0.0'}
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'stuff': true}
+        }
+      }).create();
+      await expectResolves(
+          result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
+    });
+
+    test("can't disable features", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "dependencies": {
+            'bar': {
+              'version': '1.0.0',
+              'features': {'stuff': false}
+            },
+          },
+          "features": {
+            "stuff": {
+              "default": false,
+              "dependencies": {
+                'bar': {
+                  'features': {'stuff': true}
+                }
+              }
+            }
+          }
+        });
+
+        builder.serve('bar', '1.0.0', pubspec: {
+          "features": {
+            "stuff": {
+              "default": true,
+              "dependencies": {'baz': '1.0.0'}
+            }
+          }
+        });
+
+        builder.serve('baz', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'stuff': true}
+        }
+      }).create();
+      await expectResolves(
+          result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
     });
   });
 }

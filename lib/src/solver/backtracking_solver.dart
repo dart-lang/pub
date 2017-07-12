@@ -591,8 +591,15 @@ class BacktrackingSolver {
       Dependency dep, List<Dependency> allDeps) {
     var required = _selection.getRequiredDependency(dep.dep.name);
     if (required == null) return;
+    _checkDependencyMatchesRequiredMetadata(dep, required.dep, allDeps);
+  }
 
-    if (dep.dep.source != required.dep.source) {
+  /// Like [_checkDependencyMatchesMetadata], but takes a [required] range whose
+  /// source and description must be matched rather than using the range defined
+  /// by [_selection].
+  void _checkDependencyMatchesRequiredMetadata(
+      Dependency dep, PackageRange required, List<Dependency> allDeps) {
+    if (dep.dep.source != required.source) {
       // Mark the dependers as failing rather than the package itself, because
       // no version from this source will be compatible.
       for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
@@ -605,7 +612,7 @@ class BacktrackingSolver {
       throw new SourceMismatchException(dep.dep.name, allDeps);
     }
 
-    if (!dep.dep.samePackage(required.dep)) {
+    if (!dep.dep.samePackage(required)) {
       // Mark the dependers as failing rather than the package itself, because
       // no version with this description will be compatible.
       for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
@@ -715,20 +722,23 @@ class BacktrackingSolver {
   /// neccessary.
   Future<Set<PackageRange>> depsFor(PackageId id) async {
     var pubspec = await _getPubspec(id);
-    var deps = pubspec.dependencies.toSet();
+    var deps = <String, List<PackageRange>>{};
+    _addDependencies(deps, pubspec.dependencies);
 
     for (var feature in pubspec.features.values) {
       if (!_selection.isFeatureEnabled(id.name, feature)) continue;
-      deps.addAll(feature.dependencies);
+      _addDependencies(deps, feature.dependencies);
     }
 
     if (id.isRoot) {
       // Include dev dependencies of the root package.
-      deps.addAll(pubspec.devDependencies);
+      _addDependencies(deps, pubspec.devDependencies);
 
       // Add all overrides. This ensures a dependency only present as an
       // override is still included.
-      deps.addAll(_overrides.values);
+      for (var range in _overrides.values) {
+        deps[range.name] = [range];
+      }
     }
 
     return _processDependencies(id, deps);
@@ -741,23 +751,51 @@ class BacktrackingSolver {
     var pubspec = await _getPubspec(id);
     if (pubspec.features.isEmpty) return const UnmodifiableSetView.empty();
 
-    var deps = new Set();
+    var deps = <String, List<PackageRange>>{};
     for (var feature in pubspec.features.values) {
       // Only enable features that weren't already enabled.
       if ((features[feature.name]?.isEnabled ?? feature.onByDefault) &&
           !_selection.isFeatureEnabled(id.name, feature)) {
-        deps.addAll(feature.dependencies);
+        _addDependencies(deps, feature.dependencies);
       }
     }
 
     return _processDependencies(id, deps);
   }
 
+  /// Adds [ranges] to [deps].
+  void _addDependencies(
+      Map<String, List<PackageRange>> deps, List<PackageRange> ranges) {
+    for (var range in ranges) {
+      deps.putIfAbsent(range.name, () => []).add(range);
+    }
+  }
+
   /// Post-processes [deps] before returning it from [depsFor] or
   /// [depsForFeature].
   ///
   /// This may modify [deps].
-  Set<PackageRange> _processDependencies(PackageId id, Set<PackageRange> deps) {
+  Set<PackageRange> _processDependencies(
+      PackageId id, Map<String, List<PackageRange>> depsByName) {
+    // Make sure that all active dependencies on a given package have the same
+    // source and description.
+    var deps = new Set<PackageRange>();
+    for (var ranges in depsByName.values) {
+      deps.addAll(ranges);
+      if (ranges.length == 1) continue;
+
+      var required = ranges.first;
+      var allDeps = _selection.getDependenciesOn(required.name).toList();
+
+      var dependencies =
+          ranges.map((range) => new Dependency(id, range)).toList();
+      allDeps.addAll(dependencies);
+
+      for (var dependency in dependencies.skip(1)) {
+        _checkDependencyMatchesRequiredMetadata(dependency, required, allDeps);
+      }
+    }
+
     if (id.isRoot) {
       // Replace any overridden dependencies.
       deps = deps.map((dep) {
