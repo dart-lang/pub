@@ -23,9 +23,7 @@ main() {
         "dependencies": {"barback": "any"}
       }),
       d.dir("lib", [
-        d.file(
-            "foo.dart",
-            """
+        d.file("foo.dart", """
 const TOKEN = "before";
 foo() => TOKEN;
 """),
@@ -38,9 +36,7 @@ foo() => TOKEN;
         "foo": {"path": "../foo"}
       }),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
 import "package:foo/foo.dart";
 main() => print(foo());
 """)

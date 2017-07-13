@@ -22,9 +22,7 @@ main() {
 
     await runPub(args: ["global", "activate", "-sgit", "../foo.git"]);
 
-    await runPub(
-        args: ["global", "activate", "foo"],
-        output: """
+    await runPub(args: ["global", "activate", "foo"], output: """
         Package foo is currently active from Git repository "../foo.git".
         Resolving dependencies...
         + foo 2.0.0

@@ -21,9 +21,7 @@ main() {
         d.file("hello.dart", "hello() => print('hello');"),
       ]),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            '''
+        d.file("main.dart", '''
           import 'package:myapp/hello.dart';
 
           void main() => hello();
@@ -112,9 +110,7 @@ main() {
         },
       }),
       d.dir('web', [
-        d.file(
-            'main.dart',
-            '''
+        d.file('main.dart', '''
           void main() => print('hello');
         '''),
       ]),
@@ -145,9 +141,7 @@ main() {
         },
       }),
       d.dir('web', [
-        d.file(
-            'main.dart',
-            '''
+        d.file('main.dart', '''
           void main() => print('hello');
         '''),
       ]),

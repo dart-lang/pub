@@ -15,9 +15,7 @@ main() {
         "dependencies": {"bar": "any"}
       }, contents: [
         d.dir("bin", [
-          d.file(
-              "hello.dart",
-              """
+          d.file("hello.dart", """
 import 'package:bar/bar.dart';
 
 void main() => print(message);

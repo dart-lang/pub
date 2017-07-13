@@ -13,9 +13,7 @@ main() {
   setUp(d.validPackage.create);
 
   test('--force cannot be combined with --dry-run', () async {
-    await runPub(
-        args: ['lish', '--force', '--dry-run'],
-        error: """
+    await runPub(args: ['lish', '--force', '--dry-run'], error: """
           Cannot use both --force and --dry-run.
           
           Usage: pub publish [options]
@@ -27,7 +25,6 @@ main() {
 
           Run "pub help" to see global options.
           See http://dartlang.org/tools/pub/cmd/pub-lish.html for detailed documentation.
-          """,
-        exitCode: exit_codes.USAGE);
+          """, exitCode: exit_codes.USAGE);
   });
 }

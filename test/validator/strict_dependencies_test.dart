@@ -26,9 +26,7 @@ main() {
         d.libPubspec("test_pkg", "1.0.0",
             deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('lib', [
-          d.file(
-              'library.dart',
-              r'''
+          d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -42,9 +40,7 @@ main() {
         d.libPubspec("test_pkg", "1.0.0",
             deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('lib', [
-          d.file(
-              'library.dart',
-              r'''
+          d.file('library.dart', r'''
             export 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -58,9 +54,7 @@ main() {
         d.libPubspec("test_pkg", "1.0.0",
             deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
         d.dir('bin', [
-          d.file(
-              'library.dart',
-              r'''
+          d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
           '''),
         ]),
@@ -87,9 +81,7 @@ main() {
               d.libPubspec("test_pkg", "1.0.0",
                   deps: deps, devDeps: devDeps, sdk: ">=1.8.0 <2.0.0"),
               d.dir(devDir, [
-                d.file(
-                    'library.dart',
-                    '''
+                d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
           '''),
               ]),
@@ -102,87 +94,59 @@ main() {
     }
 
     test('only uses dart: dependencies (not pub packages)', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'dart:async';
         import 'dart:collection';
         import 'dart:typed_data';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('imports itself', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:test_pkg/test_pkg.dart';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('has a relative import', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'some/relative/path.dart';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('has an absolute import', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'file://shared/some/library.dart';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('has a parse error preventing reading directives', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import not_supported_keyword 'dart:async';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('has a top-level Dart file with an invalid dependency', () async {
-      await d
-          .file(
-              path.join(appPath, 'top_level.dart'),
-              r'''
+      await d.file(path.join(appPath, 'top_level.dart'), r'''
         import 'package:';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
 
     test('has a Dart-like file with an invalid dependency', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'generator.dart.template'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'generator.dart.template'), r'''
         import 'package:';
-      ''')
-          .create();
+      ''').create();
 
       expectNoValidationError(strictDeps);
     });
@@ -192,37 +156,25 @@ main() {
     setUp(d.validPackage.create);
 
     test('does not declare an "import" as a dependency', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:silly_monkey/silly_monkey.dart';
-      ''')
-          .create();
+      ''').create();
 
       expectValidationWarning(strictDeps);
     });
 
     test('does not declare an "export" as a dependency', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         export 'package:silly_monkey/silly_monkey.dart';
-      ''')
-          .create();
+      ''').create();
 
       expectValidationWarning(strictDeps);
     });
 
     test('has an invalid URI', () async {
-      await d
-          .file(
-              path.join(appPath, 'lib', 'library.dart'),
-              r'''
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:/';
-      ''')
-          .create();
+      ''').create();
 
       expectValidationWarning(strictDeps);
     });
@@ -234,9 +186,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0",
                 devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
             d.dir(codeDir, [
-              d.file(
-                  'library.dart',
-                  '''
+              d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
           '''),
             ]),
@@ -254,9 +204,7 @@ main() {
           await d.dir(appPath, [
             d.libPubspec("test_pkg", "1.0.0", sdk: ">=1.8.0 <2.0.0"),
             d.dir(devDir, [
-              d.file(
-                  'library.dart',
-                  '''
+              d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
           '''),
             ]),
@@ -271,9 +219,7 @@ main() {
       test('"package:"', () async {
         await d.dir(appPath, [
           d.dir('lib', [
-            d.file(
-                'library.dart',
-                r'''
+            d.file('library.dart', r'''
             import 'package:';
           '''),
           ]),
@@ -287,9 +233,7 @@ main() {
           d.libPubspec("test_pkg", "1.0.0",
               deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
           d.dir('lib', [
-            d.file(
-                'library.dart',
-                r'''
+            d.file('library.dart', r'''
             import 'package:silly_monkey';
           '''),
           ]),
@@ -301,9 +245,7 @@ main() {
       test('"package:/"', () async {
         await d.dir(appPath, [
           d.dir('lib', [
-            d.file(
-                'library.dart',
-                r'''
+            d.file('library.dart', r'''
             import 'package:/';
           '''),
           ]),
@@ -315,9 +257,7 @@ main() {
       test('"package:/]"', () async {
         await d.dir(appPath, [
           d.dir('lib', [
-            d.file(
-                'library.dart',
-                r'''
+            d.file('library.dart', r'''
             import 'package:/]';
           '''),
           ]),

@@ -310,9 +310,7 @@ main() {
     await d.dir(appPath, [
       d.appPubspec({"foo": "1.2.3"}),
       d.dir('bin', [
-        d.file(
-            'script.dart',
-            """
+        d.file('script.dart', """
           import 'package:foo/foo.dart';
 
           void main() => print(message);""")
@@ -350,9 +348,7 @@ main() {
     await d.dir(appPath, [
       d.appPubspec({"foo": "1.2.3"}),
       d.dir('bin', [
-        d.file(
-            'script.dart',
-            """
+        d.file('script.dart', """
           import 'package:foo/foo.dart';
 
           void main() => print(message);""")
@@ -480,9 +476,7 @@ main() {
     ]).validate();
 
     await pubServe();
-    await requestShouldSucceed(
-        "packages/foo/inputs.txt",
-        """
+    await requestShouldSucceed("packages/foo/inputs.txt", """
 foo|lib/copy_transformer.dart
 foo|lib/copy_transformer.dart.copy
 foo|lib/hello.dart

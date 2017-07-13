@@ -15,9 +15,7 @@ main() {
       builder.serve("foo", "2.0.0-wildly.unstable");
     });
 
-    await runPub(
-        args: ["global", "activate", "foo"],
-        output: """
+    await runPub(args: ["global", "activate", "foo"], output: """
         Resolving dependencies...
         + foo 1.2.3 (2.0.0-wildly.unstable available)
         Downloading foo 1.2.3...

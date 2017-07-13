@@ -10,9 +10,7 @@ import '../../test_pub.dart';
 
 main() {
   test('fails if no package was given', () {
-    return runPub(
-        args: ["cache", "add"],
-        error: """
+    return runPub(args: ["cache", "add"], error: """
             No package to add given.
             
             Usage: pub cache add <package> [--version <constraint>] [--all]
@@ -22,7 +20,6 @@ main() {
 
             Run "pub help" to see global options.
             See http://dartlang.org/tools/pub/cmd/pub-cache.html for detailed documentation.
-            """,
-        exitCode: exit_codes.USAGE);
+            """, exitCode: exit_codes.USAGE);
   });
 }

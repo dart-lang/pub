@@ -45,9 +45,7 @@ main() {
   group("lists all dependencies", () {
     test("in compact form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps', '-s', 'compact'],
-          output: '''
+      await runPub(args: ['deps', '-s', 'compact'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -74,9 +72,7 @@ main() {
 
     test("in list form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps', '--style', 'list'],
-          output: '''
+      await runPub(args: ['deps', '--style', 'list'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -112,9 +108,7 @@ main() {
 
     test("lists dependencies in tree form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps'],
-          output: '''
+      await runPub(args: ['deps'], output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3
@@ -137,9 +131,7 @@ main() {
   group("lists non-dev dependencies", () {
     test("in compact form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps', '-s', 'compact', '--no-dev'],
-          output: '''
+      await runPub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -162,9 +154,7 @@ main() {
 
     test("in list form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps', '--style', 'list', '--no-dev'],
-          output: '''
+      await runPub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -194,9 +184,7 @@ main() {
 
     test("in tree form", () async {
       await pubGet();
-      await runPub(
-          args: ['deps', '--no-dev'],
-          output: '''
+      await runPub(args: ['deps', '--no-dev'], output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3

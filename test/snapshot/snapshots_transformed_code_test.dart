@@ -39,9 +39,7 @@ main() {
       }, contents: [
         d.dir("lib", [d.file("foo.dart", REPLACE_TRANSFORMER)]),
         d.dir("bin", [
-          d.file(
-              "hello.dart",
-              """
+          d.file("hello.dart", """
 final message = 'REPLACE ME';
 
 void main() => print(message);

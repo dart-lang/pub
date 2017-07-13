@@ -8,9 +8,7 @@ import 'test_pub.dart';
 
 main() {
   test('running pub with no command displays usage', () {
-    return runPub(
-        args: [],
-        output: """
+    return runPub(args: [], output: """
         Pub is a package manager for Dart.
 
         Usage: pub <command> [arguments]

@@ -15,9 +15,7 @@ main() {
 
     await runPub(args: ["cache", "add", "foo"]);
 
-    await runPub(
-        args: ["global", "activate", "foo"],
-        output: """
+    await runPub(args: ["global", "activate", "foo"], output: """
         Resolving dependencies...
         + foo 1.0.0
         Precompiling executables...

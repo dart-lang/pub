@@ -59,9 +59,7 @@ main() {
     await runPub(args: ['global', 'activate', 'aaa']);
     await runPub(args: ['global', 'activate', 'bbb']);
 
-    await runPub(
-        args: ['global', 'list'],
-        output: '''
+    await runPub(args: ['global', 'list'], output: '''
 aaa 1.0.0
 bbb 1.0.0
 ccc 1.0.0

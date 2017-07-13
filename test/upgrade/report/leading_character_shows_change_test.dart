@@ -71,9 +71,7 @@ main() {
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(
-        output: new RegExp(
-            r"""
+    await pubUpgrade(output: new RegExp(r"""
 Resolving dependencies\.\.\..*
 \+ added .*
 \* description_changed .*
@@ -84,7 +82,6 @@ Resolving dependencies\.\.\..*
 > upgraded .*
 These packages are no longer being depended on:
 - removed .*
-""",
-            multiLine: true));
+""", multiLine: true));
   });
 }

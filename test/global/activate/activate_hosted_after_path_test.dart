@@ -26,9 +26,7 @@ main() {
     await runPub(args: ["global", "activate", "-spath", "../foo"]);
 
     var path = canonicalize(p.join(d.sandbox, "foo"));
-    await runPub(
-        args: ["global", "activate", "foo"],
-        output: """
+    await runPub(args: ["global", "activate", "foo"], output: """
         Package foo is currently active at path "$path".
         Resolving dependencies...
         + foo 2.0.0

@@ -21,9 +21,7 @@ main() {
       })
     ]).create();
 
-    await runPub(
-        args: ["run", "foo:sub/dir"],
-        error: """
+    await runPub(args: ["run", "foo:sub/dir"], error: """
 Cannot run an executable in a subdirectory of a dependency.
 
 Usage: pub run <executable> [args...]
@@ -33,7 +31,6 @@ Usage: pub run <executable> [args...]
                       (defaults to "release" for dependencies, "debug" for entrypoint)
 
 Run "pub help" to see global options.
-""",
-        exitCode: exit_codes.USAGE);
+""", exitCode: exit_codes.USAGE);
   });
 }
