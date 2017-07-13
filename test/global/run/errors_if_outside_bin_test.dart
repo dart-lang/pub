@@ -18,9 +18,7 @@ main() {
     });
 
     await runPub(args: ["global", "activate", "foo"]);
-    await runPub(
-        args: ["global", "run", "foo:example/script"],
-        error: """
+    await runPub(args: ["global", "run", "foo:example/script"], error: """
 Cannot run an executable in a subdirectory of a global package.
 
 Usage: pub global run <package>:<executable> [args...]
@@ -30,7 +28,6 @@ Usage: pub global run <package>:<executable> [args...]
                       (defaults to "release")
 
 Run "pub help" to see global options.
-""",
-        exitCode: exit_codes.USAGE);
+""", exitCode: exit_codes.USAGE);
   });
 }

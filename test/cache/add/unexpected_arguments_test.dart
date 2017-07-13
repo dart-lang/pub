@@ -10,9 +10,7 @@ import '../../test_pub.dart';
 
 main() {
   test('fails if there are extra arguments', () {
-    return runPub(
-        args: ["cache", "add", "foo", "bar", "baz"],
-        error: """
+    return runPub(args: ["cache", "add", "foo", "bar", "baz"], error: """
             Unexpected arguments "bar" and "baz".
             
             Usage: pub cache add <package> [--version <constraint>] [--all]
@@ -22,7 +20,6 @@ main() {
 
             Run "pub help" to see global options.
             See http://dartlang.org/tools/pub/cmd/pub-cache.html for detailed documentation.
-            """,
-        exitCode: exit_codes.USAGE);
+            """, exitCode: exit_codes.USAGE);
   });
 }

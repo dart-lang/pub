@@ -22,9 +22,7 @@ main() {
         ]
       }),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
 void main() {
   if (const bool.fromEnvironment('CONSTANT')) {
     print("hello");

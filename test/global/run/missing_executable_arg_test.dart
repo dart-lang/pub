@@ -10,9 +10,7 @@ import '../../test_pub.dart';
 
 main() {
   test('fails if no executable was given', () {
-    return runPub(
-        args: ["global", "run"],
-        error: """
+    return runPub(args: ["global", "run"], error: """
             Must specify an executable to run.
 
             Usage: pub global run <package>:<executable> [args...]
@@ -22,7 +20,6 @@ main() {
                                   (defaults to "release")
 
             Run "pub help" to see global options.
-            """,
-        exitCode: exit_codes.USAGE);
+            """, exitCode: exit_codes.USAGE);
   });
 }

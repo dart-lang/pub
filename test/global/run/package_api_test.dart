@@ -17,9 +17,7 @@ main() {
         "bar": "1.0.0"
       }, contents: [
         d.dir("bin", [
-          d.file(
-              "script.dart",
-              """
+          d.file("script.dart", """
 import 'dart:isolate';
 
 main() async {
@@ -64,9 +62,7 @@ main() async {
         "foo": {"path": "../foo"}
       }),
       d.dir("bin", [
-        d.file(
-            "script.dart",
-            """
+        d.file("script.dart", """
 import 'dart:isolate';
 
 main() async {
@@ -114,9 +110,7 @@ main() async {
         "transformers": ["myapp/src/transformer"]
       }),
       d.dir("lib/src", [
-        d.file(
-            "transformer.dart",
-            """
+        d.file("transformer.dart", """
           import 'dart:async';
 
           import 'package:barback/barback.dart';
@@ -135,9 +129,7 @@ main() async {
         """)
       ]),
       d.dir("bin", [
-        d.file(
-            "script.dart",
-            """
+        d.file("script.dart", """
           import 'dart:isolate';
 
           main() async {

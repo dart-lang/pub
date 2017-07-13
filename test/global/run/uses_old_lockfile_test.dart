@@ -15,9 +15,7 @@ main() {
         "bar": "any"
       }, contents: [
         d.dir("bin", [
-          d.file(
-              "script.dart",
-              """
+          d.file("script.dart", """
               import 'package:bar/bar.dart' as bar;
 
               main(args) => print(bar.main());""")
@@ -30,9 +28,7 @@ main() {
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.file(
-            'foo.lock',
-            '''
+        d.file('foo.lock', '''
 packages:
   foo:
     description: foo

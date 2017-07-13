@@ -18,9 +18,7 @@ main() {
     await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
-        d.file(
-            "foo.dart",
-            """
+        d.file("foo.dart", """
             library foo;
             foo() {
               // As of today dart2js will not inline this code.
@@ -36,16 +34,12 @@ main() {
         "foo": {"path": "../foo"}
       }),
       d.dir("web", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
             import 'package:foo/foo.dart';
             main() => foo();
             """),
         d.dir("sub", [
-          d.file(
-              "main2.dart",
-              """
+          d.file("main2.dart", """
             import 'package:foo/foo.dart';
             main() => foo();
             """),

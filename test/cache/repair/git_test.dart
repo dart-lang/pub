@@ -42,9 +42,7 @@ main() {
       }
 
       // Repair them.
-      await runPub(
-          args: ["cache", "repair"],
-          output: '''
+      await runPub(args: ["cache", "repair"], output: '''
           Resetting Git repository for foo 1.0.0...
           Resetting Git repository for foo 1.0.1...
           Reinstalled 2 packages.''');
@@ -153,9 +151,7 @@ main() {
       }
 
       // Repair them.
-      await runPub(
-          args: ["cache", "repair"],
-          output: '''
+      await runPub(args: ["cache", "repair"], output: '''
           Resetting Git repository for sub 1.0.0...
           Resetting Git repository for sub 1.0.1...
           Reinstalled 2 packages.''');

@@ -231,9 +231,7 @@ main() {
         await pubGet();
 
         await d.dir(appPath, [
-          d.file(
-              ".packages",
-              """
+          d.file(".packages", """
 myapp:lib
 foo:http://example.com/
 """)

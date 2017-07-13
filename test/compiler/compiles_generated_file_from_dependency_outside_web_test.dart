@@ -25,15 +25,11 @@ main() {
       }),
       d.dir("lib", [d.file("transformer.dart", dartTransformer("munge"))]),
       d.dir("test", [
-        d.file(
-            "main.dart",
-            """
+        d.file("main.dart", """
 import "other.dart";
 void main() => print(TOKEN);
 """),
-        d.file(
-            "other.dart",
-            """
+        d.file("other.dart", """
 const TOKEN = "before";
 """)
       ])

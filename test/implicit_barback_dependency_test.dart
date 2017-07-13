@@ -148,8 +148,7 @@ main() {
 
     await d.appDir({"barback": "any"}).create();
 
-    await pubGet(
-        error: """
+    await pubGet(error: """
 Package barback has no versions that match >=$current <$max derived from:
 - myapp depends on version any
 - pub itself depends on version >=$current <$max""");
@@ -168,8 +167,7 @@ Package barback has no versions that match >=$current <$max derived from:
 
     await d.appDir({"barback": previous}).create();
 
-    await pubGet(
-        error: """
+    await pubGet(error: """
 Incompatible version constraints on barback:
 - myapp depends on version $previous
 - pub itself depends on version >=$current <$max""");

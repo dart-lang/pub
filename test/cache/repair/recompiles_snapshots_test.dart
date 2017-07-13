@@ -21,9 +21,7 @@ main() {
       d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')])
     ]).create();
 
-    await runPub(
-        args: ["cache", "repair"],
-        output: '''
+    await runPub(args: ["cache", "repair"], output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
