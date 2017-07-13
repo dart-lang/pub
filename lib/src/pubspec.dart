@@ -176,12 +176,18 @@ class Pubspec {
                 specNode.nodes['default'].span);
           }
 
+          var requires = _parseStringList(specNode.nodes['requires'],
+              validate: (name, span) {
+            if (!features.containsKey(name)) _error('Undefined feature.', span);
+          });
+
           var dependencies = _parseDependencies(
               'dependencies', specNode.nodes['dependencies']);
 
           var sdkConstraints = _parseEnvironment(specNode);
 
           return new Feature(nameNode.value, dependencies,
+              requires: requires,
               dartSdkConstraint: sdkConstraints.first,
               flutterSdkConstraint: sdkConstraints.last,
               onByDefault: onByDefault);
@@ -195,18 +201,7 @@ class Pubspec {
   List<Set<TransformerConfig>> get transformers {
     if (_transformers != null) return _transformers;
 
-    var transformers = fields['transformers'];
-    if (transformers == null) {
-      _transformers = [];
-      return _transformers;
-    }
-
-    if (transformers is! List) {
-      _error('"transformers" field must be a list.',
-          fields.nodes['transformers'].span);
-    }
-
-    _transformers = (transformers as YamlList).nodes.map((phase) {
+    _transformers = _parseList(fields.nodes['transformers']).nodes.map((phase) {
       var phaseNodes = phase is YamlList ? phase.nodes : [phase];
       return phaseNodes.map((transformerNode) {
         var transformer = transformerNode.value;
@@ -729,6 +724,30 @@ class Pubspec {
     }
 
     return name;
+  }
+
+  /// Verifies that [node] is a list of strings and returns it.
+  ///
+  /// If [validate] is passed, it's called for each string in [node].
+  List<String> _parseStringList(YamlNode node,
+      {void validate(String value, SourceSpan span)}) {
+    var list = _parseList(node);
+    for (var element in list.nodes) {
+      var value = element.value;
+      if (value is String) {
+        if (validate != null) validate(value, element.span);
+      } else {
+        _error('Must be a string.', element.span);
+      }
+    }
+    return DelegatingList.typed(list);
+  }
+
+  /// Verifies that [node] is a list and returns it.
+  YamlList _parseList(YamlNode node) {
+    if (node == null || node.value == null) return new YamlList();
+    if (node is YamlList) return node;
+    _error('Must be a list.', node.span);
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a

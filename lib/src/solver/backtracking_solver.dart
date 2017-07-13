@@ -474,8 +474,7 @@ class BacktrackingSolver {
     _checkPubspecMatchesSdkConstraint(pubspec);
     _checkPubspecMatchesFeatures(pubspec);
 
-    for (var feature in pubspec.features.values) {
-      if (!_selection.isFeatureEnabled(id.name, feature)) continue;
+    for (var feature in _selection.enabledFeatures(id.name, pubspec.features)) {
       _checkFeatureMatchesSdk(id, feature);
     }
 
@@ -648,14 +647,10 @@ class BacktrackingSolver {
     var pubspec = await _getPubspec(selected);
 
     // Verify that any features enabled by [dep] have valid dependencies.
-    for (var feature in pubspec.features.values) {
-      // If the feature is already enabled, we don't need to re-check its
-      // dependencies.
-      if (_selection.isFeatureEnabled(dep.dep.name, feature)) continue;
-
-      // If [dep] doesn't enable the feature, don't check its dependencies.
-      if (!feature.isEnabled(dep.dep.features)) continue;
-
+    var newlyEnabledFeatures = Feature
+        .featuresEnabledBy(pubspec.features, dep.dep.features)
+        .difference(_selection.enabledFeatures(dep.dep.name, pubspec.features));
+    for (var feature in newlyEnabledFeatures) {
       _checkFeatureMatchesSdk(selected, feature);
       await _checkDependencies(selected, feature.dependencies);
     }
@@ -725,8 +720,7 @@ class BacktrackingSolver {
     var deps = <String, List<PackageRange>>{};
     _addDependencies(deps, pubspec.dependencies);
 
-    for (var feature in pubspec.features.values) {
-      if (!_selection.isFeatureEnabled(id.name, feature)) continue;
+    for (var feature in _selection.enabledFeatures(id.name, pubspec.features)) {
       _addDependencies(deps, feature.dependencies);
     }
 
@@ -752,12 +746,11 @@ class BacktrackingSolver {
     if (pubspec.features.isEmpty) return const UnmodifiableSetView.empty();
 
     var deps = <String, List<PackageRange>>{};
-    for (var feature in pubspec.features.values) {
-      // Only enable features that weren't already enabled.
-      if ((features[feature.name]?.isEnabled ?? feature.onByDefault) &&
-          !_selection.isFeatureEnabled(id.name, feature)) {
-        _addDependencies(deps, feature.dependencies);
-      }
+    var newlyEnabledFeatures = Feature
+        .featuresEnabledBy(pubspec.features, features)
+        .difference(_selection.enabledFeatures(id.name, pubspec.features));
+    for (var feature in newlyEnabledFeatures) {
+      _addDependencies(deps, feature.dependencies);
     }
 
     return _processDependencies(id, deps);
