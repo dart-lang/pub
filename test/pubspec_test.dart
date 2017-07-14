@@ -456,7 +456,8 @@ dependencies:
     group("environment", () {
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('', sources);
-        expect(pubspec.dartSdkConstraint, equals(VersionConstraint.any));
+        expect(pubspec.dartSdkConstraint,
+            equals(new VersionConstraint.parse("<2.0.0-dev.infinity")));
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 

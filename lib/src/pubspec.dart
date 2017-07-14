@@ -23,6 +23,12 @@ import 'utils.dart';
 final _packageName = new RegExp(
     "^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
 
+/// The default SDK constraint for packages that don't declare one.
+///
+/// This allows 2.0.0 dev versions to make the migration proecss smoother.
+final _defaultSdkConstraint =
+    new VersionConstraint.parse("<2.0.0-dev.infinity");
+
 /// The parsed contents of a pubspec file.
 ///
 /// The fields of a pubspec are, for the most part, validated when they're first
@@ -231,7 +237,7 @@ class Pubspec {
     });
   }
 
-  /// The constraint on the Dart SDK, or [VersionConstraint.any] if none is
+  /// The constraint on the Dart SDK, or [_defaultSdkConstraint] if none is
   /// specified.
   VersionConstraint get dartSdkConstraint {
     _parseEnvironment();
@@ -255,7 +261,7 @@ class Pubspec {
 
     var yaml = fields['environment'];
     if (yaml == null) {
-      _dartSdkConstraint = VersionConstraint.any;
+      _dartSdkConstraint = _defaultSdkConstraint;
       return;
     }
 
@@ -264,7 +270,8 @@ class Pubspec {
           fields.nodes['environment'].span);
     }
 
-    _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk']);
+    _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk'],
+        defaultConstraint: _defaultSdkConstraint);
     _flutterSdkConstraint = yaml.containsKey('flutter')
         ? _parseVersionConstraint(yaml.nodes['flutter'])
         : null;
@@ -444,7 +451,7 @@ class Pubspec {
             devDependencies == null ? null : devDependencies.toList(),
         _dependencyOverrides =
             dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint = dartSdkConstraint ?? VersionConstraint.any,
+        _dartSdkConstraint = dartSdkConstraint ?? _defaultSdkConstraint,
         _flutterSdkConstraint = flutterSdkConstraint,
         _transformers = transformers == null
             ? []
@@ -458,7 +465,7 @@ class Pubspec {
         _version = Version.none,
         _dependencies = <PackageRange>[],
         _devDependencies = <PackageRange>[],
-        _dartSdkConstraint = VersionConstraint.any,
+        _dartSdkConstraint = _defaultSdkConstraint,
         _flutterSdkConstraint = null,
         _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
@@ -619,9 +626,11 @@ class Pubspec {
     return dependencies;
   }
 
-  /// Parses [node] to a [VersionConstraint].
-  VersionConstraint _parseVersionConstraint(YamlNode node) {
-    if (node?.value == null) return VersionConstraint.any;
+  /// Parses [node] to a [VersionConstraint], or [defaultConstraint] if no
+  /// constraint is specified..
+  VersionConstraint _parseVersionConstraint(YamlNode node,
+      {VersionConstraint defaultConstraint}) {
+    if (node?.value == null) return defaultConstraint;
     if (node.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }
