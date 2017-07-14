@@ -150,6 +150,16 @@ class VersionSelection {
     // [BacktrackingSolver] takes care of that.
     var dependencies = <String, FeatureDependency>{};
     for (var dep in getDependenciesOn(package)) {
+      // If any defalut-on features are unused in [dependencies] but aren't
+      // explicitly referenced [dep.dep.features], mark them used.
+      for (var name in dependencies.keys.toList()) {
+        var feature = features[name];
+        if (feature == null) continue;
+        if (!feature.onByDefault) continue;
+        if (dep.dep.features.containsKey(name)) continue;
+        dependencies[name] = FeatureDependency.required;
+      }
+
       dep.dep.features.forEach((name, type) {
         if (type.isEnabled) {
           dependencies[name] = FeatureDependency.required;
