@@ -68,7 +68,15 @@ abstract class Validator {
     var nextNonDevVersion = firstSdkVersion.isPreRelease
         ? firstSdkVersion.nextMinor
         : firstSdkVersion;
-    var allowedSdks = new VersionConstraint.compatibleWith(nextNonDevVersion);
+    var allowedSdks =
+        new VersionConstraint.compatibleWith(nextNonDevVersion) as VersionRange;
+
+    // Avoid ^ constraints, since they aren't supported in SDK constraints.
+    allowedSdks = new VersionRange(
+        min: allowedSdks.min,
+        max: allowedSdks.max,
+        includeMin: allowedSdks.includeMin,
+        includeMax: allowedSdks.includeMax);
 
     var newSdkConstraint =
         entrypoint.root.pubspec.dartSdkConstraint.intersect(allowedSdks);
