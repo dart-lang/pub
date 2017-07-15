@@ -141,18 +141,35 @@ class VersionSelection {
     return constraint;
   }
 
-  /// Returns whether the [feature] of [package] is already enabled by an
-  /// existing dependency.
-  bool isFeatureEnabled(String package, Feature feature) {
-    if (feature.onByDefault) {
-      var dependencies = getDependenciesOn(package);
-      return dependencies.isEmpty ||
-          dependencies.any((dep) =>
-              dep.dep.features[feature.name] != FeatureDependency.unused);
-    } else {
-      return getDependenciesOn(package)
-          .any((dep) => dep.dep.features[feature.name]?.isEnabled == true);
+  /// Returns the subset of [features] that are currently enabled for [package].
+  Set<Feature> enabledFeatures(String package, Map<String, Feature> features) {
+    if (features.isEmpty) return const UnmodifiableSetView.empty();
+
+    // Figure out which features are enabled and which are disabled. We don't
+    // care about the distinction between required and if available here;
+    // [BacktrackingSolver] takes care of that.
+    var dependencies = <String, FeatureDependency>{};
+    for (var dep in getDependenciesOn(package)) {
+      // If any defalut-on features are unused in [dependencies] but aren't
+      // explicitly referenced [dep.dep.features], mark them used.
+      for (var name in dependencies.keys.toList()) {
+        var feature = features[name];
+        if (feature == null) continue;
+        if (!feature.onByDefault) continue;
+        if (dep.dep.features.containsKey(name)) continue;
+        dependencies[name] = FeatureDependency.required;
+      }
+
+      dep.dep.features.forEach((name, type) {
+        if (type.isEnabled) {
+          dependencies[name] = FeatureDependency.required;
+        } else {
+          dependencies.putIfAbsent(name, () => FeatureDependency.unused);
+        }
+      });
     }
+
+    return Feature.featuresEnabledBy(features, dependencies);
   }
 
   /// Returns a string description of the dependencies on [name].

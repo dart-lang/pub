@@ -250,9 +250,7 @@ dependencies:
 
     test("throws if transformers isn't a list", () {
       expectPubspecException(
-          'transformers: "not list"',
-          (pubspec) => pubspec.transformers,
-          '"transformers" field must be a list');
+          'transformers: "not list"', (pubspec) => pubspec.transformers);
     });
 
     test("throws if a transformer isn't a string or map", () {
@@ -732,6 +730,29 @@ features:
         expect(feature.dependencies.last.name, equals('qux'));
         expect(feature.dependencies.last.constraint,
             equals(new VersionConstraint.parse('^2.0.0')));
+      });
+
+      group("requires", () {
+        test("can be null", () {
+          var pubspec = new Pubspec.parse(
+              'features: {foobar: {requires: null}}', sources);
+          expect(pubspec.features['foobar'].requires, isEmpty);
+        });
+
+        test("must be a list", () {
+          expectPubspecException('features: {foobar: {requires: baz}, baz: {}}',
+              (pubspec) => pubspec.features);
+        });
+
+        test("must be a string list", () {
+          expectPubspecException('features: {foobar: {requires: [12]}}',
+              (pubspec) => pubspec.features);
+        });
+
+        test("must refer to features that exist in the pubspec", () {
+          expectPubspecException('features: {foobar: {requires: [baz]}}',
+              (pubspec) => pubspec.features);
+        });
       });
     });
   });

@@ -2192,6 +2192,146 @@ void features() {
           result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
     });
   });
+
+  group("with required features", () {
+    test("enables those features", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "main": {
+              "default": false,
+              "requires": ["required1", "required2"]
+            },
+            "required1": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            },
+            "required2": {
+              "default": true,
+              "dependencies": {'baz': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+        builder.serve('baz', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'main': true}
+        }
+      }).create();
+      await expectResolves(
+          result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
+    });
+
+    test("enables those features by default", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "main": {
+              "requires": ["required1", "required2"]
+            },
+            "required1": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            },
+            "required2": {
+              "default": true,
+              "dependencies": {'baz': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+        builder.serve('baz', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+      await expectResolves(
+          result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
+    });
+
+    test("doesn't enable those features if it's disabled", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "main": {
+              "requires": ["required"]
+            },
+            "required": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'main': false}
+        }
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0'});
+    });
+
+    test("enables those features even if they'd otherwise be disabled",
+        () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "main": {
+              "requires": ["required"]
+            },
+            "required": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'main': true, 'required': false}
+        }
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+    });
+
+    test("enables features transitively", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0', pubspec: {
+          "features": {
+            "main": {
+              "requires": ["required1"]
+            },
+            "required1": {
+              "default": false,
+              "requires": ["required2"]
+            },
+            "required2": {
+              "default": false,
+              "dependencies": {'bar': '1.0.0'}
+            }
+          }
+        });
+        builder.serve('bar', '1.0.0');
+      });
+
+      await d.appDir({
+        'foo': {
+          'version': '1.0.0',
+          'features': {'main': true}
+        }
+      }).create();
+      await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+    });
+  });
 }
 
 /// Runs "pub get" and makes assertions about its results.
