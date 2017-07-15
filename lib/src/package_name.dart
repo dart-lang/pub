@@ -2,10 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
+import 'utils.dart';
+
+/// The equality to use when comparing the feature sets of two package names.
+final _featureEquality = const MapEquality<String, FeatureDependency>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
@@ -148,22 +153,72 @@ class PackageRange extends PackageName {
   /// The allowed package versions.
   final VersionConstraint constraint;
 
+  /// The dependencies declared on features of the target package.
+  final Map<String, FeatureDependency> features;
+
   /// Creates a reference to package with the given [name], [source],
   /// [constraint], and [description].
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageRange(String name, Source source, this.constraint, description)
-      : super._(name, source, description);
+  PackageRange(String name, Source source, this.constraint, description,
+      {Map<String, FeatureDependency> features})
+      : features = features == null
+            ? const {}
+            : new UnmodifiableMapView(new Map.from(features)),
+        super._(name, source, description);
 
   PackageRange.magic(String name)
       : constraint = Version.none,
+        features = const {},
         super._magic(name);
 
+  /// Returns a description of [features], or the empty string if [features] is
+  /// empty.
+  String get featureDescription {
+    if (features.isEmpty) return "";
+
+    var enabledFeatures = <String>[];
+    var disabledFeatures = <String>[];
+    features.forEach((name, type) {
+      if (type == FeatureDependency.unused) {
+        disabledFeatures.add(name);
+      } else {
+        enabledFeatures.add(name);
+      }
+    });
+
+    var description = "";
+    if (enabledFeatures.isNotEmpty) {
+      description += "with ${toSentence(enabledFeatures)}";
+      if (disabledFeatures.isNotEmpty) description += ", ";
+    }
+
+    if (disabledFeatures.isNotEmpty) {
+      description += "without ${toSentence(disabledFeatures)}";
+    }
+    return description;
+  }
+
   String toString() {
-    if (isRoot) return "$name $constraint (root)";
-    if (isMagic) return name;
-    return "$name $constraint from $source ($description)";
+    String prefix;
+    if (isRoot) {
+      prefix = "$name $constraint (root)";
+    } else if (isMagic) {
+      prefix = name;
+    } else {
+      prefix = "$name $constraint from $source";
+    }
+
+    if (features.isNotEmpty) prefix += " $featureDescription";
+    return "$prefix ($description)";
+  }
+
+  /// Returns a new [PackageRange] with [features] merged with [this.features].
+  PackageRange withFeatures(Map<String, FeatureDependency> features) {
+    if (features.isEmpty) return this;
+    return new PackageRange(name, source, constraint, description,
+        features: new Map.from(this.features)..addAll(features));
   }
 
   /// Whether [id] satisfies this dependency.
@@ -172,10 +227,35 @@ class PackageRange extends PackageName {
   /// [constraint] allows `id.version`.
   bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
 
-  int get hashCode => super.hashCode ^ constraint.hashCode;
+  int get hashCode =>
+      super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
 
   bool operator ==(other) =>
       other is PackageRange &&
       samePackage(other) &&
-      other.constraint == constraint;
+      other.constraint == constraint &&
+      _featureEquality.equals(other.features, features);
+}
+
+/// An enum of types of dependencies on a [Feature].
+class FeatureDependency {
+  /// The feature must exist and be enabled for this dependency to be satisfied.
+  static const required = const FeatureDependency._("required");
+
+  /// The feature must be enabled if it exists, but is not required to exist for
+  /// this dependency to be satisfied.
+  static const ifAvailable = const FeatureDependency._("if available");
+
+  /// The feature is neither required to exist nor to be enabled for this
+  /// feature to be satisfied.
+  static const unused = const FeatureDependency._("unused");
+
+  final String _name;
+
+  /// Whether this type of dependency enables the feature it depends on.
+  bool get isEnabled => this != unused;
+
+  const FeatureDependency._(this._name);
+
+  String toString() => _name;
 }

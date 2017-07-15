@@ -152,20 +152,16 @@ dependencies:
       expect(foo.source, equals(sources['unknown']));
     });
 
-    test("throws if a package is in dependencies and dev_dependencies", () {
-      expectPubspecException('''
+    test("allows a default source", () {
+      var pubspec = new Pubspec.parse('''
 dependencies:
   foo:
-    mock: ok
-dev_dependencies:
-  foo:
-    mock: ok
-''', (pubspec) {
-        // This check only triggers if both [dependencies] and [devDependencies]
-        // are accessed.
-        pubspec.dependencies;
-        pubspec.devDependencies;
-      });
+    version: 1.2.3
+''', sources);
+
+      var foo = pubspec.dependencies[0];
+      expect(foo.name, equals('foo'));
+      expect(foo.source, equals(sources['hosted']));
     });
 
     test("throws if it dependes on itself", () {
@@ -221,14 +217,6 @@ dependencies:
 ''', (pubspec) => pubspec.dependencies);
     });
 
-    test("throws if there's no source", () {
-      expectPubspecException('''
-dependencies:
-  foo:
-    version: 1.2.3
-''', (pubspec) => pubspec.dependencies);
-    });
-
     test("throws if 'name' is not a string", () {
       expectPubspecException(
           'name: [not, a, string]', (pubspec) => pubspec.name);
@@ -262,9 +250,7 @@ dependencies:
 
     test("throws if transformers isn't a list", () {
       expectPubspecException(
-          'transformers: "not list"',
-          (pubspec) => pubspec.transformers,
-          '"transformers" field must be a list');
+          'transformers: "not list"', (pubspec) => pubspec.transformers);
     });
 
     test("throws if a transformer isn't a string or map", () {
@@ -636,6 +622,137 @@ web:
         test("throws if the value is null", () {
           expectPubspecException(
               'web: {compiler: {debug: }}', (pubspec) => pubspec.webCompiler);
+        });
+      });
+    });
+
+    group("features", () {
+      test("can be null", () {
+        var pubspec = new Pubspec.parse('features:', sources);
+        expect(pubspec.features, isEmpty);
+      });
+
+      test("throws if it's not a map", () {
+        expectPubspecException('features: 12', (pubspec) => pubspec.features);
+      });
+
+      test("throws if it has non-string keys", () {
+        expectPubspecException(
+            'features: {1: {}}', (pubspec) => pubspec.features);
+      });
+
+      test("throws if a key isn't a Dart identifier", () {
+        expectPubspecException(
+            'features: {foo-bar: {}}', (pubspec) => pubspec.features);
+      });
+
+      test("allows null values", () {
+        var pubspec = new Pubspec.parse('''
+features:
+  foobar:
+''', sources);
+        expect(pubspec.features, contains('foobar'));
+
+        var feature = pubspec.features['foobar'];
+        expect(feature.name, equals('foobar'));
+        expect(feature.onByDefault, isTrue);
+        expect(feature.dependencies, isEmpty);
+      });
+
+      test("throws if the value isn't a map", () {
+        expectPubspecException(
+            'features: {foobar: 1}', (pubspec) => pubspec.features);
+      });
+
+      test("throws if the value's dependencies aren't valid", () {
+        expectPubspecException('''
+features:
+  foobar:
+    dependencies:
+      baz: not a version range
+''', (pubspec) => pubspec.features);
+      });
+
+      test("throws if the environment value isn't a map", () {
+        expectPubspecException(
+            'features: {foobar: 1}', (pubspec) => pubspec.features);
+      });
+
+      test("allows a valid environment", () {
+        var pubspec = new Pubspec.parse('''
+features:
+  foobar:
+    environment:
+      sdk: ^1.0.0
+      flutter: ^2.0.0
+''', sources);
+
+        expect(pubspec.features, contains('foobar'));
+
+        var feature = pubspec.features['foobar'];
+        expect(feature.dartSdkConstraint,
+            equals(new VersionConstraint.parse("^1.0.0")));
+        expect(feature.flutterSdkConstraint,
+            equals(new VersionConstraint.parse("^2.0.0")));
+      });
+
+      test("throws if the default value isn't a boolean", () {
+        expectPubspecException(
+            'features: {foobar: {default: 12}}', (pubspec) => pubspec.features);
+      });
+
+      test("allows a default boolean", () {
+        var pubspec =
+            new Pubspec.parse('features: {foobar: {default: false}}', sources);
+
+        expect(pubspec.features, contains('foobar'));
+        expect(pubspec.features['foobar'].onByDefault, isFalse);
+      });
+
+      test("parses valid dependency specifications", () {
+        var pubspec = new Pubspec.parse('''
+features:
+  foobar:
+    dependencies:
+      baz: 1.0.0
+      qux: ^2.0.0
+''', sources);
+
+        expect(pubspec.features, contains('foobar'));
+
+        var feature = pubspec.features['foobar'];
+        expect(feature.name, equals('foobar'));
+        expect(feature.onByDefault, isTrue);
+        expect(feature.dependencies, hasLength(2));
+
+        expect(feature.dependencies.first.name, equals(equals('baz')));
+        expect(feature.dependencies.first.constraint,
+            equals(new Version(1, 0, 0)));
+        expect(feature.dependencies.last.name, equals('qux'));
+        expect(feature.dependencies.last.constraint,
+            equals(new VersionConstraint.parse('^2.0.0')));
+      });
+
+      group("requires", () {
+        test("can be null", () {
+          var pubspec = new Pubspec.parse(
+              'features: {foobar: {requires: null}}', sources);
+          expect(pubspec.features['foobar'].requires, isEmpty);
+        });
+
+        test("must be a list", () {
+          expectPubspecException('features: {foobar: {requires: baz}, baz: {}}',
+              (pubspec) => pubspec.features);
+        });
+
+        test("must be a string list", () {
+          expectPubspecException('features: {foobar: {requires: [12]}}',
+              (pubspec) => pubspec.features);
+        });
+
+        test("must refer to features that exist in the pubspec", () {
+          expectPubspecException('features: {foobar: {requires: [baz]}}',
+              (pubspec) => pubspec.features);
         });
       });
     });

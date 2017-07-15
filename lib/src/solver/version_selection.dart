@@ -5,8 +5,10 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../feature.dart';
 import '../package_name.dart';
 import 'backtracking_solver.dart';
 import 'unselected_package_queue.dart';
@@ -31,6 +33,9 @@ class VersionSelection {
   List<PackageId> get ids => new UnmodifiableListView<PackageId>(_ids);
   final _ids = <PackageId>[];
 
+  /// The new dependencies added by each id in [_ids].
+  final _dependenciesForIds = <Set<Dependency>>[];
+
   /// Tracks all of the dependencies on a given package.
   ///
   /// Each key is a package. Its value is the list of dependencies placed on
@@ -54,20 +59,36 @@ class VersionSelection {
     _unselected.remove(id.toRef());
     _ids.add(id);
 
-    // TODO(nweiz): Use a real for loop when issue 23394 is fixed.
+    _dependenciesForIds
+        .add(await _addDependencies(id, await _solver.depsFor(id)));
+  }
 
-    // Add all of [id]'s dependencies to [_dependencies], as well as to
-    // [_unselected] if necessary.
-    await Future.forEach(await _solver.depsFor(id), (dep) async {
-      var deps = getDependenciesOn(dep.name);
-      deps.add(new Dependency(id, dep));
+  /// Adds dependencies from [depender] on [ranges].
+  ///
+  /// Returns the set of dependencies that have been added due to [depender].
+  Future<Set<Dependency>> _addDependencies(
+      PackageId depender, Iterable<PackageRange> ranges) async {
+    var newDeps = new Set<Dependency>.identity();
+    for (var range in ranges) {
+      var deps = getDependenciesOn(range.name);
 
-      // If this is the first dependency on this package, add it to the
-      // unselected queue.
-      if (deps.length == 1 && dep.name != _solver.root.name) {
-        await _unselected.add(dep.toRef());
+      var id = selected(range.name);
+      if (id != null) {
+        newDeps.addAll(await _addDependencies(
+            id, await _solver.newDepsFor(id, range.features)));
       }
-    });
+
+      var dep = new Dependency(depender, range);
+      deps.add(dep);
+      newDeps.add(dep);
+
+      if (deps.length == 1 && range.name != _solver.root.name) {
+        // If this is the first dependency on this package, add it to the
+        // unselected queue.
+        await _unselected.add(range.toRef());
+      }
+    }
+    return newDeps;
   }
 
   /// Removes the most recently selected package from the selection.
@@ -75,13 +96,14 @@ class VersionSelection {
     var id = _ids.removeLast();
     await _unselected.add(id.toRef());
 
-    for (var dep in await _solver.depsFor(id)) {
-      var deps = getDependenciesOn(dep.name);
-      deps.removeLast();
-
-      if (deps.isEmpty) {
-        _unselected.remove(dep.toRef());
+    var removedDeps = _dependenciesForIds.removeLast();
+    for (var dep in removedDeps) {
+      var deps = getDependenciesOn(dep.dep.name);
+      while (deps.isNotEmpty && removedDeps.contains(deps.last)) {
+        deps.removeLast();
       }
+
+      if (deps.isEmpty) _unselected.remove(dep.dep.toRef());
     }
   }
 
@@ -117,6 +139,37 @@ class VersionSelection {
     assert(!constraint.isEmpty);
 
     return constraint;
+  }
+
+  /// Returns the subset of [features] that are currently enabled for [package].
+  Set<Feature> enabledFeatures(String package, Map<String, Feature> features) {
+    if (features.isEmpty) return const UnmodifiableSetView.empty();
+
+    // Figure out which features are enabled and which are disabled. We don't
+    // care about the distinction between required and if available here;
+    // [BacktrackingSolver] takes care of that.
+    var dependencies = <String, FeatureDependency>{};
+    for (var dep in getDependenciesOn(package)) {
+      // If any defalut-on features are unused in [dependencies] but aren't
+      // explicitly referenced [dep.dep.features], mark them used.
+      for (var name in dependencies.keys.toList()) {
+        var feature = features[name];
+        if (feature == null) continue;
+        if (!feature.onByDefault) continue;
+        if (dep.dep.features.containsKey(name)) continue;
+        dependencies[name] = FeatureDependency.required;
+      }
+
+      dep.dep.features.forEach((name, type) {
+        if (type.isEnabled) {
+          dependencies[name] = FeatureDependency.required;
+        } else {
+          dependencies.putIfAbsent(name, () => FeatureDependency.unused);
+        }
+      });
+    }
+
+    return Feature.featuresEnabledBy(features, dependencies);
   }
 
   /// Returns a string description of the dependencies on [name].

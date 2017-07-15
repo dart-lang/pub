@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -10,6 +11,7 @@ import 'package:yaml/yaml.dart';
 import 'barback/transformer_config.dart';
 import 'compiler.dart';
 import 'exceptions.dart';
+import 'feature.dart';
 import 'io.dart';
 import 'package_name.dart';
 import 'source_registry.dart';
@@ -120,8 +122,8 @@ class Pubspec {
   /// The additional packages this package depends on.
   List<PackageRange> get dependencies {
     if (_dependencies != null) return _dependencies;
-    _dependencies = _parseDependencies('dependencies');
-    _checkDependencyOverlap(_dependencies, _devDependencies);
+    _dependencies =
+        _parseDependencies('dependencies', fields.nodes['dependencies']);
     return _dependencies;
   }
 
@@ -130,8 +132,8 @@ class Pubspec {
   /// The packages this package depends on when it is the root package.
   List<PackageRange> get devDependencies {
     if (_devDependencies != null) return _devDependencies;
-    _devDependencies = _parseDependencies('dev_dependencies');
-    _checkDependencyOverlap(_dependencies, _devDependencies);
+    _devDependencies = _parseDependencies(
+        'dev_dependencies', fields.nodes['dev_dependencies']);
     return _devDependencies;
   }
 
@@ -144,28 +146,68 @@ class Pubspec {
   /// name anywhere in the dependency graph.
   List<PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides;
-    _dependencyOverrides = _parseDependencies('dependency_overrides');
+    _dependencyOverrides = _parseDependencies(
+        'dependency_overrides', fields.nodes['dependency_overrides']);
     return _dependencyOverrides;
   }
 
   List<PackageRange> _dependencyOverrides;
 
+  Map<String, Feature> get features {
+    if (_features != null) return _features;
+    var features = fields['features'];
+    if (features == null) {
+      _features = const {};
+      return _features;
+    }
+
+    if (features is! Map) {
+      _error('"features" field must be a map.', fields.nodes['features'].span);
+    }
+
+    _features = mapMap(features.nodes,
+        key: (nameNode, _) => _validateFeatureName(nameNode),
+        value: (nameNode, specNode) {
+          if (specNode.value == null) {
+            return new Feature(nameNode.value, const []);
+          }
+
+          if (specNode is! Map) {
+            _error('A feature specification must be a map.', specNode.span);
+          }
+
+          var onByDefault = specNode['default'] ?? true;
+          if (onByDefault is! bool) {
+            _error('Default must be true or false.',
+                specNode.nodes['default'].span);
+          }
+
+          var requires = _parseStringList(specNode.nodes['requires'],
+              validate: (name, span) {
+            if (!features.containsKey(name)) _error('Undefined feature.', span);
+          });
+
+          var dependencies = _parseDependencies(
+              'dependencies', specNode.nodes['dependencies']);
+
+          var sdkConstraints = _parseEnvironment(specNode);
+
+          return new Feature(nameNode.value, dependencies,
+              requires: requires,
+              dartSdkConstraint: sdkConstraints.first,
+              flutterSdkConstraint: sdkConstraints.last,
+              onByDefault: onByDefault);
+        });
+    return _features;
+  }
+
+  Map<String, Feature> _features;
+
   /// The configurations of the transformers to use for this package.
   List<Set<TransformerConfig>> get transformers {
     if (_transformers != null) return _transformers;
 
-    var transformers = fields['transformers'];
-    if (transformers == null) {
-      _transformers = [];
-      return _transformers;
-    }
-
-    if (transformers is! List) {
-      _error('"transformers" field must be a list.',
-          fields.nodes['transformers'].span);
-    }
-
-    _transformers = (transformers as YamlList).nodes.map((phase) {
+    _transformers = _parseList(fields.nodes['transformers']).nodes.map((phase) {
       var phaseNodes = phase is YamlList ? phase.nodes : [phase];
       return phaseNodes.map((transformerNode) {
         var transformer = transformerNode.value;
@@ -240,7 +282,7 @@ class Pubspec {
   /// The constraint on the Dart SDK, or [_defaultSdkConstraint] if none is
   /// specified.
   VersionConstraint get dartSdkConstraint {
-    _parseEnvironment();
+    _ensureEnvironment();
     return _dartSdkConstraint;
   }
 
@@ -248,33 +290,41 @@ class Pubspec {
 
   /// The constraint on the Flutter SDK, or `null` if none is specified.
   VersionConstraint get flutterSdkConstraint {
-    _parseEnvironment();
+    _ensureEnvironment();
     return _flutterSdkConstraint;
   }
 
   VersionConstraint _flutterSdkConstraint;
 
-  /// Parses the "environment" field and sets [_dartSdkConstraint] and
-  /// [_flutterSdkConstraint] accordingly.
-  void _parseEnvironment() {
+  /// Ensures that the top-level "environment" field has been parsed and
+  /// [_dartSdkConstraint] and [_flutterSdkConstraint] are set accordingly.
+  void _ensureEnvironment() {
     if (_dartSdkConstraint != null) return;
 
-    var yaml = fields['environment'];
+    var pair = _parseEnvironment(fields);
+    _dartSdkConstraint = pair.first;
+    _flutterSdkConstraint = pair.last;
+  }
+
+  /// Parses the "environment" field in [parent] and returns the Dart and
+  /// Flutter SDK constraints, respectively.
+  Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
+    var yaml = parent['environment'];
     if (yaml == null) {
-      _dartSdkConstraint = _defaultSdkConstraint;
-      return;
+      return new Pair(_defaultSdkConstraint, null);
     }
 
     if (yaml is! Map) {
       _error('"environment" field must be a map.',
-          fields.nodes['environment'].span);
+          parent.nodes['environment'].span);
     }
 
-    _dartSdkConstraint = _parseVersionConstraint(yaml.nodes['sdk'],
-        defaultConstraint: _defaultSdkConstraint);
-    _flutterSdkConstraint = yaml.containsKey('flutter')
-        ? _parseVersionConstraint(yaml.nodes['flutter'])
-        : null;
+    return new Pair(
+        _parseVersionConstraint(yaml.nodes['sdk'],
+            defaultConstraint: _defaultSdkConstraint),
+        yaml.containsKey('flutter')
+            ? _parseVersionConstraint(yaml.nodes['flutter'])
+            : null);
   }
 
   /// The URL of the server that the package should default to being published
@@ -539,30 +589,31 @@ class Pubspec {
     _getError(() => this.devDependencies);
     _getError(() => this.transformers);
     _getError(() => this.publishTo);
-    _getError(() => this._parseEnvironment());
+    _getError(() => this.features);
+    _getError(() => this._ensureEnvironment());
     return errors;
   }
 
   /// Parses the dependency field named [field], and returns the corresponding
   /// list of dependencies.
-  List<PackageRange> _parseDependencies(String field) {
+  List<PackageRange> _parseDependencies(String field, YamlNode node) {
     var dependencies = <PackageRange>[];
 
-    var yaml = fields[field];
     // Allow an empty dependencies key.
-    if (yaml == null) return dependencies;
+    if (node == null || node.value == null) return dependencies;
 
-    if (yaml is! Map) {
-      _error('"$field" field must be a map.', fields.nodes[field].span);
+    if (node is! YamlMap) {
+      _error('"$field" field must be a map.', node.span);
     }
 
-    var nonStringNode = yaml.nodes.keys
+    var map = node as YamlMap;
+    var nonStringNode = map.nodes.keys
         .firstWhere((e) => e.value is! String, orElse: () => null);
     if (nonStringNode != null) {
       _error('A dependency name must be a string.', nonStringNode.span);
     }
 
-    yaml.nodes.forEach((nameNode, specNode) {
+    map.nodes.forEach((nameNode, specNode) {
       var name = nameNode.value;
       var spec = specNode.value;
       if (fields['name'] != null && name == this.name) {
@@ -573,6 +624,7 @@ class Pubspec {
       var sourceName;
 
       var versionConstraint = new VersionRange();
+      Map<String, FeatureDependency> features = const {};
       if (spec == null) {
         descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
@@ -583,44 +635,52 @@ class Pubspec {
       } else if (spec is Map) {
         // Don't write to the immutable YAML map.
         spec = new Map.from(spec);
+        var specMap = specNode as YamlMap;
 
         if (spec.containsKey('version')) {
           spec.remove('version');
-          versionConstraint =
-              _parseVersionConstraint(specNode.nodes['version']);
+          versionConstraint = _parseVersionConstraint(specMap.nodes['version']);
+        }
+
+        if (spec.containsKey('features')) {
+          spec.remove('features');
+          features = _parseDependencyFeatures(specMap.nodes['features']);
         }
 
         var sourceNames = spec.keys.toList();
         if (sourceNames.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
         } else if (sourceNames.isEmpty) {
-          _error('A dependency must contain a source.', specNode.span);
+          // Default to a hosted dependency if no source is specifid.
+          sourceName = 'hosted';
+          descriptionNode = nameNode;
         }
 
-        sourceName = sourceNames.single;
+        sourceName ??= sourceNames.single;
         if (sourceName is! String) {
           _error('A source name must be a string.',
-              specNode.nodes.keys.single.span);
+              specMap.nodes.keys.single.span);
         }
 
-        descriptionNode = specNode.nodes[sourceName];
+        descriptionNode ??= specMap.nodes[sourceName];
       } else {
         _error('A dependency specification must be a string or a mapping.',
             specNode.span);
       }
 
       // Let the source validate the description.
-      var ref = _wrapFormatException('description', descriptionNode.span, () {
+      var ref = _wrapFormatException('description', descriptionNode?.span, () {
         var pubspecPath;
         if (_location != null && _isFileUri(_location)) {
           pubspecPath = path.fromUri(_location);
         }
 
-        return _sources[sourceName]
-            .parseRef(name, descriptionNode.value, containingPath: pubspecPath);
+        return _sources[sourceName].parseRef(name, descriptionNode?.value,
+            containingPath: pubspecPath);
       });
 
-      dependencies.add(ref.withConstraint(versionConstraint));
+      dependencies
+          .add(ref.withConstraint(versionConstraint).withFeatures(features));
     });
 
     return dependencies;
@@ -639,31 +699,64 @@ class Pubspec {
         () => new VersionConstraint.parse(node.value));
   }
 
-  /// Makes sure the same package doesn't appear as both a regular and dev
-  /// dependency.
-  void _checkDependencyOverlap(
-      List<PackageRange> dependencies, List<PackageRange> devDependencies) {
-    if (dependencies == null) return;
-    if (devDependencies == null) return;
+  /// Parses [node] to a map from feature names to whether those features are
+  /// enabled.
+  Map<String, FeatureDependency> _parseDependencyFeatures(YamlNode node) {
+    if (node?.value == null) return const {};
+    if (node is! YamlMap) _error('Features must be a map.', node.span);
 
-    var dependencyNames = dependencies.map((dep) => dep.name).toSet();
-    var collisions = dependencyNames
-        .intersection(devDependencies.map((dep) => dep.name).toSet());
-    if (collisions.isEmpty) return;
+    return mapMap((node as YamlMap).nodes,
+        key: (nameNode, _) => _validateFeatureName(nameNode),
+        value: (_, valueNode) {
+          var value = valueNode.value;
+          if (value is bool) {
+            return value
+                ? FeatureDependency.required
+                : FeatureDependency.unused;
+          } else if (value is String && value == "if available") {
+            return FeatureDependency.ifAvailable;
+          } else {
+            _error('Features must be true, false, or "if available".',
+                valueNode.span);
+          }
+        });
+  }
 
-    var span = fields["dependencies"]
-        .nodes
-        .keys
-        .firstWhere((key) => collisions.contains(key.value))
-        .span;
+  /// Verifies that [node] is a string and a valid feature name, and returns it
+  /// if so.
+  String _validateFeatureName(YamlNode node) {
+    var name = node.value;
+    if (name is! String) {
+      _error('A feature name must be a string.', node.span);
+    } else if (!_packageName.hasMatch(name)) {
+      _error('A feature name must be a valid Dart identifier.', node.span);
+    }
 
-    // TODO(nweiz): associate source range info with PackageRanges and use it
-    // here.
-    _error(
-        '${pluralize('Package', collisions.length)} '
-        '${toSentence(collisions.map((package) => '"$package"'))} cannot '
-        'appear in both "dependencies" and "dev_dependencies".',
-        span);
+    return name;
+  }
+
+  /// Verifies that [node] is a list of strings and returns it.
+  ///
+  /// If [validate] is passed, it's called for each string in [node].
+  List<String> _parseStringList(YamlNode node,
+      {void validate(String value, SourceSpan span)}) {
+    var list = _parseList(node);
+    for (var element in list.nodes) {
+      var value = element.value;
+      if (value is String) {
+        if (validate != null) validate(value, element.span);
+      } else {
+        _error('Must be a string.', element.span);
+      }
+    }
+    return DelegatingList.typed(list);
+  }
+
+  /// Verifies that [node] is a list and returns it.
+  YamlList _parseList(YamlNode node) {
+    if (node == null || node.value == null) return new YamlList();
+    if (node is YamlList) return node;
+    _error('Must be a list.', node.span);
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a

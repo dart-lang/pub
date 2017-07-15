@@ -350,8 +350,11 @@ abstract class SolveFailure implements ApplicationException {
   /// Describes a dependency's reference in the output message.
   ///
   /// Override this to highlight which aspect of [dep] led to the failure.
-  String _describeDependency(PackageRange dep) =>
-      "depends on version ${dep.constraint}";
+  String _describeDependency(PackageRange dep) {
+    var description = "depends on version ${dep.constraint}";
+    if (dep.features.isNotEmpty) description += " ${dep.featureDescription}";
+    return description;
+  }
 }
 
 /// Exception thrown when the current SDK's version does not match a package's
@@ -472,4 +475,17 @@ class DependencyNotFoundException extends SolveFailure {
   /// it's the package itself that can't be found, so just show the name and no
   /// descriptive details.
   String _describeDependency(PackageRange dep) => "";
+}
+
+/// An exception thrown when a dependency requires a feature that doesn't exist.
+class MissingFeatureException extends SolveFailure {
+  final Version version;
+  final String feature;
+
+  String get _message =>
+      "$package $version doesn't have a feature named $feature";
+
+  MissingFeatureException(String package, this.version, this.feature,
+      Iterable<Dependency> dependencies)
+      : super(package, dependencies);
 }
