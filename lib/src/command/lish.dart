@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart' as http_parser;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
@@ -88,9 +87,7 @@ class LishCommand extends PubCommand {
           request.followRedirects = false;
           request.files.add(new http.MultipartFile.fromBytes(
               'file', packageBytes,
-              filename: 'package.tar.gz',
-              contentType: new http_parser.MediaType('application', 'gzip')));
-
+              filename: 'package.tar.gz'));
           var postResponse =
               await http.Response.fromStream(await client.send(request));
 
