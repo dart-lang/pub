@@ -11,7 +11,7 @@ dependencies:
   async: "^1.12.0"
   barback: "^0.15.2"
   bazel_worker: "^0.1.4"
-  cli_util: ">=0.0.1 <0.2.0"
+  cli_util: "^0.1.0"
   collection: "^1.8.0"
   compiler_unsupported: "^1.22.0"
   crypto: ">=1.0.0 <3.0.0"

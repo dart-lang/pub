@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import 'package:async/async.dart';
 import 'package:barback/barback.dart';
-import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
 import '../io.dart';
@@ -219,11 +218,10 @@ class DartDevcEnvironment {
 
   /// Builds [_sdkResources] assets by copying them from the SDK.
   Future<Asset> _buildJsResource(AssetId id) async {
-    var sdk = cli_util.getSdkDir();
     var basename = p.url.basename(id.path);
     var resourcePath = _sdkResources[basename];
     if (resourcePath == null) return null;
-    return new Asset.fromPath(id, p.url.join(sdk.path, resourcePath));
+    return new Asset.fromPath(id, p.url.join(sdkDir, resourcePath));
   }
 
   /// Whether or not this looks like a request for an entrypoint or bootstrap
