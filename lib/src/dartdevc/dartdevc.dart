@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
-import 'package:cli_util/cli_util.dart' as cli_util;
 import 'package:path/path.dart' as p;
 
 import '../dart.dart';
@@ -300,12 +299,12 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
       ..addAll(linkedSummaryIds);
     await scratchSpace.ensureAssets(allAssetIds);
     var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
-    var sdk_summary = p.url.join(sdkDir.path, 'lib/_internal/ddc_sdk.sum');
+    var sdk_summary = p.url.join(sdkDir, 'lib/_internal/ddc_sdk.sum');
     var request = new WorkRequest();
     request.arguments.addAll([
       '--dart-sdk-summary=$sdk_summary',
       '--modules=amd',
-      '--dart-sdk=${sdkDir.path}',
+      '--dart-sdk=${sdkDir}',
       '--module-root=${scratchSpace.tempDir.path}',
       '--library-root=${p.dirname(jsOutputFile.path)}',
       '--summary-extension=${linkedSummaryExtension.substring(1)}',
@@ -378,18 +377,17 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
 ///
 /// Returns a `Map<AssetId, Asset>` of the created assets.
 Map<AssetId, Asset> copyDartDevcResources(String package, String outputDir) {
-  var sdk = cli_util.getSdkDir();
   var outputs = <AssetId, Asset>{};
 
   // Copy the dart_sdk.js file for AMD into the output folder.
   var sdkJsOutputId =
       new AssetId(package, p.url.join(outputDir, 'dart_sdk.js'));
-  var sdkAmdJsPath = p.url.join(sdk.path, 'lib/dev_compiler/amd/dart_sdk.js');
+  var sdkAmdJsPath = p.url.join(sdkDir, 'lib/dev_compiler/amd/dart_sdk.js');
   outputs[sdkJsOutputId] =
       new Asset.fromFile(sdkJsOutputId, new File(sdkAmdJsPath));
 
   // Copy the require.js file for AMD into the output folder.
-  var requireJsPath = p.url.join(sdk.path, 'lib/dev_compiler/amd/require.js');
+  var requireJsPath = p.url.join(sdkDir, 'lib/dev_compiler/amd/require.js');
   var requireJsOutputId =
       new AssetId(package, p.url.join(outputDir, 'require.js'));
   outputs[requireJsOutputId] =

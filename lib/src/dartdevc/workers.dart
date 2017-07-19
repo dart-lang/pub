@@ -12,12 +12,12 @@ String get _scriptExtension => Platform.isWindows ? '.bat' : '';
 
 /// Manages a shared set of persistent analyzer workers.
 final analyzerDriver = new BazelWorkerDriver(() => Process.start(
-    p.join(sdkDir.path, 'bin', 'dartanalyzer$_scriptExtension'),
+    p.join(sdkDir, 'bin', 'dartanalyzer$_scriptExtension'),
     ['--build-mode', '--persistent_worker']));
 
 /// Manages a shared set of persistent dartdevc workers.
 final dartdevcDriver = new BazelWorkerDriver(() => Process.start(
-    p.join(sdkDir.path, 'bin', 'dartdevc$_scriptExtension'),
+    p.join(sdkDir, 'bin', 'dartdevc$_scriptExtension'),
     ['--persistent_worker']));
 
-final sdkDir = cli_util.getSdkDir();
+final sdkDir = cli_util.getSdkPath();
