@@ -2,47 +2,38 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('ignores previously activated git commit',
-        () {
+  test('ignores previously activated git commit', () async {
     ensureGit();
 
-    d.git('foo.git', [
-      d.libPubspec("foo", "1.0.0")
-    ]).create();
+    await d.git('foo.git', [d.libPubspec("foo", "1.0.0")]).create();
 
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"],
+    await runPub(
+        args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf(
-            startsWith(
-                'Resolving dependencies...\n'
+            startsWith('Resolving dependencies...\n'
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith(
-                'Precompiling executables...\n'
-                'Loading source assets...\n'
+            endsWith('Precompiling executables...\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
-    d.git('foo.git', [
-      d.libPubspec("foo", "1.0.1")
-    ]).commit();
+    await d.git('foo.git', [d.libPubspec("foo", "1.0.1")]).commit();
 
     // Activating it again pulls down the latest commit.
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"],
+    await runPub(
+        args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf(
-            startsWith(
-                'Package foo is currently active from Git repository '
-                  '"../foo.git".\n'
+            startsWith('Package foo is currently active from Git repository '
+                '"../foo.git".\n'
                 'Resolving dependencies...\n'
                 '+ foo 1.0.1 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith(
-                'Precompiling executables...\n'
-                'Loading source assets...\n'
+            endsWith('Precompiling executables...\n'
                 'Activated foo 1.0.1 from Git repository "../foo.git".')));
   });
 }

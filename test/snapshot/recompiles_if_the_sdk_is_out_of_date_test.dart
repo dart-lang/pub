@@ -3,40 +3,39 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("creates a snapshot for an immediate dependency's executables",
-      () {
-    servePackages((builder) {
+  test("creates a snapshot for an immediate dependency's executables",
+      () async {
+    await servePackages((builder) {
       builder.serve("foo", "5.6.7", contents: [
         d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
       ]);
     });
 
-    d.appDir({"foo": "5.6.7"}).create();
+    await d.appDir({"foo": "5.6.7"}).create();
 
-    pubGet(output: contains("Precompiled foo:hello."));
+    await pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin'), [
+    await d.dir(p.join(appPath, '.pub', 'bin'), [
       d.dir('foo', [d.outOfDateSnapshot('hello.dart.snapshot')])
     ]).create();
 
-    var process = pubRun(args: ['foo:hello']);
+    var process = await pubRun(args: ['foo:hello']);
 
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
-    process.stdout.expect("Precompiling executables...");
-    process.stdout.expect(consumeThrough("hello!"));
-    process.shouldExit();
+    expect(process.stdout, emits("Precompiling executables..."));
+    expect(process.stdout, emitsThrough("hello!"));
+    await process.shouldExit();
 
-    d.dir(p.join(appPath, '.pub', 'bin'), [
-      d.file('sdk-version', '0.1.2+3'),
-      d.dir('foo', [d.matcherFile('hello.dart.snapshot', contains('hello!'))])
-    ]).create();
+    await d.dir(p.join(appPath, '.pub', 'bin'), [
+      d.file('sdk-version', '0.1.2+3\n'),
+      d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
+    ]).validate();
   });
 }

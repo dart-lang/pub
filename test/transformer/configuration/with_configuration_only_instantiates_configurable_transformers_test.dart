@@ -4,9 +4,11 @@
 
 import 'dart:convert';
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
-import '../../test_pub.dart';
 import '../../serve/utils.dart';
+import '../../test_pub.dart';
 
 final transformer = """
 import 'dart:async';
@@ -45,30 +47,33 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-   integration("with configuration, only instantiates configurable "
-       "transformers", () {
-     serveBarback();
+  test(
+      "with configuration, only instantiates configurable "
+      "transformers", () async {
+    await serveBarback();
 
-     var configuration = {"param": ["list", "of", "values"]};
+    var configuration = {
+      "param": ["list", "of", "values"]
+    };
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": [{"myapp/src/transformer": configuration}],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", transformer)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {"myapp/src/transformer": configuration}
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", transformer)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShouldSucceed("foo.json", JSON.encode(configuration));
-     requestShould404("foo.out");
-     endPubServe();
-   });
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.json", JSON.encode(configuration));
+    await requestShould404("foo.out");
+    await endPubServe();
+  });
 }

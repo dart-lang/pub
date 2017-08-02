@@ -61,7 +61,9 @@ class TransformerConfig {
       // Check whether the first path component of the glob is "lib", "bin", or
       // contains wildcards that may cause it to match "lib" or "bin".
       var first = p.posix.split(glob.toString()).first;
-      if (first.contains('{') || first.contains('*') || first.contains('[') ||
+      if (first.contains('{') ||
+          first.contains('*') ||
+          first.contains('[') ||
           first.contains('?')) {
         return true;
       }
@@ -74,12 +76,12 @@ class TransformerConfig {
   ///
   /// [identifierSpan] is the source span for [identifier].
   factory TransformerConfig.parse(String identifier, SourceSpan identifierSpan,
-        YamlMap configuration) =>
-      new TransformerConfig(new TransformerId.parse(identifier, identifierSpan),
-          configuration);
+          YamlMap configuration) =>
+      new TransformerConfig(
+          new TransformerId.parse(identifier, identifierSpan), configuration);
 
   factory TransformerConfig(TransformerId id, YamlMap configurationNode) {
-    parseField(key) {
+    Set<Glob> parseField(String key) {
       if (!configurationNode.containsKey(key)) return null;
       var fieldNode = configurationNode.nodes[key];
       var field = fieldNode.value;
@@ -103,11 +105,10 @@ class TransformerConfig {
       }));
     }
 
-    var includes = null;
-    var excludes = null;
-
-    var configuration;
-    var span;
+    Set<Glob> includes;
+    Set<Glob> excludes;
+    Map configuration;
+    SourceSpan span;
     if (configurationNode == null) {
       configuration = {};
       span = id.span;

@@ -9,7 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
 import '../io.dart';
-import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
@@ -31,19 +31,15 @@ class PathSource extends Source {
 
   /// Returns a reference to a path package named [name] at [path].
   PackageRef refFor(String name, String path) {
-    return new PackageRef(name, this, {
-      "path": path,
-      "relative": p.isRelative(path)
-    });
+    return new PackageRef(
+        name, this, {"path": path, "relative": p.isRelative(path)});
   }
 
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
   PackageId idFor(String name, Version version, String path) {
-    return new PackageId(name, this, version, {
-      "path": path,
-      "relative": p.isRelative(path)
-    });
+    return new PackageId(
+        name, this, version, {"path": path, "relative": p.isRelative(path)});
   }
 
   bool descriptionsEqual(description1, description2) {
@@ -78,14 +74,11 @@ class PathSource extends Source {
             'isn\'t a local pubspec.');
       }
 
-      description = p.normalize(
-          p.join(p.dirname(containingPath), description));
+      description = p.normalize(p.join(p.dirname(containingPath), description));
     }
 
-    return new PackageRef(name, this, {
-      "path": description,
-      "relative": isRelative
-    });
+    return new PackageRef(
+        name, this, {"path": description, "relative": isRelative});
   }
 
   PackageId parseId(String name, Version version, description) {
@@ -178,7 +171,7 @@ class BoundPathSource extends BoundSource {
 
     if (fileExists(dir)) {
       fail('Path dependency for package $name must refer to a directory, '
-           'not a file. Was "$dir".');
+          'not a file. Was "$dir".');
     }
 
     throw new PackageNotFoundException(

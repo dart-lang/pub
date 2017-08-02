@@ -7,8 +7,11 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
 import 'barback/transformer_config.dart';
+import 'compiler.dart';
+import 'feature.dart';
 import 'io.dart';
 import 'package.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 
 /// A [Package] whose `lib` directory has been precompiled and cached.
@@ -29,8 +32,13 @@ class CachedPackage extends Package {
   CachedPackage(Package inner, this._cacheDir)
       : super(new _CachedPubspec(inner.pubspec), inner.dir);
 
-  String path(String part1, [String part2, String part3, String part4,
-      String part5, String part6, String part7]) {
+  String path(String part1,
+      [String part2,
+      String part3,
+      String part4,
+      String part5,
+      String part6,
+      String part7]) {
     if (_pathInCache(part1)) {
       return p.join(_cacheDir, part1, part2, part3, part4, part5, part6, part7);
     } else {
@@ -39,26 +47,32 @@ class CachedPackage extends Package {
   }
 
   String relative(String path) {
-    if (p.isWithin(path, _cacheDir)) return p.relative(path, from: _cacheDir);
+    if (p.isWithin(_cacheDir, path)) {
+      return p.relative(path, from: _cacheDir);
+    }
     return super.relative(path);
   }
 
   /// This will include the cached, transformed versions of files if [beneath]
   /// is within a cached directory, but not otherwise.
-  List<String> listFiles({String beneath, recursive: true,
-      bool useGitIgnore: false}) {
+  List<String> listFiles(
+      {String beneath, recursive: true, bool useGitIgnore: false}) {
     if (beneath == null) {
       return super.listFiles(recursive: recursive, useGitIgnore: useGitIgnore);
     }
 
-    if (_pathInCache(beneath)) return listDir(p.join(_cacheDir, beneath));
-    return super.listFiles(beneath: beneath, recursive: recursive,
-        useGitIgnore: useGitIgnore);
+    if (_pathInCache(beneath)) {
+      return listDir(p.join(_cacheDir, beneath),
+          includeDirs: false, recursive: recursive);
+    }
+    return super.listFiles(
+        beneath: beneath, recursive: recursive, useGitIgnore: useGitIgnore);
   }
 
   /// Returns whether [relativePath], a path relative to the package's root,
   /// is in a cached directory.
-  bool _pathInCache(String relativePath) => p.isWithin('lib', relativePath);
+  bool _pathInCache(String relativePath) =>
+      relativePath == 'lib' || p.isWithin('lib', relativePath);
 }
 
 /// A pubspec wrapper that reports no transformers.
@@ -68,9 +82,10 @@ class _CachedPubspec implements Pubspec {
   YamlMap get fields => _inner.fields;
   String get name => _inner.name;
   Version get version => _inner.version;
-  List<PackageDep> get dependencies => _inner.dependencies;
-  List<PackageDep> get devDependencies => _inner.devDependencies;
-  List<PackageDep> get dependencyOverrides => _inner.dependencyOverrides;
+  List<PackageRange> get dependencies => _inner.dependencies;
+  List<PackageRange> get devDependencies => _inner.devDependencies;
+  List<PackageRange> get dependencyOverrides => _inner.dependencyOverrides;
+  Map<String, Feature> get features => _inner.features;
   VersionConstraint get dartSdkConstraint => _inner.dartSdkConstraint;
   VersionConstraint get flutterSdkConstraint => _inner.flutterSdkConstraint;
   String get publishTo => _inner.publishTo;
@@ -78,6 +93,7 @@ class _CachedPubspec implements Pubspec {
   bool get isPrivate => _inner.isPrivate;
   bool get isEmpty => _inner.isEmpty;
   List<PubspecException> get allErrors => _inner.allErrors;
+  Map<String, Compiler> get webCompiler => _inner.webCompiler;
 
   List<Set<TransformerConfig>> get transformers => const [];
 

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:barback/barback.dart';
@@ -17,8 +18,7 @@ final _arrow = getSpecial('\u2192', '=>');
 /// Handles the `serve` pub command.
 class ServeCommand extends BarbackCommand {
   String get name => "serve";
-  String get description =>
-      'Run a local web development server.\n\n'
+  String get description => 'Run a local web development server.\n\n'
       'By default, this serves "web/" and "test/", but an explicit list of \n'
       'directories to serve can be provided as well.';
   String get invocation => "pub serve [directories...]";
@@ -39,9 +39,6 @@ class ServeCommand extends BarbackCommand {
     return adminPort == null ? null : parseInt(adminPort, 'admin port');
   }
 
-  /// `true` if Dart entrypoints should be compiled to JavaScript.
-  bool get useDart2JS => argResults['dart2js'];
-
   /// `true` if the admin server URL should be displayed on startup.
   bool get logAdminUrl => argResults['log-admin-url'];
 
@@ -51,16 +48,18 @@ class ServeCommand extends BarbackCommand {
 
   /// This completer is used to keep pub running (by not completing) and to
   /// pipe fatal errors to pub's top-level error-handling machinery.
-  final _completer = new Completer();
+  final _completer = new Completer<Null>();
 
   ServeCommand() {
-    argParser.addOption("define", abbr: "D",
+    argParser.addOption("define",
+        abbr: "D",
         help: "Defines an environment constant for dart2js.",
-        allowMultiple: true, splitCommas: false);
-    argParser.addOption('hostname', defaultsTo: 'localhost',
-        help: 'The hostname to listen on.');
-    argParser.addOption('port', defaultsTo: '8080',
-        help: 'The base port to listen on.');
+        allowMultiple: true,
+        splitCommas: false);
+    argParser.addOption('hostname',
+        defaultsTo: 'localhost', help: 'The hostname to listen on.');
+    argParser.addOption('port',
+        defaultsTo: '8080', help: 'The base port to listen on.');
 
     // TODO(rnystrom): A hidden option to print the URL that the admin server
     // is bound to on startup. Since this is currently only used for the Web
@@ -71,30 +70,55 @@ class ServeCommand extends BarbackCommand {
 
     // TODO(nweiz): Make this public when issue 16954 is fixed.
     argParser.addOption('admin-port', hide: true);
+    argParser.addOption('build-delay',
+        defaultsTo: '50',
+        help: 'Amount of time to wait for file change events to settle before '
+            'scheduling a new build, specified in milliseconds.');
 
-    argParser.addFlag('dart2js', defaultsTo: true,
-        help: 'Compile Dart to JavaScript.');
-    argParser.addFlag('force-poll', defaultsTo: false,
+    argParser.addFlag('dart2js',
+        defaultsTo: true,
+        help: 'Deprecated: Use --compiler=none to disable js compilation.',
+        hide: true);
+    argParser.addFlag('force-poll',
+        defaultsTo: false,
         help: 'Force the use of a polling filesystem watcher.');
   }
 
   Future onRunTransformerCommand() async {
     var port = parseInt(argResults['port'], 'port');
-    var adminPort = argResults['admin-port'] == null ? null :
-        parseInt(argResults['admin-port'], 'admin port');
+    var adminPort = argResults['admin-port'] == null
+        ? null
+        : parseInt(argResults['admin-port'], 'admin port');
 
-    var watcherType = argResults['force-poll'] ?
-        WatcherType.POLLING : WatcherType.AUTO;
+    var watcherType =
+        argResults['force-poll'] ? WatcherType.POLLING : WatcherType.AUTO;
 
-    var environmentConstants = new Map.fromIterable(argResults["define"],
+    var environmentConstants = new Map<String, String>.fromIterable(
+        argResults["define"],
         key: (pair) => pair.split("=").first,
         value: (pair) => pair.split("=").last);
 
     var environment = await AssetEnvironment.create(entrypoint, mode,
-        watcherType: watcherType, hostname: hostname, basePort: port,
-        useDart2JS: useDart2JS, environmentConstants: environmentConstants);
-    var directoryLength = sourceDirectories.map((dir) => dir.length)
-        .reduce(math.max);
+        watcherType: watcherType,
+        hostname: hostname,
+        basePort: port,
+        compiler: compiler,
+        environmentConstants: environmentConstants,
+        buildDelay: new Duration(
+            milliseconds: parseInt(argResults['build-delay'], 'build-delay')));
+
+    StreamSubscription<ProcessSignal> sigintListener;
+    sigintListener = ProcessSignal.SIGINT.watch().listen((_) {
+      sigintListener.cancel();
+      log.progress('Cleaning up dartdevc temp environment', () async {
+        await environment.cleanUp();
+        // Re-send a SIGINT to ourselves, now that we are done cleaning up.
+        Process.killPid(pid, ProcessSignal.SIGINT);
+      });
+    });
+
+    var directoryLength =
+        sourceDirectories.map((dir) => dir.length).reduce(math.max);
 
     if (adminPort != null) {
       var server = await environment.startAdminServer(adminPort);
@@ -105,7 +129,7 @@ class ServeCommand extends BarbackCommand {
 
       if (logAdminUrl) {
         log.message("Running admin server on "
-                    "${log.bold('http://$hostname:${server.port}')}");
+            "${log.bold('http://$hostname:${server.port}')}");
       }
     }
 
@@ -146,8 +170,8 @@ class ServeCommand extends BarbackCommand {
     }
 
     // Add two characters to account for "[" and "]".
-    var directory = log.gray(
-        padRight("[${server.rootDirectory}]", directoryLength + 2));
+    var directory =
+        log.gray(padRight("[${server.rootDirectory}]", directoryLength + 2));
 
     server.results.listen((result) {
       if (result.isCached) {

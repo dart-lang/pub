@@ -11,8 +11,11 @@ import 'package:http/http.dart' as http;
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import 'command_runner.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
+import 'package.dart';
 import 'sdk.dart' as sdk;
 import 'utils.dart';
 
@@ -26,6 +29,9 @@ final _CENSORED_FIELDS = const ['refresh_token', 'authorization'];
 /// it's not supported.
 final PUB_API_HEADERS = const {'Accept': 'application/vnd.pub.v2+json'};
 
+/// A unique ID to identify this particular invocation of pub.
+final _sessionId = createUuid();
+
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
 class _PubHttpClient extends http.BaseClient {
@@ -37,6 +43,20 @@ class _PubHttpClient extends http.BaseClient {
       : this._inner = inner == null ? new http.Client() : inner;
 
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (_shouldAddMetadata(request)) {
+      request.headers["X-Pub-OS"] = Platform.operatingSystem;
+      request.headers["X-Pub-Command"] = PubCommandRunner.command;
+      request.headers["X-Pub-Session-ID"] = _sessionId;
+
+      var environment = Platform.environment["PUB_ENVIRONMENT"];
+      if (environment != null) {
+        request.headers["X-Pub-Environment"] = environment;
+      }
+
+      var type = Zone.current[#_dependencyType];
+      if (type != null) request.headers["X-Pub-Reason"] = type.toString();
+    }
+
     _requestStopwatches[request] = new Stopwatch()..start();
     request.headers[HttpHeaders.USER_AGENT] = "Dart pub ${sdk.version}";
     _logRequest(request);
@@ -55,12 +75,14 @@ class _PubHttpClient extends http.BaseClient {
           error.osError.errorCode == -5 ||
           error.osError.errorCode == 11001 ||
           error.osError.errorCode == 11004) {
-        fail('Could not resolve URL "${request.url.origin}".',
-            error, stackTrace);
+        fail('Could not resolve URL "${request.url.origin}".', error,
+            stackTrace);
       } else if (error.osError.errorCode == -12276) {
-        fail('Unable to validate SSL certificate for '
+        fail(
+            'Unable to validate SSL certificate for '
             '"${request.url.origin}".',
-            error, stackTrace);
+            error,
+            stackTrace);
       } else {
         rethrow;
       }
@@ -72,8 +94,8 @@ class _PubHttpClient extends http.BaseClient {
     // 401 responses should be handled by the OAuth2 client. It's very
     // unlikely that they'll be returned by non-OAuth2 requests. We also want
     // to pass along 400 responses from the token endpoint.
-    var tokenRequest = urisEqual(
-        streamedResponse.request.url, oauth2.tokenEndpoint);
+    var tokenRequest =
+        urisEqual(streamedResponse.request.url, oauth2.tokenEndpoint);
     if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
       return streamedResponse;
     }
@@ -81,8 +103,8 @@ class _PubHttpClient extends http.BaseClient {
     if (status == 406 &&
         request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
       fail("Pub ${sdk.version} is incompatible with the current version of "
-               "${request.url.host}.\n"
-           "Upgrade pub to the latest version and try again.");
+          "${request.url.host}.\n"
+          "Upgrade pub to the latest version and try again.");
     }
 
     if (status == 500 &&
@@ -104,12 +126,32 @@ class _PubHttpClient extends http.BaseClient {
         await http.Response.fromStream(streamedResponse));
   }
 
+  /// Whether extra metadata headers should be added to [request].
+  bool _shouldAddMetadata(http.BaseRequest request) {
+    if (runningFromTest && Platform.environment.containsKey("PUB_HOSTED_URL")) {
+      if (request.url.origin != Platform.environment["PUB_HOSTED_URL"]) {
+        return false;
+      }
+    } else {
+      if (request.url.origin != "https://pub.dartlang.org") return false;
+    }
+
+    return const [
+      "cache add",
+      "cache repair",
+      "downgrade",
+      "get",
+      "global activate",
+      "upgrade",
+    ].contains(PubCommandRunner.command);
+  }
+
   /// Logs the fact that [request] was sent, and information about it.
   void _logRequest(http.BaseRequest request) {
     var requestLog = new StringBuffer();
     requestLog.writeln("HTTP ${request.method} ${request.url}");
-    request.headers.forEach((name, value) =>
-        requestLog.writeln(_logField(name, value)));
+    request.headers
+        .forEach((name, value) => requestLog.writeln(_logField(name, value)));
 
     if (request.method == 'POST') {
       var contentTypeString = request.headers[HttpHeaders.CONTENT_TYPE];
@@ -118,16 +160,16 @@ class _PubHttpClient extends http.BaseClient {
       if (request is http.MultipartRequest) {
         requestLog.writeln();
         requestLog.writeln("Body fields:");
-        request.fields.forEach((name, value) =>
-            requestLog.writeln(_logField(name, value)));
+        request.fields.forEach(
+            (name, value) => requestLog.writeln(_logField(name, value)));
 
         // TODO(nweiz): make MultipartRequest.files readable, and log them?
       } else if (request is http.Request) {
         if (contentType.value == 'application/x-www-form-urlencoded') {
           requestLog.writeln();
           requestLog.writeln("Body fields:");
-          request.bodyFields.forEach((name, value) =>
-              requestLog.writeln(_logField(name, value)));
+          request.bodyFields.forEach(
+              (name, value) => requestLog.writeln(_logField(name, value)));
         } else if (contentType.value == 'text/plain' ||
             contentType.value == 'application/json') {
           requestLog.write(request.body);
@@ -135,7 +177,7 @@ class _PubHttpClient extends http.BaseClient {
       }
     }
 
-    log.fine(requestLog.toString().trim());
+    log.io(requestLog.toString().trim());
   }
 
   /// Logs the fact that [response] was received, and information about it.
@@ -149,10 +191,10 @@ class _PubHttpClient extends http.BaseClient {
     responseLog.writeln("HTTP response ${response.statusCode} "
         "${response.reasonPhrase} for ${request.method} ${request.url}");
     responseLog.writeln("took ${stopwatch.elapsed}");
-    response.headers.forEach((name, value) =>
-        responseLog.writeln(_logField(name, value)));
+    response.headers
+        .forEach((name, value) => responseLog.writeln(_logField(name, value)));
 
-    log.fine(responseLog.toString().trim());
+    log.io(responseLog.toString().trim());
   }
 
   /// Returns a log-formatted string for the HTTP field or header with the given
@@ -175,6 +217,16 @@ final httpClient = new ThrottleClient(16, _pubClient);
 /// The underlying HTTP client wrapped by [httpClient].
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
+
+/// Runs [callback] in a zone where all HTTP requests sent to `pub.dartlang.org`
+/// will indicate the [type] of the relationship between the root package and
+/// the package being requested.
+///
+/// If [type] is [DependencyType.none], no extra metadata is added.
+Future<T> withDependencyType<T>(DependencyType type, Future<T> callback()) {
+  if (type == DependencyType.none) return callback();
+  return runZoned(callback, zoneValues: {#_dependencyType: type});
+}
 
 /// Handles a successful JSON-formatted response from pub.dartlang.org.
 ///
@@ -223,7 +275,7 @@ Map parseJsonResponse(http.Response response) {
 
 /// Throws an error describing an invalid response from the server.
 void invalidServerResponse(http.Response response) =>
-  fail('Invalid server response:\n${response.body}');
+    fail('Invalid server response:\n${response.body}');
 
 /// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {

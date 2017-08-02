@@ -7,9 +7,8 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
-import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import 'descriptor.dart' as d;
@@ -24,25 +23,25 @@ PackageServer _globalPackageServer;
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-void servePackages(void callback(PackageServerBuilder builder)) {
-  _globalPackageServer = new PackageServer(callback);
+Future servePackages(void callback(PackageServerBuilder builder)) async {
+  _globalPackageServer = await PackageServer.start(callback);
   globalServer = _globalPackageServer._inner;
 
-  currentSchedule.onComplete.schedule(() {
+  addTearDown(() {
     _globalPackageServer = null;
-  }, 'clearing the global package server');
+  });
 }
 
 /// Like [servePackages], but instead creates an empty server with no packages
 /// registered.
 ///
 /// This will always replace a previous server.
-void serveNoPackages() => servePackages((_) {});
+Future serveNoPackages() => servePackages((_) {});
 
 /// A shortcut for [servePackages] that serves the version of barback used by
 /// pub.
-void serveBarback() {
-  servePackages((builder) {
+Future serveBarback() {
+  return servePackages((builder) {
     builder.serveRealPackage('barback');
   });
 }
@@ -69,63 +68,74 @@ class PackageServer {
   /// package to serve.
   ///
   /// This is preserved so that additional packages can be added.
-  var _builder = new PackageServerBuilder._();
+  final _builder = new PackageServerBuilder._();
 
   /// A future that will complete to the port used for the server.
-  Future<int> get port => _inner.port;
+  int get port => _inner.port;
 
   /// A future that will complete to the URL for the server.
-  Future<String> get url async => 'http://localhost:${await port}';
+  String get url => 'http://localhost:$port';
 
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///
   /// Calls [callback] with a [PackageServerBuilder] that's used to specify
   /// which packages to serve.
-  PackageServer(void callback(PackageServerBuilder builder)) {
-    _inner = new DescriptorServer([
-      d.dir('api', [_servedApiPackageDir]),
-      _servedPackageDir
-    ]);
-
-    add(callback);
+  static Future<PackageServer> start(
+      void callback(PackageServerBuilder builder)) async {
+    var descriptorServer = await DescriptorServer.start();
+    var server = new PackageServer._(descriptorServer);
+    descriptorServer.contents
+      ..add(d.dir('api', [server._servedApiPackageDir]))
+      ..add(server._servedPackageDir);
+    server.add(callback);
+    return server;
   }
+
+  PackageServer._(this._inner);
 
   /// Add to the current set of packages that are being served.
   void add(void callback(PackageServerBuilder builder)) {
-    schedule(() async {
-      callback(_builder);
+    callback(_builder);
 
-      await _builder._await();
-      _servedApiPackageDir.contents.clear();
-      _servedPackageDir.contents.clear();
+    _servedApiPackageDir.contents.clear();
+    _servedPackageDir.contents.clear();
 
-      _builder._packages.forEach((name, versions) {
-        _servedApiPackageDir.contents.addAll([
-          d.file('$name', JSON.encode({
-            'name': name,
-            'uploaders': ['nweiz@google.com'],
-            'versions': versions.map((version) =>
-                packageVersionApiMap(version.pubspec)).toList()
-          })),
-          d.dir(name, [
-            d.dir('versions', versions.map((version) {
-              return d.file(version.version.toString(), JSON.encode(
-                  packageVersionApiMap(version.pubspec, full: true)));
-            }))
-          ])
-        ]);
+    _builder._packages.forEach((name, versions) {
+      _servedApiPackageDir.contents.addAll([
+        d.file(
+            '$name',
+            JSON.encode({
+              'name': name,
+              'uploaders': ['nweiz@google.com'],
+              'versions': versions
+                  .map((version) => packageVersionApiMap(version.pubspec))
+                  .toList()
+            })),
+        d.dir(name, [
+          d.dir('versions', versions.map((version) {
+            return d.file(version.version.toString(),
+                JSON.encode(packageVersionApiMap(version.pubspec, full: true)));
+          }))
+        ])
+      ]);
 
-        _servedPackageDir.contents.add(d.dir(name, [
-          d.dir('versions', versions.map((version) =>
-              d.tar('${version.version}.tar.gz', version.contents)))
-        ]));
-      });
-    }, 'adding packages to the package server');
+      _servedPackageDir.contents.add(d.dir(name, [
+        d.dir(
+            'versions',
+            versions.map((version) =>
+                d.tar('${version.version}.tar.gz', version.contents)))
+      ]));
+    });
   }
+
+  /// Returns the path of [package] at [version], installed from this server, in
+  /// the pub cache.
+  String pathInCache(String package, String version) => p.join(
+      d.sandbox, cachePath, "hosted/localhost%58$port/$package-$version");
 
   /// Replace the current set of packages that are being served.
   void replace(void callback(PackageServerBuilder builder)) {
-    schedule(() => _builder._clear(), "clearing builder");
+    _builder._clear();
     add(callback);
   }
 }
@@ -135,44 +145,28 @@ class PackageServerBuilder {
   /// A map from package names to a list of concrete packages to serve.
   final _packages = new Map<String, List<_ServedPackage>>();
 
-  /// A group of futures from [serve] calls.
-  ///
-  /// This should be accessed by calling [_awair].
-  var _futures = new FutureGroup();
-
   PackageServerBuilder._();
 
   /// Specifies that a package named [name] with [version] should be served.
   ///
   /// If [deps] is passed, it's used as the "dependencies" field of the pubspec.
-  /// If [pubspec] is passed, it's used as the rest of the pubspec. Either of
-  /// these may recursively contain Futures.
+  /// If [pubspec] is passed, it's used as the rest of the pubspec.
   ///
   /// If [contents] is passed, it's used as the contents of the package. By
   /// default, a package just contains a dummy lib directory.
-  void serve(String name, String version, {Map deps, Map pubspec,
+  void serve(String name, String version,
+      {Map<String, dynamic> deps,
+      Map<String, dynamic> pubspec,
       Iterable<d.Descriptor> contents}) {
-    _futures.add(Future.wait([
-      awaitObject(deps),
-      awaitObject(pubspec)
-    ]).then((pair) {
-      var resolvedDeps = pair.first;
-      var resolvedPubspec = pair.last;
+    var pubspecFields = <String, dynamic>{"name": name, "version": version};
+    if (pubspec != null) pubspecFields.addAll(pubspec);
+    if (deps != null) pubspecFields["dependencies"] = deps;
 
-      var pubspecFields = {
-        "name": name,
-        "version": version
-      };
-      if (resolvedPubspec != null) pubspecFields.addAll(resolvedPubspec);
-      if (resolvedDeps != null) pubspecFields["dependencies"] = resolvedDeps;
+    if (contents == null) contents = [d.libDir(name, "$name $version")];
+    contents = [d.file("pubspec.yaml", yaml(pubspecFields))]..addAll(contents);
 
-      if (contents == null) contents = [d.libDir(name, "$name $version")];
-      contents = [d.file("pubspec.yaml", yaml(pubspecFields))]
-          ..addAll(contents);
-
-      var packages = _packages.putIfAbsent(name, () => []);
-      packages.add(new _ServedPackage(pubspecFields, contents));
-    }));
+    var packages = _packages.putIfAbsent(name, () => []);
+    packages.add(new _ServedPackage(pubspecFields, contents));
   }
 
   /// Serves the versions of [package] and all its dependencies that are
@@ -183,8 +177,8 @@ class PackageServerBuilder {
       _packages[name] = [];
 
       var root = packagePath(name);
-      var pubspec = new Map.from(loadYaml(
-          readTextFile(p.join(root, 'pubspec.yaml'))));
+      var pubspec =
+          new Map.from(loadYaml(readTextFile(p.join(root, 'pubspec.yaml'))));
 
       // Remove any SDK constraints since we don't have a valid SDK version
       // while testing.
@@ -201,15 +195,6 @@ class PackageServerBuilder {
     }
 
     _addPackage(package);
-  }
-
-  /// Returns a Future that completes once all the [serve] calls have been fully
-  /// processed.
-  Future _await() {
-    if (_futures.futures.isEmpty) return new Future.value();
-    return _futures.future.then((_) {
-      _futures = new FutureGroup();
-    });
   }
 
   /// Clears all existing packages from this builder.

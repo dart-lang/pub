@@ -2,19 +2,19 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import 'utils.dart';
 
 main() {
-  setUp(() {
-    d.appDir().create();
-  });
+  setUp(() => d.appDir().create());
 
-  pubBuildAndServeShouldFail("if no directories were passed and no default "
-          "ones exist",
+  pubBuildAndServeShouldFail(
+      "if no directories were passed and no default "
+      "ones exist",
       args: [],
       buildError: 'Your package must have a "web" directory,\n'
           'or you must specify the source directories.',

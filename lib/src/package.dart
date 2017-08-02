@@ -9,11 +9,11 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/transformer_id.dart';
-import 'io.dart';
 import 'git.dart' as git;
+import 'io.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'source_registry.dart';
-import 'source.dart';
 import 'utils.dart';
 
 final _README_REGEXP = new RegExp(r"^README($|\.)", caseSensitive: false);
@@ -49,19 +49,19 @@ class Package {
   final Pubspec pubspec;
 
   /// The immediate dependencies this package specifies in its pubspec.
-  List<PackageDep> get dependencies => pubspec.dependencies;
+  List<PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
-  List<PackageDep> get devDependencies => pubspec.devDependencies;
+  List<PackageRange> get devDependencies => pubspec.devDependencies;
 
   /// The dependency overrides this package specifies in its pubspec.
-  List<PackageDep> get dependencyOverrides => pubspec.dependencyOverrides;
+  List<PackageRange> get dependencyOverrides => pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
-  Set<PackageDep> get immediateDependencies {
-    var deps = {};
+  List<PackageRange> get immediateDependencies {
+    var deps = <String, PackageRange>{};
 
     addToMap(dep) {
       deps[dep.name] = dep;
@@ -73,7 +73,7 @@ class Package {
     // Make sure to add these last so they replace normal dependencies.
     dependencyOverrides.forEach(addToMap);
 
-    return deps.values.toSet();
+    return deps.values.toList();
   }
 
   /// Returns a list of asset ids for all Dart executables in this package's bin
@@ -125,6 +125,7 @@ class Package {
 
     return _inGitRepoCache;
   }
+
   bool _inGitRepoCache;
 
   /// Loads the package whose root directory is [packageDir].
@@ -139,8 +140,7 @@ class Package {
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec)
-    : dir = null;
+  Package.inMemory(this.pubspec) : dir = null;
 
   /// Creates a package with [pubspec] located at [dir].
   Package(this.pubspec, this.dir);
@@ -151,8 +151,13 @@ class Package {
   /// override it to report that certain paths exist elsewhere than within
   /// [dir]. For example, a [CachedPackage]'s `lib` directory is in the
   /// `.pub/deps` directory.
-  String path(String part1, [String part2, String part3, String part4,
-            String part5, String part6, String part7]) {
+  String path(String part1,
+      [String part2,
+      String part3,
+      String part4,
+      String part5,
+      String part6,
+      String part7]) {
     if (dir == null) {
       throw new StateError("Package $name is in-memory and doesn't have paths "
           "on disk.");
@@ -183,6 +188,17 @@ class Package {
     return path('lib/$name.dart');
   }
 
+  /// Returns the type of dependency from this package onto [name].
+  DependencyType dependencyType(String name) {
+    if (pubspec.fields['dependencies']?.containsKey(name) ?? false) {
+      return DependencyType.direct;
+    } else if (pubspec.fields['dev_dependencies']?.containsKey(name) ?? false) {
+      return DependencyType.dev;
+    } else {
+      return DependencyType.none;
+    }
+  }
+
   /// The basenames of files that are included in [list] despite being hidden.
   static final _WHITELISTED_FILES = const ['.htaccess'];
 
@@ -205,8 +221,8 @@ class Package {
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
-  List<String> listFiles({String beneath, bool recursive: true,
-      bool useGitIgnore: false}) {
+  List<String> listFiles(
+      {String beneath, bool recursive: true, bool useGitIgnore: false}) {
     // An in-memory package has no files.
     if (dir == null) return [];
 
@@ -223,47 +239,38 @@ class Package {
     // readability than most code in pub. In particular, it avoids using the
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
-    var files;
+    Iterable<String> files;
     if (useGitIgnore && _inGitRepo) {
-      // Later versions of git do not allow a path for ls-files that appears to
-      // be outside of the repo, so make sure we give it a relative path.
-      var relativeBeneath = p.relative(beneath, from: dir);
-
       // List all files that aren't gitignored, including those not checked in
-      // to Git.
+      // to Git. Use [beneath] as the working dir rather than passing it as a
+      // parameter so that we list a submodule using its own git logic.
       files = git.runSync(
-          ["ls-files", "--cached", "--others", "--exclude-standard",
-           relativeBeneath],
-          workingDir: dir);
+          ["ls-files", "--cached", "--others", "--exclude-standard"],
+          workingDir: beneath);
 
       // If we're not listing recursively, strip out paths that contain
       // separators. Since git always prints forward slashes, we always detect
       // them.
-      if (!recursive) {
-        // If we're listing a subdirectory, we only want to look for slashes
-        // after the subdirectory prefix.
-        var relativeStart = relativeBeneath == '.' ? 0 :
-            relativeBeneath.length + 1;
-        files = files.where((file) => !file.contains('/', relativeStart));
-      }
+      if (!recursive) files = files.where((file) => !file.contains('/'));
 
-      // Git always prints files relative to the repository root, but we want
-      // them relative to the working directory. It also prints forward slashes
-      // on Windows which we normalize away for easier testing.
+      // Git prints files relative to [beneath], but we want them relative to
+      // the pub's working directory. It also prints forward slashes on Windows
+      // which we normalize away for easier testing.
       files = files.map((file) {
-        if (Platform.operatingSystem != 'windows') return "$dir/$file";
-        return "$dir\\${file.replaceAll("/", "\\")}";
+        if (Platform.operatingSystem != 'windows') return "$beneath/$file";
+        return "$beneath\\${file.replaceAll("/", "\\")}";
       }).expand((file) {
         if (fileExists(file)) return [file];
         if (!dirExists(file)) return [];
 
-        // `git ls-files` only returns files, except in the case of a symlink to
-        // a directory. So if we're here, [file] refers to a valid symlink to a
-        // directory.
-        return recursive ? _listSymlinkedDir(file) : [file];
+        // `git ls-files` only returns files, except in the case of a submodule
+        // or a symlink to a directory.
+        return recursive ? _listWithinDir(file) : [file];
       });
     } else {
-      files = listDir(beneath, recursive: recursive, includeDirs: false,
+      files = listDir(beneath,
+          recursive: recursive,
+          includeDirs: false,
           whitelist: _WHITELISTED_FILES);
     }
 
@@ -285,17 +292,17 @@ class Package {
     }).toList();
   }
 
-  /// List all files recursively beneath [link], which should be a symlink to a
-  /// directory.
+  /// List all files recursively beneath [dir], which should be either a symlink
+  /// to a directory or a git submodule.
   ///
   /// This is used by [list] when listing a Git repository, since `git ls-files`
-  /// can't natively follow symlinks.
-  Iterable<String> _listSymlinkedDir(String link) {
-    assert(linkExists(link));
-    assert(dirExists(link));
-    assert(p.isWithin(dir, link));
+  /// can't natively follow symlinks and (as of Git 2.12.0-rc1) can't use
+  /// `--recurse-submodules` in conjunction with `--other`.
+  Iterable<String> _listWithinDir(String subdir) {
+    assert(dirExists(subdir));
+    assert(p.isWithin(dir, subdir));
 
-    var target = new Directory(link).resolveSymbolicLinksSync();
+    var target = new Directory(subdir).resolveSymbolicLinksSync();
 
     List<String> targetFiles;
     if (p.isWithin(dir, target)) {
@@ -308,191 +315,33 @@ class Package {
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.
-      targetFiles = listDir(target, recursive: true, includeDirs: false,
-          whitelist: _WHITELISTED_FILES);
+      targetFiles = listDir(target,
+          recursive: true, includeDirs: false, whitelist: _WHITELISTED_FILES);
     }
 
     // Re-write the paths so they're underneath the symlink.
-    return targetFiles.map((targetFile) =>
-        p.join(link, p.relative(targetFile, from: target)));
+    return targetFiles.map(
+        (targetFile) => p.join(subdir, p.relative(targetFile, from: target)));
   }
 
   /// Returns a debug string for the package.
   String toString() => '$name $version ($dir)';
 }
 
-/// The base class of [PackageRef], [PackageId], and [PackageDep].
-abstract class PackageName {
-  /// The name of the package being identified.
-  final String name;
+/// The type of dependency from one package to another.
+class DependencyType {
+  /// A dependency declared in `dependencies`.
+  static const direct = const DependencyType._("direct");
 
-  /// The [Source] used to look up this package.
-  ///
-  /// If this is a root package, this will be `null`.
-  final Source source;
+  /// A dependency declared in `dev_dependencies`.
+  static const dev = const DependencyType._("dev");
 
-  /// The metadata used by the package's [source] to identify and locate it.
-  ///
-  /// It contains whatever [Source]-specific data it needs to be able to get
-  /// the package. For example, the description of a git sourced package might
-  /// by the URL "git://github.com/dart/uilib.git".
-  final description;
+  /// No dependency exists.
+  static const none = const DependencyType._("none");
 
-  /// Whether this is a name for a magic package.
-  ///
-  /// Magic packages are unversioned pub constructs that have special semantics.
-  /// For example, a magic package named "pub itself" is inserted into the
-  /// dependency graph when any package depends on barback. This packages has
-  /// dependencies that represent the versions of barback and related packages
-  /// that pub is compatible with.
-  final bool isMagic;
+  final String _name;
 
-  /// Whether this package is the root package.
-  bool get isRoot => source == null && !isMagic;
+  const DependencyType._(this._name);
 
-  PackageName._(this.name, this.source, this.description)
-      : isMagic = false;
-
-  PackageName._magic(this.name)
-      : source = null,
-        description = null,
-        isMagic = true;
-
-  String toString() {
-    if (isRoot) return "$name (root)";
-    if (isMagic) return name;
-    return "$name from $source";
-  }
-
-  /// Returns a [PackageRef] with this one's [name], [source], and
-  /// [description].
-  PackageRef toRef() => isMagic
-      ? new PackageRef.magic(name)
-      : new PackageRef(name, source, description);
-
-  /// Returns a [PackageDep] for this package with the given version constraint.
-  PackageDep withConstraint(VersionConstraint constraint) =>
-    new PackageDep(name, source, constraint, description);
-
-  /// Returns whether this refers to the same package as [other].
-  ///
-  /// This doesn't compare any constraint information; it's equivalent to
-  /// `this.toRef() == other.toRef()`.
-  bool samePackage(PackageName other) {
-    if (other.name != name) return false;
-    if (source == null) return other.source == null;
-
-    return other.source == source &&
-        source.descriptionsEqual(description, other.description);
-  }
-
-  int get hashCode {
-    if (source == null) return name.hashCode;
-    return name.hashCode ^
-        source.hashCode ^
-        source.hashDescription(description);
-  }
-}
-
-/// A reference to a [Package], but not any particular version(s) of it.
-class PackageRef extends PackageName {
-  /// Creates a reference to a package with the given [name], [source], and
-  /// [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses. A reference
-  /// can be obtained from a user-supplied description using [Source.parseRef].
-  PackageRef(String name, Source source, description)
-      : super._(name, source, description);
-
-  /// Creates a reference to a magic package (see [isMagic]).
-  PackageRef.magic(String name)
-      : super._magic(name);
-
-  bool operator ==(other) => other is PackageRef && samePackage(other);
-}
-
-/// A reference to a specific version of a package.
-///
-/// A package ID contains enough information to correctly get the package.
-///
-/// It's possible for multiple distinct package IDs to point to different
-/// packages that have identical contents. For example, the same package may be
-/// available from multiple sources. As far as Pub is concerned, those packages
-/// are different.
-///
-/// Note that a package ID's [description] field has a different structure than
-/// the [PackageRef.description] or [PackageDep.description] fields for some
-/// sources. For example, the `git` source adds revision information to the
-/// description to ensure that the same ID always points to the same source.
-class PackageId extends PackageName {
-  /// The package's version.
-  final Version version;
-
-  /// Creates an ID for a package with the given [name], [source], [version],
-  /// and [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses.
-  PackageId(String name, Source source, this.version, description)
-      : super._(name, source, description);
-
-  /// Creates an ID for a magic package (see [isMagic]).
-  PackageId.magic(String name)
-      : super._magic(name),
-        version = Version.none;
-
-  /// Creates an ID for the given root package.
-  PackageId.root(Package package)
-      : version = package.version,
-        super._(package.name, null, package.name);
-
-  int get hashCode => super.hashCode ^ version.hashCode;
-
-  bool operator ==(other) =>
-      other is PackageId && samePackage(other) && other.version == version;
-
-  String toString() {
-    if (isRoot) return "$name $version (root)";
-    if (isMagic) return name;
-    return "$name $version from $source";
-  }
-}
-
-/// A reference to a constrained range of versions of one package.
-class PackageDep extends PackageName {
-  /// The allowed package versions.
-  final VersionConstraint constraint;
-
-  /// Creates a reference to package with the given [name], [source],
-  /// [constraint], and [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses.
-  PackageDep(String name, Source source, this.constraint, description)
-      : super._(name, source, description);
-
-  PackageDep.magic(String name)
-      : super._magic(name),
-        constraint = Version.none;
-
-  String toString() {
-    if (isRoot) return "$name $constraint (root)";
-    if (isMagic) return name;
-    return "$name $constraint from $source ($description)";
-  }
-
-  /// Whether [id] satisfies this dependency.
-  ///
-  /// Specifically, whether [id] refers to the same package as [this] *and*
-  /// [constraint] allows `id.version`.
-  bool allows(PackageId id) =>
-      samePackage(id) && constraint.allows(id.version);
-
-  int get hashCode => super.hashCode ^ constraint.hashCode;
-
-  bool operator ==(other) =>
-      other is PackageDep &&
-      samePackage(other) &&
-      other.constraint == constraint;
+  String toString() => _name;
 }

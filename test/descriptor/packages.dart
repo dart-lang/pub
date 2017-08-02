@@ -2,25 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// Pub-specific scheduled_test descriptors.
-import "dart:io" show File;
 import "dart:async" show Future;
 import "dart:convert" show UTF8;
+import "dart:io" show File;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/descriptor.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 import '../test_pub.dart';
 
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {
-  // RegExp recognizing semantic version numbers.
-  static final _semverRE =
-      new RegExp(r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-                r"(?:-[a-zA-Z\d-]+)?(?:\+[a-zA-Z\d-]+)?$");
-
   /// A map from package names to strings describing where the packages are
   /// located on disk.
   final Map<String, String> _dependencies;
@@ -31,15 +26,14 @@ class PackagesFileDescriptor extends Descriptor {
   /// are located on disk.
   PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
-  Future create([String parent]) => schedule(() {
-    if (parent == null) parent = defaultRoot;
+  Future create([String parent]) {
     var contents = const <int>[];
     if (_dependencies != null) {
-      var mapping = {};
+      var mapping = <String, Uri>{};
       _dependencies.forEach((package, version) {
         var packagePath;
-        if (_semverRE.hasMatch(version)) {
-          // If it's a semver, it's a cache reference.
+        if (_isSemver(version)) {
+          // It's a cache reference.
           packagePath = p.join(cachePath, "$package-$version");
         } else {
           // Otherwise it's a path relative to the pubspec file,
@@ -52,31 +46,22 @@ class PackagesFileDescriptor extends Descriptor {
       packages_file.write(buffer, mapping);
       contents = UTF8.encode(buffer.toString());
     }
-    return new File(p.join(parent, name)).writeAsBytes(contents);
-  }, "creating file '$name'");
-
-  Future validate([String parent]) =>
-    schedule(() => validateNow(parent), "validating file '$name'");
-
-  Future validateNow([String parent]) {
-    // Copied from FileDescriptor in scheduled_test.
-    if (parent == null) parent = defaultRoot;
-    var fullPath = p.join(parent, name);
-    if (!new File(fullPath).existsSync()) {
-      fail("File not found: '$fullPath'.");
-    }
-    return new File(fullPath).readAsBytes()
-        .then((bytes) => _validateNow(bytes, fullPath));
+    return new File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
   }
 
-  /// A function that throws an error if [binaryContents] doesn't match the
-  /// expected contents of the descriptor.
-  void _validateNow(List<int> binaryContents, String fullPath) {
+  Future validate([String parent]) async {
+    var fullPath = p.join(parent ?? sandbox, name);
+    if (!await new File(fullPath).exists()) {
+      fail("File not found: '$fullPath'.");
+    }
+
+    var bytes = await new File(fullPath).readAsBytes();
+
     // Resolve against a dummy URL so that we can test whether the URLs in
     // the package file are themselves relative. We can't resolve against just
     // "." due to sdk#23809.
     var base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
-    var map = packages_file.parse(binaryContents, Uri.parse(base));
+    var map = packages_file.parse(bytes, Uri.parse(base));
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {
@@ -84,10 +69,10 @@ class PackagesFileDescriptor extends Descriptor {
       }
 
       var description = _dependencies[package];
-      if (_semverRE.hasMatch(description)) {
+      if (_isSemver(description)) {
         if (!map[package].path.contains(description)) {
           fail(".packages of $package has incorrect version. "
-               "Expected $description, found location: ${map[package]}.");
+              "Expected $description, found location: ${map[package]}.");
         }
       } else {
         var expected = p.normalize(p.join(p.fromUri(description), 'lib'));
@@ -107,6 +92,18 @@ class PackagesFileDescriptor extends Descriptor {
         }
       }
     }
+  }
+
+  /// Returns `true` if [text] is a valid semantic version number string.
+  bool _isSemver(String text) {
+    try {
+      // See if it's a semver.
+      new Version.parse(text);
+      return true;
+    } on FormatException catch (_) {
+      // Do nothing.
+    }
+    return false;
   }
 
   String describe() => name;

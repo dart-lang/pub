@@ -5,15 +5,14 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("includes assets from the 'lib' directory of dependencies", () {
-    d.dir("foo", [
+  test("includes assets from the 'lib' directory of dependencies", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
         d.file("foo.txt", "foo"),
@@ -23,7 +22,7 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -32,17 +31,16 @@ main() {
       ]),
       d.dir("web", [
         d.file("index.html", "html"),
-        d.dir("sub", [
-          d.file("index.html", "html")
-        ])
+        d.dir("sub", [d.file("index.html", "html")])
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(args: ["build", "--all"],
+    await pubGet();
+    await runPub(
+        args: ["build", "--all"],
         output: new RegExp(r'Built 7 files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('example', [
           d.file("index.html", "html"),

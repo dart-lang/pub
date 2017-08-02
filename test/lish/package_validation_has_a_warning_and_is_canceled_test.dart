@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -13,16 +13,16 @@ import '../test_pub.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('package validation has a warning and is canceled', () {
+  test('package validation has a warning and is canceled', () async {
     var pkg = packageMap("test_pkg", "1.0.0");
     pkg["author"] = "Natalie Weizenbaum";
-    d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    var server = new ScheduledServer();
-    var pub = startPublish(server);
+    var server = await ShelfTestServer.create();
+    var pub = await startPublish(server);
 
-    pub.writeLine("n");
-    pub.shouldExit(exit_codes.DATA);
-    pub.stderr.expect(consumeThrough("Package upload canceled."));
+    pub.stdin.writeln("n");
+    await pub.shouldExit(exit_codes.DATA);
+    expect(pub.stderr, emitsThrough("Package upload canceled."));
   });
 }

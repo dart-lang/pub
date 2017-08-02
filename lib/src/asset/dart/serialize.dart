@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 
 //# if source_span
@@ -12,7 +13,6 @@ import 'package:source_span/source_span.dart';
 //# end
 
 import 'serialize/exception.dart';
-import 'utils.dart';
 
 export 'serialize/aggregate_transform.dart';
 export 'serialize/exception.dart';
@@ -41,10 +41,8 @@ Map serializeSpan(span) {
 
 /// Converts a serializable map into a [SourceSpan].
 SourceSpan deserializeSpan(Map span) {
-  return new SourceSpan(
-      deserializeLocation(span['start']),
-      deserializeLocation(span['end']),
-      span['text']);
+  return new SourceSpan(deserializeLocation(span['start']),
+      deserializeLocation(span['end']), span['text']);
 }
 
 /// Converts [location] into a serializable map.
@@ -77,22 +75,17 @@ SourceLocation deserializeLocation(Map location) {
 /// Converts [stream] into a serializable map.
 ///
 /// [serializeEvent] is used to serialize each event from the stream.
-Map serializeStream(Stream stream, serializeEvent(event)) {
+Map serializeStream/*<T>*/(Stream/*<T>*/ stream, serializeEvent(/*=T*/ event)) {
   var receivePort = new ReceivePort();
   var map = {'replyTo': receivePort.sendPort};
 
   receivePort.first.then((message) {
     var sendPort = message['replyTo'];
     stream.listen((event) {
-      sendPort.send({
-        'type': 'event',
-        'value': serializeEvent(event)
-      });
+      sendPort.send({'type': 'event', 'value': serializeEvent(event)});
     }, onError: (error, stackTrace) {
-      sendPort.send({
-        'type': 'error',
-        'error': serializeException(error, stackTrace)
-      });
+      sendPort.send(
+          {'type': 'error', 'error': serializeException(error, stackTrace)});
     }, onDone: () => sendPort.send({'type': 'done'}));
   });
 
@@ -102,12 +95,14 @@ Map serializeStream(Stream stream, serializeEvent(event)) {
 /// Converts a serializable map into a [Stream].
 ///
 /// [deserializeEvent] is used to deserialize each event from the stream.
-Stream deserializeStream(Map stream, deserializeEvent(event)) {
-  return callbackStream(() {
+Stream/*<T>*/ deserializeStream/*<T>*/(
+    Map stream,
+    /*=T*/ deserializeEvent(event)) {
+  return new LazyStream(() {
     var receivePort = new ReceivePort();
     stream['replyTo'].send({'replyTo': receivePort.sendPort});
 
-    var controller = new StreamController(sync: true);
+    var controller = new StreamController<T>(sync: true);
     receivePort.listen((event) {
       switch (event['type']) {
         case 'event':
@@ -133,15 +128,15 @@ Stream deserializeStream(Map stream, deserializeEvent(event)) {
 ///
 /// The returned Future will complete to the value or error returned by
 /// [respond].
-Future call(SendPort port, message) {
+Future/*<T>*/ call/*<T>*/(SendPort port, message) {
   var receivePort = new ReceivePort();
-  port.send({
-    'message': message,
-    'replyTo': receivePort.sendPort
-  });
+  port.send({'message': message, 'replyTo': receivePort.sendPort});
 
-  return receivePort.first.then((response) {
-    if (response['type'] == 'success') return response['value'];
+  return new Future.sync(() async {
+    var response = await receivePort.first;
+    if (response['type'] == 'success') {
+      return response['value'] as dynamic/*=T*/;
+    }
     assert(response['type'] == 'error');
     var exception = deserializeException(response['error']);
     return new Future.error(exception, exception.stackTrace);
@@ -159,9 +154,7 @@ void respond(wrappedMessage, callback(message)) {
   new Future.sync(() => callback(wrappedMessage['message']))
       .then((result) => replyTo.send({'type': 'success', 'value': result}))
       .catchError((error, stackTrace) {
-    replyTo.send({
-      'type': 'error',
-      'error': serializeException(error, stackTrace)
-    });
+    replyTo.send(
+        {'type': 'error', 'error': serializeException(error, stackTrace)});
   });
 }

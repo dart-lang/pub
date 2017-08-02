@@ -22,14 +22,14 @@ class RunCommand extends PubCommand {
   bool get allowTrailingOptions => false;
 
   RunCommand() {
-    argParser.addFlag("checked", abbr: "c",
-        help: "Enable runtime type checks and assertions.");
+    argParser.addFlag("checked",
+        abbr: "c", help: "Enable runtime type checks and assertions.");
     argParser.addFlag('list', negatable: false,
         help: 'List all available executables.');
     argParser.addOption("mode",
         help: 'Mode to run transformers in.\n'
-              '(defaults to "release" for dependencies, "debug" for '
-                'entrypoint)');
+            '(defaults to "release" for dependencies, "debug" for '
+            'entrypoint)');
   }
 
   Future run() async {
@@ -54,10 +54,10 @@ class RunCommand extends PubCommand {
       executable = components[1];
 
       if (p.split(executable).length > 1) {
-      // TODO(nweiz): Use adjacent strings when the new async/await compiler
-      // lands.
-        usageException("Cannot run an executable in a subdirectory of a " +
-            "dependency.");
+        // TODO(nweiz): Use adjacent strings when the new async/await compiler
+        // lands.
+        usageException(
+            "Cannot run an executable in a subdirectory of a " + "dependency.");
       }
     } else if (onlyIdentifierRegExp.hasMatch(executable)) {
       // "pub run foo" means the same thing as "pub run foo:foo" as long as

@@ -4,11 +4,11 @@
 
 import 'dart:convert';
 
-import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
+
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -17,21 +17,21 @@ import 'utils.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('--force publishes if there are no warnings or errors', () {
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server, args: ['--force']);
+  test('--force publishes if there are no warnings or errors', () async {
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server, args: ['--force']);
 
     handleUploadForm(server);
     handleUpload(server);
 
-    server.handle('GET', '/create', (request) {
+    server.handler.expect('GET', '/create', (request) {
       return new shelf.Response.ok(JSON.encode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });
 
-    pub.shouldExit(exit_codes.SUCCESS);
-    pub.stdout.expect(consumeThrough('Package test_pkg 1.0.0 uploaded!'));
+    await pub.shouldExit(exit_codes.SUCCESS);
+    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }

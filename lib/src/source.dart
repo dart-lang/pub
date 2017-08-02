@@ -6,10 +6,10 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import 'package.dart';
+import 'exceptions.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
-import 'utils.dart';
 
 /// A source from which to get packages.
 ///
@@ -32,7 +32,7 @@ import 'utils.dart';
 /// All [Source]s should extend this class and all [BoundSource]s should extend
 /// [BoundSource]. In addition to defining the behavior of various methods,
 /// sources define the structure of package descriptions used in [PackageRef]s,
-/// [PackageDep]s, and [PackageId]s. There are three distinct types of
+/// [PackageRange]s, and [PackageId]s. There are three distinct types of
 /// description, although in practice most sources use the same format for one
 /// or more of these:
 ///
@@ -41,7 +41,7 @@ import 'utils.dart';
 ///   optimize for ease of authoring.
 ///
 /// * Reference descriptions. These are the descriptions in [PackageRef]s and
-///   [PackageDep]. They're parsed directly from user descriptions using
+///   [PackageRange]. They're parsed directly from user descriptions using
 ///   [parseRef], and so add no additional information.
 ///
 /// * ID descriptions. These are the descriptions in [PackageId]s, which
@@ -60,7 +60,7 @@ abstract class Source {
   /// package during version solving.
   ///
   /// Defaults to `false`.
-  final bool hasMultipleVersions = false;
+  bool get hasMultipleVersions => false;
 
   /// Records the system cache to which this source belongs.
   ///
@@ -136,7 +136,7 @@ abstract class Source {
 
 /// A source bound to a [SystemCache].
 abstract class BoundSource {
-  /// The unbound source that produced [this]. 
+  /// The unbound source that produced [this].
   Source get source;
 
   /// The system cache to which [this] is bound.
@@ -158,7 +158,8 @@ abstract class BoundSource {
       throw new ArgumentError("Cannot get versions for the root package.");
     }
     if (ref.source != source) {
-      throw new ArgumentError("Package $ref does not use source ${source.name}.");
+      throw new ArgumentError(
+          "Package $ref does not use source ${source.name}.");
     }
 
     return doGetVersions(ref);
@@ -204,7 +205,8 @@ abstract class BoundSource {
     // Delegate to the overridden one.
     pubspec = await doDescribe(id);
     if (pubspec.version != id.version) {
-      dataError("The pubspec for $id has version ${pubspec.version}.");
+      throw new PackageNotFoundException(
+          "The pubspec for $id has version ${pubspec.version}.");
     }
 
     _pubspecs[id] = pubspec;
@@ -213,6 +215,10 @@ abstract class BoundSource {
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
+  ///
+  /// For sources that have only one version for a given [PackageRef], this may
+  /// return a pubspec with a different version than that specified by [id]. If
+  /// they do, [describe] will throw a [PackageNotFoundException].
   ///
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.

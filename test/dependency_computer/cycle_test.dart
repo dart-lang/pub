@@ -2,17 +2,22 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("allows a package dependency cycle that's unrelated to "
-      "transformers", () {
-    d.dir(appPath, [
+  test(
+      "allows a package dependency cycle that's unrelated to "
+      "transformers", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp/first", "myapp/second"]
       }),
       d.dir('lib', [
@@ -21,30 +26,42 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0", deps: {"bar": {"path": "../bar"}})
+    await d.dir("foo", [
+      d.libPubspec("foo", "1.0.0", deps: {
+        "bar": {"path": "../bar"}
+      })
     ]).create();
 
-    d.dir("bar", [
-      d.libPubspec("bar", "1.0.0", deps: {"baz": {"path": "../baz"}})
+    await d.dir("bar", [
+      d.libPubspec("bar", "1.0.0", deps: {
+        "baz": {"path": "../baz"}
+      })
     ]).create();
 
-    d.dir("baz", [
-      d.libPubspec("baz", "1.0.0", deps: {"foo": {"path": "../foo"}})
+    await d.dir("baz", [
+      d.libPubspec("baz", "1.0.0", deps: {
+        "foo": {"path": "../foo"}
+      })
     ]).create();
 
-    expectDependencies({'myapp/first': [], 'myapp/second': ['myapp/first']});
+    expectDependencies({
+      'myapp/first': [],
+      'myapp/second': ['myapp/first']
+    });
   });
 
-  integration("disallows a package dependency cycle that may be related to "
-      "transformers", () {
+  test(
+      "disallows a package dependency cycle that may be related to "
+      "transformers", () async {
     // Two layers of myapp transformers are necessary here because otherwise pub
     // will figure out that the transformer doesn't import "foo" and thus
     // doesn't transitively import itself. Import loops are tested below.
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp/first", "myapp/second"]
       }),
       d.dir('lib', [
@@ -53,12 +70,16 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0", deps: {"bar": {"path": "../bar"}})
+    await d.dir("foo", [
+      d.libPubspec("foo", "1.0.0", deps: {
+        "bar": {"path": "../bar"}
+      })
     ]).create();
 
-    d.dir("bar", [
-      d.libPubspec("bar", "1.0.0", deps: {"myapp": {"path": "../myapp"}})
+    await d.dir("bar", [
+      d.libPubspec("bar", "1.0.0", deps: {
+        "myapp": {"path": "../myapp"}
+      })
     ]).create();
 
     expectCycleException([
@@ -70,29 +91,35 @@ void main() {
     ]);
   });
 
-  integration("disallows a transformation dependency cycle", () {
-    d.dir(appPath, [
+  test("disallows a transformation dependency cycle", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["foo"]
       }),
       d.dir('lib', [d.file("myapp.dart", transformer())])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
-        "dependencies": {"bar": {"path": "../bar"}},
+        "dependencies": {
+          "bar": {"path": "../bar"}
+        },
         "transformers": ["bar"]
       }),
       d.dir('lib', [d.file("foo.dart", transformer())])
     ]).create();
 
-    d.dir("bar", [
+    await d.dir("bar", [
       d.pubspec({
         "name": "bar",
-        "dependencies": {"myapp": {"path": "../myapp"}},
+        "dependencies": {
+          "myapp": {"path": "../myapp"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir('lib', [d.file("bar.dart", transformer())])
@@ -105,12 +132,15 @@ void main() {
     ]);
   });
 
-  integration("allows a cross-package import cycle that's unrelated to "
-      "transformers", () {
-     d.dir(appPath, [
+  test(
+      "allows a cross-package import cycle that's unrelated to "
+      "transformers", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir('lib', [
@@ -118,30 +148,39 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0", deps: {"bar": {"path": "../bar"}}),
+    await d.dir("foo", [
+      d.libPubspec("foo", "1.0.0", deps: {
+        "bar": {"path": "../bar"}
+      }),
       d.dir('lib', [d.file("foo.dart", "import 'package:bar/bar.dart';")])
     ]).create();
 
-    d.dir("bar", [
-      d.libPubspec("bar", "1.0.0", deps: {"baz": {"path": "../baz"}}),
+    await d.dir("bar", [
+      d.libPubspec("bar", "1.0.0", deps: {
+        "baz": {"path": "../baz"}
+      }),
       d.dir('lib', [d.file("bar.dart", "import 'package:baz/baz.dart';")])
     ]).create();
 
-    d.dir("baz", [
-      d.libPubspec("baz", "1.0.0", deps: {"foo": {"path": "../foo"}}),
+    await d.dir("baz", [
+      d.libPubspec("baz", "1.0.0", deps: {
+        "foo": {"path": "../foo"}
+      }),
       d.dir('lib', [d.file("baz.dart", "import 'package:foo/foo.dart';")])
     ]).create();
 
     expectDependencies({'myapp': []});
   });
 
-  integration("disallows a cross-package import cycle that's related to "
-      "transformers", () {
-     d.dir(appPath, [
+  test(
+      "disallows a cross-package import cycle that's related to "
+      "transformers", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir('lib', [
@@ -149,13 +188,17 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
-      d.libPubspec("foo", "1.0.0", deps: {"bar": {"path": "../bar"}}),
+    await d.dir("foo", [
+      d.libPubspec("foo", "1.0.0", deps: {
+        "bar": {"path": "../bar"}
+      }),
       d.dir('lib', [d.file("foo.dart", "import 'package:bar/bar.dart';")])
     ]).create();
 
-    d.dir("bar", [
-      d.libPubspec("bar", "1.0.0", deps: {"myapp": {"path": "../myapp"}}),
+    await d.dir("bar", [
+      d.libPubspec("bar", "1.0.0", deps: {
+        "myapp": {"path": "../myapp"}
+      }),
       d.dir('lib', [d.file("bar.dart", "import 'package:myapp/myapp.dart';")])
     ]).create();
 
@@ -167,12 +210,15 @@ void main() {
     ]);
   });
 
-  integration("allows a single-package import cycle that's unrelated to "
-      "transformers", () {
-     d.dir(appPath, [
+  test(
+      "allows a single-package import cycle that's unrelated to "
+      "transformers", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir('lib', [
@@ -186,12 +232,15 @@ void main() {
     expectDependencies({'myapp': []});
   });
 
-  integration("allows a single-package import cycle that's related to "
-      "transformers", () {
-     d.dir(appPath, [
+  test(
+      "allows a single-package import cycle that's related to "
+      "transformers", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir('lib', [
@@ -205,9 +254,10 @@ void main() {
   });
 
   // Regression test for #1298
-  integration("allows a single-package import cycle with two uses of "
-      "the same transformer", () {
-     d.dir(appPath, [
+  test(
+      "allows a single-package import cycle with two uses of "
+      "the same transformer", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp", "myapp"]

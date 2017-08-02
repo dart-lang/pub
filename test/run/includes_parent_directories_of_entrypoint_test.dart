@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:path/path.dart' as path;
 
 import '../descriptor.dart' as d;
@@ -16,24 +18,23 @@ main() {
 """;
 
 main() {
-  integration('allows assets in parent directories of the entrypoint to be'
-      'accessed', () {
-    d.dir(appPath, [
+  test(
+      'allows assets in parent directories of the entrypoint to be'
+      'accessed', () async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("tool", [
         d.file("a.dart", "var a = 'a';"),
         d.dir("a", [
           d.file("b.dart", "var b = 'b';"),
-          d.dir("b", [
-            d.file("app.dart", SCRIPT)
-          ])
+          d.dir("b", [d.file("app.dart", SCRIPT)])
         ])
       ])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: [path.join("tool", "a", "b", "app")]);
-    pub.stdout.expect("a b");
-    pub.shouldExit();
+    await pubGet();
+    var pub = await pubRun(args: [path.join("tool", "a", "b", "app")]);
+    expect(pub.stdout, emits("a b"));
+    await pub.shouldExit();
   });
 }

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -26,62 +28,64 @@ class DartTransformer extends Transformer {
 """;
 
 main() {
-   integration('runs a local script with customizable modes', () {
-     serveBarback();
+  test('runs a local script with customizable modes', () async {
+    await serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", TRANSFORMER),
-         d.file("primary.in", "")
-       ])])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src",
+            [d.file("transformer.dart", TRANSFORMER), d.file("primary.in", "")])
+      ])
+    ]).create();
 
-     pubGet();
+    await pubGet();
 
-     // By default it should run in debug mode.
-     var pub = pubRun(args: ["bin/script"]);
-     pub.stdout.expect("debug");
-     pub.shouldExit();
+    // By default it should run in debug mode.
+    var pub = await pubRun(args: ["bin/script"]);
+    expect(pub.stdout, emits("debug"));
+    await pub.shouldExit();
 
-     // A custom mode should be specifiable.
-     pub = pubRun(args: ["--mode", "custom-mode", "bin/script"]);
-     pub.stdout.expect("custom-mode");
-     pub.shouldExit();
-   });
+    // A custom mode should be specifiable.
+    pub = await pubRun(args: ["--mode", "custom-mode", "bin/script"]);
+    expect(pub.stdout, emits("custom-mode"));
+    await pub.shouldExit();
+  });
 
-   integration('runs a dependency script with customizable modes', () {
-     serveBarback();
+  test('runs a dependency script with customizable modes', () async {
+    await serveBarback();
 
-     d.dir("foo", [
-       d.pubspec({
-         "name": "foo",
-         "version": "1.2.3",
-         "transformers": ["foo/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", TRANSFORMER),
-         d.file("primary.in", "")
-       ])])
-     ]).create();
+    await d.dir("foo", [
+      d.pubspec({
+        "name": "foo",
+        "version": "1.2.3",
+        "transformers": ["foo/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src",
+            [d.file("transformer.dart", TRANSFORMER), d.file("primary.in", "")])
+      ])
+    ]).create();
 
-     d.appDir({"foo": {"path": "../foo"}}).create();
+    await d.appDir({
+      "foo": {"path": "../foo"}
+    }).create();
 
-     pubGet();
+    await pubGet();
 
-     // By default it should run in release mode.
-     var pub = pubRun(args: ["foo:script"]);
-     pub.stdout.expect("release");
-     pub.shouldExit();
+    // By default it should run in release mode.
+    var pub = await pubRun(args: ["foo:script"]);
+    expect(pub.stdout, emits("release"));
+    await pub.shouldExit();
 
-     // A custom mode should be specifiable.
-     pub = pubRun(args: ["--mode", "custom-mode", "foo:script"]);
-     pub.stdout.expect("custom-mode");
-     pub.shouldExit();
-   });
+    // A custom mode should be specifiable.
+    pub = await pubRun(args: ["--mode", "custom-mode", "foo:script"]);
+    expect(pub.stdout, emits("custom-mode"));
+    await pub.shouldExit();
+  });
 }

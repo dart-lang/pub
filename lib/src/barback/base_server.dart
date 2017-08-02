@@ -40,9 +40,13 @@ abstract class BaseServer<T> {
   final _resultsController = new StreamController<T>.broadcast();
 
   BaseServer(this.environment, this._server) {
-    shelf_io.serveRequests(_server, const shelf.Pipeline()
-        .addMiddleware(shelf.createMiddleware(errorHandler: _handleError))
-        .addHandler(handleRequest));
+    shelf_io.serveRequests(
+        _server,
+        const shelf.Pipeline()
+            .addMiddleware(shelf.createMiddleware(errorHandler: _handleError))
+            .addMiddleware(shelf.createMiddleware(
+                requestHandler: (_) => _pausedCompleter?.future))
+            .addHandler(handleRequest));
   }
 
   /// Closes this server.
@@ -64,8 +68,8 @@ abstract class BaseServer<T> {
   /// Returns a 404 response to [request].
   ///
   /// If [asset] is given, it is the ID of the asset that couldn't be found.
-  shelf.Response notFound(shelf.Request request, {String error,
-      AssetId asset}) {
+  shelf.Response notFound(shelf.Request request,
+      {String error, AssetId asset}) {
     logRequest(request, "Not Found");
 
     // TODO(rnystrom): Apply some styling to make it visually clear that this
@@ -100,7 +104,7 @@ abstract class BaseServer<T> {
 
   /// Log [message] at [log.Level.FINE] with metadata about [request].
   void logRequest(shelf.Request request, String message) =>
-    log.fine("$this ${request.method} ${request.url}\n$message");
+      log.fine("$this ${request.method} ${request.url}\n$message");
 
   /// Adds [result] to the server's [results] stream.
   void addResult(T result) {
@@ -117,5 +121,19 @@ abstract class BaseServer<T> {
     _resultsController.addError(error, stackTrace);
     close();
     return new shelf.Response.internalServerError();
+  }
+
+  /// If paused, this will be non-null and complete when the server should
+  /// resume serving requests.
+  Completer<Null> _pausedCompleter;
+
+  void pause() {
+    _pausedCompleter ??= new Completer<Null>();
+  }
+
+  void resume() {
+    if (_pausedCompleter?.isCompleted == true) return;
+    _pausedCompleter?.complete();
+    _pausedCompleter = null;
   }
 }

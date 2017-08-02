@@ -38,7 +38,11 @@ main() {
     });
 
     test('uses indentation for maps', () {
-      expect(yamlToString({'a': {'b': 1, 'c': 2}, 'd': 3}),
+      expect(
+          yamlToString({
+            'a': {'b': 1, 'c': 2},
+            'd': 3
+          }),
           equals("""
 a:
   b: 1
@@ -47,8 +51,7 @@ d: 3"""));
     });
 
     test('sorts map keys', () {
-      expect(yamlToString({'a': 1, 'c': 2, 'b': 3, 'd': 4}),
-          equals("""
+      expect(yamlToString({'a': 1, 'c': 2, 'b': 3, 'd': 4}), equals("""
 a: 1
 b: 3
 c: 2
@@ -56,8 +59,7 @@ d: 4"""));
     });
 
     test('quotes map keys as needed', () {
-      expect(yamlToString({'no': 1, 'yes!': 2, '123': 3}),
-          equals("""
+      expect(yamlToString({'no': 1, 'yes!': 2, '123': 3}), equals("""
 "123": 3
 no: 1
 "yes!": 2"""));
@@ -69,8 +71,7 @@ no: 1
       map[123] = "num";
       map[true] = "bool";
 
-      expect(yamlToString(map),
-          equals("""
+      expect(yamlToString(map), equals("""
 123: num
 null: null
 true: bool"""));
@@ -82,7 +83,6 @@ true: bool"""));
 a: {}
 b: {}"""));
     });
-
   });
 
   group('niceDuration()', () {
@@ -100,6 +100,28 @@ b: {}"""));
 
     test('has reasonable output on minute boundary', () {
       expect(niceDuration(new Duration(minutes: 1)), equals("1:00.0s"));
+    });
+  });
+
+  group('uuid', () {
+    var uuidRegexp = new RegExp("^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-"
+        r"[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$");
+
+    test("min value is valid", () {
+      var uuid = createUuid(new List<int>.filled(16, 0));
+      expect(uuid, matches(uuidRegexp));
+      expect(uuid, "00000000-0000-4000-8000-000000000000");
+    });
+    test("max value is valid", () {
+      var uuid = createUuid(new List<int>.filled(16, 255));
+      expect(uuid, matches(uuidRegexp));
+      expect(uuid, "FFFFFFFF-FFFF-4FFF-BFFF-FFFFFFFFFFFF");
+    });
+    test("random values are valid", () {
+      for (var i = 0; i < 100; i++) {
+        var uuid = createUuid();
+        expect(uuid, matches(uuidRegexp));
+      }
     });
   });
 }

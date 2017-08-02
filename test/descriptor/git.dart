@@ -6,8 +6,7 @@ import 'dart:async';
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/git.dart' as git;
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/descriptor.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a Git repository and its contents.
 class GitRepoDescriptor extends DirectoryDescriptor {
@@ -15,46 +14,41 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       : super(name, contents);
 
   /// Creates the Git repository and commits the contents.
-  Future create([String parent]) => schedule(() {
-    return super.create(parent).then((_) {
-      return _runGitCommands(parent, [
-        ['init'],
-        ['add', '.'],
-        ['commit', '-m', 'initial commit', '--allow-empty']
-      ]);
-    });
-  }, 'creating Git repo:\n${describe()}');
+  Future create([String parent]) async {
+    await super.create(parent);
+    await _runGitCommands(parent, [
+      ['init'],
+      ['config', 'core.excludesfile', ''],
+      ['add', '.'],
+      ['commit', '-m', 'initial commit', '--allow-empty']
+    ]);
+  }
 
-  /// Writes this descriptor to the filesystem, than commits any changes from
+  /// Writes this descriptor to the filesystem, then commits any changes from
   /// the previous structure to the Git repo.
   ///
-  /// [parent] defaults to [defaultRoot].
-  Future commit([String parent]) => schedule(() {
-    return super.create(parent).then((_) {
-      return _runGitCommands(parent, [
-        ['add', '.'],
-        ['commit', '-m', 'update']
-      ]);
-    });
-  }, 'committing Git repo:\n${describe()}');
+  /// [parent] defaults to [sandbox].
+  Future commit([String parent]) async {
+    await super.create(parent);
+    await _runGitCommands(parent, [
+      ['add', '.'],
+      ['commit', '-m', 'update']
+    ]);
+  }
 
   /// Return a Future that completes to the commit in the git repository
-  /// referred to by [ref] at the current point in the scheduled test run.
+  /// referred to by [ref].
   ///
-  /// [parent] defaults to [defaultRoot].
-  Future<String> revParse(String ref, [String parent]) => schedule(() {
-    return _runGit(['rev-parse', ref], parent).then((output) => output[0]);
-  }, 'parsing revision $ref for Git repo:\n${describe()}');
+  /// [parent] defaults to [sandbox].
+  Future<String> revParse(String ref, [String parent]) async {
+    var output = await _runGit(['rev-parse', ref], parent);
+    return output[0];
+  }
 
-  /// Schedule a Git command to run in this repository.
+  /// Runs a Git command in this repository.
   ///
-  /// [parent] defaults to [defaultRoot].
-  Future runGit(List<String> args, [String parent]) => schedule(() {
-    return _runGit(args, parent);
-  }, "running 'git ${args.join(' ')}' in Git repo:\n${describe()}");
-
-  Future _runGitCommands(String parent, List<List<String>> commands) =>
-      Future.forEach(commands, (command) => _runGit(command, parent));
+  /// [parent] defaults to [sandbox].
+  Future runGit(List<String> args, [String parent]) => _runGit(args, parent);
 
   Future<List<String>> _runGit(List<String> args, String parent) {
     // Explicitly specify the committer information. Git needs this to commit
@@ -66,10 +60,14 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       'GIT_COMMITTER_EMAIL': 'pub@dartlang.org'
     };
 
-    if (parent == null) parent = defaultRoot;
     return git.run(args,
-        workingDir: path.join(parent, name),
+        workingDir: path.join(parent ?? sandbox, name),
         environment: environment);
   }
-}
 
+  Future _runGitCommands(String parent, List<List<String>> commands) async {
+    for (var command in commands) {
+      await _runGit(command, parent);
+    }
+  }
+}

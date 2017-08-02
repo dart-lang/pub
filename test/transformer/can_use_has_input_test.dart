@@ -2,9 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 const TRANSFORMER = """
 import 'dart:async';
@@ -31,26 +33,24 @@ class RewriteTransformer extends Transformer {
 """;
 
 main() {
-   integration("a transform can use hasInput", () {
-     serveBarback();
+  test("a transform can use hasInput", () async {
+    await serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", TRANSFORMER)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShouldSucceed("foo.out", "primary: true, secondary: false");
-     endPubServe();
-   });
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.out", "primary: true, secondary: false");
+    await endPubServe();
+  });
 }

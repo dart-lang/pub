@@ -2,9 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 const AGGREGATE_TRANSFORMER = """
 import 'dart:async';
@@ -34,10 +36,10 @@ class ManyToOneTransformer extends AggregateTransformer {
 """;
 
 main() {
-  integration("loads an aggregate transformer", () {
-    serveBarback();
+  test("loads an aggregate transformer", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp"],
@@ -46,15 +48,12 @@ main() {
       d.dir("lib", [
         d.file("transformer.dart", AGGREGATE_TRANSFORMER),
       ]),
-      d.dir("web", [
-        d.file("foo.txt", "foo"),
-        d.file("bar.txt", "bar")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo"), d.file("bar.txt", "bar")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("out.txt", "bar\nfoo");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("out.txt", "bar\nfoo");
+    await endPubServe();
   });
 }

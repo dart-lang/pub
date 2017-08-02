@@ -2,30 +2,29 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('can activate an already cached package', () {
-    servePackages((builder) {
+  test('can activate an already cached package', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0");
     });
 
-    schedulePub(args: ["cache", "add", "foo"]);
+    await runPub(args: ["cache", "add", "foo"]);
 
-    schedulePub(args: ["global", "activate", "foo"], output: """
+    await runPub(args: ["global", "activate", "foo"], output: """
         Resolving dependencies...
         + foo 1.0.0
         Precompiling executables...
-        Loading source assets...
         Activated foo 1.0.0.""");
 
     // Should be in global package cache.
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.dir('foo', [d.matcherFile('pubspec.lock', contains('1.0.0'))])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.0.0'))])
       ])
     ]).validate();
   });

@@ -2,14 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 main() {
   // Regression test for issue 23480
-  integration("ignores a transformer on test files in a dependency", () {
-    servePackages((builder) {
+  test("ignores a transformer on test files in a dependency", () async {
+    await servePackages((builder) {
       builder.serveRealPackage('barback');
 
       builder.serve("bar", "1.2.3", contents: [
@@ -20,37 +22,32 @@ main() {
         ])
       ]);
 
-      builder.serve("foo", "1.2.3",
-        pubspec: {
+      builder.serve("foo", "1.2.3", pubspec: {
         "name": "foo",
         "version": "1.0.0",
-        "dev_dependencies": {
-          "bar": "any"
-        },
-        "transformers": [{
-          "bar": {"\$include": "test/**"}
-        }]
+        "dev_dependencies": {"bar": "any"},
+        "transformers": [
+          {
+            "bar": {"\$include": "test/**"}
+          }
+        ]
       }, contents: [
-        d.dir("test", [
-          d.file("my_test.dart", "void main() {}")
-        ])
+        d.dir("test", [d.file("my_test.dart", "void main() {}")])
       ]);
     });
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {"foo": "any"}
       }),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
+    await pubGet();
 
-    pubServe();
-    requestShouldSucceed("foo.txt", "foo");
-    endPubServe();
+    await pubServe();
+    await requestShouldSucceed("foo.txt", "foo");
+    await endPubServe();
   });
 }

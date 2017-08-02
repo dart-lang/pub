@@ -2,25 +2,33 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("doesn't return a dependency's transformer that can't run on lib",
-      () {
-    d.dir(appPath, [
+  test("doesn't return a dependency's transformer that can't run on lib",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "test/foo_test.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "test/foo_test.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("foo.dart", transformer())]),
       d.dir("test", [d.file("foo_test.dart", "")])
@@ -29,12 +37,17 @@ void main() {
     expectDependencies({});
   });
 
-  integration("does return the root package's transformer that can't run on "
-      "lib", () {
-    d.dir(appPath, [
+  test(
+      "does return the root package's transformer that can't run on "
+      "lib", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "transformers": [{"myapp": {"\$include": "test/myapp_test.dart"}}]
+        "transformers": [
+          {
+            "myapp": {"\$include": "test/myapp_test.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("myapp.dart", transformer())]),
       d.dir("test", [d.file("myapp_test.dart", "")])
@@ -43,42 +56,52 @@ void main() {
     expectDependencies({"myapp": []});
   });
 
-  integration("does return a dependency's transformer that the root package "
-      "uses", () {
-    d.dir(appPath, [
+  test(
+      "does return a dependency's transformer that the root package "
+      "uses", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
-        "transformers": [{"foo": {"\$include": "test/myapp_test.dart"}}]
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
+        "transformers": [
+          {
+            "foo": {"\$include": "test/myapp_test.dart"}
+          }
+        ]
       }),
       d.dir("test", [d.file("myapp_test.dart", "")])
     ]).create();
 
-    d.dir("foo", [
-      d.pubspec({
-        "name": "foo",
-        "version": "1.0.0"
-      }),
+    await d.dir("foo", [
+      d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
 
     expectDependencies({"foo": []});
   });
 
-  integration("doesn't return a dependency's transformer that can run on bin",
-      () {
-    d.dir(appPath, [
+  test("doesn't return a dependency's transformer that can run on bin",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}}
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        }
       })
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "bin/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "bin/foo.dart"}
+          }
+        ]
       }),
       d.dir("lib", [d.file("foo.dart", transformer())]),
       d.dir("test", [d.file("foo_test.dart", "")])
@@ -88,12 +111,15 @@ void main() {
   });
 
   // Regression test for #1291
-  integration("doesn't return a dependency's transformer that can't run on lib "
-      "when the app's transformer imports the dependency's", () {
-    d.dir(appPath, [
+  test(
+      "doesn't return a dependency's transformer that can't run on lib "
+      "when the app's transformer imports the dependency's", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -101,13 +127,17 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
         "transformers": [
           ["foo/bar"],
-          [{"foo": {"\$include": "test/foo_test.dart"}}]
+          [
+            {
+              "foo": {"\$include": "test/foo_test.dart"}
+            }
+          ]
         ]
       }),
       d.dir("lib", [

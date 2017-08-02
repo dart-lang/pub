@@ -2,39 +2,43 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("upgrades Git packages to a nonexistent pubspec", () {
+  test("upgrades Git packages to a nonexistent pubspec", () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0')
-    ]);
-    repo.create();
+    var repo =
+        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
+    await repo.create();
 
-    d.appDir({"foo": {"git": "../foo.git"}}).create();
+    await d.appDir({
+      "foo": {"git": "../foo.git"}
+    }).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+    await d.dir(packagesPath, [
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
 
-    repo.runGit(['rm', 'pubspec.yaml']);
-    repo.runGit(['commit', '-m', 'delete']);
+    await repo.runGit(['rm', 'pubspec.yaml']);
+    await repo.runGit(['commit', '-m', 'delete']);
 
-    pubUpgrade(error: new RegExp(r'Could not find a file named "pubspec.yaml" '
-        r'in [^\n]*\.'));
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    await pubUpgrade(
+        args: ["--packages-dir"],
+        error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+            r'in [^\n]*\.'));
 
-    d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo";')
-      ])
+    await d.dir(packagesPath, [
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
     ]).validate();
   });
 }

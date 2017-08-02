@@ -3,32 +3,29 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
+
 import 'package:pub/src/io.dart';
-import 'package:scheduled_test/scheduled_process.dart';
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("a binstub runs 'pub global run' for an outdated snapshot", () {
-    servePackages((builder) {
+  test("a binstub runs 'pub global run' for an outdated snapshot", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
           d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')])
@@ -36,19 +33,21 @@ main() {
       ])
     ]).create();
 
-    var process = new ScheduledProcess.start(
-        p.join(sandboxDir, cachePath, "bin", binStubName("foo-script")),
+    var process = await TestProcess.start(
+        p.join(d.sandbox, cachePath, "bin", binStubName("foo-script")),
         ["arg1", "arg2"],
         environment: getEnvironment());
 
-    process.stderr.expect(startsWith("Wrong script snapshot version"));
-    process.stdout.expect(consumeThrough("ok [arg1, arg2]"));
-    process.shouldExit();
+    expect(process.stderr, emits(startsWith("Wrong script snapshot version")));
+    expect(process.stdout, emitsThrough("ok [arg1, arg2]"));
+    await process.shouldExit();
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages/foo/bin', [
-        d.binaryMatcherFile('script.dart.snapshot', isNot(equals(
-            readBinaryFile(testAssetPath('out-of-date.snapshot')))))
+        d.file(
+            'script.dart.snapshot',
+            isNot(
+                equals(readBinaryFile(testAssetPath('out-of-date.snapshot')))))
       ])
     ]).validate();
   });

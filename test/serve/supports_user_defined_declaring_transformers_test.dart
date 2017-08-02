@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
@@ -33,38 +35,39 @@ class DeclaringRewriteTransformer extends Transformer
 """;
 
 main() {
-  integration("supports a user-defined declaring transformer", () {
-    serveBarback();
+  test("supports a user-defined declaring transformer", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/lazy", "myapp/src/declaring"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        // Include a lazy transformer before the declaring transformer,
-        // because otherwise its behavior is indistinguishable from a normal
-        // transformer.
-        d.file("lazy.dart", LAZY_TRANSFORMER),
-        d.file("declaring.dart", DECLARING_TRANSFORMER)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [
+          // Include a lazy transformer before the declaring transformer,
+          // because otherwise its behavior is indistinguishable from a normal
+          // transformer.
+          d.file("lazy.dart", LAZY_TRANSFORMER),
+          d.file("declaring.dart", DECLARING_TRANSFORMER)
+        ])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    var server = pubServe();
+    await pubGet();
+    var server = await pubServe();
     // The build should complete without either transformer logging anything.
-    server.stdout.expect('Build completed successfully');
+    await expectLater(server.stdout, emits('Build completed successfully'));
 
-    requestShouldSucceed("foo.final", "foo.out.final");
-    server.stdout.expect(emitsLines(
-        '[Info from LazyRewrite]:\n'
-        'Rewriting myapp|web/foo.txt.\n'
-        '[Info from DeclaringRewrite]:\n'
-        'Rewriting myapp|web/foo.out.'));
-    endPubServe();
+    await requestShouldSucceed("foo.final", "foo.out.final");
+    await expectLater(
+        server.stdout,
+        emitsLines('[Info from LazyRewrite]:\n'
+            'Rewriting myapp|web/foo.txt.\n'
+            '[Info from DeclaringRewrite]:\n'
+            'Rewriting myapp|web/foo.out.'));
+    await endPubServe();
   });
 }

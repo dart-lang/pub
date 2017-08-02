@@ -4,6 +4,9 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+import 'package:pub_semver/pub_semver.dart';
+
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'utils.dart';
@@ -18,6 +21,7 @@ import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
+import 'validator/strict_dependencies.dart';
 import 'validator/utf8_readme.dart';
 
 /// The base class for validators that check whether a package is fit for
@@ -47,6 +51,44 @@ abstract class Validator {
   /// [warnings], respectively.
   Future validate();
 
+  /// Adds an error if the package's SDK constraint doesn't exclude Dart SDK
+  /// versions older than [firstSdkVersion].
+  @protected
+  void validateSdkConstraint(Version firstSdkVersion, String message) {
+    // If the SDK constraint disallowed all versions before [firstSdkVersion],
+    // no error is necessary.
+    if (entrypoint.root.pubspec.dartSdkConstraint
+        .intersect(new VersionRange(max: firstSdkVersion))
+        .isEmpty) {
+      return;
+    }
+
+    // Suggest that users use a non-dev SDK constraint, even if there were some
+    // dev versions that are allowed.
+    var nextNonDevVersion = firstSdkVersion.isPreRelease
+        ? firstSdkVersion.nextMinor
+        : firstSdkVersion;
+    var allowedSdks =
+        new VersionConstraint.compatibleWith(nextNonDevVersion) as VersionRange;
+
+    // Avoid ^ constraints, since they aren't supported in SDK constraints.
+    allowedSdks = new VersionRange(
+        min: allowedSdks.min,
+        max: allowedSdks.max,
+        includeMin: allowedSdks.includeMin,
+        includeMax: allowedSdks.includeMax);
+
+    var newSdkConstraint =
+        entrypoint.root.pubspec.dartSdkConstraint.intersect(allowedSdks);
+    if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
+
+    errors.add("$message\n"
+        "Make sure your SDK constraint excludes old versions:\n"
+        "\n"
+        "environment:\n"
+        "  sdk: \"$newSdkConstraint\"");
+  }
+
   /// Run all validators on the [entrypoint] package and print their results.
   ///
   /// The future completes with the error and warning messages, respectively.
@@ -54,8 +96,8 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<Pair<List<String>, List<String>>> runAll(
-      Entrypoint entrypoint, [Future<int> packageSize]) {
+  static Future<Pair<List<String>, List<String>>> runAll(Entrypoint entrypoint,
+      [Future<int> packageSize]) {
     var validators = [
       new PubspecValidator(entrypoint),
       new LicenseValidator(entrypoint),
@@ -67,20 +109,21 @@ abstract class Validator {
       new ExecutableValidator(entrypoint),
       new CompiledDartdocValidator(entrypoint),
       new Utf8ReadmeValidator(entrypoint),
-      new SdkConstraintValidator(entrypoint)
+      new SdkConstraintValidator(entrypoint),
+      new StrictDependenciesValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(new SizeValidator(entrypoint, packageSize));
     }
 
-    return Future.wait(validators.map((validator) => validator.validate()))
-      .then((_) {
-      var errors =
-          flatten(validators.map((validator) => validator.errors));
+    return Future
+        .wait(validators.map((validator) => validator.validate()))
+        .then((_) {
+      var errors = validators.expand((validator) => validator.errors).toList();
       var warnings =
-          flatten(validators.map((validator) => validator.warnings));
+          validators.expand((validator) => validator.warnings).toList();
 
-      if (!errors.isEmpty) {
+      if (errors.isNotEmpty) {
         log.error("Missing requirements:");
         for (var error in errors) {
           log.error("* ${error.split('\n').join('\n  ')}");
@@ -88,7 +131,7 @@ abstract class Validator {
         log.error("");
       }
 
-      if (!warnings.isEmpty) {
+      if (warnings.isNotEmpty) {
         log.warning("Suggestions:");
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");

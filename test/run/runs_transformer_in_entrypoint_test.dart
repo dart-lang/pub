@@ -2,9 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 const SCRIPT = """
 const TOKEN = "hi";
@@ -14,27 +16,25 @@ main() {
 """;
 
 main() {
-  integration('runs transformers in the entrypoint package', () {
-    serveBarback();
+  test('runs transformers in the entrypoint package', () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/transformer"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", dartTransformer("transformed"))
-      ])]),
-      d.dir("bin", [
-        d.file("hi.dart", SCRIPT)
-      ])
+      d.dir("lib", [
+        d.dir(
+            "src", [d.file("transformer.dart", dartTransformer("transformed"))])
+      ]),
+      d.dir("bin", [d.file("hi.dart", SCRIPT)])
     ]).create();
 
-    pubGet();
-    var pub = pubRun(args: ["bin/hi"]);
-
-    pub.stdout.expect("(hi, transformed)");
-    pub.shouldExit();
+    await pubGet();
+    var pub = await pubRun(args: ["bin/hi"]);
+    expect(pub.stdout, emits("(hi, transformed)"));
+    await pub.shouldExit();
   });
 }

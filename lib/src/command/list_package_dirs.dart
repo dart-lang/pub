@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
@@ -19,8 +20,7 @@ class ListPackageDirsCommand extends PubCommand {
 
   ListPackageDirsCommand() {
     argParser.addOption("format",
-        help: "How output should be displayed.",
-        allowed: ["json"]);
+        help: "How output should be displayed.", allowed: ["json"]);
   }
 
   void run() {
@@ -57,4 +57,3 @@ class ListPackageDirsCommand extends PubCommand {
     log.json.message(output);
   }
 }
-

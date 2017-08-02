@@ -4,9 +4,11 @@
 
 import 'dart:convert';
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
-import '../../test_pub.dart';
 import '../../serve/utils.dart';
+import '../../test_pub.dart';
 
 final transformer = """
 import 'dart:async';
@@ -32,26 +34,24 @@ class ConfigTransformer extends Transformer {
 """;
 
 main() {
-   integration("configuration defaults to an empty map", () {
-     serveBarback();
+  test("configuration defaults to an empty map", () async {
+    await serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [d.dir("src", [
-         d.file("transformer.dart", transformer)
-       ])]),
-       d.dir("web", [
-         d.file("foo.txt", "foo")
-       ])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", transformer)])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
+    ]).create();
 
-     pubGet();
-     pubServe();
-     requestShouldSucceed("foo.json", JSON.encode({}));
-     endPubServe();
-   });
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.json", JSON.encode({}));
+    await endPubServe();
+  });
 }

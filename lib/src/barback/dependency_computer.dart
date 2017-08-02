@@ -47,8 +47,9 @@ class DependencyComputer {
   /// dependencies in the computation.
   DependencyComputer(this._graph) {
     for (var package in ordered(_graph.packages.keys)) {
-      if (_graph.transitiveDependencies(package).every((dependency) =>
-            dependency.pubspec.transformers.isEmpty)) {
+      if (_graph
+          .transitiveDependencies(package)
+          .every((dependency) => dependency.pubspec.transformers.isEmpty)) {
         _untransformedPackages.add(package);
       }
     }
@@ -69,7 +70,7 @@ class DependencyComputer {
   /// `T1` to `T2`.
   Map<TransformerId, Set<TransformerId>> transformersNeededByTransformers(
       [Iterable<TransformerId> transformers]) {
-    var result = {};
+    var result = <TransformerId, Set<TransformerId>>{};
 
     if (transformers == null) {
       transformers = ordered(_graph.packages.keys).expand((packageName) {
@@ -99,8 +100,10 @@ class DependencyComputer {
   Set<TransformerId> transformersNeededByLibrary(AssetId id) {
     var library = _graph.packages[id.package].path(p.fromUri(id.path));
     _loadPackageComputer(id.package);
-    return _packageComputers[id.package].transformersNeededByLibrary(library)
-        .where((id) => !id.isBuiltInTransformer).toSet();
+    return _packageComputers[id.package]
+        .transformersNeededByLibrary(library)
+        .where((id) => !id.isBuiltInTransformer)
+        .toSet();
   }
 
   /// Returns the set of all transformers that need to be loaded before [id] is
@@ -114,7 +117,7 @@ class DependencyComputer {
       // assets and that being unable to load it will be a problem.
       throw new PubspecException(
           'Error loading transformer "$id": package "${id.package}" is not '
-              'a dependency.',
+          'a dependency.',
           id.span);
     }
 
@@ -162,8 +165,8 @@ class DependencyComputer {
       return _transformersNeededByPackages[rootPackage];
     }
 
-    var results = new Set();
-    var seen = new Set();
+    var results = new Set<TransformerId>();
+    var seen = new Set<String>();
 
     traversePackage(packageName) {
       if (seen.contains(packageName)) return;
@@ -187,11 +190,10 @@ class DependencyComputer {
         }
       }
 
-      var dependencies =
-          !_graph.entrypoint.isGlobal &&
-                  packageName == _graph.entrypoint.root.name
-              ? package.immediateDependencies
-              : package.dependencies;
+      var dependencies = !_graph.entrypoint.isGlobal &&
+              packageName == _graph.entrypoint.root.name
+          ? package.immediateDependencies
+          : package.dependencies;
       for (var dep in dependencies) {
         try {
           traversePackage(dep.name);
@@ -205,7 +207,6 @@ class DependencyComputer {
     _transformersNeededByPackages[rootPackage] = results;
     return results;
   }
-
 
   /// Ensure that a [_PackageDependencyComputer] for [packageName] is loaded.
   ///
@@ -261,8 +262,8 @@ class _PackageDependencyComputer {
   /// This is invalidated whenever [_applicableTransformers] changes.
   final _transitiveExternalDirectives = new Map<String, Set<Uri>>();
 
-  _PackageDependencyComputer(DependencyComputer dependencyComputer,
-          String packageName)
+  _PackageDependencyComputer(
+      DependencyComputer dependencyComputer, String packageName)
       : _dependencyComputer = dependencyComputer,
         _package = dependencyComputer._graph.packages[packageName] {
     var isRootPackage =
@@ -292,8 +293,10 @@ class _PackageDependencyComputer {
             // this stored set of dependencies rather than the potentially wider
             // set that would be recomputed if [transformersNeededByLibrary]
             // were called anew.
-            _transformersNeededByTransformers.putIfAbsent(id, () =>
-                transformersNeededByLibrary(_package.transformerPath(id)));
+            _transformersNeededByTransformers.putIfAbsent(
+                id,
+                () =>
+                    transformersNeededByLibrary(_package.transformerPath(id)));
           }
         } on CycleException catch (error) {
           throw error.prependStep("$packageName is transformed by $id");
@@ -340,18 +343,19 @@ class _PackageDependencyComputer {
       var externalDirectives = _getTransitiveExternalDirectives(library);
       if (externalDirectives == null) {
         var rootName = _dependencyComputer._graph.entrypoint.root.name;
-        var dependencies =
-            !_dependencyComputer._graph.entrypoint.isGlobal &&
-                    _package.name == rootName
-                ? _package.immediateDependencies
-                : _package.dependencies;
+        var dependencies = !_dependencyComputer._graph.entrypoint.isGlobal &&
+                _package.name == rootName
+            ? _package.immediateDependencies
+            : _package.dependencies;
 
         // If anything transitively imported/exported by [library] within this
         // package is modified by a transformer, we don't know what it will
         // load, so we take the conservative approach and say it depends on
         // everything.
-        return _applicableTransformers.map((config) => config.id).toSet().union(
-            unionAll(dependencies.map((dep) {
+        return _applicableTransformers
+            .map((config) => config.id)
+            .toSet()
+            .union(unionAll(dependencies.map((dep) {
           try {
             return _dependencyComputer._transformersNeededByPackage(dep.name);
           } on CycleException catch (error) {
@@ -389,10 +393,10 @@ class _PackageDependencyComputer {
       return _transitiveExternalDirectives[rootLibrary];
     }
 
-    var results = new Set();
-    var seen = new Set();
+    var results = new Set<Uri>();
+    var seen = new Set<String>();
 
-    traverseLibrary(library) {
+    traverseLibrary(String library) {
       library = p.normalize(library);
       if (seen.contains(library)) return true;
       seen.add(library);
@@ -434,8 +438,8 @@ class _PackageDependencyComputer {
   Set<Uri> _getDirectives(String library) {
     var libraryUri = p.toUri(p.normalize(library));
     var relative = p.toUri(_package.relative(library)).path;
-    if (_applicableTransformers.any((config) =>
-            config.canTransform(relative))) {
+    if (_applicableTransformers
+        .any((config) => config.canTransform(relative))) {
       _directives[libraryUri] = null;
       return null;
     }
@@ -454,8 +458,8 @@ class _PackageDependencyComputer {
 
     _directives[libraryUri] =
         parseImportsAndExports(readTextFile(library), name: library)
-        .map((directive) => Uri.parse(directive.uri.stringValue))
-        .toSet();
+            .map((directive) => Uri.parse(directive.uri.stringValue))
+            .toSet();
     return _directives[libraryUri];
   }
 }

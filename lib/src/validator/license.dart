@@ -11,21 +11,21 @@ import '../validator.dart';
 
 /// A validator that checks that a LICENSE-like file exists.
 class LicenseValidator extends Validator {
-  LicenseValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
       var licenseLike = new RegExp(
-          r"^([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)(\..*)?$");
-      if (entrypoint.root.listFiles(recursive: false, useGitIgnore: true)
+          r"^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$");
+      if (entrypoint.root
+          .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)
           .any(licenseLike.hasMatch)) {
         return;
       }
 
       errors.add(
-          "You must have a COPYING or LICENSE file in the root directory.\n"
+          "You must have a COPYING, LICENSE or UNLICENSE file in the root directory.\n"
           "An open-source license helps ensure people can legally use your "
           "code.");
     });

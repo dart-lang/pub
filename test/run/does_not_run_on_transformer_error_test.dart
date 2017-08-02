@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -30,32 +32,28 @@ class FailingTransformer extends Transformer {
 """;
 
 main() {
-   integration('does not run if a transformer has an error', () {
-     serveBarback();
+  test('does not run if a transformer has an error', () async {
+    await serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": ["myapp/src/transformer"],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [
-         d.dir("src", [
-           d.file("transformer.dart", TRANSFORMER)
-         ])
-       ]),
-       d.dir("bin", [
-         d.file("script.dart", SCRIPT)
-       ])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": ["myapp/src/transformer"],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("bin", [d.file("script.dart", SCRIPT)])
+    ]).create();
 
-     pubGet();
-     var pub = pubRun(args: ["bin/script"]);
+    await pubGet();
+    var pub = await pubRun(args: ["bin/script"]);
 
-     pub.stderr.expect("[Error from Failing]:");
-     pub.stderr.expect("myapp|bin/script.dart.");
+    expect(pub.stderr, emits("[Error from Failing]:"));
+    expect(pub.stderr, emits("myapp|bin/script.dart."));
 
-     // Note: no output from the script.
-     pub.shouldExit();
-   });
+    // Note: no output from the script.
+    await pub.shouldExit();
+  });
 }

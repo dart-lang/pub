@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
 import 'dart:convert';
 
 import '../descriptor.dart' as d;
@@ -10,18 +12,20 @@ import '../test_pub.dart';
 /// Runs the hosted test server and serves a valid "browser" package that
 /// contains the same files (but not their contents) as the real browser
 /// package.
-void serveBrowserPackage() {
-  serve([
+Future serveBrowserPackage() {
+  return serve([
     d.dir('api', [
       d.dir('packages', [
-        d.file('browser', JSON.encode({
-          'versions': [packageVersionApiMap(packageMap('browser', '1.0.0'))]
-        })),
+        d.file(
+            'browser',
+            JSON.encode({
+              'versions': [packageVersionApiMap(packageMap('browser', '1.0.0'))]
+            })),
         d.dir('browser', [
           d.dir('versions', [
-            d.file('1.0.0', JSON.encode(
-                packageVersionApiMap(
-                    packageMap('browser', '1.0.0'),
+            d.file(
+                '1.0.0',
+                JSON.encode(packageVersionApiMap(packageMap('browser', '1.0.0'),
                     full: true)))
           ])
         ])

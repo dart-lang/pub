@@ -20,16 +20,24 @@ class GetCommand extends PubCommand {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
 
-    argParser.addFlag('dry-run', abbr: 'n', negatable: false,
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
-    argParser.addFlag('precompile', defaultsTo: true,
+    argParser.addFlag('precompile',
+        defaultsTo: true,
         help: "Precompile executables and transformed dependencies.");
+
+    argParser.addFlag('packages-dir',
+        negatable: true,
+        help: "Generate a packages/ directory when installing packages.");
   }
 
   Future run() {
     return entrypoint.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'],
-        precompile: argResults['precompile']);
+        precompile: argResults['precompile'],
+        packagesDir: argResults['packages-dir']);
   }
 }

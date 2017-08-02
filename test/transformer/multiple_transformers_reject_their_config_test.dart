@@ -2,12 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_stream.dart';
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 const REJECT_CONFIG_TRANSFORMER = """
 import 'dart:async';
@@ -25,33 +24,44 @@ class RejectConfigTransformer extends Transformer {
 """;
 
 main() {
-    integration("multiple transformers in the same phase reject their "
-        "configurations", () {
-      serveBarback();
+  test(
+      "multiple transformers in the same phase reject their "
+      "configurations", () async {
+    await serveBarback();
 
-      d.dir(appPath, [
-        d.pubspec({
-          "name": "myapp",
-          "transformers": [[
-            {"myapp/src/transformer": {'foo': 'bar'}},
-            {"myapp/src/transformer": {'baz': 'bang'}},
-            {"myapp/src/transformer": {'qux': 'fblthp'}}
-          ]],
-          "dependencies": {"barback": "any"}
-        }),
-        d.dir("lib", [d.dir("src", [
-          d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)
-        ])])
-      ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          [
+            {
+              "myapp/src/transformer": {'foo': 'bar'}
+            },
+            {
+              "myapp/src/transformer": {'baz': 'bang'}
+            },
+            {
+              "myapp/src/transformer": {'qux': 'fblthp'}
+            }
+          ]
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REJECT_CONFIG_TRANSFORMER)])
+      ])
+    ]).create();
 
-      pubGet();
-      // We should see three instances of the error message, once for each
-      // use of the transformer.
-      var pub = startPubServe();
-      for (var i = 0; i < 3; i++) {
-        pub.stderr.expect(consumeThrough(endsWith('Error loading transformer: '
-            'I hate these settings!')));
-      }
-      pub.shouldExit(1);
-    });
+    await pubGet();
+    // We should see three instances of the error message, once for each
+    // use of the transformer.
+    var pub = await startPubServe();
+    for (var i = 0; i < 3; i++) {
+      expect(
+          pub.stderr,
+          emitsThrough(endsWith('Error loading transformer: '
+              'I hate these settings!')));
+    }
+    await pub.shouldExit(1);
+  });
 }

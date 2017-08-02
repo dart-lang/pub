@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
@@ -22,33 +24,33 @@ class BrokenTransformer extends Transformer {
 """;
 
 main() {
-   integration("doesn't load an unnecessary transformer", () {
-     serveBarback();
+  test("doesn't load an unnecessary transformer", () async {
+    await serveBarback();
 
-     d.dir(appPath, [
-       d.pubspec({
-         "name": "myapp",
-         "transformers": [
-           {"myapp/src/transformer": {r"$include": "lib/myapp.dart"}}
-         ],
-         "dependencies": {"barback": "any"}
-       }),
-       d.dir("lib", [
-         d.file("myapp.dart", ""),
-         d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
-       ]),
-       d.dir("bin", [
-         d.file("hi.dart", "void main() => print('Hello!');")
-       ])
-     ]).create();
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "transformers": [
+          {
+            "myapp/src/transformer": {r"$include": "lib/myapp.dart"}
+          }
+        ],
+        "dependencies": {"barback": "any"}
+      }),
+      d.dir("lib", [
+        d.file("myapp.dart", ""),
+        d.dir("src", [d.file("transformer.dart", TRANSFORMER)])
+      ]),
+      d.dir("bin", [d.file("hi.dart", "void main() => print('Hello!');")])
+    ]).create();
 
-     pubGet();
+    await pubGet();
 
-     // This shouldn't load the transformer, since it doesn't transform
-     // anything that the entrypoint imports. If it did load the transformer,
-     // we'd know since it would throw an exception.
-     var pub = pubRun(args: ["bin/hi"]);
-     pub.stdout.expect("Hello!");
-     pub.shouldExit();
-   });
+    // This shouldn't load the transformer, since it doesn't transform
+    // anything that the entrypoint imports. If it did load the transformer,
+    // we'd know since it would throw an exception.
+    var pub = await pubRun(args: ["bin/hi"]);
+    expect(pub.stdout, emits("Hello!"));
+    await pub.shouldExit();
+  });
 }

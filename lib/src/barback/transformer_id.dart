@@ -63,7 +63,7 @@ class TransformerId {
         'Unsupported built-in transformer $package.', span);
   }
 
-  bool operator==(other) =>
+  bool operator ==(other) =>
       other is TransformerId && other.package == package && other.path == path;
 
   int get hashCode => package.hashCode ^ path.hashCode;
@@ -80,14 +80,17 @@ class TransformerId {
   /// [getAssetId], this doesn't take generated assets into account; it's used
   /// to determine transformers' dependencies, which requires looking at files
   /// on disk.
-  Future<AssetId> getAssetId(Barback barback) {
+  Future<AssetId> getAssetId(Barback barback) async {
     if (path != null) {
-      return new Future.value(new AssetId(package, 'lib/$path.dart'));
+      return new AssetId(package, 'lib/$path.dart');
     }
 
     var transformerAsset = new AssetId(package, 'lib/transformer.dart');
-    return barback.getAssetById(transformerAsset).then((_) => transformerAsset)
-        .catchError((e) => new AssetId(package, 'lib/$package.dart'),
-            test: (e) => e is AssetNotFoundException);
+    try {
+      await barback.getAssetById(transformerAsset);
+      return transformerAsset;
+    } on AssetNotFoundException catch (_) {
+      return new AssetId(package, 'lib/$package.dart');
+    }
   }
 }

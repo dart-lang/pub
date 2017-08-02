@@ -58,8 +58,10 @@ class TransformerCache {
       // that's fine; we just won't load them.
       if (!_graph.packages.containsKey(id.package)) return new Set();
 
-      return _graph.transitiveDependencies(id.package)
-          .map((package) => package.name).toSet();
+      return _graph
+          .transitiveDependencies(id.package)
+          .map((package) => package.name)
+          .toSet();
     }));
 
     // If none of the snapshot's dependencies have changed, then we can reuse
@@ -110,16 +112,17 @@ class TransformerCache {
     if (_oldTransformers.containsAll(_newTransformers)) return;
 
     ensureDir(_dir);
-    writeTextFile(_manifestPath,
+    writeTextFile(
+        _manifestPath,
         "${sdk.version}\n" +
-        ordered(_newTransformers.map((id) => id.serialize())).join(","));
+            ordered(_newTransformers.map((id) => id.serialize())).join(","));
   }
 
   /// Parses the cache manifest and returns the set of previously-cached
   /// transformers.
   ///
   /// If the manifest indicates that the SDK version is out-of-date, this
-  /// deletes the existing cache. Otherwise, 
+  /// deletes the existing cache. Otherwise,
   Set<TransformerId> _parseManifest() {
     if (!fileExists(_manifestPath)) return new Set();
 
@@ -135,7 +138,8 @@ class TransformerCache {
 
     /// The second line of the manifest is a list of transformer ids used to
     /// create the existing snapshot.
-    return manifest.single.split(",")
+    return manifest.single
+        .split(",")
         .map((id) => new TransformerId.parse(id, null))
         .toSet();
   }

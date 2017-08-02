@@ -2,32 +2,36 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration('with an expired credentials.json without a refresh token, '
-       'authenticates again and saves credentials.json', () {
-    d.validPackage.create();
+  test(
+      'with an expired credentials.json without a refresh token, '
+      'authenticates again and saves credentials.json', () async {
+    await d.validPackage.create();
 
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token',
-        expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+    var server = await ShelfTestServer.create();
+    await d
+        .credentialsFile(server, 'access token',
+            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
         .create();
 
-    var pub = startPublish(server);
-    confirmPublish(pub);
+    var pub = await startPublish(server);
+    await confirmPublish(pub);
 
-    pub.stderr.expect("Pub's authorization to upload packages has expired and "
-        "can't be automatically refreshed.");
-    authorizePub(pub, server, "new access token");
+    await expectLater(
+        pub.stderr,
+        emits("Pub's authorization to upload packages has expired and "
+            "can't be automatically refreshed."));
+    await authorizePub(pub, server, "new access token");
 
-    server.handle('GET', '/api/packages/versions/new', (request) {
+    server.handler.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -36,8 +40,8 @@ main() {
 
     // After we give pub an invalid response, it should crash. We wait for it to
     // do so rather than killing it so it'll write out the credentials file.
-    pub.shouldExit(1);
+    await pub.shouldExit(1);
 
-    d.credentialsFile(server, 'new access token').validate();
+    await d.credentialsFile(server, 'new access token').validate();
   });
 }

@@ -10,13 +10,17 @@ import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'barback/asset_environment.dart';
+import 'compiler.dart';
+import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exe;
+import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
@@ -75,11 +79,13 @@ class GlobalPackages {
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
   ///
-  /// if [overwriteBinStubs] is `true`, any binstubs that collide with
+  /// The [features] map controls which features of the package to activate.
+  ///
+  /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future activateGit(String repo, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
     // Call this just to log what the current active package is, if any.
     _describeActive(name);
@@ -89,13 +95,18 @@ class GlobalPackages {
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
     await _installInCache(
-        cache.git.source.refFor(name, repo)
-            .withConstraint(VersionConstraint.any),
-        executables, overwriteBinStubs: overwriteBinStubs);
+        cache.git.source
+            .refFor(name, repo)
+            .withConstraint(VersionConstraint.any)
+            .withFeatures(features ?? const {}),
+        executables,
+        overwriteBinStubs: overwriteBinStubs);
   }
 
   /// Finds the latest version of the hosted package with [name] that matches
   /// [constraint] and makes it the active global version.
+  ///
+  /// The [features] map controls which features of the package to activate.
   ///
   /// [executables] is the names of the executables that should have binstubs.
   /// If `null`, all executables in the package will get binstubs. If empty, no
@@ -104,11 +115,15 @@ class GlobalPackages {
   /// if [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future activateHosted(String name, VersionConstraint constraint,
-      List<String> executables, {bool overwriteBinStubs}) async {
+  Future activateHosted(
+      String name, VersionConstraint constraint, List<String> executables,
+      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     _describeActive(name);
     await _installInCache(
-        cache.hosted.source.refFor(name).withConstraint(constraint),
+        cache.hosted.source
+            .refFor(name)
+            .withConstraint(constraint)
+            .withFeatures(features ?? const {}),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }
@@ -146,10 +161,11 @@ class GlobalPackages {
 
     _updateBinStubs(entrypoint.root, executables,
         overwriteBinStubs: overwriteBinStubs);
+    log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
-  Future _installInCache(PackageDep dep, List<String> executables,
+  Future _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = new Package.inMemory(new Pubspec("pub global activate",
@@ -167,53 +183,95 @@ class GlobalPackages {
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.
-    await Future.wait(result.packages.map(_cacheDependency));
+    await Future.wait(result.packages.map((id) {
+      return http.withDependencyType(root.dependencyType(id.name), () async {
+        if (id.isRoot) return;
 
-    // Load the package graph from [result] so we don't need to re-parse all
-    // the pubspecs.
-    var entrypoint = new Entrypoint.fromSolveResult(root, cache, result,
-        isGlobal: true);
-    var snapshots = await _precompileExecutables(entrypoint, dep.name);
+        var source = cache.source(id.source);
+        if (source is CachedSource) await source.downloadToSystemCache(id);
+      });
+    }));
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
     writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile(cache));
 
+    // Load the package graph from [result] so we don't need to re-parse all
+    // the pubspecs.
+    var entrypoint =
+        new Entrypoint.fromSolveResult(root, cache, result, isGlobal: true);
+    var snapshots = await _precompileExecutables(entrypoint, dep.name);
+
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
         overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
+
+    var id = lockFile.packages[dep.name];
+    log.message('Activated ${_formatPackage(id)}.');
   }
 
-  /// Precompiles the executables for [package] and saves them in the global
+  /// Precompiles the executables for [packageName] and saves them in the global
   /// cache.
   ///
   /// Returns a map from executable name to path for the snapshots that were
   /// successfully precompiled.
-  Future<Map<String, String>> _precompileExecutables(Entrypoint entrypoint,
-      String package) {
-    return log.progress("Precompiling executables", () async {
-      var binDir = p.join(_directory, package, 'bin');
+  Future<Map<String, String>> _precompileExecutables(
+      Entrypoint entrypoint, String packageName) {
+    return log.progress("Precompiling executables", () {
+      var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
-      var environment = await AssetEnvironment.create(
-          entrypoint, BarbackMode.RELEASE,
-          entrypoints: entrypoint.packageGraph.packages[package].executableIds,
-          useDart2JS: false);
-      environment.barback.errors.listen((error) {
-        log.error(log.red("Build error:\n$error"));
-      });
-
-      return environment.precompileExecutables(package, binDir);
+      // Try to avoid starting up an asset server to precompile packages if
+      // possible. This is faster and produces better error messages.
+      var package = entrypoint.packageGraph.packages[packageName];
+      if (entrypoint.packageGraph
+          .transitiveDependencies(packageName)
+          .every((package) => package.pubspec.transformers.isEmpty)) {
+        return _precompileExecutablesWithoutBarback(package, binDir);
+      } else {
+        return _precompileExecutablesWithBarback(entrypoint, package, binDir);
+      }
     });
   }
 
-  /// Downloads [id] into the system cache if it's a cached package.
-  Future _cacheDependency(PackageId id) async {
-    if (id.isRoot) return;
+  //// Precompiles all executables in [package] to snapshots from the
+  //// filesystem.
+  ////
+  //// The snapshots are placed in [dir].
+  ////
+  //// Returns a map from executable basenames without extensions to the paths
+  //// to those executables.
+  Future<Map<String, String>> _precompileExecutablesWithoutBarback(
+      Package package, String dir) async {
+    var precompiled = {};
+    await waitAndPrintErrors(package.executableIds.map((id) async {
+      var url = p.toUri(package.dir);
+      url = url.replace(path: p.url.join(url.path, id.path));
+      var basename = p.url.basename(id.path);
+      var snapshotPath = p.join(dir, '$basename.snapshot');
+      await dart.snapshot(url, snapshotPath,
+          packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
+      precompiled[p.withoutExtension(basename)] = snapshotPath;
+    }));
+    return precompiled;
+  }
 
-    var source = cache.source(id.source);
-    if (source is! CachedSource) return;
+  //// Precompiles all executables in [package] to snapshots from a barback
+  //// asset environment.
+  ////
+  //// The snapshots are placed in [dir].
+  ////
+  //// Returns a map from executable basenames without extensions to the paths
+  //// to those executables.
+  Future<Map<String, String>> _precompileExecutablesWithBarback(
+      Entrypoint entrypoint, Package package, String dir) async {
+    var environment = await AssetEnvironment.create(
+        entrypoint, BarbackMode.RELEASE,
+        entrypoints: package.executableIds, compiler: Compiler.none);
+    environment.barback.errors.listen((error) {
+      log.error(log.red("Build error:\n$error"));
+    });
 
-    await source.downloadToSystemCache(id);
+    return environment.precompileExecutables(package.name, dir);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -227,9 +285,6 @@ class GlobalPackages {
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
     writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
-
-    var id = lockFile.packages[package];
-    log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Shows the user the currently active package with [name], if any.
@@ -311,8 +366,8 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = new Entrypoint.inMemory(
-          cache.load(id), lockFile, cache, isGlobal: true);
+      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache,
+          isGlobal: true);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -345,8 +400,9 @@ class GlobalPackages {
   /// [BarbackMode.RELEASE].
   ///
   /// Returns the exit code from the executable.
-  Future<int> runExecutable(String package, String executable,
-      Iterable<String> args, {bool checked: false, BarbackMode mode}) {
+  Future<int> runExecutable(
+      String package, String executable, Iterable<String> args,
+      {bool checked: false, BarbackMode mode}) {
     if (mode == null) mode = BarbackMode.RELEASE;
 
     var binDir = p.join(_directory, package, 'bin');
@@ -363,8 +419,7 @@ class GlobalPackages {
     }
 
     var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
-    return exe.runSnapshot(snapshotPath, args,
-        checked: checked,
+    return exe.runSnapshot(snapshotPath, args, checked: checked,
         recompile: () async {
       log.fine("$package:$executable is out of date and needs to be "
           "recompiled.");
@@ -388,8 +443,8 @@ class GlobalPackages {
     if (!dirExists(_directory)) return;
 
     listDir(_directory).map(_loadPackageId).toList()
-        ..sort((id1, id2) => id1.name.compareTo(id2.name))
-        ..forEach((id) => log.message(_formatPackage(id)));
+      ..sort((id1, id2) => id1.name.compareTo(id2.name))
+      ..forEach((id) => log.message(_formatPackage(id)));
   }
 
   /// Returns the [PackageId] for the globally-activated package at [path].
@@ -430,9 +485,8 @@ class GlobalPackages {
   ///
   /// Returns a pair of two lists of strings. The first indicates which packages
   /// were successfully re-activated; the second indicates which failed.
-  Future<Pair<List<String>, List<String>>> repairActivatedPackages()
-      async {
-    var executables = {};
+  Future<Pair<List<String>, List<String>>> repairActivatedPackages() async {
+    var executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
         try {
@@ -451,16 +505,17 @@ class GlobalPackages {
         } catch (error, stackTrace) {
           log.error(
               "Error reading binstub for "
-                  "\"${p.basenameWithoutExtension(entry)}\"",
-              error, stackTrace);
+              "\"${p.basenameWithoutExtension(entry)}\"",
+              error,
+              stackTrace);
 
           tryDeleteEntry(entry);
         }
       }
     }
 
-    var successes = [];
-    var failures = [];
+    var successes = <String>[];
+    var failures = <String>[];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
         var id;
@@ -473,8 +528,7 @@ class GlobalPackages {
           var packageExecutables = executables.remove(id.name);
           if (packageExecutables == null) packageExecutables = [];
           _updateBinStubs(
-              entrypoint.packageGraph.packages[id.name],
-              packageExecutables,
+              entrypoint.packageGraph.packages[id.name], packageExecutables,
               overwriteBinStubs: true,
               snapshots: snapshots,
               suggestIfNotOnPath: false);
@@ -501,8 +555,8 @@ class GlobalPackages {
       executables.forEach((package, executableNames) {
         // TODO(nweiz): Use a normal for loop here when
         // https://github.com/dart-lang/async_await/issues/68 is fixed.
-        executableNames.forEach((executable) =>
-            deleteEntry(p.join(_binStubDir, executable)));
+        executableNames.forEach(
+            (executable) => deleteEntry(p.join(_binStubDir, executable)));
 
         message.writeln("  From ${log.bold(package)}: "
             "${toSentence(executableNames)}");
@@ -536,8 +590,9 @@ class GlobalPackages {
   /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
   /// the bin directory isn't on their path.
   void _updateBinStubs(Package package, List<String> executables,
-      {bool overwriteBinStubs, Map<String, String> snapshots,
-       bool suggestIfNotOnPath: true}) {
+      {bool overwriteBinStubs,
+      Map<String, String> snapshots,
+      bool suggestIfNotOnPath: true}) {
     if (snapshots == null) snapshots = const {};
 
     // Remove any previously activated binstubs for this package, in case the
@@ -551,8 +606,8 @@ class GlobalPackages {
 
     ensureDir(_binStubDir);
 
-    var installed = [];
-    var collided = {};
+    var installed = <String>[];
+    var collided = <String, String>{};
     var allExecutables = ordered(package.pubspec.executables.keys);
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;
@@ -595,8 +650,8 @@ class GlobalPackages {
 
     // Show errors for any unknown executables.
     if (executables != null) {
-      var unknown = ordered(executables.where(
-          (exe) => !package.pubspec.executables.keys.contains(exe)));
+      var unknown = ordered(executables
+          .where((exe) => !package.pubspec.executables.keys.contains(exe)));
       if (unknown.isNotEmpty) {
         dataError("Unknown ${namedSequence('executable', unknown)}.");
       }
@@ -605,7 +660,8 @@ class GlobalPackages {
     // Show errors for any missing scripts.
     // TODO(rnystrom): This can print false positives since a script may be
     // produced by a transformer. Do something better.
-    var binFiles = package.listFiles(beneath: "bin", recursive: false)
+    var binFiles = package
+        .listFiles(beneath: "bin", recursive: false)
         .map((path) => package.relative(path))
         .toList();
     for (var executable in installed) {
@@ -767,28 +823,30 @@ pub global run ${package.name}:$script "\$@"
       var result = runProcessSync("where", [r"\q", installed + ".bat"]);
       if (result.exitCode == 0) return;
 
-      log.warning(
-          "${log.yellow('Warning:')} Pub installs executables into "
-              "${log.bold(_binStubDir)}, which is not on your path.\n"
+      log.warning("${log.yellow('Warning:')} Pub installs executables into "
+          "${log.bold(_binStubDir)}, which is not on your path.\n"
           "You can fix that by adding that directory to your system's "
-              '"Path" environment variable.\n'
+          '"Path" environment variable.\n'
           'A web search for "configure windows path" will show you how.');
     } else {
       // See if the shell can find one of the binstubs.
-      var result = runProcessSync("which", [installed]);
+      //
+      // The "command" builtin is more reliable than the "which" executable. See
+      // http://unix.stackexchange.com/questions/85249/why-not-use-which-what-to-use-then
+      var result =
+          runProcessSync("command", ["-v", installed], runInShell: true);
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
       if (binDir.startsWith(Platform.environment['HOME'])) {
-        binDir = p.join("~", p.relative(binDir,
-            from: Platform.environment['HOME']));
+        binDir =
+            p.join("~", p.relative(binDir, from: Platform.environment['HOME']));
       }
 
-      log.warning(
-          "${log.yellow('Warning:')} Pub installs executables into "
-              "${log.bold(binDir)}, which is not on your path.\n"
+      log.warning("${log.yellow('Warning:')} Pub installs executables into "
+          "${log.bold(binDir)}, which is not on your path.\n"
           "You can fix that by adding this to your shell's config file "
-              "(.bashrc, .bash_profile, etc.):\n"
+          "(.bashrc, .bash_profile, etc.):\n"
           "\n"
           "  ${log.bold('export PATH="\$PATH":"$binDir"')}\n"
           "\n");

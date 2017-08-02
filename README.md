@@ -59,11 +59,7 @@ included in the repository as [Git submodules][]. To get them, run:
 
 Changes to pub should be accompanied by one or more tests that exercise the new
 functionality. When adding a test, the best strategy is to find a similar test
-in `test/` and follow the same patterns. Note that pub makes wide use of the
-[scheduled_test] package in its tests, so it's usually important to be familiar
-with that when adding tests.
-
-[scheduled_test]: http://pub.dartlang.org/packages/scheduled_test
+in `test/` and follow the same patterns.
 
 Pub tests come in two basic forms. The first, which is usually used to unit test
 classes and libraries internal to pub, has many tests in a single file. This is

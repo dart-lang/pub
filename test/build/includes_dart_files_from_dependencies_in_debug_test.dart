@@ -5,15 +5,14 @@
 // Dart2js can take a long time to compile dart code, so we increase the timeout
 // to cope with that.
 @Timeout.factor(3)
-
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration("includes .dart files from dependencies in debug mode", () {
-    d.dir("foo", [
+  test("includes .dart files from dependencies in debug mode", () async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
       d.dir("lib", [
         d.file('foo.dart', 'foo() => print("hello");'),
@@ -23,23 +22,23 @@ main() {
       ])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
       d.dir("example", [
         d.file("main.dart", 'myapp() => print("not entrypoint");'),
-        d.dir("sub", [
-          d.file("main.dart", 'myapp() => print("not entrypoint");')
-        ])
+        d.dir(
+            "sub", [d.file("main.dart", 'myapp() => print("not entrypoint");')])
       ])
     ]).create();
 
-    pubGet();
-    schedulePub(args: ["build", "--mode", "debug", "example"],
+    await pubGet();
+    await runPub(
+        args: ["build", "--mode", "debug", "example"],
         output: new RegExp(r'Built \d+ files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir('build', [
         d.dir('example', [
           d.file("main.dart", 'myapp() => print("not entrypoint");'),

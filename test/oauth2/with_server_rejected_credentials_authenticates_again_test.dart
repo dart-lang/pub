@@ -4,34 +4,38 @@
 
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_server.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  integration('with server-rejected credentials, authenticates again and saves '
-      'credentials.json', () {
-    d.validPackage.create();
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server);
+  test(
+      'with server-rejected credentials, authenticates again and saves '
+      'credentials.json', () async {
+    await d.validPackage.create();
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server);
 
-    confirmPublish(pub);
+    await confirmPublish(pub);
 
-    server.handle('GET', '/api/packages/versions/new', (request) {
+    server.handler.expect('GET', '/api/packages/versions/new', (request) {
       return new shelf.Response(401,
-          body: JSON.encode({'error': {'message': 'your token sucks'}}),
+          body: JSON.encode({
+            'error': {'message': 'your token sucks'}
+          }),
           headers: {
-        'www-authenticate': 'Bearer error="invalid_token",'
-            ' error_description="your token sucks"'
-      });
+            'www-authenticate': 'Bearer error="invalid_token",'
+                ' error_description="your token sucks"'
+          });
     });
 
-    pub.stderr.expect('OAuth2 authorization failed (your token sucks).');
-    pub.stdout.expect(startsWith('Uploading...'));
-    pub.kill();
+    await expectLater(
+        pub.stderr, emits('OAuth2 authorization failed (your token sucks).'));
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    await pub.kill();
   });
 }

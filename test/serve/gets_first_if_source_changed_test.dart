@@ -4,38 +4,41 @@
 
 import 'dart:convert';
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 main() {
-  integration("gets first if a dependency's source doesn't match the one in "
-      "the lock file", () {
-    d.dir("foo", [
-      d.libPubspec("foo", "0.0.1"),
-      d.libDir("foo")
-    ]).create();
+  test(
+      "gets first if a dependency's source doesn't match the one in "
+      "the lock file", () async {
+    await d
+        .dir("foo", [d.libPubspec("foo", "0.0.1"), d.libDir("foo")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       // A pubspec with a path source.
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
       // A lock file with the hosted source.
-      d.file("pubspec.lock", JSON.encode({
-        'packages': {
-          'foo': {
-            'version': '0.0.0',
-            'source': 'hosted',
-            'description': 'foo'
-          }
-        }
-      }))
+      d.file(
+          "pubspec.lock",
+          JSON.encode({
+            'packages': {
+              'foo': {
+                'version': '0.0.0',
+                'source': 'hosted',
+                'description': 'foo'
+              }
+            }
+          }))
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("packages/foo/foo.dart", 'main() => "foo";');
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("packages/foo/foo.dart", 'main() => "foo";');
+    await endPubServe();
   });
 }

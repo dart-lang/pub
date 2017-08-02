@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
@@ -10,28 +12,25 @@ import 'utils.dart';
 // for the polling watcher when issue 14941 is fixed.
 
 main() {
-  integration("picks up files added after serving started when using the "
-      "native watcher", () {
-    d.dir(appPath, [
+  test(
+      "picks up files added after serving started when using the "
+      "native watcher", () async {
+    await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("web", [
-        d.file("index.html", "body")
-      ])
+      d.dir("web", [d.file("index.html", "body")])
     ]).create();
 
-    pubGet();
-    pubServe(args: ["--no-force-poll"]);
-    waitForBuildSuccess();
-    requestShouldSucceed("index.html", "body");
+    await pubGet();
+    await pubServe(args: ["--no-force-poll"]);
+    await waitForBuildSuccess();
+    await requestShouldSucceed("index.html", "body");
 
-    d.dir(appPath, [
-      d.dir("web", [
-        d.file("other.html", "added")
-      ])
+    await d.dir(appPath, [
+      d.dir("web", [d.file("other.html", "added")])
     ]).create();
 
-    waitForBuildSuccess();
-    requestShouldSucceed("other.html", "added");
-    endPubServe();
+    await waitForBuildSuccess();
+    await requestShouldSucceed("other.html", "added");
+    await endPubServe();
   });
 }

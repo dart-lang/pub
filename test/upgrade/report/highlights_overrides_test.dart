@@ -2,24 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("highlights overridden packages", () {
-    servePackages((builder) => builder.serve("overridden", "1.0.0"));
+  test("highlights overridden packages", () async {
+    await servePackages((builder) => builder.serve("overridden", "1.0.0"));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependency_overrides": {
-          "overridden": "any"
-        }
+        "dependency_overrides": {"overridden": "any"}
       })
     ]).create();
 
     // Upgrade everything.
-    pubUpgrade(output: new RegExp(r"""
+    await pubUpgrade(output: new RegExp(r"""
 Resolving dependencies\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
 """, multiLine: true));

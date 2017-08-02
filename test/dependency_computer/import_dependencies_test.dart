@@ -2,19 +2,25 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("reports a dependency if a transformed local file is imported",
-      () {
-    d.dir(appPath, [
+  test("reports a dependency if a transformed local file is imported",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}},
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          },
           "myapp"
         ]
       }),
@@ -25,20 +31,25 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed foreign file is imported",
-      () {
-    d.dir(appPath, [
+  test("reports a dependency if a transformed foreign file is imported",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -47,27 +58,35 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed external package file is "
-      "imported from an export", () {
-    d.dir(appPath, [
+  test(
+      "reports a dependency if a transformed external package file is "
+      "imported from an export", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -77,27 +96,35 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed foreign file is "
-      "transitively imported", () {
-    d.dir(appPath, [
+  test(
+      "reports a dependency if a transformed foreign file is "
+      "transitively imported", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -107,11 +134,15 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
       d.dir("lib", [
         d.file("foo.dart", ""),
@@ -120,15 +151,21 @@ void main() {
       ])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 
-  integration("reports a dependency if a transformed foreign file is "
-      "transitively imported across packages", () {
-    d.dir(appPath, [
+  test(
+      "reports a dependency if a transformed foreign file is "
+      "transitively imported across packages", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": ["myapp"]
       }),
       d.dir("lib", [
@@ -137,38 +174,50 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "dependencies": {"bar": {"path": "../bar"}}
+        "dependencies": {
+          "bar": {"path": "../bar"}
+        }
       }),
       d.dir("lib", [d.file("foo.dart", "import 'package:bar/bar.dart';")])
     ]).create();
 
-    d.dir("bar", [
+    await d.dir("bar", [
       d.pubspec({
         "name": "bar",
         "version": "1.0.0",
-        "transformers": [{"bar": {"\$include": "lib/bar.dart"}}]
+        "transformers": [
+          {
+            "bar": {"\$include": "lib/bar.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("bar.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("bar.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['bar'], 'bar': []});
+    expectDependencies({
+      'myapp': ['bar'],
+      'bar': []
+    });
   });
 
-  integration("reports a dependency if an imported file is transformed by a "
-      "different package", () {
-    d.dir(appPath, [
+  test(
+      "reports a dependency if an imported file is transformed by a "
+      "different package", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {'\$include': 'lib/local.dart'}},
+          {
+            "foo": {'\$include': 'lib/local.dart'}
+          },
           "myapp"
         ]
       }),
@@ -179,11 +228,14 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("transformer.dart", transformer())])
     ]).create();
 
-    expectDependencies({'myapp': ['foo'], 'foo': []});
+    expectDependencies({
+      'myapp': ['foo'],
+      'foo': []
+    });
   });
 }

@@ -9,12 +9,14 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../exceptions.dart';
+import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
-import '../system_cache.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'backtracking_solver.dart';
 import 'solve_report.dart';
@@ -29,8 +31,9 @@ import 'solve_report.dart';
 /// packages.
 ///
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
-Future<SolveResult> resolveVersions(SolveType type, SystemCache cache,
-    Package root, {LockFile lockFile, List<String> useLatest}) {
+Future<SolveResult> resolveVersions(
+    SolveType type, SystemCache cache, Package root,
+    {LockFile lockFile, List<String> useLatest}) {
   if (lockFile == null) lockFile = new LockFile.empty();
   if (useLatest == null) useLatest = [];
 
@@ -50,7 +53,7 @@ class SolveResult {
   final List<PackageId> packages;
 
   /// The dependency overrides that were used in the solution.
-  final List<PackageDep> overrides;
+  final List<PackageRange> overrides;
 
   /// A map from package names to the pubspecs for the versions of those
   /// packages that were installed, or `null` if the solver failed.
@@ -84,8 +87,8 @@ class SolveResult {
             !_root.dependencyOverrides.any((dep) => dep.name == pubspec.name))
         .toList();
 
-    var dartMerged = new VersionConstraint.intersection(nonOverrides
-        .map((pubspec) => pubspec.dartSdkConstraint));
+    var dartMerged = new VersionConstraint.intersection(
+        nonOverrides.map((pubspec) => pubspec.dartSdkConstraint));
 
     var flutterConstraints = nonOverrides
         .map((pubspec) => pubspec.flutterSdkConstraint)
@@ -96,8 +99,7 @@ class SolveResult {
         : new VersionConstraint.intersection(flutterConstraints);
 
     return new LockFile(packages,
-        dartSdkConstraint: dartMerged,
-        flutterSdkConstraint: flutterMerged);
+        dartSdkConstraint: dartMerged, flutterSdkConstraint: flutterMerged);
   }
 
   final SourceRegistry _sources;
@@ -112,15 +114,22 @@ class SolveResult {
 
     var changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
-        .map((id) => id.name).toSet();
+        .map((id) => id.name)
+        .toSet();
 
     return changed.union(_previousLockFile.packages.keys
         .where((package) => !availableVersions.containsKey(package))
         .toSet());
   }
 
-  SolveResult.success(this._sources, this._root, this._previousLockFile,
-      this.packages, this.overrides, this.pubspecs, this.availableVersions,
+  SolveResult.success(
+      this._sources,
+      this._root,
+      this._previousLockFile,
+      this.packages,
+      this.overrides,
+      this.pubspecs,
+      this.availableVersions,
       this.attemptedSolutions)
       : error = null;
 
@@ -149,11 +158,11 @@ class SolveResult {
   String toString() {
     if (!succeeded) {
       return 'Failed to solve after $attemptedSolutions attempts:\n'
-             '$error';
+          '$error';
     }
 
     return 'Took $attemptedSolutions tries to resolve to\n'
-           '- ${packages.join("\n- ")}';
+        '- ${packages.join("\n- ")}';
   }
 }
 
@@ -170,6 +179,12 @@ class SolverCache {
   /// The type of version resolution that was run.
   final SolveType _type;
 
+  /// The root package being solved.
+  ///
+  /// This is used to send metadata about the relationship between the packages
+  /// being requested and the root package.
+  final Package _root;
+
   /// The number of times a version list was requested and it wasn't cached and
   /// had to be requested from the source.
   int _versionCacheMisses = 0;
@@ -178,7 +193,7 @@ class SolverCache {
   /// was returned.
   int _versionCacheHits = 0;
 
-  SolverCache(this._type, this._cache);
+  SolverCache(this._type, this._cache, this._root);
 
   /// Gets the list of versions for [package].
   ///
@@ -210,9 +225,10 @@ class SolverCache {
     _versionCacheMisses++;
 
     var source = _cache.source(package.source);
-    var ids;
+    List<PackageId> ids;
     try {
-      ids = await source.getVersions(package);
+      ids = await withDependencyType(_root.dependencyType(package.name),
+          () => source.getVersions(package));
     } catch (error, stackTrace) {
       // If an error occurs, cache that too. We only want to do one request
       // for any given package, successful or not.
@@ -260,7 +276,7 @@ class Dependency {
   final PackageId depender;
 
   /// The package being depended on.
-  final PackageDep dep;
+  final PackageRange dep;
 
   Dependency(this.depender, this.dep);
 
@@ -334,8 +350,11 @@ abstract class SolveFailure implements ApplicationException {
   /// Describes a dependency's reference in the output message.
   ///
   /// Override this to highlight which aspect of [dep] led to the failure.
-  String _describeDependency(PackageDep dep) =>
-      "depends on version ${dep.constraint}";
+  String _describeDependency(PackageRange dep) {
+    var description = "depends on version ${dep.constraint}";
+    if (dep.features.isNotEmpty) description += " ${dep.featureDescription}";
+    return description;
+  }
 }
 
 /// Exception thrown when the current SDK's version does not match a package's
@@ -344,8 +363,8 @@ class BadSdkVersionException extends SolveFailure {
   final String _message;
 
   BadSdkVersionException(String package, String message)
-      : super(package, null),
-        _message = message;
+      : _message = message,
+        super(package, null);
 }
 
 /// Exception thrown when the [VersionConstraint] used to match a package is
@@ -409,7 +428,7 @@ class SourceMismatchException extends SolveFailure {
   SourceMismatchException(String package, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
-  String _describeDependency(PackageDep dep) =>
+  String _describeDependency(PackageRange dep) =>
       "depends on it from source ${dep.source}";
 }
 
@@ -421,7 +440,7 @@ class UnknownSourceException extends SolveFailure {
   String toString() {
     var dep = dependencies.single;
     return 'Package ${dep.depender.name} depends on ${dep.dep.name} from '
-           'unknown source "${dep.dep.source}".';
+        'unknown source "${dep.dep.source}".';
   }
 }
 
@@ -430,11 +449,11 @@ class UnknownSourceException extends SolveFailure {
 class DescriptionMismatchException extends SolveFailure {
   String get _message => "Incompatible dependencies on $package";
 
-  DescriptionMismatchException(String package,
-      Iterable<Dependency> dependencies)
+  DescriptionMismatchException(
+      String package, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
-  String _describeDependency(PackageDep dep) {
+  String _describeDependency(PackageRange dep) {
     // TODO(nweiz): Dump descriptions to YAML when that's supported.
     return "depends on it with description ${JSON.encode(dep.description)}";
   }
@@ -448,12 +467,25 @@ class DependencyNotFoundException extends SolveFailure {
   final PackageNotFoundException _innerException;
   String get _message => "${_innerException.message}\nDepended on by";
 
-  DependencyNotFoundException(String package, this._innerException,
-      Iterable<Dependency> dependencies)
+  DependencyNotFoundException(
+      String package, this._innerException, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
   /// The failure isn't because of the version of description of the package,
   /// it's the package itself that can't be found, so just show the name and no
   /// descriptive details.
-  String _describeDependency(PackageDep dep) => "";
+  String _describeDependency(PackageRange dep) => "";
+}
+
+/// An exception thrown when a dependency requires a feature that doesn't exist.
+class MissingFeatureException extends SolveFailure {
+  final Version version;
+  final String feature;
+
+  String get _message =>
+      "$package $version doesn't have a feature named $feature";
+
+  MissingFeatureException(String package, this.version, this.feature,
+      Iterable<Dependency> dependencies)
+      : super(package, dependencies);
 }

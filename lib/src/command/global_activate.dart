@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -22,29 +23,49 @@ class GlobalActivateCommand extends PubCommand {
         allowed: ["git", "hosted", "path"],
         defaultsTo: "hosted");
 
-    argParser.addFlag("no-executables", negatable: false,
-        help: "Do not put executables on PATH.");
+    argParser.addOption("features",
+        abbr: "f", help: "Feature(s) to enable.", allowMultiple: true);
 
-    argParser.addOption("executable", abbr: "x",
+    argParser.addOption("omit-features",
+        abbr: "F", help: "Feature(s) to disable.", allowMultiple: true);
+
+    argParser.addFlag("no-executables",
+        negatable: false, help: "Do not put executables on PATH.");
+
+    argParser.addOption("executable",
+        abbr: "x",
         help: "Executable(s) to place on PATH.",
         allowMultiple: true);
 
-    argParser.addFlag("overwrite", negatable: false,
+    argParser.addFlag("overwrite",
+        negatable: false,
         help: "Overwrite executables from other packages with the same name.");
   }
 
   Future run() {
     // Default to `null`, which means all executables.
-    var executables;
+    List<String> executables;
     if (argResults.wasParsed("executable")) {
       if (argResults.wasParsed("no-executables")) {
         usageException("Cannot pass both --no-executables and --executable.");
       }
 
-      executables = argResults["executable"];
+      executables = argResults["executable"] as List<String>;
     } else if (argResults["no-executables"]) {
       // An empty list means no executables.
       executables = [];
+    }
+
+    var features = <String, FeatureDependency>{};
+    for (var feature in argResults["features"] ?? []) {
+      features[feature] = FeatureDependency.required;
+    }
+    for (var feature in argResults["omit-features"] ?? []) {
+      if (features.containsKey(feature)) {
+        usageException("Cannot both enable and disable $feature.");
+      }
+
+      features[feature] = FeatureDependency.unused;
     }
 
     var overwrite = argResults["overwrite"];
@@ -70,7 +91,7 @@ class GlobalActivateCommand extends PubCommand {
         // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
         return globals.activateGit(repo, executables,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "hosted":
         var package = readArg("No package to activate given.");
@@ -87,9 +108,16 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(package, constraint, executables,
-            overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite);
 
       case "path":
+        if (features.isNotEmpty) {
+          // Globally-activated path packages just use the existing lockfile, so
+          // we can't change the feature selection.
+          usageException("--features and --omit-features may not be used with "
+              "the path source.");
+        }
+
         var path = readArg("No package to activate given.");
         validateNoExtraArgs();
         return globals.activatePath(path, executables,

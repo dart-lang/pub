@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:watcher/watcher.dart';
 
+import '../dartdevc/dartdevc_environment.dart';
 import 'asset_environment.dart';
 import 'barback_server.dart';
 
@@ -39,9 +40,11 @@ class SourceDirectory {
   SourceDirectory(this._environment, this.directory, this.hostname, this.port);
 
   /// Binds a server running on [hostname]:[port] to this directory.
-  Future<BarbackServer> serve() {
-    return BarbackServer.bind(_environment, hostname, port,
-        rootDirectory: directory).then((server) {
+  Future<BarbackServer> serve({DartDevcEnvironment dartDevcEnvironment}) {
+    return BarbackServer
+        .bind(_environment, hostname, port,
+            rootDirectory: directory, dartDevcEnvironment: dartDevcEnvironment)
+        .then((server) {
       _serverCompleter.complete(server);
       return server;
     });

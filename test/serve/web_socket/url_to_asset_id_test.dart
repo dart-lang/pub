@@ -2,22 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import '../utils.dart';
 
 main() {
-  // TODO(rnystrom): Split into independent tests.
-  setUp(() {
-    d.dir("foo", [
+  setUp(() async {
+    await d.dir("foo", [
       d.libPubspec("foo", "0.0.1"),
-      d.dir("lib", [
-        d.file("foo.dart", "foo")
-      ])
+      d.dir("lib", [d.file("foo.dart", "foo")])
     ]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.appPubspec({
         "foo": {"path": "../foo"}
       }),
@@ -38,59 +36,65 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
-  integration("converts URLs to matching asset ids in web/", () {
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "index.html")
-    }, {"package": "myapp", "path": "web/index.html"});
-    endPubServe();
+  test("converts URLs to matching asset ids in web/", () async {
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "index.html")},
+        {"package": "myapp", "path": "web/index.html"});
+    await endPubServe();
   });
 
-  integration("converts URLs to matching asset ids in subdirectories of web/",
-      () {
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "sub/bar.html")
-    }, {"package": "myapp", "path": "web/sub/bar.html"});
-    endPubServe();
+  test("converts URLs to matching asset ids in subdirectories of web/",
+      () async {
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "sub/bar.html")},
+        {"package": "myapp", "path": "web/sub/bar.html"});
+    await endPubServe();
   });
 
-  integration("converts URLs to matching asset ids in test/", () {
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("test", "index.html")
-    }, {"package": "myapp", "path": "test/index.html"});
-    endPubServe();
+  test("converts URLs to matching asset ids in test/", () async {
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("test", "index.html")},
+        {"package": "myapp", "path": "test/index.html"});
+    await endPubServe();
   });
 
-  integration("converts URLs to matching asset ids in subdirectories of test/",
-      () {
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("test", "sub/bar.html")
-    }, {"package": "myapp", "path": "test/sub/bar.html"});
-    endPubServe();
+  test("converts URLs to matching asset ids in subdirectories of test/",
+      () async {
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("test", "sub/bar.html")},
+        {"package": "myapp", "path": "test/sub/bar.html"});
+    await endPubServe();
   });
 
-  integration("converts URLs to matching asset ids in the entrypoint's lib/",
-      () {
+  test("converts URLs to matching asset ids in the entrypoint's lib/",
+      () async {
     // Path in root package's lib/.
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "packages/myapp/myapp.dart")
-    }, {"package": "myapp", "path": "lib/myapp.dart"});
-    endPubServe();
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "packages/myapp/myapp.dart")},
+        {"package": "myapp", "path": "lib/myapp.dart"});
+    await endPubServe();
   });
 
-  integration("converts URLs to matching asset ids in a dependency's lib/", () {
+  test("converts URLs to matching asset ids in a dependency's lib/", () async {
     // Path in lib/.
-    pubServe();
-    expectWebSocketResult("urlToAssetId", {
-      "url": getServerUrl("web", "packages/foo/foo.dart")
-    }, {"package": "foo", "path": "lib/foo.dart"});
-    endPubServe();
+    await pubServe();
+    await expectWebSocketResult(
+        "urlToAssetId",
+        {"url": getServerUrl("web", "packages/foo/foo.dart")},
+        {"package": "foo", "path": "lib/foo.dart"});
+    await endPubServe();
   });
 }

@@ -8,12 +8,12 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:analyzer/analyzer.dart';
+import 'package:barback/barback.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
-import 'package:compiler_unsupported/src/filenames.dart'
-    show appendSlash;
+import 'package:compiler_unsupported/src/filenames.dart' show appendSlash;
 import 'package:path/path.dart' as p;
 
-import 'asset/dart/serialize.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
@@ -34,11 +34,11 @@ abstract class CompilerProvider {
   /// the input file at that URI.
   ///
   /// The future can complete to a string or a list of bytes.
-  Future/*<String | List<int>>*/ provideInput(Uri uri);
+  Future provideInput(Uri uri);
 
   /// Reports a diagnostic message from dart2js to the user.
-  void handleDiagnostic(Uri uri, int begin, int end, String message,
-                        compiler.Diagnostic kind);
+  void handleDiagnostic(
+      Uri uri, int begin, int end, String message, compiler.Diagnostic kind);
 
   /// Given a [name] (which will be "" for the entrypoint) and a file extension,
   /// returns an [EventSink] that dart2js can write to to emit an output file.
@@ -53,8 +53,8 @@ abstract class CompilerProvider {
 ///
 /// By default, the package root is assumed to be adjacent to [entrypoint], but
 /// if [packageRoot] is passed that will be used instead.
-Future compile(String entrypoint, CompilerProvider provider, {
-    Iterable<String> commandLineOptions,
+Future compile(String entrypoint, CompilerProvider provider,
+    {Iterable<String> commandLineOptions,
     bool checked: false,
     bool csp: false,
     bool minify: true,
@@ -122,10 +122,15 @@ bool isEntrypoint(CompilationUnit dart) {
   // TODO(nweiz): this misses the case where a Dart file doesn't contain main(),
   // but it parts in another file that does.
   return dart.declarations.any((node) {
-    return node is FunctionDeclaration && node.name.name == "main" &&
+    return node is FunctionDeclaration &&
+        node.name.name == "main" &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
 }
+
+/// Returns whether [dart] contains a [PartOfDirective].
+bool isPart(CompilationUnit dart) =>
+    dart.directives.any((directive) => directive is PartOfDirective);
 
 /// Efficiently parses the import and export directives in [contents].
 ///
@@ -156,8 +161,8 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 /// If [snapshot] is passed, the isolate will be loaded from that path if it
 /// exists. Otherwise, a snapshot of the isolate's code will be saved to that
 /// path once the isolate is loaded.
-Future runInIsolate(String code, message, {packageRoot, String snapshot})
-    async {
+Future runInIsolate(String code, message,
+    {packageRoot, String snapshot}) async {
   if (snapshot != null && fileExists(snapshot)) {
     log.fine("Spawning isolate from $snapshot.");
     if (packageRoot != null) packageRoot = Uri.parse(packageRoot.toString());
@@ -175,24 +180,13 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
   await withTempDir((dir) async {
     var dartPath = p.join(dir, 'runInIsolate.dart');
     writeTextFile(dartPath, code, dontLogContents: true);
-    var port = new ReceivePort();
-    await Isolate.spawn(_isolateBuffer, {
-      'replyTo': port.sendPort,
-      // Make the snapshot URI absolute to work around sdk#8440.
-      'uri': p.toUri(p.absolute(dartPath)).toString(),
-      'packageRoot': packageRoot == null ? null : packageRoot.toString(),
-      'message': message
-    });
-
-    var response = await port.first;
-    if (response['type'] == 'error') {
-      throw new CrossIsolateException.deserialize(response['error']);
-    }
+    await Isolate.spawnUri(p.toUri(p.absolute(dartPath)), [], message,
+        packageRoot: packageRoot);
 
     if (snapshot == null) return;
 
     ensureDir(p.dirname(snapshot));
-    var snapshotArgs = [];
+    var snapshotArgs = <String>[];
     if (packageRoot != null) snapshotArgs.add('--package-root=$packageRoot');
     snapshotArgs.addAll(['--snapshot=$snapshot', dartPath]);
     var result = await runProcess(Platform.executable, snapshotArgs);
@@ -202,27 +196,34 @@ Future runInIsolate(String code, message, {packageRoot, String snapshot})
     // Don't emit a fatal error here, since we don't want to crash the
     // otherwise successful isolate load.
     log.warning("Failed to compile a snapshot to "
-        "${p.relative(snapshot)}:\n" + result.stderr.join("\n"));
+        "${p.relative(snapshot)}:\n" +
+        result.stderr.join("\n"));
   });
 }
 
-// TODO(nweiz): remove this when issue 12617 is fixed.
-/// A function used as a buffer between the host isolate and [spawnUri].
+/// Snapshots the Dart executable at [executableUrl] to a snapshot at
+/// [snapshotPath].
 ///
-/// [spawnUri] synchronously loads the file and its imports, which can deadlock
-/// the host isolate if there's an HTTP import pointing at a server in the host.
-/// Adding an additional isolate in the middle works around this.
-void _isolateBuffer(message) {
-  var replyTo = message['replyTo'];
-  var packageRoot = message['packageRoot'];
-  if (packageRoot != null) packageRoot = Uri.parse(packageRoot);
-  Isolate.spawnUri(Uri.parse(message['uri']), [], message['message'],
-          packageRoot: packageRoot)
-      .then((_) => replyTo.send({'type': 'success'}))
-      .catchError((e, stack) {
-    replyTo.send({
-      'type': 'error',
-      'error': CrossIsolateException.serialize(e, stack)
-    });
-  });
+/// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
+/// executable. Otherwise, a `packages/` directory or a package spec is inferred
+/// from the executable's location.
+///
+/// If [id] is passed, it's used to describe the executable in logs and error
+/// messages.
+Future snapshot(Uri executableUrl, String snapshotPath,
+    {Uri packagesFile, AssetId id}) async {
+  var name = log.bold(id == null
+      ? executableUrl.toString()
+      : "${id.package}:${p.url.basenameWithoutExtension(id.path)}");
+
+  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
+  if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
+  var result = await runProcess(Platform.executable, args);
+
+  if (result.success) {
+    log.message("Precompiled $name.");
+  } else {
+    throw new ApplicationException(
+        log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
+  }
 }

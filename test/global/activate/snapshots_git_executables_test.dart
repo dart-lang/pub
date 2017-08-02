@@ -2,40 +2,39 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('snapshots the executables for a Git repo', () {
+  test('snapshots the executables for a Git repo', () async {
     ensureGit();
 
-    d.git('foo.git', [
+    await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),
       d.dir("bin", [
         d.file("hello.dart", "void main() => print('hello!');"),
         d.file("goodbye.dart", "void main() => print('goodbye!');"),
         d.file("shell.sh", "echo shell"),
-        d.dir("subdir", [
-          d.file("sub.dart", "void main() => print('sub!');")
-        ])
+        d.dir("subdir", [d.file("sub.dart", "void main() => print('sub!');")])
       ])
     ]).create();
 
-    schedulePub(args: ["global", "activate", "-sgit", "../foo.git"],
+    await runPub(
+        args: ["global", "activate", "-sgit", "../foo.git"],
         output: allOf([
-      contains('Precompiled foo:hello.'),
-      contains("Precompiled foo:goodbye.")
-    ]));
+          contains('Precompiled foo:hello.'),
+          contains("Precompiled foo:goodbye.")
+        ]));
 
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.matcherFile('pubspec.lock', contains('1.0.0')),
+          d.file('pubspec.lock', contains('1.0.0')),
           d.dir('bin', [
-            d.matcherFile('hello.dart.snapshot', contains('hello!')),
-            d.matcherFile('goodbye.dart.snapshot', contains('goodbye!')),
+            d.file('hello.dart.snapshot', contains('hello!')),
+            d.file('goodbye.dart.snapshot', contains('goodbye!')),
             d.nothing('shell.sh.snapshot'),
             d.nothing('subdir')
           ])

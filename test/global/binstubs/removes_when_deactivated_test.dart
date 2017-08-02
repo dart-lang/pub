@@ -2,17 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration("removes binstubs when the package is deactivated", () {
-    servePackages((builder) {
+  test("removes binstubs when the package is deactivated", () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "one": null,
-          "two": null
-        }
+        "executables": {"one": null, "two": null}
       }, contents: [
         d.dir("bin", [
           d.file("one.dart", "main(args) => print('one');"),
@@ -21,14 +20,12 @@ main() {
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
-    schedulePub(args: ["global", "deactivate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "deactivate", "foo"]);
 
-    d.dir(cachePath, [
-      d.dir("bin", [
-        d.nothing(binStubName("one")),
-        d.nothing(binStubName("two"))
-      ])
+    await d.dir(cachePath, [
+      d.dir(
+          "bin", [d.nothing(binStubName("one")), d.nothing(binStubName("two"))])
     ]).validate();
   });
 }

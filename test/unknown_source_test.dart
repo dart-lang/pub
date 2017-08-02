@@ -4,67 +4,70 @@
 
 import 'dart:convert';
 
+import 'package:test/test.dart';
+
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
   forBothPubGetAndUpgrade((command) {
-    integration('fails gracefully on a dependency from an unknown source', () {
-      d.appDir({"foo": {"bad": "foo"}}).create();
+    test('fails gracefully on a dependency from an unknown source', () async {
+      await d.appDir({
+        "foo": {"bad": "foo"}
+      }).create();
 
-      pubCommand(command, error:
-          'Package myapp depends on foo from unknown source "bad".');
+      await pubCommand(command,
+          error: 'Package myapp depends on foo from unknown source "bad".');
     });
 
-    integration('fails gracefully on transitive dependency from an unknown '
-                'source', () {
-      d.dir('foo', [
+    test(
+        'fails gracefully on transitive dependency from an unknown '
+        'source', () async {
+      await d.dir('foo', [
         d.libDir('foo', 'foo 0.0.1'),
-        d.libPubspec('foo', '0.0.1', deps: {"bar": {"bad": "bar"}})
+        d.libPubspec('foo', '0.0.1', deps: {
+          "bar": {"bad": "bar"}
+        })
       ]).create();
 
-      d.appDir({"foo": {"path": "../foo"}}).create();
+      await d.appDir({
+        "foo": {"path": "../foo"}
+      }).create();
 
-      pubCommand(command, error:
-          'Package foo depends on bar from unknown source "bad".');
+      await pubCommand(command,
+          error: 'Package foo depends on bar from unknown source "bad".');
     });
 
-    integration('ignores unknown source in lockfile', () {
-      d.dir('foo', [
-        d.libDir('foo'),
-        d.libPubspec('foo', '0.0.1')
-      ]).create();
+    test('ignores unknown source in lockfile', () async {
+      await d
+          .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
       // Depend on "foo" from a valid source.
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.appPubspec({
           "foo": {"path": "../foo"}
         })
       ]).create();
 
       // But lock it to a bad one.
-      d.dir(appPath, [
-        d.file("pubspec.lock", JSON.encode({
-          'packages': {
-            'foo': {
-              'version': '0.0.0',
-              'source': 'bad',
-              'description': {
-                'name': 'foo'
+      await d.dir(appPath, [
+        d.file(
+            "pubspec.lock",
+            JSON.encode({
+              'packages': {
+                'foo': {
+                  'version': '0.0.0',
+                  'source': 'bad',
+                  'description': {'name': 'foo'}
+                }
               }
-            }
-          }
-        }))
+            }))
       ]).create();
 
-      pubCommand(command);
+      await pubCommand(command);
 
       // Should upgrade to the new one.
-      d.dir(packagesPath, [
-        d.dir("foo", [
-          d.file("foo.dart", 'main() => "foo";')
-        ])
-      ]).validate();
+      await d.appPackagesFile({"foo": "../foo"}).validate();
     });
   });
 }

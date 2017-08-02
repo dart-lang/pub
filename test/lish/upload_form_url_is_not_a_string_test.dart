@@ -4,8 +4,8 @@
 
 import 'dart:convert';
 
-import 'package:scheduled_test/scheduled_test.dart';
-import 'package:scheduled_test/scheduled_server.dart';
+import 'package:shelf_test_handler/shelf_test_handler.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,24 +14,21 @@ import 'utils.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('upload form url is not a string', () {
-    var server = new ScheduledServer();
-    d.credentialsFile(server, 'access token').create();
-    var pub = startPublish(server);
+  test('upload form url is not a string', () async {
+    var server = await ShelfTestServer.create();
+    await d.credentialsFile(server, 'access token').create();
+    var pub = await startPublish(server);
 
-    confirmPublish(pub);
+    await confirmPublish(pub);
 
     var body = {
       'url': 12,
-      'fields': {
-        'field1': 'value1',
-        'field2': 'value2'
-      }
+      'fields': {'field1': 'value1', 'field2': 'value2'}
     };
 
     handleUploadForm(server, body);
-    pub.stderr.expect('Invalid server response:');
-    pub.stderr.expect(JSON.encode(body));
-    pub.shouldExit(1);
+    expect(pub.stderr, emits('Invalid server response:'));
+    expect(pub.stderr, emits(JSON.encode(body)));
+    await pub.shouldExit(1);
   });
 }

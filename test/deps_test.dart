@@ -2,25 +2,21 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  setUp(() {
-    servePackages((builder) {
-      builder.serve("normal", "1.2.3", deps: {
-        "transitive": "any",
-        "circular_a": "any"
-      });
+  setUp(() async {
+    await servePackages((builder) {
+      builder.serve("normal", "1.2.3",
+          deps: {"transitive": "any", "circular_a": "any"});
       builder.serve("transitive", "1.2.3", deps: {"shared": "any"});
       builder.serve("shared", "1.2.3", deps: {"other": "any"});
       builder.serve("dev_only", "1.2.3");
-      builder.serve("unittest", "1.2.3", deps: {
-        "shared": "any",
-        "dev_only": "any"
-      });
+      builder.serve("unittest", "1.2.3",
+          deps: {"shared": "any", "dev_only": "any"});
       builder.serve("other", "1.0.0", deps: {"myapp": "any"});
       builder.serve("overridden", "1.0.0");
       builder.serve("overridden", "2.0.0");
@@ -29,12 +25,10 @@ main() {
       builder.serve("circular_b", "1.2.3", deps: {"circular_a": "any"});
     });
 
-    d.dir("from_path", [
-      d.libDir("from_path"),
-      d.libPubspec("from_path", "1.2.3")
-    ]).create();
+    await d.dir("from_path",
+        [d.libDir("from_path"), d.libPubspec("from_path", "1.2.3")]).create();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "dependencies": {
@@ -42,21 +36,16 @@ main() {
           "overridden": "1.0.0",
           "from_path": {"path": "../from_path"}
         },
-        "dev_dependencies": {
-          "unittest": "any"
-        },
-        "dependency_overrides": {
-          "overridden": "2.0.0",
-          "override_only": "any"
-        }
+        "dev_dependencies": {"unittest": "any"},
+        "dependency_overrides": {"overridden": "2.0.0", "override_only": "any"}
       })
     ]).create();
   });
 
   group("lists all dependencies", () {
-    integration("in compact form", () {
-      pubGet();
-      schedulePub(args: ['deps', '-s', 'compact'], output: '''
+    test("in compact form", () async {
+      await pubGet();
+      await runPub(args: ['deps', '-s', 'compact'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -81,9 +70,9 @@ main() {
           ''');
     });
 
-    integration("in list form", () {
-      pubGet();
-      schedulePub(args: ['deps', '--style', 'list'], output: '''
+    test("in list form", () async {
+      await pubGet();
+      await runPub(args: ['deps', '--style', 'list'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -117,9 +106,9 @@ main() {
           ''');
     });
 
-    integration("lists dependencies in tree form", () {
-      pubGet();
-      schedulePub(args: ['deps'], output: '''
+    test("lists dependencies in tree form", () async {
+      await pubGet();
+      await runPub(args: ['deps'], output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3
@@ -140,9 +129,9 @@ main() {
   });
 
   group("lists non-dev dependencies", () {
-    integration("in compact form", () {
-      pubGet();
-      schedulePub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
+    test("in compact form", () async {
+      await pubGet();
+      await runPub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -163,9 +152,9 @@ main() {
           ''');
     });
 
-    integration("in list form", () {
-      pubGet();
-      schedulePub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
+    test("in list form", () async {
+      await pubGet();
+      await runPub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
           myapp 0.0.0
 
           dependencies:
@@ -193,9 +182,9 @@ main() {
           ''');
     });
 
-    integration("in tree form", () {
-      pubGet();
-      schedulePub(args: ['deps', '--no-dev'], output: '''
+    test("in tree form", () async {
+      await pubGet();
+      await runPub(args: ['deps', '--no-dev'], output: '''
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3

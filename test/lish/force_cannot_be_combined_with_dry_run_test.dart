@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -11,9 +12,8 @@ import '../test_pub.dart';
 main() {
   setUp(d.validPackage.create);
 
-  integration('--force cannot be combined with --dry-run', () {
-    schedulePub(args: ['lish', '--force', '--dry-run'],
-        error: """
+  test('--force cannot be combined with --dry-run', () async {
+    await runPub(args: ['lish', '--force', '--dry-run'], error: """
           Cannot use both --force and --dry-run.
           
           Usage: pub publish [options]
@@ -25,7 +25,6 @@ main() {
 
           Run "pub help" to see global options.
           See http://dartlang.org/tools/pub/cmd/pub-lish.html for detailed documentation.
-          """,
-        exitCode: exit_codes.USAGE);
+          """, exitCode: exit_codes.USAGE);
   });
 }

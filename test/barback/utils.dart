@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../test_pub.dart';
 
@@ -17,9 +18,12 @@ import '../test_pub.dart';
 /// If [error] is provided, then both pub build and pub serve should exit with
 /// that message. Otherwise, [buildError] is the expected error from pub build
 /// and [serveError] from pub serve.
-void pubBuildAndServeShouldFail(String description, {List<String> args,
-    String error, String buildError, String serveError, int exitCode}) {
-
+void pubBuildAndServeShouldFail(String description,
+    {List<String> args,
+    String error,
+    String buildError,
+    String serveError,
+    int exitCode}) {
   if (error != null) {
     assert(buildError == null);
     buildError = error;
@@ -29,31 +33,34 @@ void pubBuildAndServeShouldFail(String description, {List<String> args,
   }
 
   // Usage errors also print the usage, so validate that.
-  var buildExpectation = buildError;
-  var serveExpectation = serveError;
+  Object buildExpectation = buildError;
+  Object serveExpectation = serveError;
   if (exitCode == exit_codes.USAGE) {
-    buildExpectation = allOf(
-        startsWith(buildExpectation), contains("Usage: pub build"));
-    serveExpectation = allOf(
-        startsWith(serveExpectation), contains("Usage: pub serve"));
+    buildExpectation =
+        allOf(startsWith(buildExpectation), contains("Usage: pub build"));
+    serveExpectation =
+        allOf(startsWith(serveExpectation), contains("Usage: pub serve"));
   }
 
-  integration("build fails $description", () {
-    schedulePub(args: ["build"]..addAll(args),
+  test("build fails $description", () {
+    return runPub(
+        args: ["build"]..addAll(args),
         error: buildExpectation,
         exitCode: exitCode);
   });
 
-  integration("build --format json fails $description", () {
-    schedulePub(args: ["build", "--format", "json"]..addAll(args),
+  test("build --format json fails $description", () {
+    return runPub(
+        args: ["build", "--format", "json"]..addAll(args),
         outputJson: {
           "error": buildError // No usage in JSON output.
         },
         exitCode: exitCode);
   });
 
-  integration("serve fails $description", () {
-    schedulePub(args: ["serve"]..addAll(args),
+  test("serve fails $description", () {
+    return runPub(
+        args: ["serve"]..addAll(args),
         error: serveExpectation,
         exitCode: exitCode);
   });

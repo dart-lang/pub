@@ -2,32 +2,31 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
-import '../../test_pub.dart';
 import '../../serve/utils.dart';
+import '../../test_pub.dart';
 
 main() {
-  integration("includes assets", () {
-    serveBarback();
+  test("includes assets", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": [
           {
             "myapp/src/transformer": {
-              "\$include": [
-                "web/foo.txt",
-                "web/sub/foo.txt"
-              ]
+              "\$include": ["web/foo.txt", "web/sub/foo.txt"]
             }
           }
         ],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER)
-      ])]),
+      d.dir("lib", [
+        d.dir("src", [d.file("transformer.dart", REWRITE_TRANSFORMER)])
+      ]),
       d.dir("web", [
         d.file("foo.txt", "foo"),
         d.file("bar.txt", "bar"),
@@ -37,11 +36,11 @@ main() {
       ])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.out", "foo.out");
-    requestShouldSucceed("sub/foo.out", "foo.out");
-    requestShould404("bar.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.out", "foo.out");
+    await requestShouldSucceed("sub/foo.out", "foo.out");
+    await requestShould404("bar.out");
+    await endPubServe();
   });
 }

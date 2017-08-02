@@ -2,31 +2,29 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/executable.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 Validator executable(Entrypoint entrypoint) =>
-  new ExecutableValidator(entrypoint);
+    new ExecutableValidator(entrypoint);
 
 main() {
   setUp(d.validPackage.create);
 
   group('should consider a package valid if it', () {
-    integration('has executables that are present', () {
-      d.dir(appPath, [
+    test('has executables that are present', () async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
-          "executables": {
-            "one": "one_script",
-            "two": null
-          }
+          "executables": {"one": "one_script", "two": null}
         }),
         d.dir("bin", [
           d.file("one_script.dart", "main() => print('ok');"),
@@ -38,29 +36,23 @@ main() {
   });
 
   group("should consider a package invalid if it", () {
-    integration('is missing one or more listed executables', () {
-      d.dir(appPath, [
+    test('is missing one or more listed executables', () async {
+      await d.dir(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
-          "executables": {
-            "nope": "not_there",
-            "nada": null
-          }
+          "executables": {"nope": "not_there", "nada": null}
         })
       ]).create();
       expectValidationWarning(executable);
     });
 
-    integration('has .gitignored one or more listed executables', () {
-      d.git(appPath, [
+    test('has .gitignored one or more listed executables', () async {
+      await d.git(appPath, [
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
-          "executables": {
-            "one": "one_script",
-            "two": null
-          }
+          "executables": {"one": "one_script", "two": null}
         }),
         d.dir("bin", [
           d.file("one_script.dart", "main() => print('ok');"),

@@ -3,18 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io' as io;
 import "dart:convert";
+import 'dart:io' as io;
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
@@ -102,7 +104,7 @@ class HostedSource extends Source {
 
     if (!description.containsKey("name")) {
       throw new FormatException(
-      "The description map must contain a 'name' key.");
+          "The description map must contain a 'name' key.");
     }
 
     var name = description["name"];
@@ -125,8 +127,8 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    var url = _makeUrl(ref.description,
-        (server, package) => "$server/api/packages/$package");
+    var url = _makeUrl(
+        ref.description, (server, package) => "$server/api/packages/$package");
 
     log.io("Get versions from $url.");
 
@@ -140,8 +142,7 @@ class BoundHostedSource extends CachedSource {
 
     var doc = JSON.decode(body);
     return doc['versions'].map((map) {
-      var pubspec = new Pubspec.fromMap(
-          map['pubspec'], systemCache.sources,
+      var pubspec = new Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description));
@@ -166,21 +167,22 @@ class BoundHostedSource extends CachedSource {
   /// is available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
     // Request it from the server.
-    var url = _makeVersionUrl(id, (server, package, version) =>
-        "$server/api/packages/$package/versions/$version");
+    var url = _makeVersionUrl(
+        id,
+        (server, package, version) =>
+            "$server/api/packages/$package/versions/$version");
 
     log.io("Describe package at $url.");
     var version;
     try {
-      version = JSON.decode(
-          await httpClient.read(url, headers: PUB_API_HEADERS));
+      version =
+          JSON.decode(await httpClient.read(url, headers: PUB_API_HEADERS));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
     }
 
-    return new Pubspec.fromMap(
-        version['pubspec'], systemCache.sources,
+    return new Pubspec.fromMap(version['pubspec'], systemCache.sources,
         expectedName: id.name, location: url);
   }
 
@@ -212,12 +214,23 @@ class BoundHostedSource extends CachedSource {
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
     if (!dirExists(systemCacheRoot)) return new Pair([], []);
 
-    var successes = [];
-    var failures = [];
+    var successes = <PackageId>[];
+    var failures = <PackageId>[];
 
     for (var serverDir in listDir(systemCacheRoot)) {
       var url = _directoryToUrl(p.basename(serverDir));
-      var packages = _getCachedPackagesInDirectory(p.basename(serverDir));
+
+      var packages = [];
+      for (var entry in listDir(serverDir)) {
+        try {
+          packages.add(new Package.load(null, entry, systemCache.sources));
+        } catch (error, stackTrace) {
+          log.error("Failed to load package", error, stackTrace);
+          failures.add(_idForBasename(p.basename(entry)));
+          tryDeleteEntry(entry);
+        }
+      }
+
       packages.sort(Package.orderByNameAndVersion);
 
       for (var package in packages) {
@@ -242,26 +255,42 @@ class BoundHostedSource extends CachedSource {
     return new Pair(successes, failures);
   }
 
+  /// Returns the best-guess package ID for [basename], which should be a
+  /// subdirectory in a hosted cache.
+  PackageId _idForBasename(String basename) {
+    var components = split1(basename, '-');
+    var version = Version.none;
+    if (components.length > 1) {
+      try {
+        version = new Version.parse(components.last);
+      } catch (_) {
+        // Default to Version.none.
+      }
+    }
+    return new PackageId(components.first, source, version, components.first);
+  }
+
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
-  List<Package> getCachedPackages() =>
-      _getCachedPackagesInDirectory(_urlToDirectory(source.defaultUrl));
-
-  /// Gets all of the packages that have been downloaded into the system cache
-  /// into [dir].
-  List<Package> _getCachedPackagesInDirectory(String dir) {
-    var cacheDir = p.join(systemCacheRoot, dir);
+  List<Package> getCachedPackages() {
+    var cacheDir = p.join(systemCacheRoot, _urlToDirectory(source.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
-    return listDir(cacheDir)
-        .map((entry) => new Package.load(null, entry, systemCache.sources))
-        .toList();
+    return listDir(cacheDir).map((entry) {
+      try {
+        return new Package.load(null, entry, systemCache.sources);
+      } catch (error, stackTrace) {
+        log.fine("Failed to load package from $entry:\n"
+            "$error\n"
+            "${new Chain.forTrace(stackTrace)}");
+      }
+    }).toList();
   }
 
   /// Downloads package [package] at [version] from [server], and unpacks it
   /// into [destPath].
-  Future _download(String server, String package, Version version,
-      String destPath) async {
+  Future _download(
+      String server, String package, Version version, String destPath) async {
     var url = Uri.parse("$server/packages/$package/versions/$version.tar.gz");
     log.io("Get package from $url.");
     log.message('Downloading ${log.bold(package)} ${version}...');
@@ -285,17 +314,24 @@ class BoundHostedSource extends CachedSource {
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
-  void _throwFriendlyError(error, StackTrace stackTrace, String package,
-      String url) {
-    if (error is PubHttpException &&
-        error.response.statusCode == 404) {
-      throw new PackageNotFoundException(
-          "Could not find package $package at $url.", error, stackTrace);
+  void _throwFriendlyError(
+      error, StackTrace stackTrace, String package, String url) {
+    if (error is PubHttpException) {
+      if (error.response.statusCode == 404) {
+        throw new PackageNotFoundException(
+            "Could not find package $package at $url.", error, stackTrace);
+      }
+
+      fail(
+          "${error.response.statusCode} ${error.response.reasonPhrase} trying "
+          "to find package $package at $url.",
+          error,
+          stackTrace);
     }
 
     if (error is io.SocketException) {
-      fail("Got socket error trying to find package $package at $url.",
-           error, stackTrace);
+      fail("Got socket error trying to find package $package at $url.", error,
+          stackTrace);
     }
 
     // Otherwise re-throw the original exception.
@@ -318,8 +354,7 @@ class BoundHostedSource extends CachedSource {
   String _urlToDirectory(String url) {
     // Normalize all loopback URLs to "localhost".
     url = url.replaceAllMapped(
-        new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"),
-        (match) {
+        new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"), (match) {
       // Don't include the scheme for HTTPS URLs. This makes the directory names
       // nice for the default and most recommended scheme. We also don't include
       // it for localhost URLs, since they're always known to be HTTP.
@@ -394,13 +429,16 @@ class _OfflineHostedSource extends BoundHostedSource {
 
     var versions;
     if (dirExists(dir)) {
-      versions = await listDir(dir).map((entry) {
-        var components = p.basename(entry).split("-");
-        if (components.first != ref.name) return null;
-        return source.idFor(
-            ref.name, new Version.parse(components.skip(1).join("-")),
-            url: _serverFor(ref.description));
-      }).where((id) => id != null).toList();
+      versions = await listDir(dir)
+          .map((entry) {
+            var components = p.basename(entry).split("-");
+            if (components.first != ref.name) return null;
+            return source.idFor(
+                ref.name, new Version.parse(components.skip(1).join("-")),
+                url: _serverFor(ref.description));
+          })
+          .where((id) => id != null)
+          .toList();
     } else {
       versions = [];
     }
@@ -414,8 +452,8 @@ class _OfflineHostedSource extends BoundHostedSource {
     return versions;
   }
 
-  Future _download(String server, String package, Version version,
-      String destPath) {
+  Future _download(
+      String server, String package, Version version, String destPath) {
     // Since HostedSource is cached, this will only be called for uncached
     // packages.
     throw new UnsupportedError("Cannot download packages when offline.");

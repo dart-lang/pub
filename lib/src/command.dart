@@ -6,8 +6,8 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
 import 'entrypoint.dart';
-import 'log.dart' as log;
 import 'global_packages.dart';
+import 'log.dart' as log;
 import 'system_cache.dart';
 
 /// The base class for commands for the pub executable.
@@ -20,6 +20,7 @@ abstract class PubCommand extends Command {
     if (_cache == null) _cache = new SystemCache(isOffline: isOffline);
     return _cache;
   }
+
   SystemCache _cache;
 
   GlobalPackages get globals {
@@ -28,6 +29,7 @@ abstract class PubCommand extends Command {
     }
     return _globals;
   }
+
   GlobalPackages _globals;
 
   /// Gets the [Entrypoint] package for the current working directory.
@@ -37,11 +39,11 @@ abstract class PubCommand extends Command {
   Entrypoint get entrypoint {
     // Lazy load it.
     if (_entrypoint == null) {
-      _entrypoint = new Entrypoint('.', cache,
-          packageSymlinks: globalResults['package-symlinks']);
+      _entrypoint = new Entrypoint('.', cache);
     }
     return _entrypoint;
   }
+
   Entrypoint _entrypoint;
 
   /// The URL for web documentation for this command.
@@ -59,6 +61,7 @@ abstract class PubCommand extends Command {
     }
     return _argParser;
   }
+
   ArgParser _argParser;
 
   /// Override this to use offline-only sources instead of hitting the network.
@@ -84,6 +87,7 @@ abstract class PubCommand extends Command {
       return int.parse(intString);
     } on FormatException catch (_) {
       usageException('Could not parse $name "$intString".');
+      return null;
     }
   }
 }

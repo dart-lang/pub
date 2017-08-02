@@ -2,9 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
-import '../test_pub.dart';
 import '../serve/utils.dart';
+import '../test_pub.dart';
 
 const GROUP = """
 import 'package:barback/barback.dart';
@@ -19,27 +21,27 @@ class RewriteGroup implements TransformerGroup {
 """;
 
 main() {
-  integration("runs a transformer group", () {
-    serveBarback();
+  test("runs a transformer group", () async {
+    await serveBarback();
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
         "transformers": ["myapp/src/group"],
         "dependencies": {"barback": "any"}
       }),
-      d.dir("lib", [d.dir("src", [
-        d.file("transformer.dart", REWRITE_TRANSFORMER),
-        d.file("group.dart", GROUP)
-      ])]),
-      d.dir("web", [
-        d.file("foo.txt", "foo")
-      ])
+      d.dir("lib", [
+        d.dir("src", [
+          d.file("transformer.dart", REWRITE_TRANSFORMER),
+          d.file("group.dart", GROUP)
+        ])
+      ]),
+      d.dir("web", [d.file("foo.txt", "foo")])
     ]).create();
 
-    pubGet();
-    pubServe();
-    requestShouldSucceed("foo.out", "foo.out");
-    endPubServe();
+    await pubGet();
+    await pubServe();
+    await requestShouldSucceed("foo.out", "foo.out");
+    await endPubServe();
   });
 }

@@ -2,26 +2,27 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/compiled_dartdoc.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 Validator compiledDartdoc(Entrypoint entrypoint) =>
-  new CompiledDartdocValidator(entrypoint);
+    new CompiledDartdocValidator(entrypoint);
 
 main() {
+  setUp(d.validPackage.create);
+
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    test('looks normal', () => expectNoValidationError(compiledDartdoc));
 
-    integration('looks normal', () => expectNoValidationError(compiledDartdoc));
-
-    integration('has most but not all files from compiling dartdoc', () {
-      d.dir(appPath, [
+    test('has most but not all files from compiling dartdoc', () async {
+      await d.dir(appPath, [
         d.dir("doc-out", [
           d.file("nav.json", ""),
           d.file("index.html", ""),
@@ -32,10 +33,10 @@ main() {
       expectNoValidationError(compiledDartdoc);
     });
 
-    integration('contains compiled dartdoc in a hidden directory', () {
+    test('contains compiled dartdoc in a hidden directory', () async {
       ensureGit();
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.dir(".doc-out", [
           d.file('nav.json', ''),
           d.file('index.html', ''),
@@ -47,10 +48,10 @@ main() {
       expectNoValidationError(compiledDartdoc);
     });
 
-    integration('contains compiled dartdoc in a gitignored directory', () {
+    test('contains compiled dartdoc in a gitignored directory', () async {
       ensureGit();
 
-      d.git(appPath, [
+      await d.git(appPath, [
         d.dir("doc-out", [
           d.file('nav.json', ''),
           d.file('index.html', ''),
@@ -65,10 +66,8 @@ main() {
   });
 
   group("should consider a package invalid if it", () {
-    integration('contains compiled dartdoc', () {
-      d.validPackage.create();
-
-      d.dir(appPath, [
+    test('contains compiled dartdoc', () async {
+      await d.dir(appPath, [
         d.dir('doc-out', [
           d.file('nav.json', ''),
           d.file('index.html', ''),
@@ -81,13 +80,12 @@ main() {
       expectValidationWarning(compiledDartdoc);
     });
 
-    integration('contains compiled dartdoc in a non-gitignored hidden '
-        'directory', () {
+    test(
+        'contains compiled dartdoc in a non-gitignored hidden '
+        'directory', () async {
       ensureGit();
 
-      d.validPackage.create();
-
-      d.git(appPath, [
+      await d.git(appPath, [
         d.dir('.doc-out', [
           d.file('nav.json', ''),
           d.file('index.html', ''),

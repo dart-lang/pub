@@ -28,7 +28,7 @@ class WebSocketApi {
   bool _exitOnClose = false;
 
   WebSocketApi(WebSocketChannel socket, this._environment)
-      : _server = new json_rpc.Server(socket) {
+      : _server = new json_rpc.Server(socket.cast()) {
     _server.registerMethod("urlToAssetId", _urlToAssetId);
     _server.registerMethod("pathToUrls", _pathToUrls);
     _server.registerMethod("serveDirectory", _serveDirectory);
@@ -116,7 +116,7 @@ class WebSocketApi {
       // see if assets exist, consider supporting implicit index.html at that
       // point.
 
-      var result = {"package": id.package, "path": id.path};
+      var result = <String, Object>{"package": id.package, "path": id.path};
 
       // Map the line.
       // TODO(rnystrom): Right now, source maps are not supported and it just
@@ -188,7 +188,9 @@ class WebSocketApi {
             'Asset path "$assetPath" is not currently being served.');
       }
 
-      var result = {"urls": urls.map((url) => url.toString()).toList()};
+      var result = <String, Object>{
+        "urls": urls.map((url) => url.toString()).toList()
+      };
 
       // Map the line.
       // TODO(rnystrom): Right now, source maps are not supported and it just
@@ -219,26 +221,21 @@ class WebSocketApi {
   ///     }
   ///
   /// If the directory is already being served, returns the previous URL.
-  Future<Map> _serveDirectory(json_rpc.Parameters params) {
+  Future<Map> _serveDirectory(json_rpc.Parameters params) async {
     var rootDirectory = _validateRelativePath(params, "path");
-    return _environment.serveDirectory(rootDirectory).then((server) {
-      return {
-        "url": server.url.toString()
-      };
-    }).catchError((error) {
-      if (error is! OverlappingSourceDirectoryException) throw error;
-
+    try {
+      var server = await _environment.serveDirectory(rootDirectory);
+      return {"url": server.url.toString()};
+    } on OverlappingSourceDirectoryException catch (error) {
       var dir = pluralize("directory", error.overlappingDirectories.length,
           plural: "directories");
-      var overlapping = toSentence(error.overlappingDirectories.map(
-          (dir) => '"$dir"'));
+      var overlapping =
+          toSentence(error.overlappingDirectories.map((dir) => '"$dir"'));
       print("data: ${error.overlappingDirectories}");
       throw new json_rpc.RpcException(_Error.OVERLAPPING,
           'Path "$rootDirectory" overlaps already served $dir $overlapping.',
-          data: {
-            "directories": error.overlappingDirectories
-          });
-    });
+          data: {"directories": error.overlappingDirectories});
+    }
   }
 
   /// Given a relative directory path within the entrypoint package, unbinds

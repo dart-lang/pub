@@ -5,9 +5,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
-
-import '../utils.dart';
 
 /// A mixin for transforms that support [getInput] and the associated suite of
 /// methods.
@@ -16,17 +15,19 @@ abstract class GetInputTransform {
 
   Future<String> readInputAsString(AssetId id, {Encoding encoding}) {
     if (encoding == null) encoding = UTF8;
-    return getInput(id).then((input) =>
-        input.readAsString(encoding: encoding));
+    return getInput(id).then((input) => input.readAsString(encoding: encoding));
   }
 
   Stream<List<int>> readInput(AssetId id) =>
-      futureStream(getInput(id).then((input) => input.read()));
+      StreamCompleter.fromFuture(getInput(id).then((input) => input.read()));
 
-  Future<bool> hasInput(AssetId id) {
-    return getInput(id).then((_) => true).catchError((error) {
-      if (error is AssetNotFoundException && error.id == id) return false;
-      throw error;
-    });
+  Future<bool> hasInput(AssetId id) async {
+    try {
+      await getInput(id);
+      return true;
+    } on AssetNotFoundException catch (error) {
+      if (error.id == id) return false;
+      rethrow;
+    }
   }
 }

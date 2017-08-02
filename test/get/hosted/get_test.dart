@@ -2,56 +2,55 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('gets a package from a pub server', () {
-    servePackages((builder) => builder.serve("foo", "1.2.3"));
+  test('gets a package from a pub server', () async {
+    await servePackages((builder) => builder.serve("foo", "1.2.3"));
 
-    d.appDir({"foo": "1.2.3"}).create();
+    await d.appDir({"foo": "1.2.3"}).create();
 
-    pubGet();
+    await pubGet();
 
-    d.cacheDir({"foo": "1.2.3"}).validate();
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    await d.cacheDir({"foo": "1.2.3"}).validate();
+    await d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 
-  integration('URL encodes the package name', () {
-    serveNoPackages();
+  test('URL encodes the package name', () async {
+    await serveNoPackages();
 
-    d.appDir({"bad name!": "1.2.3"}).create();
+    await d.appDir({"bad name!": "1.2.3"}).create();
 
-    pubGet(
+    await pubGet(
         error: new RegExp(
-          r"Could not find package bad name! at http://localhost:\d+\."),
+            r"Could not find package bad name! at http://localhost:\d+\."),
         exitCode: exit_codes.UNAVAILABLE);
   });
 
-  integration('gets a package from a non-default pub server', () {
+  test('gets a package from a non-default pub server', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    serveErrors();
+    await serveErrors();
 
-    var server = new PackageServer((builder) {
+    var server = await PackageServer.start((builder) {
       builder.serve("foo", "1.2.3");
     });
 
-    d.appDir({
+    await d.appDir({
       "foo": {
         "version": "1.2.3",
-        "hosted": {
-          "name": "foo",
-          "url": server.port.then((port) => "http://localhost:$port")
-        }
+        "hosted": {"name": "foo", "url": "http://localhost:${server.port}"}
       }
     }).create();
 
-    pubGet();
+    await pubGet();
 
-    d.cacheDir({"foo": "1.2.3"}, port: server.port).validate();
-    d.packagesDir({"foo": "1.2.3"}).validate();
+    await d.cacheDir({"foo": "1.2.3"}, port: server.port).validate();
+    await d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 }

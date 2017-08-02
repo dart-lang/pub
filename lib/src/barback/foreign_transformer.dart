@@ -8,8 +8,8 @@ import 'dart:isolate';
 import 'package:barback/barback.dart';
 
 import '../asset/dart/serialize.dart';
-import 'excluding_transformer.dart';
 import 'excluding_aggregate_transformer.dart';
+import 'excluding_transformer.dart';
 import 'transformer_config.dart';
 
 /// A wrapper for a transformer that's in a different isolate.
@@ -28,17 +28,12 @@ class _ForeignTransformer extends Transformer {
         _toString = map['toString'];
 
   Future<bool> isPrimary(AssetId id) {
-    return call(_port, {
-      'type': 'isPrimary',
-      'id': serializeId(id)
-    });
+    return call(_port, {'type': 'isPrimary', 'id': serializeId(id)});
   }
 
   Future apply(Transform transform) {
-    return call(_port, {
-      'type': 'apply',
-      'transform': serializeTransform(transform)
-    });
+    return call(
+        _port, {'type': 'apply', 'transform': serializeTransform(transform)});
   }
 
   String toString() => _toString;
@@ -46,8 +41,7 @@ class _ForeignTransformer extends Transformer {
 
 class _ForeignDeclaringTransformer extends _ForeignTransformer
     implements DeclaringTransformer {
-  _ForeignDeclaringTransformer(Map map)
-      : super(map);
+  _ForeignDeclaringTransformer(Map map) : super(map);
 
   Future declareOutputs(DeclaringTransform transform) {
     return call(_port, {
@@ -59,8 +53,7 @@ class _ForeignDeclaringTransformer extends _ForeignTransformer
 
 class _ForeignLazyTransformer extends _ForeignDeclaringTransformer
     implements LazyTransformer {
-  _ForeignLazyTransformer(Map map)
-      : super(map);
+  _ForeignLazyTransformer(Map map) : super(map);
 }
 
 /// A wrapper for an aggregate transformer that's in a different isolate.
@@ -79,17 +72,12 @@ class _ForeignAggregateTransformer extends AggregateTransformer {
         _toString = map['toString'];
 
   Future<String> classifyPrimary(AssetId id) {
-    return call(_port, {
-      'type': 'classifyPrimary',
-      'id': serializeId(id)
-    });
+    return call(_port, {'type': 'classifyPrimary', 'id': serializeId(id)});
   }
 
   Future apply(AggregateTransform transform) {
-    return call(_port, {
-      'type': 'apply',
-      'transform': serializeAggregateTransform(transform)
-    });
+    return call(_port,
+        {'type': 'apply', 'transform': serializeAggregateTransform(transform)});
   }
 
   String toString() => _toString;
@@ -97,8 +85,7 @@ class _ForeignAggregateTransformer extends AggregateTransformer {
 
 class _ForeignDeclaringAggregateTransformer extends _ForeignAggregateTransformer
     implements DeclaringAggregateTransformer {
-  _ForeignDeclaringAggregateTransformer(Map map)
-      : super(map);
+  _ForeignDeclaringAggregateTransformer(Map map) : super(map);
 
   Future declareOutputs(DeclaringAggregateTransform transform) {
     return call(_port, {
@@ -111,8 +98,7 @@ class _ForeignDeclaringAggregateTransformer extends _ForeignAggregateTransformer
 class _ForeignLazyAggregateTransformer
     extends _ForeignDeclaringAggregateTransformer
     implements LazyAggregateTransformer {
-  _ForeignLazyAggregateTransformer(Map map)
-      : super(map);
+  _ForeignLazyAggregateTransformer(Map map) : super(map);
 }
 
 /// A wrapper for a transformer group that's in a different isolate.
@@ -123,9 +109,11 @@ class _ForeignGroup implements TransformerGroup {
   final String _toString;
 
   _ForeignGroup(TransformerConfig config, Map map)
-      : phases = map['phases'].map((phase) {
-          return phase.map((transformer) => deserializeTransformerLike(
-              transformer, config)).toList();
+      : phases = (map['phases'] as List).map((phase) {
+          return (phase as List)
+              .map((transformer) =>
+                  deserializeTransformerLike(transformer, config))
+              .toList();
         }).toList(),
         _toString = map['toString'];
 
@@ -136,8 +124,9 @@ class _ForeignGroup implements TransformerGroup {
 /// or a [TransformerGroup].
 deserializeTransformerLike(Map map, TransformerConfig config) {
   var transformer;
-  switch(map['type']) {
-    case 'TransformerGroup': return new _ForeignGroup(config, map);
+  switch (map['type']) {
+    case 'TransformerGroup':
+      return new _ForeignGroup(config, map);
     case 'Transformer':
       transformer = new _ForeignTransformer(map);
       break;
@@ -156,7 +145,8 @@ deserializeTransformerLike(Map map, TransformerConfig config) {
     case 'LazyAggregateTransformer':
       transformer = new _ForeignLazyAggregateTransformer(map);
       break;
-    default: assert(false);
+    default:
+      assert(false);
   }
 
   if (transformer is Transformer) {

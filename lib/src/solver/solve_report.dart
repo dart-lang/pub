@@ -7,6 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../package_name.dart';
 import '../source_registry.dart';
 import '../utils.dart';
 import 'version_solver.dart';
@@ -104,9 +105,9 @@ class SolveReport {
     removed.removeAll(names);
     if (removed.isNotEmpty) {
       _output.writeln("These packages are no longer being depended on:");
-      removed = removed.toList();
-      removed.sort();
-      removed.forEach((name) => _reportPackage(name, alwaysShow: true));
+      for (var name in ordered(removed)) {
+        _reportPackage(name, alwaysShow: true);
+      }
     }
 
     log.message(_output);
@@ -121,9 +122,8 @@ class SolveReport {
       var overrides = _result.overrides.map((dep) => dep.name).toList();
       overrides.sort((a, b) => a.compareTo(b));
 
-      overrides.forEach(
-          (name) => _reportPackage(name, alwaysShow: true,
-              highlightOverride: false));
+      overrides.forEach((name) =>
+          _reportPackage(name, alwaysShow: true, highlightOverride: false));
 
       log.warning(_output);
     }
@@ -140,8 +140,8 @@ class SolveReport {
     var oldId = _previousLockFile.packages[name];
     var id = newId != null ? newId : oldId;
 
-    var isOverridden = _result.overrides.map(
-        (dep) => dep.name).contains(id.name);
+    var isOverridden =
+        _result.overrides.map((dep) => dep.name).contains(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.

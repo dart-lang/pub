@@ -11,7 +11,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
-import 'package.dart';
+import 'package_name.dart';
 import 'source_registry.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -35,14 +35,14 @@ class LockFile {
   /// [VersionConstraint.any]. Similarly, [flutterSdkConstraint] represents the
   /// intersection of all Flutter SDK constraints; however, it defaults to
   /// `null`.
-  LockFile(Iterable<PackageId> ids, {VersionConstraint dartSdkConstraint,
+  LockFile(Iterable<PackageId> ids,
+      {VersionConstraint dartSdkConstraint,
       VersionConstraint flutterSdkConstraint})
       : this._(
-          new Map.fromIterable(
-              ids.where((id) => !id.isRoot),
-              key: (id) => id.name),
-          dartSdkConstraint ?? VersionConstraint.any,
-          flutterSdkConstraint);
+            new Map.fromIterable(ids.where((id) => !id.isRoot),
+                key: (id) => id.name),
+            dartSdkConstraint ?? VersionConstraint.any,
+            flutterSdkConstraint);
 
   LockFile._(Map<String, PackageId> packages, this.dartSdkConstraint,
       this.flutterSdkConstraint)
@@ -67,8 +67,8 @@ class LockFile {
   ///
   /// [filePath] is the system-native path to the lockfile on disc. It may be
   /// `null`.
-  static LockFile _parse(String filePath, String contents,
-      SourceRegistry sources) {
+  static LockFile _parse(
+      String filePath, String contents, SourceRegistry sources) {
     if (contents.trim() == '') return new LockFile.empty();
 
     var sourceUrl;
@@ -76,32 +76,31 @@ class LockFile {
     var parsed = loadYamlNode(contents, sourceUrl: sourceUrl);
 
     _validate(parsed is Map, 'The lockfile must be a YAML mapping.', parsed);
+    var parsedMap = parsed as YamlMap;
 
     var dartSdkConstraint = VersionConstraint.any;
     VersionConstraint flutterSdkConstraint;
-    var sdkNode = parsed.nodes['sdk'];
+    var sdkNode = parsedMap.nodes['sdk'];
     if (sdkNode != null) {
       // Lockfiles produced by pub versions from 1.14.0 through 1.18.0 included
       // a top-level "sdk" field which encoded the unified constraint on the
       // Dart SDK. They had no way of specifying constraints on other SDKs.
       dartSdkConstraint = _parseVersionConstraint(sdkNode);
-    } else if ((parsed as Map).containsKey('sdks')) {
-      var sdksField = parsed['sdks'];
-      _validate(
-          sdksField is Map,
-          'The "sdks" field must be a mapping.',
-          parsed.nodes['sdks']);
+    } else if (parsedMap.containsKey('sdks')) {
+      var sdksField = parsedMap['sdks'];
+      _validate(sdksField is Map, 'The "sdks" field must be a mapping.',
+          parsedMap.nodes['sdks']);
 
       dartSdkConstraint = _parseVersionConstraint(sdksField.nodes['dart']);
       flutterSdkConstraint =
           _parseVersionConstraint(sdksField.nodes['flutter']);
     }
 
-    var packages = {};
-    var packageEntries = parsed['packages'];
+    var packages = <String, PackageId>{};
+    var packageEntries = parsedMap['packages'];
     if (packageEntries != null) {
       _validate(packageEntries is Map, 'The "packages" field must be a map.',
-          parsed.nodes['packages']);
+          parsedMap.nodes['packages']);
 
       packageEntries.forEach((name, spec) {
         // Parse the version.
@@ -124,8 +123,8 @@ class LockFile {
         try {
           id = source.parseId(name, version, description);
         } on FormatException catch (ex) {
-          throw new SourceSpanFormatException(ex.message,
-              spec.nodes['description'].span);
+          throw new SourceSpanFormatException(
+              ex.message, spec.nodes['description'].span);
         }
 
         // Validate the name.
@@ -143,14 +142,10 @@ class LockFile {
   static VersionConstraint _parseVersionConstraint(YamlNode node) {
     if (node == null) return null;
 
-    _validate(
-        node.value is String,
-        'Invalid version constraint: must be a string.',
-        node);
+    _validate(node.value is String,
+        'Invalid version constraint: must be a string.', node);
 
-    return _wrapFormatException(
-        'version constraint',
-        node.span,
+    return _wrapFormatException('version constraint', node.span,
         () => new VersionConstraint.parse(node.value));
   }
 
@@ -182,7 +177,7 @@ class LockFile {
   LockFile setPackage(PackageId id) {
     if (id.isRoot) return this;
 
-    var packages = new Map.from(this.packages);
+    var packages = new Map<String, PackageId>.from(this.packages);
     packages[id.name] = id;
     return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint);
   }
@@ -193,7 +188,7 @@ class LockFile {
   LockFile removePackage(String name) {
     if (!this.packages.containsKey(name)) return this;
 
-    var packages = new Map.from(this.packages);
+    var packages = new Map<String, PackageId>.from(this.packages);
     packages.remove(name);
     return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint);
   }
@@ -205,7 +200,8 @@ class LockFile {
   String packagesFile(SystemCache cache, [String entrypoint]) {
     var header = "Generated by pub on ${new DateTime.now()}.";
 
-    var map = new Map.fromIterable(ordered(packages.keys), value: (name) {
+    var map = new Map<String, Uri>.fromIterable(ordered(packages.keys),
+        value: (name) {
       var id = packages[name];
       var source = cache.source(id.source);
       return p.toUri(p.join(source.getDirectory(id), "lib"));
@@ -226,8 +222,8 @@ class LockFile {
     // Convert the dependencies to a simple object.
     var packageMap = {};
     packages.forEach((name, package) {
-      var description = package.source
-          .serializeDescription(packageDir, package.description);
+      var description =
+          package.source.serializeDescription(packageDir, package.description);
 
       packageMap[name] = {
         'version': package.version.toString(),
@@ -236,9 +232,7 @@ class LockFile {
       };
     });
 
-    var sdks = {
-      'dart': dartSdkConstraint.toString()
-    };
+    var sdks = {'dart': dartSdkConstraint.toString()};
     if (flutterSdkConstraint != null) {
       sdks['flutter'] = flutterSdkConstraint.toString();
     }

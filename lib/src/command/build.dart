@@ -34,15 +34,19 @@ class BuildCommand extends BarbackCommand {
   int builtFiles = 0;
 
   BuildCommand() {
-    argParser.addOption("define", abbr: "D",
+    argParser.addOption("define",
+        abbr: "D",
         help: "Defines an environment constant for dart2js.",
-        allowMultiple: true, splitCommas: false);
+        allowMultiple: true,
+        splitCommas: false);
 
     argParser.addOption("format",
         help: "How output should be displayed.",
-        allowed: ["text", "json"], defaultsTo: "text");
+        allowed: ["text", "json"],
+        defaultsTo: "text");
 
-    argParser.addOption("output", abbr: "o",
+    argParser.addOption("output",
+        abbr: "o",
         help: "Directory to write build outputs to.",
         defaultsTo: "build");
   }
@@ -53,82 +57,101 @@ class BuildCommand extends BarbackCommand {
     var errorsJson = [];
     var logJson = [];
 
-    var environmentConstants = new Map.fromIterable(argResults["define"],
+    var environmentConstants = new Map<String, String>.fromIterable(
+        argResults["define"],
         key: (pair) => pair.split("=").first,
         value: (pair) => pair.split("=").last);
 
-    // Since this server will only be hit by the transformer loader and isn't
-    // user-facing, just use an IPv4 address to avoid a weird bug on the
-    // OS X buildbots.
-    return AssetEnvironment.create(entrypoint, mode,
-            environmentConstants: environmentConstants,
-            useDart2JS: true)
-        .then((environment) {
-      // Show in-progress errors, but not results. Those get handled
-      // implicitly by getAllAssets().
-      environment.barback.errors.listen((error) {
-        log.error(log.red("Build error:\n$error"));
+    try {
+      // Since this server will only be hit by the transformer loader and isn't
+      // user-facing, just use an IPv4 address to avoid a weird bug on the OS X
+      // buildbots.
+      var environment = await AssetEnvironment.create(entrypoint, mode,
+          environmentConstants: environmentConstants, compiler: compiler);
+
+      var hasError = false;
+
+      // Unified error handler for barback and dartdevc.
+      logError(error, {bool logToStdError = true}) {
+        if (logToStdError) log.error(log.red("Build error:\n$error"));
+        hasError = true;
 
         if (log.json.enabled) {
           // Wrap the error in a map in case we end up decorating it with
           // more properties later.
-          errorsJson.add({
-            "error": error.toString()
-          });
+          errorsJson.add({"error": error.toString()});
         }
-      });
+      }
+
+      // Show in-progress errors, but not results. Those get handled
+      // implicitly by getAllAssets().
+      environment.barback.errors.listen(logError);
 
       // If we're using JSON output, the regular server logging is disabled.
       // Instead, we collect it here to include in the final JSON result.
       if (log.json.enabled) {
-        environment.barback.log.listen(
-            (entry) => logJson.add(_logEntryToJson(entry)));
+        environment.barback.log
+            .listen((entry) => logJson.add(_logEntryToJson(entry)));
       }
 
-      return log.progress("Building ${entrypoint.root.name}", () {
+      var assets = await log
+          .progress/*<AssetSet>*/("Building ${entrypoint.root.name}", () async {
         // Register all of the build directories.
         // TODO(rnystrom): We don't actually need to bind servers for these, we
         // just need to add them to barback's sources. Add support to
         // BuildEnvironment for going the latter without the former.
-        return Future.wait(sourceDirectories.map(
-            (dir) => environment.serveDirectory(dir))).then((_) {
+        await Future.wait(
+            sourceDirectories.map((dir) => environment.serveDirectory(dir)));
 
-          return environment.barback.getAllAssets();
+        return environment.barback.getAllAssets();
+      });
+
+      // Add all the js assets from dartdevc to the build, we don't need the
+      // rest once a build is complete.
+      if (environment.dartDevcEnvironment != null) {
+        await log.progress("Building dartdevc modules", () async {
+          assets.addAll(await environment.dartDevcEnvironment.doFullBuild(
+              assets,
+              logError: (e) => logError(e, logToStdError: false)));
         });
-      }).then((assets) {
+        await environment.dartDevcEnvironment.cleanUp();
+      }
+
+      // Clean up the environment before exiting.
+      await environment.cleanUp();
+
+      if (hasError) {
+        log.error(log.red("Build failed."));
+        log.json.message(
+            {"buildResult": "failure", "errors": errorsJson, "log": logJson});
+        return flushThenExit(exit_codes.DATA);
+      } else {
         // Find all of the JS entrypoints we built.
         var dart2JSEntrypoints = assets
             .where((asset) => asset.id.path.endsWith(".dart.js"))
             .map((asset) => asset.id);
 
-        return Future.wait(assets.map(_writeAsset)).then((_) {
-          return _copyBrowserJsFiles(dart2JSEntrypoints, assets);
-        }).then((_) {
-          log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
-              'to "$outputDirectory".');
+        await Future.wait(assets.map(_writeAsset));
+        await _copyBrowserJsFiles(dart2JSEntrypoints, assets);
 
-          log.json.message({
-            "buildResult": "success",
-            "outputDirectory": outputDirectory,
-            "numFiles": builtFiles,
-            "log": logJson
-          });
+        log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
+            'to "$outputDirectory".');
+        log.json.message({
+          "buildResult": "success",
+          "outputDirectory": outputDirectory,
+          "numFiles": builtFiles,
+          "log": logJson
         });
-      });
-    }).catchError((error) {
+      }
+    } on BarbackException catch (_) {
       // If [getAllAssets()] throws a BarbackException, the error has already
       // been reported.
-      if (error is! BarbackException) throw error;
-
       log.error(log.red("Build failed."));
-      log.json.message({
-        "buildResult": "failure",
-        "errors": errorsJson,
-        "log": logJson
-      });
+      log.json.message(
+          {"buildResult": "failure", "errors": errorsJson, "log": logJson});
 
       return flushThenExit(exit_codes.DATA);
-    });
+    }
   }
 
   /// Writes [asset] to the appropriate build directory.
@@ -202,8 +225,8 @@ class BuildCommand extends BarbackCommand {
   /// directories next to each entrypoint in [entrypoints].
   Future _copyBrowserJsFiles(Iterable<AssetId> entrypoints, AssetSet assets) {
     // Must depend on the browser package.
-    if (!entrypoint.root.immediateDependencies.any(
-        (dep) => dep.name == 'browser' && dep.source is HostedSource)) {
+    if (!entrypoint.root.immediateDependencies
+        .any((dep) => dep.name == 'browser' && dep.source is HostedSource)) {
       return new Future.value();
     }
 
@@ -241,10 +264,7 @@ class BuildCommand extends BarbackCommand {
           "path": entry.transform.primaryId.path
         },
       },
-      "assetId": {
-        "package": entry.assetId.package,
-        "path": entry.assetId.path
-      },
+      "assetId": {"package": entry.assetId.package, "path": entry.assetId.path},
       "message": entry.message
     };
 
@@ -255,10 +275,7 @@ class BuildCommand extends BarbackCommand {
           "line": entry.span.start.line,
           "column": entry.span.start.column
         },
-        "end": {
-          "line": entry.span.end.line,
-          "column": entry.span.end.column
-        },
+        "end": {"line": entry.span.end.line, "column": entry.span.end.column},
       };
     }
 

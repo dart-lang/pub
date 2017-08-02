@@ -26,18 +26,19 @@ import 'transformer_loader.dart';
 ///
 /// If [entrypoints] is passed, only transformers necessary to run those
 /// entrypoints will be loaded.
-Future loadAllTransformers(AssetEnvironment environment,
-    BarbackServer transformerServer, {Iterable<AssetId> entrypoints}) async {
+Future loadAllTransformers(
+    AssetEnvironment environment, BarbackServer transformerServer,
+    {Iterable<AssetId> entrypoints}) async {
   var dependencyComputer = new DependencyComputer(environment.graph);
 
   // If we only need to load transformers for a specific set of entrypoints,
   // remove any other transformers from [transformersNeededByTransformers].
-  var necessaryTransformers;
+  Set<TransformerId> necessaryTransformers;
   if (entrypoints != null) {
     if (entrypoints.isEmpty) return;
 
-    necessaryTransformers = unionAll(entrypoints.map(
-        dependencyComputer.transformersNeededByLibrary));
+    necessaryTransformers = unionAll(
+        entrypoints.map(dependencyComputer.transformersNeededByLibrary));
 
     if (necessaryTransformers.isEmpty) {
       log.fine("No transformers are needed for ${toSentence(entrypoints)}.");
@@ -69,15 +70,16 @@ Future loadAllTransformers(AssetEnvironment environment,
   // Only save compiled snapshots when a physical entrypoint package is being
   // used. There's no physical entrypoint when e.g. globally activating a cached
   // package.
-  var cache = environment.rootPackage.dir == null ? null :
-      environment.graph.loadTransformerCache();
+  var cache = environment.rootPackage.dir == null
+      ? null
+      : environment.graph.loadTransformerCache();
 
   var first = true;
   for (var stage in stagedTransformers) {
     // Only cache the first stage, since its contents aren't based on other
     // transformers and thus is independent of the current mode.
-    var snapshotPath = cache == null || !first ? null :
-        cache.snapshotPath(stage);
+    var snapshotPath =
+        cache == null || !first ? null : cache.snapshotPath(stage);
     first = false;
 
     /// Load all the transformers in [stage], then add them to the appropriate
@@ -85,13 +87,14 @@ Future loadAllTransformers(AssetEnvironment environment,
     await loader.load(stage, snapshot: snapshotPath);
 
     // Only update packages that use transformers in [stage].
-    var packagesToUpdate = unionAll(stage.map((id) =>
-        packagesThatUseTransformers[id]));
+    var packagesToUpdate =
+        unionAll(stage.map((id) => packagesThatUseTransformers[id]));
     await Future.wait(packagesToUpdate.map((packageName) async {
       var package = environment.graph.packages[packageName];
-      var phases = await loader.transformersForPhases(
-          package.pubspec.transformers);
+      var phases =
+          await loader.transformersForPhases(package.pubspec.transformers);
       environment.barback.updateTransformers(packageName, phases);
+      environment.dartDevcEnvironment?.invalidatePackage(packageName);
     }));
   }
 
@@ -99,10 +102,9 @@ Future loadAllTransformers(AssetEnvironment environment,
 
   /// Add built-in transformers for the packages that need them.
   await Future.wait(environment.graph.packages.values.map((package) async {
-    var phases = await loader.transformersForPhases(
-        package.pubspec.transformers);
-    var transformers = environment.getBuiltInTransformers(package);
-    if (transformers != null) phases.add(transformers);
+    var phases =
+        await loader.transformersForPhases(package.pubspec.transformers);
+    phases.addAll(environment.getBuiltInTransformers(package));
     if (phases.isEmpty) return;
 
     // TODO(nweiz): remove the [newFuture] here when issue 17305 is fixed.
@@ -111,8 +113,10 @@ Future loadAllTransformers(AssetEnvironment environment,
     // immediate emission. Issue 17305 means that the caller will be unable
     // to receive this result unless we delay the update to after this
     // function returns.
-    newFuture(() =>
-        environment.barback.updateTransformers(package.name, phases));
+    newFuture(() {
+      environment.barback.updateTransformers(package.name, phases);
+      environment.dartDevcEnvironment?.invalidatePackage(package.name);
+    });
   }));
 }
 
@@ -126,18 +130,18 @@ List<Set<TransformerId>> _stageTransformers(
     Map<TransformerId, Set<TransformerId>> transformerDependencies) {
   // A map from transformer ids to the indices of the stages that those
   // transformer ids should end up in. Populated by [stageNumberFor].
-  var stageNumbers = {};
-  var stages = [];
+  var stageNumbers = <TransformerId, int>{};
+  var stages = <Set<TransformerId>>[];
 
-  stageNumberFor(id) {
+  stageNumberFor(TransformerId id) {
     // Built-in transformers don't have to be loaded in stages, since they're
     // run from pub's source. Return -1 so that the "next stage" is 0.
     if (id.isBuiltInTransformer) return -1;
 
     if (stageNumbers.containsKey(id)) return stageNumbers[id];
     var dependencies = transformerDependencies[id];
-    stageNumbers[id] = dependencies.isEmpty ?
-        0 : maxAll(dependencies.map(stageNumberFor)) + 1;
+    stageNumbers[id] =
+        dependencies.isEmpty ? 0 : maxAll(dependencies.map(stageNumberFor)) + 1;
     return stageNumbers[id];
   }
 
@@ -155,7 +159,7 @@ List<Set<TransformerId>> _stageTransformers(
 /// transformer.
 Map<TransformerId, Set<String>> _packagesThatUseTransformers(
     PackageGraph graph) {
-  var results = {};
+  var results = <TransformerId, Set<String>>{};
   for (var package in graph.packages.values) {
     for (var phase in package.pubspec.transformers) {
       for (var config in phase) {

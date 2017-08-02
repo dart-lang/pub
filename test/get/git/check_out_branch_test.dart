@@ -2,35 +2,35 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('checks out a package at a specific branch from Git', () {
+  test('checks out a package at a specific branch from Git', () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
-      d.libDir('foo', 'foo 1'),
-      d.libPubspec('foo', '1.0.0')
-    ]);
-    repo.create();
-    repo.runGit(["branch", "old"]);
+    var repo = d.git(
+        'foo.git', [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')]);
+    await repo.create();
+    await repo.runGit(["branch", "old"]);
 
-    d.git('foo.git', [
-      d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0')
-    ]).commit();
+    await d.git('foo.git',
+        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    d.appDir({
-      "foo": {"git": {"url": "../foo.git", "ref": "old"}}
+    await d.appDir({
+      "foo": {
+        "git": {"url": "../foo.git", "ref": "old"}
+      }
     }).create();
 
-    pubGet();
+    // TODO(rnystrom): Remove "--packages-dir" and validate using the
+    // ".packages" file instead of looking in the "packages" directory.
+    await pubGet(args: ["--packages-dir"]);
 
-    d.dir(packagesPath, [
-      d.dir('foo', [
-        d.file('foo.dart', 'main() => "foo 1";')
-      ])
+    await d.dir(packagesPath, [
+      d.dir('foo', [d.file('foo.dart', 'main() => "foo 1";')])
     ]).validate();
   });
 }

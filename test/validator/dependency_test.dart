@@ -8,31 +8,32 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency.dart';
-import 'package:scheduled_test/scheduled_test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 Validator dependency(Entrypoint entrypoint) =>
-  new DependencyValidator(entrypoint);
+    new DependencyValidator(entrypoint);
 
 expectDependencyValidationError(String error) {
-  expect(schedulePackageValidation(dependency),
+  expect(validatePackage(dependency),
       completion(pairOf(anyElement(contains(error)), isEmpty)));
 }
 
 expectDependencyValidationWarning(String warning) {
-  expect(schedulePackageValidation(dependency),
+  expect(validatePackage(dependency),
       completion(pairOf(isEmpty, anyElement(contains(warning)))));
 }
 
 /// Sets up a test package with dependency [dep] and mocks a server with
 /// [hostedVersions] of the package available.
-setUpDependency(Map dep, {List<String> hostedVersions}) {
+Future setUpDependency(Map dep, {List<String> hostedVersions}) {
   useMockClient(new MockClient((request) {
     expect(request.method, equals("GET"));
     expect(request.url.path, equals("/api/packages/foo"));
@@ -40,33 +41,113 @@ setUpDependency(Map dep, {List<String> hostedVersions}) {
     if (hostedVersions == null) {
       return new Future.value(new http.Response("not found", 404));
     } else {
-      return new Future.value(new http.Response(JSON.encode({
-        "name": "foo",
-        "uploaders": ["nweiz@google.com"],
-        "versions": hostedVersions.map((version) =>
-            packageVersionApiMap(packageMap('foo', version))).toList()
-      }), 200));
+      return new Future.value(new http.Response(
+          JSON.encode({
+            "name": "foo",
+            "uploaders": ["nweiz@google.com"],
+            "versions": hostedVersions
+                .map((version) =>
+                    packageVersionApiMap(packageMap('foo', version)))
+                .toList()
+          }),
+          200));
     }
   }));
 
-  d.dir(appPath, [
+  return d.dir(appPath, [
     d.libPubspec("test_pkg", "1.0.0", deps: {"foo": dep})
   ]).create();
 }
 
 main() {
   group('should consider a package valid if it', () {
-    integration('looks normal', () {
-      d.validPackage.create();
+    test('looks normal', () async {
+      await d.validPackage.create();
       expectNoValidationError(dependency);
     });
 
-    integration('has a ^ constraint with an appropriate SDK constraint', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "foo": "^1.2.3"
-        }, sdk: ">=1.8.0 <2.0.0")
+    test('has a ^ constraint with an appropriate SDK constraint', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"foo": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0")
       ]).create();
+      expectNoValidationError(dependency);
+    });
+
+    test('depends on a feature with an appropriate SDK constraint', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {
+              "foo": {
+                "version": "^1.2.3",
+                "features": {"stuff": true}
+              }
+            },
+            sdk: ">=2.0.0 <3.0.0")
+      ]).create();
+      expectNoValidationError(dependency);
+    });
+
+    test('declares a feature with an appropriate SDK constraint', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "features": {
+            "stuff": {
+              "dependencies": {"foo": "^1.0.0"}
+            }
+          },
+          "environment": {"sdk": ">=2.0.0 <3.0.0"}
+        })
+      ]).create();
+      expectNoValidationError(dependency);
+    });
+
+    test('declares a default-off feature with an appropriate SDK constraint',
+        () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "features": {
+            "stuff": {
+              "default": false,
+              "dependencies": {"foo": "^1.0.0"}
+            }
+          },
+          "environment": {"sdk": ">=2.0.0 <3.0.0"}
+        })
+      ]).create();
+      expectNoValidationError(dependency);
+    });
+
+    test('has a git path dependency with an appropriate SDK constraint',
+        () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {
+              "foo": {
+                "git": {
+                  "url": "git://github.com/dart-lang/foo",
+                  "path": "subdir"
+                }
+              }
+            },
+            sdk: ">=2.0.0 <3.0.0")
+      ]).create();
+
+      // We should get a warning for using a git dependency, but not an error.
+      expectDependencyValidationWarning('  foo: any');
+    });
+
+    test('depends on Flutter from an SDK source', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {
+          "flutter": {"sdk": ">=1.2.3 <2.0.0"}
+        })
+      ]).create();
+
       expectNoValidationError(dependency);
     });
   });
@@ -76,42 +157,43 @@ main() {
 
     group('has a git dependency', () {
       group('where a hosted version exists', () {
-        integration("and should suggest the hosted primary version", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+        test("and should suggest the hosted primary version", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
-          expectDependencyValidationWarning('  foo: ">=2.0.0 <3.0.0"');
+          expectDependencyValidationWarning('  foo: ^2.0.0');
         });
 
-        integration("and should suggest the hosted prerelease version if "
-                    "it's the only version available", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+        test(
+            "and should suggest the hosted prerelease version if "
+            "it's the only version available", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
-          expectDependencyValidationWarning('  foo: ">=3.0.0-pre <4.0.0"');
+          expectDependencyValidationWarning('  foo: ^3.0.0-pre');
         });
 
-        integration("and should suggest a tighter constraint if primary is "
-                    "pre-1.0.0", () {
-          setUpDependency({'git': 'git://github.com/dart-lang/foo'},
+        test(
+            "and should suggest a tighter constraint if primary is "
+            "pre-1.0.0", () async {
+          await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ["0.0.1", "0.0.2"]);
-          expectDependencyValidationWarning('  foo: ">=0.0.2 <0.1.0"');
+          expectDependencyValidationWarning('  foo: ^0.0.2');
         });
       });
 
       group('where no hosted version exists', () {
-        integration("and should use the other source's version", () {
-          setUpDependency({
+        test("and should use the other source's version", () async {
+          await setUpDependency({
             'git': 'git://github.com/dart-lang/foo',
             'version': '>=1.0.0 <2.0.0'
           });
           expectDependencyValidationWarning('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration("and should use the other source's unquoted version if "
-                    "concrete", () {
-          setUpDependency({
-            'git': 'git://github.com/dart-lang/foo',
-            'version': '0.2.3'
-          });
+        test(
+            "and should use the other source's unquoted version if "
+            "concrete", () async {
+          await setUpDependency(
+              {'git': 'git://github.com/dart-lang/foo', 'version': '0.2.3'});
           expectDependencyValidationWarning('  foo: 0.2.3');
         });
       });
@@ -119,42 +201,43 @@ main() {
 
     group('has a path dependency', () {
       group('where a hosted version exists', () {
-        integration("and should suggest the hosted primary version", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+        test("and should suggest the hosted primary version", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0", "1.0.0"]);
-          expectDependencyValidationError('  foo: ">=2.0.0 <3.0.0"');
+          expectDependencyValidationError('  foo: ^2.0.0');
         });
 
-        integration("and should suggest the hosted prerelease version if "
-                    "it's the only version available", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+        test(
+            "and should suggest the hosted prerelease version if "
+            "it's the only version available", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["3.0.0-pre", "2.0.0-pre"]);
-          expectDependencyValidationError('  foo: ">=3.0.0-pre <4.0.0"');
+          expectDependencyValidationError('  foo: ^3.0.0-pre');
         });
 
-        integration("and should suggest a tighter constraint if primary is "
-                    "pre-1.0.0", () {
-          setUpDependency({'path': path.join(sandboxDir, 'foo')},
+        test(
+            "and should suggest a tighter constraint if primary is "
+            "pre-1.0.0", () async {
+          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ["0.0.1", "0.0.2"]);
-          expectDependencyValidationError('  foo: ">=0.0.2 <0.1.0"');
+          expectDependencyValidationError('  foo: ^0.0.2');
         });
       });
 
       group('where no hosted version exists', () {
-        integration("and should use the other source's version", () {
-          setUpDependency({
-            'path': path.join(sandboxDir, 'foo'),
+        test("and should use the other source's version", () async {
+          await setUpDependency({
+            'path': path.join(d.sandbox, 'foo'),
             'version': '>=1.0.0 <2.0.0'
           });
           expectDependencyValidationError('  foo: ">=1.0.0 <2.0.0"');
         });
 
-        integration("and should use the other source's unquoted version if "
-                    "concrete", () {
-          setUpDependency({
-            'path': path.join(sandboxDir, 'foo'),
-            'version': '0.2.3'
-          });
+        test(
+            "and should use the other source's unquoted version if "
+            "concrete", () async {
+          await setUpDependency(
+              {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
           expectDependencyValidationError('  foo: 0.2.3');
         });
       });
@@ -162,228 +245,233 @@ main() {
 
     group('has an unconstrained dependency', () {
       group('and it should not suggest a version', () {
-        integration("if there's no lockfile", () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            })
+        test("if there's no lockfile", () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"})
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              validatePackage(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration("if the lockfile doesn't have an entry for the "
-            "dependency", () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'bar': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'bar',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            "if the lockfile doesn't have an entry for the "
+            "dependency", () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'bar': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'bar',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              validatePackage(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration('and it should suggest a constraint based on the locked '
-            'version', () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            'and it should suggest a constraint based on the locked '
+            'version', () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+          expectDependencyValidationWarning('  foo: ^1.2.3');
         });
 
-        integration('and it should suggest a concrete constraint if the locked '
-            'version is pre-1.0.0', () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "any"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '0.1.2',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            'and it should suggest a concrete constraint if the locked '
+            'version is pre-1.0.0', () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '0.1.2',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=0.1.2 <0.2.0"');
+          expectDependencyValidationWarning('  foo: ^0.1.2');
         });
       });
     });
 
-    integration('with a single-version dependency and it should suggest a '
-        'constraint based on the version', () {
-      d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "foo": "1.2.3"
-        })
+    test(
+        'with a single-version dependency and it should suggest a '
+        'constraint based on the version', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "1.2.3"})
       ]).create();
 
-      expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+      expectDependencyValidationWarning('  foo: ^1.2.3');
     });
 
     group('has a dependency without a lower bound', () {
       group('and it should not suggest a version', () {
-        integration("if there's no lockfile", () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            })
+        test("if there's no lockfile", () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"})
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              validatePackage(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
 
-        integration("if the lockfile doesn't have an entry for the "
-            "dependency", () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'bar': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'bar',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            "if the lockfile doesn't have an entry for the "
+            "dependency", () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'bar': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'bar',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expect(schedulePackageValidation(dependency), completion(
-              pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
+          expect(
+              validatePackage(dependency),
+              completion(
+                  pairOf(isEmpty, everyElement(isNot(contains("\n  foo:"))))));
         });
       });
 
       group('with a lockfile', () {
-        integration('and it should suggest a constraint based on the locked '
-            'version', () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            'and it should suggest a constraint based on the locked '
+            'version', () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <3.0.0"');
         });
 
-        integration('and it should preserve the upper-bound operator', () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<=3.0.0"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+        test('and it should preserve the upper-bound operator', () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=3.0.0"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
           expectDependencyValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
         });
 
-        integration('and it should expand the suggested constraint if the '
-            'locked version matches the upper bound', () {
-          d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", deps: {
-              "foo": "<=1.2.3"
-            }),
-            d.file("pubspec.lock", JSON.encode({
-              'packages': {
-                'foo': {
-                  'version': '1.2.3',
-                  'source': 'hosted',
-                  'description': {
-                    'name': 'foo',
-                    'url': 'http://pub.dartlang.org'
+        test(
+            'and it should expand the suggested constraint if the '
+            'locked version matches the upper bound', () async {
+          await d.dir(appPath, [
+            d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=1.2.3"}),
+            d.file(
+                "pubspec.lock",
+                JSON.encode({
+                  'packages': {
+                    'foo': {
+                      'version': '1.2.3',
+                      'source': 'hosted',
+                      'description': {
+                        'name': 'foo',
+                        'url': 'http://pub.dartlang.org'
+                      }
+                    }
                   }
-                }
-              }
-            }))
+                }))
           ]).create();
 
-          expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+          expectDependencyValidationWarning('  foo: ^1.2.3');
         });
       });
     });
 
     group('with a dependency without an upper bound', () {
-      integration('and it should suggest a constraint based on the lower bound',
-          () {
-        d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": ">=1.2.3"
-          })
+      test('and it should suggest a constraint based on the lower bound',
+          () async {
+        await d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">=1.2.3"})
         ]).create();
 
-        expectDependencyValidationWarning('  foo: ">=1.2.3 <2.0.0"');
+        expectDependencyValidationWarning('  foo: ^1.2.3');
       });
 
-      integration('and it should preserve the lower-bound operator', () {
-        d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": ">1.2.3"
-          })
+      test('and it should preserve the lower-bound operator', () async {
+        await d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0", deps: {"foo": ">1.2.3"})
         ]).create();
 
         expectDependencyValidationWarning('  foo: ">1.2.3 <2.0.0"');
@@ -391,25 +479,163 @@ main() {
     });
 
     group('has a ^ dependency', () {
-      integration("without an SDK constraint", () {
-        d.dir(appPath, [
+      test("without an SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
+        ]).create();
+
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0-dev.infinity"');
+      });
+
+      test("with a too-broad SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0",
+              deps: {"foo": "^1.2.3"}, sdk: ">=1.5.0 <2.0.0")
+        ]).create();
+
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+      });
+    });
+
+    group('has a git path dependency', () {
+      test("without an SDK constraint", () async {
+        await d.dir(appPath, [
           d.libPubspec("integration_pkg", "1.0.0", deps: {
-            "foo": "^1.2.3"
+            "foo": {
+              "git": {"url": "git://github.com/dart-lang/foo", "path": "subdir"}
+            }
           })
         ]).create();
 
-        expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+                anyElement(contains('  foo: any')))));
       });
 
-      integration("with a too-broad SDK constraint", () {
-        d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": "^1.2.3"
-          }, sdk: ">=1.5.0 <2.0.0")
+      test("with a too-broad SDK constraint", () async {
+        await d.dir(appPath, [
+          d.libPubspec("integration_pkg", "1.0.0",
+              deps: {
+                "foo": {
+                  "git": {
+                    "url": "git://github.com/dart-lang/foo",
+                    "path": "subdir"
+                  }
+                }
+              },
+              sdk: ">=1.24.0 <3.0.0")
         ]).create();
 
-        expectDependencyValidationError('  foo: ">=1.2.3 <2.0.0"');
+        expect(
+            validatePackage(dependency),
+            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+                anyElement(contains('  foo: any')))));
       });
+    });
+
+    group('has a feature dependency', () {
+      test('without an SDK constraint', () async {
+        await d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0", deps: {
+            "foo": {
+              "version": "^1.2.3",
+              "features": {"stuff": true}
+            }
+          })
+        ]).create();
+
+        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
+      });
+
+      test('with a too-broad SDK constraint', () async {
+        await d.dir(appPath, [
+          d.libPubspec("test_pkg", "1.0.0",
+              deps: {
+                "foo": {
+                  "version": "^1.2.3",
+                  "features": {"stuff": true}
+                }
+              },
+              sdk: ">=1.24.0 <3.0.0")
+        ]).create();
+
+        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
+      });
+    });
+
+    group('declares a feature', () {
+      test('without an constraint', () async {
+        await d.dir(appPath, [
+          d.pubspec({
+            "name": "test_pkg",
+            "version": "1.0.0",
+            "features": {
+              "stuff": {
+                "dependencies": {"foo": "^1.0.0"}
+              }
+            }
+          })
+        ]).create();
+        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
+      });
+
+      test('with a too-broad SDK constraint', () async {
+        await d.dir(appPath, [
+          d.pubspec({
+            "name": "test_pkg",
+            "version": "1.0.0",
+            "features": {
+              "stuff": {
+                "dependencies": {"foo": "^1.0.0"}
+              }
+            },
+            "environment": {"sdk": ">=1.24.0 <3.0.0"}
+          })
+        ]).create();
+        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
+      });
+
+      test('with an explicit default and a too-broad SDK constraint', () async {
+        await d.dir(appPath, [
+          d.pubspec({
+            "name": "test_pkg",
+            "version": "1.0.0",
+            "features": {
+              "stuff": {
+                "default": true,
+                "dependencies": {"foo": "^1.0.0"}
+              }
+            },
+            "environment": {"sdk": ">=1.24.0 <3.0.0"}
+          })
+        ]).create();
+        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
+      });
+
+      test('with an invalid dependency', () async {
+        await d.dir(appPath, [
+          d.pubspec({
+            "name": "test_pkg",
+            "version": "1.0.0",
+            "features": {
+              "stuff": {
+                "dependencies": {"foo": "1.2.3"}
+              }
+            },
+            "environment": {"sdk": ">=2.0.0 <3.0.0"}
+          })
+        ]).create();
+        expectDependencyValidationWarning('  foo: ^1.2.3');
+      });
+    });
+
+    test('depends on Flutter from a non-SDK source', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {"flutter": ">=1.2.3 <2.0.0"})
+      ]).create();
+
+      expectDependencyValidationError('sdk: >=1.2.3 <2.0.0');
     });
   });
 }

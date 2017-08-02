@@ -25,8 +25,8 @@ class AdminServer extends BaseServer {
   shelf.Handler _handler;
 
   /// Creates a new server and binds it to [port] of [host].
-  static Future<AdminServer> bind(AssetEnvironment environment,
-      String host, int port) {
+  static Future<AdminServer> bind(
+      AssetEnvironment environment, String host, int port) {
     return bindServer(host, port).then((server) {
       log.fine('Bound admin server to $host:$port.');
       return new AdminServer._(environment, server);
@@ -37,7 +37,8 @@ class AdminServer extends BaseServer {
       : super(environment, server) {
     _handler = new shelf.Cascade()
         .add(webSocketHandler(_handleWebSocket))
-        .add(_handleHttp).handler;
+        .add(_handleHttp)
+        .handler;
   }
 
   /// Closes the server and all Web Socket connections.
@@ -62,7 +63,8 @@ class AdminServer extends BaseServer {
   void _handleWebSocket(WebSocketChannel channel) {
     _webSockets.add(channel);
     var api = new WebSocketApi(channel, environment);
-    api.listen()
+    api
+        .listen()
         .whenComplete(() => _webSockets.remove(channel))
         .catchError(addError);
   }

@@ -26,12 +26,14 @@ class DepsCommand extends PubCommand {
   bool get _includeDev => argResults['dev'];
 
   DepsCommand() {
-    argParser.addOption("style", abbr: "s",
+    argParser.addOption("style",
+        abbr: "s",
         help: "How output should be displayed.",
         allowed: ["compact", "tree", "list"],
         defaultsTo: "tree");
 
-    argParser.addFlag("dev", negatable: true,
+    argParser.addFlag("dev",
+        negatable: true,
         help: "Whether to include dev dependencies.",
         defaultsTo: true);
   }
@@ -45,9 +47,15 @@ class DepsCommand extends PubCommand {
     _buffer.writeln(_labelPackage(entrypoint.root));
 
     switch (argResults["style"]) {
-      case "compact": _outputCompact(); break;
-      case "list": _outputList(); break;
-      case "tree": _outputTree(); break;
+      case "compact":
+        _outputCompact();
+        break;
+      case "list":
+        _outputList();
+        break;
+      case "tree":
+        _outputTree();
+        break;
     }
 
     log.message(_buffer);
@@ -61,11 +69,11 @@ class DepsCommand extends PubCommand {
   /// line.
   void _outputCompact() {
     var root = entrypoint.root;
-    _outputCompactPackages("dependencies",
-        root.dependencies.map((dep) => dep.name));
+    _outputCompactPackages(
+        "dependencies", root.dependencies.map((dep) => dep.name));
     if (_includeDev) {
-      _outputCompactPackages("dev dependencies",
-          root.devDependencies.map((dep) => dep.name));
+      _outputCompactPackages(
+          "dev dependencies", root.devDependencies.map((dep) => dep.name));
     }
     _outputCompactPackages("dependency overrides",
         root.dependencyOverrides.map((dep) => dep.name));
@@ -101,11 +109,11 @@ class DepsCommand extends PubCommand {
   /// shown.
   void _outputList() {
     var root = entrypoint.root;
-    _outputListSection("dependencies",
-        root.dependencies.map((dep) => dep.name));
+    _outputListSection(
+        "dependencies", root.dependencies.map((dep) => dep.name));
     if (_includeDev) {
-      _outputListSection("dev dependencies",
-          root.devDependencies.map((dep) => dep.name));
+      _outputListSection(
+          "dev dependencies", root.devDependencies.map((dep) => dep.name));
     }
     _outputListSection("dependency overrides",
         root.dependencyOverrides.map((dep) => dep.name));
@@ -128,8 +136,8 @@ class DepsCommand extends PubCommand {
       _buffer.writeln("- ${_labelPackage(package)}");
 
       for (var dep in package.dependencies) {
-        _buffer.writeln(
-            "  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}");
+        _buffer
+            .writeln("  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}");
       }
     }
   }
@@ -144,11 +152,11 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = new Queue<Pair<Package, Map>>();
+    var toWalk = new Queue<Pair<Package, Map<String, Map>>>();
     var visited = new Set<String>.from([entrypoint.root.name]);
 
     // Start with the root dependencies.
-    var packageTree = {};
+    var packageTree = <String, Map>{};
     var immediateDependencies = entrypoint.root.immediateDependencies.toSet();
     if (!_includeDev) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies);
@@ -171,7 +179,7 @@ class DepsCommand extends PubCommand {
       visited.add(package.name);
 
       // Populate the map with this package's dependencies.
-      var childMap = {};
+      var childMap = <String, Map>{};
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies) {
@@ -202,10 +210,10 @@ class DepsCommand extends PubCommand {
     if (_includeDev) return entrypoint.packageGraph.packages.keys.toSet();
 
     var nonDevDependencies = entrypoint.root.dependencies.toList()
-        ..addAll(entrypoint.root.dependencyOverrides);
+      ..addAll(entrypoint.root.dependencyOverrides);
     return nonDevDependencies
-        .expand((dep) =>
-            entrypoint.packageGraph.transitiveDependencies(dep.name))
+        .expand(
+            (dep) => entrypoint.packageGraph.transitiveDependencies(dep.name))
         .map((package) => package.name)
         .toSet();
   }
@@ -221,5 +229,6 @@ class DepsCommand extends PubCommand {
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "pub get" again.');
+    return null;
   }
 }

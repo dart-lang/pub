@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import 'package:pub/src/barback.dart' as barback;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -11,78 +13,85 @@ import 'test_pub.dart';
 main() {
   var constraint = barback.pubConstraints["barback"];
   var current = constraint.min.toString();
-  var previous = new Version(constraint.min.major, constraint.min.minor - 1, 0)
-      .toString();
+  var previous =
+      new Version(constraint.min.major, constraint.min.minor - 1, 0).toString();
   var nextPatch = constraint.min.nextPatch.toString();
   var max = constraint.max.toString();
 
   var sourceSpanVersion = barback.pubConstraints["source_span"].min.toString();
   var stackTraceVersion = barback.pubConstraints["stack_trace"].min.toString();
+  var asyncVersion = barback.pubConstraints["async"].min.toString();
 
   forBothPubGetAndUpgrade((command) {
-    integration("implicitly constrains barback to versions pub supports", () {
-      servePackages((builder) {
+    test("implicitly constrains barback to versions pub supports", () async {
+      await servePackages((builder) {
         builder.serve("barback", previous);
         builder.serve("barback", current);
         builder.serve("barback", nextPatch);
         builder.serve("barback", max);
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
-      d.appDir({
-        "barback": "any"
-      }).create();
+      await d.appDir({"barback": "any"}).create();
 
-      pubCommand(command);
+      await pubCommand(command);
 
-      d.packagesDir({
-        "barback": nextPatch
+      await d.appPackagesFile({
+        "async": asyncVersion,
+        "barback": nextPatch,
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion
       }).validate();
     });
 
-    integration("discovers transitive dependency on barback", () {
-      servePackages((builder) {
+    test("discovers transitive dependency on barback", () async {
+      await servePackages((builder) {
         builder.serve("barback", previous);
         builder.serve("barback", current);
         builder.serve("barback", nextPatch);
         builder.serve("barback", max);
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
-      d.dir("foo", [
+      await d.dir("foo", [
         d.libDir("foo", "foo 0.0.1"),
-        d.libPubspec("foo", "0.0.1", deps: {
-          "barback": "any"
-        })
+        d.libPubspec("foo", "0.0.1", deps: {"barback": "any"})
       ]).create();
 
-      d.appDir({
+      await d.appDir({
         "foo": {"path": "../foo"}
       }).create();
 
-      pubCommand(command);
+      await pubCommand(command);
 
-      d.packagesDir({
+      await d.appPackagesFile({
+        "async": asyncVersion,
         "barback": nextPatch,
-        "foo": "0.0.1"
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion,
+        "foo": "../foo"
       }).validate();
     });
 
-    integration("pub's implicit constraint uses the same source and "
-        "description as a dependency override", () {
-      servePackages((builder) {
+    test(
+        "pub's implicit constraint uses the same source and "
+        "description as a dependency override", () async {
+      await servePackages((builder) {
         builder.serve("source_span", sourceSpanVersion);
         builder.serve("stack_trace", stackTraceVersion);
+        builder.serve("async", asyncVersion);
       });
 
-      d.dir('barback', [
+      await d.dir('barback', [
         d.libDir('barback', 'barback $current'),
         d.libPubspec('barback', current),
       ]).create();
 
-      d.dir(appPath, [
+      await d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
           "dependency_overrides": {
@@ -91,65 +100,74 @@ main() {
         })
       ]).create();
 
-      pubCommand(command);
+      await pubCommand(command);
 
-      d.packagesDir({
-        "barback": current
+      await d.appPackagesFile({
+        "async": asyncVersion,
+        "barback": "../barback",
+        "source_span": sourceSpanVersion,
+        "stack_trace": stackTraceVersion,
       }).validate();
     });
   });
 
-  integration("unlock if the locked version doesn't meet pub's constraint", () {
-    servePackages((builder) {
+  test("unlock if the locked version doesn't meet pub's constraint", () async {
+    await servePackages((builder) {
       builder.serve("barback", previous);
       builder.serve("barback", current);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
-    d.appDir({"barback": "any"}).create();
-
+    await d.appDir({"barback": "any"}).create();
     // Hand-create a lockfile to pin barback to an older version.
-    createLockFile("myapp", hosted: {
-      "barback": previous
-    });
 
-    pubGet();
+    await createLockFile("myapp", hosted: {"barback": previous});
 
+    await pubGet();
     // It should be upgraded.
-    d.packagesDir({
-      "barback": current
+
+    await d.appPackagesFile({
+      "async": asyncVersion,
+      "barback": current,
+      "source_span": sourceSpanVersion,
+      "stack_trace": stackTraceVersion,
     }).validate();
   });
 
-  integration("includes pub in the error if a solve failed because there "
-      "is no version available", () {
-    servePackages((builder) {
+  test(
+      "includes pub in the error if a solve failed because there "
+      "is no version available", () async {
+    await servePackages((builder) {
       builder.serve("barback", previous);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
-    d.appDir({"barback": "any"}).create();
+    await d.appDir({"barback": "any"}).create();
 
-    pubGet(error: """
+    await pubGet(error: """
 Package barback has no versions that match >=$current <$max derived from:
 - myapp depends on version any
 - pub itself depends on version >=$current <$max""");
   });
 
-  integration("includes pub in the error if a solve failed because there "
-      "is a disjoint constraint", () {
-    servePackages((builder) {
+  test(
+      "includes pub in the error if a solve failed because there "
+      "is a disjoint constraint", () async {
+    await servePackages((builder) {
       builder.serve("barback", previous);
       builder.serve("barback", current);
       builder.serve("source_span", sourceSpanVersion);
       builder.serve("stack_trace", stackTraceVersion);
+      builder.serve("async", asyncVersion);
     });
 
-    d.appDir({"barback": previous}).create();
+    await d.appDir({"barback": previous}).create();
 
-    pubGet(error: """
+    await pubGet(error: """
 Incompatible version constraints on barback:
 - myapp depends on version $previous
 - pub itself depends on version >=$current <$max""");

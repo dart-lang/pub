@@ -12,8 +12,7 @@ import '../validator.dart';
 
 /// A validator that validates the name of the package and its libraries.
 class NameValidator extends Validator {
-  NameValidator(Entrypoint entrypoint)
-    : super(entrypoint);
+  NameValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
@@ -41,10 +40,12 @@ class NameValidator extends Validator {
   /// to the package's root directory.
   List<String> get _libraries {
     var libDir = entrypoint.root.path("lib");
-    return entrypoint.root.listFiles(beneath: "lib")
+    return entrypoint.root
+        .listFiles(beneath: "lib")
         .map((file) => path.relative(file, from: path.dirname(libDir)))
-        .where((file) => !path.split(file).contains("src") &&
-                         path.extension(file) == '.dart')
+        .where((file) =>
+            !path.split(file).contains("src") &&
+            path.extension(file) == '.dart')
         .toList();
   }
 

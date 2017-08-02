@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/package.dart';
+import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
@@ -242,25 +242,27 @@ packages:
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = new LockFile([
         new PackageId(
-          'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
+            'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
         new PackageId('bar', mockSource, new Version.parse('3.2.1'), 'bar desc')
       ]);
 
-      expect(loadYaml(lockfile.serialize(null)), equals({
-        'sdks': {'dart': 'any'},
-        'packages': {
-          'foo': {
-            'version': '1.2.3',
-            'source': 'mock',
-            'description': 'foo desc'
-          },
-          'bar': {
-            'version': '3.2.1',
-            'source': 'mock',
-            'description': 'bar desc'
-          }
-        }
-      }));
+      expect(
+          loadYaml(lockfile.serialize(null)),
+          equals({
+            'sdks': {'dart': 'any'},
+            'packages': {
+              'foo': {
+                'version': '1.2.3',
+                'source': 'mock',
+                'description': 'foo desc'
+              },
+              'bar': {
+                'version': '3.2.1',
+                'source': 'mock',
+                'description': 'bar desc'
+              }
+            }
+          }));
     });
   });
 }

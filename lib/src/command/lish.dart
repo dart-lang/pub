@@ -6,9 +6,9 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
+import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../exit_codes.dart' as exit_codes;
-import '../ascii_tree.dart' as tree;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -48,15 +48,20 @@ class LishCommand extends PubCommand {
   bool get force => argResults['force'];
 
   LishCommand() {
-    argParser.addFlag('dry-run', abbr: 'n', negatable: false,
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
         help: 'Validate but do not publish the package.');
-    argParser.addFlag('force', abbr: 'f', negatable: false,
+    argParser.addFlag('force',
+        abbr: 'f',
+        negatable: false,
         help: 'Publish without confirmation if there are no errors.');
-    argParser.addOption('server', defaultsTo: cache.sources.hosted.defaultUrl,
+    argParser.addOption('server',
+        defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(packageBytes) async {
+  Future _publish(List<int> packageBytes) async {
     var cloudStorageUrl;
     try {
       await oauth2.withClient(cache, (client) {
@@ -81,9 +86,10 @@ class LishCommand extends PubCommand {
 
           request.followRedirects = false;
           request.files.add(new http.MultipartFile.fromBytes(
-              'file', packageBytes, filename: 'package.tar.gz'));
-          var postResponse = await http.Response.fromStream(
-              await client.send(request));
+              'file', packageBytes,
+              filename: 'package.tar.gz'));
+          var postResponse =
+              await http.Response.fromStream(await client.send(request));
 
           var location = postResponse.headers['location'];
           if (location == null) throw new PubHttpException(postResponse);
@@ -114,7 +120,7 @@ class LishCommand extends PubCommand {
     if (entrypoint.root.pubspec.isPrivate) {
       dataError('A private package cannot be published.\n'
           'You can enable this by changing the "publish_to" field in your '
-              'pubspec.');
+          'pubspec.');
     }
 
     var files = entrypoint.root.listFiles(useGitIgnore: true);
@@ -122,18 +128,17 @@ class LishCommand extends PubCommand {
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;
-    log.message(
-        'Publishing ${package.name} ${package.version} to $server:\n'
+    log.message('Publishing ${package.name} ${package.version} to $server:\n'
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
 
-    var packageBytesFuture = createTarGz(files, baseDir: entrypoint.root.dir)
-        .toBytes();
+    var packageBytesFuture =
+        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
 
     // Validate the package.
-    var isValid = await _validate(
-        packageBytesFuture.then((bytes) => bytes.length));
+    var isValid =
+        await _validate(packageBytesFuture.then((bytes) => bytes.length));
     if (!isValid) {
-      await flushThenExit(exit_codes.DATA); 
+      await flushThenExit(exit_codes.DATA);
     } else if (dryRun) {
       await flushThenExit(exit_codes.SUCCESS);
     } else {
@@ -155,7 +160,7 @@ class LishCommand extends PubCommand {
     var errors = pair.first;
     var warnings = pair.last;
 
-    if (!errors.isEmpty) {
+    if (errors.isNotEmpty) {
       log.error("Sorry, your package is missing "
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
@@ -173,7 +178,7 @@ class LishCommand extends PubCommand {
 
     var message = '\nLooks great! Are you ready to upload your package';
 
-    if (!warnings.isEmpty) {
+    if (warnings.isNotEmpty) {
       var s = warnings.length == 1 ? '' : 's';
       message = "\nPackage has ${warnings.length} warning$s. Upload anyway";
     }

@@ -25,11 +25,11 @@ class CacheRepairCommand extends PubCommand {
 
     // Repair every cached source.
     for (var source in cache.sources.all.map(cache.source)) {
-      if (source is! CachedSource) continue;
-
-      var results = await source.repairCachedPackages();
-      successes.addAll(results.first);
-      failures.addAll(results.last);
+      if (source is CachedSource) {
+        var results = await source.repairCachedPackages();
+        successes.addAll(results.first);
+        failures.addAll(results.last);
+      }
     }
 
     if (successes.length > 0) {
@@ -63,7 +63,7 @@ class CacheRepairCommand extends PubCommand {
       var packages = pluralize("package", results.last.length);
       log.message(
           "Failed to reactivate ${log.red(results.last.length)} $packages:\n" +
-          results.last.map((name) => "- ${log.bold(name)}").join("\n"));
+              results.last.map((name) => "- ${log.bold(name)}").join("\n"));
     }
 
     if (successes.length == 0 && failures.length == 0) {

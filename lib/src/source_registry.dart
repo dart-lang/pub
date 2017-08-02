@@ -6,6 +6,7 @@ import 'source.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
+import 'source/sdk.dart';
 import 'source/unknown.dart';
 
 /// A class that keeps track of [Source]s used for getting packages.
@@ -16,7 +17,8 @@ class SourceRegistry {
   final _sources = {
     "git": new GitSource(),
     "hosted": new HostedSource(),
-    "path": new PathSource()
+    "path": new PathSource(),
+    "sdk": new SdkSource()
   };
 
   /// The default source, which is used when no source is specified.
@@ -40,6 +42,9 @@ class SourceRegistry {
 
   /// The built-in [PathSource].
   PathSource get path => _sources["path"] as PathSource;
+
+  /// The built-in [SdkSource].
+  SdkSource get sdk => _sources["sdk"] as SdkSource;
 
   SourceRegistry() {
     _default = hosted;
@@ -73,7 +78,7 @@ class SourceRegistry {
   ///
   /// Returns an [UnknownSource] if no source with that name has been
   /// registered. If [name] is null, returns the default source.
-  Source operator[](String name) {
+  Source operator [](String name) {
     if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
     return new UnknownSource(name);

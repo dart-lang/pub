@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  integration('only requests versions that are needed during solving', () {
-    servePackages((builder) {
+  test('only requests versions that are needed during solving', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0");
       builder.serve("foo", "1.1.0");
       builder.serve("foo", "1.2.0");
@@ -18,40 +18,32 @@ main() {
       builder.serve("bar", "1.2.0");
     });
 
-    d.appDir({
-      "foo": "any"
-    }).create();
+    await d.appDir({"foo": "any"}).create();
 
     // Get once so it gets cached.
-    pubGet();
+    await pubGet();
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    globalServer.clearRequestedPaths();
+    globalServer.requestedPaths.clear();
 
     // Add "bar" to the dependencies.
-    d.appDir({
-      "foo": "any",
-      "bar": "any"
-    }).create();
+    await d.appDir({"foo": "any", "bar": "any"}).create();
 
     // Run the solver again.
-    pubGet();
+    await pubGet();
 
-    d.packagesDir({
-      "foo": "1.2.0",
-      "bar": "1.2.0"
-    }).validate();
+    await d.appPackagesFile({"foo": "1.2.0", "bar": "1.2.0"}).validate();
 
     // The get should not have done any network requests since the lock file is
     // up to date.
-    globalServer.requestedPaths.then((paths) {
-      expect(paths, unorderedEquals([
-        // Bar should be requested because it's new, but not foo.
-        "api/packages/bar",
-        // Need to download it.
-        "packages/bar/versions/1.2.0.tar.gz"
-      ]));
-    });
+    expect(
+        globalServer.requestedPaths,
+        unorderedEquals([
+          // Bar should be requested because it's new, but not foo.
+          "api/packages/bar",
+          // Need to download it.
+          "packages/bar/versions/1.2.0.tar.gz"
+        ]));
   });
 }

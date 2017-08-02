@@ -24,6 +24,9 @@ class Progress {
   /// Gets the current progress time as a parenthesized, formatted string.
   String get _time => "(${niceDuration(_stopwatch.elapsed)})";
 
+  /// The length of the most recently-printed [_time] string.
+  var _timeLength = 0;
+
   /// Creates a new progress indicator.
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.FINE]
@@ -38,7 +41,8 @@ class Progress {
     // with non-JSON output.
     if (stdioType(stdout) != StdioType.TERMINAL ||
         !log.verbosity.isLevelVisible(level) ||
-        log.json.enabled || fine ||
+        log.json.enabled ||
+        fine ||
         log.verbosity.isLevelVisible(log.Level.FINE)) {
       // Not animating, so just log the start and wait until the task is
       // completed.
@@ -50,7 +54,7 @@ class Progress {
       _update();
     });
 
-    _update();
+    stdout.write(log.format("$_message... "));
   }
 
   /// Stops the progress indicator.
@@ -78,9 +82,10 @@ class Progress {
   void stopAnimating() {
     if (_timer == null) return;
 
-    // Print a final message without a time indicator so that we don't leave a
-    // misleading half-complete time indicator on the console.
-    stdout.writeln(log.format("\r$_message..."));
+    // Erase the time indicator so that we don't leave a misleading
+    // half-complete time indicator on the console.
+    stdout.writeln("\b" * _timeLength);
+    _timeLength = 0;
     _timer.cancel();
     _timer = null;
   }
@@ -89,9 +94,15 @@ class Progress {
   void _update() {
     if (log.isMuted) return;
 
-    stdout.write(log.format("\r$_message... "));
-
     // Show the time only once it gets noticeably long.
-    if (_stopwatch.elapsed.inSeconds > 0) stdout.write("${log.gray(_time)} ");
+    if (_stopwatch.elapsed.inSeconds == 0) return;
+
+    // Erase the last time that was printed. Erasing just the time using `\b`
+    // rather than using `\r` to erase the entire line ensures that we don't
+    // spam progress lines if they're wider than the terminal width.
+    stdout.write("\b" * _timeLength);
+    var time = _time;
+    _timeLength = time.length;
+    stdout.write(log.gray(time));
   }
 }

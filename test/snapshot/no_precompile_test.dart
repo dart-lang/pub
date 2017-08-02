@@ -3,100 +3,97 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
   group("with --no-precompile,", () {
-    integration("doesn't create a new snapshot", () {
-      servePackages((builder) {
+    test("doesn't create a new snapshot", () async {
+      await servePackages((builder) {
         builder.serve("foo", "1.2.3", contents: [
           d.dir("bin", [
             d.file("hello.dart", "void main() => print('hello!');"),
             d.file("goodbye.dart", "void main() => print('goodbye!');"),
             d.file("shell.sh", "echo shell"),
-            d.dir("subdir", [
-              d.file("sub.dart", "void main() => print('sub!');")
-            ])
+            d.dir(
+                "subdir", [d.file("sub.dart", "void main() => print('sub!');")])
           ])
         ]);
       });
 
-      d.appDir({"foo": "1.2.3"}).create();
+      await d.appDir({"foo": "1.2.3"}).create();
 
-      pubGet(args: ["--no-precompile"], output: isNot(contains("Precompiled")));
+      await pubGet(
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      d.nothing(p.join(appPath, '.pub')).validate();
+      await d.nothing(p.join(appPath, '.pub')).validate();
 
-      var process = pubRun(args: ['foo:hello']);
-      process.stdout.expect("hello!");
-      process.shouldExit();
+      var process = await pubRun(args: ['foo:hello']);
+      expect(process.stdout, emits("hello!"));
+      await process.shouldExit();
 
-      process = pubRun(args: ['foo:goodbye']);
-      process.stdout.expect("goodbye!");
-      process.shouldExit();
+      process = await pubRun(args: ['foo:goodbye']);
+      expect(process.stdout, emits("goodbye!"));
+      await process.shouldExit();
     });
 
-    integration("deletes a snapshot when its package is upgraded", () {
-      servePackages((builder) {
+    test("deletes a snapshot when its package is upgraded", () async {
+      await servePackages((builder) {
         builder.serve("foo", "1.2.3", contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello!');")
-          ])
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
         ]);
       });
 
-      d.appDir({"foo": "any"}).create();
+      await d.appDir({"foo": "any"}).create();
 
-      pubGet(output: contains("Precompiled foo:hello."));
+      await pubGet(output: contains("Precompiled foo:hello."));
 
-      d.dir(p.join(appPath, '.pub', 'bin', 'foo'), [
-        d.matcherFile('hello.dart.snapshot', contains('hello!'))
-      ]).validate();
+      await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+          [d.file('hello.dart.snapshot', contains('hello!'))]).validate();
 
-      globalPackageServer.add((builder) {
+      await globalPackageServer.add((builder) {
         builder.serve("foo", "1.2.4", contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello 2!');")
-          ])
+          d.dir("bin",
+              [d.file("hello.dart", "void main() => print('hello 2!');")])
         ]);
       });
 
-      pubUpgrade(
-          args: ["--no-precompile"],
-          output: isNot(contains("Precompiled")));
+      await pubUpgrade(
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      d.nothing(p.join(appPath, '.pub', 'bin', 'foo')).validate();
+      await d.nothing(p.join(appPath, '.pub', 'bin', 'foo')).validate();
 
-      var process = pubRun(args: ['foo:hello']);
-      process.stdout.expect("hello 2!");
-      process.shouldExit();
+      var process = await pubRun(args: ['foo:hello']);
+      expect(process.stdout, emits("hello 2!"));
+      await process.shouldExit();
     });
 
-    integration("doesn't delete a snapshot when no dependencies of a package "
-        "have changed", () {
-      servePackages((builder) {
-        builder.serve("foo", "1.2.3", deps: {"bar": "any"}, contents: [
-          d.dir("bin", [
-            d.file("hello.dart", "void main() => print('hello!');")
-          ])
+    test(
+        "doesn't delete a snapshot when no dependencies of a package "
+        "have changed", () async {
+      await servePackages((builder) {
+        builder.serve("foo", "1.2.3", deps: {
+          "bar": "any"
+        }, contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
         ]);
         builder.serve("bar", "1.2.3");
       });
 
-      d.appDir({"foo": "1.2.3"}).create();
+      await d.appDir({"foo": "1.2.3"}).create();
 
-      pubGet(output: contains("Precompiled foo:hello."));
+      await pubGet(output: contains("Precompiled foo:hello."));
 
-      pubUpgrade(
-          args: ["--no-precompile"],
-          output: isNot(contains("Precompiled")));
+      await pubUpgrade(
+          args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
-        d.dir('foo', [d.matcherFile('hello.dart.snapshot', contains('hello!'))])
+        d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
     });
   });

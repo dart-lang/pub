@@ -2,18 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  integration("reports a dependency if the library itself is transformed", () {
-    d.dir(appPath, [
+  test("reports a dependency if the library itself is transformed", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "bin/myapp.dart.dart"}}
+          {
+            "foo": {"\$include": "bin/myapp.dart.dart"}
+          }
         ]
       }),
       d.dir("bin", [
@@ -21,7 +27,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -29,14 +35,18 @@ void main() {
     expectLibraryDependencies('myapp|bin/myapp.dart', ['foo']);
   });
 
-  integration("reports a dependency if a transformed local file is imported",
-      () {
-    d.dir(appPath, [
+  test("reports a dependency if a transformed local file is imported",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}}
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          }
         ]
       }),
       d.dir("lib", [
@@ -47,7 +57,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();
@@ -55,41 +65,48 @@ void main() {
     expectLibraryDependencies('myapp|bin/myapp.dart', ['foo']);
   });
 
-  integration("reports a dependency if a transformed foreign file is imported",
-      () {
-    d.dir(appPath, [
+  test("reports a dependency if a transformed foreign file is imported",
+      () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
       }),
-      d.dir("bin", [
-        d.file("myapp.dart", "import 'package:foo/foo.dart';")
-      ])
+      d.dir("bin", [d.file("myapp.dart", "import 'package:foo/foo.dart';")])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({
         "name": "foo",
         "version": "1.0.0",
-        "transformers": [{"foo": {"\$include": "lib/foo.dart"}}]
+        "transformers": [
+          {
+            "foo": {"\$include": "lib/foo.dart"}
+          }
+        ]
       }),
-      d.dir("lib", [
-        d.file("foo.dart", ""),
-        d.file("transformer.dart", transformer())
-      ])
+      d.dir("lib",
+          [d.file("foo.dart", ""), d.file("transformer.dart", transformer())])
     ]).create();
 
     expectLibraryDependencies('myapp|bin/myapp.dart', ['foo']);
   });
 
-  integration("doesn't report a dependency if no transformed files are "
-      "imported", () {
-    d.dir(appPath, [
+  test(
+      "doesn't report a dependency if no transformed files are "
+      "imported", () async {
+    await d.dir(appPath, [
       d.pubspec({
         "name": "myapp",
-        "dependencies": {"foo": {"path": "../foo"}},
+        "dependencies": {
+          "foo": {"path": "../foo"}
+        },
         "transformers": [
-          {"foo": {"\$include": "lib/lib.dart"}}
+          {
+            "foo": {"\$include": "lib/lib.dart"}
+          }
         ]
       }),
       d.dir("lib", [
@@ -101,7 +118,7 @@ void main() {
       ])
     ]).create();
 
-    d.dir("foo", [
+    await d.dir("foo", [
       d.pubspec({"name": "foo", "version": "1.0.0"}),
       d.dir("lib", [d.file("foo.dart", transformer())])
     ]).create();

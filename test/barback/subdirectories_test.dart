@@ -3,15 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
 import '../test_pub.dart';
 
 main() {
-  setUp(() {
-    d.dir(appPath, [
+  setUp(() async {
+    await d.dir(appPath, [
       d.appPubspec(),
       d.dir("web", [
         d.dir("one", [
@@ -26,17 +26,18 @@ main() {
       ])
     ]).create();
 
-    pubGet();
+    await pubGet();
   });
 
   var webOne = p.join("web", "one");
   var webTwoInner = p.join("web", "two", "inner");
 
-  integration("builds subdirectories", () {
-    schedulePub(args: ["build", webOne, webTwoInner],
+  test("builds subdirectories", () async {
+    await runPub(
+        args: ["build", webOne, webTwoInner],
         output: new RegExp(r'Built 2 files to "build".'));
 
-    d.dir(appPath, [
+    await d.dir(appPath, [
       d.dir("build", [
         d.dir("web", [
           d.dir("one", [
@@ -51,14 +52,14 @@ main() {
     ]).validate();
   });
 
-  integration("serves subdirectories", () {
-    pubServe(args: [webOne, webTwoInner]);
+  test("serves subdirectories", () async {
+    await pubServe(args: [webOne, webTwoInner]);
 
-    requestShouldSucceed("inner/file.txt", "one", root: webOne);
-    requestShouldSucceed("file.txt", "two", root: webTwoInner);
-    expectNotServed("web");
-    expectNotServed(p.join("web", "three"));
+    await requestShouldSucceed("inner/file.txt", "one", root: webOne);
+    await requestShouldSucceed("file.txt", "two", root: webTwoInner);
+    await expectNotServed("web");
+    await expectNotServed(p.join("web", "three"));
 
-    endPubServe();
+    await endPubServe();
   });
 }

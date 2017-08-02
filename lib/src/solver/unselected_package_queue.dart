@@ -8,7 +8,7 @@ import 'dart:collection';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../log.dart' as log;
-import '../package.dart';
+import '../package_name.dart';
 import 'backtracking_solver.dart';
 
 /// A priority queue of package references.
@@ -134,7 +134,8 @@ class UnselectedPackageQueue {
     // it.
     for (var rootDep in _solver.root.immediateDependencies) {
       if (rootDep.name != ref.name) continue;
-      return versions.where((id) => rootDep.constraint.allows(id.version))
+      return versions
+          .where((id) => rootDep.constraint.allows(id.version))
           .length;
     }
 

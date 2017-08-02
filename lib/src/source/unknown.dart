@@ -6,7 +6,7 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../package.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
@@ -26,9 +26,7 @@ class UnknownSource extends Source {
       new _BoundUnknownSource(this, systemCache);
 
   /// Two unknown sources are the same if their names are the same.
-  bool operator==(other) =>
-      other is UnknownSource &&
-      other.name == name;
+  bool operator ==(other) => other is UnknownSource && other.name == name;
 
   int get hashCode => name.hashCode;
 

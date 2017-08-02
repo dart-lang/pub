@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:barback/barback.dart';
 
+import '../compiler.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import 'asset_environment.dart';
@@ -34,7 +35,8 @@ class TransformerLoader {
   TransformerLoader(this._environment, this._transformerServer) {
     for (var package in _environment.graph.packages.values) {
       for (var config in unionAll(package.pubspec.transformers)) {
-        _transformerUsers.putIfAbsent(config.id, () => new Set<String>())
+        _transformerUsers
+            .putIfAbsent(config.id, () => new Set<String>())
             .add(package.name);
       }
     }
@@ -51,9 +53,10 @@ class TransformerLoader {
     ids = ids.where((id) => !_isolates.containsKey(id)).toList();
     if (ids.isEmpty) return;
 
-    var isolate = await log.progress("Loading ${toSentence(ids)} transformers",
+    var isolate = await log.progress(
+        "Loading ${toSentence(ids)} transformers",
         () => TransformerIsolate.spawn(_environment, _transformerServer, ids,
-                  snapshot: snapshot));
+            snapshot: snapshot));
 
     for (var id in ids) {
       _isolates[id] = isolate;
@@ -83,7 +86,7 @@ class TransformerLoader {
       var location;
       if (config.id.path == null) {
         location = 'package:${config.id.package}/transformer.dart or '
-          'package:${config.id.package}/${config.id.package}.dart';
+            'package:${config.id.package}/${config.id.package}.dart';
       } else {
         location = 'package:$config.dart';
       }
@@ -97,22 +100,28 @@ class TransformerLoader {
 
     var transformer;
     try {
-      transformer = new Dart2JSTransformer.withSettings(_environment,
-          new BarbackSettings(config.configuration, _environment.mode));
+      if (_environment.compiler == Compiler.dart2JS) {
+        transformer = new Dart2JSTransformer.withSettings(_environment,
+            new BarbackSettings(config.configuration, _environment.mode));
+        // Handle any exclusions.
+        _transformers[config] =
+            new Set.from([ExcludingTransformer.wrap(transformer, config)]);
+      } else {
+        // Empty set if dart2js is disabled based on compiler flag.
+        _transformers[config] = new Set();
+      }
     } on FormatException catch (error, stackTrace) {
       fail(error.message, error, stackTrace);
     }
 
-    // Handle any exclusions.
-    _transformers[config] = new Set.from(
-        [ExcludingTransformer.wrap(transformer, config)]);
     return _transformers[config];
   }
 
-  /// Loads all transformers defined in each phase of [phases].
+  /// Loads all [Transformer]s or [AggregateTransformer]s defined in each phase
+  /// of [phases].
   ///
   /// If any library hasn't yet been loaded via [load], it will be ignored.
-  Future<List<Set<Transformer>>> transformersForPhases(
+  Future<List<Set>> transformersForPhases(
       Iterable<Set<TransformerConfig>> phases) async {
     var result = await Future.wait(phases.map((phase) async {
       var transformers = await waitAndPrintErrors(phase.map(transformersFor));

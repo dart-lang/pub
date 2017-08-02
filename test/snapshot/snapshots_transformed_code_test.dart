@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -28,14 +28,15 @@ class ReplaceTransformer extends Transformer {
 """;
 
 main() {
-  integration("snapshots the transformed version of an executable", () {
-    servePackages((builder) {
+  test("snapshots the transformed version of an executable", () async {
+    await servePackages((builder) {
       builder.serveRealPackage('barback');
 
-      builder.serve("foo", "1.2.3",
-          deps: {"barback": "any"},
-          pubspec: {'transformers': ['foo']},
-          contents: [
+      builder.serve("foo", "1.2.3", deps: {
+        "barback": "any"
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
         d.dir("lib", [d.file("foo.dart", REPLACE_TRANSFORMER)]),
         d.dir("bin", [
           d.file("hello.dart", """
@@ -47,16 +48,16 @@ void main() => print(message);
       ]);
     });
 
-    d.appDir({"foo": "1.2.3"}).create();
+    await d.appDir({"foo": "1.2.3"}).create();
 
-    pubGet(output: contains("Precompiled foo:hello."));
+    await pubGet(output: contains("Precompiled foo:hello."));
 
-    d.dir(p.join(appPath, '.pub', 'bin'), [
-      d.dir('foo', [d.matcherFile('hello.dart.snapshot', contains('hello!'))])
+    await d.dir(p.join(appPath, '.pub', 'bin'), [
+      d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
     ]).validate();
 
-    var process = pubRun(args: ['foo:hello']);
-    process.stdout.expect("hello!");
-    process.shouldExit();
+    var process = await pubRun(args: ['foo:hello']);
+    expect(process.stdout, emits("hello!"));
+    await process.shouldExit();
   });
 }

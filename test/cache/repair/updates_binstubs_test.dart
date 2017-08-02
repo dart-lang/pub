@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:scheduled_test/scheduled_test.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -18,44 +18,37 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 """;
 
 main() {
-  integration('updates an outdated binstub script', () {
-    servePackages((builder) {
+  test('updates an outdated binstub script', () async {
+    await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {
-          "foo-script": "script"
-        }
+        "executables": {"foo-script": "script"}
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", "main(args) => print('ok \$args');")
-        ])
+        d.dir(
+            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
       ]);
     });
 
-    schedulePub(args: ["global", "activate", "foo"]);
+    await runPub(args: ["global", "activate", "foo"]);
 
-    d.dir(cachePath, [
-      d.dir('bin', [
-        d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)
-      ])
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)])
     ]).create();
 
     // Repair them.
-    schedulePub(args: ["cache", "repair"],
-        output: '''
+    await runPub(args: ["cache", "repair"], output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
           Precompiling executables...
-          Loading source assets...
           Precompiled foo:script.
           Installed executable foo-script.
           Reactivated 1 package.''');
 
     // The broken versions should have been replaced.
-    d.dir(cachePath, [
+    await d.dir(cachePath, [
       d.dir('bin', [
         // 253 is the VM's exit code upon seeing an out-of-date snapshot.
-        d.matcherFile(binStubName('foo-script'), contains('253'))
+        d.file(binStubName('foo-script'), contains('253'))
       ])
     ]).validate();
   });

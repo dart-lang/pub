@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
@@ -12,11 +13,12 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:stack_trace/stack_trace.dart';
 
 import '../barback.dart';
+import '../dartdevc/dartdevc_environment.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
-import 'base_server.dart';
 import 'asset_environment.dart';
+import 'base_server.dart';
 
 /// Callback for determining if an asset with [id] should be served or not.
 typedef bool AllowAsset(AssetId id);
@@ -42,6 +44,11 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// If this is `null`, all assets may be served.
   AllowAsset allowAsset;
 
+  /// Manages running the dartdevc compiler on top of barback.
+  ///
+  /// This is `null` unless `environment.compiler == Compiler.dartDevc`.
+  final DartDevcEnvironment dartDevcEnvironment;
+
   /// Creates a new server and binds it to [port] of [host].
   ///
   /// This server serves assets from [barback], and uses [rootDirectory]
@@ -49,8 +56,11 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
   /// directory. If [rootDirectory] is omitted, the bound server can only be
   /// used to serve assets from packages' lib directories (i.e. "packages/..."
   /// URLs). If [package] is omitted, it defaults to the entrypoint package.
-  static Future<BarbackServer> bind(AssetEnvironment environment,
-      String host, int port, {String package, String rootDirectory}) {
+  static Future<BarbackServer> bind(
+      AssetEnvironment environment, String host, int port,
+      {String package,
+      String rootDirectory,
+      DartDevcEnvironment dartDevcEnvironment}) {
     if (package == null) package = environment.rootPackage.name;
     return bindServer(host, port).then((server) {
       if (rootDirectory == null) {
@@ -58,12 +68,14 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       } else {
         log.fine('Bound "$rootDirectory" to $host:$port.');
       }
-      return new BarbackServer._(environment, server, package, rootDirectory);
+      return new BarbackServer._(environment, server, package, rootDirectory,
+          dartDevcEnvironment: dartDevcEnvironment);
     });
   }
 
-  BarbackServer._(AssetEnvironment environment, HttpServer server,
-      this.package, this.rootDirectory)
+  BarbackServer._(AssetEnvironment environment, HttpServer server, this.package,
+      this.rootDirectory,
+      {this.dartDevcEnvironment})
       : super(environment, server);
 
   /// Converts a [url] served by this server into an [AssetId] that can be
@@ -111,11 +123,13 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
           asset: id);
     }
 
-    return environment.barback.getAssetById(id).then((result) {
-      return result;
-    }).then((asset) => _serveAsset(request, asset)).catchError((error, trace) {
+    return environment.barback
+        .getAssetById(id)
+        .then((asset) => _serveAsset(request, asset))
+        .catchError((error, trace) {
       if (error is! AssetNotFoundException) throw error;
-      return environment.barback.getAssetById(id.addExtension("/index.html"))
+      return environment.barback
+          .getAssetById(id.addExtension("/index.html"))
           .then((asset) {
         if (request.url.path.isEmpty || request.url.path.endsWith('/')) {
           return _serveAsset(request, asset);
@@ -130,6 +144,14 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
         // If we find neither the original file or the index, we should report
         // the error about the original to the user.
         throw newError is AssetNotFoundException ? error : newError;
+      });
+    }).catchError((error, trace) {
+      if (error is! AssetNotFoundException || dartDevcEnvironment == null) {
+        throw error;
+      }
+      return dartDevcEnvironment.getAssetById(id).then((asset) {
+        if (asset == null) throw new AssetNotFoundException(id);
+        return _serveAsset(request, asset);
       });
     }).catchError((error, trace) {
       if (error is! AssetNotFoundException) {
@@ -148,17 +170,18 @@ class BarbackServer extends BaseServer<BarbackServerResult> {
       // running "pub serve" in parallel with another development server. Since
       // "pub serve" is only used as a development server and doesn't require
       // any sort of credentials anyway, this is secure.
-      return response.change(
-          headers: const {"Access-Control-Allow-Origin": "*"});
+      return response
+          .change(headers: const {"Access-Control-Allow-Origin": "*"});
     });
   }
 
   /// Returns the body of [asset] as a response to [request].
   Future<shelf.Response> _serveAsset(shelf.Request request, Asset asset) async {
     try {
-      var pair = tee(await validateStream(asset.read()));
-      var responseStream = pair.first;
-      var hashStream = pair.last;
+      var streams =
+          StreamSplitter.splitFrom(await validateStream(asset.read()));
+      var responseStream = streams.first;
+      var hashStream = streams.last;
 
       // Allow the asset to be cached based on its content hash.
       var assetSha = await sha1Stream(hashStream);
