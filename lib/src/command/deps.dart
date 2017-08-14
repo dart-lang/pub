@@ -4,11 +4,25 @@
 
 import 'dart:collection';
 
+import 'package:analyzer/analyzer.dart' as analyzer;
+import 'package:path/path.dart' as p;
+
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../dart.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../utils.dart';
+
+/// Returns `true` if [path] looks like a Dart entrypoint.
+bool _isDartExecutable(String path) {
+  try {
+    var unit = analyzer.parseDartFile(path, parseFunctionBodies: false);
+    return isEntrypoint(unit);
+  } on analyzer.AnalyzerErrorGroup {
+    return false;
+  }
+}
 
 /// Handles the `deps` pub command.
 class DepsCommand extends PubCommand {
@@ -36,6 +50,9 @@ class DepsCommand extends PubCommand {
         negatable: true,
         help: "Whether to include dev dependencies.",
         defaultsTo: true);
+
+    argParser.addFlag("executables",
+        negatable: false, help: "List all available executables.");
   }
 
   void run() {
@@ -44,18 +61,22 @@ class DepsCommand extends PubCommand {
 
     _buffer = new StringBuffer();
 
-    _buffer.writeln(_labelPackage(entrypoint.root));
+    if (argResults['executables']) {
+      _outputExecutables();
+    } else {
+      _buffer.writeln(_labelPackage(entrypoint.root));
 
-    switch (argResults["style"]) {
-      case "compact":
-        _outputCompact();
-        break;
-      case "list":
-        _outputList();
-        break;
-      case "tree":
-        _outputTree();
-        break;
+      switch (argResults["style"]) {
+        case "compact":
+          _outputCompact();
+          break;
+        case "list":
+          _outputList();
+          break;
+        case "tree":
+          _outputTree();
+          break;
+      }
     }
 
     log.message(_buffer);
@@ -230,5 +251,61 @@ class DepsCommand extends PubCommand {
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "pub get" again.');
     return null;
+  }
+
+  /// Outputs all executables reachable from [entrypoint].
+  void _outputExecutables() {
+    var packages = []
+      ..add(entrypoint.root)
+      ..addAll((_includeDev
+              ? entrypoint.root.immediateDependencies
+              : entrypoint.root.dependencies)
+          .map((dep) => entrypoint.packageGraph.packages[dep.name]));
+
+    for (var package in packages) {
+      var executables = _getExecutablesFor(package);
+      if (executables.isNotEmpty) {
+        _buffer.writeln(_formatExecutables(package.name, executables.toList()));
+      }
+    }
+  }
+
+  /// Lists all Dart files in the `bin` directory of the [package].
+  ///
+  /// Returns file names without extensions.
+  List<String> _getExecutablesFor(Package package) => package.executableIds
+      .where((e) => _isDartExecutable(p.absolute(package.dir, e.path)))
+      .map((e) => p.basenameWithoutExtension(e.path));
+
+  /// Returns formatted string that lists [executables] for the [packageName].
+  /// Examples:
+  ///
+  ///     _formatExecutables('foo', ['foo'])        // -> 'foo'
+  ///     _formatExecutables('foo', ['bar'])        // -> 'foo:bar'
+  ///     _formatExecutables('foo', ['bar', 'foo']) // -> 'foo: foo, bar'
+  ///
+  /// Note the leading space before first executable and sorting order in the
+  /// last example.
+  String _formatExecutables(String packageName, List<String> executables) {
+    if (executables.length == 1) {
+      // If executable matches the package name omit the name of executable in
+      // the output.
+      return executables.first != packageName
+          ? '${packageName}:${log.bold(executables.first)}'
+          : log.bold(executables.first);
+    }
+
+    // Sort executables to make executable that matches the package name to be
+    // the first in the list.
+    executables.sort((e1, e2) {
+      if (e1 == packageName)
+        return -1;
+      else if (e2 == packageName)
+        return 1;
+      else
+        return e1.compareTo(e2);
+    });
+
+    return '${packageName}: ${executables.map(log.bold).join(', ')}';
   }
 }
