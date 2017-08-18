@@ -10,10 +10,7 @@ final defaultAnalysisOptionsId =
     new AssetId('_internal_', 'lib/analysis_options.yaml');
 
 final defaultAnalysisOptions =
-    new Asset.fromString(defaultAnalysisOptionsId, '''
-analyzer:
-  strong-mode: true
-''');
+    new Asset.fromString(defaultAnalysisOptionsId, '');
 
 String defaultAnalysisOptionsArg(ScratchSpace scratchSpace) =>
     '--options=${scratchSpace.fileFor(defaultAnalysisOptionsId).path}';
