@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:bazel_worker/bazel_worker.dart';
 
+import 'common.dart';
 import 'errors.dart';
 import 'module.dart';
 import 'module_reader.dart';
@@ -25,7 +26,8 @@ final String unlinkedSummaryExtension = '.unlinked.sum';
 /// Synchronously returns a `Map<AssetId, Future<Asset>>` so that you can know
 /// immediately what assets will be output.
 Future<Asset> createLinkedSummary(
-    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace) async {
+    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace,
+    {bool isRoot = false}) async {
   assert(id.path.endsWith(linkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
   var transitiveModuleDeps = await moduleReader.readTransitiveDeps(module);
@@ -33,7 +35,8 @@ Future<Asset> createLinkedSummary(
       transitiveModuleDeps.map((depId) => depId.unlinkedSummaryId).toSet();
   var allAssetIds = new Set<AssetId>()
     ..addAll(module.assetIds)
-    ..addAll(unlinkedSummaryIds);
+    ..addAll(unlinkedSummaryIds)
+    ..add(defaultAnalysisOptionsId);
   await scratchSpace.ensureAssets(allAssetIds);
   var summaryOutputFile = scratchSpace.fileFor(module.id.linkedSummaryId);
   var request = new WorkRequest();
@@ -47,6 +50,10 @@ Future<Asset> createLinkedSummary(
   // Add all the unlinked summaries as build summary inputs.
   request.arguments.addAll(unlinkedSummaryIds.map((id) =>
       '--build-summary-unlinked-input=${scratchSpace.fileFor(id).path}'));
+  // Add the default analysis_options if not the root package.
+  if (!isRoot) {
+    request.arguments.add(defaultAnalysisOptionsArg(scratchSpace));
+  }
   // Add all the files to include in the linked summary bundle.
   request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
   var response = await analyzerDriver.doWork(request);
@@ -60,10 +67,12 @@ Future<Asset> createLinkedSummary(
 
 /// Creates an unlinked summary at [id].
 Future<Asset> createUnlinkedSummary(
-    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace) async {
+    AssetId id, ModuleReader moduleReader, ScratchSpace scratchSpace,
+    {bool isRoot = false}) async {
   assert(id.path.endsWith(unlinkedSummaryExtension));
   var module = await moduleReader.moduleFor(id);
-  await scratchSpace.ensureAssets(module.assetIds);
+  await scratchSpace
+      .ensureAssets(module.assetIds.toSet()..add(defaultAnalysisOptionsId));
   var summaryOutputFile = scratchSpace.fileFor(module.id.unlinkedSummaryId);
   var request = new WorkRequest();
   // TODO(jakemac53): Diet parsing results in erroneous errors later on today,
@@ -74,6 +83,10 @@ Future<Asset> createUnlinkedSummary(
     '--build-summary-output=${summaryOutputFile.path}',
     '--strong',
   ]);
+  // Add the default analysis_options if not the root package.
+  if (!isRoot) {
+    request.arguments.add(defaultAnalysisOptionsArg(scratchSpace));
+  }
   // Add all the files to include in the unlinked summary bundle.
   request.arguments.addAll(_analyzerSourceArgsForModule(module, scratchSpace));
   var response = await analyzerDriver.doWork(request);

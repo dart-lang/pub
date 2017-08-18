@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 
 import '../dart.dart';
 import '../io.dart';
+import 'common.dart';
 import 'errors.dart';
 import 'module_reader.dart';
 import 'scratch_space.dart';
@@ -279,7 +280,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
     ModuleReader moduleReader,
     ScratchSpace scratchSpace,
     Map<String, String> environmentConstants,
-    BarbackMode mode) {
+    BarbackMode mode,
+    {bool isRoot = false}) {
   assert(id.extension == '.js');
   var outputCompleters = <AssetId, Completer<Asset>>{
     id: new Completer(),
@@ -296,7 +298,8 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
         transitiveModuleDeps.map((depId) => depId.linkedSummaryId).toSet();
     var allAssetIds = new Set<AssetId>()
       ..addAll(module.assetIds)
-      ..addAll(linkedSummaryIds);
+      ..addAll(linkedSummaryIds)
+      ..add(defaultAnalysisOptionsId);
     await scratchSpace.ensureAssets(allAssetIds);
     var jsOutputFile = scratchSpace.fileFor(module.id.jsId);
     var sdk_summary = p.url.join(sdkDir, 'lib/_internal/ddc_sdk.sum');
@@ -341,6 +344,10 @@ Map<AssetId, Future<Asset>> createDartdevcModule(
         request.arguments
             .add('--url-mapping=$uri,${scratchSpace.fileFor(id).path}');
       }
+    }
+    // Add the default analysis_options if not the root package.
+    if (!isRoot) {
+      request.arguments.add(defaultAnalysisOptionsArg(scratchSpace));
     }
     // And finally add all the urls to compile, using the package: path for
     // files under lib and the full absolute path for other files.

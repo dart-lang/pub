@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../io.dart';
 import '../log.dart' as log;
 import '../package_graph.dart';
+import 'common.dart';
 import 'dartdevc.dart';
 import 'module.dart';
 import 'module_computer.dart';
@@ -143,9 +144,15 @@ class DartDevcEnvironment {
     if (_assetCache.containsKey(id)) return {id: _assetCache[id]};
     Map<AssetId, Future<Asset>> assets;
     if (id.path.endsWith(unlinkedSummaryExtension)) {
-      assets = {id: createUnlinkedSummary(id, _moduleReader, _scratchSpace)};
+      assets = {
+        id: createUnlinkedSummary(id, _moduleReader, _scratchSpace,
+            isRoot: _packageGraph.entrypoint.root.name == id.package)
+      };
     } else if (id.path.endsWith(linkedSummaryExtension)) {
-      assets = {id: createLinkedSummary(id, _moduleReader, _scratchSpace)};
+      assets = {
+        id: createLinkedSummary(id, _moduleReader, _scratchSpace,
+            isRoot: _packageGraph.entrypoint.root.name == id.package)
+      };
     } else if (_isEntrypointId(id)) {
       var dartId = _entrypointDartId(id);
       if (dartId != null) {
@@ -160,7 +167,8 @@ class DartDevcEnvironment {
     } else if (id.path.endsWith('.js') || id.path.endsWith('.js.map')) {
       var jsId = id.extension == '.map' ? id.changeExtension('') : id;
       assets = createDartdevcModule(
-          jsId, _moduleReader, _scratchSpace, _environmentConstants, _mode);
+          jsId, _moduleReader, _scratchSpace, _environmentConstants, _mode,
+          isRoot: _packageGraph.entrypoint.root.name == jsId.package);
       // Pre-emptively start building all transitive JS deps under the
       // assumption they will be needed in the near future.
       () async {
@@ -177,6 +185,8 @@ class DartDevcEnvironment {
       assets = {id: _buildModuleConfig(id)};
     } else if (id.extension == '.errors') {
       assets = {id: _cachedAsset(id)};
+    } else if (id == defaultAnalysisOptionsId) {
+      assets = {id: new Future.value(defaultAnalysisOptions)};
     }
     assets ??= <AssetId, Future<Asset>>{};
 
