@@ -180,4 +180,63 @@ void main() {
       await endPubServe();
     });
   });
+
+  group('custom analysis options', () {
+    setUp(() async {
+      await d.dir("foo", [
+        d.libPubspec("foo", "1.0.0"),
+        d.dir("lib", [
+          d.file("foo.dart", """
+// not actually a used input
+import 'dart:io';
+
+String get message => 'hello';
+""")
+        ]),
+      ]).create();
+
+      await d.dir(appPath, [
+        d.appPubspec({
+          "foo": {"path": "../foo"}
+        }),
+        d.file("analysis_options.yaml", """
+analyzer:
+  strong-mode: true
+  errors:
+    unused_import: error
+"""),
+        d.dir("web", [
+          d.file("main.dart", """
+import 'package:foo/foo.dart';
+
+void main() {
+  print(message);
+}
+"""),
+          d.file("bad.dart", """
+import 'dart:io';
+
+import 'package:foo/foo.dart';
+
+void main() {
+  print(message);
+}
+"""),
+        ]),
+      ]).create();
+
+      await pubGet();
+      await pubServe(args: ['--web-compiler', 'dartdevc']);
+    });
+
+    test("the root package can't violate the root analysis options", () async {
+      await requestShould404('web__bad.js');
+      await endPubServe();
+    });
+
+    test("dependencies can violate the root analysis options", () async {
+      await requestShouldSucceed('web__main.js', null);
+      await endPubServe();
+    });
+  });
 }
