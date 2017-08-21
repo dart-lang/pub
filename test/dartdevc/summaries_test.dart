@@ -126,9 +126,6 @@ Future linkedSummaryRequestShouldSucceed(
   var bundle = new PackageBundle.fromBuffer(response.bodyBytes);
   expect(bundle.linkedLibraryUris, unorderedMatches(expectedLinkedUris));
   expect(bundle.unlinkedUnitUris, unorderedMatches(expectedUnlinkedUris));
-  var summaryDepPaths = bundle.dependencies
-      .map((info) => info.summaryPath)
-      .where((path) => path.isNotEmpty);
 }
 
 Future unlinkedSummaryRequestShouldSucceed(
