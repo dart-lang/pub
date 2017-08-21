@@ -55,19 +55,11 @@ void main() {}
       equals('package:foo/foo.dart')
     ], [
       endsWith('web/main.dart')
-    ], [
-      endsWith('packages/myapp/lib__hello.unlinked.sum'),
-      endsWith('packages/foo/lib__foo.unlinked.sum'),
     ]);
     await linkedSummaryRequestShouldSucceed(
-        'packages/myapp/lib__hello$linkedSummaryExtension', [
-      equals('package:myapp/hello.dart'),
-      equals('package:foo/foo.dart')
-    ], [
-      equals('package:myapp/hello.dart')
-    ], [
-      endsWith('packages/foo/lib__foo.unlinked.sum'),
-    ]);
+        'packages/myapp/lib__hello$linkedSummaryExtension',
+        [equals('package:myapp/hello.dart'), equals('package:foo/foo.dart')],
+        [equals('package:myapp/hello.dart')]);
     await linkedSummaryRequestShouldSucceed(
         'packages/foo/lib__foo$linkedSummaryExtension',
         [equals('package:foo/foo.dart')],
@@ -125,9 +117,10 @@ void main() {}
   });
 }
 
-Future linkedSummaryRequestShouldSucceed(String uri,
-    List<Matcher> expectedLinkedUris, List<Matcher> expectedUnlinkedUris,
-    [List<Matcher> expectedSummaryDeps = const []]) async {
+Future linkedSummaryRequestShouldSucceed(
+    String uri,
+    List<Matcher> expectedLinkedUris,
+    List<Matcher> expectedUnlinkedUris) async {
   var response = await requestFromPub(uri);
   expect(response.statusCode, 200);
   var bundle = new PackageBundle.fromBuffer(response.bodyBytes);
@@ -136,7 +129,6 @@ Future linkedSummaryRequestShouldSucceed(String uri,
   var summaryDepPaths = bundle.dependencies
       .map((info) => info.summaryPath)
       .where((path) => path.isNotEmpty);
-  expect(summaryDepPaths, unorderedMatches(expectedSummaryDeps));
 }
 
 Future unlinkedSummaryRequestShouldSucceed(
