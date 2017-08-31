@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency.dart';
 

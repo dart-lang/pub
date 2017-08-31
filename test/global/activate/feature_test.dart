@@ -4,6 +4,7 @@
 
 import 'package:test/test.dart';
 
+import 'package:pub/src/pubspec.dart';
 import '../../test_pub.dart';
 
 main() {
