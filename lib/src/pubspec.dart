@@ -32,6 +32,12 @@ final _packageName = new RegExp(
 final _defaultSdkConstraint =
     new VersionConstraint.parse("<2.0.0-dev.infinity");
 
+/// Whether or not `features` are enabled.
+///
+/// This can be overridden manually or by setting the ENABLE_PUB_FEATURES
+/// environment variable to "true".
+bool featuresEnabled = Platform.environment["ENABLE_PUB_FEATURES"] != "true";
+
 /// The parsed contents of a pubspec file.
 ///
 /// The fields of a pubspec are, for the most part, validated when they're first
@@ -164,7 +170,7 @@ class Pubspec {
     }
 
     // Disable features support unless we have this environment variable set.
-    if (Platform.environment["ENABLE_PUB_FEATURES"] != "true") {
+    if (!featuresEnabled) {
       _error(
           'Pub `features` support is not enabled but found a pubspec that '
           'uses it:\n$fields',

@@ -7,6 +7,9 @@ import 'package:test/test.dart';
 import '../../test_pub.dart';
 
 main() {
+  // Explicitly enable `features` support.
+  featuresEnabled = true;
+
   test('enables default-on features by default', () async {
     await servePackages((builder) {
       builder.serve("foo", "1.0.0", pubspec: {

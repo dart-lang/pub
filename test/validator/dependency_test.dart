@@ -60,6 +60,9 @@ Future setUpDependency(Map dep, {List<String> hostedVersions}) {
 }
 
 main() {
+  // Explicitly enable `features` support.
+  featuresEnabled = true;
+
   group('should consider a package valid if it', () {
     test('looks normal', () async {
       await d.validPackage.create();
