@@ -238,25 +238,28 @@ require(["$appModulePath", "dart_sdk"], function(app, dart_sdk) {
     var bootstrapModuleName = p.withoutExtension(
         p.relative(bootstrapId.path, from: p.dirname(dartEntrypointId.path)));
     var entrypointJsContent = new StringBuffer('''
-var el;
+(function() {
+  $_currentDirectoryScript
+  var el;
 ''');
     if (isDebug) {
       entrypointJsContent.write('''
-el = document.createElement("script");
-el.defer = true;
-el.async = false;
-el.src = "dart_stack_trace_mapper.js";
-document.head.appendChild(el);
+  el = document.createElement("script");
+  el.defer = true;
+  el.async = false;
+  el.src = "dart_stack_trace_mapper.js";
+  document.head.appendChild(el);
 ''');
     }
 
     entrypointJsContent.write('''
-el = document.createElement("script");
-el.defer = true;
-el.async = false;
-el.src = "require.js";
-el.setAttribute("data-main", "$bootstrapModuleName");
-document.head.appendChild(el);
+  el = document.createElement("script");
+  el.defer = true;
+  el.async = false;
+  el.src = "require.js";
+  el.setAttribute("data-main", _currentDirectory + "$bootstrapModuleName");
+  document.head.appendChild(el);
+})();
 ''');
     outputCompleters[jsEntrypointId].complete(
         new Asset.fromString(jsEntrypointId, entrypointJsContent.toString()));
