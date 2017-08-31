@@ -1,6 +1,7 @@
 // Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as path;
@@ -155,10 +156,19 @@ class Pubspec {
 
   Map<String, Feature> get features {
     if (_features != null) return _features;
+
     var features = fields['features'];
     if (features == null) {
       _features = const {};
       return _features;
+    }
+
+    // Disable features support unless we have this environment variable set.
+    if (Platform.environment["ENABLE_PUB_FEATURES"] != "true") {
+      _error(
+          'Pub `features` support is not enabled but found a pubspec that '
+          'uses it:\n$fields',
+          fields.nodes['features'].span);
     }
 
     if (features is! Map) {

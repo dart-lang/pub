@@ -13,6 +13,7 @@ dart_task:
 # snapshot if it's available.
 before_script:
   - dart --no-checked --snapshot=bin/pub.dart.snapshot --snapshot-kind=app-jit bin/pub.dart --help
+  - export ENABLE_PUB_FEATURES=true
 
 # Only building master means that we don't run two builds for each pull request.
 branches:
