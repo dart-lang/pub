@@ -34,6 +34,9 @@ class MockSource extends Source {
 }
 
 main() {
+  // Explicitly enable `features` support.
+  featuresEnabled = true;
+
   group('parse()', () {
     var sources = new SourceRegistry();
     sources.register(new MockSource());
