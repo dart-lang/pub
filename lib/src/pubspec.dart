@@ -701,8 +701,11 @@ class Pubspec {
     return dependencies;
   }
 
-  /// Parses [node] to a [VersionConstraint], or [defaultConstraint] if no
-  /// constraint is specified..
+  /// Parses [node] to a [VersionConstraint].
+  ///
+  /// If or [defaultUpperBoundConstraint] is specified then it will be set as
+  /// the max constraint if the original constraint doesn't have an upper
+  /// bound and it is compatible with [defaultUpperBoundConstraint].
   VersionConstraint _parseVersionConstraint(YamlNode node,
       {VersionConstraint defaultUpperBoundConstraint}) {
     if (node?.value == null) return defaultUpperBoundConstraint;
