@@ -16,12 +16,14 @@ const _defaultMaxWorkers = 4;
 
 const _maxWorkersEnvVar = 'PUB_MAX_WORKERS_PER_TASK';
 
-final int _maxWorkersPerTask = int.parse(
-    Platform.environment[_maxWorkersEnvVar] ?? '$_defaultMaxWorkers',
-    onError: (value) => warning(
-        yellow('Invalid value for $_maxWorkersEnvVar environment variable, '
-            'expected an int but got `$value`. Falling back to default value '
-            'of $_defaultMaxWorkers.')));
+final int _maxWorkersPerTask = int
+    .parse(Platform.environment[_maxWorkersEnvVar] ?? '$_defaultMaxWorkers',
+        onError: (value) {
+  warning(yellow('Invalid value for $_maxWorkersEnvVar environment variable, '
+      'expected an int but got `$value`. Falling back to default value '
+      'of $_defaultMaxWorkers.'));
+  return _defaultMaxWorkers;
+});
 
 /// Manages a shared set of persistent analyzer workers.
 final analyzerDriver = new BazelWorkerDriver(
