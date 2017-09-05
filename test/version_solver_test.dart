@@ -1023,13 +1023,15 @@ void dartSdkConstraint() {
     await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
   });
 
-  test('allows 2.0.0-dev by default', () async {
+  test('disallows 2.0.0-dev by default', () async {
     await d.dir(appPath, [
       await d.pubspec({'name': 'myapp'})
     ]).create();
 
     await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'}, result: {});
+        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'}, result: {},
+        error: 'Package myapp requires SDK version <2.0.0 but the '
+            'current SDK is 2.0.0.');
   });
 
   test('disallows 2.0.0 by default', () async {
@@ -1039,7 +1041,7 @@ void dartSdkConstraint() {
 
     await expectResolves(
         environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package myapp requires SDK version <2.0.0-dev.infinity but the '
+        error: 'Package myapp requires SDK version <2.0.0 but the '
             'current SDK is 2.0.0.');
   });
 }

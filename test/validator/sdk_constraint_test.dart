@@ -79,7 +79,7 @@ main() {
       expect(
           validatePackage(sdkConstraint),
           completion(pairOf(
-              anyElement(contains('">=1.19.0 <2.0.0-dev.infinity"')),
+              anyElement(contains('">=1.19.0 <2.0.0"')),
               isEmpty)));
     });
   });

@@ -488,7 +488,7 @@ main() {
           d.libPubspec("integration_pkg", "1.0.0", deps: {"foo": "^1.2.3"})
         ]).create();
 
-        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0-dev.infinity"');
+        expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
       });
 
       test("with a too-broad SDK constraint", () async {
