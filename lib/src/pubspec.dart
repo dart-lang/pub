@@ -516,7 +516,7 @@ class Pubspec {
             devDependencies == null ? null : devDependencies.toList(),
         _dependencyOverrides =
             dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint = dartSdkConstraint ?? _defaultSdkConstraint,
+        _dartSdkConstraint = dartSdkConstraint ?? _defaultUpperBoundSdkConstraint,
         _flutterSdkConstraint = flutterSdkConstraint,
         _transformers = transformers == null
             ? []
@@ -530,7 +530,7 @@ class Pubspec {
         _version = Version.none,
         _dependencies = <PackageRange>[],
         _devDependencies = <PackageRange>[],
-        _dartSdkConstraint = _defaultSdkConstraint,
+        _dartSdkConstraint = _defaultUpperBoundSdkConstraint,
         _flutterSdkConstraint = null,
         _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
