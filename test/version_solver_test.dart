@@ -1029,9 +1029,9 @@ void dartSdkConstraint() {
     ]).create();
 
     await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'}, result: {},
+        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
         error: 'Package myapp requires SDK version <2.0.0 but the '
-            'current SDK is 2.0.0.');
+            'current SDK is 2.0.0-dev.99.');
   });
 
   test('disallows 2.0.0 by default', () async {
@@ -1170,8 +1170,8 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires SDK version >0.1.2+3 but the current '
-              'SDK is 0.1.2+3.');
+          error: 'Package myapp requires SDK version >0.1.2+3 <2.0.0 but the '
+              'current SDK is 0.1.2+3.');
     });
 
     test('selects the latest dependency with a matching constraint', () async {
