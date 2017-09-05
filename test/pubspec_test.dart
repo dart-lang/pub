@@ -446,7 +446,29 @@ dependencies:
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('', sources);
         expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse("<2.0.0-dev.infinity")));
+            equals(new VersionConstraint.parse("<2.0.0")));
+        expect(pubspec.flutterSdkConstraint, isNull);
+      });
+
+      test("defaults the upper constraint for the sdk", () {
+        var pubspec = new Pubspec.parse('''
+  environment:
+    sdk: ">1.0.0"
+  ''', sources);
+        expect(pubspec.dartSdkConstraint,
+            equals(new VersionConstraint.parse(">1.0.0 <2.0.0")));
+        expect(pubspec.flutterSdkConstraint, isNull);
+      });
+
+      test(
+          "default upper constraint for the sdk applies only if compatibile "
+          "with the lower bound", () {
+        var pubspec = new Pubspec.parse('''
+  environment:
+    sdk: ">3.0.0"
+  ''', sources);
+        expect(pubspec.dartSdkConstraint,
+            equals(new VersionConstraint.parse(">3.0.0")));
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 

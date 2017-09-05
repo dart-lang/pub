@@ -26,11 +26,10 @@ import 'utils.dart';
 final _packageName = new RegExp(
     "^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
 
-/// The default SDK constraint for packages that don't declare one.
+/// The default SDK upper bound constraint for packages that don't declare one.
 ///
-/// This allows 2.0.0 dev versions to make the migration proecss smoother.
-final _defaultSdkConstraint =
-    new VersionConstraint.parse("<2.0.0-dev.infinity");
+/// This provides a sane default for packages that don't have an upper bound.
+final _defaultUpperBoundSdkConstraint = new VersionConstraint.parse("<2.0.0");
 
 /// Whether or not `features` are enabled.
 ///
@@ -295,8 +294,8 @@ class Pubspec {
     });
   }
 
-  /// The constraint on the Dart SDK, or [_defaultSdkConstraint] if none is
-  /// specified.
+  /// The constraint on the Dart SDK, with [_defaultUpperBoundSdkConstraint] if
+  /// none is specified.
   VersionConstraint get dartSdkConstraint {
     _ensureEnvironment();
     return _dartSdkConstraint;
@@ -327,7 +326,7 @@ class Pubspec {
   Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
     var yaml = parent['environment'];
     if (yaml == null) {
-      return new Pair(_defaultSdkConstraint, null);
+      return new Pair(_defaultUpperBoundSdkConstraint, null);
     }
 
     if (yaml is! Map) {
@@ -337,7 +336,7 @@ class Pubspec {
 
     return new Pair(
         _parseVersionConstraint(yaml.nodes['sdk'],
-            defaultConstraint: _defaultSdkConstraint),
+            defaultUpperBoundConstraint: _defaultUpperBoundSdkConstraint),
         yaml.containsKey('flutter')
             ? _parseVersionConstraint(yaml.nodes['flutter'])
             : null);
@@ -705,14 +704,23 @@ class Pubspec {
   /// Parses [node] to a [VersionConstraint], or [defaultConstraint] if no
   /// constraint is specified..
   VersionConstraint _parseVersionConstraint(YamlNode node,
-      {VersionConstraint defaultConstraint}) {
-    if (node?.value == null) return defaultConstraint;
+      {VersionConstraint defaultUpperBoundConstraint}) {
+    if (node?.value == null) return defaultUpperBoundConstraint;
     if (node.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }
 
-    return _wrapFormatException('version constraint', node.span,
-        () => new VersionConstraint.parse(node.value));
+    return _wrapFormatException('version constraint', node.span, () {
+      var constraint = new VersionConstraint.parse(node.value);
+      if (defaultUpperBoundConstraint != null &&
+          constraint is VersionRange &&
+          constraint.max == null &&
+          defaultUpperBoundConstraint.allowsAny(constraint)) {
+        constraint = new VersionConstraint.intersection(
+            [constraint, defaultUpperBoundConstraint]);
+      }
+      return constraint;
+    });
   }
 
   /// Parses [node] to a map from feature names to whether those features are
