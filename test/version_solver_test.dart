@@ -1170,7 +1170,7 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires SDK version >0.1.2+3 <2.0.0 but the '
+          error: 'Package myapp requires SDK version >0.1.2+3 but the '
               'current SDK is 0.1.2+3.');
     });
 

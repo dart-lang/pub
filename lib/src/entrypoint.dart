@@ -144,7 +144,8 @@ class Entrypoint {
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, SystemCache cache, {this.isGlobal: false})
-      : root = new Package.load(null, rootDir, cache.sources),
+      : root =
+            new Package.load(null, rootDir, cache.sources, isRootPackage: true),
         cache = cache,
         _inMemory = false;
 

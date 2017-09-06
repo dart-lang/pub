@@ -66,6 +66,10 @@ class Pubspec {
   /// This includes the fields from which other properties are derived.
   final YamlMap fields;
 
+  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// pubspec.
+  bool _includeDefaultSdkConstraint;
+
   /// The package's name.
   String get name {
     if (_name != null) return _name;
@@ -326,7 +330,11 @@ class Pubspec {
   Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
     var yaml = parent['environment'];
     if (yaml == null) {
-      return new Pair(_defaultUpperBoundSdkConstraint, null);
+      return new Pair(
+          _includeDefaultSdkConstraint
+              ? _defaultUpperBoundSdkConstraint
+              : VersionConstraint.any,
+          null);
     }
 
     if (yaml is! Map) {
@@ -336,7 +344,9 @@ class Pubspec {
 
     return new Pair(
         _parseVersionConstraint(yaml.nodes['sdk'],
-            defaultUpperBoundConstraint: _defaultUpperBoundSdkConstraint),
+            defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+                ? _defaultUpperBoundSdkConstraint
+                : null),
         yaml.containsKey('flutter')
             ? _parseVersionConstraint(yaml.nodes['flutter'])
             : null);
@@ -484,7 +494,7 @@ class Pubspec {
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecError].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String expectedName}) {
+      {String expectedName, bool includeDefaultSdkConstraint}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -497,7 +507,9 @@ class Pubspec {
     }
 
     return new Pubspec.parse(readTextFile(pubspecPath), sources,
-        expectedName: expectedName, location: pubspecUri);
+        expectedName: expectedName,
+        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+        location: pubspecUri);
   }
 
   Pubspec(this._name,
@@ -506,6 +518,7 @@ class Pubspec {
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
       VersionConstraint dartSdkConstraint,
+      bool includeDefaultSdkConstraint,
       VersionConstraint flutterSdkConstraint,
       Iterable<Iterable<TransformerConfig>> transformers,
       Map fields,
@@ -516,9 +529,11 @@ class Pubspec {
             devDependencies == null ? null : devDependencies.toList(),
         _dependencyOverrides =
             dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint =
-            dartSdkConstraint ?? _defaultUpperBoundSdkConstraint,
+        _dartSdkConstraint = dartSdkConstraint ?? includeDefaultSdkConstraint
+            ? _defaultUpperBoundSdkConstraint
+            : VersionConstraint.any,
         _flutterSdkConstraint = flutterSdkConstraint,
+        _includeDefaultSdkConstraint = false,
         _transformers = transformers == null
             ? []
             : transformers.map((phase) => phase.toSet()).toList(),
@@ -531,8 +546,9 @@ class Pubspec {
         _version = Version.none,
         _dependencies = <PackageRange>[],
         _devDependencies = <PackageRange>[],
-        _dartSdkConstraint = _defaultUpperBoundSdkConstraint,
+        _dartSdkConstraint = VersionConstraint.any,
         _flutterSdkConstraint = null,
+        _includeDefaultSdkConstraint = false,
         _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
 
@@ -544,10 +560,11 @@ class Pubspec {
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
-      {String expectedName, Uri location})
+      {String expectedName, bool includeDefaultSdkConstraint, Uri location})
       : fields = fields is YamlMap
             ? fields
-            : new YamlMap.wrap(fields, sourceUrl: location) {
+            : new YamlMap.wrap(fields, sourceUrl: location),
+        _includeDefaultSdkConstraint = includeDefaultSdkConstraint ?? true {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -564,7 +581,7 @@ class Pubspec {
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String expectedName, Uri location}) {
+      {String expectedName, bool includeDefaultSdkConstraint, Uri location}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -583,7 +600,9 @@ class Pubspec {
     }
 
     return new Pubspec.fromMap(pubspecMap, sources,
-        expectedName: expectedName, location: location);
+        expectedName: expectedName,
+        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+        location: location);
   }
 
   /// Returns a list of most errors in this pubspec.
@@ -709,7 +728,9 @@ class Pubspec {
   /// bound and it is compatible with [defaultUpperBoundConstraint].
   VersionConstraint _parseVersionConstraint(YamlNode node,
       {VersionConstraint defaultUpperBoundConstraint}) {
-    if (node?.value == null) return defaultUpperBoundConstraint;
+    if (node?.value == null) {
+      return defaultUpperBoundConstraint ?? VersionConstraint.any;
+    }
     if (node.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }

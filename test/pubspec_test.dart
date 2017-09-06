@@ -450,6 +450,13 @@ dependencies:
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
+      test("default sdk constraint can be ommited with empty environment", () {
+        var pubspec =
+            new Pubspec.parse('', sources, includeDefaultSdkConstraint: false);
+        expect(pubspec.dartSdkConstraint, equals(VersionConstraint.any));
+        expect(pubspec.flutterSdkConstraint, isNull);
+      });
+
       test("defaults the upper constraint for the sdk", () {
         var pubspec = new Pubspec.parse('''
   environment:
