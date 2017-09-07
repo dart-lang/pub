@@ -5,7 +5,11 @@ dart:
   - dev
 
 dart_task:
-  - test: --preset travis
+  - test: --preset travis --total-shards 5 --shard-index 0
+  - test: --preset travis --total-shards 5 --shard-index 1
+  - test: --preset travis --total-shards 5 --shard-index 2
+  - test: --preset travis --total-shards 5 --shard-index 3
+  - test: --preset travis --total-shards 5 --shard-index 4
   - dartfmt
   - dartanalyzer
 
