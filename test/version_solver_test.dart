@@ -1023,23 +1023,60 @@ void dartSdkConstraint() {
     await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
   });
 
-  test('allows 2.0.0-dev by default', () async {
+  test('root package allows 2.0.0-dev by default', () async {
     await d.dir(appPath, [
       await d.pubspec({'name': 'myapp'})
     ]).create();
 
     await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'}, result: {});
+        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
   });
 
-  test('disallows 2.0.0 by default', () async {
+  test('root package allows 2.0.0 by default', () async {
     await d.dir(appPath, [
       await d.pubspec({'name': 'myapp'})
+    ]).create();
+
+    await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
+  });
+
+  test('package deps disallow 2.0.0-dev by default', () async {
+    await d.dir('foo', [
+      await d.pubspec({'name': 'foo'})
+    ]).create();
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'}
+        }
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
+        error: 'Package foo requires SDK version <2.0.0 but the '
+            'current SDK is 2.0.0-dev.99.');
+  });
+
+  test('package deps disallow 2.0.0 by default', () async {
+    await d.dir('foo', [
+      await d.pubspec({'name': 'foo'})
+    ]).create();
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'}
+        }
+      })
     ]).create();
 
     await expectResolves(
         environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package myapp requires SDK version <2.0.0-dev.infinity but the '
+        error: 'Package foo requires SDK version <2.0.0 but the '
             'current SDK is 2.0.0.');
   });
 }
@@ -1168,8 +1205,8 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires SDK version >0.1.2+3 but the current '
-              'SDK is 0.1.2+3.');
+          error: 'Package myapp requires SDK version >0.1.2+3 but the '
+              'current SDK is 0.1.2+3.');
     });
 
     test('selects the latest dependency with a matching constraint', () async {

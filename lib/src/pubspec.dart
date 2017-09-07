@@ -26,11 +26,10 @@ import 'utils.dart';
 final _packageName = new RegExp(
     "^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
 
-/// The default SDK constraint for packages that don't declare one.
+/// The default SDK upper bound constraint for packages that don't declare one.
 ///
-/// This allows 2.0.0 dev versions to make the migration proecss smoother.
-final _defaultSdkConstraint =
-    new VersionConstraint.parse("<2.0.0-dev.infinity");
+/// This provides a sane default for packages that don't have an upper bound.
+final _defaultUpperBoundSdkConstraint = new VersionConstraint.parse("<2.0.0");
 
 /// Whether or not `features` are enabled.
 ///
@@ -66,6 +65,10 @@ class Pubspec {
   ///
   /// This includes the fields from which other properties are derived.
   final YamlMap fields;
+
+  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// pubspec.
+  bool _includeDefaultSdkConstraint;
 
   /// The package's name.
   String get name {
@@ -295,8 +298,8 @@ class Pubspec {
     });
   }
 
-  /// The constraint on the Dart SDK, or [_defaultSdkConstraint] if none is
-  /// specified.
+  /// The constraint on the Dart SDK, with [_defaultUpperBoundSdkConstraint] if
+  /// none is specified.
   VersionConstraint get dartSdkConstraint {
     _ensureEnvironment();
     return _dartSdkConstraint;
@@ -327,7 +330,11 @@ class Pubspec {
   Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
     var yaml = parent['environment'];
     if (yaml == null) {
-      return new Pair(_defaultSdkConstraint, null);
+      return new Pair(
+          _includeDefaultSdkConstraint
+              ? _defaultUpperBoundSdkConstraint
+              : VersionConstraint.any,
+          null);
     }
 
     if (yaml is! Map) {
@@ -337,7 +344,9 @@ class Pubspec {
 
     return new Pair(
         _parseVersionConstraint(yaml.nodes['sdk'],
-            defaultConstraint: _defaultSdkConstraint),
+            defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+                ? _defaultUpperBoundSdkConstraint
+                : null),
         yaml.containsKey('flutter')
             ? _parseVersionConstraint(yaml.nodes['flutter'])
             : null);
@@ -485,7 +494,7 @@ class Pubspec {
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecError].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String expectedName}) {
+      {String expectedName, bool includeDefaultSdkConstraint}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -498,7 +507,9 @@ class Pubspec {
     }
 
     return new Pubspec.parse(readTextFile(pubspecPath), sources,
-        expectedName: expectedName, location: pubspecUri);
+        expectedName: expectedName,
+        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+        location: pubspecUri);
   }
 
   Pubspec(this._name,
@@ -507,6 +518,7 @@ class Pubspec {
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
       VersionConstraint dartSdkConstraint,
+      bool includeDefaultSdkConstraint,
       VersionConstraint flutterSdkConstraint,
       Iterable<Iterable<TransformerConfig>> transformers,
       Map fields,
@@ -517,8 +529,12 @@ class Pubspec {
             devDependencies == null ? null : devDependencies.toList(),
         _dependencyOverrides =
             dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint = dartSdkConstraint ?? _defaultSdkConstraint,
+        _dartSdkConstraint =
+            dartSdkConstraint ?? includeDefaultSdkConstraint == true
+                ? _defaultUpperBoundSdkConstraint
+                : VersionConstraint.any,
         _flutterSdkConstraint = flutterSdkConstraint,
+        _includeDefaultSdkConstraint = includeDefaultSdkConstraint,
         _transformers = transformers == null
             ? []
             : transformers.map((phase) => phase.toSet()).toList(),
@@ -531,8 +547,9 @@ class Pubspec {
         _version = Version.none,
         _dependencies = <PackageRange>[],
         _devDependencies = <PackageRange>[],
-        _dartSdkConstraint = _defaultSdkConstraint,
+        _dartSdkConstraint = VersionConstraint.any,
         _flutterSdkConstraint = null,
+        _includeDefaultSdkConstraint = false,
         _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
 
@@ -544,10 +561,11 @@ class Pubspec {
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
-      {String expectedName, Uri location})
+      {String expectedName, bool includeDefaultSdkConstraint, Uri location})
       : fields = fields is YamlMap
             ? fields
-            : new YamlMap.wrap(fields, sourceUrl: location) {
+            : new YamlMap.wrap(fields, sourceUrl: location),
+        _includeDefaultSdkConstraint = includeDefaultSdkConstraint ?? true {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -564,7 +582,7 @@ class Pubspec {
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String expectedName, Uri location}) {
+      {String expectedName, bool includeDefaultSdkConstraint, Uri location}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -583,7 +601,9 @@ class Pubspec {
     }
 
     return new Pubspec.fromMap(pubspecMap, sources,
-        expectedName: expectedName, location: location);
+        expectedName: expectedName,
+        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+        location: location);
   }
 
   /// Returns a list of most errors in this pubspec.
@@ -702,17 +722,31 @@ class Pubspec {
     return dependencies;
   }
 
-  /// Parses [node] to a [VersionConstraint], or [defaultConstraint] if no
-  /// constraint is specified..
+  /// Parses [node] to a [VersionConstraint].
+  ///
+  /// If or [defaultUpperBoundConstraint] is specified then it will be set as
+  /// the max constraint if the original constraint doesn't have an upper
+  /// bound and it is compatible with [defaultUpperBoundConstraint].
   VersionConstraint _parseVersionConstraint(YamlNode node,
-      {VersionConstraint defaultConstraint}) {
-    if (node?.value == null) return defaultConstraint;
+      {VersionConstraint defaultUpperBoundConstraint}) {
+    if (node?.value == null) {
+      return defaultUpperBoundConstraint ?? VersionConstraint.any;
+    }
     if (node.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }
 
-    return _wrapFormatException('version constraint', node.span,
-        () => new VersionConstraint.parse(node.value));
+    return _wrapFormatException('version constraint', node.span, () {
+      var constraint = new VersionConstraint.parse(node.value);
+      if (defaultUpperBoundConstraint != null &&
+          constraint is VersionRange &&
+          constraint.max == null &&
+          defaultUpperBoundConstraint.allowsAny(constraint)) {
+        constraint = new VersionConstraint.intersection(
+            [constraint, defaultUpperBoundConstraint]);
+      }
+      return constraint;
+    });
   }
 
   /// Parses [node] to a map from feature names to whether those features are

@@ -133,9 +133,11 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String name, String packageDir, SourceRegistry sources)
+  Package.load(String name, String packageDir, SourceRegistry sources,
+      {bool isRootPackage: false})
       : dir = packageDir,
-        pubspec = new Pubspec.load(packageDir, sources, expectedName: name);
+        pubspec = new Pubspec.load(packageDir, sources,
+            expectedName: name, includeDefaultSdkConstraint: !isRootPackage);
 
   /// Constructs a package with the given pubspec.
   ///
