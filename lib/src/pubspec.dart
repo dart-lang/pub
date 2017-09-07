@@ -529,9 +529,10 @@ class Pubspec {
             devDependencies == null ? null : devDependencies.toList(),
         _dependencyOverrides =
             dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint = dartSdkConstraint ?? includeDefaultSdkConstraint
-            ? _defaultUpperBoundSdkConstraint
-            : VersionConstraint.any,
+        _dartSdkConstraint =
+            dartSdkConstraint ?? includeDefaultSdkConstraint == true
+                ? _defaultUpperBoundSdkConstraint
+                : VersionConstraint.any,
         _flutterSdkConstraint = flutterSdkConstraint,
         _includeDefaultSdkConstraint = false,
         _transformers = transformers == null
