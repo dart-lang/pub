@@ -20,15 +20,25 @@ class SdkConstraintValidator extends Validator {
 
   Future validate() async {
     var dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
-    if (dartConstraint is VersionRange &&
-        dartConstraint.toString().startsWith("^")) {
-      errors
-          .add("^ version constraints aren't allowed for SDK constraints since "
-              "older versions of pub don't support them.\n"
-              "Expand it manually instead:\n"
-              "\n"
-              "environment:\n"
-              "  sdk: \">=${dartConstraint.min} <${dartConstraint.max}\"");
+    if (dartConstraint is VersionRange) {
+      if (dartConstraint.toString().startsWith("^")) {
+        errors.add(
+            "^ version constraints aren't allowed for SDK constraints since "
+            "older versions of pub don't support them.\n"
+            "Expand it manually instead:\n"
+            "\n"
+            "environment:\n"
+            "  sdk: \">=${dartConstraint.min} <${dartConstraint.max}\"");
+      }
+
+      if (dartConstraint.max == null) {
+        errors.add(
+            'Published packages should have an upper bound constraint on the '
+            'Dart sdk (typically this should restrict to less than the next '
+            'major version to guard against breaking changes).\n'
+            'See https://www.dartlang.org/tools/pub/pubspec#sdk-constraints for '
+            'instructions on setting an sdk version constraint.');
+      }
     }
 
     if (entrypoint.root.pubspec.flutterSdkConstraint != null &&

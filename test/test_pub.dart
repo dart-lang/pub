@@ -591,6 +591,7 @@ Map packageMap(
   String version, [
   Map dependencies,
   Map devDependencies,
+  Map environment,
 ]) {
   var package = <String, dynamic>{
     "name": name,
@@ -602,6 +603,7 @@ Map packageMap(
 
   if (dependencies != null) package["dependencies"] = dependencies;
   if (devDependencies != null) package["dev_dependencies"] = devDependencies;
+  if (environment != null) package["environment"] = environment;
   return package;
 }
 

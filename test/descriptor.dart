@@ -28,7 +28,7 @@ TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
 
 /// Describes a package that passes all validation.
 Descriptor get validPackage => dir(appPath, [
-      libPubspec("test_pkg", "1.0.0"),
+      libPubspec("test_pkg", "1.0.0", sdk: '>=1.8.0 <=2.0.0'),
       file("LICENSE", "Eh, do what you want."),
       dir("lib", [file("test_pkg.dart", "int i = 1;")])
     ]);
