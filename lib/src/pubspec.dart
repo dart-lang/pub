@@ -534,7 +534,7 @@ class Pubspec {
                 ? _defaultUpperBoundSdkConstraint
                 : VersionConstraint.any,
         _flutterSdkConstraint = flutterSdkConstraint,
-        _includeDefaultSdkConstraint = false,
+        _includeDefaultSdkConstraint = includeDefaultSdkConstraint,
         _transformers = transformers == null
             ? []
             : transformers.map((phase) => phase.toSet()).toList(),
