@@ -62,6 +62,15 @@ main() {
               isEmpty)));
     });
 
+    test("has no SDK constraint", () async {
+      await d.dir(appPath, [d.libPubspec("test_pkg", "1.0.0")]).create();
+      expect(
+          validatePackage(sdkConstraint),
+          completion(pairOf(
+              anyElement(contains('should have an upper bound constraint')),
+              isEmpty)));
+    });
+
     test(
         "has a Flutter SDK constraint with a too-broad SDK "
         "constraint", () async {
