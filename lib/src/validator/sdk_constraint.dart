@@ -34,7 +34,7 @@ class SdkConstraintValidator extends Validator {
       if (dartConstraint.max == null) {
         errors.add(
             'Published packages should have an upper bound constraint on the '
-            'Dart sdk (typically this should restrict to less than the next '
+            'Dart SDK (typically this should restrict to less than the next '
             'major version to guard against breaking changes).\n'
             'See https://www.dartlang.org/tools/pub/pubspec#sdk-constraints for '
             'instructions on setting an sdk version constraint.');
