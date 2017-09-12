@@ -151,12 +151,12 @@ if(!window.\$dartLoader) {
    window.\$dartLoader = {
      moduleIdToUrl: new Map(),
      urlToModuleId: new Map(),
-     rootDirectories: new Set(),
+     rootDirectories: new Array(),
    };
 }
 
 let customModulePaths = {};
-window.\$dartLoader.rootDirectories.add(_currentDirectory);
+window.\$dartLoader.rootDirectories.push(_currentDirectory);
 for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
   let modulePath = modulePaths[moduleName];
   if (modulePath != moduleName) {
