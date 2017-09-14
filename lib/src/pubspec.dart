@@ -33,10 +33,10 @@ final _packageName = new RegExp(
 final VersionRange _defaultUpperBoundSdkConstraint =
     new VersionConstraint.parse("<2.0.0");
 
-/// The upper bound contraint that matches the dev sdk.
+/// The upper bound contraint that matches the dev SDK.
 final _preReleaseTwoDotZeroSdkVersion = new Version.parse("2.0.0-dev.infinity");
 
-/// Whether or not to allow the pre-release sdk for packages that have an
+/// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
 ///
 /// If enabled then a Dart SDK upper bound of <2.0.0 is always converted to
@@ -44,32 +44,27 @@ final _preReleaseTwoDotZeroSdkVersion = new Version.parse("2.0.0-dev.infinity");
 ///
 /// This has a default value of `true` but can be overridden with the
 /// PUB_ALLOW_PRERELEASE_SDK system environment variable.
-final bool allowPreReleaseTwoDotZeroSdk = () {
-  var userSetting =
+bool get allowPreReleaseTwoDotZeroSdk => allowPreReleaseSdkValue != 'false';
+
+/// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
+/// to `true`.
+final String allowPreReleaseSdkValue = () {
+  var value =
       Platform.environment["PUB_ALLOW_PRERELEASE_SDK"]?.toLowerCase() ?? 'true';
-  switch (userSetting) {
-    case "true":
-      return true;
-      break;
-    case "quiet":
-      warnAboutPreReleaseTwoDotZeroSdkOverrides = false;
-      return true;
-      break;
-    case "false":
-      return false;
-      break;
-    default:
-      warning(yellow('''
-The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$userSetting`.
+  if (!['true', 'quiet', 'false'].contains(value)) {
+    warning(yellow('''
+The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$value`.
 The expected value is either `true`, `quiet` (true but no logging), or `false`.
 Using a default value of `true`.
 '''));
-      return true;
+    value = 'true';
   }
+  return value;
 }();
 
-/// Whether or not to warn about pre-release sdk overrides.
-bool warnAboutPreReleaseTwoDotZeroSdkOverrides = true;
+/// Whether or not to warn about pre-release SDK overrides.
+bool get warnAboutPreReleaseTwoDotZeroSdkOverrides =>
+    allowPreReleaseSdkValue != 'quiet';
 
 /// Whether or not `features` are enabled.
 ///
@@ -111,7 +106,7 @@ class Pubspec {
   /// pubspec.
   final bool _includeDefaultSdkConstraint;
 
-  /// Whether or not the sdk version was overridden from <2.0.0 to
+  /// Whether or not the SDK version was overridden from <2.0.0 to
   /// <2.0.0-dev.infinity.
   bool get dartSdkWasOverridden => _dartSdkWasOverridden;
   bool _dartSdkWasOverridden = false;

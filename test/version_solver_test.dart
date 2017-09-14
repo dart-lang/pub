@@ -1062,14 +1062,14 @@ void dartSdkConstraint() {
       environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
       // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
       // variable and mention the foo and bar packages specifically.
-      output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
-          anyOf(contains('foo, bar'), contains('bar, foo'))),
+      output: allOf(
+          contains('PUB_ALLOW_PRERELEASE_SDK'), anyOf(contains('bar, foo'))),
     );
   });
 
   test(
-      'pub doesn\'t log about pre-release sdk overrides if '
-      'PUB_ALLOW_PRERELEASE_SDK=quiet', () async {
+      "pub doesn't log about pre-release sdk overrides if "
+      "PUB_ALLOW_PRERELEASE_SDK=quiet", () async {
     await d.dir('foo', [
       await d.pubspec({'name': 'foo'})
     ]).create();
