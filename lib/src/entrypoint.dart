@@ -22,6 +22,7 @@ import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
 import 'package_graph.dart';
+import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
@@ -193,6 +194,23 @@ class Entrypoint {
       bool packagesDir: false}) async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
+
+    // Log once about all overridden packages.
+    if (warnAboutPreReleaseTwoDotZeroSdkOverrides && result.pubspecs != null) {
+      var overriddenPackages = result.pubspecs.values
+          .where((pubspec) => pubspec.dartSdkWasOverridden)
+          .map((pubspec) => pubspec.name)
+          .join(', ');
+      if (overriddenPackages.isNotEmpty) {
+        log.message(log.yellow(
+            'Overriding Dart SDK constraint from <2.0.0 to <2.0.0-dev.infinity'
+            ' for the following packages:\n\n$overriddenPackages\n\n'
+            'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
+            'environment variable to `false`, or you can silence this message '
+            'by setting it to `quiet`.'));
+      }
+    }
+
     if (!result.succeeded) throw result.error;
 
     result.showReport(type);

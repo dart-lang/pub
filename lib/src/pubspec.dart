@@ -14,6 +14,7 @@ import 'compiler.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
+import 'log.dart';
 import 'package_name.dart';
 import 'source_registry.dart';
 import 'utils.dart';
@@ -29,13 +30,53 @@ final _packageName = new RegExp(
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
 /// This provides a sane default for packages that don't have an upper bound.
-final _defaultUpperBoundSdkConstraint = new VersionConstraint.parse("<2.0.0");
+final VersionRange _defaultUpperBoundSdkConstraint =
+    new VersionConstraint.parse("<2.0.0");
+
+/// The upper bound contraint that matches the dev sdk.
+final _preReleaseTwoDotZeroSdkVersion = new Version.parse("2.0.0-dev.infinity");
+
+/// Whether or not to allow the pre-release sdk for packages that have an
+/// upper bound Dart SDK constraint of <2.0.0.
+///
+/// If enabled then a Dart SDK upper bound of <2.0.0 is always converted to
+/// <2.0.0-dev.infinity.
+///
+/// This has a default value of `true` but can be overridden with the
+/// PUB_ALLOW_PRERELEASE_SDK system environment variable.
+final bool allowPreReleaseTwoDotZeroSdk = () {
+  var userSetting =
+      Platform.environment["PUB_ALLOW_PRERELEASE_SDK"]?.toLowerCase() ?? 'true';
+  switch (userSetting) {
+    case "true":
+      return true;
+      break;
+    case "quiet":
+      warnAboutPreReleaseTwoDotZeroSdkOverrides = false;
+      return true;
+      break;
+    case "false":
+      return false;
+      break;
+    default:
+      warning(yellow('''
+The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$userSetting`.
+The expected value is either `true`, `quiet` (true but no logging), or `false`.
+Using a default value of `true`.
+'''));
+      return true;
+  }
+}();
+
+/// Whether or not to warn about pre-release sdk overrides.
+bool warnAboutPreReleaseTwoDotZeroSdkOverrides = true;
 
 /// Whether or not `features` are enabled.
 ///
 /// This can be overridden manually or by setting the ENABLE_PUB_FEATURES
 /// environment variable to "true".
-bool featuresEnabled = Platform.environment["ENABLE_PUB_FEATURES"] != "true";
+bool featuresEnabled =
+    Platform.environment["ENABLE_PUB_FEATURES"]?.toLowerCase() != "true";
 
 /// The parsed contents of a pubspec file.
 ///
@@ -68,7 +109,12 @@ class Pubspec {
 
   /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
   /// pubspec.
-  bool _includeDefaultSdkConstraint;
+  final bool _includeDefaultSdkConstraint;
+
+  /// Whether or not the sdk version was overridden from <2.0.0 to
+  /// <2.0.0-dev.infinity.
+  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
+  bool _dartSdkWasOverridden = false;
 
   /// The package's name.
   String get name {
@@ -300,12 +346,24 @@ class Pubspec {
 
   /// The constraint on the Dart SDK, with [_defaultUpperBoundSdkConstraint] if
   /// none is specified.
+  ///
+  /// This also includes the pre-release override if
+  /// [allowPreReleaseTwoDotZeroSdk] is `true`.
   VersionConstraint get dartSdkConstraint {
     _ensureEnvironment();
     return _dartSdkConstraint;
   }
 
   VersionConstraint _dartSdkConstraint;
+
+  /// The original Dart SDK constraint, if [dartSdkWasOverridden] is `true`,
+  /// otherwise this will be identical to [dartSdkConstraint].
+  VersionConstraint get originalDartSdkConstraint {
+    _ensureEnvironment();
+    return _originalDartSdkConstraint ?? dartSdkConstraint;
+  }
+
+  VersionConstraint _originalDartSdkConstraint;
 
   /// The constraint on the Flutter SDK, or `null` if none is specified.
   VersionConstraint get flutterSdkConstraint {
@@ -321,7 +379,23 @@ class Pubspec {
     if (_dartSdkConstraint != null) return;
 
     var pair = _parseEnvironment(fields);
-    _dartSdkConstraint = pair.first;
+    var parsedDartSdkConstraint = pair.first;
+
+    if (allowPreReleaseTwoDotZeroSdk &&
+        parsedDartSdkConstraint is VersionRange &&
+        parsedDartSdkConstraint.max == _defaultUpperBoundSdkConstraint.max &&
+        !parsedDartSdkConstraint.includeMax) {
+      _originalDartSdkConstraint = parsedDartSdkConstraint;
+      _dartSdkWasOverridden = true;
+      _dartSdkConstraint = new VersionRange(
+          min: parsedDartSdkConstraint.min,
+          includeMin: parsedDartSdkConstraint.includeMin,
+          max: _preReleaseTwoDotZeroSdkVersion,
+          includeMax: false);
+    } else {
+      _dartSdkConstraint = parsedDartSdkConstraint;
+    }
+
     _flutterSdkConstraint = pair.last;
   }
 

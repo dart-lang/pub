@@ -1040,7 +1040,62 @@ void dartSdkConstraint() {
     await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
   });
 
-  test('package deps disallow 2.0.0-dev by default', () async {
+  test('package deps allow 2.0.0-dev by default', () async {
+    await d.dir('foo', [
+      await d.pubspec({'name': 'foo'})
+    ]).create();
+    await d.dir('bar', [
+      await d.pubspec({'name': 'bar'})
+    ]).create();
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'},
+          'bar': {'path': '../bar'},
+        }
+      })
+    ]).create();
+
+    await expectResolves(
+      environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
+      // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
+      // variable and mention the foo and bar packages specifically.
+      output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+          anyOf(contains('foo, bar'), contains('bar, foo'))),
+    );
+  });
+
+  test(
+      'pub doesn\'t log about pre-release sdk overrides if '
+      'PUB_ALLOW_PRERELEASE_SDK=quiet', () async {
+    await d.dir('foo', [
+      await d.pubspec({'name': 'foo'})
+    ]).create();
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'},
+        }
+      })
+    ]).create();
+
+    await expectResolves(
+      environment: {
+        '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
+        'PUB_ALLOW_PRERELEASE_SDK': 'quiet'
+      },
+      // Log output should not mention the PUB_ALLOW_RELEASE_SDK environment
+      // variable.
+      output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')),
+    );
+  });
+
+  test('package deps disallow 2.0.0-dev if PUB_ALLOW_PRERELEASE_SDK is false',
+      () async {
     await d.dir('foo', [
       await d.pubspec({'name': 'foo'})
     ]).create();
@@ -1055,7 +1110,10 @@ void dartSdkConstraint() {
     ]).create();
 
     await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
+        environment: {
+          '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
+          'PUB_ALLOW_PRERELEASE_SDK': 'false'
+        },
         error: 'Package foo requires SDK version <2.0.0 but the '
             'current SDK is 2.0.0-dev.99.');
   });
@@ -1076,7 +1134,7 @@ void dartSdkConstraint() {
 
     await expectResolves(
         environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package foo requires SDK version <2.0.0 but the '
+        error: 'Package foo requires SDK version <2.0.0-dev.infinity but the '
             'current SDK is 2.0.0.');
   });
 }
@@ -2403,6 +2461,9 @@ void features() {
 /// If [error] is passed, this asserts that pub's error output matches the
 /// value. It may be a String, a [RegExp], or a [Matcher].
 ///
+/// If [output] is passed, this asserts that the results match. It may be a
+/// [String], a [RegExp], or a [Matcher].
+///
 /// Asserts that version solving looks at exactly [tries] solutions. It defaults
 /// to allowing only a single solution.
 ///
@@ -2413,16 +2474,18 @@ void features() {
 Future expectResolves(
     {Map result,
     error,
+    output,
     int tries,
     Map<String, String> environment,
     bool downgrade: false}) async {
   await runPub(
       args: [downgrade ? 'downgrade' : 'get'],
       environment: environment,
-      output: error == null
-          ? anyOf(contains('Got dependencies!'),
-              matches(new RegExp(r'Changed \d+ dependenc(ies|y)!')))
-          : null,
+      output: output ??
+          (error == null
+              ? anyOf(contains('Got dependencies!'),
+                  matches(new RegExp(r'Changed \d+ dependenc(ies|y)!')))
+              : null),
       error: error,
       silent: contains('Tried ${tries ?? 1} solutions'),
       exitCode: error == null ? 0 : 1);
