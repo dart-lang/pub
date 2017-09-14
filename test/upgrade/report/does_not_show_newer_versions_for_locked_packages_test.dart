@@ -33,6 +33,6 @@ main() {
 Resolving dependencies\.\.\..*
   not_upgraded 1\.0\.0
 . upgraded 2\.0\.0 \(was 1\.0\.0\) \(3\.0\.0-dev available\)
-""", multiLine: true));
+""", multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });
 }

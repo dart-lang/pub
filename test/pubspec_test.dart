@@ -444,9 +444,9 @@ dependencies:
 
     group("environment", () {
       test("allows an omitted environment", () {
-        var pubspec = new Pubspec.parse('', sources);
+        var pubspec = new Pubspec.parse('name: testing', sources);
         expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse("<2.0.0")));
+            equals(new VersionConstraint.parse("<2.0.0-dev.infinity")));
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
@@ -459,11 +459,12 @@ dependencies:
 
       test("defaults the upper constraint for the sdk", () {
         var pubspec = new Pubspec.parse('''
+  name: test
   environment:
     sdk: ">1.0.0"
   ''', sources);
         expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">1.0.0 <2.0.0")));
+            equals(new VersionConstraint.parse(">1.0.0 <2.0.0-dev.infinity")));
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 

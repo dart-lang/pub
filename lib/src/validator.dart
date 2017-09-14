@@ -57,7 +57,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.dartSdkConstraint
+    if (entrypoint.root.pubspec.originalDartSdkConstraint
         .intersect(new VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -78,8 +78,8 @@ abstract class Validator {
         includeMin: allowedSdks.includeMin,
         includeMax: allowedSdks.includeMax);
 
-    var newSdkConstraint =
-        entrypoint.root.pubspec.dartSdkConstraint.intersect(allowedSdks);
+    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
+        .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
     errors.add("$message\n"

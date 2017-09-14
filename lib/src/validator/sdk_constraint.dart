@@ -19,7 +19,7 @@ class SdkConstraintValidator extends Validator {
   SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    var dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
+    var dartConstraint = entrypoint.root.pubspec.originalDartSdkConstraint;
     if (dartConstraint is VersionRange) {
       if (dartConstraint.toString().startsWith("^")) {
         errors.add(

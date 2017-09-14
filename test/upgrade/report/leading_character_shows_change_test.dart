@@ -82,6 +82,6 @@ Resolving dependencies\.\.\..*
 > upgraded .*
 These packages are no longer being depended on:
 - removed .*
-""", multiLine: true));
+""", multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });
 }
