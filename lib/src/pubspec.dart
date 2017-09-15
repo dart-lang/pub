@@ -16,6 +16,7 @@ import 'feature.dart';
 import 'io.dart';
 import 'log.dart';
 import 'package_name.dart';
+import 'sdk.dart' as sdk;
 import 'source_registry.dart';
 import 'utils.dart';
 
@@ -33,9 +34,6 @@ final _packageName = new RegExp(
 final VersionRange _defaultUpperBoundSdkConstraint =
     new VersionConstraint.parse("<2.0.0");
 
-/// The upper bound contraint that matches the dev SDK.
-final _preReleaseTwoDotZeroSdkVersion = new Version.parse("2.0.0-dev.infinity");
-
 /// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
 ///
@@ -44,7 +42,7 @@ final _preReleaseTwoDotZeroSdkVersion = new Version.parse("2.0.0-dev.infinity");
 ///
 /// This has a default value of `true` but can be overridden with the
 /// PUB_ALLOW_PRERELEASE_SDK system environment variable.
-bool get allowPreReleaseTwoDotZeroSdk => allowPreReleaseSdkValue != 'false';
+bool get allowPreReleaseSdk => allowPreReleaseSdkValue != 'false';
 
 /// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
 /// to `true`.
@@ -63,8 +61,7 @@ Using a default value of `true`.
 }();
 
 /// Whether or not to warn about pre-release SDK overrides.
-bool get warnAboutPreReleaseTwoDotZeroSdkOverrides =>
-    allowPreReleaseSdkValue != 'quiet';
+bool get warnAboutPreReleaseoSdkOverrides => allowPreReleaseSdkValue != 'quiet';
 
 /// Whether or not `features` are enabled.
 ///
@@ -376,22 +373,43 @@ class Pubspec {
     var pair = _parseEnvironment(fields);
     var parsedDartSdkConstraint = pair.first;
 
-    if (allowPreReleaseTwoDotZeroSdk &&
-        parsedDartSdkConstraint is VersionRange &&
-        parsedDartSdkConstraint.max == _defaultUpperBoundSdkConstraint.max &&
-        !parsedDartSdkConstraint.includeMax) {
+    if (parsedDartSdkConstraint is VersionRange &&
+        _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
       _originalDartSdkConstraint = parsedDartSdkConstraint;
       _dartSdkWasOverridden = true;
       _dartSdkConstraint = new VersionRange(
           min: parsedDartSdkConstraint.min,
           includeMin: parsedDartSdkConstraint.includeMin,
-          max: _preReleaseTwoDotZeroSdkVersion,
-          includeMax: false);
+          max: sdk.version,
+          includeMax: true);
     } else {
       _dartSdkConstraint = parsedDartSdkConstraint;
     }
 
     _flutterSdkConstraint = pair.last;
+  }
+
+  /// Whether or not we should override [sdkConstraint] to be <= the current
+  /// users SDK version.
+  ///
+  /// This is true if the following conditions are met:
+  ///
+  ///   - [allowPreReleaseSdk] is `true`
+  ///   - The current users SDK is a pre-release version.
+  ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
+  ///     is `false`).
+  ///   - The original [sdkConstraint] is not a pre-release version.
+  ///   - The original [sdkConstraint] matches the exact same major, minor, and
+  ///     patch versions as the current users SDK.
+  bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
+    if (!allowPreReleaseSdk) return false;
+    if (!sdk.version.isPreRelease) return false;
+    if (sdkConstraint.includeMax) return false;
+    if (sdkConstraint.max == null) return false;
+    if (sdkConstraint.max.isPreRelease) return false;
+    return sdkConstraint.max.major == sdk.version.major &&
+        sdkConstraint.max.minor == sdk.version.minor &&
+        sdkConstraint.max.patch == sdk.version.patch;
   }
 
   /// Parses the "environment" field in [parent] and returns the Dart and

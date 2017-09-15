@@ -196,7 +196,7 @@ class Entrypoint {
         lockFile: lockFile, useLatest: useLatest);
 
     // Log once about all overridden packages.
-    if (warnAboutPreReleaseTwoDotZeroSdkOverrides && result.pubspecs != null) {
+    if (warnAboutPreReleaseoSdkOverrides && result.pubspecs != null) {
       var overriddenPackages = (result.pubspecs.values
               .where((pubspec) => pubspec.dartSdkWasOverridden)
               .map((pubspec) => pubspec.name)
@@ -205,8 +205,8 @@ class Entrypoint {
           .join(', ');
       if (overriddenPackages.isNotEmpty) {
         log.message(log.yellow(
-            'Overriding Dart SDK constraint from <2.0.0 to <2.0.0-dev.infinity'
-            ' for the following packages:\n\n${overriddenPackages}\n\n'
+            'Overriding the upper bound Dart SDK constraint to <=${sdk.version} '
+            'for the following packages:\n\n${overriddenPackages}\n\n'
             'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
             'environment variable to `false`, or you can silence this message '
             'by setting it to `quiet`.'));

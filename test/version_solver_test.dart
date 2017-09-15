@@ -1134,7 +1134,7 @@ void dartSdkConstraint() {
 
     await expectResolves(
         environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package foo requires SDK version <2.0.0-dev.infinity but the '
+        error: 'Package foo requires SDK version <2.0.0 but the '
             'current SDK is 2.0.0.');
   });
 }

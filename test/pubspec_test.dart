@@ -5,6 +5,7 @@
 import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/sdk.dart' as sdk;
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
@@ -443,17 +444,31 @@ dependencies:
     });
 
     group("environment", () {
+      /// Checking for the default sdk constraint based on the current sdk.
+      void expectDefaultSdkConstraint(Pubspec pubspec) {
+        var sdkVersionString = sdk.version.toString();
+        if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
+          expect(
+              pubspec.dartSdkConstraint,
+              new VersionConstraint.parse(
+                  '${pubspec.dartSdkConstraint} <=$sdkVersionString'));
+        } else {
+          expect(
+              pubspec.dartSdkConstraint,
+              new VersionConstraint.parse(
+                  "${pubspec.dartSdkConstraint} <2.0.0"));
+        }
+      }
+
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('name: testing', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse("<2.0.0-dev.infinity")));
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
       test("default sdk constraint can be ommited with empty environment", () {
-        var pubspec =
-            new Pubspec.parse('', sources, includeDefaultSdkConstraint: false);
-        expect(pubspec.dartSdkConstraint, equals(VersionConstraint.any));
+        var pubspec = new Pubspec.parse('', sources);
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
@@ -463,8 +478,7 @@ dependencies:
   environment:
     sdk: ">1.0.0"
   ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">1.0.0 <2.0.0-dev.infinity")));
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
