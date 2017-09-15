@@ -61,7 +61,7 @@ Using a default value of `true`.
 }();
 
 /// Whether or not to warn about pre-release SDK overrides.
-bool get warnAboutPreReleaseoSdkOverrides => allowPreReleaseSdkValue != 'quiet';
+bool get warnAboutPreReleaseSdkOverrides => allowPreReleaseSdkValue != 'quiet';
 
 /// Whether or not `features` are enabled.
 ///
@@ -389,18 +389,18 @@ class Pubspec {
     _flutterSdkConstraint = pair.last;
   }
 
-  /// Whether or not we should override [sdkConstraint] to be <= the current
-  /// users SDK version.
+  /// Whether or not we should override [sdkConstraint] to be <= the user's
+  /// current SDK version.
   ///
   /// This is true if the following conditions are met:
   ///
   ///   - [allowPreReleaseSdk] is `true`
-  ///   - The current users SDK is a pre-release version.
+  ///   - The user's current SDK is a pre-release version.
   ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
   ///     is `false`).
   ///   - The original [sdkConstraint] is not a pre-release version.
   ///   - The original [sdkConstraint] matches the exact same major, minor, and
-  ///     patch versions as the current users SDK.
+  ///     patch versions as the user's current SDK.
   bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
     if (!allowPreReleaseSdk) return false;
     if (!sdk.version.isPreRelease) return false;

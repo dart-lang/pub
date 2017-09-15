@@ -196,7 +196,7 @@ class Entrypoint {
         lockFile: lockFile, useLatest: useLatest);
 
     // Log once about all overridden packages.
-    if (warnAboutPreReleaseoSdkOverrides && result.pubspecs != null) {
+    if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
       var overriddenPackages = (result.pubspecs.values
               .where((pubspec) => pubspec.dartSdkWasOverridden)
               .map((pubspec) => pubspec.name)
@@ -677,7 +677,7 @@ class Entrypoint {
       // It's very unlikely that the lockfile is invalid here, but it's not
       // impossible—for example, the user may have a very old application
       // package with a checked-in lockfile that's newer than the pubspec, but
-      // that contains sdk dependencies.
+      // that contains SDK dependencies.
       if (lockFileId.source is UnknownSource) return false;
 
       var packagesFileUri = packages[lockFileId.name];

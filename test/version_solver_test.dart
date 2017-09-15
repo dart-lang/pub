@@ -1068,7 +1068,7 @@ void dartSdkConstraint() {
   });
 
   test(
-      "pub doesn't log about pre-release sdk overrides if "
+      "pub doesn't log about pre-release SDK overrides if "
       "PUB_ALLOW_PRERELEASE_SDK=quiet", () async {
     await d.dir('foo', [
       await d.pubspec({'name': 'foo'})
@@ -1138,7 +1138,7 @@ void dartSdkConstraint() {
             'current SDK is 2.0.0.');
   });
 
-  test("prerelease override requires major sdk versions to match", () async {
+  test("pre-release override requires major SDK versions to match", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
@@ -1151,7 +1151,7 @@ void dartSdkConstraint() {
         output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
   });
 
-  test("prerelease override requires minor sdk versions to match", () async {
+  test("pre-release override requires minor SDK versions to match", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
@@ -1164,7 +1164,7 @@ void dartSdkConstraint() {
         output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
   });
 
-  test("prerelease override requires patch sdk versions to match", () async {
+  test("pre-release override requires patch SDK versions to match", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
@@ -1177,7 +1177,7 @@ void dartSdkConstraint() {
         output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
   });
 
-  test("prerelease override requires exclusive max", () async {
+  test("pre-release override requires exclusive max", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
@@ -1190,7 +1190,7 @@ void dartSdkConstraint() {
         output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
   });
 
-  test("prerelease override requires prerelease sdk", () async {
+  test("pre-release override requires pre-release SDK", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
@@ -1204,7 +1204,34 @@ void dartSdkConstraint() {
             'SDK is 1.2.3.');
   });
 
-  test("prerelease override works generally", () async {
+  test("pre-release override requires no existing pre-release constraints",
+      () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.2.3-dev.2.0'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("pre-release override requires no build release constraints", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.2.3+1'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("pre-release override works generally", () async {
     await d.dir(appPath, [
       await d.pubspec({
         'name': 'myapp',
