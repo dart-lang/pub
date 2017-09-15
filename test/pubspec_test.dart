@@ -5,6 +5,7 @@
 import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/sdk.dart' as sdk;
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
@@ -443,33 +444,46 @@ dependencies:
     });
 
     group("environment", () {
+      /// Checking for the default SDK constraint based on the current SDK.
+      void expectDefaultSdkConstraint(Pubspec pubspec) {
+        var sdkVersionString = sdk.version.toString();
+        if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
+          expect(
+              pubspec.dartSdkConstraint,
+              new VersionConstraint.parse(
+                  '${pubspec.dartSdkConstraint} <=$sdkVersionString'));
+        } else {
+          expect(
+              pubspec.dartSdkConstraint,
+              new VersionConstraint.parse(
+                  "${pubspec.dartSdkConstraint} <2.0.0"));
+        }
+      }
+
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('name: testing', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse("<2.0.0-dev.infinity")));
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
-      test("default sdk constraint can be ommited with empty environment", () {
-        var pubspec =
-            new Pubspec.parse('', sources, includeDefaultSdkConstraint: false);
-        expect(pubspec.dartSdkConstraint, equals(VersionConstraint.any));
+      test("default SDK constraint can be omitted with empty environment", () {
+        var pubspec = new Pubspec.parse('', sources);
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
-      test("defaults the upper constraint for the sdk", () {
+      test("defaults the upper constraint for the SDK", () {
         var pubspec = new Pubspec.parse('''
   name: test
   environment:
     sdk: ">1.0.0"
   ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">1.0.0 <2.0.0-dev.infinity")));
+        expectDefaultSdkConstraint(pubspec);
         expect(pubspec.flutterSdkConstraint, isNull);
       });
 
       test(
-          "default upper constraint for the sdk applies only if compatibile "
+          "default upper constraint for the SDK applies only if compatibile "
           "with the lower bound", () {
         var pubspec = new Pubspec.parse('''
   environment:
