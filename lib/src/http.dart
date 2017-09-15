@@ -240,7 +240,7 @@ void handleJsonSuccess(http.Response response) {
       parsed['success']['message'] is! String) {
     invalidServerResponse(response);
   }
-  log.message(parsed['success']['message']);
+  log.message(log.green(parsed['success']['message']));
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dartlang.org.
@@ -255,7 +255,7 @@ void handleJsonError(http.Response response) {
       errorMap['error']['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(errorMap['error']['message']);
+  fail(log.red(errorMap['error']['message']));
 }
 
 /// Parses a response body, assuming it's JSON-formatted.
@@ -275,7 +275,7 @@ Map parseJsonResponse(http.Response response) {
 
 /// Throws an error describing an invalid response from the server.
 void invalidServerResponse(http.Response response) =>
-    fail('Invalid server response:\n${response.body}');
+    fail(log.red('Invalid server response:\n${response.body}'));
 
 /// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {
