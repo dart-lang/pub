@@ -1137,6 +1137,86 @@ void dartSdkConstraint() {
         error: 'Package foo requires SDK version <2.0.0 but the '
             'current SDK is 2.0.0.');
   });
+
+  test("prerelease override requires major sdk versions to match", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<2.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("prerelease override requires minor sdk versions to match", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.3.3'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("prerelease override requires patch sdk versions to match", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.2.4'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("prerelease override requires exclusive max", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<=1.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+  });
+
+  test("prerelease override requires prerelease sdk", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
+        error: 'Package myapp requires SDK version <1.2.3 but the current '
+            'SDK is 1.2.3.');
+  });
+
+  test("prerelease override works generally", () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '<1.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+        output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+            contains('<=1.2.3-dev.1.0'), contains('myapp')));
+  });
 }
 
 void flutterSdkConstraint() {
