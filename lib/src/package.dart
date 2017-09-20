@@ -258,7 +258,12 @@ class Package {
       // Git prints files relative to [beneath], but we want them relative to
       // the pub's working directory. It also prints forward slashes on Windows
       // which we normalize away for easier testing.
-      files = files.map((file) {
+      //
+      // Git lists empty directories as "./", which we skip so we don't keep
+      // trying to recurse into the same directory. Normally git doesn't allow
+      // totally empty directories, but a submodule that's not checked out
+      // behaves like one.
+      files = files.where((file) => file != './').map((file) {
         if (Platform.operatingSystem != 'windows') return "$beneath/$file";
         return "$beneath\\${file.replaceAll("/", "\\")}";
       }).expand((file) {
