@@ -16,9 +16,6 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 main() {
-  // Explicitly enable `features` support.
-  featuresEnabled = true;
-
   group('basic graph', basicGraph);
   group('with lockfile', withLockFile);
   group('root dependency', rootDependency);
