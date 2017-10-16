@@ -96,6 +96,8 @@ main() {
         }).create();
         await pubCommand(command,
             error: 'The Flutter SDK is not available.\n'
+                'Flutter users should run `flutter packages get` instead of '
+                '`pub get`.'
                 'Depended on by:\n'
                 '- myapp',
             exitCode: exit_codes.UNAVAILABLE);
