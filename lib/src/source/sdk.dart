@@ -95,8 +95,7 @@ class BoundSdkSource extends BoundSource {
   /// contain the package.
   String _verifiedPackagePath(String name) {
     if (!flutter.isAvailable) {
-      throw new PackageNotFoundException(
-          "The Flutter SDK is not available.\n"
+      throw new PackageNotFoundException("The Flutter SDK is not available.\n"
           "Flutter users should run `flutter packages get` instead of `pub "
           "get`.");
     }
