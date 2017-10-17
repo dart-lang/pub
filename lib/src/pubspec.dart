@@ -1,6 +1,7 @@
 // Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -62,13 +63,6 @@ Using a default value of `true`.
 
 /// Whether or not to warn about pre-release SDK overrides.
 bool get warnAboutPreReleaseSdkOverrides => allowPreReleaseSdkValue != 'quiet';
-
-/// Whether or not `features` are enabled.
-///
-/// This can be overridden manually or by setting the ENABLE_PUB_FEATURES
-/// environment variable to "true".
-bool featuresEnabled =
-    Platform.environment["ENABLE_PUB_FEATURES"]?.toLowerCase() != "true";
 
 /// The parsed contents of a pubspec file.
 ///
@@ -203,19 +197,10 @@ class Pubspec {
 
   Map<String, Feature> get features {
     if (_features != null) return _features;
-
     var features = fields['features'];
     if (features == null) {
       _features = const {};
       return _features;
-    }
-
-    // Disable features support unless we have this environment variable set.
-    if (!featuresEnabled) {
-      _error(
-          'Pub `features` support is not enabled but found a pubspec that '
-          'uses it:\n$fields',
-          fields.nodes['features'].span);
     }
 
     if (features is! Map) {
