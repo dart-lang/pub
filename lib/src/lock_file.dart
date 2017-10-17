@@ -278,6 +278,9 @@ ${yamlToString(data)}
   String _dependencyType(String package) {
     if (_mainDependencies.contains(package)) return 'direct main';
     if (_devDependencies.contains(package)) return 'direct dev';
+
+    // If a package appears in `dependency_overrides` and another dependency
+    // section, the main section it appears in takes precedence.
     if (_overriddenDependencies.contains(package)) {
       return 'direct overridden';
     }

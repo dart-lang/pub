@@ -57,40 +57,66 @@ main() {
     await d.appPackagesFile({"foo": "1.2.3"}).validate();
   });
 
-  test('categorizes dependency types in the lockfile', () async {
-    await servePackages((builder) {
-      builder.serve("foo", "1.2.3", deps: {"bar": "any"});
-      builder.serve("bar", "1.2.3");
-      builder.serve("baz", "1.2.3", deps: {"qux": "any"});
-      builder.serve("qux", "1.2.3");
-      builder.serve("zip", "1.2.3", deps: {"zap": "any"});
-      builder.serve("zap", "1.2.3");
+  group('categorizes dependency types in the lockfile', () {
+    setUp(() => servePackages((builder) {
+          builder.serve("foo", "1.2.3", deps: {"bar": "any"});
+          builder.serve("bar", "1.2.3");
+          builder.serve("baz", "1.2.3", deps: {"qux": "any"});
+          builder.serve("qux", "1.2.3");
+          builder.serve("zip", "1.2.3", deps: {"zap": "any"});
+          builder.serve("zap", "1.2.3");
+        }));
+
+    test('for main, dev, and overridden dependencies', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "dependencies": {"foo": "any"},
+          "dev_dependencies": {"baz": "any"},
+          "dependency_overrides": {"zip": "any"}
+        })
+      ]).create();
+
+      await pubGet();
+
+      var packages = loadYaml(
+          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')))['packages'];
+      expect(packages,
+          containsPair('foo', containsPair('dependency', 'direct main')));
+      expect(packages,
+          containsPair('bar', containsPair('dependency', 'transitive')));
+      expect(packages,
+          containsPair('baz', containsPair('dependency', 'direct dev')));
+      expect(packages,
+          containsPair('qux', containsPair('dependency', 'transitive')));
+      expect(packages,
+          containsPair('zip', containsPair('dependency', 'direct overridden')));
+      expect(packages,
+          containsPair('zap', containsPair('dependency', 'transitive')));
     });
 
-    await d.dir(appPath, [
-      d.pubspec({
-        "name": "myapp",
-        "dependencies": {"foo": "any"},
-        "dev_dependencies": {"baz": "any"},
-        "dependency_overrides": {"zip": "any"}
-      })
-    ]).create();
+    test('for overridden main and dev dependencies', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "myapp",
+          "dependencies": {"foo": "any"},
+          "dev_dependencies": {"baz": "any"},
+          "dependency_overrides": {"foo": "any", "baz": "any"}
+        })
+      ]).create();
 
-    await pubGet();
+      await pubGet();
 
-    var packages = loadYaml(
-        readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')))['packages'];
-    expect(packages,
-        containsPair('foo', containsPair('dependency', 'direct main')));
-    expect(packages,
-        containsPair('bar', containsPair('dependency', 'transitive')));
-    expect(packages,
-        containsPair('baz', containsPair('dependency', 'direct dev')));
-    expect(packages,
-        containsPair('qux', containsPair('dependency', 'transitive')));
-    expect(packages,
-        containsPair('zip', containsPair('dependency', 'direct overridden')));
-    expect(packages,
-        containsPair('zap', containsPair('dependency', 'transitive')));
+      var packages = loadYaml(
+          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')))['packages'];
+      expect(packages,
+          containsPair('foo', containsPair('dependency', 'direct main')));
+      expect(packages,
+          containsPair('bar', containsPair('dependency', 'transitive')));
+      expect(packages,
+          containsPair('baz', containsPair('dependency', 'direct dev')));
+      expect(packages,
+          containsPair('qux', containsPair('dependency', 'transitive')));
+    });
   });
 }
