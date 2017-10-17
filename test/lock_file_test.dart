@@ -244,7 +244,7 @@ packages:
         new PackageId(
             'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
         new PackageId('bar', mockSource, new Version.parse('3.2.1'), 'bar desc')
-      ]);
+      ], devDependencies: ['bar'].toSet());
 
       expect(
           loadYaml(lockfile.serialize(null)),
@@ -254,12 +254,14 @@ packages:
               'foo': {
                 'version': '1.2.3',
                 'source': 'mock',
-                'description': 'foo desc'
+                'description': 'foo desc',
+                'dependency': 'transitive'
               },
               'bar': {
                 'version': '3.2.1',
                 'source': 'mock',
-                'description': 'bar desc'
+                'description': 'bar desc',
+                'dependency': 'direct dev'
               }
             }
           }));
