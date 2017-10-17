@@ -99,7 +99,13 @@ class SolveResult {
         : new VersionConstraint.intersection(flutterConstraints);
 
     return new LockFile(packages,
-        dartSdkConstraint: dartMerged, flutterSdkConstraint: flutterMerged);
+        dartSdkConstraint: dartMerged,
+        flutterSdkConstraint: flutterMerged,
+        mainDependencies: _root.dependencies.map((range) => range.name).toSet(),
+        devDependencies:
+            _root.devDependencies.map((range) => range.name).toSet(),
+        overriddenDependencies:
+            _root.dependencyOverrides.map((range) => range.name).toSet());
   }
 
   final SourceRegistry _sources;

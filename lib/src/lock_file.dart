@@ -4,6 +4,7 @@
 
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:pub_semver/pub_semver.dart';
@@ -28,6 +29,18 @@ class LockFile {
   /// or `null` if no packages require the Flutter SDK.
   final VersionConstraint flutterSdkConstraint;
 
+  /// Dependency names that appeared in the root package's `dependencies`
+  /// section.
+  final Set<String> _mainDependencies;
+
+  /// Dependency names that appeared in the root package's `dev_dependencies`
+  /// section.
+  final Set<String> _devDependencies;
+
+  /// Dependency names that appeared in the root package's
+  /// `dependency_overrides` section.
+  final Set<String> _overriddenDependencies;
+
   /// Creates a new lockfile containing [ids].
   ///
   /// If passed, [dartSdkConstraint] represents the intersection of all Dart SDK
@@ -35,23 +48,43 @@ class LockFile {
   /// [VersionConstraint.any]. Similarly, [flutterSdkConstraint] represents the
   /// intersection of all Flutter SDK constraints; however, it defaults to
   /// `null`.
+  ///
+  /// If passed, [mainDependencies], [devDependencies], and
+  /// [overriddenDependencies] indicate which dependencies should be marked as
+  /// being listed in the main package's `dependencies`, `dev_dependencies`, and
+  /// `dependency_overrides` sections, respectively. These are consumed by the
+  /// analysis server to provide better auto-completion.
   LockFile(Iterable<PackageId> ids,
       {VersionConstraint dartSdkConstraint,
-      VersionConstraint flutterSdkConstraint})
+      VersionConstraint flutterSdkConstraint,
+      Set<String> mainDependencies,
+      Set<String> devDependencies,
+      Set<String> overriddenDependencies})
       : this._(
             new Map.fromIterable(ids.where((id) => !id.isRoot),
                 key: (id) => id.name),
             dartSdkConstraint ?? VersionConstraint.any,
-            flutterSdkConstraint);
+            flutterSdkConstraint,
+            mainDependencies ?? const UnmodifiableSetView.empty(),
+            devDependencies ?? const UnmodifiableSetView.empty(),
+            overriddenDependencies ?? const UnmodifiableSetView.empty());
 
-  LockFile._(Map<String, PackageId> packages, this.dartSdkConstraint,
-      this.flutterSdkConstraint)
+  LockFile._(
+      Map<String, PackageId> packages,
+      this.dartSdkConstraint,
+      this.flutterSdkConstraint,
+      this._mainDependencies,
+      this._devDependencies,
+      this._overriddenDependencies)
       : packages = new UnmodifiableMapView(packages);
 
   LockFile.empty()
       : packages = const {},
         dartSdkConstraint = VersionConstraint.any,
-        flutterSdkConstraint = null;
+        flutterSdkConstraint = null,
+        _mainDependencies = const UnmodifiableSetView.empty(),
+        _devDependencies = const UnmodifiableSetView.empty(),
+        _overriddenDependencies = const UnmodifiableSetView.empty();
 
   /// Loads a lockfile from [filePath].
   factory LockFile.load(String filePath, SourceRegistry sources) {
@@ -135,7 +168,13 @@ class LockFile {
       });
     }
 
-    return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint);
+    return new LockFile._(
+        packages,
+        dartSdkConstraint,
+        flutterSdkConstraint,
+        const UnmodifiableSetView.empty(),
+        const UnmodifiableSetView.empty(),
+        const UnmodifiableSetView.empty());
   }
 
   /// Asserts that [node] is a version constraint, and parses it.
@@ -170,18 +209,6 @@ class LockFile {
     throw new SourceSpanFormatException(message, node.span);
   }
 
-  /// Returns a copy of this LockFile with [id] added.
-  ///
-  /// If there's already an ID with the same name as [id] in the LockFile, it's
-  /// overwritten.
-  LockFile setPackage(PackageId id) {
-    if (id.isRoot) return this;
-
-    var packages = new Map<String, PackageId>.from(this.packages);
-    packages[id.name] = id;
-    return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint);
-  }
-
   /// Returns a copy of this LockFile with a package named [name] removed.
   ///
   /// Returns an identical [LockFile] if there's no package named [name].
@@ -190,7 +217,8 @@ class LockFile {
 
     var packages = new Map<String, PackageId>.from(this.packages);
     packages.remove(name);
-    return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint);
+    return new LockFile._(packages, dartSdkConstraint, flutterSdkConstraint,
+        _mainDependencies, _devDependencies, _overriddenDependencies);
   }
 
   /// Returns the contents of the `.packages` file generated from this lockfile.
@@ -228,7 +256,8 @@ class LockFile {
       packageMap[name] = {
         'version': package.version.toString(),
         'source': package.source.name,
-        'description': description
+        'description': description,
+        'dependency': _dependencyType(package.name)
       };
     });
 
@@ -243,5 +272,15 @@ class LockFile {
 # See http://pub.dartlang.org/doc/glossary.html#lockfile
 ${yamlToString(data)}
 """;
+  }
+
+  /// Returns the dependency classification for [package].
+  String _dependencyType(String package) {
+    if (_mainDependencies.contains(package)) return 'direct main';
+    if (_devDependencies.contains(package)) return 'direct dev';
+    if (_overriddenDependencies.contains(package)) {
+      return 'direct overridden';
+    }
+    return 'transitive';
   }
 }
