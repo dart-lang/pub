@@ -40,5 +40,5 @@ main() {
     expect(results[0]["result"], equals(results[1]["result"]));
 
     await endPubServe();
-  });
+  }, skip: "Flaky (#1723)");
 }
