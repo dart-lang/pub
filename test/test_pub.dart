@@ -74,9 +74,6 @@ final String packagesPath = "$appPath/packages";
 /// to the sandbox directory.
 final String packagesFilePath = "$appPath/.packages";
 
-/// Set to true when the current batch of scheduled events should be aborted.
-bool _abortScheduled = false;
-
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {

@@ -65,7 +65,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to register a new [Future].
-  Future/*<T>*/ registerFuture/*<T>*/(Future/*<T>*/ future) {
+  Future<T> registerFuture<T>(Future<T> future) {
     if (_isDone) {
       throw new StateError("Can't register new members on a complete "
           "ErrorGroup.");
@@ -88,7 +88,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to register a new [Stream].
-  Stream/*<T>*/ registerStream/*<T>*/(Stream/*<T>*/ stream) {
+  Stream<T> registerStream<T>(Stream<T> stream) {
     if (_isDone) {
       throw new StateError("Can't register new members on a complete "
           "ErrorGroup.");

@@ -75,7 +75,7 @@ SourceLocation deserializeLocation(Map location) {
 /// Converts [stream] into a serializable map.
 ///
 /// [serializeEvent] is used to serialize each event from the stream.
-Map serializeStream/*<T>*/(Stream/*<T>*/ stream, serializeEvent(/*=T*/ event)) {
+Map serializeStream<T>(Stream<T> stream, serializeEvent(T event)) {
   var receivePort = new ReceivePort();
   var map = {'replyTo': receivePort.sendPort};
 
@@ -95,9 +95,7 @@ Map serializeStream/*<T>*/(Stream/*<T>*/ stream, serializeEvent(/*=T*/ event)) {
 /// Converts a serializable map into a [Stream].
 ///
 /// [deserializeEvent] is used to deserialize each event from the stream.
-Stream/*<T>*/ deserializeStream/*<T>*/(
-    Map stream,
-    /*=T*/ deserializeEvent(event)) {
+Stream<T> deserializeStream<T, S>(Map stream, T deserializeEvent(S event)) {
   return new LazyStream(() {
     var receivePort = new ReceivePort();
     stream['replyTo'].send({'replyTo': receivePort.sendPort});
@@ -128,14 +126,14 @@ Stream/*<T>*/ deserializeStream/*<T>*/(
 ///
 /// The returned Future will complete to the value or error returned by
 /// [respond].
-Future/*<T>*/ call/*<T>*/(SendPort port, message) {
+Future<T> call<T>(SendPort port, message) {
   var receivePort = new ReceivePort();
   port.send({'message': message, 'replyTo': receivePort.sendPort});
 
   return new Future.sync(() async {
     var response = await receivePort.first;
     if (response['type'] == 'success') {
-      return response['value'] as dynamic/*=T*/;
+      return response['value'] as T;
     }
     assert(response['type'] == 'error');
     var exception = deserializeException(response['error']);

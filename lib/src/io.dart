@@ -197,7 +197,7 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
-  return _descriptorPool.withResource/*<Future<String>>*/(() async {
+  return _descriptorPool.withResource<Future<String>>(() async {
     _deleteIfLink(file);
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
@@ -354,7 +354,7 @@ void _attempt(String description, void operation()) {
     return;
   }
 
-  getErrorReason(error) {
+  String getErrorReason(FileSystemException error) {
     if (error.osError.errorCode == 5) {
       return "access was denied";
     }
@@ -653,9 +653,8 @@ Future flushThenExit(int status) {
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
-Pair<EventSink/*<T>*/, Future> consumerToSink/*<T>*/(
-    StreamConsumer/*<T>*/ consumer) {
-  var controller = new StreamController/*<T>*/(sync: true);
+Pair<EventSink<T>, Future> consumerToSink<T>(StreamConsumer<T> consumer) {
+  var controller = new StreamController<T>(sync: true);
   var done = controller.stream.pipe(consumer);
   return new Pair(controller.sink, done);
 }
@@ -697,7 +696,7 @@ Future store(Stream stream, EventSink sink,
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell: false}) {
-  return _descriptorPool.withResource/*<Future<PubProcessResult>>*/(() async {
+  return _descriptorPool.withResource<Future<PubProcessResult>>(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
         environment: environment,
@@ -869,7 +868,7 @@ void touch(String path) {
 ///
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
-Future/*<T>*/ withTempDir/*<T>*/(Future/*<T>*/ fn(String path)) async {
+Future<T> withTempDir<T>(Future<T> fn(String path)) async {
   var tempDir = createSystemTempDir();
   try {
     return await fn(tempDir);
