@@ -99,12 +99,12 @@ class LishCommand extends PubCommand {
       });
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
-      if (urisEqual(url, cloudStorageUrl)) {
+      if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
         // the error. Try to parse that out once we have an easily-accessible
         // XML parser.
         fail(log.red('Failed to upload the package.'));
-      } else if (urisEqual(Uri.parse(url.origin), Uri.parse(server.origin))) {
+      } else if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;

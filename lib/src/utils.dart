@@ -290,33 +290,6 @@ List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
   return list;
 }
 
-/// Returns the element of [iter] for which [f] returns the minimum value.
-minBy(Iterable iter, Comparable f(element)) {
-  var min = null;
-  var minComparable = null;
-  for (var element in iter) {
-    var comparable = f(element);
-    if (minComparable == null || comparable.compareTo(minComparable) < 0) {
-      min = element;
-      minComparable = comparable;
-    }
-  }
-  return min;
-}
-
-/// Returns every pair of consecutive elements in [iter].
-///
-/// For example, if [iter] is `[1, 2, 3, 4]`, this will return `[(1, 2), (2, 3),
-/// (3, 4)]`.
-Iterable<Pair> pairs(Iterable iter) {
-  var previous = iter.first;
-  return iter.skip(1).map((element) {
-    var oldPrevious = previous;
-    previous = element;
-    return new Pair(oldPrevious, element);
-  });
-}
-
 /// Given a list of filenames, returns a set of patterns that can be used to
 /// filter for those filenames.
 ///
@@ -348,19 +321,11 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// Returns the maximum value in [iter] by [compare].
 ///
 /// [compare] defaults to [Comparable.compare].
-T maxAll<T extends Comparable>(Iterable<T> iter, [int compare(T element1, T element2)]) {
+T maxAll<T extends Comparable>(Iterable<T> iter,
+    [int compare(T element1, T element2)]) {
   if (compare == null) compare = Comparable.compare;
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
-}
-
-/// Returns the minimum value in [iter] by [compare].
-///
-/// [compare] defaults to [Comparable.compare].
-T minAll<T>(Iterable<T> iter, [int compare(T element1, T element2)]) {
-  if (compare == null) compare = Comparable.compare;
-  return iter
-      .reduce((max, element) => compare(element, max) < 0 ? element : max);
 }
 
 /// Replace each instance of [matcher] in [source] with the return value of
@@ -375,14 +340,6 @@ String replace(String source, Pattern matcher, String fn(Match match)) {
   }
   buffer.write(source.substring(start));
   return buffer.toString();
-}
-
-/// Returns whether or not [str] ends with [matcher].
-bool endsWithPattern(String str, Pattern matcher) {
-  for (var match in matcher.allMatches(str)) {
-    if (match.end == str.length) return true;
-  }
-  return false;
 }
 
 /// Returns the hex-encoded sha1 hash of [source].
@@ -482,17 +439,6 @@ Future<T> streamFirst<T>(Stream<T> stream) {
   return completer.future;
 }
 
-/// Returns a wrapped version of [stream] along with a [StreamSubscription] that
-/// can be used to control the wrapped stream.
-Pair<Stream, StreamSubscription> streamWithSubscription(Stream stream) {
-  var controller = stream.isBroadcast
-      ? new StreamController.broadcast(sync: true)
-      : new StreamController(sync: true);
-  var subscription = stream.listen(controller.add,
-      onError: controller.addError, onDone: controller.close);
-  return new Pair<Stream, StreamSubscription>(controller.stream, subscription);
-}
-
 /// A regular expression matching a trailing CR character.
 final _trailingCR = new RegExp(r"\r$");
 
@@ -526,19 +472,6 @@ Stream<String> streamToLines(Stream<String> stream) {
     if (buffer.isNotEmpty) sink.add(buffer.toString());
     sink.close();
   }));
-}
-
-/// Like [Iterable.where], but allows [test] to return [Future]s and uses the
-/// results of those [Future]s as the test.
-Future<Iterable> futureWhere(Iterable iter, test(value)) {
-  return Future
-      .wait(iter.map((e) {
-        var result = test(e);
-        if (result is! Future) result = new Future.value(result);
-        return result.then((result) => new Pair(e, result));
-      }))
-      .then((pairs) => pairs.where((pair) => pair.last))
-      .then((pairs) => pairs.map((pair) => pair.first));
 }
 
 // TODO(nweiz): unify the following functions with the utility functions in
@@ -599,19 +532,6 @@ String mapToQuery(Map<String, String> map) {
 /// Returns the union of all elements in each set in [sets].
 Set<T> unionAll<T>(Iterable<Set<T>> sets) =>
     sets.fold(new Set(), (union, set) => union.union(set));
-
-// TODO(nweiz): remove this when issue 9068 has been fixed.
-/// Whether [uri1] and [uri2] are equal.
-///
-/// This consider HTTP URIs to default to port 80, and HTTPs URIs to default to
-/// port 443.
-bool urisEqual(Uri uri1, Uri uri2) =>
-    canonicalizeUri(uri1) == canonicalizeUri(uri2);
-
-/// Return [uri] with redundant port information removed.
-Uri canonicalizeUri(Uri uri) {
-  return uri;
-}
 
 /// Returns a human-friendly representation of [inputPath].
 ///
