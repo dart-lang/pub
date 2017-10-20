@@ -400,7 +400,7 @@ void dumpTranscript() {
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.FINE].
-Future/*<T>*/ progress/*<T>*/(String message, Future/*<T>*/ callback(),
+Future<T> progress<T>(String message, Future<T> callback(),
     {bool fine: false}) {
   _stopProgress();
 

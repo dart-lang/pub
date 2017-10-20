@@ -135,8 +135,7 @@ Future captureErrors(Future callback(), {bool captureStackChains: false}) {
 /// only returns once all Futures have completed, successfully or not.
 ///
 /// This will wrap the first error thrown in a [SilentException] and rethrow it.
-Future<List/*<T>*/ > waitAndPrintErrors/*<T>*/(
-    Iterable<Future/*<T>*/ > futures) {
+Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
   return Future.wait(futures.map((future) {
     return future.catchError((error, stackTrace) {
       log.exception(error, stackTrace);
@@ -151,8 +150,8 @@ Future<List/*<T>*/ > waitAndPrintErrors/*<T>*/(
 /// completes.
 ///
 /// The stream will be passed through unchanged.
-StreamTransformer/*<T, T>*/ onDoneTransformer/*<T>*/(void onDone()) {
-  return new StreamTransformer/*<T, T>*/ .fromHandlers(handleDone: (sink) {
+StreamTransformer<T, T> onDoneTransformer<T>(void onDone()) {
+  return new StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
     onDone();
     sink.close();
   });
@@ -266,8 +265,7 @@ bool isLoopback(String host) {
 }
 
 /// Randomly chooses a single element in [elements].
-/*=T*/ choose/*<T>*/(List/*<T>*/ elements) =>
-    elements[random.nextInt(elements.length)];
+T choose<T>(List<T> elements) => elements[random.nextInt(elements.length)];
 
 /// Returns a set containing all elements in [minuend] that are not in
 /// [subtrahend].
@@ -286,7 +284,7 @@ bool overlaps(Set set1, Set set2) {
 }
 
 /// Returns a list containing the sorted elements of [iter].
-List/*<T>*/ ordered/*<T extends Comparable<T>>*/(Iterable/*<T>*/ iter) {
+List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
   var list = iter.toList();
   list.sort();
   return list;
@@ -298,7 +296,7 @@ List/*<T>*/ ordered/*<T extends Comparable<T>>*/(Iterable/*<T>*/ iter) {
 /// For a given path, that path ends with some string in the returned set if
 /// and only if that path's basename is in [files].
 Set<String> createFileFilter(Iterable<String> files) {
-  return files.expand/*<String>*/((file) {
+  return files.expand<String>((file) {
     var result = ["/$file"];
     if (Platform.operatingSystem == 'windows') result.add("\\$file");
     return result;
@@ -311,7 +309,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 /// For a given path, that path contains some string in the returned set if
 /// and only if one of that path's components is in [dirs].
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
-  return dirs.expand/*<String>*/((dir) {
+  return dirs.expand<String>((dir) {
     var result = ["/$dir/"];
     if (Platform.operatingSystem == 'windows') {
       result..add("/$dir\\")..add("\\$dir/")..add("\\$dir\\");
@@ -391,7 +389,7 @@ void chainToCompleter(Future future, Completer completer) {
 /// emitting the same values and errors as [stream], but only if at least one
 /// value can be read successfully. If an error occurs before any values are
 /// emitted, the returned Future completes to that error.
-Future<Stream/*<T>*/ > validateStream/*<T>*/(Stream/*<T>*/ stream) {
+Future<Stream<T>> validateStream<T>(Stream<T> stream) {
   var completer = new Completer<Stream>();
   var controller = new StreamController(sync: true);
 
@@ -531,7 +529,7 @@ String mapToQuery(Map<String, String> map) {
 }
 
 /// Returns the union of all elements in each set in [sets].
-Set/*<T>*/ unionAll/*<T>*/(Iterable<Set/*<T>*/ > sets) =>
+Set<T> unionAll<T>(Iterable<Set<T>> sets) =>
     sets.fold(new Set(), (union, set) => union.union(set));
 
 /// Returns a human-friendly representation of [inputPath].
@@ -577,12 +575,12 @@ String urlDecode(String encoded) =>
 /// within.
 ///
 /// Completes with the fully resolved structure.
-Future/*<T>*/ awaitObject/*<T>*/(/*=T*/ object) async {
+Future<T> awaitObject<T>(T object) async {
   // Unroll nested futures.
   if (object is Future) return await awaitObject(await object);
 
   if (object is Iterable) {
-    return await Future.wait(object.map(awaitObject)) as List/*=T*/;
+    return await Future.wait(object.map(awaitObject)) as T;
   }
 
   if (object is Map) {
@@ -590,7 +588,7 @@ Future/*<T>*/ awaitObject/*<T>*/(/*=T*/ object) async {
     await Future.wait(object.keys.map((key) async {
       newMap[key] = await awaitObject(await object[key]);
     }));
-    return newMap as Map/*=T*/;
+    return newMap as T;
   }
 
   return object;

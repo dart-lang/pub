@@ -767,7 +767,7 @@ class Entrypoint {
   /// Recursively lists the contents of [dir], excluding hidden `.DS_Store`
   /// files and `package` files.
   Iterable<String> _listDirWithoutPackages(dir) {
-    return listDir(dir).expand/*<String>*/((file) {
+    return listDir(dir).expand<String>((file) {
       if (p.basename(file) == 'packages') return [];
       if (!dirExists(file)) return [];
       var fileAndSubfiles = [file];
