@@ -15,8 +15,6 @@ import '../source/hosted.dart';
 import '../utils.dart';
 import 'barback.dart';
 
-final _arrow = getSpecial('\u2192', '=>');
-
 /// Handles the `build` pub command.
 class BuildCommand extends BarbackCommand {
   String get name => "build";

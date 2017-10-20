@@ -13,8 +13,6 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
-final _arrow = getSpecial('\u2192', '=>');
-
 /// The set of top level directories in the entrypoint package that are built
 /// when the user does "--all".
 final _allSourceDirectories =
