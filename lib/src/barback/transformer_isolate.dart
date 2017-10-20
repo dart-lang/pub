@@ -111,7 +111,7 @@ class TransformerIsolate {
   /// return an empty set.
   Future<Set<Transformer>> create(TransformerConfig config) async {
     try {
-      var transformers = (await call/*<List>*/(_port, {
+      var transformers = (await call<List>(_port, {
         'library': _idsToUrls[config.id].toString(),
         'mode': _mode.name,
         'configuration': JSON.encode(config.configuration)

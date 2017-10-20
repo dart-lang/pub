@@ -79,7 +79,7 @@ void clearCredentials(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future withClient(SystemCache cache, Future fn(Client client)) {
+Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
   return _getClient(cache).then((client) {
     return fn(client).whenComplete(() {
       client.close();

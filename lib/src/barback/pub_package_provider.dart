@@ -67,8 +67,7 @@ class PubPackageProvider implements StaticPackageProvider {
         return new Asset.fromPath(id, file);
       }
 
-      var versions = mapMap/*<String, Package, String, Version>*/(
-          _graph.packages,
+      var versions = mapMap<String, Package, String, Version>(_graph.packages,
           value: (_, package) => package.version);
       var contents = readTextFile(file);
       contents = preprocess(contents, versions, p.toUri(file));
