@@ -329,7 +329,7 @@ class BoundHostedSource extends CachedSource {
           stackTrace);
     }
 
-    if (error is io.SocketException) {
+    if (error is io.SocketException || error is io.TlsException) {
       fail("Got socket error trying to find package $package at $url.", error,
           stackTrace);
     }
