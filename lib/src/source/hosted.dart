@@ -327,15 +327,16 @@ class BoundHostedSource extends CachedSource {
           "to find package $package at $url.",
           error,
           stackTrace);
-    }
-
-    if (error is io.SocketException) {
+    } else if (error is io.SocketException) {
       fail("Got socket error trying to find package $package at $url.", error,
           stackTrace);
+    } else if (error is io.TlsException) {
+      fail("Got TLS error trying to find package $package at $url.", error,
+          stackTrace);
+    } else {
+      // Otherwise re-throw the original exception.
+      throw error;
     }
-
-    // Otherwise re-throw the original exception.
-    throw error;
   }
 
   /// Given a URL, returns a "normalized" string to be used as a directory name

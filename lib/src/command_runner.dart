@@ -235,6 +235,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
+        exception is TlsException ||
         exception is PubHttpException ||
         exception is DependencyNotFoundException) {
       return exit_codes.UNAVAILABLE;
