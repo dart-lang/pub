@@ -354,7 +354,7 @@ void _attempt(String description, void operation()) {
     return;
   }
 
-  getErrorReason(error) {
+  String getErrorReason(FileSystemException error) {
     if (error.osError.errorCode == 5) {
       return "access was denied";
     }

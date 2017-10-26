@@ -133,7 +133,7 @@ List<Set<TransformerId>> _stageTransformers(
   var stageNumbers = <TransformerId, int>{};
   var stages = <Set<TransformerId>>[];
 
-  stageNumberFor(TransformerId id) {
+  int stageNumberFor(TransformerId id) {
     // Built-in transformers don't have to be loaded in stages, since they're
     // run from pub's source. Return -1 so that the "next stage" is 0.
     if (id.isBuiltInTransformer) return -1;

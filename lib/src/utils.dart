@@ -321,7 +321,8 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// Returns the maximum value in [iter] by [compare].
 ///
 /// [compare] defaults to [Comparable.compare].
-maxAll(Iterable iter, [int compare(element1, element2)]) {
+T maxAll<T extends Comparable>(Iterable<T> iter,
+    [int compare(T element1, T element2)]) {
   if (compare == null) compare = Comparable.compare;
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
@@ -329,7 +330,7 @@ maxAll(Iterable iter, [int compare(element1, element2)]) {
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
-String replace(String source, Pattern matcher, String fn(Match)) {
+String replace(String source, Pattern matcher, String fn(Match match)) {
   var buffer = new StringBuffer();
   var start = 0;
   for (var match in matcher.allMatches(source)) {
@@ -398,7 +399,7 @@ Future<Stream<T>> validateStream<T>(Stream<T> stream) {
     // We got a value, so the stream is valid.
     if (!completer.isCompleted) completer.complete(controller.stream);
     controller.add(value);
-  }, onError: (error, [stackTrace]) {
+  }, onError: (error, [StackTrace stackTrace]) {
     // If the error came after values, it's OK.
     if (completer.isCompleted) {
       controller.addError(error, stackTrace);
@@ -424,13 +425,13 @@ Future<Stream<T>> validateStream<T>(Stream<T> stream) {
 /// Returns a [Future] that will complete to the first element of [stream].
 ///
 /// Unlike [Stream.first], this is safe to use with single-subscription streams.
-Future streamFirst(Stream stream) {
+Future<T> streamFirst<T>(Stream<T> stream) {
   var completer = new Completer();
   var subscription;
   subscription = stream.listen((value) {
     subscription.cancel();
     completer.complete(value);
-  }, onError: (e, [stackTrace]) {
+  }, onError: (e, [StackTrace stackTrace]) {
     completer.completeError(e, stackTrace);
   }, onDone: () {
     completer.completeError(new StateError("No elements"), new Chain.current());

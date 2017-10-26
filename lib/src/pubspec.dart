@@ -879,6 +879,7 @@ class Pubspec {
     if (node == null || node.value == null) return new YamlList();
     if (node is YamlList) return node;
     _error('Must be a list.', node.span);
+    return null; // NOOP return to silence analyzer
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
