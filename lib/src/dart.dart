@@ -45,10 +45,10 @@ abstract class CompilerProvider {
   EventSink<String> provideOutput(String name, String extension);
 }
 
-/// Compiles [entrypoint] to JavaScript (or to Dart if [toDart] is true) as
-/// well as any ancillary outputs dart2js creates.
+/// Compiles [entrypoint] to JavaScript as well as any ancillary outputs dart2js
+/// creates.
 ///
-/// Uses [provider] to communcate between dart2js and the caller. Returns a
+/// Uses [provider] to communicate between dart2js and the caller. Returns a
 /// future that completes when compilation is done.
 ///
 /// By default, the package root is assumed to be adjacent to [entrypoint], but
@@ -67,8 +67,7 @@ Future compile(String entrypoint, CompilerProvider provider,
     bool suppressHints: false,
     bool suppressPackageWarnings: true,
     bool terse: false,
-    bool includeSourceMapUrls: false,
-    bool toDart: false}) async {
+    bool includeSourceMapUrls: false}) async {
   // dart2js chokes on relative paths. Including "/./" can also confuse it, so
   // we normalize as well.
   entrypoint = p.normalize(p.absolute(entrypoint));
@@ -84,7 +83,6 @@ Future compile(String entrypoint, CompilerProvider provider,
   if (suppressHints) options.add('--suppress-hints');
   if (!suppressPackageWarnings) options.add('--show-package-warnings');
   if (terse) options.add('--terse');
-  if (toDart) options.add('--output-type=dart');
 
   var sourceUrl = p.toUri(entrypoint);
   options.add("--out=$sourceUrl.js");
