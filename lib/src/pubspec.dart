@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -879,6 +880,9 @@ class Pubspec {
     if (node == null || node.value == null) return new YamlList();
     if (node is YamlList) return node;
     _error('Must be a list.', node.span);
+
+    // TODO(nweiz): Remove this when sdk#31384 is fixed.
+    throw "Unreachable";
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
@@ -904,6 +908,7 @@ class Pubspec {
   }
 
   /// Throws a [PubspecException] with the given message.
+  @alwaysThrows
   void _error(String message, SourceSpan span) {
     throw new PubspecException(message, span);
   }

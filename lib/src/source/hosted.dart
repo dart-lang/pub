@@ -220,7 +220,7 @@ class BoundHostedSource extends CachedSource {
     for (var serverDir in listDir(systemCacheRoot)) {
       var url = _directoryToUrl(p.basename(serverDir));
 
-      var packages = [];
+      var packages = <Package>[];
       for (var entry in listDir(serverDir)) {
         try {
           packages.add(new Package.load(null, entry, systemCache.sources));

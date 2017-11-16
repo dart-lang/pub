@@ -20,7 +20,7 @@ dependencies:
   http_multi_server: ">=1.0.0 <3.0.0"
   http_throttle: "^1.0.0"
   json_rpc_2: "^2.0.0"
-  meta: ">=0.12.2 <2.0.0"
+  meta: "^1.1.0"
   mime: "^0.9.0"
   oauth2: "^1.0.0"
   package_config: "^1.0.0"
