@@ -9,7 +9,8 @@ import 'dart:isolate';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
-import 'package:compiler_unsupported/compiler.dart' as compiler;
+import 'package:compiler_unsupported/compiler_new.dart' as compiler;
+import 'package:compiler_unsupported/src/options.dart';
 import 'package:compiler_unsupported/src/filenames.dart' show appendSlash;
 import 'package:path/path.dart' as p;
 
@@ -20,9 +21,9 @@ import 'log.dart' as log;
 /// Interface to communicate with dart2js.
 ///
 /// This is basically an amalgamation of dart2js's
-/// [compiler.CompilerInputProvider], [compiler.CompilerOutputProvider], and
-/// [compiler.DiagnosticHandler] function types so that we can provide them
-/// as a single unit.
+/// [compiler.CompilerInput], [compiler.CompilerOutput], and
+/// [compiler.CompilerDiagnostics] types so that we can provide them as a single
+/// unit.
 abstract class CompilerProvider {
   /// The URI to the root directory where "dart:" libraries can be found.
   ///
@@ -30,19 +31,17 @@ abstract class CompilerProvider {
   /// back to [provideInput].
   Uri get libraryRoot;
 
-  /// Given [uri], responds with a future that completes to the contents of
-  /// the input file at that URI.
+  /// An input provider that reads the contents of given URIs.
   ///
-  /// The future can complete to a string or a list of bytes.
-  Future provideInput(Uri uri);
+  /// The URIs can point to resources containing text or binary data.
+  compiler.CompilerInput get inputProvider;
 
-  /// Reports a diagnostic message from dart2js to the user.
-  void handleDiagnostic(
-      Uri uri, int begin, int end, String message, compiler.Diagnostic kind);
+  /// Reports a diagnostic from dart2js to the user.
+  compiler.CompilerDiagnostics get diagnosticHandler;
 
-  /// Given a [name] (which will be "" for the entrypoint) and a file extension,
-  /// returns an [EventSink] that dart2js can write to to emit an output file.
-  EventSink<String> provideOutput(String name, String extension);
+  /// Provides [EventSink]s for a given name and file extension so dart2js can
+  /// write to output files.
+  compiler.CompilerOutput get outputProvider;
 }
 
 /// Compiles [entrypoint] to JavaScript as well as any ancillary outputs dart2js
@@ -101,15 +100,15 @@ Future compile(String entrypoint, CompilerProvider provider,
     packageRoot = p.normalize(p.absolute(packageRoot));
   }
 
-  await compiler.compile(
-      p.toUri(entrypoint),
-      provider.libraryRoot,
-      p.toUri(appendSlash(packageRoot)),
-      provider.provideInput,
-      provider.handleDiagnostic,
-      options,
-      provider.provideOutput,
-      environment);
+  var compilerOptions = new CompilerOptions.parse(
+      entryPoint: sourceUrl,
+      libraryRoot: provider.libraryRoot,
+      packageRoot: p.toUri(appendSlash(packageRoot)),
+      environment: environment,
+      options: options);
+
+  await compiler.compile(compilerOptions, provider.inputProvider,
+      provider.diagnosticHandler, provider.outputProvider);
 }
 
 /// Returns whether [dart] looks like an entrypoint file.

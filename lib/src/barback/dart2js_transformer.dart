@@ -11,7 +11,7 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 
-import 'package:compiler_unsupported/compiler.dart' as compiler;
+import 'package:compiler_unsupported/compiler_new.dart' as compiler;
 import 'package:compiler_unsupported/src/dart2js.dart' show AbortLeg;
 import 'package:compiler_unsupported/src/io/source_file.dart';
 import '../barback.dart';
@@ -225,36 +225,16 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   /// The map of previously loaded files.
   ///
   /// Used to show where an error occurred in a source file.
-  final _sourceFiles = new Map<String, SourceFile>();
+  final _sourceFiles = <String, SourceFile>{};
 
-  // TODO(rnystrom): Make these configurable.
-  /// Whether or not warnings should be logged.
-  var _showWarnings = true;
+  _BarbackCompilerInput inputProvider;
 
-  /// Whether or not hints should be logged.
-  var _showHints = true;
+  _BarbackCompilerOutput outputProvider;
 
-  /// Whether or not verbose info messages should be logged.
-  var _verbose = false;
-
-  /// Whether an exception should be thrown on an error to stop compilation.
-  final _throwOnError = false;
-
-  /// This gets set after a fatal error is reported to quash any subsequent
-  /// errors.
-  var _isAborting = false;
-
-  final bool generateSourceMaps;
-
-  compiler.Diagnostic _lastKind;
-
-  static final int _FATAL =
-      compiler.Diagnostic.CRASH.ordinal | compiler.Diagnostic.ERROR.ordinal;
-  static final int _INFO = compiler.Diagnostic.INFO.ordinal |
-      compiler.Diagnostic.VERBOSE_INFO.ordinal;
+  _BarbackDiagnosticHandler diagnosticHandler;
 
   _BarbackCompilerProvider(this._environment, this._transform,
-      {this.generateSourceMaps: true}) {
+      {bool generateSourceMaps: true}) {
     // Dart2js outputs source maps that reference the Dart SDK sources. For
     // that to work, those sources need to be inside the build environment. We
     // do that by placing them in a special "$sdk" pseudo-package. In order for
@@ -277,10 +257,24 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
         .getSourceDirectoryContaining(_transform.primaryInput.id.path);
     _libraryRootPath =
         _environment.rootPackage.path(buildDir, "packages", r"$sdk");
-  }
 
-  /// A [CompilerInputProvider] for dart2js.
-  Future<String> provideInput(Uri resourceUri) {
+    inputProvider =
+        new _BarbackCompilerInput(_transform, _environment, _sourceFiles);
+    outputProvider = new _BarbackCompilerOutput(_transform,
+        generateSourceMaps: generateSourceMaps);
+    diagnosticHandler = new _BarbackDiagnosticHandler(_transform, _sourceFiles);
+  }
+}
+
+class _BarbackCompilerInput extends compiler.CompilerInput {
+  final Transform _transform;
+  final AssetEnvironment _environment;
+  final Map<String, SourceFile> _sourceFiles;
+
+  _BarbackCompilerInput(this._transform, this._environment, this._sourceFiles);
+
+  @override
+  Future readFromUri(Uri resourceUri) {
     // We only expect to get absolute "file:" URLs from dart2js.
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
@@ -293,8 +287,47 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     });
   }
 
-  /// A [CompilerOutputProvider] for dart2js.
-  EventSink<String> provideOutput(String name, String extension) {
+  Future<String> _readResource(Uri url) {
+    return new Future.sync(() {
+      // Find the corresponding asset in barback.
+      var id = _sourceUrlToId(url);
+      if (id != null) return _transform.readInputAsString(id);
+
+      // Don't allow arbitrary file paths that point to things not in packages.
+      // Doing so won't work in Dartium.
+      throw new Exception(
+          "Cannot read $url because it is outside of the build environment.");
+    });
+  }
+
+  AssetId _sourceUrlToId(Uri url) {
+    // See if it's a package path.
+    var id = packagesUrlToId(url);
+    if (id != null) return id;
+
+    // See if it's a path to a "public" asset within the root package. All
+    // other files in the root package are not visible to transformers, so
+    // should be loaded directly from disk.
+    var sourcePath = p.fromUri(url);
+    if (_environment.containsPath(sourcePath)) {
+      var relative =
+          p.toUri(_environment.rootPackage.relative(sourcePath)).toString();
+
+      return new AssetId(_environment.rootPackage.name, relative);
+    }
+
+    return null;
+  }
+}
+
+class _BarbackCompilerOutput extends compiler.CompilerOutput {
+  final Transform _transform;
+  final bool generateSourceMaps;
+
+  _BarbackCompilerOutput(this._transform, {this.generateSourceMaps: true});
+
+  @override
+  EventSink<String> createEventSink(String name, String extension) {
     // TODO(rnystrom): Do this more cleanly. See: #17403.
     if (!generateSourceMaps && extension.endsWith(".map")) {
       return new NullSink<String>();
@@ -329,11 +362,42 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
 
     return sink;
   }
+}
 
-  /// A [DiagnosticHandler] for dart2js, loosely based on
-  /// [FormattingDiagnosticHandler].
-  void handleDiagnostic(
-      Uri uri, int begin, int end, String message, compiler.Diagnostic kind) {
+class _BarbackDiagnosticHandler extends compiler.CompilerDiagnostics {
+  // TODO(rnystrom): Make these configurable.
+  /// Whether or not warnings should be logged.
+  var _showWarnings = true;
+
+  /// Whether or not hints should be logged.
+  var _showHints = true;
+
+  /// Whether or not verbose info messages should be logged.
+  var _verbose = false;
+
+  /// Whether an exception should be thrown on an error to stop compilation.
+  final _throwOnError = false;
+
+  /// This gets set after a fatal error is reported to quash any subsequent
+  /// errors.
+  var _isAborting = false;
+
+  static final int _FATAL =
+      compiler.Diagnostic.CRASH.ordinal | compiler.Diagnostic.ERROR.ordinal;
+  static final int _INFO = compiler.Diagnostic.INFO.ordinal |
+      compiler.Diagnostic.VERBOSE_INFO.ordinal;
+
+  compiler.Diagnostic _lastKind;
+
+  final Transform _transform;
+
+  final Map<String, SourceFile> _sourceFiles;
+
+  _BarbackDiagnosticHandler(this._transform, this._sourceFiles);
+
+  @override
+  void report(code, Uri uri, int begin, int end, String message,
+      compiler.Diagnostic kind) {
     // TODO(ahe): Remove this when source map is handled differently.
     if (kind.name == "source map") return;
 
@@ -389,38 +453,6 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
       _isAborting = true;
       throw new AbortLeg(message);
     }
-  }
-
-  Future<String> _readResource(Uri url) {
-    return new Future.sync(() {
-      // Find the corresponding asset in barback.
-      var id = _sourceUrlToId(url);
-      if (id != null) return _transform.readInputAsString(id);
-
-      // Don't allow arbitrary file paths that point to things not in packages.
-      // Doing so won't work in Dartium.
-      throw new Exception(
-          "Cannot read $url because it is outside of the build environment.");
-    });
-  }
-
-  AssetId _sourceUrlToId(Uri url) {
-    // See if it's a package path.
-    var id = packagesUrlToId(url);
-    if (id != null) return id;
-
-    // See if it's a path to a "public" asset within the root package. All
-    // other files in the root package are not visible to transformers, so
-    // should be loaded directly from disk.
-    var sourcePath = p.fromUri(url);
-    if (_environment.containsPath(sourcePath)) {
-      var relative =
-          p.toUri(_environment.rootPackage.relative(sourcePath)).toString();
-
-      return new AssetId(_environment.rootPackage.name, relative);
-    }
-
-    return null;
   }
 }
 
