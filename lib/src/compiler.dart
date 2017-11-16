@@ -16,7 +16,8 @@ class Compiler {
 
   static final all = [dart2JS, dartDevc, none];
 
-  static Iterable<String> get names => all.map((compiler) => compiler.name);
+  static List<String> get names =>
+      all.map((compiler) => compiler.name).toList();
 
   final String name;
 
