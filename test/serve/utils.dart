@@ -322,7 +322,9 @@ Future _ensureWebSocket() async {
   var socket = await WebSocket.connect("ws://localhost:$_adminPort");
   _webSocket = socket;
   // TODO(rnystrom): Works around #13913.
-  _webSocketBroadcastStream = _webSocket.map(JSON.decode).asBroadcastStream();
+  _webSocketBroadcastStream = _webSocket
+      .map((message) => JSON.decode(message as String))
+      .asBroadcastStream();
 }
 
 /// Closes the web socket connection to the currently-running pub serve.
