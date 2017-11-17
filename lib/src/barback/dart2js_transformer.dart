@@ -222,19 +222,16 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   final Transform _transform;
   String _libraryRootPath;
 
-  /// The map of previously loaded files.
-  ///
-  /// Used to show where an error occurred in a source file.
-  final _sourceFiles = <String, SourceFile>{};
-
   _BarbackCompilerInput inputProvider;
 
-  _BarbackCompilerOutput outputProvider;
+  final _BarbackCompilerOutput outputProvider;
 
   _BarbackDiagnosticHandler diagnosticHandler;
 
   _BarbackCompilerProvider(this._environment, this._transform,
-      {bool generateSourceMaps: true}) {
+      {bool generateSourceMaps: true})
+      : outputProvider = new _BarbackCompilerOutput(_transform,
+            generateSourceMaps: generateSourceMaps) {
     // Dart2js outputs source maps that reference the Dart SDK sources. For
     // that to work, those sources need to be inside the build environment. We
     // do that by placing them in a special "$sdk" pseudo-package. In order for
@@ -258,10 +255,13 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     _libraryRootPath =
         _environment.rootPackage.path(buildDir, "packages", r"$sdk");
 
+    // The map of previously loaded files.
+    //
+    // Used to show where an error occurred in a source file.
+    var _sourceFiles = <String, SourceFile>{};
+
     inputProvider =
         new _BarbackCompilerInput(_transform, _environment, _sourceFiles);
-    outputProvider = new _BarbackCompilerOutput(_transform,
-        generateSourceMaps: generateSourceMaps);
     diagnosticHandler = new _BarbackDiagnosticHandler(_transform, _sourceFiles);
   }
 }
@@ -273,31 +273,27 @@ class _BarbackCompilerInput extends compiler.CompilerInput {
 
   _BarbackCompilerInput(this._transform, this._environment, this._sourceFiles);
 
-  @override
-  Future readFromUri(Uri resourceUri) {
+  Future readFromUri(Uri resourceUri) async {
     // We only expect to get absolute "file:" URLs from dart2js.
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
 
     var sourcePath = p.fromUri(resourceUri);
-    return _readResource(resourceUri).then((source) {
-      _sourceFiles[resourceUri.toString()] =
-          new StringSourceFile(resourceUri, p.relative(sourcePath), source);
-      return source;
-    });
+    var source = await _readResource(resourceUri);
+    _sourceFiles[resourceUri.toString()] =
+        new StringSourceFile(resourceUri, p.relative(sourcePath), source);
+    return source;
   }
 
-  Future<String> _readResource(Uri url) {
-    return new Future.sync(() {
-      // Find the corresponding asset in barback.
-      var id = _sourceUrlToId(url);
-      if (id != null) return _transform.readInputAsString(id);
+  Future<String> _readResource(Uri url) async {
+    // Find the corresponding asset in barback.
+    var id = _sourceUrlToId(url);
+    if (id != null) return _transform.readInputAsString(id);
 
-      // Don't allow arbitrary file paths that point to things not in packages.
-      // Doing so won't work in Dartium.
-      throw new Exception(
-          "Cannot read $url because it is outside of the build environment.");
-    });
+    // Don't allow arbitrary file paths that point to things not in packages.
+    // Doing so won't work in Dartium.
+    throw new Exception(
+        "Cannot read $url because it is outside of the build environment.");
   }
 
   AssetId _sourceUrlToId(Uri url) {
@@ -326,7 +322,6 @@ class _BarbackCompilerOutput extends compiler.CompilerOutput {
 
   _BarbackCompilerOutput(this._transform, {this.generateSourceMaps: true});
 
-  @override
   EventSink<String> createEventSink(String name, String extension) {
     // TODO(rnystrom): Do this more cleanly. See: #17403.
     if (!generateSourceMaps && extension.endsWith(".map")) {
@@ -395,7 +390,6 @@ class _BarbackDiagnosticHandler extends compiler.CompilerDiagnostics {
 
   _BarbackDiagnosticHandler(this._transform, this._sourceFiles);
 
-  @override
   void report(code, Uri uri, int begin, int end, String message,
       compiler.Diagnostic kind) {
     // TODO(ahe): Remove this when source map is handled differently.
