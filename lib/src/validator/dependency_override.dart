@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart';
+
 import '../entrypoint.dart';
 import '../validator.dart';
 
@@ -14,8 +16,8 @@ class DependencyOverrideValidator extends Validator {
 
   Future validate() {
     var overridden =
-        entrypoint.root.dependencyOverrides.map((dep) => dep.name).toSet();
-    var dev = entrypoint.root.devDependencies.map((dep) => dep.name).toSet();
+        new MapKeySet(entrypoint.root.dependencyOverrides);
+    var dev = new MapKeySet(entrypoint.root.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
       errors.add('Your pubspec.yaml must not override non-dev dependencies.\n'
           'This ensures you test your package against the same versions of '

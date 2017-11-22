@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:path/path.dart' as p;
+import 'package:collection/collection.dart';
 import 'package:pub/src/dart.dart';
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/io.dart';
@@ -61,10 +62,10 @@ class StrictDependenciesValidator extends Validator {
   }
 
   Future validate() async {
-    var dependencies = entrypoint.root.dependencies.map((d) => d.name).toSet()
+    var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);
     var devDependencies =
-        entrypoint.root.devDependencies.map((d) => d.name).toSet();
+        new MapKeySet(entrypoint.root.devDependencies);
     _validateLibBin(dependencies, devDependencies);
     _validateBenchmarkExampleTestTool(dependencies, devDependencies);
   }

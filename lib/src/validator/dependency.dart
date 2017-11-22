@@ -36,7 +36,7 @@ class DependencyValidator extends Validator {
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    await _validateDependencies(entrypoint.root.pubspec.dependencies);
+    await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
     for (var feature in entrypoint.root.pubspec.features.values) {
       // Allow off-by-default features, since older pubs will just ignore them
@@ -58,7 +58,7 @@ class DependencyValidator extends Validator {
   }
 
   /// Validates all dependencies in [dependencies].
-  Future _validateDependencies(List<PackageRange> dependencies) async {
+  Future _validateDependencies(Iterable<PackageRange> dependencies) async {
     for (var dependency in dependencies) {
       var constraint = dependency.constraint;
       if (dependency.name == "flutter") {

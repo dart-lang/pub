@@ -223,8 +223,8 @@ class BuildCommand extends BarbackCommand {
   /// directories next to each entrypoint in [entrypoints].
   Future _copyBrowserJsFiles(Iterable<AssetId> entrypoints, AssetSet assets) {
     // Must depend on the browser package.
-    if (!entrypoint.root.immediateDependencies
-        .any((dep) => dep.name == 'browser' && dep.source is HostedSource)) {
+    var browser = entrypoint.root.immediateDependencies['browser'];
+    if (browser == null || browser.source is! HostedSource) {
       return new Future.value();
     }
 
