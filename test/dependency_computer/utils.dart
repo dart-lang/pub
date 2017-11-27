@@ -89,7 +89,7 @@ PackageGraph _loadPackageGraph() {
     if (packages.containsKey(packageName)) return;
     packages[packageName] = new Package.load(
         packageName, packagePath(packageName), systemCache.sources);
-    for (var dep in packages[packageName].dependencies) {
+    for (var dep in packages[packageName].dependencies.values) {
       loadPackage(dep.name);
     }
   }

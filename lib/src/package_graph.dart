@@ -82,8 +82,7 @@ class PackageGraph {
     if (_transitiveDependencies == null) {
       var closure = transitiveClosure(
           mapMap<String, Package, String, Iterable<String>>(packages,
-              value: (_, package) =>
-                  package.dependencies.map((dep) => dep.name)));
+              value: (_, package) => package.dependencies.keys));
       _transitiveDependencies =
           mapMap<String, Set<String>, String, Set<Package>>(closure,
               value: (depender, names) {

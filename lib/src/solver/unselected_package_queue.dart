@@ -132,7 +132,7 @@ class UnselectedPackageQueue {
     // that constraint. Since the root package's dependency constraints won't
     // change during solving, we can safely filter out packages that don't meet
     // it.
-    for (var rootDep in _solver.root.immediateDependencies) {
+    for (var rootDep in _solver.root.immediateDependencies.values) {
       if (rootDep.name != ref.name) continue;
       return versions
           .where((id) => rootDep.constraint.allows(id.version))
