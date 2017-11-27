@@ -55,15 +55,18 @@ class Package {
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
   /// The dependency overrides this package specifies in its pubspec.
-  Map<String, PackageRange> get dependencyOverrides => pubspec.dependencyOverrides;
+  Map<String, PackageRange> get dependencyOverrides =>
+      pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
   Map<String, PackageRange> get immediateDependencies {
-    return {}..addAll(dependencies)..addAll(devDependencies)
-    // Make sure to add these last so they replace normal dependencies.
-    ..addAll(dependencyOverrides);
+    // Make sure to add overrides last so they replace normal dependencies.
+    return {}
+      ..addAll(dependencies)
+      ..addAll(devDependencies)
+      ..addAll(dependencyOverrides);
   }
 
   /// Returns a list of asset ids for all Dart executables in this package's bin

@@ -84,8 +84,8 @@ class SolveResult {
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
-        .where((pubspec) =>
-            !_root.dependencyOverrides.containsKey(pubspec.name))
+        .where(
+            (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
         .toList();
 
     var dartMerged = new VersionConstraint.intersection(
@@ -103,10 +103,8 @@ class SolveResult {
         dartSdkConstraint: dartMerged,
         flutterSdkConstraint: flutterMerged,
         mainDependencies: new MapKeySet(_root.dependencies),
-        devDependencies:
-            new MapKeySet(_root.devDependencies),
-        overriddenDependencies:
-            new MapKeySet(_root.dependencyOverrides));
+        devDependencies: new MapKeySet(_root.devDependencies),
+        overriddenDependencies: new MapKeySet(_root.dependencyOverrides));
   }
 
   final SourceRegistry _sources;

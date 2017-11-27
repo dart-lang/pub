@@ -597,11 +597,16 @@ class Pubspec {
       Map fields,
       SourceRegistry sources})
       : _version = version,
-        _dependencies = dependencies == null ? null : new Map.fromIterable(dependencies, key: (range) => range.name),
-        _devDependencies =
-            devDependencies == null ? null : new Map.fromIterable(devDependencies, key: (range) => range.name),
-        _dependencyOverrides =
-            dependencyOverrides == null ? null : new Map.fromIterable(dependencyOverrides, key: (range) => range.name),
+        _dependencies = dependencies == null
+            ? null
+            : new Map.fromIterable(dependencies, key: (range) => range.name),
+        _devDependencies = devDependencies == null
+            ? null
+            : new Map.fromIterable(devDependencies, key: (range) => range.name),
+        _dependencyOverrides = dependencyOverrides == null
+            ? null
+            : new Map.fromIterable(dependencyOverrides,
+                key: (range) => range.name),
         _dartSdkConstraint =
             dartSdkConstraint ?? includeDefaultSdkConstraint == true
                 ? _defaultUpperBoundSdkConstraint
@@ -788,7 +793,8 @@ class Pubspec {
             containingPath: pubspecPath);
       });
 
-      dependencies[name] = ref.withConstraint(versionConstraint).withFeatures(features);
+      dependencies[name] =
+          ref.withConstraint(versionConstraint).withFeatures(features);
     });
 
     return dependencies;

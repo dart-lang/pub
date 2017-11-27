@@ -373,8 +373,7 @@ class Entrypoint {
   Future precompileExecutables({Iterable<String> changed}) async {
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = mapMap(
-        root.immediateDependencies,
+    var executables = mapMap(root.immediateDependencies,
         value: (name, _) => _executablesForPackage(name));
 
     for (var package in executables.keys.toList()) {

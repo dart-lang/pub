@@ -90,14 +90,12 @@ class DepsCommand extends PubCommand {
   /// line.
   void _outputCompact() {
     var root = entrypoint.root;
-    _outputCompactPackages(
-        "dependencies", root.dependencies.keys);
+    _outputCompactPackages("dependencies", root.dependencies.keys);
     if (_includeDev) {
-      _outputCompactPackages(
-          "dev dependencies", root.devDependencies.keys);
+      _outputCompactPackages("dev dependencies", root.devDependencies.keys);
     }
-    _outputCompactPackages("dependency overrides",
-        root.dependencyOverrides.keys);
+    _outputCompactPackages(
+        "dependency overrides", root.dependencyOverrides.keys);
 
     var transitive = _getTransitiveDependencies();
     _outputCompactPackages("transitive dependencies", transitive);
@@ -130,14 +128,11 @@ class DepsCommand extends PubCommand {
   /// shown.
   void _outputList() {
     var root = entrypoint.root;
-    _outputListSection(
-        "dependencies", root.dependencies.keys);
+    _outputListSection("dependencies", root.dependencies.keys);
     if (_includeDev) {
-      _outputListSection(
-          "dev dependencies", root.devDependencies.keys);
+      _outputListSection("dev dependencies", root.devDependencies.keys);
     }
-    _outputListSection("dependency overrides",
-        root.dependencyOverrides.keys);
+    _outputListSection("dependency overrides", root.dependencyOverrides.keys);
 
     var transitive = _getTransitiveDependencies();
     if (transitive.isEmpty) return;
@@ -178,7 +173,8 @@ class DepsCommand extends PubCommand {
 
     // Start with the root dependencies.
     var packageTree = <String, Map>{};
-    var immediateDependencies = entrypoint.root.immediateDependencies.keys.toSet();
+    var immediateDependencies =
+        entrypoint.root.immediateDependencies.keys.toSet();
     if (!_includeDev) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
@@ -233,8 +229,7 @@ class DepsCommand extends PubCommand {
     var nonDevDependencies = entrypoint.root.dependencies.keys.toList()
       ..addAll(entrypoint.root.dependencyOverrides.keys);
     return nonDevDependencies
-        .expand(
-            (name) => entrypoint.packageGraph.transitiveDependencies(name))
+        .expand((name) => entrypoint.packageGraph.transitiveDependencies(name))
         .map((package) => package.name)
         .toSet();
   }
@@ -259,7 +254,8 @@ class DepsCommand extends PubCommand {
       ..add(entrypoint.root)
       ..addAll((_includeDev
               ? entrypoint.root.immediateDependencies
-              : entrypoint.root.dependencies).keys
+              : entrypoint.root.dependencies)
+          .keys
           .map((name) => entrypoint.packageGraph.packages[name]));
 
     for (var package in packages) {

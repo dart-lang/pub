@@ -64,8 +64,7 @@ class StrictDependenciesValidator extends Validator {
   Future validate() async {
     var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);
-    var devDependencies =
-        new MapKeySet(entrypoint.root.devDependencies);
+    var devDependencies = new MapKeySet(entrypoint.root.devDependencies);
     _validateLibBin(dependencies, devDependencies);
     _validateBenchmarkExampleTestTool(dependencies, devDependencies);
   }
