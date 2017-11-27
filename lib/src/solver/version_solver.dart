@@ -5,6 +5,7 @@
 import 'dart:async';
 import "dart:convert";
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -83,8 +84,8 @@ class SolveResult {
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
-        .where((pubspec) =>
-            !_root.dependencyOverrides.any((dep) => dep.name == pubspec.name))
+        .where(
+            (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
         .toList();
 
     var dartMerged = new VersionConstraint.intersection(
@@ -101,11 +102,9 @@ class SolveResult {
     return new LockFile(packages,
         dartSdkConstraint: dartMerged,
         flutterSdkConstraint: flutterMerged,
-        mainDependencies: _root.dependencies.map((range) => range.name).toSet(),
-        devDependencies:
-            _root.devDependencies.map((range) => range.name).toSet(),
-        overriddenDependencies:
-            _root.dependencyOverrides.map((range) => range.name).toSet());
+        mainDependencies: new MapKeySet(_root.dependencies),
+        devDependencies: new MapKeySet(_root.devDependencies),
+        overriddenDependencies: new MapKeySet(_root.dependencyOverrides));
   }
 
   final SourceRegistry _sources;

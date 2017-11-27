@@ -137,7 +137,7 @@ class BacktrackingSolver {
       _forceLatest.add(package);
     }
 
-    for (var override in root.dependencyOverrides) {
+    for (var override in root.dependencyOverrides.values) {
       _overrides[override.name] = override;
     }
   }
@@ -718,7 +718,7 @@ class BacktrackingSolver {
   Future<Set<PackageRange>> depsFor(PackageId id) async {
     var pubspec = await _getPubspec(id);
     var deps = <String, List<PackageRange>>{};
-    _addDependencies(deps, pubspec.dependencies);
+    _addDependencies(deps, pubspec.dependencies.values);
 
     for (var feature in _selection.enabledFeatures(id.name, pubspec.features)) {
       _addDependencies(deps, feature.dependencies);
@@ -726,7 +726,7 @@ class BacktrackingSolver {
 
     if (id.isRoot) {
       // Include dev dependencies of the root package.
-      _addDependencies(deps, pubspec.devDependencies);
+      _addDependencies(deps, pubspec.devDependencies.values);
 
       // Add all overrides. This ensures a dependency only present as an
       // override is still included.
@@ -837,7 +837,7 @@ class BacktrackingSolver {
   void _logParameters() {
     var buffer = new StringBuffer();
     buffer.writeln("Solving dependencies:");
-    for (var package in root.dependencies) {
+    for (var package in root.dependencies.values) {
       buffer.write("- $package");
       var locked = getLocked(package.name);
       if (_forceLatest.contains(package.name)) {

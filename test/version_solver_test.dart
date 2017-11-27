@@ -2602,7 +2602,7 @@ Future expectResolves(
   var resultPubspec = new Pubspec.fromMap({"dependencies": result}, registry);
 
   var ids = new Map.from(lockFile.packages);
-  for (var dep in resultPubspec.dependencies) {
+  for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
 
