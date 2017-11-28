@@ -30,7 +30,7 @@ import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
