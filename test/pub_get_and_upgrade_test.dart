@@ -18,7 +18,7 @@ main() {
         await pubCommand(command,
             error: new RegExp(r'Could not find a file named "pubspec.yaml" '
                 r'in "[^\n]*"\.'),
-                         exitCode: exit_codes.NO_INPUT);
+            exitCode: exit_codes.NO_INPUT);
       });
 
       test('a pubspec with a "name" key', () async {
