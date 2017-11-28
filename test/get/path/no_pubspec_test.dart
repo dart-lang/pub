@@ -5,6 +5,7 @@
 import 'package:test/test.dart';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -23,6 +24,7 @@ main() {
 
     await pubGet(
         error: new RegExp(r'Could not find a file named "pubspec.yaml" '
-            r'in "[^\n]*"\.'));
+            r'in "[^\n]*"\.'),
+        exitCode: exit_codes.NO_INPUT);
   });
 }

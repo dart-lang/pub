@@ -469,12 +469,15 @@ class DescriptionMismatchException extends SolveFailure {
 ///
 /// Unlike [PackageNotFoundException], this includes information about the
 /// dependent packages requesting the missing one.
-class DependencyNotFoundException extends SolveFailure {
-  final PackageNotFoundException _innerException;
-  String get _message => "${_innerException.message}\nDepended on by";
+class DependencyNotFoundException extends SolveFailure
+    implements WrappedException {
+  final PackageNotFoundException innerError;
+  Chain get innerChain => innerError.innerChain;
+
+  String get _message => "${innerError.message}\nDepended on by";
 
   DependencyNotFoundException(
-      String package, this._innerException, Iterable<Dependency> dependencies)
+      String package, this.innerError, Iterable<Dependency> dependencies)
       : super(package, dependencies);
 
   /// The failure isn't because of the version of description of the package,

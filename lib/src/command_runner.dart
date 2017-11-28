@@ -30,7 +30,6 @@ import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
@@ -230,15 +229,20 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
   /// appropriate exit code could be found.
   int _chooseExitCode(exception) {
-    while (exception is WrappedException) exception = exception.innerError;
+    while (exception is WrappedException && exception.innerError is Exception) {
+      exception = exception.innerError;
+    }
 
     if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||
         exception is PubHttpException ||
-        exception is DependencyNotFoundException) {
+        exception is git.GitException ||
+        exception is PackageNotFoundException) {
       return exit_codes.UNAVAILABLE;
+    } else if (exception is FileSystemException || exception is FileException) {
+      return exit_codes.NO_INPUT;
     } else if (exception is FormatException || exception is DataException) {
       return exit_codes.DATA;
     } else if (exception is UsageException) {
