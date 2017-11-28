@@ -4,6 +4,8 @@
 
 import 'package:test/test.dart';
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+
 import '../../test_pub.dart';
 
 main() {
@@ -13,6 +15,6 @@ main() {
     await runPub(
         args: ["global", "activate", "-sgit", "../nope.git"],
         error: contains("repository '../nope.git' does not exist"),
-        exitCode: 1);
+        exitCode: exit_codes.UNAVAILABLE);
   });
 }

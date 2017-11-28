@@ -175,6 +175,7 @@ class BoundPathSource extends BoundSource {
     }
 
     throw new PackageNotFoundException(
-        'Could not find package $name at "$dir".');
+        'Could not find package $name at "$dir".',
+        new FileException('$dir does not exist.', dir));
   }
 }

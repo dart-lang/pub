@@ -5,6 +5,7 @@
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 
 import '../../descriptor.dart' as d;
@@ -25,6 +26,6 @@ main() {
     var path = canonicalize(p.join(d.sandbox, "foo"));
     expect(pub.stderr,
         emits('Could not find a file named "pubspec.yaml" in "$path".'));
-    await pub.shouldExit(1);
+    await pub.shouldExit(exit_codes.NO_INPUT);
   });
 }

@@ -23,6 +23,6 @@ main() {
     await pubGet(error: """
         Could not find package foo at "$badPath".
         Depended on by:
-        - myapp""", exitCode: exit_codes.UNAVAILABLE);
+        - myapp""", exitCode: exit_codes.NO_INPUT);
   });
 }
