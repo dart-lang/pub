@@ -22,7 +22,8 @@ class MockSource extends Source {
     return new PackageRef(name, this, description);
   }
 
-  PackageId parseId(String name, Version version, description) {
+  PackageId parseId(String name, Version version, description,
+      {String containingPath}) {
     if (!description.endsWith(' desc')) throw new FormatException('Bad');
     return new PackageId(name, this, version, description);
   }

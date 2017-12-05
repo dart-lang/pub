@@ -81,7 +81,8 @@ class PathSource extends Source {
         name, this, {"path": description, "relative": isRelative});
   }
 
-  PackageId parseId(String name, Version version, description) {
+  PackageId parseId(String name, Version version, description,
+      {String containingPath}) {
     if (description is! Map) {
       throw new FormatException("The description must be a map.");
     }
@@ -94,6 +95,20 @@ class PathSource extends Source {
     if (description["relative"] is! bool) {
       throw new FormatException("The 'relative' field of the description "
           "must be a boolean.");
+    }
+
+    // Resolve the path relative to the containing file path.
+    if (description["relative"]) {
+      // Relative paths coming from lockfiles that are not on the local file
+      // system aren't allowed.
+      if (containingPath == null) {
+        throw new FormatException('"$description" is a relative path, but this '
+            'isn\'t a local pubspec.');
+      }
+
+      description = new Map.from(description);
+      description["path"] =
+          p.normalize(p.join(p.dirname(containingPath), description["path"]));
     }
 
     return new PackageId(name, this, version, description);
