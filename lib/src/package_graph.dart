@@ -9,7 +9,7 @@ import 'compiler.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';
-import 'solver/version_solver.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.

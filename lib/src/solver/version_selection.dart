@@ -10,7 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../feature.dart';
 import '../package_name.dart';
-import 'backtracking_solver.dart';
+import 'dependency.dart';
 import 'unselected_package_queue.dart';
 import 'version_solver.dart';
 
@@ -23,11 +23,11 @@ import 'version_solver.dart';
 /// A [VersionSelection] is always internally consistent. That is, all selected
 /// packages are compatible with dependencies on those packages, no constraints
 /// are empty, and dependencies agree on sources and descriptions. However, the
-/// selection itself doesn't ensure this; that's up to the [BacktrackingSolver]
+/// selection itself doesn't ensure this; that's up to the [VersionSolver]
 /// that controls it.
 class VersionSelection {
   /// The version solver.
-  final BacktrackingSolver _solver;
+  final VersionSolver _solver;
 
   /// The packages that have been selected, in the order they were selected.
   List<PackageId> get ids => new UnmodifiableListView<PackageId>(_ids);
@@ -50,7 +50,7 @@ class VersionSelection {
   PackageRef get nextUnselected =>
       _unselected.isEmpty ? null : _unselected.first;
 
-  VersionSelection(BacktrackingSolver solver)
+  VersionSelection(VersionSolver solver)
       : _solver = solver,
         _unselected = new UnselectedPackageQueue(solver);
 
@@ -147,7 +147,7 @@ class VersionSelection {
 
     // Figure out which features are enabled and which are disabled. We don't
     // care about the distinction between required and if available here;
-    // [BacktrackingSolver] takes care of that.
+    // [VersionSolver] takes care of that.
     var dependencies = <String, FeatureDependency>{};
     for (var dep in getDependenciesOn(package)) {
       // If any defalut-on features are unused in [dependencies] but aren't

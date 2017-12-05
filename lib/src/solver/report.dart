@@ -10,7 +10,8 @@ import '../package.dart';
 import '../package_name.dart';
 import '../source_registry.dart';
 import '../utils.dart';
-import 'version_solver.dart';
+import 'result.dart';
+import 'type.dart';
 
 /// Unlike [SolveResult], which is the static data describing a resolution,
 /// this class contains the mutable state used while generating the report

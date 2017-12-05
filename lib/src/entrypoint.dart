@@ -25,7 +25,7 @@ import 'package_name.dart';
 import 'package_graph.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
