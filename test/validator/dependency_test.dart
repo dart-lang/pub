@@ -74,54 +74,6 @@ main() {
       expectNoValidationError(dependency);
     });
 
-    test('depends on a feature with an appropriate SDK constraint', () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            deps: {
-              "foo": {
-                "version": "^1.2.3",
-                "features": {"stuff": true}
-              }
-            },
-            sdk: ">=2.0.0 <3.0.0")
-      ]).create();
-      expectNoValidationError(dependency);
-    });
-
-    test('declares a feature with an appropriate SDK constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          "name": "test_pkg",
-          "version": "1.0.0",
-          "features": {
-            "stuff": {
-              "dependencies": {"foo": "^1.0.0"}
-            }
-          },
-          "environment": {"sdk": ">=2.0.0 <3.0.0"}
-        })
-      ]).create();
-      expectNoValidationError(dependency);
-    });
-
-    test('declares a default-off feature with an appropriate SDK constraint',
-        () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          "name": "test_pkg",
-          "version": "1.0.0",
-          "features": {
-            "stuff": {
-              "default": false,
-              "dependencies": {"foo": "^1.0.0"}
-            }
-          },
-          "environment": {"sdk": ">=2.0.0 <3.0.0"}
-        })
-      ]).create();
-      expectNoValidationError(dependency);
-    });
-
     test('has a git path dependency with an appropriate SDK constraint',
         () async {
       await d.dir(appPath, [
@@ -534,100 +486,35 @@ main() {
       });
     });
 
-    group('has a feature dependency', () {
-      test('without an SDK constraint', () async {
-        await d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0", deps: {
-            "foo": {
-              "version": "^1.2.3",
-              "features": {"stuff": true}
-            }
-          })
-        ]).create();
+    test('has a feature dependency', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0", deps: {
+          "foo": {
+            "version": "^1.2.3",
+            "features": {"stuff": true}
+          }
+        })
+      ]).create();
 
-        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
-      });
-
-      test('with a too-broad SDK constraint', () async {
-        await d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0",
-              deps: {
-                "foo": {
-                  "version": "^1.2.3",
-                  "features": {"stuff": true}
-                }
-              },
-              sdk: ">=1.24.0 <3.0.0")
-        ]).create();
-
-        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
-      });
+      expectDependencyValidationError(
+          "Packages with package features may not be published yet.");
     });
 
-    group('declares a feature', () {
-      test('without an constraint', () async {
-        await d.dir(appPath, [
-          d.pubspec({
-            "name": "test_pkg",
-            "version": "1.0.0",
-            "features": {
-              "stuff": {
-                "dependencies": {"foo": "^1.0.0"}
-              }
+    test('declares a feature', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "features": {
+            "stuff": {
+              "dependencies": {"foo": "^1.0.0"}
             }
-          })
-        ]).create();
-        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
-      });
+          }
+        })
+      ]).create();
 
-      test('with a too-broad SDK constraint', () async {
-        await d.dir(appPath, [
-          d.pubspec({
-            "name": "test_pkg",
-            "version": "1.0.0",
-            "features": {
-              "stuff": {
-                "dependencies": {"foo": "^1.0.0"}
-              }
-            },
-            "environment": {"sdk": ">=1.24.0 <3.0.0"}
-          })
-        ]).create();
-        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
-      });
-
-      test('with an explicit default and a too-broad SDK constraint', () async {
-        await d.dir(appPath, [
-          d.pubspec({
-            "name": "test_pkg",
-            "version": "1.0.0",
-            "features": {
-              "stuff": {
-                "default": true,
-                "dependencies": {"foo": "^1.0.0"}
-              }
-            },
-            "environment": {"sdk": ">=1.24.0 <3.0.0"}
-          })
-        ]).create();
-        expectDependencyValidationError('  sdk: ">=2.0.0 <3.0.0"');
-      });
-
-      test('with an invalid dependency', () async {
-        await d.dir(appPath, [
-          d.pubspec({
-            "name": "test_pkg",
-            "version": "1.0.0",
-            "features": {
-              "stuff": {
-                "dependencies": {"foo": "1.2.3"}
-              }
-            },
-            "environment": {"sdk": ">=2.0.0 <3.0.0"}
-          })
-        ]).create();
-        expectDependencyValidationWarning('  foo: ^1.2.3');
-      });
+      expectDependencyValidationError(
+          "Packages with package features may not be published yet.");
     });
 
     test('depends on Flutter from a non-SDK source', () async {

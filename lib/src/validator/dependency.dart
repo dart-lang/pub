@@ -22,9 +22,6 @@ final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
 /// The first Dart SDK version that supported Git path dependencies.
 final _firstGitPathVersion = new Version.parse("2.0.0-dev.1.0");
 
-/// The first Dart SDK version that supported package features.
-final _firstFeatureVersion = new Version.parse("2.0.0-dev.1.0");
-
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
   /// Whether any dependency has a caret constraint.
@@ -52,8 +49,11 @@ class DependencyValidator extends Validator {
     }
 
     if (_hasFeatures) {
-      validateSdkConstraint(_firstFeatureVersion,
-          "Older versions of pub don't support package features.");
+      // TODO(nweiz): Allow packages with features to be published when we have
+      // analyzer support for telling the user that a given import requires a
+      // given feature. When we do this, verify that packages with features have
+      // an SDK constraint that's at least >=2.0.0-dev.11.0.
+      errors.add("Packages with package features may not be published yet.");
     }
   }
 
