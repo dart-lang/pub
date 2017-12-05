@@ -1,8 +1,5 @@
 name: pub
 
-# Pub is not yet ready to release as a user-accessible package.
-version: 1.0.0-unreleased
-
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
