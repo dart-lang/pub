@@ -38,7 +38,8 @@ class UnknownSource extends Source {
   PackageRef parseRef(String name, description, {String containingPath}) =>
       new PackageRef(name, this, description);
 
-  PackageId parseId(String name, Version version, description) =>
+  PackageId parseId(String name, Version version, description,
+          {String containingPath}) =>
       new PackageId(name, this, version, description);
 }
 

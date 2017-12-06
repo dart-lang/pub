@@ -66,6 +66,7 @@ main() {
     var lockfile = new LockFile.load(lockfilePath, new SourceRegistry());
     var description = lockfile.packages["foo"].description;
 
-    expect(path.isRelative(description["path"]), isTrue);
+    expect(description["relative"], isTrue);
+    expect(description["path"], path.join(d.sandbox, "foo"));
   });
 }

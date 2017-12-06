@@ -23,7 +23,8 @@ class MockSource extends Source {
     return new PackageRef(name, this, description);
   }
 
-  PackageId parseId(String name, Version version, description) =>
+  PackageId parseId(String name, Version version, description,
+          {String containingPath}) =>
       new PackageId(name, this, version, description);
 
   bool descriptionsEqual(description1, description2) =>

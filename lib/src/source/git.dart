@@ -81,7 +81,8 @@ class GitSource extends Source {
         {"url": description["url"], "ref": ref ?? "HEAD", "path": path ?? "."});
   }
 
-  PackageId parseId(String name, Version version, description) {
+  PackageId parseId(String name, Version version, description,
+      {String containingPath}) {
     if (description is! Map) {
       throw new FormatException("The description must be a map with a 'url' "
           "key.");

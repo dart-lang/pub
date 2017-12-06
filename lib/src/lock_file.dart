@@ -154,7 +154,8 @@ class LockFile {
         var source = sources[sourceName];
         var id;
         try {
-          id = source.parseId(name, version, description);
+          id = source.parseId(name, version, description,
+              containingPath: filePath);
         } on FormatException catch (ex) {
           throw new SourceSpanFormatException(
               ex.message, spec.nodes['description'].span);
