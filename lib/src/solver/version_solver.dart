@@ -2,212 +2,380 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// A back-tracking depth-first solver.
-///
-/// Attempts to find the best solution for a root package's transitive
-/// dependency graph, where a "solution" is a set of concrete package versions.
-/// A valid solution will select concrete versions for every package reached
-/// from the root package's dependency graph, and each of those packages will
-/// fit the version constraints placed on it.
-///
-/// The solver builds up a solution incrementally by traversing the dependency
-/// graph starting at the root package. When it reaches a new package, it gets
-/// the set of versions that meet the current constraint placed on it. It
-/// *speculatively* selects one version from that set and adds it to the
-/// current solution and then proceeds. If it fully traverses the dependency
-/// graph, the solution is valid and it stops.
-///
-/// If it reaches an error because:
-///
-/// - A new dependency is placed on a package that's already been selected in
-///   the solution and the selected version doesn't match the new constraint.
-///
-/// - There are no versions available that meet the constraint placed on a
-///   package.
-///
-/// - etc.
-///
-/// then the current solution is invalid. It will then backtrack to the most
-/// recent speculative version choice and try the next one. That becomes the
-/// new in-progress solution and it tries to proceed from there. It will keep
-/// doing this, traversing and then backtracking when it meets a failure until
-/// a valid solution has been found or until all possible options for all
-/// speculative choices have been exhausted.
 import 'dart:async';
+import 'dart:math' as math;
 
-import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../barback.dart' as barback;
-import '../exceptions.dart';
-import '../feature.dart';
-import '../flutter.dart' as flutter;
-import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
-import '../sdk.dart' as sdk;
-import '../source/unknown.dart';
 import '../system_cache.dart';
 import '../utils.dart';
-import 'cache.dart';
-import 'dependency.dart';
-import 'failure.dart';
-import 'type.dart';
+import 'assignment.dart';
+import 'incompatibility.dart';
+import 'package_lister.dart';
+import 'partial_solution.dart';
 import 'result.dart';
-import 'version_queue.dart';
-import 'version_selection.dart';
+import 'set_relation.dart';
+import 'term.dart';
+import 'type.dart';
 
-/// The top-level solver.
+/// The version solver that finds a set of package versions that satisfy the
+/// root package's dependencies.
 ///
-/// Keeps track of the current potential solution, and the other possible
-/// versions for speculative package selections. Backtracks and advances to the
-/// next potential solution in the case of a failure.
+/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md for details
+/// on how this solver works.
 class VersionSolver {
-  final SolveType type;
-  final SystemCache systemCache;
-  final Package root;
-
-  /// The lockfile that was present before solving.
-  final LockFile lockFile;
-
-  /// A cache of data requested during solving.
-  final SolverCache cache;
-
-  /// The set of packages that are being explicitly upgraded.
+  /// All known incompatibilities, indexed by package name.
   ///
-  /// The solver will only allow the very latest version for each of these
-  /// packages.
-  final _forceLatest = new Set<String>();
+  /// Each incompatibility is indexed by each package it refers to, and so may
+  /// appear in multiple values.
+  final _incompatibilities = <String, List<Incompatibility>>{};
 
-  /// The set of packages whose dependency is being overridden by the root
-  /// package, keyed by the name of the package.
-  ///
-  /// Any dependency on a package that appears in this map will be overriden
-  /// to use the one here.
-  final _overrides = new Map<String, PackageRange>();
+  /// The partial solution that contains package versions we've selected and
+  /// assignments we've derived from those versions and [_incompatibilities].
+  final _solution = new PartialSolution();
 
-  /// The package versions currently selected by the solver, along with the
-  /// versions which are remaining to be tried.
-  ///
-  /// Every time a package is encountered when traversing the dependency graph,
-  /// the solver must select a version for it, sometimes when multiple versions
-  /// are valid. This keeps track of which versions have been selected so far
-  /// and which remain to be tried.
-  ///
-  /// Each entry in the list is a [VersionQueue], which is an ordered queue of
-  /// versions to try for a single package. It maintains the currently selected
-  /// version for that package. When a new dependency is encountered, a queue
-  /// of versions of that dependency is pushed onto the end of the list. A
-  /// queue is removed from the list once it's empty, indicating that none of
-  /// the versions provided a solution.
-  ///
-  /// The solver tries versions in depth-first order, so only the last queue in
-  /// the list will have items removed from it. When a new constraint is placed
-  /// on an already-selected package, and that constraint doesn't match the
-  /// selected version, that will cause the current solution to fail and
-  /// trigger backtracking.
-  final _versions = <VersionQueue>[];
+  /// Package listers that lazily convert package versions' dependencies into
+  /// incompatibilities.
+  final _packageListers = <PackageRef, PackageLister>{};
 
-  /// The current set of package versions the solver has selected, along with
-  /// metadata about those packages' dependencies.
-  ///
-  /// This has the same view of the selected versions as [_versions], except for
-  /// two differences. First, [_versions] doesn't have an entry for the root
-  /// package, since it has only one valid version, but [_selection] does, since
-  /// its dependencies are relevant. Second, when backtracking, [_versions]
-  /// contains the version that's being backtracked, while [_selection] does
-  /// not.
-  VersionSelection _selection;
+  /// The type of version solve being performed.
+  final SolveType _type;
 
-  /// The number of solutions the solver has tried so far.
-  var _attemptedSolutions = 1;
+  /// The system cache in which packages are stored.
+  final SystemCache _systemCache;
 
-  /// A pubspec for pub's implicit dependencies on barback and related packages.
-  final Pubspec _implicitPubspec;
+  /// The entrypoint package, whose dependencies seed the version solve process.
+  final Package _root;
 
-  VersionSolver(SolveType type, SystemCache systemCache, Package root,
-      this.lockFile, List<String> useLatest)
-      : type = type,
-        systemCache = systemCache,
-        root = root,
-        cache = new SolverCache(type, systemCache, root),
-        _implicitPubspec = _makeImplicitPubspec(systemCache) {
-    _selection = new VersionSelection(this);
+  VersionSolver(this._type, this._systemCache, this._root, LockFile lockFile,
+      List<String> useLatest);
 
-    for (var package in useLatest) {
-      _forceLatest.add(package);
-    }
-
-    for (var override in root.dependencyOverrides.values) {
-      _overrides[override.name] = override;
-    }
-  }
-
-  /// Creates [_implicitPubspec].
-  static Pubspec _makeImplicitPubspec(SystemCache systemCache) {
-    var dependencies = <PackageRange>[];
-    barback.pubConstraints.forEach((name, constraint) {
-      dependencies.add(
-          systemCache.sources.hosted.refFor(name).withConstraint(constraint));
-    });
-
-    return new Pubspec("pub itself", dependencies: dependencies);
-  }
-
-  /// Run the solver.
-  ///
-  /// Completes with a list of specific package versions if successful or an
-  /// error if it failed to find a solution.
+  /// Finds a set of dependencies that match the root package's constraints, or
+  /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
-    var stopwatch = new Stopwatch();
+    var stopwatch = new Stopwatch()..start();
 
-    _logParameters();
+    var rootId = new PackageId.root(_root);
+    _solution.assign(rootId, true);
+    _log("selecting ${rootId.toTerseString()}");
+    for (var dependency in _root.immediateDependencies.values) {
+      _addIncompatibility(new Incompatibility(
+          [new Term(rootId, true), new Term(dependency, false)]));
+    }
 
-    // Sort the overrides by package name to make sure they're deterministic.
-    var overrides = _overrides.values.toList();
-    overrides.sort((a, b) => a.name.compareTo(b.name));
+    var next = _root.name;
+    while (next != null) {
+      _propagate(next);
+      next = await _choosePackageVersion();
+    }
 
-    try {
-      stopwatch.start();
+    var result = await _result();
 
-      // Pre-cache the root package's known pubspec.
-      var rootID = new PackageId.root(root);
-      await _selection.select(rootID);
+    // Gather some solving metrics.
+    log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
+        'Tried ${_solution.attemptedSolutions} solutions.');
 
-      _checkPubspecMatchesSdkConstraint(root.pubspec);
+    return result;
+  }
 
-      logSolve();
-      var packages = await _solve();
+  /// Performs [unit propagation][] on incompatibilities transitively related to
+  /// [package] to derive new assignments for [_solution].
+  ///
+  /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
+  void _propagate(String package) {
+    var changed = new Set.from([package]);
 
-      var pubspecs = <String, Pubspec>{};
-      for (var id in packages) {
-        pubspecs[id.name] = await _getPubspec(id);
+    while (!changed.isEmpty) {
+      var package = changed.first;
+      changed.remove(package);
+
+      // Iterate in reverse because conflict resolution tends to produce more
+      // general incompatibilities as time goes on. If we look at those first,
+      // we can derive stronger assignments sooner and more eagerly find
+      // conflicts.
+      for (var incompatibility in _incompatibilities[package].reversed) {
+        var result = _propagateIncompatibility(incompatibility);
+        if (result == #conflict) {
+          // If [incompatibility] is satisfied by [_solution], we use
+          // [_resolveConflict] to determine the root cause of the conflict as a
+          // new incompatibility. It also backjumps to a point in [_solution]
+          // where that incompatibility will allow us to derive new assignments
+          // that avoid the conflict.
+          var rootCause = _resolveConflict(incompatibility);
+
+          // Backjumping erases all the assignments we did at the previous
+          // decision level, so we clear [changed] and refill it with the
+          // newly-propagated assignment.
+          changed.clear();
+          changed.add(_propagateIncompatibility(rootCause) as String);
+          break;
+        } else if (result is String) {
+          changed.add(result);
+        }
+      }
+    }
+  }
+
+  /// If [incompatibility] is [almost satisfied][] by [_solution], adds the
+  /// negation of the unsatisfied term to [_solution].
+  ///
+  /// [almost satisfied]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility
+  ///
+  /// If [incompatibility] is satisfied by [_solution], returns `#conflict`.
+  /// Otherwise, returns `#none`.
+  dynamic /* String | #none | #conflict */ _propagateIncompatibility(
+      Incompatibility incompatibility) {
+    // The first entry in `incompatibility.terms` that's not yet satisfied by
+    // [_solution], if one exists. If we find more than one, [_solution] is
+    // inconclusive for [incompatibility] and we can't deduce anything.
+    Term unsatisfied;
+
+    for (var i = 0; i < incompatibility.terms.length; i++) {
+      var term = incompatibility.terms[i];
+      var relation = _solution.relation(term);
+
+      if (relation == SetRelation.disjoint) {
+        // If [term] is already contradicted by [_solution], then
+        // [incompatibility] is contradicted as well and there's nothing new we
+        // can deduce from it.
+        return #none;
+      } else if (relation == SetRelation.overlapping) {
+        // If more than one term is inconclusive, we can't deduce anything about
+        // [incompatibility].
+        if (unsatisfied != null) return #none;
+
+        // If exactly one term in [incompatibility] is inconclusive, then it's
+        // almost satisfied and [term] is the unsatisfied term. We can add the
+        // inverse of the term to [_solution].
+        unsatisfied = term;
+      }
+    }
+
+    // If *all* terms in [incompatibility] are satsified by [_solution], then
+    // [incompatibility] is satisfied and we have a conflict.
+    if (unsatisfied == null) return #conflict;
+
+    _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
+        "${unsatisfied.package.toTerseString()}");
+    _solution.assign(unsatisfied.package, !unsatisfied.isPositive,
+        cause: incompatibility);
+    return unsatisfied.package.name;
+  }
+
+  /// Given an [incompatibility] that's satisfied by [_solution], [conflict
+  /// resolution][] constructs a new incompatibility that encapsulates the root
+  /// cause of the conflict and backtracks [_solution] until the new
+  /// incompatibility will allow [_propagate] to deduce new assignments.
+  ///
+  /// [conflict resolution]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+  ///
+  /// Adds the new incompatibility to [_incompatibilities] and returns it.
+  Incompatibility _resolveConflict(Incompatibility incompatibility) {
+    _log("${log.red(log.bold("conflict"))}: $incompatibility");
+
+    var newIncompatibility = false;
+    while (true) {
+      // The term in `incompatibility.terms` that was most recently satisfied by
+      // [_solution].
+      Term mostRecentTerm;
+
+      // The earliest assignment in [_solution] such that [incompatibility] is
+      // satisfied by [_solution.assignments] up to and including this
+      // assignment.
+      Assignment mostRecentSatisfier;
+
+      // The difference between [mostRecentSatisfier] and [mostRecentTerm];
+      // that is, the versions that are allowed by [mostRecentSatisfier] and not
+      // by [mostRecentTerm]. This is `null` if [mostRecentSatisfier] totally
+      // satisfies [mostRecentTerm].
+      Term difference;
+
+      // The decision level of the earliest assignment in [_solution] *before*
+      // [mostRecentSatisfier] such that [incompatibility] is satisfied by
+      // [_solution.assignments] up to and including this assignment plus
+      // [mostRecentSatisfier].
+      var maxDecisionLevel = 0;
+
+      for (var term in incompatibility.terms) {
+        var satisfier = _solution.satisfier(term);
+        if (mostRecentSatisfier == null) {
+          mostRecentTerm = term;
+          mostRecentSatisfier = satisfier;
+        } else if (mostRecentSatisfier.index < satisfier.index) {
+          maxDecisionLevel =
+              math.max(maxDecisionLevel, mostRecentSatisfier.decisionLevel);
+          mostRecentTerm = term;
+          mostRecentSatisfier = satisfier;
+          difference = null;
+        } else {
+          maxDecisionLevel =
+              math.max(maxDecisionLevel, satisfier.decisionLevel);
+        }
+
+        if (mostRecentTerm == term) {
+          // If [mostRecentSatisfier] doesn't satisfy [mostRecentTerm] on its
+          // own, then the next-most-recent satisfier may be the one that
+          // satisfies the remainder.
+          difference = mostRecentSatisfier.difference(mostRecentTerm);
+          if (difference != null) {
+            maxDecisionLevel = math.max(maxDecisionLevel,
+                _solution.satisfier(difference.inverse).decisionLevel);
+          }
+        }
       }
 
-      return new SolveResult.success(
-          systemCache.sources,
-          root,
-          lockFile,
-          packages,
-          overrides,
-          pubspecs,
-          _getAvailableVersions(packages),
-          _attemptedSolutions);
-    } on SolveFailure catch (error) {
-      // Wrap a failure in a result so we can attach some other data.
-      return new SolveResult.failure(systemCache.sources, root, lockFile,
-          overrides, error, _attemptedSolutions);
-    } finally {
-      // Gather some solving metrics.
-      var buffer = new StringBuffer();
-      buffer.writeln('${runtimeType} took ${stopwatch.elapsed} seconds.');
-      buffer.writeln('- Tried $_attemptedSolutions solutions');
-      buffer.writeln(cache.describeResults());
-      log.solver(buffer);
+      // If we have a conflict at the root level, there's no hope of finding a
+      // solution and version solving has failed.
+      if (mostRecentSatisfier.decisionLevel == 0) {
+        throw "Tough luck, chuck!";
+      }
+
+      // If [mostRecentSatisfier] is the only satisfier left at its decision
+      // level, or if it has no cause (indicating that it's a decision rather
+      // than a derivation), then [incompatibility] is the root cause. We then
+      // backjump to [maxDecisionLevel], where [incompatibility] is guaranteed
+      // to allow [_propagate] to produce more assignments.
+      if (maxDecisionLevel < mostRecentSatisfier.decisionLevel ||
+          mostRecentSatisfier.cause == null) {
+        _solution.backtrack(maxDecisionLevel);
+        if (newIncompatibility) _addIncompatibility(incompatibility);
+        return incompatibility;
+      }
+
+      // Create a new incompatibility by combining [incompatibility] with the
+      // incompatibility that caused [mostRecentSatisfier] to be assigned. Doing
+      // this iteratively constructs an incompatibility that's guaranteed to be
+      // true (that is, we know for sure no solution will satisfy the
+      // incompatibility) while also approximating the intuitive notion of the
+      // "root cause" of the conflict.
+      var newTerms = <Term>[]
+        ..addAll(incompatibility.terms.where((term) => term != mostRecentTerm))
+        ..addAll(mostRecentSatisfier.cause.terms
+            .where((term) => term.package != mostRecentSatisfier.package));
+
+      // The [mostRecentSatisfier] may not satisfy [mostRecentTerm] on its own
+      // if there are a collection of constraints on [mostRecentTerm] that
+      // only satisfy it together. For example, if [mostRecentTerm] is
+      // `foo ^1.0.0` and [_solution] contains `[foo >=1.0.0,
+      // foo <2.0.0]`, then [mostRecentSatisfier] will be `foo <2.0.0` even
+      // though it doesn't totally satisfy `foo ^1.0.0`.
+      //
+      // In this case, we add `not (mostRecentSatisfier \ mostRecentTerm)` to
+      // the incompatibility as well, See [the algorithm documentation][] for
+      // details.
+      //
+      // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+      if (difference != null) newTerms.add(difference.inverse);
+
+      incompatibility = new Incompatibility(newTerms);
+      newIncompatibility = true;
+
+      var partially = difference == null ? "" : " partially";
+      var bang = log.red('!');
+      _log('$bang $mostRecentTerm is$partially satisfied by '
+          '$mostRecentSatisfier');
+      _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
+      _log("$bang thus: $incompatibility");
     }
+  }
+
+  /// Tries to select a version of a required package.
+  ///
+  /// Returns the name of the package whose incompatibilities should be
+  /// propagated by [_propagate], or `null` indicating that version solving is
+  /// complete and a solution has been found.
+  Future<String> _choosePackageVersion() async {
+    var unsatisfied = _solution.positive.values
+        .where((term) => term.package is! PackageId)
+        .map((term) => term.package as PackageRange)
+        .toList();
+    if (unsatisfied.isEmpty) return null;
+
+    /// Prefer packages with as few remaining versions as possible, so that if a
+    /// conflict is necessary it's forced quickly.
+    var package = await minByAsync(unsatisfied,
+        (package) => _packageLister(package).countVersions(package.constraint));
+
+    var version =
+        await _packageLister(package).latestVersion(package.constraint);
+
+    if (version == null) {
+      // If there are no versions that satisfy [package.constraint], add an
+      // incompatibility that indicates that.
+      _addIncompatibility(new Incompatibility([new Term(package, true)]));
+      return package.name;
+    }
+
+    var conflict = false;
+    for (var incompatibility
+        in await _packageLister(package).incompatibilitiesFor(version)) {
+      _addIncompatibility(incompatibility);
+
+      // If an incompatibility is already satisfied, then selecting [version]
+      // would cause a conflict. We'll continue adding its dependencies, then go
+      // back to unit propagation which will guide us to choose a better
+      // version.
+      conflict = conflict ||
+          incompatibility.terms.every((term) =>
+              term.package.name == package.name || _solution.satisfies(term));
+    }
+
+    if (!conflict) {
+      _solution.assign(version, true, decision: true);
+      _log("selecting ${version.toTerseString()}");
+    }
+
+    return package.name;
+  }
+
+  /// Adds [incompatibility] to [_incompatibilities].
+  void _addIncompatibility(Incompatibility incompatibility) {
+    _log("fact: $incompatibility");
+
+    for (var term in incompatibility.terms) {
+      _incompatibilities
+          .putIfAbsent(term.package.name, () => [])
+          .add(incompatibility);
+    }
+  }
+
+  /// Creates a [SolveResult] from the decisions in [_solution].
+  Future<SolveResult> _result() async {
+    var packages = _solution.assignments
+        .where((assignment) => assignment.package is PackageId)
+        .map((assignment) => assignment.package as PackageId)
+        .toList();
+
+    var pubspecs = <String, Pubspec>{};
+    for (var id in packages) {
+      if (id.isRoot) {
+        pubspecs[id.name] = _root.pubspec;
+      } else {
+        pubspecs[id.name] = await _systemCache.source(id.source).describe(id);
+      }
+    }
+
+    var availableVersions = <String, List<Version>>{};
+    for (var id in packages) {
+      if (id.isRoot) {
+        availableVersions[id.name] = [id.version];
+      }
+    }
+
+    return new SolveResult.success(
+        _systemCache.sources,
+        _root,
+        new LockFile.empty(),
+        packages,
+        [],
+        pubspecs,
+        _getAvailableVersions(packages),
+        _solution.attemptedSolutions);
   }
 
   /// Generates a map containing all of the known available versions for each
@@ -220,7 +388,7 @@ class VersionSolver {
   Map<String, List<Version>> _getAvailableVersions(List<PackageId> packages) {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
-      var cached = cache.getCachedVersions(package.toRef());
+      var cached = _packageListers[package.toRef()]?.cachedVersions;
       // If the version list was never requested, just use the one known
       // version.
       var versions = cached == null
@@ -233,644 +401,18 @@ class VersionSolver {
     return availableVersions;
   }
 
-  /// Gets the version of [package] currently locked in the lock file.
-  ///
-  /// Returns `null` if it isn't in the lockfile (or has been unlocked).
-  PackageId getLocked(String package) {
-    if (type == SolveType.GET) return lockFile.packages[package];
-
-    // When downgrading, we don't want to force the latest versions of
-    // non-hosted packages, since they don't support multiple versions and thus
-    // can't be downgraded.
-    if (type == SolveType.DOWNGRADE) {
-      var locked = lockFile.packages[package];
-      if (locked != null && !locked.source.hasMultipleVersions) return locked;
-    }
-
-    if (_forceLatest.isEmpty || _forceLatest.contains(package)) return null;
-    return lockFile.packages[package];
-  }
-
-  /// Gets the package [name] that's currently contained in the lockfile if it
-  /// matches the current constraint and has the same source and description as
-  /// other references to that package.
-  ///
-  /// Returns `null` otherwise.
-  PackageId _getValidLocked(String name) {
-    var package = getLocked(name);
-    if (package == null) return null;
-
-    var constraint = _selection.getConstraint(name);
-    if (!constraint.allows(package.version)) {
-      logSolve('$package is locked but does not match $constraint');
-      return null;
-    } else {
-      logSolve('$package is locked');
-    }
-
-    var required = _selection.getRequiredDependency(name);
-    if (required != null && !package.samePackage(required.dep)) return null;
-
-    return package;
-  }
-
-  /// Tries to find the best set of versions that meet the constraints.
-  ///
-  /// Selects matching versions of unselected packages, or backtracks if there
-  /// are no such versions.
-  Future<List<PackageId>> _solve() async {
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-    await Future.doWhile(() async {
-      // Avoid starving the event queue by waiting for a timer-level event.
-      await new Future(() {});
-
-      // If there are no more packages to traverse, we've traversed the whole
-      // graph.
-      var ref = _selection.nextUnselected;
-      if (ref == null) return false;
-
-      var queue;
-      try {
-        queue = await _versionQueueFor(ref);
-      } on SolveFailure catch (error) {
-        // TODO(nweiz): adjust the priority of [ref] in the unselected queue
-        // since we now know it's problematic. We should reselect it as soon as
-        // we've selected a different version of one of its dependers.
-
-        // There are no valid versions of [ref] to select, so we have to
-        // backtrack and unselect some previously-selected packages.
-        if (await _backtrack()) return true;
-
-        // Backtracking failed, which means we're out of possible solutions.
-        // Throw the error that caused us to try backtracking.
-        if (error is! NoVersionException) rethrow;
-
-        // If we got a NoVersionException, convert it to a
-        // non-version-specific one so that it's clear that there aren't *any*
-        // acceptable versions that satisfy the constraint.
-        throw new NoVersionException(error.package, null,
-            (error as NoVersionException).constraint, error.dependencies);
-      }
-
-      await _selection.select(queue.current);
-      _versions.add(queue);
-
-      logSolve();
-      return true;
-    });
-
-    // If we got here, we successfully found a solution.
-    return _selection.ids.where((id) => !id.isMagic).toList();
-  }
-
-  /// Creates a queue of available versions for [ref].
-  ///
-  /// The returned queue starts at a version that is valid according to the
-  /// current dependency constraints. If no such version is available, throws a
-  /// [SolveFailure].
-  Future<VersionQueue> _versionQueueFor(PackageRef ref) async {
-    if (ref.isRoot) {
-      return await VersionQueue.create(
-          new PackageId.root(root), () => new Future.value([]));
-    }
-
-    var locked = _getValidLocked(ref.name);
-    var queue = await VersionQueue.create(
-        locked, () => _getAllowedVersions(ref, locked));
-
-    await _findValidVersion(queue);
-
-    return queue;
-  }
-
-  /// Gets all versions of [ref] that could be selected, other than [locked].
-  Future<Iterable<PackageId>> _getAllowedVersions(
-      PackageRef ref, PackageId locked) async {
-    var allowed;
-    try {
-      allowed = await cache.getVersions(ref);
-    } on PackageNotFoundException catch (error) {
-      // Show the user why the package was being requested.
-      throw new DependencyNotFoundException(
-          ref.name, error, _selection.getDependenciesOn(ref.name).toList());
-    }
-
-    if (_forceLatest.contains(ref.name)) allowed = [allowed.first];
-
-    if (locked != null) {
-      allowed = allowed.where((version) => version != locked);
-    }
-
-    return allowed;
-  }
-
-  /// Backtracks from the current failed solution and determines the next
-  /// solution to try.
-  ///
-  /// This backjumps based on the cause of previous failures to minimize
-  /// backtracking.
-  ///
-  /// Returns `true` if there is a new solution to try.
-  Future<bool> _backtrack() async {
-    // Bail if there is nothing to backtrack to.
-    if (_versions.isEmpty) return false;
-
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-
-    // Advance past the current version of the leaf-most package.
-    await Future.doWhile(() async {
-      // Move past any packages that couldn't have led to the failure.
-      await Future.doWhile(() async {
-        if (_versions.isEmpty || _versions.last.hasFailed) return false;
-        var queue = _versions.removeLast();
-        assert(_selection.ids.last == queue.current);
-        await _selection.unselectLast();
-        return true;
-      });
-
-      if (_versions.isEmpty) return false;
-
-      var queue = _versions.last;
-      var name = queue.current.name;
-      assert(_selection.ids.last == queue.current);
-      await _selection.unselectLast();
-
-      // Fast forward through versions to find one that's valid relative to the
-      // current constraints.
-      var foundVersion = false;
-      if (await queue.advance()) {
-        try {
-          await _findValidVersion(queue);
-          foundVersion = true;
-        } on SolveFailure {
-          // `foundVersion` is already false.
-        }
-      }
-
-      // If we found a valid version, add it to the selection and stop
-      // backtracking. Otherwise, backtrack through this package and on.
-      if (foundVersion) {
-        await _selection.select(queue.current);
-        logSolve();
-        return false;
-      } else {
-        logSolve('no more versions of $name, backtracking');
-        _versions.removeLast();
-        return true;
-      }
-    });
-
-    if (_versions.isNotEmpty) _attemptedSolutions++;
-    return _versions.isNotEmpty;
-  }
-
-  /// Rewinds [queue] until it reaches a version that's valid relative to the
-  /// current constraints.
-  ///
-  /// If the first version is valid, no rewinding will be done. If no version is
-  /// valid, this throws a [SolveFailure] explaining why.
-  Future _findValidVersion(VersionQueue queue) {
-    // TODO(nweiz): Use real while loops when issue 23394 is fixed.
-    return Future.doWhile(() async {
-      try {
-        await _checkVersion(queue.current);
-        return false;
-      } on SolveFailure {
-        var name = queue.current.name;
-        if (await queue.advance()) return true;
-
-        // If we've run out of valid versions for this package, mark its oldest
-        // depender as failing. This ensures that we look at graphs in which the
-        // package isn't selected at all.
-        _fail(_selection.getDependenciesOn(name).first.depender.name);
-
-        // TODO(nweiz): Throw a more detailed error here that combines all the
-        // errors that were thrown for individual versions and fully explains
-        // why we couldn't select any versions.
-
-        // The queue is out of versions, so throw the final error we
-        // encountered while trying to find one.
-        rethrow;
-      }
-    });
-  }
-
-  /// Checks whether the package identified by [id] is valid relative to the
-  /// current constraints.
-  ///
-  /// If it's not, throws a [SolveFailure] explaining why.
-  Future _checkVersion(PackageId id) async {
-    _checkVersionMatchesConstraint(id);
-
-    var pubspec;
-    try {
-      pubspec = await _getPubspec(id);
-    } on PubspecException catch (error) {
-      // The lockfile for the pubspec couldn't be parsed,
-      log.fine("Failed to parse pubspec for $id:\n$error");
-      throw new NoVersionException(id.name, null, id.version, []);
-    } on PackageNotFoundException {
-      // We can only get here if the lockfile refers to a specific package
-      // version that doesn't exist (probably because it was yanked).
-      throw new NoVersionException(id.name, null, id.version, []);
-    }
-
-    _checkPubspecMatchesSdkConstraint(pubspec);
-    _checkPubspecMatchesFeatures(pubspec);
-
-    for (var feature in _selection.enabledFeatures(id.name, pubspec.features)) {
-      _checkFeatureMatchesSdk(id, feature);
-    }
-
-    await _checkDependencies(id, await depsFor(id));
-
-    return true;
-  }
-
-  /// Throws a [SolveFailure] if [id] doesn't match existing version constraints
-  /// on the package.
-  void _checkVersionMatchesConstraint(PackageId id) {
-    var constraint = _selection.getConstraint(id.name);
-    if (!constraint.allows(id.version)) {
-      var deps = _selection.getDependenciesOn(id.name);
-
-      for (var dep in deps) {
-        if (dep.dep.constraint.allows(id.version)) continue;
-        _fail(dep.depender.name);
-      }
-
-      logSolve(
-          "version ${id.version} of ${id.name} doesn't match $constraint:\n" +
-              _selection.describeDependencies(id.name));
-      throw new NoVersionException(
-          id.name, id.version, constraint, deps.toList());
-    }
-  }
-
-  /// Throws a [SolveFailure] if [pubspec]'s SDK constraint isn't compatible
-  /// with the current SDK.
-  void _checkPubspecMatchesSdkConstraint(Pubspec pubspec) {
-    if (_overrides.containsKey(pubspec.name)) return;
-
-    if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
-      throw new BadSdkVersionException(
-          pubspec.name,
-          'Package ${pubspec.name} requires SDK version '
-          '${pubspec.dartSdkConstraint} but the current SDK is '
-          '${sdk.version}.');
-    }
-
-    if (pubspec.flutterSdkConstraint != null) {
-      if (!flutter.isAvailable) {
-        throw new BadSdkVersionException(
-            pubspec.name,
-            'Package ${pubspec.name} requires the Flutter SDK, which is not '
-            'available.');
-      }
-
-      if (!pubspec.flutterSdkConstraint.allows(flutter.version)) {
-        throw new BadSdkVersionException(
-            pubspec.name,
-            'Package ${pubspec.name} requires Flutter SDK version '
-            '${pubspec.flutterSdkConstraint} but the current SDK is '
-            '${flutter.version}.');
-      }
-    }
-  }
-
-  /// Throws a [SolveFailure] if [pubspec] doesn't have features that are
-  /// required for its package.
-  void _checkPubspecMatchesFeatures(Pubspec pubspec) {
-    var dependencies = _selection.getDependenciesOn(pubspec.name);
-    for (var dep in dependencies) {
-      dep.dep.features.forEach((featureName, type) {
-        if (type != FeatureDependency.required) return;
-        if (pubspec.features.containsKey(featureName)) return;
-
-        throw new MissingFeatureException(
-            pubspec.name, pubspec.version, featureName, dependencies);
-      });
-    }
-  }
-
-  /// Throws a [SolveFailure] if [deps] are inconsistent with the existing state
-  /// of the version solver.
-  Future _checkDependencies(
-      PackageId depender, Iterable<PackageRange> deps) async {
-    for (var dep in deps) {
-      if (dep.isMagic) continue;
-
-      var dependency = new Dependency(depender, dep);
-      var allDeps = _selection.getDependenciesOn(dep.name).toList();
-      allDeps.add(dependency);
-
-      _checkDependencyMatchesMetadata(dependency, allDeps);
-      await _checkDependencyMatchesSelection(dependency, allDeps);
-      _checkDependencyMatchesConstraint(dependency, allDeps);
-    }
-  }
-
-  /// Throws a [SolveFailure] if [dep] is inconsistent with existing
-  /// dependencies on the same package.
-  void _checkDependencyMatchesConstraint(
-      Dependency dep, List<Dependency> allDeps) {
-    var depConstraint = _selection.getConstraint(dep.dep.name);
-    if (!depConstraint.allowsAny(dep.dep.constraint)) {
-      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
-        if (otherDep.dep.constraint.allowsAny(dep.dep.constraint)) continue;
-        _fail(otherDep.depender.name);
-      }
-
-      logSolve('inconsistent constraints on ${dep.dep.name}:\n'
-          '  $dep\n' +
-          _selection.describeDependencies(dep.dep.name));
-      throw new DisjointConstraintException(dep.dep.name, allDeps);
-    }
-  }
-
-  /// Throws a [SolveFailure] if the source and description of [dep] doesn't
-  /// match the existing dependencies on the same package.
-  void _checkDependencyMatchesMetadata(
-      Dependency dep, List<Dependency> allDeps) {
-    var required = _selection.getRequiredDependency(dep.dep.name);
-    if (required == null) return;
-    _checkDependencyMatchesRequiredMetadata(dep, required.dep, allDeps);
-  }
-
-  /// Like [_checkDependencyMatchesMetadata], but takes a [required] range whose
-  /// source and description must be matched rather than using the range defined
-  /// by [_selection].
-  void _checkDependencyMatchesRequiredMetadata(
-      Dependency dep, PackageRange required, List<Dependency> allDeps) {
-    if (dep.dep.source != required.source) {
-      // Mark the dependers as failing rather than the package itself, because
-      // no version from this source will be compatible.
-      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
-        _fail(otherDep.depender.name);
-      }
-
-      logSolve('inconsistent source "${dep.dep.source}" for ${dep.dep.name}:\n'
-          '  $dep\n' +
-          _selection.describeDependencies(dep.dep.name));
-      throw new SourceMismatchException(dep.dep.name, allDeps);
-    }
-
-    if (!dep.dep.samePackage(required)) {
-      // Mark the dependers as failing rather than the package itself, because
-      // no version with this description will be compatible.
-      for (var otherDep in _selection.getDependenciesOn(dep.dep.name)) {
-        _fail(otherDep.depender.name);
-      }
-
-      logSolve(
-          'inconsistent description "${dep.dep.description}" for ${dep.dep.name}:\n'
-              '  $dep\n' +
-              _selection.describeDependencies(dep.dep.name));
-      throw new DescriptionMismatchException(dep.dep.name, allDeps);
-    }
-  }
-
-  /// Throws a [SolveFailure] if [dep] doesn't match the version of the package
-  /// that has already been selected.
-  Future _checkDependencyMatchesSelection(
-      Dependency dep, List<Dependency> allDeps) async {
-    var selected = _selection.selected(dep.dep.name);
-    if (selected == null) return;
-
-    if (!dep.dep.constraint.allows(selected.version)) {
-      _fail(dep.dep.name);
-
-      logSolve(
-          "constraint doesn't match selected version ${selected.version} of "
-          "${dep.dep.name}:\n"
-          "  $dep");
-      throw new NoVersionException(
-          dep.dep.name, selected.version, dep.dep.constraint, allDeps);
-    }
-
-    var pubspec = await _getPubspec(selected);
-
-    // Verify that any features enabled by [dep] have valid dependencies.
-    var newlyEnabledFeatures = Feature
-        .featuresEnabledBy(pubspec.features, dep.dep.features)
-        .difference(_selection.enabledFeatures(dep.dep.name, pubspec.features));
-    for (var feature in newlyEnabledFeatures) {
-      _checkFeatureMatchesSdk(selected, feature);
-      await _checkDependencies(selected, feature.dependencies);
-    }
-
-    // Verify that all features that are depended on actually exist in the package.
-    dep.dep.features.forEach((featureName, type) {
-      if (type != FeatureDependency.required) return;
-      if (pubspec.features.containsKey(featureName)) return;
-
-      _fail(dep.dep.name);
-
-      logSolve("selected version of ${dep.dep.name} doesn't have feature "
-          "$featureName:\n"
-          "  $dep");
-      throw new MissingFeatureException(
-          dep.dep.name, selected.version, featureName, allDeps);
-    });
-  }
-
-  /// Throws a [SolveFailure] if [feature]'s SDK constraints aren't compatible
-  /// with the current SDK.
-  void _checkFeatureMatchesSdk(PackageId id, Feature feature) {
-    if (_overrides.containsKey(id.name)) return;
-
-    if (!feature.dartSdkConstraint.allows(sdk.version)) {
-      throw new BadSdkVersionException(
-          id.name,
-          'Package ${id.name} feature ${feature.name} requires SDK version '
-          '${feature.dartSdkConstraint} but the current SDK is '
-          '${sdk.version}.');
-    }
-
-    if (feature.flutterSdkConstraint != null) {
-      if (!flutter.isAvailable) {
-        throw new BadSdkVersionException(
-            id.name,
-            'Package ${id.name} feature ${feature.name} requires the Flutter '
-            'SDK, which is not available.');
-      }
-
-      if (!feature.flutterSdkConstraint.allows(flutter.version)) {
-        throw new BadSdkVersionException(
-            id.name,
-            'Package ${id.name} feature ${feature.name} requires Flutter SDK '
-            'version ${feature.flutterSdkConstraint} but the current SDK is '
-            '${flutter.version}.');
-      }
-    }
-  }
-
-  /// Marks the package named [name] as having failed.
-  ///
-  /// This will cause the backtracker not to jump over this package.
-  void _fail(String name) {
-    // Don't mark the root package as failing because it's not in [_versions]
-    // and there's only one version of it anyway.
-    if (name == root.name) return;
-    _versions.firstWhere((queue) => queue.current.name == name).fail();
-  }
-
-  /// Returns the dependencies of the package identified by [id].
-  ///
-  /// This takes overrides, dev dependencies, and features into account when
-  /// neccessary.
-  Future<Set<PackageRange>> depsFor(PackageId id) async {
-    var pubspec = await _getPubspec(id);
-    var deps = <String, List<PackageRange>>{};
-    _addDependencies(deps, pubspec.dependencies.values);
-
-    for (var feature in _selection.enabledFeatures(id.name, pubspec.features)) {
-      _addDependencies(deps, feature.dependencies);
-    }
-
-    if (id.isRoot) {
-      // Include dev dependencies of the root package.
-      _addDependencies(deps, pubspec.devDependencies.values);
-
-      // Add all overrides. This ensures a dependency only present as an
-      // override is still included.
-      for (var range in _overrides.values) {
-        deps[range.name] = [range];
-      }
-    }
-
-    return _processDependencies(id, deps);
-  }
-
-  /// Returns the dependencies of package identified by [id] that are
-  /// newly-activated by [features].
-  Future<Set<PackageRange>> newDepsFor(
-      PackageId id, Map<String, FeatureDependency> features) async {
-    var pubspec = await _getPubspec(id);
-    if (pubspec.features.isEmpty) return const UnmodifiableSetView.empty();
-
-    var deps = <String, List<PackageRange>>{};
-    var newlyEnabledFeatures = Feature
-        .featuresEnabledBy(pubspec.features, features)
-        .difference(_selection.enabledFeatures(id.name, pubspec.features));
-    for (var feature in newlyEnabledFeatures) {
-      _addDependencies(deps, feature.dependencies);
-    }
-
-    return _processDependencies(id, deps);
-  }
-
-  /// Adds [ranges] to [deps].
-  void _addDependencies(
-      Map<String, List<PackageRange>> deps, List<PackageRange> ranges) {
-    for (var range in ranges) {
-      deps.putIfAbsent(range.name, () => []).add(range);
-    }
-  }
-
-  /// Post-processes [deps] before returning it from [depsFor] or
-  /// [depsForFeature].
-  ///
-  /// This may modify [deps].
-  Set<PackageRange> _processDependencies(
-      PackageId id, Map<String, List<PackageRange>> depsByName) {
-    // Make sure that all active dependencies on a given package have the same
-    // source and description.
-    var deps = new Set<PackageRange>();
-    for (var ranges in depsByName.values) {
-      deps.addAll(ranges);
-      if (ranges.length == 1) continue;
-
-      var required = ranges.first;
-      var allDeps = _selection.getDependenciesOn(required.name).toList();
-
-      var dependencies =
-          ranges.map((range) => new Dependency(id, range)).toList();
-      allDeps.addAll(dependencies);
-
-      for (var dependency in dependencies.skip(1)) {
-        _checkDependencyMatchesRequiredMetadata(dependency, required, allDeps);
-      }
-    }
-
-    if (id.isRoot) {
-      // Replace any overridden dependencies.
-      deps = deps.map((dep) {
-        var override = _overrides[dep.name];
-        if (override != null) return override;
-
-        // Not overridden.
-        return dep;
-      }).toSet();
-    } else {
-      // Ignore any overridden dependencies.
-      deps.removeWhere((dep) => _overrides.containsKey(dep.name));
-
-      // If an overridden dependency depends on the root package, ignore that
-      // dependency. This ensures that users can work on the next version of one
-      // side of a circular dependency easily.
-      if (_overrides.containsKey(id.name)) {
-        deps.removeWhere((dep) => dep.name == root.name);
-      }
-    }
-
-    // Make sure the package doesn't have any bad dependencies.
-    for (var dep in deps.toSet()) {
-      if (!dep.isRoot && dep.source is UnknownSource) {
-        throw new UnknownSourceException(id.name, [new Dependency(id, dep)]);
-      }
-
-      if (dep.name == 'barback') {
-        deps.add(new PackageRange.magic('pub itself'));
-      }
-    }
-
-    return deps;
-  }
-
-  /// Loads and returns the pubspec for [id].
-  Future<Pubspec> _getPubspec(PackageId id) async {
-    if (id.isRoot) return root.pubspec;
-    if (id.isMagic && id.name == 'pub itself') return _implicitPubspec;
-
-    return await withDependencyType(root.dependencyType(id.name),
-        () => systemCache.source(id.source).describe(id));
-  }
-
-  /// Logs the initial parameters to the solver.
-  void _logParameters() {
-    var buffer = new StringBuffer();
-    buffer.writeln("Solving dependencies:");
-    for (var package in root.dependencies.values) {
-      buffer.write("- $package");
-      var locked = getLocked(package.name);
-      if (_forceLatest.contains(package.name)) {
-        buffer.write(" (use latest)");
-      } else if (locked != null) {
-        var version = locked.version;
-        buffer.write(" (locked to $version)");
-      }
-      buffer.writeln();
-    }
-    log.solver(buffer.toString().trim());
+  /// Returns the package lister for [package], creating it if necessary.
+  PackageLister _packageLister(PackageName package) {
+    var ref = package.toRef();
+    return _packageListers.putIfAbsent(
+        ref, () => new PackageLister(_systemCache, ref));
   }
 
   /// Logs [message] in the context of the current selected packages.
   ///
   /// If [message] is omitted, just logs a description of leaf-most selection.
-  void logSolve([String message]) {
-    if (message == null) {
-      if (_versions.isEmpty) {
-        message = "* start at root";
-      } else {
-        message = "* select ${_versions.last.current}";
-      }
-    } else {
-      // Otherwise, indent it under the current selected package.
-      message = prefixLines(message);
-    }
-
+  void _log([String message]) {
     // Indent for the previous selections.
-    log.solver(prefixLines(message, prefix: '| ' * _versions.length));
+    log.solver(prefixLines(message, prefix: '  ' * _solution.decisionLevel));
   }
 }
