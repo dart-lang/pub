@@ -16,6 +16,7 @@ import '../system_cache.dart';
 import '../utils.dart';
 import 'assignment.dart';
 import 'incompatibility.dart';
+import 'incompatibility_cause.dart';
 import 'package_lister.dart';
 import 'partial_solution.dart';
 import 'result.dart';
@@ -65,7 +66,8 @@ class VersionSolver {
     _log("selecting ${rootId.toTerseString()}");
     for (var dependency in _root.immediateDependencies.values) {
       _addIncompatibility(new Incompatibility(
-          [new Term(rootId, true), new Term(dependency, false)]));
+          [new Term(rootId, true), new Term(dependency, false)],
+          IncompatibilityCause.dependency));
     }
 
     var next = _root.name;
@@ -273,7 +275,8 @@ class VersionSolver {
       // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
       if (difference != null) newTerms.add(difference.inverse);
 
-      incompatibility = new Incompatibility(newTerms);
+      incompatibility = new Incompatibility(newTerms,
+          new ConflictCause(incompatibility, mostRecentSatisfier.cause));
       newIncompatibility = true;
 
       var partially = difference == null ? "" : " partially";
@@ -307,7 +310,8 @@ class VersionSolver {
     if (version == null) {
       // If there are no versions that satisfy [package.constraint], add an
       // incompatibility that indicates that.
-      _addIncompatibility(new Incompatibility([new Term(package, true)]));
+      _addIncompatibility(new Incompatibility(
+          [new Term(package, true)], IncompatibilityCause.noVersions));
       return package.name;
     }
 

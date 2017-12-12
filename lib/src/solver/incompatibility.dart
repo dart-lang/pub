@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import '../package_name.dart';
+import 'incompatibility_cause.dart';
 import 'term.dart';
 
 /// A set of mutually-incompatible terms.
@@ -12,17 +13,20 @@ class Incompatibility {
   /// The mutually-incompatibile terms.
   final List<Term> terms;
 
+  /// The reason [terms] are incompatible.
+  final IncompatibilityCause cause;
+
   /// Creates an incompatibility with [terms].
   ///
   /// This normalizes [terms] so that each package has at most one term
   /// referring to it.
-  factory Incompatibility(List<Term> terms) {
+  factory Incompatibility(List<Term> terms, IncompatibilityCause cause) {
     if (terms.length == 1 ||
         // Short-circuit in the common case of a two-term incompatibility with
         // two different packages (for example, a dependency).
         (terms.length == 2 &&
             terms.first.package.name != terms.last.package.name)) {
-      return new Incompatibility._(terms);
+      return new Incompatibility._(terms, cause);
     }
 
     // Coalesce multiple terms about the same package if possible.
@@ -44,18 +48,20 @@ class Incompatibility {
       }
     }
 
-    return new Incompatibility._(byName.values.expand((byRef) {
-      // If there are any positive terms for a given package, we can discard
-      // any negative terms.
-      var positiveTerms =
-          byRef.values.where((term) => term.isPositive).toList();
-      if (positiveTerms.isNotEmpty) return positiveTerms;
+    return new Incompatibility._(
+        byName.values.expand((byRef) {
+          // If there are any positive terms for a given package, we can discard
+          // any negative terms.
+          var positiveTerms =
+              byRef.values.where((term) => term.isPositive).toList();
+          if (positiveTerms.isNotEmpty) return positiveTerms;
 
-      return byRef.values;
-    }).toList());
+          return byRef.values;
+        }).toList(),
+        cause);
   }
 
-  Incompatibility._(this.terms);
+  Incompatibility._(this.terms, this.cause);
 
   String toString() {
     if (terms.length == 1) {
