@@ -6,8 +6,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
+import 'package:http_retry/http_retry.dart';
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -210,8 +212,36 @@ class _PubHttpClient extends http.BaseClient {
 /// The [_PubHttpClient] wrapped by [httpClient].
 final _pubClient = new _PubHttpClient();
 
+/// A set of all hostnames for which we've printed a message indicating that
+/// we're waiting for them to come back up.
+final _retryMessages = new Set<String>();
+
 /// The HTTP client to use for all HTTP requests.
-final httpClient = new ThrottleClient(16, _pubClient);
+final httpClient = new ThrottleClient(
+    16,
+    new RetryClient(_pubClient,
+        retries: 5,
+        when: (response) => const [502, 503, 504].contains(response.statusCode),
+        delay: (retryCount) {
+          if (retryCount < 3) {
+            // Retry quickly a couple times in case of a short transient error.
+            return new Duration(milliseconds: 500) * math.pow(1.5, retryCount);
+          } else {
+            // If the error persists, wait a long time. This works around issues
+            // where an AppEngine instance will go down and need to be rebooted,
+            // which takes about a minute.
+            return new Duration(milliseconds: 30);
+          }
+        },
+        onRetry: (request, response, retryCount) {
+          log.io("Retry #${retryCount + 1} for "
+              "${request.method} ${request.url}...");
+          if (retryCount != 3) return;
+          if (!_retryMessages.add(request.url.host)) return;
+          log.message(
+              "It looks like ${request.url.host} is having some trouble.\n"
+              "Pub will wait for a while before trying to connect again.");
+        }));
 
 /// The underlying HTTP client wrapped by [httpClient].
 http.Client get innerHttpClient => _pubClient._inner;
