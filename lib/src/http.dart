@@ -6,7 +6,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http_retry/http_retry.dart';
@@ -230,7 +230,7 @@ final httpClient = new ThrottleClient(
             // If the error persists, wait a long time. This works around issues
             // where an AppEngine instance will go down and need to be rebooted,
             // which takes about a minute.
-            return new Duration(milliseconds: 30);
+            return new Duration(seconds: 30);
           }
         },
         onRetry: (request, response, retryCount) {
