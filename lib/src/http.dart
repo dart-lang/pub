@@ -214,7 +214,7 @@ final _pubClient = new _PubHttpClient();
 
 /// A set of all hostnames for which we've printed a message indicating that
 /// we're waiting for them to come back up.
-final _retryMessages = new Set<String>();
+final _retriedHosts = new Set<String>();
 
 /// The HTTP client to use for all HTTP requests.
 final httpClient = new ThrottleClient(
@@ -225,7 +225,11 @@ final httpClient = new ThrottleClient(
         delay: (retryCount) {
           if (retryCount < 3) {
             // Retry quickly a couple times in case of a short transient error.
-            return new Duration(milliseconds: 500) * math.pow(1.5, retryCount);
+            //
+            // Add a random delay to avoid retrying a bunch of parallel requests
+            // all at the same time.
+            return new Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
+                new Duration(milliseconds: random.nextInt(500));
           } else {
             // If the error persists, wait a long time. This works around issues
             // where an AppEngine instance will go down and need to be rebooted,
@@ -237,7 +241,7 @@ final httpClient = new ThrottleClient(
           log.io("Retry #${retryCount + 1} for "
               "${request.method} ${request.url}...");
           if (retryCount != 3) return;
-          if (!_retryMessages.add(request.url.host)) return;
+          if (!_retriedHosts.add(request.url.host)) return;
           log.message(
               "It looks like ${request.url.host} is having some trouble.\n"
               "Pub will wait for a while before trying to connect again.");
