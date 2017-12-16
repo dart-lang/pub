@@ -96,7 +96,6 @@ class DescriptorServer {
     _server.mount((request) {
       fail("The HTTP server received an unexpected request:\n"
           "${request.method} ${request.requestedUri}");
-      return new shelf.Response.forbidden(null);
     });
     addTearDown(() => _server.close());
   }
