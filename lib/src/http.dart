@@ -184,6 +184,8 @@ final _pubClient = new _PubHttpClient();
 /// we're waiting for them to come back up.
 final _retriedHosts = new Set<String>();
 
+/// Intercepts all requests and throws exceptions if the response was not
+/// considered successful.
 class _ThrowingClient extends http.BaseClient {
   final http.Client _inner;
 
