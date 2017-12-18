@@ -891,7 +891,7 @@ class Pubspec {
   /// [description] should be a noun phrase that describes whatever's being
   /// parsed or processed by [fn]. [span] should be the location of whatever's
   /// being processed within the pubspec.
-  _wrapFormatException(String description, SourceSpan span, fn()) {
+  T _wrapFormatException<T>(String description, SourceSpan span, T fn()) {
     try {
       return fn();
     } on FormatException catch (e) {
@@ -899,7 +899,7 @@ class Pubspec {
     }
   }
 
-  _wrapSpanFormatException(String description, fn()) {
+  T _wrapSpanFormatException<T>(String description, T fn()) {
     try {
       return fn();
     } on SourceSpanFormatException catch (e) {
