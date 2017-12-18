@@ -9,6 +9,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import "package:crypto/crypto.dart" as crypto;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
 
@@ -725,6 +726,7 @@ String yamlToString(data) {
 }
 
 /// Throw a [ApplicationException] with [message].
+@alwaysThrows
 void fail(String message, [innerError, StackTrace innerTrace]) {
   if (innerError != null) {
     throw new WrappedException(message, innerError, innerTrace);

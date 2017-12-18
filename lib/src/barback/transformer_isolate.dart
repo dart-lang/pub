@@ -98,7 +98,6 @@ class TransformerIsolate {
       // failed was the one we were loading transformers from, throw an
       // application exception with a more user-friendly message.
       fail('Transformer library "$packageUri" not found.', error, stackTrace);
-      return null;
     }
   }
 
