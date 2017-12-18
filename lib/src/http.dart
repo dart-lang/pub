@@ -213,16 +213,8 @@ class _ThrowingClient extends http.BaseClient {
     if (status == 500 &&
         (request.url.host == "pub.dartlang.org" ||
             request.url.host == "storage.googleapis.com")) {
-      var message = "HTTP error 500: Internal Server Error at "
-          "${request.url}.";
-
-      if (request.url.host == "pub.dartlang.org" ||
-          request.url.host == "storage.googleapis.com") {
-        message += "\nThis is likely a transient error. Please try again "
-            "later.";
-      }
-
-      fail(message);
+      fail("HTTP error 500: Internal Server Error at ${request.url}.\n"
+          "This is likely a transient error. Please try again later.");
     }
 
     throw new PubHttpException(
