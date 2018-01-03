@@ -1203,7 +1203,7 @@ void dartSdkConstraint() {
                 'SDK is 1.2.3.');
       });
 
-      test("no existing pre-release constraint", () async {
+      test("no max pre-release constraint", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1214,6 +1214,20 @@ void dartSdkConstraint() {
         await expectResolves(
             environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
+
+      test("no min pre-release constraint", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '>=1.2.3-dev.2.0 <2.0.0'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            error: 'Package myapp requires SDK version >=1.2.3-dev.2.0 <2.0.0 '
+                'but the current SDK is 1.2.3-dev.1.0.');
       });
 
       test("no build release constraints", () async {
