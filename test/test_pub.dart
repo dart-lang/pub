@@ -728,6 +728,12 @@ void _validateOutputJson(
     failures.add(actualText);
   }
 
+  // Remove dart2js's timing logs, which would otherwise cause tests to fail
+  // flakily when compilation takes a long time.
+  actual['log']?.removeWhere((entry) =>
+      entry['level'] == 'Fine' &&
+      entry['message'].startsWith('Not yet complete after'));
+
   // Match against the expectation.
   expect(actual, expected);
 }
