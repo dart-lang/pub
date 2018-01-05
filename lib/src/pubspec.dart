@@ -391,6 +391,9 @@ class Pubspec {
     if (!allowPreReleaseSdk) return false;
     if (!sdk.version.isPreRelease) return false;
     if (sdkConstraint.includeMax) return false;
+    if (sdkConstraint.min != null && sdkConstraint.min.isPreRelease) {
+      return false;
+    }
     if (sdkConstraint.max == null) return false;
     if (sdkConstraint.max.isPreRelease) return false;
     return sdkConstraint.max.major == sdk.version.major &&
