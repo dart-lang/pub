@@ -67,7 +67,8 @@ class PartialSolution {
   /// assignments made after that level.
   void backtrack(int decisionLevel) {
     // When we start backtracking, count an additional attempted solution. If we
-    // backtrack multiple times in a row, though, we only want to count one.
+    // backtrack multiple times in a row, though, we only want to count one,
+    // since we haven't actually started attempting a new solution.
     if (!_backtracking) _attemptedSolutions++;
     _backtracking = true;
 

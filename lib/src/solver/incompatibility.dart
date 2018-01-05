@@ -14,7 +14,7 @@ class Incompatibility {
 
   /// Creates an incompatibility with [terms].
   ///
-  /// This normalized [terms] so that each package has at most one term
+  /// This normalizes [terms] so that each package has at most one term
   /// referring to it.
   factory Incompatibility(List<Term> terms) {
     if (terms.length == 1 ||

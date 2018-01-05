@@ -34,12 +34,12 @@ class PackageLister {
   /// times.
   final _alreadyListedDependencies = <String, VersionConstraint>{};
 
-  /// A constraint indicating which versions of [_ref] have already been listed
-  /// as not matching the current SDK version by [incompatibilitiesFor].
+  /// A constraint indicating which versions of [_ref] are already known to be
+  /// incompatible with the current version of the SDK.
   ///
-  /// This allows us to avoid returning the same incompatibilities multiple
-  /// times.
-  var _alreadyListedSdks = VersionConstraint.empty;
+  /// This allows us to avoid returning the same incompatibilities from
+  /// [incompatibilitiesFor] multiple times.
+  var _knownInvalidSdks = VersionConstraint.empty;
 
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
@@ -64,9 +64,10 @@ class PackageLister {
   Future<int> countVersions(VersionConstraint constraint) async =>
       (await _versions).where((id) => constraint.allows(id.version)).length;
 
-  /// Returns the latest version of this package that matches [constraint], or
-  /// `null` if no versions match.
-  Future<PackageId> latestVersion(VersionConstraint constraint) async {
+  /// Returns the best version of this package that matches [constraint]
+  /// according to the solver's prioritization scheme, or `null` if no versions
+  /// match.
+  Future<PackageId> bestVersion(VersionConstraint constraint) async {
     var versions = await _versions;
     var min = constraint is VersionRange ? constraint.min : null;
 
@@ -93,7 +94,7 @@ class PackageLister {
   /// won't return incompatibilities that have already been returned by a
   /// previous call to [incompatibilitiesFor].
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
-    if (_alreadyListedSdks.allows(id.version)) return const [];
+    if (_knownInvalidSdks.allows(id.version)) return const [];
 
     var pubspec = await _source.describe(id);
 
@@ -105,7 +106,7 @@ class PackageLister {
       var upper = await _unmatchedSdkBound(index, upper: true);
       var constraint = new VersionRange(
           min: lower, includeMin: true, max: upper, includeMax: true);
-      _alreadyListedSdks = constraint.union(_alreadyListedSdks);
+      _knownInvalidSdks = constraint.union(_knownInvalidSdks);
 
       return [
         new Incompatibility([new Term(_ref.withConstraint(constraint), true)])
@@ -141,14 +142,14 @@ class PackageLister {
     }).toList();
   }
 
-  /// Returns a version bound indicating where in [versions] this package
+  /// Returns a version bound indicating where in [_versions] this package
   /// stopped having an incompatible SDK constraint.
   ///
-  /// If [inclusive] is `true`, this returns the last version in [versions] with
-  /// an incompatible SDK constraint. If it's `false`, it returns the
-  /// first version in [versions] with an compatible SDK constraint.
+  /// If [inclusive] is `true`, this returns the last version in [_versions]
+  /// with an incompatible SDK constraint. If it's `false`, it returns the first
+  /// version in [_versions] with a compatible SDK constraint.
   ///
-  /// This may return `null`, indicating that all [versions] have an
+  /// This may return `null`, indicating that all [_versions] have an
   /// incompatible SDK constraint.
   Future<Version> _unmatchedSdkBound(int index, {bool upper: true}) async {
     var versions = await _versions;
@@ -172,7 +173,8 @@ class PackageLister {
   /// [index].
   ///
   /// If a package is absent from the return value, that indicates indicate that
-  /// all versions above or below [index] (according to [upper]) have the same dependency.
+  /// all versions above or below [index] (according to [upper]) have the same
+  /// dependency.
   Future<Map<String, Version>> _dependencyBounds(
       Map<String, PackageRange> dependencies, int index,
       {bool upper: true}) async {

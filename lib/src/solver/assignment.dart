@@ -16,7 +16,7 @@ class Assignment extends Term {
   final int index;
 
   /// The incompatibility that caused this assignment to be derived, or `null`
-  /// if it isn't a derivation.
+  /// if the assignment isn't a derivation.
   final Incompatibility cause;
 
   Assignment(

@@ -126,8 +126,9 @@ class VersionSolver {
   ///
   /// [almost satisfied]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility
   ///
-  /// If [incompatibility] is satisfied by [_solution], returns `#conflict`.
-  /// Otherwise, returns `#none`.
+  /// If [incompatibility] is satisfied by [_solution], returns `#conflict`. If
+  /// [incompatibility] is almost satisfied by [_solution], returns the
+  /// unsatisfied term's package name. Otherwise, returns `#none`.
   dynamic /* String | #none | #conflict */ _propagateIncompatibility(
       Incompatibility incompatibility) {
     // The first entry in `incompatibility.terms` that's not yet satisfied by
@@ -301,8 +302,7 @@ class VersionSolver {
     var package = await minByAsync(unsatisfied,
         (package) => _packageLister(package).countVersions(package.constraint));
 
-    var version =
-        await _packageLister(package).latestVersion(package.constraint);
+    var version = await _packageLister(package).bestVersion(package.constraint);
 
     if (version == null) {
       // If there are no versions that satisfy [package.constraint], add an

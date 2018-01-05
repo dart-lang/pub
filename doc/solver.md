@@ -54,8 +54,8 @@ in the book [*Answer Set Solving in Practice*][book] by Gebser *et al*.
 [book]: https://potassco.org/book/
 
 At a high level, Pubgrub works like many other search algorithms. Its core loop
-involves speculatively chooses package versions that match outstanding
-dependencies in a loop. Eventually one of two things happens:
+involves speculatively choosing package versions that match outstanding
+dependencies. Eventually one of two things happens:
 
 * All dependencies are satisfied, in which case a solution has been found and
   Pubgrub has succeeded.
@@ -66,7 +66,7 @@ dependencies in a loop. Eventually one of two things happens:
 When a conflict is found, Pubgrub backtracks to the package that caused the
 conflict and chooses a different version. However, unlike many search
 algorithms, it also records the root cause of that conflict. This is the
-"conflict-driven clause learning" that lends CDCl its name.
+"conflict-driven clause learning" that lends CDCL its name.
 
 Recording the root causes of conflicts allows Pubgrub to avoid retreading dead
 ends in the search space when the context has changed. This makes the solver
@@ -85,11 +85,11 @@ package versions. For example, `foo ^1.0.0` is a term that's true if `foo 1.2.
 is selected and false if `foo 2.3.4` is selected. Conversely, `not foo ^1.0.0`
 is false if `foo 1.2.3` is selected and true if `foo 2.3.4` is selected.
 
-We say that a term `t` is "satisfied" by a set of terms `S` if `t` must be true
-whenever every term in `S` is true. Conversely, `t` is "contradicted" by `S` if
-it must be false whenever every term in `S` is true. If neither of these is
-true, we say that `S` is "inconclusive" for `t`. As a shorthand, we say that a
-term `v` satisfies or contradicts `t` if `{v}` satisfies or contradicts it. For
+We say that a set of terms `S` "satisfies" a term `t` if `t` must be true
+whenever every term in `S` is true. Conversely, `S` "contradicts" `t` if `t`
+must be false whenever every term in `S` is true. If neither of these is true,
+we say that `S` is "inconclusive" for `t`. As a shorthand, we say that a term
+`v` satisfies or contradicts `t` if `{v}` satisfies or contradicts it. For
 example:
 
 * `{foo >=1.0.0, foo <2.0.0}` satisfies `foo ^2.0.0`,
@@ -104,24 +104,31 @@ operations can be defined accordingly. For example:
 * `foo >=1.0.0 ∩ not foo >=2.0.0` is `foo ^1.0.0`.
 * `foo ^1.0.0 \ foo ^1.5.0` is `foo >=1.0.0 <1.5.0`.
 
+> **Note:** we use the [ISO 31-11 standard notation][ISO 31-11] for set
+> operations.
+
+[ISO 31-11]: https://en.wikipedia.org/wiki/ISO_31-11#Sets
+
 This turns out to be useful for computing satisfaction and contradiction. Given
-a term `t` and a set of terms `S`, and letting `∩S` denote the intersection of
-all terms in `S`, we have the following identities:
+a term `t` and a set of terms `S`, we have the following identities:
 
 * `S` satisfies `t` if and only if `⋂S ⊆ t`.
 * `S` contradicts `t` if and only if `⋂S` is disjoint with `t`.
 
 ## Incompatibility
 
-An incompatibility is a set of terms that cannot all be true—that is, at least
-one term in every incompatibility must be false for a given set of package
-versions in order for it to be considered a valid solution. Incompatibilities
-are *context-independent*, meaning that their terms are mutually incompatible
+An incompatibility is a set of terms that are not *all* allowed to be true. A
+given set of package versions can only be valid according to an incompatibility
+if at least one of the incompatibility's terms is false for that solution. For
+example, the incompatibility `{foo ^1.0.0, bar ^2.0.0}` indicates that
+`foo ^1.0.0` is incompatible with `bar ^2.0.0`, so a solution that contains
+`foo 1.1.0` and `bar 2.0.2` would be invalid. Incompatibilities are
+*context-independent*, meaning that their terms are mutually incompatible
 regardless of which versions are selected at any given point in time.
 
 There are two sources of incompatibilities. They may represent facts about
 packages—for example, "`foo ^1.0.0` depends on `bar ^2.0.0`" is represented as
-the incompatibility `{not foo ^1.0.0, bar ^2.0.0}`, while "`foo <1.3.0` has an
+the incompatibility `{foo ^1.0.0, not bar ^2.0.0}`, while "`foo <1.3.0` has an
 incompatible SDK constraint" is represented by the incompatibility
 `{not foo <1.3.0}`. They may also represent derived facts that were produced
 during [conflict resolution](#conflict-resolution), which are used to avoid
@@ -591,6 +598,8 @@ the satisfier and the previous satisfier have different decision levels,
 conflict resolution has no root cause to find and just backtracks to decision
 level 3, where it can make a new derivation:
 
+| Step | Incompatibility | Term | Satisfier | Cause | Previous Satisfier |
+| ---- | --------------- | ---- | --------- | ----- | ------------------ |
 | 19 | `not shared ^1.0.0` | derivation | unit propagation | step 18 | 3 |
 
 But this derivation causes a new conflict, which needs to be resolved:
