@@ -559,8 +559,8 @@ publish_to: none
       });
 
       test("throws on non-absolute URLs", () {
-        expectPubspecException('publish_to: pub.dartlang.org',
-            (pubspec) => pubspec.publishTo);
+        expectPubspecException(
+            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
       });
     });
 
