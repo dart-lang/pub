@@ -446,8 +446,12 @@ class Pubspec {
 
       // It must be "none" or a valid URL.
       if (publishTo != "none") {
-        _wrapFormatException(
-            '"publish_to" field', span, () => Uri.parse(publishTo));
+        _wrapFormatException('"publish_to" field', span, () {
+          var url = Uri.parse(publishTo);
+          if (url.scheme.isEmpty) {
+            throw new FormatException("must be an absolute URL.");
+          }
+        });
       }
     }
 

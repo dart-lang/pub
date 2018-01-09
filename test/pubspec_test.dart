@@ -557,6 +557,11 @@ publish_to: none
         expectPubspecException('publish_to: http://bad.url:not-port',
             (pubspec) => pubspec.publishTo);
       });
+
+      test("throws on non-absolute URLs", () {
+        expectPubspecException(
+            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
+      });
     });
 
     group("executables", () {
