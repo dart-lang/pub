@@ -624,6 +624,47 @@ void backtracking() {
     await expectResolves(result: {'a': '1.0.0'}, tries: 2);
   });
 
+  test("diamond dependency graph", () async {
+    await servePackages((builder) {
+      builder.serve('a', '2.0.0', deps: {'c': '^1.0.0'});
+      builder.serve('a', '1.0.0');
+
+      builder.serve('b', '2.0.0', deps: {'c': '^3.0.0'});
+      builder.serve('b', '1.0.0', deps: {'c': '^2.0.0'});
+
+      builder.serve('c', '3.0.0');
+      builder.serve('c', '2.0.0');
+      builder.serve('c', '1.0.0');
+    });
+
+    await d.appDir({"a": "any", "b": "any"}).create();
+    await expectResolves(
+        result: {'a': '1.0.0', 'b': '2.0.0', 'c': '3.0.0'}, tries: 2);
+  });
+
+  // c 2.0.0 is incompatible with y 2.0.0 because it requires x 1.0.0, but that
+  // requirement only exists because of both a and b. The solver should be able
+  // to deduce c 2.0.0's incompatibility and select c 1.0.0 instead.
+  test("backjumps after a partial satisfier", () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0', deps: {'x': '>=1.0.0'});
+      builder.serve('b', '1.0.0', deps: {'x': '<2.0.0'});
+
+      builder.serve('c', '1.0.0');
+      builder.serve('c', '2.0.0', deps: {'a': 'any', 'b': 'any'});
+
+      builder.serve('x', '0.0.0');
+      builder.serve('x', '1.0.0', deps: {'y': '1.0.0'});
+      builder.serve('x', '2.0.0');
+
+      builder.serve('y', '1.0.0');
+      builder.serve('y', '2.0.0');
+    });
+
+    await d.appDir({"c": "any", "y": "^2.0.0"}).create();
+    await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
+  });
+
   // The latest versions of a and b disagree on c. An older version of either
   // will resolve the problem. This test validates that b, which is farther
   // in the dependency graph from myapp is downgraded first.

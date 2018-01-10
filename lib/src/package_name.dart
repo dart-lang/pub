@@ -48,12 +48,6 @@ abstract class PackageName {
         description = null,
         isMagic = true;
 
-  String toString() {
-    if (isRoot) return "$name (root)";
-    if (isMagic) return name;
-    return "$name from $source";
-  }
-
   /// Returns a [PackageRef] with this one's [name], [source], and
   /// [description].
   PackageRef toRef() => isMagic
@@ -82,6 +76,9 @@ abstract class PackageName {
         source.hashCode ^
         source.hashDescription(description);
   }
+
+  /// Like [toString], but leaves off some information for extra terseness.
+  String toTerseString();
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
@@ -97,6 +94,18 @@ class PackageRef extends PackageName {
 
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name) : super._magic(name);
+
+  String toString() {
+    if (isRoot) return "$name (root)";
+    if (isMagic) return name;
+    return "$name from $source";
+  }
+
+  String toTerseString() {
+    if (isMagic) return name;
+    if (isRoot || source.name != 'hosted') return "$name";
+    return "$name from $source";
+  }
 
   bool operator ==(other) => other is PackageRef && samePackage(other);
 }
@@ -144,6 +153,12 @@ class PackageId extends PackageName {
   String toString() {
     if (isRoot) return "$name $version (root)";
     if (isMagic) return name;
+    return "$name $version from $source";
+  }
+
+  String toTerseString() {
+    if (isMagic) return name;
+    if (isRoot || source.name == 'hosted') return "$name $version";
     return "$name $version from $source";
   }
 }
@@ -212,6 +227,12 @@ class PackageRange extends PackageName {
 
     if (features.isNotEmpty) prefix += " $featureDescription";
     return "$prefix ($description)";
+  }
+
+  String toTerseString() {
+    if (isMagic) return name;
+    if (isRoot || source.name == 'hosted') return "$name $constraint";
+    return "$name $constraint from $source";
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].

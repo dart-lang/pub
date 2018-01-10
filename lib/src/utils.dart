@@ -327,6 +327,31 @@ T maxAll<T>(Iterable<T> iter, [int compare(T value, T value2)]) {
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }
 
+/// Like [minBy], but with an asynchronous [orderBy] callback.
+Future<S> minByAsync<S, T>(
+    Iterable<S> values, Future<T> orderBy(S element)) async {
+  S minValue;
+  T minOrderBy;
+  for (var element in values) {
+    var elementOrderBy = await orderBy(element);
+    if (minOrderBy == null ||
+        (elementOrderBy as Comparable).compareTo(minOrderBy) < 0) {
+      minValue = element;
+      minOrderBy = elementOrderBy;
+    }
+  }
+  return minValue;
+}
+
+/// Returns the first index in [list] for which [callback] returns `true`, or
+/// `-1` if there is no such index.
+int indexWhere<T>(List<T> list, bool callback(T element)) {
+  for (var i = 0; i < list.length; i++) {
+    if (callback(list[i])) return i;
+  }
+  return -1;
+}
+
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String fn(Match)) {
