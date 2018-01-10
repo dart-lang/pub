@@ -367,7 +367,7 @@ class VersionSolver {
       }
     }
 
-    return new SolveResult.success(
+    return new SolveResult(
         _systemCache.sources,
         _root,
         new LockFile.empty(),

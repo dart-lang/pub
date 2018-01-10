@@ -172,14 +172,16 @@ class GlobalPackages {
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
-    var result = await resolveVersions(SolveType.GET, cache, root);
-    if (!result.succeeded) {
+    SolveResult result;
+    try {
+      result = await resolveVersions(SolveType.GET, cache, root);
+    } on NoVersionException catch (error) {
       // If the package specified by the user doesn't exist, we want to
       // surface that as a [DataError] with the associated exit code.
-      if (result.error.package != dep.name) throw result.error;
-      if (result.error is NoVersionException) dataError(result.error.message);
-      throw result.error;
+      if (error.package != dep.name) rethrow;
+      dataError(error.message);
     }
+
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.

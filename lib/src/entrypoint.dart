@@ -214,8 +214,6 @@ class Entrypoint {
       }
     }
 
-    if (!result.succeeded) throw result.error;
-
     result.showReport(type);
 
     if (dryRun) {
