@@ -241,6 +241,23 @@ class PackageRange extends PackageName {
         features: new Map.from(this.features)..addAll(features));
   }
 
+  /// Returns a copy of [this] with the same semantics, but with a `^`-style
+  /// constraint if possible.
+  PackageRange withTerseConstraint() {
+    if (constraint is! VersionRange) return this;
+    if (constraint.toString().startsWith("^")) return this;
+
+    var range = constraint as VersionRange;
+    if (range.includeMin &&
+        !range.includeMax &&
+        range.min != null &&
+        range.max == range.min.nextBreaking) {
+      return withConstraint(new VersionConstraint.compatibleWith(range.min));
+    } else {
+      return this;
+    }
+  }
+
   /// Whether [id] satisfies this dependency.
   ///
   /// Specifically, whether [id] refers to the same package as [this] *and*
