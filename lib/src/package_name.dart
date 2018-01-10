@@ -102,8 +102,7 @@ class PackageRef extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name != 'hosted') return "$name";
+    if (isMagic || isRoot || source.name == 'hosted') return name;
     return "$name from $source";
   }
 
@@ -157,8 +156,8 @@ class PackageId extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name == 'hosted') return "$name $version";
+    if (isMagic || isRoot) return name;
+    if (source.name == 'hosted') return "$name $version";
     return "$name $version from $source";
   }
 }
@@ -230,8 +229,8 @@ class PackageRange extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name == 'hosted') return "$name $constraint";
+    if (isMagic || isRoot) return name;
+    if (source.name == 'hosted') return "$name $constraint";
     return "$name $constraint from $source";
   }
 
