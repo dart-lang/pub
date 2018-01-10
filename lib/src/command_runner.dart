@@ -30,7 +30,6 @@ import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'sdk.dart' as sdk;
-import 'solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
@@ -232,12 +231,13 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   int _chooseExitCode(exception) {
     while (exception is WrappedException) exception = exception.innerError;
 
+    // TODO(nweiz): Emit an UNAVAILABLE exit code for a SolveFailure that was
+    // (transitively) caused by a package not existing.
     if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||
-        exception is PubHttpException ||
-        exception is DependencyNotFoundException) {
+        exception is PubHttpException) {
       return exit_codes.UNAVAILABLE;
     } else if (exception is FormatException || exception is DataException) {
       return exit_codes.DATA;

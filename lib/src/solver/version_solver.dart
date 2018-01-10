@@ -15,6 +15,7 @@ import '../pubspec.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'assignment.dart';
+import 'failure.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 import 'package_lister.dart';
@@ -281,7 +282,7 @@ class VersionSolver {
       _log("$bang thus: $incompatibility");
     }
 
-    throw "Tough luck, chuck!";
+    throw new SolveFailure(incompatibility);
   }
 
   /// Tries to select a version of a required package.
