@@ -182,7 +182,7 @@ class VersionSolver {
     _log("${log.red(log.bold("conflict"))}: $incompatibility");
 
     var newIncompatibility = false;
-    while (true) {
+    while (!incompatibility.isFailure) {
       // The term in `incompatibility.terms` that was most recently satisfied by
       // [_solution].
       Term mostRecentTerm;
@@ -230,12 +230,6 @@ class VersionSolver {
                 _solution.satisfier(difference.inverse).decisionLevel);
           }
         }
-      }
-
-      // If we have a conflict at the root level, there's no hope of finding a
-      // solution and version solving has failed.
-      if (mostRecentSatisfier.decisionLevel == 0) {
-        throw "Tough luck, chuck!";
       }
 
       // If [mostRecentSatisfier] is the only satisfier left at its decision
@@ -286,6 +280,8 @@ class VersionSolver {
       _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
       _log("$bang thus: $incompatibility");
     }
+
+    throw "Tough luck, chuck!";
   }
 
   /// Tries to select a version of a required package.

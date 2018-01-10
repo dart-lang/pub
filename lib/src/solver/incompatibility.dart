@@ -16,6 +16,10 @@ class Incompatibility {
   /// The reason [terms] are incompatible.
   final IncompatibilityCause cause;
 
+  /// Whether this incompatibility indicates that version solving as a whole has
+  /// failed.
+  bool get isFailure => terms.length == 1 && terms.first.package.isRoot;
+
   /// Creates an incompatibility with [terms].
   ///
   /// This normalizes [terms] so that each package has at most one term
