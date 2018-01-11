@@ -20,6 +20,11 @@ class Incompatibility {
   /// failed.
   bool get isFailure => terms.length == 1 && terms.first.package.isRoot;
 
+  /// Whether this incompatibility represents one or more dependencies of a
+  /// single package.
+  bool get _isRequirement =>
+      terms.length > 1 && terms.where((term) => term.isPositive).length == 1;
+
   /// Creates an incompatibility with [terms].
   ///
   /// This normalizes [terms] so that each package has at most one term
@@ -169,6 +174,38 @@ class Incompatibility {
     } else {
       return "one of ${negative.join(' or ')} must be true";
     }
+  }
+
+  /// Returns the equivalent of `"$this and $other"`, with more intelligent
+  /// phrasing for specific patterns.
+  String andToString(Incompatibility other) {
+    if (_isRequirement && other._isRequirement) {
+      var thisPositive = terms.firstWhere((term) => term.isPositive);
+      var otherPositive = other.terms.firstWhere((term) => term.isPositive);
+      if (thisPositive.package == otherPositive.package) {
+        var thisNegatives = terms
+            .where((term) => !term.isPositive)
+            .map((term) => term.package.toTerseString());
+        var otherNegatives = other.terms
+            .where((term) => !term.isPositive)
+            .map((term) => term.package.toTerseString());
+        ;
+
+        var isDependency = cause == IncompatibilityCause.dependency &&
+            other.cause == IncompatibilityCause.dependency;
+        if (thisPositive.constraint.isAny) {
+          var verb = isDependency ? "depend on" : "require";
+          return "all versions of ${_terseRef(thisPositive)} $verb both "
+              "${thisNegatives.join(' or ')} and ${otherNegatives.join(' or ')}";
+        } else {
+          var verb = isDependency ? "depends on" : "requires";
+          return "${thisPositive.package.toTerseString()} $verb both "
+              "${thisNegatives.join(' or ')} and ${otherNegatives.join(' or ')}";
+        }
+      }
+    }
+
+    return "$this and $other";
   }
 
   /// Returns a terse representation of term's package ref.
