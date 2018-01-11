@@ -68,6 +68,9 @@ class HostedSource extends Source {
     return {'name': name, 'url': url.toString()};
   }
 
+  String formatDescription(description) =>
+      "on ${_parseDescription(description).last}";
+
   bool descriptionsEqual(description1, description2) =>
       _parseDescription(description1) == _parseDescription(description2);
 
