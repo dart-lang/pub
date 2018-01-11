@@ -240,7 +240,7 @@ class SolveReport {
     _output.write(id.version);
 
     if (id.source != _sources.defaultSource) {
-      var description = id.source.formatDescription(_root.dir, id.description);
+      var description = id.source.formatDescription(id.description);
       _output.write(" from ${id.source} $description");
     }
   }
