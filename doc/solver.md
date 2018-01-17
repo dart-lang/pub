@@ -136,7 +136,9 @@ exploring the same dead-end portion of the state space over and over.
 
 Incompatibilities are normalized so that at most one term refers to any given
 package name. For example, `{foo >=1.0.0, foo <2.0.0}` is normalized to
-`{foo ^1.0.0}`.
+`{foo ^1.0.0}`. Derived incompatibilities with more than one term are also
+normalized to remove positive terms referring to the root package, since these
+terms will always be satisfied.
 
 We say that a set of terms `S` satisfies an incompatibility `I` if `S` satisfies
 every term in `I`. We say that `S` contradicts `I` if `S` contradicts at least

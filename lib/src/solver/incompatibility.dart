@@ -25,6 +25,17 @@ class Incompatibility {
   /// This normalizes [terms] so that each package has at most one term
   /// referring to it.
   factory Incompatibility(List<Term> terms, IncompatibilityCause cause) {
+    // Remove the root package from generated incompatibilities, since it will
+    // always be satisfied. This makes error reporting clearer, and may also
+    // make solving more efficient.
+    if (terms.length != 1 &&
+        cause is ConflictCause &&
+        terms.any((term) => term.isPositive && term.package.isRoot)) {
+      terms = terms
+          .where((term) => !term.isPositive || !term.package.isRoot)
+          .toList();
+    }
+
     if (terms.length == 1 ||
         // Short-circuit in the common case of a two-term incompatibility with
         // two different packages (for example, a dependency).
