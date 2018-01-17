@@ -20,11 +20,6 @@ class Incompatibility {
   /// failed.
   bool get isFailure => terms.length == 1 && terms.first.package.isRoot;
 
-  /// Whether this incompatibility represents one or more dependencies of a
-  /// single package.
-  bool get _isRequirement =>
-      terms.length > 1 && terms.where((term) => term.isPositive).length == 1;
-
   /// Creates an incompatibility with [terms].
   ///
   /// This normalizes [terms] so that each package has at most one term
@@ -187,33 +182,135 @@ class Incompatibility {
   /// for packages with the given names.
   String andToString(Incompatibility other,
       [Map<String, PackageDetail> details]) {
-    if (_isRequirement && other._isRequirement) {
-      var thisPositive = terms.firstWhere((term) => term.isPositive);
-      var otherPositive = other.terms.firstWhere((term) => term.isPositive);
-      if (thisPositive.package == otherPositive.package) {
-        var thisNegatives = terms
-            .where((term) => !term.isPositive)
-            .map((term) => _terse(term, details));
-        var otherNegatives = other.terms
-            .where((term) => !term.isPositive)
-            .map((term) => _terse(term, details));
+    var requiresBoth = _tryRequiresBoth(other, details);
+    if (requiresBoth != null) return requiresBoth;
 
-        var isDependency = cause == IncompatibilityCause.dependency &&
-            other.cause == IncompatibilityCause.dependency;
-        if (thisPositive.constraint.isAny) {
-          var verb = isDependency ? "depend on" : "require";
-          return "all versions of ${_terseRef(thisPositive, details)} "
-              "$verb both ${thisNegatives.join(' or ')} and "
-              "${otherNegatives.join(' or ')}";
-        } else {
-          var verb = isDependency ? "depends on" : "requires";
-          return "${_terse(thisPositive, details)} $verb both "
-              "${thisNegatives.join(' or ')} and ${otherNegatives.join(' or ')}";
-        }
-      }
-    }
+    var requiresThrough = _tryRequiresThrough(other, details);
+    if (requiresThrough != null) return requiresThrough;
 
     return "${this.toString(details)} and ${other.toString(details)}";
+  }
+
+  /// If "[this] and [other]" can be expressed as "some package requires both X
+  /// and Y", this returns that expression.
+  ///
+  /// Otherwise, this returns `null`.
+  String _tryRequiresBoth(Incompatibility other,
+      [Map<String, PackageDetail> details]) {
+    if (terms.length == 1 || other.terms.length == 1) return null;
+
+    var thisPositive = _singleTermWhere((term) => term.isPositive);
+    if (thisPositive == null) return null;
+    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+    if (otherPositive == null) return null;
+    if (thisPositive.package != otherPositive.package) return null;
+
+    var thisNegatives = terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or ');
+    var otherNegatives = other.terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or ');
+
+    var isDependency = cause == IncompatibilityCause.dependency &&
+        other.cause == IncompatibilityCause.dependency;
+    if (thisPositive.constraint.isAny) {
+      var verb = isDependency ? "depend on" : "require";
+      return "all versions of ${_terseRef(thisPositive, details)} $verb both "
+          "$thisNegatives and $otherNegatives";
+    } else {
+      var verb = isDependency ? "depends on" : "requires";
+      return "${_terse(thisPositive, details)} $verb both $thisNegatives and "
+          "$otherNegatives";
+    }
+  }
+
+  /// If "[this] and [other]" can be expressed as "X requires Y which requires
+  /// Z", this returns that expression.
+  ///
+  /// Otherwise, this returns `null`.
+  String _tryRequiresThrough(Incompatibility other,
+      [Map<String, PackageDetail> details]) {
+    if (terms.length == 1 || other.terms.length == 1) return null;
+
+    var thisNegative = _singleTermWhere((term) => !term.isPositive);
+    var otherNegative = other._singleTermWhere((term) => !term.isPositive);
+    if (thisNegative == null && otherNegative == null) return null;
+
+    var thisPositive = _singleTermWhere((term) => term.isPositive);
+    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+
+    Incompatibility prior;
+    Term priorNegative;
+    Incompatibility latter;
+    if (thisNegative != null &&
+        otherPositive != null &&
+        thisNegative.package.name == otherPositive.package.name &&
+        thisNegative.inverse.satisfies(otherPositive)) {
+      prior = this;
+      priorNegative = thisNegative;
+      latter = other;
+    } else if (otherNegative != null &&
+        thisPositive != null &&
+        otherNegative.package.name == thisPositive.package.name &&
+        otherNegative.inverse.satisfies(thisPositive)) {
+      prior = other;
+      priorNegative = otherNegative;
+      latter = this;
+    } else {
+      return null;
+    }
+
+    var priorPositives = prior.terms.where((term) => term.isPositive);
+
+    var buffer = new StringBuffer();
+    if (priorPositives.length > 1) {
+      var priorString =
+          priorPositives.map((term) => _terse(term, details)).join(' or ');
+      buffer.write("if $priorString then ");
+    } else if (priorPositives.first.constraint.isAny) {
+      var verb = prior.cause == IncompatibilityCause.dependency
+          ? "depend on"
+          : "require";
+      buffer.write("all versions of "
+          "${_terseRef(priorPositives.first, details)} $verb ");
+    } else {
+      var verb = prior.cause == IncompatibilityCause.dependency
+          ? "depends on"
+          : "requires";
+      buffer.write("${_terse(priorPositives.first, details)} $verb ");
+    }
+
+    buffer.write("${_terse(priorNegative, details)} which ");
+
+    if (latter.cause == IncompatibilityCause.dependency) {
+      buffer.write("depends on ");
+    } else {
+      buffer.write("requires ");
+    }
+
+    buffer.write(latter.terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or '));
+
+    return buffer.toString();
+  }
+
+  /// If exactly one term in this incompatibility matches [filter], returns that
+  /// term.
+  ///
+  /// Otherwise, returns `null`.
+  Term _singleTermWhere(bool filter(Term term)) {
+    Term found;
+    for (var term in terms) {
+      if (!filter(term)) continue;
+      if (found != null) return null;
+      found = term;
+    }
+    return found;
   }
 
   /// Returns a terse representation of [term]'s package ref.
