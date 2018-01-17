@@ -120,9 +120,9 @@ a term `t` and a set of terms `S`, we have the following identities:
 An incompatibility is a set of terms that are not *all* allowed to be true. A
 given set of package versions can only be valid according to an incompatibility
 if at least one of the incompatibility's terms is false for that solution. For
-example, the incompatibility `{foo ^1.0.0, bar ^2.0.0}` indicates that
-`foo ^1.0.0` is incompatible with `bar ^2.0.0`, so a solution that contains
-`foo 1.1.0` and `bar 2.0.2` would be invalid. Incompatibilities are
+example, the incompatibility `{foo ^1.0.0, bar ^2.0.0}` indicates that
+`foo ^1.0.0` is incompatible with `bar ^2.0.0`, so a solution that contains
+`foo 1.1.0` and `bar 2.0.2` would be invalid. Incompatibilities are
 *context-independent*, meaning that their terms are mutually incompatible
 regardless of which versions are selected at any given point in time.
 
