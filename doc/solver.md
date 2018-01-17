@@ -435,9 +435,9 @@ solution or by adding an incompatibility to the incompatibility set.
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
 | 1 | `root 1.0.0` | decision | top level | | 0 |
-| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
+| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
 | 3 | `foo ^1.0.0` | derivation | unit propagation | step 2 | 0 |
-| 4 | `{foo any, not bar ^1.0.0}` | incompatibility | decision making | |  |
+| 4 | `{foo any, not bar ^1.0.0}` | incompatibility | decision making | |  |
 | 5 | `foo 1.0.0` | decision | decision making | | 1 |
 | 6 | `bar ^1.0.0` | derivation | unit propagation | step 4 | 1 |
 | 7 | `bar 1.0.0` | decision | decision making | | 2 |
@@ -471,11 +471,11 @@ Pubgrub goes through the following steps:
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
 | 1 | `root 1.0.0` | decision | top level | | 0 |
-| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
-| 3 | `{root 1.0.0, not bar ^1.0.0}` | incompatibility | top level | | |
+| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
+| 3 | `{root 1.0.0, not bar ^1.0.0}` | incompatibility | top level | | |
 | 4 | `foo ^1.0.0` | derivation | unit propagation | step 2 | 0 |
 | 5 | `bar ^1.0.0` | derivation | unit propagation | step 3 | 0 |
-| 6 | `{foo >=1.1.0, not bar ^2.0.0}` | incompatibility | decision making | | |
+| 6 | `{foo >=1.1.0, not bar ^2.0.0}` | incompatibility | decision making | | |
 | 7 | `not foo >=1.1.0` | derivation | unit propagation | step 6 | 0 |
 | 8 | `foo 1.0.0` | decision | decision making | | 1 |
 | 9 | `bar 1.1.0` | decision | decision making | | 2 |
@@ -508,12 +508,12 @@ Pubgrub goes through the following steps:
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
 | 1 | `root 1.0.0` | decision | top level | | 0 |
-| 2 | `{root 1.0.0, not foo >=1.0.0}` | incompatibility | top level | | |
+| 2 | `{root 1.0.0, not foo >=1.0.0}` | incompatibility | top level | | |
 | 3 | `foo >=1.0.0` | derivation | unit propagation | step 2 | 0 |
-| 4 | `{foo >=2.0.0, not bar ^1.0.0}` | incompatibility | decision making | | |
+| 4 | `{foo >=2.0.0, not bar ^1.0.0}` | incompatibility | decision making | | |
 | 5 | `foo 2.0.0` | decision | decision making | | 1 |
 | 6 | `bar ^1.0.0` | derivation | unit propagation | step 4 | 1 |
-| 7 | `{bar any, not foo ^1.0.0}` | incompatibility | decision making | | |
+| 7 | `{bar any, not foo ^1.0.0}` | incompatibility | decision making | | |
 
 The incompatibility added at step 7 is satisfied by the partial assignment: `bar
 any` is satisfied by `bar ^1.0.0` from step 6, and `not foo ^1.0.0` is satisfied
@@ -522,7 +522,7 @@ where it iteratively works towards the root cause of the conflict:
 
 | Step | Incompatibility | Term | Satisfier | Cause | Previous Satisfier |
 | ---- | --------------- | ---- | --------- | ----- | ------------------ |
-| 8 | `{bar any, not foo ^1.0.0}` | `bar any` | `bar ^1.0.0` from step 6 | `{foo >=2.0.0, not bar ^1.0.0}` | `foo 2.0.0` from step 5 |
+| 8 | `{bar any, not foo ^1.0.0}` | `bar any` | `bar ^1.0.0` from step 6 | `{foo >=2.0.0, not bar ^1.0.0}` | `foo 2.0.0` from step 5 |
 | 9 | `{foo >=2.0.0}` | `foo >=1.0.0` | `foo 2.0.0` from step 5 | | |
 
 In step 9, we merge the two incompatibilities `{bar any, not foo ^1.0.0}` and
@@ -575,23 +575,23 @@ Pubgrub goes through the following steps:
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
 | 1 | `root 1.0.0` | decision | top level | | 0 |
-| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
-| 3 | `{root 1.0.0, not target ^2.0.0}` | incompatibility | top level | | |
+| 2 | `{root 1.0.0, not foo ^1.0.0}` | incompatibility | top level | | |
+| 3 | `{root 1.0.0, not target ^2.0.0}` | incompatibility | top level | | |
 | 4 | `foo ^1.0.0` | derivation | unit propagation | step 2 | 0 |
 | 5 | `target ^2.0.0` | derivation | unit propagation | step 3 | 0 |
 | 6 | `target 2.0.0` | decision | decision making | | 1 |
-| 7 | `{foo >=1.1.0, not left ^1.0.0}` | incompatibility | decision making | | |
-| 8 | `{foo >=1.1.0, not right ^1.0.0}` | incompatibility | decision making | | |
+| 7 | `{foo >=1.1.0, not left ^1.0.0}` | incompatibility | decision making | | |
+| 8 | `{foo >=1.1.0, not right ^1.0.0}` | incompatibility | decision making | | |
 | 9 | `foo 1.1.0` | decision | decision making | | 2 |
 | 10 | `left ^1.0.0` | derivation | unit propagation | step 7 | 2 |
 | 11 | `right ^1.0.0` | derivation | unit propagation | step 8 | 2 |
-| 12 | `{right any, not shared <2.0.0}` | incompatibility | decision making | | |
+| 12 | `{right any, not shared <2.0.0}` | incompatibility | decision making | | |
 | 13 | `right 1.0.0` | decision | decision making | | 3 |
 | 14 | `shared <2.0.0` | derivation | unit propagation | step 12 | 3 |
-| 15 | `{left any, not shared >=1.0.0}` | incompatibility | decision making | | |
+| 15 | `{left any, not shared >=1.0.0}` | incompatibility | decision making | | |
 | 16 | `left 1.0.0` | decision | decision making | | 4 |
 | 17 | `shared >=1.0.0` | derivation | unit propagation | step 15 | 4 |
-| 18 | `{shared ^1.0.0, not target ^1.0.0}` | incompatibility | decision making | | |
+| 18 | `{shared ^1.0.0, not target ^1.0.0}` | incompatibility | decision making | | |
 
 The incompatibility at step 18 is in conflict: `not target ^1.0.0` is satisfied
 by `target ^2.0.0` from step 5, and `shared ^1.0.0` is *jointly* satisfied by
@@ -608,8 +608,8 @@ But this derivation causes a new conflict, which needs to be resolved:
 
 | Step | Incompatibility | Term | Satisfier | Cause | Previous Satisfier |
 | ---- | --------------- | ---- | --------- | ----- | ------------------ |
-| 20 | `{left any, not shared >=1.0.0}` | `not shared >=1.0.0` | `not shared ^1.0.0` from step 19 | `{shared ^1.0.0, not target ^1.0.0}` | `shared <2.0.0` from step 14 |
-| 21 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | `not shared >=2.0.0` | `shared <2.0.0` from step 14 | `{right any, not shared <2.0.0}` | `left ^1.0.0` from step 10 |
+| 20 | `{left any, not shared >=1.0.0}` | `not shared >=1.0.0` | `not shared ^1.0.0` from step 19 | `{shared ^1.0.0, not target ^1.0.0}` | `shared <2.0.0` from step 14 |
+| 21 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | `not shared >=2.0.0` | `shared <2.0.0` from step 14 | `{right any, not shared <2.0.0}` | `left ^1.0.0` from step 10 |
 
 Once again, we merge two incompatibilities, but this time we aren't able to
 simplify the result.
@@ -626,17 +626,17 @@ where `left ^1.0.0` was derived:
 
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
-| 22 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | incompatibility | conflict resolution | | |
+| 22 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | incompatibility | conflict resolution | | |
 | 23 | `shared >=2.0.0` | derivation | unit propagation | step 22 | 2 |
 
 And we re-enter conflict resolution:
 
 | Step | Incompatibility | Term | Satisfier | Cause | Previous Satisfier |
 | ---- | --------------- | ---- | --------- | ----- | ------------------ |
-| 24 | `{right any, not shared <2.0.0}` | `not shared <2.0.0` | `shared >=2.0.0` from step 23 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | `right ^1.0.0` from step 11 |
-| 25 | `{left any, right any, not target ^1.0.0}` | `right any` | `right ^1.0.0` from step 11 | `{foo >=1.1.0, not right ^1.0.0}` | `left ^1.0.0` from step 10 |
-| 26 | `{left any, foo >=1.1.0, not target ^1.0.0}` | `left any` | `left ^1.0.0` from step 10 | `{foo >=1.1.0, not left ^1.0.0}` | `foo 1.1.0` from step 9 |
-| 27 | `{foo >=1.1.0, not target ^1.0.0}` | `foo >=1.1.0` | `foo 1.1.0` from step 9 | | `target ^2.0.0` from step 5 |
+| 24 | `{right any, not shared <2.0.0}` | `not shared <2.0.0` | `shared >=2.0.0` from step 23 | `{left any, not target ^1.0.0, not shared >=2.0.0}` | `right ^1.0.0` from step 11 |
+| 25 | `{left any, right any, not target ^1.0.0}` | `right any` | `right ^1.0.0` from step 11 | `{foo >=1.1.0, not right ^1.0.0}` | `left ^1.0.0` from step 10 |
+| 26 | `{left any, foo >=1.1.0, not target ^1.0.0}` | `left any` | `left ^1.0.0` from step 10 | `{foo >=1.1.0, not left ^1.0.0}` | `foo 1.1.0` from step 9 |
+| 27 | `{foo >=1.1.0, not target ^1.0.0}` | `foo >=1.1.0` | `foo 1.1.0` from step 9 | | `target ^2.0.0` from step 5 |
 
 Pubgrub has figured out that `foo 1.1.0` transitively depends on `target
 ^1.0.0`, even though that dependency goes through `left`, `right`, and `shared`.
@@ -645,7 +645,7 @@ and quickly finds the correct solution:
 
 | Step | Value | Type | Where it was added | Cause | Decision level |
 | ---- | ----- | ---- | ------------------ | ----- | -------------- |
-| 28 | `{foo >=1.1.0, not target ^1.0.0}` | incompatibility | conflict resolution | | |
+| 28 | `{foo >=1.1.0, not target ^1.0.0}` | incompatibility | conflict resolution | | |
 | 29 | `not foo >=1.1.0` | derivation | unit propagation | step 28 | 0 |
 | 30 | `foo 1.0.0` | decision | decision making | | 1 |
 | 31 | `target 2.0.0` | decision | decision making | | 2 |
