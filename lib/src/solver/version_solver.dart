@@ -72,19 +72,19 @@ class VersionSolver {
           IncompatibilityCause.dependency));
     }
 
-    var next = _root.name;
-    while (next != null) {
-      _propagate(next);
-      next = await _choosePackageVersion();
+    try {
+      var next = _root.name;
+      while (next != null) {
+        _propagate(next);
+        next = await _choosePackageVersion();
+      }
+
+      return await _result();
+    } finally {
+      // Gather some solving metrics.
+      log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
+          'Tried ${_solution.attemptedSolutions} solutions.');
     }
-
-    var result = await _result();
-
-    // Gather some solving metrics.
-    log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
-        'Tried ${_solution.attemptedSolutions} solutions.');
-
-    return result;
   }
 
   /// Performs [unit propagation][] on incompatibilities transitively related to
