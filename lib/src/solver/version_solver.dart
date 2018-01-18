@@ -63,8 +63,9 @@ class VersionSolver {
     var stopwatch = new Stopwatch()..start();
 
     var rootId = new PackageId.root(_root);
-    _solution.assign(rootId, true);
-    _log("selecting ${rootId.toTerseString()}");
+    var rootIncompatibility = new Incompatibility(
+        [new Term(rootId, false)], IncompatibilityCause.root);
+    _addIncompatibility(rootIncompatibility);
     for (var dependency in _root.immediateDependencies.values) {
       _addIncompatibility(new Incompatibility(
           [new Term(rootId, true), new Term(dependency, false)],

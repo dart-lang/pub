@@ -247,8 +247,11 @@ incompatibilities above):
 
 The core of Pubgrub works as follows:
 
-* Begin by adding the root package to the partial solution as a decision, and
-  adding incompatibilities representing the root package's dependencies.
+* Begin by adding an incompatibility indicating that the current version of the
+  root package must be selected (for example, `{not root 1.0.0}`).
+
+* Add incompatibilities representing the root package's dependencies (for
+  example, `{root 1.0.0, not foo ^1.0.0}`).
 
 * Let `next` be the name of the root package.
 
@@ -370,10 +373,11 @@ decisions. It works as follows:
 
 * In a loop:
 
-  * If `incompatibility` contains a single positive term that refers to the root
-    package version, that indicates that the root package can't be selected and
-    thus that version solving has failed. [Report an error](#error-reporting)
-    with `incompatibility` as the root incompatibility.
+  * If `incompatibility` contains no terms, or if it contains a single positive
+    term that refers to the root package version, that indicates that the root
+    package can't be selected and thus that version solving has failed.
+    [Report an error](#error-reporting) with `incompatibility` as the root
+    incompatibility.
 
   * Find the earliest assignment in the partial solution such that
     `incompatibility` is satisfied by the partial solution up to and including

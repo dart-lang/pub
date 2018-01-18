@@ -18,7 +18,8 @@ class Incompatibility {
 
   /// Whether this incompatibility indicates that version solving as a whole has
   /// failed.
-  bool get isFailure => terms.length == 1 && terms.first.package.isRoot;
+  bool get isFailure =>
+      terms.isEmpty || (terms.length == 1 && terms.first.package.isRoot);
 
   /// Creates an incompatibility with [terms].
   ///
@@ -116,6 +117,14 @@ class Incompatibility {
       assert(terms.first.isPositive);
       return "no versions of ${_terseRef(terms.first, details)} "
           "match ${terms.first.constraint}";
+    } else if (cause == IncompatibilityCause.root) {
+      // [IncompatibilityCause.root] is only used when a package depends on the
+      // entrypoint with an incompatible version, so we want to print the
+      // entrypoint's actual version to make it clear why this failed.
+      assert(terms.length == 1);
+      assert(!terms.first.isPositive);
+      assert(terms.first.package.isRoot);
+      return "${terms.first.package.name} is ${terms.first.constraint}";
     } else if (isFailure) {
       return "version solving failed";
     }

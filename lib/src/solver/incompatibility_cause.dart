@@ -6,6 +6,10 @@ import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
 abstract class IncompatibilityCause {
+  /// The incompatibility represents the requirement that the root package
+  /// exists.
+  static const IncompatibilityCause root = const _RootCause();
+
   /// The incompatibility represents a package's dependency.
   static const IncompatibilityCause dependency = const _DependencyCause();
 
@@ -30,6 +34,10 @@ class ConflictCause implements IncompatibilityCause {
   final Incompatibility other;
 
   ConflictCause(this.conflict, this.other);
+}
+
+class _RootCause implements IncompatibilityCause {
+  const _RootCause();
 }
 
 class _DependencyCause implements IncompatibilityCause {
