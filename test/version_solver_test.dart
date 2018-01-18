@@ -1216,18 +1216,18 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("no min pre-release constraint", () async {
+      test("no min pre-release constraint that matches the current SDK",
+          () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '>=1.2.3-dev.2.0 <2.0.0'}
+            'environment': {'sdk': '>=1.2.3-dev.2.0 <1.2.3'}
           })
         ]).create();
 
         await expectResolves(
-            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-            error: 'Package myapp requires SDK version >=1.2.3-dev.2.0 <2.0.0 '
-                'but the current SDK is 1.2.3-dev.1.0.');
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.3.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
       test("no build release constraints", () async {
@@ -1244,18 +1244,34 @@ void dartSdkConstraint() {
       });
     });
 
-    test("works generally", () async {
-      await d.dir(appPath, [
-        await d.pubspec({
-          'name': 'myapp',
-          'environment': {'sdk': '<1.2.3'}
-        })
-      ]).create();
+    group("allows", () {
+      test("an exclusive max that matches the current SDK", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3'}
+          })
+        ]).create();
 
-      await expectResolves(
-          environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-          output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
-              contains('<=1.2.3-dev.1.0'), contains('myapp')));
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
+
+      test("a pre-release min that doesn't match the current SDK", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '>=1.0.0-dev.1.0 <1.2.3'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
     });
   });
 }
