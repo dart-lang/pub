@@ -102,8 +102,7 @@ class PackageRef extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name != 'hosted') return "$name";
+    if (isMagic || isRoot || source.name == 'hosted') return name;
     return "$name from $source";
   }
 
@@ -157,8 +156,8 @@ class PackageId extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name == 'hosted') return "$name $version";
+    if (isMagic || isRoot) return name;
+    if (source.name == 'hosted') return "$name $version";
     return "$name $version from $source";
   }
 }
@@ -230,8 +229,8 @@ class PackageRange extends PackageName {
   }
 
   String toTerseString() {
-    if (isMagic) return name;
-    if (isRoot || source.name == 'hosted') return "$name $constraint";
+    if (isMagic || isRoot) return name;
+    if (source.name == 'hosted') return "$name $constraint";
     return "$name $constraint from $source";
   }
 
@@ -240,6 +239,23 @@ class PackageRange extends PackageName {
     if (features.isEmpty) return this;
     return new PackageRange(name, source, constraint, description,
         features: new Map.from(this.features)..addAll(features));
+  }
+
+  /// Returns a copy of [this] with the same semantics, but with a `^`-style
+  /// constraint if possible.
+  PackageRange withTerseConstraint() {
+    if (constraint is! VersionRange) return this;
+    if (constraint.toString().startsWith("^")) return this;
+
+    var range = constraint as VersionRange;
+    if (range.includeMin &&
+        !range.includeMax &&
+        range.min != null &&
+        range.max == range.min.nextBreaking) {
+      return withConstraint(new VersionConstraint.compatibleWith(range.min));
+    } else {
+      return this;
+    }
   }
 
   /// Whether [id] satisfies this dependency.

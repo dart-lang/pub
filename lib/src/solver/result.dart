@@ -10,36 +10,27 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
-import 'failure.dart';
 import 'report.dart';
 import 'type.dart';
 
-/// The result of a version resolution.
+/// The result of a successful version resolution.
 class SolveResult {
-  /// Whether the solver found a complete solution or failed.
-  bool get succeeded => error == null;
-
   /// The list of concrete package versions that were selected for each package
-  /// reachable from the root, or `null` if the solver failed.
+  /// reachable from the root.
   final List<PackageId> packages;
 
   /// The dependency overrides that were used in the solution.
   final List<PackageRange> overrides;
 
   /// A map from package names to the pubspecs for the versions of those
-  /// packages that were installed, or `null` if the solver failed.
+  /// packages that were installed.
   final Map<String, Pubspec> pubspecs;
 
   /// The available versions of all selected packages from their source.
   ///
-  /// Will be empty if the solve failed. An entry here may not include the full
-  /// list of versions available if the given package was locked and did not
-  /// need to be unlocked during the solve.
+  /// An entry here may not include the full list of versions available if the
+  /// given package was locked and did not need to be unlocked during the solve.
   final Map<String, List<Version>> availableVersions;
-
-  /// The error that prevented the solver from finding a solution or `null` if
-  /// it was successful.
-  final SolveFailure error;
 
   /// The number of solutions that were attempted before either finding a
   /// successful solution or exhausting all options.
@@ -97,7 +88,7 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult.success(
+  SolveResult(
       this._sources,
       this._root,
       this._previousLockFile,
@@ -105,14 +96,7 @@ class SolveResult {
       this.overrides,
       this.pubspecs,
       this.availableVersions,
-      this.attemptedSolutions)
-      : error = null;
-
-  SolveResult.failure(this._sources, this._root, this._previousLockFile,
-      this.overrides, this.error, this.attemptedSolutions)
-      : this.packages = null,
-        this.pubspecs = null,
-        this.availableVersions = {};
+      this.attemptedSolutions);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
@@ -130,13 +114,6 @@ class SolveResult {
         .summarize(dryRun: dryRun);
   }
 
-  String toString() {
-    if (!succeeded) {
-      return 'Failed to solve after $attemptedSolutions attempts:\n'
-          '$error';
-    }
-
-    return 'Took $attemptedSolutions tries to resolve to\n'
-        '- ${packages.join("\n- ")}';
-  }
+  String toString() => 'Took $attemptedSolutions tries to resolve to\n'
+      '- ${packages.join("\n- ")}';
 }

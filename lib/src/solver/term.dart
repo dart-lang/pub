@@ -27,7 +27,9 @@ class Term {
   /// A copy of this term with the opposite [isPositive] value.
   Term get inverse => new Term(package, !isPositive);
 
-  Term(this.package, this.isPositive);
+  Term(PackageName package, this.isPositive)
+      : package =
+            package is PackageRange ? package.withTerseConstraint() : package;
 
   /// The constraint of [package].
   VersionConstraint get constraint {

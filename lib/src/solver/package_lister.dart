@@ -15,6 +15,7 @@ import '../sdk.dart' as sdk;
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
+import 'incompatibility_cause.dart';
 import 'term.dart';
 
 /// A cache of all the versions of a single package that provides information
@@ -109,7 +110,8 @@ class PackageLister {
       _knownInvalidSdks = constraint.union(_knownInvalidSdks);
 
       return [
-        new Incompatibility([new Term(_ref.withConstraint(constraint), true)])
+        new Incompatibility([new Term(_ref.withConstraint(constraint), true)],
+            IncompatibilityCause.sdk)
       ];
     }
 
@@ -138,7 +140,7 @@ class PackageLister {
       return new Incompatibility([
         new Term(_ref.withConstraint(constraint), true),
         new Term(pubspec.dependencies[package], false)
-      ]);
+      ], IncompatibilityCause.dependency);
     }).toList();
   }
 

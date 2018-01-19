@@ -15,7 +15,9 @@ import '../pubspec.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'assignment.dart';
+import 'failure.dart';
 import 'incompatibility.dart';
+import 'incompatibility_cause.dart';
 import 'package_lister.dart';
 import 'partial_solution.dart';
 import 'result.dart';
@@ -65,7 +67,8 @@ class VersionSolver {
     _log("selecting ${rootId.toTerseString()}");
     for (var dependency in _root.immediateDependencies.values) {
       _addIncompatibility(new Incompatibility(
-          [new Term(rootId, true), new Term(dependency, false)]));
+          [new Term(rootId, true), new Term(dependency, false)],
+          IncompatibilityCause.dependency));
     }
 
     var next = _root.name;
@@ -180,7 +183,7 @@ class VersionSolver {
     _log("${log.red(log.bold("conflict"))}: $incompatibility");
 
     var newIncompatibility = false;
-    while (true) {
+    while (!incompatibility.isFailure) {
       // The term in `incompatibility.terms` that was most recently satisfied by
       // [_solution].
       Term mostRecentTerm;
@@ -230,12 +233,6 @@ class VersionSolver {
         }
       }
 
-      // If we have a conflict at the root level, there's no hope of finding a
-      // solution and version solving has failed.
-      if (mostRecentSatisfier.decisionLevel == 0) {
-        throw "Tough luck, chuck!";
-      }
-
       // If [mostRecentSatisfier] is the only satisfier left at its decision
       // level, or if it has no cause (indicating that it's a decision rather
       // than a derivation), then [incompatibility] is the root cause. We then
@@ -273,7 +270,8 @@ class VersionSolver {
       // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
       if (difference != null) newTerms.add(difference.inverse);
 
-      incompatibility = new Incompatibility(newTerms);
+      incompatibility = new Incompatibility(newTerms,
+          new ConflictCause(incompatibility, mostRecentSatisfier.cause));
       newIncompatibility = true;
 
       var partially = difference == null ? "" : " partially";
@@ -283,6 +281,8 @@ class VersionSolver {
       _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
       _log("$bang thus: $incompatibility");
     }
+
+    throw new SolveFailure(incompatibility);
   }
 
   /// Tries to select a version of a required package.
@@ -307,7 +307,8 @@ class VersionSolver {
     if (version == null) {
       // If there are no versions that satisfy [package.constraint], add an
       // incompatibility that indicates that.
-      _addIncompatibility(new Incompatibility([new Term(package, true)]));
+      _addIncompatibility(new Incompatibility(
+          [new Term(package, true)], IncompatibilityCause.noVersions));
       return package.name;
     }
 
@@ -367,7 +368,7 @@ class VersionSolver {
       }
     }
 
-    return new SolveResult.success(
+    return new SolveResult(
         _systemCache.sources,
         _root,
         new LockFile.empty(),
