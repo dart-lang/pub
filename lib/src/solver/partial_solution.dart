@@ -52,6 +52,11 @@ class PartialSolution {
   void assign(PackageName package, bool isPositive,
       {Incompatibility cause, bool decision: false}) {
     if (decision) {
+      // When we make a new decision after backtracking, count an additional
+      // attempted solution. If we backtrack multiple times in a row, though, we
+      // only want to count one, since we haven't actually started attempting a
+      // new solution.
+      if (_backtracking) _attemptedSolutions++;
       _backtracking = false;
       _decisionLevel++;
     }
@@ -66,10 +71,6 @@ class PartialSolution {
   /// Resets the current decision level to [decisionLevel], and removes all
   /// assignments made after that level.
   void backtrack(int decisionLevel) {
-    // When we start backtracking, count an additional attempted solution. If we
-    // backtrack multiple times in a row, though, we only want to count one,
-    // since we haven't actually started attempting a new solution.
-    if (!_backtracking) _attemptedSolutions++;
     _backtracking = true;
 
     var packages = new Set<String>();
