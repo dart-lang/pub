@@ -682,6 +682,41 @@ void backtracking() {
     await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
   });
 
+  // This matches the Branching Error Reporting example in the version solver
+  // documentation, and tests that we display line numbers correctly.
+  test("branching error reporting", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'a': '^1.0.0', 'b': '^1.0.0'});
+      builder.serve('foo', '1.1.0', deps: {'x': '^1.0.0', 'y': '^1.0.0'});
+      builder.serve('a', '1.0.0', deps: {'b': '^2.0.0'});
+      builder.serve('b', '1.0.0');
+      builder.serve('b', '2.0.0');
+      builder.serve('x', '1.0.0', deps: {'y': '^2.0.0'});
+      builder.serve('y', '1.0.0');
+      builder.serve('y', '2.0.0');
+    });
+
+    await d.appDir({"foo": "^1.0.0"}).create();
+    await expectResolves(
+        // We avoid equalsIgnoringWhitespace() here because we want to test the
+        // formatting of the line number.
+        error: '    Because foo <1.1.0 depends on a ^1.0.0 which depends on b '
+            '^2.0.0, foo <1.1.0 requires b\n'
+            '      ^2.0.0.\n'
+            '(1) So, because foo <1.1.0 depends on b ^1.0.0, foo <1.1.0 is '
+            'forbidden.\n'
+            '\n'
+            '    Because foo >=1.1.0 depends on x ^1.0.0 which depends on y '
+            '^2.0.0, foo >=1.1.0 requires y\n'
+            '      ^2.0.0.\n'
+            '    And because foo >=1.1.0 depends on y ^1.0.0, foo >=1.1.0 is '
+            'forbidden.\n'
+            '    And because foo <1.1.0 is forbidden (1), foo is forbidden.\n'
+            '    So, because myapp depends on foo ^1.0.0, version solving '
+            'failed.',
+        tries: 2);
+  });
+
   // The latest versions of a and b disagree on c. An older version of either
   // will resolve the problem. This test validates that b, which is farther
   // in the dependency graph from myapp is downgraded first.
