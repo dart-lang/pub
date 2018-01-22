@@ -31,7 +31,7 @@ Future authorizePub(TestProcess pub, ShelfTestServer server,
         ..followRedirects = false)
       .send();
   expect(response.headers['location'],
-      equals('http://pub.dartlang.org/authorized'));
+      equals('https://pub.dartlang.org/authorized'));
 
   handleAccessTokenRequest(server, accessToken);
 }
