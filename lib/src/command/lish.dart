@@ -164,7 +164,7 @@ class LishCommand extends PubCommand {
       log.error("Sorry, your package is missing "
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
-          "http://pub.dartlang.org/doc/pub-lish.html.\n");
+          "https://www.dartlang.org/tools/pub/cmd/pub-lish.\n");
       return false;
     }
 
