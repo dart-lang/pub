@@ -105,13 +105,14 @@ class PartialSolution {
     var ref = assignment.package.toRef();
     var negativeByRef = negative[name];
     var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
-    if (oldNegative != null) assignment = assignment.intersect(oldNegative);
+    var term =
+        oldNegative == null ? assignment : assignment.intersect(oldNegative);
 
-    if (assignment.isPositive) {
+    if (term.isPositive) {
       negative.remove(name);
-      positive[name] = assignment;
+      positive[name] = term;
     } else {
-      negative.putIfAbsent(name, () => {})[ref] = assignment;
+      negative.putIfAbsent(name, () => {})[ref] = term;
     }
   }
 
