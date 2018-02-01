@@ -17,7 +17,7 @@ import 'test_pub.dart';
 
 main() {
   group('basic graph', basicGraph);
-  group('with lockfile', withLockFile, skip: true);
+  group('with lockfile', withLockFile);
   group('root dependency', rootDependency);
   group('dev dependency', devDependency);
   group('unsolvable', unsolvable);
@@ -200,7 +200,7 @@ void withLockFile() {
       'baz': '2.0.0',
       'qux': '1.0.0',
       'newdep': '2.0.0'
-    }, tries: 4);
+    }, tries: 2);
   });
 }
 

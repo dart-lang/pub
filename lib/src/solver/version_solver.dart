@@ -58,7 +58,10 @@ class VersionSolver {
   /// The entrypoint package, whose dependencies seed the version solve process.
   final Package _root;
 
-  VersionSolver(this._type, this._systemCache, this._root, LockFile lockFile,
+  /// The lockfile, indicating which package versions were previously selected.
+  final LockFile _lockFile;
+
+  VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       List<String> useLatest);
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -376,7 +379,7 @@ class VersionSolver {
     return new SolveResult(
         _systemCache.sources,
         _root,
-        new LockFile.empty(),
+        _lockFile,
         packages,
         [],
         pubspecs,
@@ -410,8 +413,11 @@ class VersionSolver {
   /// Returns the package lister for [package], creating it if necessary.
   PackageLister _packageLister(PackageName package) {
     var ref = package.toRef();
-    return _packageListers.putIfAbsent(
-        ref, () => new PackageLister(_systemCache, ref));
+    return _packageListers.putIfAbsent(ref, () {
+      var locked = _type == SolveType.GET ? _lockFile.packages[ref.name] : null;
+      if (locked != null && !locked.samePackage(ref)) locked = null;
+      return new PackageLister(_systemCache, ref, locked);
+    });
   }
 
   /// Logs [message] in the context of the current selected packages.
