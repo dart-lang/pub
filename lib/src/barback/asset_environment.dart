@@ -127,7 +127,8 @@ class AssetEnvironment {
         new Map.fromIterable(packages, value: (packageName) {
           var package = graph.packages[packageName];
           if (mode != BarbackMode.DEBUG) return package;
-          var cache = path.join('.pub/deps/debug', packageName);
+          var cache =
+              path.join(graph.entrypoint.cachePath, 'deps/debug', packageName);
           if (!dirExists(cache)) return package;
           return new CachedPackage(package, cache);
         }));

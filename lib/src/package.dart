@@ -152,7 +152,7 @@ class Package {
   /// This is similar to `p.join(dir, part1, ...)`, except that subclasses may
   /// override it to report that certain paths exist elsewhere than within
   /// [dir]. For example, a [CachedPackage]'s `lib` directory is in the
-  /// `.pub/deps` directory.
+  /// `.dart_tool/pub/deps` directory.
   String path(String part1,
       [String part2,
       String part3,

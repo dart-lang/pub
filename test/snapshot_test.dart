@@ -5,6 +5,8 @@
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'package:pub/src/io.dart';
+
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
@@ -31,7 +33,7 @@ main() {
         contains("Precompiled foo:goodbye.")
       ]));
 
-      await d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [
           d.file('hello.dart.snapshot', contains('hello!')),
@@ -72,7 +74,7 @@ main() {
         contains("Precompiled foo:goodbye.")
       ]));
 
-      await d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [
           d.file('hello.dart.snapshot', contains('hello!')),
@@ -134,7 +136,7 @@ main() {
 
       await pubGet(output: contains("Precompiled foo:hello."));
 
-      await d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
 
@@ -156,7 +158,7 @@ main() {
 
         await pubGet(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('hello!'))]).validate();
 
         await globalPackageServer.add((builder) {
@@ -168,7 +170,7 @@ main() {
 
         await pubUpgrade(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('hello 2!'))]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -198,7 +200,7 @@ main() {
 
         await pubGet(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('hello!'))]).validate();
 
         await globalPackageServer.add((builder) {
@@ -209,7 +211,7 @@ main() {
 
         await pubUpgrade(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('hello 2!'))]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -232,7 +234,7 @@ main() {
 
         await pubGet(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('Hello!'))]).validate();
 
         await d.git('foo.git', [
@@ -242,7 +244,7 @@ main() {
 
         await pubUpgrade(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
             [d.file('hello.dart.snapshot', contains('Goodbye!'))]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -262,7 +264,7 @@ main() {
 
         await pubGet(output: contains("Precompiled foo:hello."));
 
-        await d.dir(p.join(appPath, '.pub', 'bin'), [
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo', [d.outOfDateSnapshot('hello.dart.snapshot')])
         ]).create();
 
@@ -274,7 +276,7 @@ main() {
         expect(process.stdout, emitsThrough("hello!"));
         await process.shouldExit();
 
-        await d.dir(p.join(appPath, '.pub', 'bin'), [
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.file('sdk-version', '0.1.2+3\n'),
           d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
         ]).validate();
@@ -315,7 +317,7 @@ main() {
 
     await pubGet(output: contains("Precompiled foo:hello."));
 
-    await d.dir(p.join(appPath, '.pub', 'bin'), [
+    await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
       d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
     ]).validate();
 
@@ -342,7 +344,7 @@ main() {
 
       await pubUpgrade(output: isNot(contains("Precompiled foo:hello.")));
 
-      await d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
@@ -365,7 +367,7 @@ main() {
 
       // No local cache should be created, since all dependencies transitively
       // depend on the entrypoint.
-      await d.nothing(p.join(appPath, '.pub', 'bin')).validate();
+      await d.nothing(p.join(appPath, '.dart_tool', 'pub', 'bin')).validate();
     });
 
     test("for a path dependency", () async {
@@ -383,7 +385,7 @@ main() {
 
       await pubGet();
 
-      await d.nothing(p.join(appPath, '.pub', 'bin')).validate();
+      await d.nothing(p.join(appPath, '.dart_tool', 'pub', 'bin')).validate();
     });
 
     test("for a transitive dependency", () async {
@@ -399,7 +401,9 @@ main() {
 
       await pubGet();
 
-      await d.nothing(p.join(appPath, '.pub', 'bin', 'bar')).validate();
+      await d
+          .nothing(p.join(appPath, '.dart_tool', 'pub', 'bin', 'bar'))
+          .validate();
     });
   });
 
@@ -422,7 +426,7 @@ main() {
       await pubGet(
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      await d.nothing(p.join(appPath, '.pub')).validate();
+      await d.nothing(p.join(appPath, '.dart_tool', 'pub')).validate();
 
       var process = await pubRun(args: ['foo:hello']);
       expect(process.stdout, emits("hello!"));
@@ -445,7 +449,7 @@ main() {
 
       await pubGet(output: contains("Precompiled foo:hello."));
 
-      await d.dir(p.join(appPath, '.pub', 'bin', 'foo'),
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
           [d.file('hello.dart.snapshot', contains('hello!'))]).validate();
 
       await globalPackageServer.add((builder) {
@@ -458,7 +462,9 @@ main() {
       await pubUpgrade(
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      await d.nothing(p.join(appPath, '.pub', 'bin', 'foo')).validate();
+      await d
+          .nothing(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'))
+          .validate();
 
       var process = await pubRun(args: ['foo:hello']);
       expect(process.stdout, emits("hello 2!"));
@@ -485,7 +491,7 @@ main() {
       await pubUpgrade(
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      await d.dir(p.join(appPath, '.pub', 'bin'), [
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
@@ -521,7 +527,7 @@ main() {
         ]),
         exitCode: 0);
 
-    await d.dir(p.join(appPath, '.pub', 'bin'), [
+    await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
       d.file('sdk-version', '0.1.2+3\n'),
       d.dir('foo', [
         d.nothing('hello.dart.snapshot'),
@@ -532,5 +538,69 @@ main() {
         d.nothing('goodbye.dart.snapshot')
       ])
     ]).validate();
+  });
+
+  group("migrates the old-style cache", () {
+    test("when installing packages", () async {
+      await servePackages((builder) {
+        builder.serve("foo", "1.2.3", contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
+        ]);
+      });
+
+      await d.dir(appPath, [
+        d.appPubspec({"foo": "1.2.3"}),
+
+        // Simulate an old-style cache directory.
+        d.dir(".pub", [d.file("junk", "junk")])
+      ]).create();
+
+      await pubGet(output: contains("Precompiled foo:hello."));
+
+      await d.dir(appPath, [d.nothing(".pub")]).validate();
+
+      await d.dir(p.join(appPath, '.dart_tool', 'pub'), [
+        d.file('junk', 'junk'),
+        d.dir('bin', [
+          d.file('sdk-version', '0.1.2+3\n'),
+          d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
+        ])
+      ]).validate();
+    });
+
+    test("when running executables", () async {
+      await servePackages((builder) {
+        builder.serve("foo", "1.2.3", contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
+        ]);
+      });
+
+      await d.appDir({"foo": "1.2.3"}).create();
+
+      await pubGet(output: contains("Precompiled foo:hello."));
+
+      // Move the directory to the old location to simulate it being created by an
+      // older version of pub.
+      renameDir(p.join(d.sandbox, appPath, '.dart_tool', 'pub'),
+          p.join(d.sandbox, appPath, '.pub'));
+
+      await d.dir(appPath, [
+        d.dir(".pub", [d.file("junk", "junk")])
+      ]).create();
+
+      var process = await pubRun(args: ['foo:hello']);
+      expect(process.stdout, emits("hello!"));
+      await process.shouldExit();
+
+      await d.dir(p.join(appPath, '.dart_tool', 'pub'), [
+        d.file('junk', 'junk'),
+        d.dir('bin', [
+          d.file('sdk-version', '0.1.2+3\n'),
+          d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
+        ])
+      ]).validate();
+    });
   });
 }
