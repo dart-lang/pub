@@ -45,9 +45,9 @@ class TransformerCache {
   /// Loads the transformer cache for [environment].
   ///
   /// This may modify the cache.
-  TransformerCache.load(PackageGraph graph)
-      : _graph = graph,
-        _dir = graph.entrypoint.root.path(".pub/transformers") {
+  TransformerCache.load(PackageGraph graph) : _graph = graph {
+    graph.entrypoint.migrateCache();
+    _dir = p.join(graph.entrypoint.cachePath, "transformers");
     _oldTransformers = _parseManifest();
   }
 

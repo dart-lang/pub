@@ -5,6 +5,8 @@
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'package:pub/src/io.dart';
+
 import '../descriptor.dart' as d;
 import '../serve/utils.dart';
 import '../test_pub.dart';
@@ -115,7 +117,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
   });
@@ -146,7 +148,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
   });
@@ -164,7 +166,7 @@ main() {
 
     await pubGet(output: isNot(contains("Precompiled foo.")));
 
-    await d.dir(appPath, [d.nothing(".pub/deps")]).validate();
+    await d.dir(appPath, [d.nothing(".dart_tool/pub/deps")]).validate();
   });
 
   test("recaches when the dependency is updated", () async {
@@ -199,7 +201,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
 
@@ -209,7 +211,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'See ya!';")])
     ]).validate();
   });
@@ -286,7 +288,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final mode = 'debug';")])
     ]).validate();
   });
@@ -320,7 +322,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Modified!';")])
     ]).create();
 
@@ -360,6 +362,51 @@ main() {
     // Manually reset the cache to its original state to prove that the
     // transformer won't be run again on it.
     await d.dir(appPath, [
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
+          [d.file("foo.dart", "final message = 'Hello!';")])
+    ]).create();
+
+    var pub = await pubRun(args: ["bin/script"]);
+    expect(pub.stdout, emits("Hello!"));
+    await pub.shouldExit();
+  });
+
+  test("reads cached packages from the old-style cache", () async {
+    await servePackages((builder) {
+      builder.serveRealPackage('barback');
+
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
+        d.dir("lib", [
+          d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
+          d.file("foo.dart", "final message = 'Hello!';")
+        ])
+      ]);
+    });
+
+    await d.dir(appPath, [
+      d.appPubspec({"foo": "1.2.3"}),
+      d.dir('bin', [
+        d.file('script.dart', """
+          import 'package:foo/foo.dart';
+
+          void main() => print(message);""")
+      ])
+    ]).create();
+
+    await pubGet(output: contains("Precompiled foo."));
+
+    // Move the directory to the old location to simulate it being created by an
+    // older version of pub.
+    renameDir(p.join(d.sandbox, appPath, '.dart_tool', 'pub'),
+        p.join(d.sandbox, appPath, '.pub'));
+
+    // Manually reset the cache to its original state to prove that the
+    // transformer won't be run again on it.
+    await d.dir(appPath, [
       d.dir(".pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Hello!';")])
     ]).create();
@@ -367,6 +414,42 @@ main() {
     var pub = await pubRun(args: ["bin/script"]);
     expect(pub.stdout, emits("Hello!"));
     await pub.shouldExit();
+  });
+
+  test("migrates the old-style cache", () async {
+    await servePackages((builder) {
+      builder.serveRealPackage('barback');
+
+      builder.serve("foo", "1.2.3", deps: {
+        'barback': 'any'
+      }, pubspec: {
+        'transformers': ['foo']
+      }, contents: [
+        d.dir("lib", [
+          d.file("transformer.dart", replaceTransformer("Hello", "Goodbye")),
+          d.file("foo.dart", "final message = 'Hello!';")
+        ])
+      ]);
+    });
+
+    await d.dir(appPath, [
+      d.appPubspec({"foo": "1.2.3"}),
+
+      // Simulate an old-style cache directory.
+      d.dir(".pub", [d.file("junk", "junk")])
+    ]).create();
+
+    await pubGet(output: contains("Precompiled foo."));
+
+    await d.dir(appPath, [d.nothing(".pub")]).validate();
+
+    await d.dir(appPath, [
+      d.dir(".dart_tool/pub", [
+        d.file("junk", "junk"),
+        d.dir("deps/debug/foo/lib",
+            [d.file("foo.dart", "final message = 'Goodbye!';")])
+      ])
+    ]).validate();
   });
 
   // Regression test for issue 21087.
@@ -436,7 +519,7 @@ main() {
     await pubGet(output: contains("Precompiled foo."));
 
     await d.dir(appPath, [
-      d.dir(".pub/deps/debug/foo/lib",
+      d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'Goodbye!';")])
     ]).validate();
 
@@ -445,7 +528,8 @@ main() {
 
     await pubGet(output: isNot(contains("Precompiled foo.")));
 
-    await d.dir(appPath, [d.nothing(".pub/deps/debug/foo")]).validate();
+    await d
+        .dir(appPath, [d.nothing(".dart_tool/pub/deps/debug/foo")]).validate();
   });
 
   // Regression test for https://github.com/dart-lang/pub/issues/1586.
@@ -472,7 +556,8 @@ main() {
     await pubGet(output: contains("Precompiled foo"));
 
     await d.dir(appPath, [
-      d.file(".pub/deps/debug/foo/lib/inputs.txt", contains('hello.dart.copy'))
+      d.file(".dart_tool/pub/deps/debug/foo/lib/inputs.txt",
+          contains('hello.dart.copy'))
     ]).validate();
 
     await pubServe();
@@ -508,7 +593,7 @@ foo|lib/list_transformer.dart.copy""");
       await pubGet(
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      await d.nothing(p.join(appPath, ".pub")).validate();
+      await d.nothing(p.join(appPath, ".dart_tool/pub")).validate();
     });
 
     test("deletes the cache when the dependency is updated", () async {
@@ -543,7 +628,7 @@ foo|lib/list_transformer.dart.copy""");
       await pubGet(output: contains("Precompiled foo."));
 
       await d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib",
+        d.dir(".dart_tool/pub/deps/debug/foo/lib",
             [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
 
@@ -553,7 +638,9 @@ foo|lib/list_transformer.dart.copy""");
       await pubGet(
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
-      await d.nothing(p.join(appPath, ".pub/deps/debug/foo")).validate();
+      await d
+          .nothing(p.join(appPath, ".dart_tool/pub/deps/debug/foo"))
+          .validate();
     });
 
     test(
@@ -580,7 +667,7 @@ foo|lib/list_transformer.dart.copy""");
       await pubGet(output: contains("Precompiled foo."));
 
       await d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib",
+        d.dir(".dart_tool/pub/deps/debug/foo/lib",
             [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
 
@@ -589,7 +676,7 @@ foo|lib/list_transformer.dart.copy""");
           args: ["--no-precompile"], output: isNot(contains("Precompiled")));
 
       await d.dir(appPath, [
-        d.dir(".pub/deps/debug/foo/lib",
+        d.dir(".dart_tool/pub/deps/debug/foo/lib",
             [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
     });

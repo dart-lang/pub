@@ -1,7 +1,7 @@
 .buildlog
 .DS_Store
 .idea
-.pub/
+.dart_tool/
 .settings/
 /build/
 packages

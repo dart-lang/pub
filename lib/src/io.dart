@@ -526,8 +526,6 @@ final bool runningFromSdk =
 final _dartRepoRegExp = new RegExp(r"/third_party/pkg/pub/("
     r"bin/pub\.dart"
     r"|"
-    r"\.pub/pub\.test\.snapshot"
-    r"|"
     r"test/.*_test\.dart"
     r")$");
 
@@ -584,7 +582,7 @@ final String pubRoot = (() {
     return path.joinAll(components.take(testIndex));
   }
 
-  // Pub is either run from ".pub/pub.test.snapshot" or "bin/pub.dart".
+  // Pub is run from "bin/pub.dart".
   return path.dirname(path.dirname(script));
 })();
 
