@@ -17,15 +17,61 @@ ValidatorCreator size(int size) {
   return (entrypoint) => new SizeValidator(entrypoint, new Future.value(size));
 }
 
-main() {
-  setUp(d.validPackage.create);
+expectSizeValidationError(ValidatorCreator fn, Matcher matcher) {
+  expect(validatePackage(fn), completion(pairOf(contains(matcher), anything)));
+}
 
-  test('considers a package valid if it is <= 100 MB', () {
+main() {
+  test('considers a package valid if it is <= 100 MB', () async {
+    await d.validPackage.create();
+
     expectNoValidationError(size(100));
     expectNoValidationError(size(100 * math.pow(2, 20)));
   });
 
-  test('considers a package invalid if it is more than 100 MB', () {
-    expectValidationError(size(100 * math.pow(2, 20) + 1));
+  group('considers a package invalid if it is more than 100 MB', () {
+    test('package is not under source control and no .gitignore exists',
+        () async {
+      await d.validPackage.create();
+
+      expectSizeValidationError(
+          size(100 * math.pow(2, 20) + 1),
+          equals("Your package is 100.0 MB. Hosted packages must "
+              "be smaller than 100 MB."));
+    });
+
+    test('package is not under source control and .gitignore exists', () async {
+      await d.validPackage.create();
+      await d.dir(appPath, [d.file('.gitignore', 'ignored')]).create();
+
+      expectSizeValidationError(
+          size(100 * math.pow(2, 20) + 1),
+          allOf(
+              contains("Hosted packages must be smaller than 100 MB."),
+              contains("Your .gitignore has no effect since your project "
+                  "does not appear to be in version control.")));
+    });
+
+    test('package is under source control and no .gitignore exists', () async {
+      await d.validPackage.create();
+      await d.git(appPath).create();
+
+      expectSizeValidationError(
+          size(100 * math.pow(2, 20) + 1),
+          allOf(
+              contains("Hosted packages must be smaller than 100 MB."),
+              contains("Consider adding a .gitignore to avoid including "
+                  "temporary files.")));
+    });
+
+    test('package is under source control and .gitignore exists', () async {
+      await d.validPackage.create();
+      await d.git(appPath, [d.file('.gitignore', 'ignored')]).create();
+
+      expectSizeValidationError(
+          size(100 * math.pow(2, 20) + 1),
+          equals("Your package is 100.0 MB. Hosted packages must "
+              "be smaller than 100 MB."));
+    });
   });
 }

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import '../entrypoint.dart';
+import '../io.dart' as io;
 import '../validator.dart';
 
 /// The maximum size of the package to upload (100 MB).
@@ -21,8 +22,21 @@ class SizeValidator extends Validator {
     return packageSize.then((size) {
       if (size <= _MAX_SIZE) return;
       var sizeInMb = (size / math.pow(2, 20)).toStringAsPrecision(4);
-      errors.add("Your package is $sizeInMb MB. Hosted packages must be "
-          "smaller than 100 MB.");
+      // Current implementation of Package.listFiles skips hidden files
+      var ignoreExists = io.fileExists(entrypoint.root.path('.gitignore'));
+
+      var error = new StringBuffer("Your package is $sizeInMb MB. Hosted "
+          "packages must be smaller than 100 MB.");
+
+      if (ignoreExists && !entrypoint.root.inGitRepo) {
+        error.write(" Your .gitignore has no effect since your project "
+            "does not appear to be in version control.");
+      } else if (!ignoreExists && entrypoint.root.inGitRepo) {
+        error.write(" Consider adding a .gitignore to avoid including "
+            "temporary files.");
+      }
+
+      errors.add(error.toString());
     });
   }
 }
