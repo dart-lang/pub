@@ -107,9 +107,8 @@ abstract class Source {
   /// convert it into a human-friendly form.
   ///
   /// By default, it just converts the description to a string, but sources
-  /// may customize this. [containingPath] is the containing directory of the
-  /// root package.
-  String formatDescription(String containingPath, description) {
+  /// may customize this.
+  String formatDescription(description) {
     return description.toString();
   }
 

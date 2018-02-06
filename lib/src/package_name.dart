@@ -78,7 +78,10 @@ abstract class PackageName {
   }
 
   /// Like [toString], but leaves off some information for extra terseness.
-  String toTerseString();
+  ///
+  /// The exact amount of information this displays can be controlled with
+  /// [detail].
+  String toTerseString([PackageDetail detail]);
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
@@ -101,8 +104,10 @@ class PackageRef extends PackageName {
     return "$name from $source";
   }
 
-  String toTerseString() {
-    if (isMagic || isRoot || source.name == 'hosted') return name;
+  String toTerseString([PackageDetail detail]) {
+    detail ??= PackageDetail.terse;
+    if (isMagic || isRoot) return name;
+    if (detail == PackageDetail.terse && source.name == 'hosted') return name;
     return "$name from $source";
   }
 
@@ -155,10 +160,18 @@ class PackageId extends PackageName {
     return "$name $version from $source";
   }
 
-  String toTerseString() {
+  String toTerseString([PackageDetail detail]) {
+    detail ??= PackageDetail.terse;
     if (isMagic || isRoot) return name;
-    if (source.name == 'hosted') return "$name $version";
-    return "$name $version from $source";
+
+    if (detail == PackageDetail.description) {
+      return "$name $version from $source " +
+          source.formatDescription(description);
+    } else if (detail == PackageDetail.source || source.name != 'hosted') {
+      return "$name $version from $source";
+    } else {
+      return "$name $version";
+    }
   }
 }
 
@@ -225,13 +238,21 @@ class PackageRange extends PackageName {
     }
 
     if (features.isNotEmpty) prefix += " $featureDescription";
-    return "$prefix ($description)";
+    return "$prefix (${source.formatDescription(description)})";
   }
 
-  String toTerseString() {
+  String toTerseString([PackageDetail detail]) {
+    detail ??= PackageDetail.terse;
     if (isMagic || isRoot) return name;
-    if (source.name == 'hosted') return "$name $constraint";
-    return "$name $constraint from $source";
+
+    if (detail == PackageDetail.description) {
+      return "$name $constraint from $source " +
+          source.formatDescription(description);
+    } else if (detail == PackageDetail.source || source.name != 'hosted') {
+      return "$name $constraint from $source";
+    } else {
+      return "$name $constraint";
+    }
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
@@ -293,6 +314,31 @@ class FeatureDependency {
   bool get isEnabled => this != unused;
 
   const FeatureDependency._(this._name);
+
+  String toString() => _name;
+}
+
+/// An enum of different levels of detail that can be used when displaying a
+/// terse package name.
+class PackageDetail implements Comparable<PackageDetail> {
+  /// Displays the source name for non-hosted sources, never displays the
+  /// description.
+  static const terse = const PackageDetail._("terse", 0);
+
+  /// Always displays the source name, never displays the description.
+  static const source = const PackageDetail._("source", 1);
+
+  /// Always displays both the source name and the description.
+  static const description = const PackageDetail._("description", 2);
+
+  final String _name;
+
+  /// The relative level of detail.
+  final int _detail;
+
+  const PackageDetail._(this._name, this._detail);
+
+  int compareTo(PackageDetail other) => _detail.compareTo(other._detail);
 
   String toString() => _name;
 }

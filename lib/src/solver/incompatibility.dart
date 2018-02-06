@@ -25,6 +25,17 @@ class Incompatibility {
   /// This normalizes [terms] so that each package has at most one term
   /// referring to it.
   factory Incompatibility(List<Term> terms, IncompatibilityCause cause) {
+    // Remove the root package from generated incompatibilities, since it will
+    // always be satisfied. This makes error reporting clearer, and may also
+    // make solving more efficient.
+    if (terms.length != 1 &&
+        cause is ConflictCause &&
+        terms.any((term) => term.isPositive && term.package.isRoot)) {
+      terms = terms
+          .where((term) => !term.isPositive || !term.package.isRoot)
+          .toList();
+    }
+
     if (terms.length == 1 ||
         // Short-circuit in the common case of a two-term incompatibility with
         // two different packages (for example, a dependency).
@@ -67,7 +78,11 @@ class Incompatibility {
 
   Incompatibility._(this.terms, this.cause);
 
-  String toString() {
+  /// Returns a string representation of [this].
+  ///
+  /// If [details] is passed, it controls the amount of detail that's written
+  /// for packages with the given names.
+  String toString([Map<String, PackageDetail> details]) {
     if (cause == IncompatibilityCause.dependency) {
       assert(terms.length == 2);
 
@@ -77,11 +92,11 @@ class Incompatibility {
       assert(!dependee.isPositive);
 
       if (depender.constraint.isAny) {
-        return "all versions of ${_terseRef(depender)} "
-            "depend on ${dependee.package.toTerseString()}";
+        return "all versions of ${_terseRef(depender, details)} "
+            "depend on ${_terse(dependee, details)}";
       } else {
-        return "${depender.package.toTerseString()} depends on "
-            "${dependee.package.toTerseString()}";
+        return "${_terse(depender, details)} depends on "
+            "${_terse(dependee, details)}";
       }
     } else if (cause == IncompatibilityCause.sdk) {
       assert(terms.length == 1);
@@ -90,16 +105,16 @@ class Incompatibility {
       // TODO(nweiz): Include more details about the expected and actual SDK
       // versions.
       if (terms.first.constraint.isAny) {
-        return "no versions of ${_terseRef(terms.first)} "
+        return "no versions of ${_terseRef(terms.first, details)} "
             "are compatible with the current SDK";
       } else {
-        return "${terms.first.package.toTerseString()} is incompatible with "
+        return "${_terse(terms.first, details)} is incompatible with "
             "the current SDK";
       }
     } else if (cause == IncompatibilityCause.noVersions) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
-      return "no versions of ${_terseRef(terms.first)} "
+      return "no versions of ${_terseRef(terms.first, details)} "
           "match ${terms.first.constraint}";
     } else if (isFailure) {
       return "version solving failed";
@@ -108,10 +123,10 @@ class Incompatibility {
     if (terms.length == 1) {
       var term = terms.single;
       if (term.constraint.isAny) {
-        return "${_terseRef(term)} is "
+        return "${_terseRef(term, details)} is "
             "${term.isPositive ? 'forbidden' : 'required'}";
       } else {
-        return "${term.package.toTerseString()} is "
+        return "${_terse(term, details)} is "
             "${term.isPositive ? 'forbidden' : 'required'}";
       }
     }
@@ -122,15 +137,15 @@ class Incompatibility {
       if (term1.isPositive == term2.isPositive) {
         if (term1.isPositive) {
           var package1 = term1.constraint.isAny
-              ? _terseRef(term1)
-              : term1.package.toTerseString();
+              ? _terseRef(term1, details)
+              : _terse(term1, details);
           var package2 = term2.constraint.isAny
-              ? _terseRef(term2)
-              : term2.package.toTerseString();
+              ? _terseRef(term2, details)
+              : _terse(term2, details);
           return "$package1 is incompatible with $package2";
         } else {
-          return "either ${term1.package.toTerseString()} or "
-              "${term2.package.toTerseString()}";
+          return "either ${_terse(term1, details)} or "
+              "${_terse(term2, details)}";
         }
       }
     }
@@ -138,15 +153,15 @@ class Incompatibility {
     var positive = <String>[];
     var negative = <String>[];
     for (var term in terms) {
-      (term.isPositive ? positive : negative).add(term.package.toTerseString());
+      (term.isPositive ? positive : negative).add(_terse(term, details));
     }
 
     if (positive.isNotEmpty && negative.isNotEmpty) {
       if (positive.length == 1) {
         var positiveTerm = terms.firstWhere((term) => term.isPositive);
         if (positiveTerm.constraint.isAny) {
-          return "all versions of ${_terseRef(positiveTerm)} require "
-              "${negative.join(' or ')}";
+          return "all versions of ${_terseRef(positiveTerm, details)} "
+              "require ${negative.join(' or ')}";
         } else {
           return "${positive.first} requires ${negative.join(' or ')}";
         }
@@ -160,6 +175,151 @@ class Incompatibility {
     }
   }
 
-  /// Returns a terse representation of term's package ref.
-  String _terseRef(Term term) => term.package.toRef().toTerseString();
+  /// Returns the equivalent of `"$this and $other"`, with more intelligent
+  /// phrasing for specific patterns.
+  ///
+  /// If [details] is passed, it controls the amount of detail that's written
+  /// for packages with the given names.
+  String andToString(Incompatibility other,
+      [Map<String, PackageDetail> details]) {
+    var requiresBoth = _tryRequiresBoth(other, details);
+    if (requiresBoth != null) return requiresBoth;
+
+    var requiresThrough = _tryRequiresThrough(other, details);
+    if (requiresThrough != null) return requiresThrough;
+
+    return "${this.toString(details)} and ${other.toString(details)}";
+  }
+
+  /// If "[this] and [other]" can be expressed as "some package requires both X
+  /// and Y", this returns that expression.
+  ///
+  /// Otherwise, this returns `null`.
+  String _tryRequiresBoth(Incompatibility other,
+      [Map<String, PackageDetail> details]) {
+    if (terms.length == 1 || other.terms.length == 1) return null;
+
+    var thisPositive = _singleTermWhere((term) => term.isPositive);
+    if (thisPositive == null) return null;
+    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+    if (otherPositive == null) return null;
+    if (thisPositive.package != otherPositive.package) return null;
+
+    var thisNegatives = terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or ');
+    var otherNegatives = other.terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or ');
+
+    var isDependency = cause == IncompatibilityCause.dependency &&
+        other.cause == IncompatibilityCause.dependency;
+    if (thisPositive.constraint.isAny) {
+      var verb = isDependency ? "depend on" : "require";
+      return "all versions of ${_terseRef(thisPositive, details)} $verb both "
+          "$thisNegatives and $otherNegatives";
+    } else {
+      var verb = isDependency ? "depends on" : "requires";
+      return "${_terse(thisPositive, details)} $verb both $thisNegatives and "
+          "$otherNegatives";
+    }
+  }
+
+  /// If "[this] and [other]" can be expressed as "X requires Y which requires
+  /// Z", this returns that expression.
+  ///
+  /// Otherwise, this returns `null`.
+  String _tryRequiresThrough(Incompatibility other,
+      [Map<String, PackageDetail> details]) {
+    if (terms.length == 1 || other.terms.length == 1) return null;
+
+    var thisNegative = _singleTermWhere((term) => !term.isPositive);
+    var otherNegative = other._singleTermWhere((term) => !term.isPositive);
+    if (thisNegative == null && otherNegative == null) return null;
+
+    var thisPositive = _singleTermWhere((term) => term.isPositive);
+    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+
+    Incompatibility prior;
+    Term priorNegative;
+    Incompatibility latter;
+    if (thisNegative != null &&
+        otherPositive != null &&
+        thisNegative.package.name == otherPositive.package.name &&
+        thisNegative.inverse.satisfies(otherPositive)) {
+      prior = this;
+      priorNegative = thisNegative;
+      latter = other;
+    } else if (otherNegative != null &&
+        thisPositive != null &&
+        otherNegative.package.name == thisPositive.package.name &&
+        otherNegative.inverse.satisfies(thisPositive)) {
+      prior = other;
+      priorNegative = otherNegative;
+      latter = this;
+    } else {
+      return null;
+    }
+
+    var priorPositives = prior.terms.where((term) => term.isPositive);
+
+    var buffer = new StringBuffer();
+    if (priorPositives.length > 1) {
+      var priorString =
+          priorPositives.map((term) => _terse(term, details)).join(' or ');
+      buffer.write("if $priorString then ");
+    } else if (priorPositives.first.constraint.isAny) {
+      var verb = prior.cause == IncompatibilityCause.dependency
+          ? "depend on"
+          : "require";
+      buffer.write("all versions of "
+          "${_terseRef(priorPositives.first, details)} $verb ");
+    } else {
+      var verb = prior.cause == IncompatibilityCause.dependency
+          ? "depends on"
+          : "requires";
+      buffer.write("${_terse(priorPositives.first, details)} $verb ");
+    }
+
+    buffer.write("${_terse(priorNegative, details)} which ");
+
+    if (latter.cause == IncompatibilityCause.dependency) {
+      buffer.write("depends on ");
+    } else {
+      buffer.write("requires ");
+    }
+
+    buffer.write(latter.terms
+        .where((term) => !term.isPositive)
+        .map((term) => _terse(term, details))
+        .join(' or '));
+
+    return buffer.toString();
+  }
+
+  /// If exactly one term in this incompatibility matches [filter], returns that
+  /// term.
+  ///
+  /// Otherwise, returns `null`.
+  Term _singleTermWhere(bool filter(Term term)) {
+    Term found;
+    for (var term in terms) {
+      if (!filter(term)) continue;
+      if (found != null) return null;
+      found = term;
+    }
+    return found;
+  }
+
+  /// Returns a terse representation of [term]'s package ref.
+  String _terseRef(Term term, Map<String, PackageDetail> details) =>
+      term.package
+          .toRef()
+          .toTerseString(details == null ? null : details[term.package.name]);
+
+  /// Returns a terse representation of [term]'s package.
+  String _terse(Term term, Map<String, PackageDetail> details) => term.package
+      .toTerseString(details == null ? null : details[term.package.name]);
 }
