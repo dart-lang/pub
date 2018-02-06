@@ -431,7 +431,7 @@ foo:http://example.com/
       });
 
       _runsSuccessfully();
-    });
+    }, skip: true);
 
     test("the lock file has a Flutter SDK but Flutter is unavailable",
         () async {
