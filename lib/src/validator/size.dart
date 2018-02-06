@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import '../entrypoint.dart';
-import '../io.dart' as io;
+import '../io.dart';
 import '../validator.dart';
 
 /// The maximum size of the package to upload (100 MB).
@@ -23,7 +23,7 @@ class SizeValidator extends Validator {
       if (size <= _MAX_SIZE) return;
       var sizeInMb = (size / math.pow(2, 20)).toStringAsPrecision(4);
       // Current implementation of Package.listFiles skips hidden files
-      var ignoreExists = io.fileExists(entrypoint.root.path('.gitignore'));
+      var ignoreExists = fileExists(entrypoint.root.path('.gitignore'));
 
       var error = new StringBuffer("Your package is $sizeInMb MB. Hosted "
           "packages must be smaller than 100 MB.");
