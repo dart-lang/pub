@@ -12,6 +12,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../source/unknown.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'assignment.dart';
@@ -304,6 +305,16 @@ class VersionSolver {
         .map((term) => term.package as PackageRange)
         .toList();
     if (unsatisfied.isEmpty) return null;
+
+    // If we require a package from an unknown source, add an incompatibility
+    // that will force a conflict for that package.
+    for (var candidate in unsatisfied) {
+      if (candidate.source is! UnknownSource) continue;
+      _addIncompatibility(new Incompatibility(
+          [new Term(candidate.withConstraint(VersionConstraint.any), true)],
+          IncompatibilityCause.unknownSource));
+      return candidate.name;
+    }
 
     /// Prefer packages with as few remaining versions as possible, so that if a
     /// conflict is necessary it's forced quickly.

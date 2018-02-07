@@ -112,6 +112,11 @@ class Incompatibility {
       assert(terms.first.isPositive);
       return "no versions of ${_terseRef(terms.first, details)} "
           "match ${terms.first.constraint}";
+    } else if (cause == IncompatibilityCause.unknownSource) {
+      assert(terms.length == 1);
+      assert(terms.first.isPositive);
+      return '${terms.first.package.name} comes from unknown source '
+          '"${terms.first.package.source}"';
     } else if (cause == IncompatibilityCause.root) {
       // [IncompatibilityCause.root] is only used when a package depends on the
       // entrypoint with an incompatible version, so we want to print the
@@ -355,6 +360,15 @@ class Incompatibility {
       buffer.write(prior.cause == IncompatibilityCause.dependency
           ? " depends on "
           : " requires ");
+    }
+
+    if (latter.cause == IncompatibilityCause.unknownSource) {
+      var package = latter.terms.first.package;
+      buffer.write("${package.name} ");
+      if (priorLine != null) buffer.write("($priorLine) ");
+      buffer.write('from unknown source "${package.source}"');
+      if (latterLine != null) buffer.write(" ($latterLine)");
+      return buffer.toString();
     }
 
     buffer.write("${_terse(latter.terms.first, details)} ");

@@ -21,7 +21,7 @@ main() {
   group('root dependency', rootDependency);
   group('dev dependency', devDependency);
   group('unsolvable', unsolvable);
-  group('bad source', badSource, skip: true);
+  group('bad source', badSource);
   group('backtracking', backtracking);
   group('Dart SDK constraint', dartSdkConstraint, skip: true);
   group('Flutter SDK constraint', flutterSdkConstraint, skip: true);
@@ -578,8 +578,10 @@ void badSource() {
     await d.appDir({
       'foo': {'bad': 'any'}
     }).create();
-    await expectResolves(
-        error: 'Package myapp depends on foo from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo from unknown source "bad", version solving
+        failed.
+    """));
   });
 
   test('fail if the root package has a bad source in dev dep', () async {
@@ -592,8 +594,10 @@ void badSource() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package myapp depends on foo from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo from unknown source "bad", version solving
+        failed.
+    """));
   });
 
   test('fail if all versions have bad source in dep', () async {
@@ -610,8 +614,16 @@ void badSource() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package foo depends on bar from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
+        forbidden.
+      And because foo >=1.0.1 <1.0.2 depends on baz any from bad, foo <1.0.2
+        requires baz any from bad.
+      And because baz comes from unknown source "bad" and foo >=1.0.2 depends on
+        bang any from bad, every version of foo requires bang any from bad.
+      So, because bang comes from unknown source "bad" and myapp depends on foo
+        any, version solving failed.
+    """), tries: 3);
   });
 
   test('ignore versions with bad source in dep', () async {
@@ -627,7 +639,7 @@ void badSource() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
   });
 }
 
