@@ -996,7 +996,7 @@ with the step of the algorithm that prints each line indicated:
 
 | Message | Algorithm Step | Line |
 | ------- | -------------- | ---- |
-| Because all versions of `foo` depend on `bar ^2.0.0` which depends on `baz ^3.0.0`, all versions of `foo` require `baz ^3.0.0`. | 3 | |
+| Because every version of `foo` depends on `bar ^2.0.0` which depends on `baz ^3.0.0`, every version of `foo` requires `baz ^3.0.0`. | 3 | |
 | So, because `root` depends on both `baz ^1.0.0` and `foo ^1.0.0`, version solving failed. | 2.ii | |
 
 There are a couple things worth noting about this output:
@@ -1004,12 +1004,12 @@ There are a couple things worth noting about this output:
 * Pub's implementation of error reporting has some special cases to make output
   more human-friendly:
 
-  * When we're talking about all versions of a package, we explicitly write "all
-    versions of `foo`" rather than "`foo any`".
+  * When we're talking about every version of a package, we explicitly write
+    "every version of `foo`" rather than "`foo any`".
 
-  * In the first line, instead of writing "all versions of `foo` depend on
-    `bar ^2.0.0` and all versions of `bar` depend on `baz ^3.0.0`", we write
-    "all versions of `foo` depend on `bar ^2.0.0` which depends on
+  * In the first line, instead of writing "every version of `foo` depends on
+    `bar ^2.0.0` and every version of `bar` depends on `baz ^3.0.0`", we write
+    "every version of `foo` depends on `bar ^2.0.0` which depends on
     `baz ^3.0.0`".
 
   * In the second line, instead of writing "`root` depends on `baz ^1.0.0` and
@@ -1025,7 +1025,7 @@ There are a couple things worth noting about this output:
 
 * The second line collapses together the explanations of two incompatibilities
   (`{foo any, root 1.0.0}` and `{root 1.0.0}`), as described in step 2.ii. We
-  never explicitly explain that all versions of `foo` are incompatible with
+  never explicitly explain that every version of `foo` is incompatible with
   `root`, but the output is still clear.
 
 ## Branching Error Reporting

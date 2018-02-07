@@ -92,13 +92,8 @@ class Incompatibility {
       assert(depender.isPositive);
       assert(!dependee.isPositive);
 
-      if (depender.constraint.isAny) {
-        return "all versions of ${_terseRef(depender, details)} "
-            "depend on ${_terse(dependee, details)}";
-      } else {
-        return "${_terse(depender, details)} depends on "
-            "${_terse(dependee, details)}";
-      }
+      return "${_terse(depender, details, allowEvery: true)} depends on "
+          "${_terse(dependee, details)}";
     } else if (cause == IncompatibilityCause.sdk) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -168,12 +163,8 @@ class Incompatibility {
     if (positive.isNotEmpty && negative.isNotEmpty) {
       if (positive.length == 1) {
         var positiveTerm = terms.firstWhere((term) => term.isPositive);
-        if (positiveTerm.constraint.isAny) {
-          return "all versions of ${_terseRef(positiveTerm, details)} "
-              "require ${negative.join(' or ')}";
-        } else {
-          return "${positive.first} requires ${negative.join(' or ')}";
-        }
+        return "${_terse(positiveTerm, details, allowEvery: true)} requires "
+            "${negative.join(' or ')}";
       } else {
         return "if ${positive.join(' and ')} then ${negative.join(' or ')}";
       }
@@ -225,15 +216,9 @@ class Incompatibility {
 
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
-    if (thisPositive.constraint.isAny) {
-      var verb = isDependency ? "depend on" : "require";
-      return "all versions of ${_terseRef(thisPositive, details)} $verb both "
-          "$thisNegatives and $otherNegatives";
-    } else {
-      var verb = isDependency ? "depends on" : "requires";
-      return "${_terse(thisPositive, details)} $verb both $thisNegatives and "
-          "$otherNegatives";
-    }
+    var verb = isDependency ? "depends on" : "requires";
+    return "${_terse(thisPositive, details, allowEvery: true)} $verb both "
+        "$thisNegatives and $otherNegatives";
   }
 
   /// If "[this] and [other]" can be expressed as "X requires Y which requires
@@ -279,17 +264,12 @@ class Incompatibility {
       var priorString =
           priorPositives.map((term) => _terse(term, details)).join(' or ');
       buffer.write("if $priorString then ");
-    } else if (priorPositives.first.constraint.isAny) {
-      var verb = prior.cause == IncompatibilityCause.dependency
-          ? "depend on"
-          : "require";
-      buffer.write("all versions of "
-          "${_terseRef(priorPositives.first, details)} $verb ");
     } else {
       var verb = prior.cause == IncompatibilityCause.dependency
           ? "depends on"
           : "requires";
-      buffer.write("${_terse(priorPositives.first, details)} $verb ");
+      buffer.write("${_terse(priorPositives.first, details, allowEvery: true)} "
+          "$verb ");
     }
 
     buffer.write("${_terse(priorNegative, details)} which ");
@@ -329,6 +309,16 @@ class Incompatibility {
           .toString(details == null ? null : details[term.package.name]);
 
   /// Returns a terse representation of [term]'s package.
-  String _terse(Term term, Map<String, PackageDetail> details) => term.package
-      .toString(details == null ? null : details[term.package.name]);
+  ///
+  /// If [allowEvery] is `true`, this will return "every version of foo" instead
+  /// of "foo any".
+  String _terse(Term term, Map<String, PackageDetail> details,
+      {bool allowEvery: false}) {
+    if (allowEvery && term.constraint.isAny) {
+      return "every version of ${_terseRef(term, details)}";
+    } else {
+      return term.package
+          .toString(details == null ? null : details[term.package.name]);
+    }
+  }
 }
