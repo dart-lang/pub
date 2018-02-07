@@ -197,7 +197,7 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
-  return _descriptorPool.withResource<Future<String>>(() async {
+  return _descriptorPool.withResource(() async {
     _deleteIfLink(file);
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
@@ -694,7 +694,7 @@ Future store(Stream stream, EventSink sink,
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell: false}) {
-  return _descriptorPool.withResource<Future<PubProcessResult>>(() async {
+  return _descriptorPool.withResource(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
         environment: environment,
