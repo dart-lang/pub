@@ -326,9 +326,9 @@ class Incompatibility {
   String _terseRef(Term term, Map<String, PackageDetail> details) =>
       term.package
           .toRef()
-          .toTerseString(details == null ? null : details[term.package.name]);
+          .toString(details == null ? null : details[term.package.name]);
 
   /// Returns a terse representation of [term]'s package.
   String _terse(Term term, Map<String, PackageDetail> details) => term.package
-      .toTerseString(details == null ? null : details[term.package.name]);
+      .toString(details == null ? null : details[term.package.name]);
 }

@@ -7,6 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
+import 'source/hosted.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
@@ -77,11 +78,10 @@ abstract class PackageName {
         source.hashDescription(description);
   }
 
-  /// Like [toString], but leaves off some information for extra terseness.
+  /// Returns a string representation of this package name.
   ///
-  /// The exact amount of information this displays can be controlled with
-  /// [detail].
-  String toTerseString([PackageDetail detail]);
+  /// If [detail] is passed, it controls exactly which details are included.
+  String toString([PackageDetail detail]);
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
@@ -98,17 +98,19 @@ class PackageRef extends PackageName {
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name) : super._magic(name);
 
-  String toString() {
-    if (isRoot) return "$name (root)";
-    if (isMagic) return name;
-    return "$name from $source";
-  }
-
-  String toTerseString([PackageDetail detail]) {
-    detail ??= PackageDetail.terse;
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
     if (isMagic || isRoot) return name;
-    if (detail == PackageDetail.terse && source.name == 'hosted') return name;
-    return "$name from $source";
+
+    var buffer = new StringBuffer(name);
+    if (detail.showSource ?? source is! HostedSource) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
+    }
+
+    return buffer.toString();
   }
 
   bool operator ==(other) => other is PackageRef && samePackage(other);
@@ -154,24 +156,21 @@ class PackageId extends PackageName {
   bool operator ==(other) =>
       other is PackageId && samePackage(other) && other.version == version;
 
-  String toString() {
-    if (isRoot) return "$name $version (root)";
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
     if (isMagic) return name;
-    return "$name $version from $source";
-  }
 
-  String toTerseString([PackageDetail detail]) {
-    detail ??= PackageDetail.terse;
-    if (isMagic || isRoot) return name;
+    var buffer = new StringBuffer(name);
+    if (detail.showVersion ?? !isRoot) buffer.write(" $version");
 
-    if (detail == PackageDetail.description) {
-      return "$name $version from $source " +
-          source.formatDescription(description);
-    } else if (detail == PackageDetail.source || source.name != 'hosted') {
-      return "$name $version from $source";
-    } else {
-      return "$name $version";
+    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
     }
+
+    return buffer.toString();
   }
 }
 
@@ -227,32 +226,25 @@ class PackageRange extends PackageName {
     return description;
   }
 
-  String toString() {
-    String prefix;
-    if (isRoot) {
-      prefix = "$name $constraint (root)";
-    } else if (isMagic) {
-      prefix = name;
-    } else {
-      prefix = "$name $constraint from $source";
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
+    if (isMagic) return name;
+
+    var buffer = new StringBuffer(name);
+    if (detail.showVersion ?? true) buffer.write(" $constraint");
+
+    if (detail.showSource ?? source is! HostedSource) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
     }
 
-    if (features.isNotEmpty) prefix += " $featureDescription";
-    return "$prefix (${source.formatDescription(description)})";
-  }
-
-  String toTerseString([PackageDetail detail]) {
-    detail ??= PackageDetail.terse;
-    if (isMagic || isRoot) return name;
-
-    if (detail == PackageDetail.description) {
-      return "$name $constraint from $source " +
-          source.formatDescription(description);
-    } else if (detail == PackageDetail.source || source.name != 'hosted') {
-      return "$name $constraint from $source";
-    } else {
-      return "$name $constraint";
+    if (detail.showFeatures && features.isNotEmpty) {
+      buffer.write(" $featureDescription");
     }
+
+    return buffer.toString();
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
@@ -320,25 +312,45 @@ class FeatureDependency {
 
 /// An enum of different levels of detail that can be used when displaying a
 /// terse package name.
-class PackageDetail implements Comparable<PackageDetail> {
-  /// Displays the source name for non-hosted sources, never displays the
+class PackageDetail {
+  /// The default [PackageDetail] configuration.
+  static const defaults = const PackageDetail();
+
+  /// A [PackageDetail] that always shows the package source.
+  static const source = const PackageDetail(showSource: true);
+
+  /// A [PackageDetail] that always shows both the package source and
   /// description.
-  static const terse = const PackageDetail._("terse", 0);
+  static const description = const PackageDetail(showDescription: true);
 
-  /// Always displays the source name, never displays the description.
-  static const source = const PackageDetail._("source", 1);
+  /// Whether to show the package version or version range.
+  ///
+  /// If this is `null`, the version is shown for all packages other than root
+  /// [PackageId]s.
+  final bool showVersion;
 
-  /// Always displays both the source name and the description.
-  static const description = const PackageDetail._("description", 2);
+  /// Whether to show the package source.
+  ///
+  /// If this is `null`, the source is shown for all non-hosted, non-root
+  /// packages. It's always `true` if [showDescription] is `true`.
+  final bool showSource;
 
-  final String _name;
+  /// Whether to show the package description.
+  ///
+  /// This defaults to `false`.
+  final bool showDescription;
 
-  /// The relative level of detail.
-  final int _detail;
+  /// Whether to show the package features.
+  ///
+  /// This defaults to `true`.
+  final bool showFeatures;
 
-  const PackageDetail._(this._name, this._detail);
-
-  int compareTo(PackageDetail other) => _detail.compareTo(other._detail);
-
-  String toString() => _name;
+  const PackageDetail(
+      {this.showVersion,
+      bool showSource,
+      bool showDescription,
+      bool showFeatures})
+      : showSource = showDescription == true ? true : showSource,
+        showDescription = showDescription ?? false,
+        showFeatures = showFeatures ?? true;
 }

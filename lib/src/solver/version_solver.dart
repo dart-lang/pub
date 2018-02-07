@@ -173,7 +173,7 @@ class VersionSolver {
     if (unsatisfied == null) return #conflict;
 
     _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
-        "${unsatisfied.package.toTerseString()}");
+        "${unsatisfied.package}");
     _solution.assign(unsatisfied.package, !unsatisfied.isPositive,
         cause: incompatibility);
     return unsatisfied.package.name;
@@ -336,7 +336,7 @@ class VersionSolver {
 
     if (!conflict) {
       _solution.assign(version, true, decision: true);
-      _log("selecting ${version.toTerseString()}");
+      _log("selecting $version");
     }
 
     return package.name;

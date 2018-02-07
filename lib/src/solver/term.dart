@@ -221,5 +221,5 @@ class Term {
   bool _isIdWithVersion(PackageName name, VersionConstraint constraint) =>
       name is PackageId && name.version == constraint;
 
-  String toString() => "${isPositive ? '' : 'not '}${package.toTerseString()}";
+  String toString() => "${isPositive ? '' : 'not '}$package";
 }
