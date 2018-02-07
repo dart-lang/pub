@@ -420,7 +420,7 @@ void unsolvable() {
 
     await d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
-      Because no versions of foo match ^1.0.0 and myapp depends on foo ^1.0.0,
+      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
         version solving failed.
     """));
   });
@@ -542,7 +542,7 @@ void unsolvable() {
 
     await d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
-      Because no versions of b match >1.0.0 and myapp depends on b >1.0.0,
+      Because myapp depends on b >1.0.0 which doesn't match any versions,
         version solving failed.
     """));
   });
