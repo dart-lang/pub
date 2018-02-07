@@ -7,7 +7,9 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
+import 'source/git.dart';
 import 'source/hosted.dart';
+import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
@@ -231,7 +233,10 @@ class PackageRange extends PackageName {
     if (isMagic) return name;
 
     var buffer = new StringBuffer(name);
-    if (detail.showVersion ?? true) buffer.write(" $constraint");
+    if (detail.showVersion ??
+        !constraint.isAny || (source is! PathSource && source is! GitSource)) {
+      buffer.write(" $constraint");
+    }
 
     if (detail.showSource ?? source is! HostedSource) {
       buffer.write(" from $source");
@@ -319,7 +324,8 @@ class PackageDetail {
   /// Whether to show the package version or version range.
   ///
   /// If this is `null`, the version is shown for all packages other than root
-  /// [PackageId]s.
+  /// [PackageId]s or [PackageRange]s with `git` or `path` sources and `any`
+  /// constraints.
   final bool showVersion;
 
   /// Whether to show the package source.
