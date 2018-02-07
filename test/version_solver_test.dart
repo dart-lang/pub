@@ -233,8 +233,8 @@ void rootDependency() {
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
-      Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0 from
-        hosted, myapp >0.0.0 from hosted is required.
+      Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0,
+        myapp >0.0.0 is required.
       So, because myapp is 0.0.0, version solving failed.
     """));
   });
@@ -483,11 +483,11 @@ void unsolvable() {
 
     await expectResolves(
         error: allOf([
-      contains('Because every version of foo depends on shared 1.0.0 from '
-          'hosted on http://localhost:'),
-      contains(' and\n  every version of bar depends on shared 1.0.0 from '
-          'hosted on http://localhost:'),
-      contains(', foo is\n  incompatible with bar.'),
+      contains('Because every version of foo depends on shared from hosted on '
+          'http://localhost:'),
+      contains(' and every\n   version of bar depends on shared from hosted on '
+          'http://localhost:'),
+      contains(', foo is incompatible with\n  bar.'),
       contains('So, because myapp depends on both bar 1.0.0 and foo 1.0.0, '
           'version solving failed.')
     ]));
@@ -506,9 +506,9 @@ void unsolvable() {
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
-      Because every version of foo depends on shared 1.0.0 from hosted and
-        every version of bar depends on shared any from path, foo is
-        incompatible with bar.
+      Because every version of foo depends on shared from hosted and every
+        version of bar depends on shared from path, foo is incompatible with
+        bar.
       So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version
         solving failed.
     """));
@@ -850,8 +850,8 @@ void backtracking() {
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
-      Because every version of b depends on a any from path and myapp
-        depends on a any from hosted, b is forbidden.
+      Because every version of b depends on a from path and myapp depends on
+        a from hosted, b is forbidden.
       So, because myapp depends on b any, version solving failed.
     """));
   });
@@ -878,10 +878,9 @@ void backtracking() {
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(
         error: allOf([
-      contains('Because every version of b depends on a any from hosted on '
+      contains('Because every version of b depends on a from hosted on '
           'http://localhost:'),
-      contains(' and myapp\n  depends on a any from hosted on '
-          'http://localhost:'),
+      contains(' and myapp depends on\n  a from hosted on http://localhost:'),
       contains(', b is forbidden.'),
       contains('So, because myapp depends on b any, version solving failed.')
     ]));

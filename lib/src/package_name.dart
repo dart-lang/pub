@@ -316,13 +316,6 @@ class PackageDetail {
   /// The default [PackageDetail] configuration.
   static const defaults = const PackageDetail();
 
-  /// A [PackageDetail] that always shows the package source.
-  static const source = const PackageDetail(showSource: true);
-
-  /// A [PackageDetail] that always shows both the package source and
-  /// description.
-  static const description = const PackageDetail(showDescription: true);
-
   /// Whether to show the package version or version range.
   ///
   /// If this is `null`, the version is shown for all packages other than root

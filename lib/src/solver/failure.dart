@@ -316,17 +316,21 @@ class _Writer {
   Map<String, PackageDetail> _detailsForCause(ConflictCause cause) {
     var conflictPackages = <String, PackageName>{};
     for (var term in cause.conflict.terms) {
+      if (term.package.isRoot) continue;
       conflictPackages[term.package.name] = term.package;
     }
 
     var details = <String, PackageDetail>{};
     for (var term in cause.other.terms) {
       var conflictPackage = conflictPackages[term.package.name];
+      if (term.package.isRoot) continue;
       if (conflictPackage == null) continue;
       if (conflictPackage.source != term.package.source) {
-        details[term.package.name] = PackageDetail.source;
+        details[term.package.name] =
+            const PackageDetail(showSource: true, showVersion: false);
       } else if (!conflictPackage.samePackage(term.package)) {
-        details[term.package.name] = PackageDetail.description;
+        details[term.package.name] =
+            const PackageDetail(showDescription: true, showVersion: false);
       }
     }
 
