@@ -180,15 +180,23 @@ class Incompatibility {
   ///
   /// If [details] is passed, it controls the amount of detail that's written
   /// for packages with the given names.
+  ///
+  /// If [thisLine] and/or [otherLine] are passed, they indicate line numbers
+  /// that should be associated with [this] and [other], respectively.
   String andToString(Incompatibility other,
-      [Map<String, PackageDetail> details]) {
-    var requiresBoth = _tryRequiresBoth(other, details);
+      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+    var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
     if (requiresBoth != null) return requiresBoth;
 
-    var requiresThrough = _tryRequiresThrough(other, details);
+    var requiresThrough =
+        _tryRequiresThrough(other, details, thisLine, otherLine);
     if (requiresThrough != null) return requiresThrough;
 
-    return "${this.toString(details)} and ${other.toString(details)}";
+    var buffer = new StringBuffer(this.toString(details));
+    if (thisLine != null) buffer.write(" $thisLine");
+    buffer.write(" and ${other.toString(details)}");
+    if (otherLine != null) buffer.write(" $thisLine");
+    return buffer.toString();
   }
 
   /// If "[this] and [other]" can be expressed as "some package requires both X
@@ -196,7 +204,7 @@ class Incompatibility {
   ///
   /// Otherwise, this returns `null`.
   String _tryRequiresBoth(Incompatibility other,
-      [Map<String, PackageDetail> details]) {
+      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisPositive = _singleTermWhere((term) => term.isPositive);
@@ -214,11 +222,16 @@ class Incompatibility {
         .map((term) => _terse(term, details))
         .join(' or ');
 
+    var buffer =
+        new StringBuffer("${_terse(thisPositive, details, allowEvery: true)} ");
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
-    var verb = isDependency ? "depends on" : "requires";
-    return "${_terse(thisPositive, details, allowEvery: true)} $verb both "
-        "$thisNegatives and $otherNegatives";
+    buffer.write(isDependency ? "depends on" : "requires");
+    buffer.write(" both $thisNegatives");
+    if (thisLine != null) buffer.write(" ($thisLine)");
+    buffer.write(" and $otherNegatives");
+    if (otherLine != null) buffer.write(" ($otherLine)");
+    return buffer.toString();
   }
 
   /// If "[this] and [other]" can be expressed as "X requires Y which requires
@@ -226,7 +239,7 @@ class Incompatibility {
   ///
   /// Otherwise, this returns `null`.
   String _tryRequiresThrough(Incompatibility other,
-      [Map<String, PackageDetail> details]) {
+      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisNegative = _singleTermWhere((term) => !term.isPositive);
@@ -238,21 +251,27 @@ class Incompatibility {
 
     Incompatibility prior;
     Term priorNegative;
+    int priorLine;
     Incompatibility latter;
+    int latterLine;
     if (thisNegative != null &&
         otherPositive != null &&
         thisNegative.package.name == otherPositive.package.name &&
         thisNegative.inverse.satisfies(otherPositive)) {
       prior = this;
       priorNegative = thisNegative;
+      priorLine = thisLine;
       latter = other;
+      latterLine = otherLine;
     } else if (otherNegative != null &&
         thisPositive != null &&
         otherNegative.package.name == thisPositive.package.name &&
         otherNegative.inverse.satisfies(thisPositive)) {
       prior = other;
       priorNegative = otherNegative;
+      priorLine = otherLine;
       latter = this;
+      latterLine = thisLine;
     } else {
       return null;
     }
@@ -272,7 +291,9 @@ class Incompatibility {
           "$verb ");
     }
 
-    buffer.write("${_terse(priorNegative, details)} which ");
+    buffer.write(_terse(priorNegative, details));
+    if (priorLine != null) buffer.write(" ($priorLine)");
+    buffer.write(" which ");
 
     if (latter.cause == IncompatibilityCause.dependency) {
       buffer.write("depends on ");
@@ -284,6 +305,8 @@ class Incompatibility {
         .where((term) => !term.isPositive)
         .map((term) => _terse(term, details))
         .join(' or '));
+
+    if (latterLine != null) buffer.write(" ($latterLine)");
 
     return buffer.toString();
   }

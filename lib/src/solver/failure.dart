@@ -151,9 +151,10 @@ class _Writer {
       if (conflictLine != null && otherLine != null) {
         _write(
             incompatibility,
-            "Because ${cause.conflict.toString(detailsForCause)} "
-            "($conflictLine) and ${cause.other.toString(detailsForCause)} "
-            "($otherLine), $incompatibilityString.",
+            "Because " +
+                cause.conflict.andToString(
+                    cause.other, detailsForCause, conflictLine, otherLine) +
+                ", $incompatibilityString.",
             numbered: numbered);
       } else if (conflictLine != null || otherLine != null) {
         Incompatibility withLine;
@@ -210,8 +211,9 @@ class _Writer {
       if (derivedLine != null) {
         _write(
             incompatibility,
-            "Because ${ext.andToString(derived, detailsForCause)} "
-            "($derivedLine), $incompatibilityString.",
+            "Because " +
+                ext.andToString(derived, detailsForCause, null, derivedLine) +
+                ", $incompatibilityString.",
             numbered: numbered);
       } else if (_isCollapsible(derived)) {
         var derivedCause = derived.cause as ConflictCause;
