@@ -25,6 +25,10 @@ import 'set_relation.dart';
 import 'term.dart';
 import 'type.dart';
 
+// TODO(nweiz): Currently, a bunch of tests that use the solver are skipped
+// because they exercise parts of the solver that haven't been reimplemented.
+// They should all be re-enabled before this gets released.
+
 /// The version solver that finds a set of package versions that satisfy the
 /// root package's dependencies.
 ///
