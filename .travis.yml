@@ -18,9 +18,10 @@ dart_task:
 before_script:
   - dart --no-checked --snapshot=bin/pub.dart.snapshot --snapshot-kind=app-jit bin/pub.dart --help
 
-# Only building master means that we don't run two builds for each pull request.
+# Only building these branches means that we don't run two builds for each pull
+# request.
 branches:
-  only: [master, travis, features]
+  only: [master, travis, /^feature\./]
 
 cache:
   directories:
