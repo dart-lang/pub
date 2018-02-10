@@ -383,7 +383,8 @@ class Entrypoint {
     migrateCache();
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = mapMap(root.immediateDependencies,
+    var executables = mapMap<String, PackageRange, String, List<AssetId>>(
+        root.immediateDependencies,
         value: (name, _) => _executablesForPackage(name));
 
     for (var package in executables.keys.toList()) {
