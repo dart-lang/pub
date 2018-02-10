@@ -26,6 +26,11 @@ final Version version = () {
 }();
 
 /// Returns the path to the package [name] within Flutter.
+///
+/// Flutter packages exist in both `$flutter/packages` and
+/// `$flutter/bin/cache/pkg`. This checks both locations in order. If [name]
+/// exists in neither place, it returns the `$flutter/packages` location which
+/// is more human-readable for error messages.
 String packagePath(String name) {
   if (!isAvailable) {
     throw new ApplicationException(
@@ -34,5 +39,11 @@ String packagePath(String name) {
         'pub through the "flutter" executable.');
   }
 
-  return p.join(rootDirectory, 'packages', name);
+  var packagePath = p.join(rootDirectory, 'packages', name);
+  if (dirExists(packagePath)) return packagePath;
+
+  var cachePath = p.join(rootDirectory, 'bin', 'cache', 'pkg', name);
+  if (dirExists(cachePath)) return cachePath;
+
+  return packagePath;
 }

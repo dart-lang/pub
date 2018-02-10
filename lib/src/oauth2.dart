@@ -198,7 +198,7 @@ Future<Client> _authorize() {
           grant.handleAuthorizationResponse(queryToMap(queryString)),
           completer);
 
-      return new shelf.Response.found('http://pub.dartlang.org/authorized');
+      return new shelf.Response.found('https://pub.dartlang.org/authorized');
     });
 
     var authUrl = grant.getAuthorizationUrl(

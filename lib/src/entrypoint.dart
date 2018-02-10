@@ -134,15 +134,26 @@ class Entrypoint {
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => root.path('pubspec.lock');
 
+  /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
+  ///
+  /// If the old-style `.pub` directory is being used, this returns that
+  /// instead.
+  String get cachePath {
+    var newPath = root.path('.dart_tool/pub');
+    var oldPath = root.path('.pub');
+    if (!dirExists(newPath) && dirExists(oldPath)) return oldPath;
+    return newPath;
+  }
+
   /// The path to the directory containing precompiled dependencies.
   ///
   /// We just precompile the debug version of a package. We're mostly interested
   /// in improving speed for development iteration loops, which usually use
   /// debug mode.
-  String get _precompiledDepsPath => root.path('.pub', 'deps', 'debug');
+  String get _precompiledDepsPath => p.join(cachePath, 'deps', 'debug');
 
   /// The path to the directory containing dependency executable snapshots.
-  String get _snapshotPath => root.path('.pub', 'bin');
+  String get _snapshotPath => p.join(cachePath, 'bin');
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, SystemCache cache, {this.isGlobal: false})
@@ -369,6 +380,7 @@ class Entrypoint {
   /// Precompiles all executables from dependencies that don't transitively
   /// depend on [this] or on a path dependency.
   Future precompileExecutables({Iterable<String> changed}) async {
+    migrateCache();
     _deleteExecutableSnapshots(changed: changed);
 
     var executables = mapMap(root.immediateDependencies,
@@ -781,5 +793,22 @@ class Entrypoint {
     var symlink = p.join(dir, 'packages');
     if (entryExists(symlink)) deleteEntry(symlink);
     if (packagesDir) createSymlink(packagesPath, symlink, relative: true);
+  }
+
+  /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
+  /// to the new-style `.dart_tool/pub` directory.
+  void migrateCache() {
+    var oldPath = root.path('.pub');
+    if (!dirExists(oldPath)) return;
+
+    var newPath = root.path('.dart_tool/pub');
+
+    // If both the old and new directories exist, something weird is going on.
+    // Do nothing to avoid making things worse. Pub will prefer the new
+    // directory anyway.
+    if (dirExists(newPath)) return;
+
+    ensureDir(p.dirname(newPath));
+    renameDir(oldPath, newPath);
   }
 }

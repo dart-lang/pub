@@ -38,7 +38,8 @@ class SdkSource extends Source {
     return new PackageRef(name, this, description);
   }
 
-  PackageId parseId(String name, Version version, description) {
+  PackageId parseId(String name, Version version, description,
+      {String containingPath}) {
     if (description is! String) {
       throw new FormatException("The description must be an SDK name.");
     }

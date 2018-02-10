@@ -70,7 +70,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -85,7 +85,7 @@ main() {
 
   test("recaches if the SDK version is out-of-date", () async {
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         // The version 0.0.1 is different than the test version 0.1.2+3.
         d.file("manifest.txt", "0.0.1\nfoo"),
         d.file("transformers.snapshot", "junk")
@@ -97,7 +97,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -110,7 +110,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -131,7 +131,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nbar,foo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -144,7 +144,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -174,7 +174,7 @@ main() {
     await process.shouldExit();
 
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nfoo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])
@@ -234,6 +234,33 @@ main() {
     await process.shouldExit();
   });
 
+  test("migrates an old-style cache", () async {
+    // Simulate an old-style cache directory.
+    await d.dir(appPath, [
+      d.dir(".pub", [d.file("junk", "junk")])
+    ]).create();
+
+    var process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
+
+    await d.dir(appPath, [
+      d.dir(".dart_tool/pub", [
+        d.file("junk", "junk"),
+        d.dir("transformers", [
+          d.file("manifest.txt", "0.1.2+3\nfoo"),
+          d.file("transformers.snapshot", isNot(isEmpty))
+        ])
+      ])
+    ]).validate();
+
+    // Run the executable again to make sure loading the transformer from the
+    // cache works.
+    process = await pubRun(args: ['myapp']);
+    expect(process.stdout, emits("Goodbye!"));
+    await process.shouldExit();
+  });
+
   // Issue 21298.
   test("doesn't recache when a transformer is removed", () async {
     await d.dir(appPath, [
@@ -271,7 +298,7 @@ main() {
     // "bar" should still be in the manifest, since there's no reason to
     // recompile the cache.
     await d.dir(appPath, [
-      d.dir(".pub/transformers", [
+      d.dir(".dart_tool/pub/transformers", [
         d.file("manifest.txt", "0.1.2+3\nbar,foo"),
         d.file("transformers.snapshot", isNot(isEmpty))
       ])

@@ -76,10 +76,9 @@ abstract class Source {
   /// the given [description] is well-formed according to this source, and to
   /// give the source a chance to canonicalize the description.
   ///
-  /// [containingPath] is the path to the local file (pubspec or lockfile)
-  /// where this description appears. It may be `null` if the description is
-  /// coming from some in-memory source (such as pulling down a pubspec from
-  /// pub.dartlang.org).
+  /// [containingPath] is the path to the pubspec where this description
+  /// appears. It may be `null` if the description is coming from some in-memory
+  /// source (such as pulling down a pubspec from pub.dartlang.org).
   ///
   /// The description in the returned [PackageRef] need bear no resemblance to
   /// the original user-provided description.
@@ -92,8 +91,13 @@ abstract class Source {
   /// This only accepts descriptions serialized using [serializeDescription]. It
   /// should not be used with user-authored descriptions.
   ///
+  /// [containingPath] is the path to the lockfile where this description
+  /// appears. It may be `null` if the description is coming from some in-memory
+  /// source.
+  ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId parseId(String name, Version version, description);
+  PackageId parseId(String name, Version version, description,
+      {String containingPath});
 
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.

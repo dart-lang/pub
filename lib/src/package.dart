@@ -102,7 +102,7 @@ class Package {
   }
 
   /// Returns whether or not this package is in a Git repo.
-  bool get _inGitRepo {
+  bool get inGitRepo {
     if (_inGitRepoCache != null) return _inGitRepoCache;
 
     if (dir == null || !git.isInstalled) {
@@ -145,7 +145,7 @@ class Package {
   /// This is similar to `p.join(dir, part1, ...)`, except that subclasses may
   /// override it to report that certain paths exist elsewhere than within
   /// [dir]. For example, a [CachedPackage]'s `lib` directory is in the
-  /// `.pub/deps` directory.
+  /// `.dart_tool/pub/deps` directory.
   String path(String part1,
       [String part2,
       String part3,
@@ -235,7 +235,7 @@ class Package {
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
     Iterable<String> files;
-    if (useGitIgnore && _inGitRepo) {
+    if (useGitIgnore && inGitRepo) {
       // List all files that aren't gitignored, including those not checked in
       // to Git. Use [beneath] as the working dir rather than passing it as a
       // parameter so that we list a submodule using its own git logic.

@@ -6,8 +6,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
+import 'package:http_retry/http_retry.dart';
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -90,39 +92,7 @@ class _PubHttpClient extends http.BaseClient {
 
     _logResponse(streamedResponse);
 
-    var status = streamedResponse.statusCode;
-    // 401 responses should be handled by the OAuth2 client. It's very
-    // unlikely that they'll be returned by non-OAuth2 requests. We also want
-    // to pass along 400 responses from the token endpoint.
-    var tokenRequest = streamedResponse.request.url == oauth2.tokenEndpoint;
-    if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
-      return streamedResponse;
-    }
-
-    if (status == 406 &&
-        request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
-      fail("Pub ${sdk.version} is incompatible with the current version of "
-          "${request.url.host}.\n"
-          "Upgrade pub to the latest version and try again.");
-    }
-
-    if (status == 500 &&
-        (request.url.host == "pub.dartlang.org" ||
-            request.url.host == "storage.googleapis.com")) {
-      var message = "HTTP error 500: Internal Server Error at "
-          "${request.url}.";
-
-      if (request.url.host == "pub.dartlang.org" ||
-          request.url.host == "storage.googleapis.com") {
-        message += "\nThis is likely a transient error. Please try again "
-            "later.";
-      }
-
-      fail(message);
-    }
-
-    throw new PubHttpException(
-        await http.Response.fromStream(streamedResponse));
+    return streamedResponse;
   }
 
   /// Whether extra metadata headers should be added to [request].
@@ -210,8 +180,78 @@ class _PubHttpClient extends http.BaseClient {
 /// The [_PubHttpClient] wrapped by [httpClient].
 final _pubClient = new _PubHttpClient();
 
+/// A set of all hostnames for which we've printed a message indicating that
+/// we're waiting for them to come back up.
+final _retriedHosts = new Set<String>();
+
+/// Intercepts all requests and throws exceptions if the response was not
+/// considered successful.
+class _ThrowingClient extends http.BaseClient {
+  final http.Client _inner;
+
+  _ThrowingClient(this._inner);
+
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final streamedResponse = await _inner.send(request);
+
+    var status = streamedResponse.statusCode;
+    // 401 responses should be handled by the OAuth2 client. It's very
+    // unlikely that they'll be returned by non-OAuth2 requests. We also want
+    // to pass along 400 responses from the token endpoint.
+    var tokenRequest = streamedResponse.request.url == oauth2.tokenEndpoint;
+    if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
+      return streamedResponse;
+    }
+
+    if (status == 406 &&
+        request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
+      fail("Pub ${sdk.version} is incompatible with the current version of "
+          "${request.url.host}.\n"
+          "Upgrade pub to the latest version and try again.");
+    }
+
+    if (status == 500 &&
+        (request.url.host == "pub.dartlang.org" ||
+            request.url.host == "storage.googleapis.com")) {
+      fail("HTTP error 500: Internal Server Error at ${request.url}.\n"
+          "This is likely a transient error. Please try again later.");
+    }
+
+    throw new PubHttpException(
+        await http.Response.fromStream(streamedResponse));
+  }
+}
+
 /// The HTTP client to use for all HTTP requests.
-final httpClient = new ThrottleClient(16, _pubClient);
+final httpClient = new ThrottleClient(
+    16,
+    new _ThrowingClient(new RetryClient(_pubClient,
+        retries: 5,
+        when: (response) => const [502, 503, 504].contains(response.statusCode),
+        delay: (retryCount) {
+          if (retryCount < 3) {
+            // Retry quickly a couple times in case of a short transient error.
+            //
+            // Add a random delay to avoid retrying a bunch of parallel requests
+            // all at the same time.
+            return new Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
+                new Duration(milliseconds: random.nextInt(500));
+          } else {
+            // If the error persists, wait a long time. This works around issues
+            // where an AppEngine instance will go down and need to be rebooted,
+            // which takes about a minute.
+            return new Duration(seconds: 30);
+          }
+        },
+        onRetry: (request, response, retryCount) {
+          log.io("Retry #${retryCount + 1} for "
+              "${request.method} ${request.url}...");
+          if (retryCount != 3) return;
+          if (!_retriedHosts.add(request.url.host)) return;
+          log.message(
+              "It looks like ${request.url.host} is having some trouble.\n"
+              "Pub will wait for a while before trying to connect again.");
+        })));
 
 /// The underlying HTTP client wrapped by [httpClient].
 http.Client get innerHttpClient => _pubClient._inner;

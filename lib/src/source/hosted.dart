@@ -86,7 +86,8 @@ class HostedSource extends Source {
     return new PackageRef(name, this, description);
   }
 
-  PackageId parseId(String name, Version version, description) {
+  PackageId parseId(String name, Version version, description,
+      {String containingPath}) {
     _parseDescription(description);
     return new PackageId(name, this, version, description);
   }

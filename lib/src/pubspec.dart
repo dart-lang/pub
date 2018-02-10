@@ -391,6 +391,13 @@ class Pubspec {
     if (!allowPreReleaseSdk) return false;
     if (!sdk.version.isPreRelease) return false;
     if (sdkConstraint.includeMax) return false;
+    if (sdkConstraint.min != null &&
+        sdkConstraint.min.isPreRelease &&
+        sdkConstraint.min.major == sdk.version.major &&
+        sdkConstraint.min.minor == sdk.version.minor &&
+        sdkConstraint.min.patch == sdk.version.patch) {
+      return false;
+    }
     if (sdkConstraint.max == null) return false;
     if (sdkConstraint.max.isPreRelease) return false;
     return sdkConstraint.max.major == sdk.version.major &&
@@ -443,8 +450,12 @@ class Pubspec {
 
       // It must be "none" or a valid URL.
       if (publishTo != "none") {
-        _wrapFormatException(
-            '"publish_to" field', span, () => Uri.parse(publishTo));
+        _wrapFormatException('"publish_to" field', span, () {
+          var url = Uri.parse(publishTo);
+          if (url.scheme.isEmpty) {
+            throw new FormatException("must be an absolute URL.");
+          }
+        });
       }
     }
 
@@ -885,9 +896,6 @@ class Pubspec {
     if (node == null || node.value == null) return new YamlList();
     if (node is YamlList) return node;
     _error('Must be a list.', node.span);
-
-    // TODO(nweiz): Remove this when sdk#31384 is fixed.
-    throw "Unreachable";
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
@@ -896,7 +904,7 @@ class Pubspec {
   /// [description] should be a noun phrase that describes whatever's being
   /// parsed or processed by [fn]. [span] should be the location of whatever's
   /// being processed within the pubspec.
-  _wrapFormatException(String description, SourceSpan span, fn()) {
+  T _wrapFormatException<T>(String description, SourceSpan span, T fn()) {
     try {
       return fn();
     } on FormatException catch (e) {
@@ -904,7 +912,7 @@ class Pubspec {
     }
   }
 
-  _wrapSpanFormatException(String description, fn()) {
+  T _wrapSpanFormatException<T>(String description, T fn()) {
     try {
       return fn();
     } on SourceSpanFormatException catch (e) {

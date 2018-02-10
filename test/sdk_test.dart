@@ -24,6 +24,10 @@ main() {
             d.libDir('foo', 'foo 0.0.1'),
             d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'})
           ])
+        ]),
+        d.dir('bin/cache/pkg', [
+          d.dir('baz',
+              [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')])
         ])
       ]).create();
     });
@@ -40,6 +44,21 @@ main() {
           'myapp': '.',
           'foo': p.join(d.sandbox, 'flutter', 'packages', 'foo'),
           'bar': '1.0.0'
+        })
+      ]).validate();
+    });
+
+    test("gets an SDK dependency from bin/cache/pkg", () async {
+      await d.appDir({
+        "baz": {"sdk": "flutter"}
+      }).create();
+      await pubCommand(command,
+          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
+
+      await d.dir(appPath, [
+        d.packagesFile({
+          'myapp': '.',
+          'baz': p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz')
         })
       ]).validate();
     });

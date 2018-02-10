@@ -197,7 +197,7 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
-  return _descriptorPool.withResource<Future<String>>(() async {
+  return _descriptorPool.withResource(() async {
     _deleteIfLink(file);
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
@@ -354,7 +354,7 @@ void _attempt(String description, void operation()) {
     return;
   }
 
-  getErrorReason(error) {
+  String getErrorReason(FileSystemException error) {
     if (error.osError.errorCode == 5) {
       return "access was denied";
     }
@@ -526,8 +526,6 @@ final bool runningFromSdk =
 final _dartRepoRegExp = new RegExp(r"/third_party/pkg/pub/("
     r"bin/pub\.dart"
     r"|"
-    r"\.pub/pub\.test\.snapshot"
-    r"|"
     r"test/.*_test\.dart"
     r")$");
 
@@ -584,7 +582,7 @@ final String pubRoot = (() {
     return path.joinAll(components.take(testIndex));
   }
 
-  // Pub is either run from ".pub/pub.test.snapshot" or "bin/pub.dart".
+  // Pub is run from "bin/pub.dart".
   return path.dirname(path.dirname(script));
 })();
 
@@ -696,7 +694,7 @@ Future store(Stream stream, EventSink sink,
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell: false}) {
-  return _descriptorPool.withResource<Future<PubProcessResult>>(() async {
+  return _descriptorPool.withResource(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
         environment: environment,

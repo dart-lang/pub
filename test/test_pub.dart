@@ -243,11 +243,13 @@ Future runPub(
     outputJson,
     silent,
     int exitCode: exit_codes.SUCCESS,
+    String workingDirectory,
     Map<String, String> environment}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
-  var pub = await startPub(args: args, environment: environment);
+  var pub = await startPub(
+      args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
   expect(() async {
@@ -335,6 +337,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
 Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
+    String workingDirectory,
     Map<String, String> environment}) async {
   args ??= [];
 
@@ -367,7 +370,7 @@ Future<PubProcess> startPub(
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
         ..addAll(environment ?? {}),
-      workingDirectory: _pathInSandbox(appPath),
+      workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
 }
 
@@ -724,6 +727,12 @@ void _validateOutputJson(
     failures.add('Got invalid JSON:');
     failures.add(actualText);
   }
+
+  // Remove dart2js's timing logs, which would otherwise cause tests to fail
+  // flakily when compilation takes a long time.
+  actual['log']?.removeWhere((entry) =>
+      entry['level'] == 'Fine' &&
+      entry['message'].startsWith('Not yet complete after'));
 
   // Match against the expectation.
   expect(actual, expected);

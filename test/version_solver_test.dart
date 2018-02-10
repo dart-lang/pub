@@ -1176,111 +1176,144 @@ void dartSdkConstraint() {
             'current SDK is 2.0.0.');
   });
 
-  test("pre-release override requires major SDK versions to match", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<2.2.3'}
-      })
-    ]).create();
+  group("pre-release override", () {
+    group("requires", () {
+      test("major SDK versions to match", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<2.2.3'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override requires minor SDK versions to match", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.3.3'}
-      })
-    ]).create();
+      test("minor SDK versions to match", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.3.3'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override requires patch SDK versions to match", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.2.4'}
-      })
-    ]).create();
+      test("patch SDK versions to match", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.4'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override requires exclusive max", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<=1.2.3'}
-      })
-    ]).create();
+      test("exclusive max", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<=1.2.3'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override requires pre-release SDK", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.2.3'}
-      })
-    ]).create();
+      test("pre-release SDK", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
-        error: 'Package myapp requires SDK version <1.2.3 but the current '
-            'SDK is 1.2.3.');
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
+            error: 'Package myapp requires SDK version <1.2.3 but the current '
+                'SDK is 1.2.3.');
+      });
 
-  test("pre-release override requires no existing pre-release constraints",
-      () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.2.3-dev.2.0'}
-      })
-    ]).create();
+      test("no max pre-release constraint", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3-dev.2.0'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override requires no build release constraints", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.2.3+1'}
-      })
-    ]).create();
+      test("no min pre-release constraint that matches the current SDK",
+          () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '>=1.2.3-dev.2.0 <1.2.3'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
-        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.3.0'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
 
-  test("pre-release override works generally", () async {
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'environment': {'sdk': '<1.2.3'}
-      })
-    ]).create();
+      test("no build release constraints", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3+1'}
+          })
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
-        output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
-            contains('<=1.2.3-dev.1.0'), contains('myapp')));
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
+            output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
+      });
+    });
+
+    group("allows", () {
+      test("an exclusive max that matches the current SDK", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
+
+      test("a pre-release min that doesn't match the current SDK", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '>=1.0.0-dev.1.0 <1.2.3'}
+          })
+        ]).create();
+
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
+    });
   });
 }
 

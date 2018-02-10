@@ -49,6 +49,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     }
   }
 
+  entrypoint.migrateCache();
+
   // Unless the user overrides the verbosity, we want to filter out the
   // normal pub output shown while loading the environment.
   if (log.verbosity == log.Verbosity.NORMAL) {
@@ -59,7 +61,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   if (p.extension(executable) != ".dart") executable += ".dart";
 
   var localSnapshotPath =
-      p.join(".pub", "bin", package, "$executable.snapshot");
+      p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
   if (!isGlobal &&
       fileExists(localSnapshotPath) &&
       // Dependencies are only snapshotted in release mode, since that's the

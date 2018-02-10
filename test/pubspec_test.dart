@@ -23,7 +23,8 @@ class MockSource extends Source {
     return new PackageRef(name, this, description);
   }
 
-  PackageId parseId(String name, Version version, description) =>
+  PackageId parseId(String name, Version version, description,
+          {String containingPath}) =>
       new PackageId(name, this, version, description);
 
   bool descriptionsEqual(description1, description2) =>
@@ -555,6 +556,11 @@ publish_to: none
       test("throws on other strings", () {
         expectPubspecException('publish_to: http://bad.url:not-port',
             (pubspec) => pubspec.publishTo);
+      });
+
+      test("throws on non-absolute URLs", () {
+        expectPubspecException(
+            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
       });
     });
 
