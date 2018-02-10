@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import '../flutter.dart' as flutter;
 import '../package_name.dart';
 import 'incompatibility_cause.dart';
 import 'term.dart';
@@ -20,6 +21,18 @@ class Incompatibility {
   /// failed.
   bool get isFailure =>
       terms.isEmpty || (terms.length == 1 && terms.first.package.isRoot);
+
+  /// Returns the causes of all external incompatibilities in this
+  /// incompatibility's derivation graph.
+  Iterable<IncompatibilityCause> get externalCauses sync* {
+    if (cause is ConflictCause) {
+      var cause = this.cause as ConflictCause;
+      yield* cause.conflict.externalCauses;
+      yield* cause.other.externalCauses;
+    } else {
+      yield cause;
+    }
+  }
 
   /// Creates an incompatibility with [terms].
   ///
@@ -94,19 +107,20 @@ class Incompatibility {
 
       return "${_terse(depender, details, allowEvery: true)} depends on "
           "${_terse(dependee, details)}";
-    } else if (cause == IncompatibilityCause.sdk) {
+    } else if (cause is SdkCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      // TODO(nweiz): Include more details about the expected and actual SDK
-      // versions.
-      if (terms.first.constraint.isAny) {
-        return "no versions of ${_terseRef(terms.first, details)} "
-            "are compatible with the current SDK";
+      var cause = this.cause as SdkCause;
+      var buffer = new StringBuffer(
+          "${_terse(terms.first, details, allowEvery: true)} requires ");
+      if (cause.isFlutter && !flutter.isAvailable) {
+        buffer.write("the Flutter SDK");
       } else {
-        return "${_terse(terms.first, details)} is incompatible with "
-            "the current SDK";
+        if (cause.isFlutter) buffer.write("Flutter ");
+        buffer.write("SDK version ${cause.constraint}");
       }
+      return buffer.toString();
     } else if (cause == IncompatibilityCause.noVersions) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -374,8 +388,15 @@ class Incompatibility {
     buffer.write("${_terse(latter.terms.first, details)} ");
     if (priorLine != null) buffer.write("($priorLine) ");
 
-    if (latter.cause == IncompatibilityCause.sdk) {
-      buffer.write("which is incompatible with the current SDK");
+    if (latter.cause is SdkCause) {
+      var cause = latter.cause as SdkCause;
+      buffer.write("which requires ");
+      if (cause.isFlutter && !flutter.isAvailable) {
+        buffer.write("the Flutter SDK");
+      } else {
+        if (cause.isFlutter) buffer.write("Flutter ");
+        buffer.write("SDK version ${cause.constraint}");
+      }
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");
     } else {

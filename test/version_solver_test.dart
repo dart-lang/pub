@@ -23,8 +23,8 @@ main() {
   group('unsolvable', unsolvable);
   group('bad source', badSource);
   group('backtracking', backtracking);
-  group('Dart SDK constraint', dartSdkConstraint, skip: true);
-  group('Flutter SDK constraint', flutterSdkConstraint, skip: true);
+  group('Dart SDK constraint', dartSdkConstraint);
+  group('Flutter SDK constraint', flutterSdkConstraint);
   group('pre-release', prerelease);
   group('override', override, skip: true);
   group('downgrade', downgrade, skip: true);
@@ -1005,9 +1005,11 @@ void dartSdkConstraint() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package myapp requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace('''
+      The current Dart SDK version is 0.1.2+3.
+
+      Because myapp requires SDK version 0.0.0, version solving failed.
+    '''));
   });
 
   test('dependency does not match SDK', () async {
@@ -1018,9 +1020,12 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package foo requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      The current Dart SDK version is 0.1.2+3.
+
+      Because myapp depends on foo any which requires SDK version 0.0.0, version
+        solving failed.
+    """));
   });
 
   test('transitive dependency does not match SDK', () async {
@@ -1032,9 +1037,13 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package bar requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      The current Dart SDK version is 0.1.2+3.
+
+      Because every version of foo depends on bar any which requires SDK version
+        0.0.0, foo is forbidden.
+      So, because myapp depends on foo any, version solving failed.
+    """));
   });
 
   test('selects a dependency version that allows the SDK', () async {
@@ -1101,7 +1110,7 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
+    await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 2);
   });
 
   group('pre-release overrides', () {
@@ -1302,8 +1311,11 @@ void dartSdkConstraint() {
 
         await expectResolves(
             environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
-            error: 'Package myapp requires SDK version <1.2.3 but the current '
-                'SDK is 1.2.3.');
+            error: equalsIgnoringWhitespace('''
+              The current Dart SDK version is 1.2.3.
+
+              Because myapp requires SDK version <1.2.3, version solving failed.
+            '''));
       });
 
       test("upper bound is pre-release", () async {
@@ -1375,7 +1387,7 @@ void dartSdkConstraint() {
                 contains('<=1.2.3-dev.1.0'), contains('myapp')));
       });
     });
-  });
+  }, skip: true);
 }
 
 void flutterSdkConstraint() {
@@ -1388,9 +1400,11 @@ void flutterSdkConstraint() {
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Package myapp requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Flutter SDK, version solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
 
     test('fails for a dependency', () async {
@@ -1401,9 +1415,12 @@ void flutterSdkConstraint() {
       });
 
       await d.appDir({'foo': 'any'}).create();
-      await expectResolves(
-          error: 'Package foo requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp depends on foo any which requires the Flutter SDK, version
+          solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
 
     test("chooses a version that doesn't need Flutter", () async {
@@ -1427,9 +1444,11 @@ void flutterSdkConstraint() {
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Package myapp requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Flutter SDK, version solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
   });
 
@@ -1461,8 +1480,12 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-              'current SDK is 1.2.3.');
+          error: equalsIgnoringWhitespace('''
+            The current Flutter SDK version is 1.2.3.
+
+            Because myapp requires Flutter SDK version >1.2.3, version solving
+              failed.
+          '''));
     });
 
     test('succeeds if both Flutter and Dart SDKs match', () async {
@@ -1488,8 +1511,12 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-              'current SDK is 1.2.3.');
+          error: equalsIgnoringWhitespace('''
+            The current Flutter SDK version is 1.2.3.
+
+            Because myapp requires Flutter SDK version >1.2.3, version solving
+              failed.
+          '''));
     });
 
     test("fails if Dart SDK doesn't match but Flutter does", () async {
@@ -1502,8 +1529,11 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires SDK version >0.1.2+3 but the '
-              'current SDK is 0.1.2+3.');
+          error: equalsIgnoringWhitespace('''
+            The current Dart SDK version is 0.1.2+3.
+
+            Because myapp requires SDK version >0.1.2+3, version solving failed.
+          '''));
     });
 
     test('selects the latest dependency with a matching constraint', () async {

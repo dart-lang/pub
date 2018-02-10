@@ -358,6 +358,23 @@ Future<S> minByAsync<S, T>(
   return minValue;
 }
 
+/// Like [List.sublist], but for any iterable.
+Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
+  if (end <= start) {
+    throw new RangeError.range(
+        end, start + 1, null, "end", "must be greater than start");
+  }
+  return values.skip(start).take(end - start);
+}
+
+/// Like [Iterable.fold], but for an asynchronous [combine] function.
+Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
+        Future<S> combine(S previous, T element)) =>
+    values.fold(
+        new Future.value(initialValue),
+        (previousFuture, element) =>
+            previousFuture.then((previous) => combine(previous, element)));
+
 /// Returns the first index in [list] for which [callback] returns `true`, or
 /// `-1` if there is no such index.
 int indexWhere<T>(List<T> list, bool callback(T element)) {
