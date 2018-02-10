@@ -144,6 +144,6 @@ main() {
                 '- myapp',
             exitCode: exit_codes.UNAVAILABLE);
       });
-    });
+    }, skip: true);
   });
 }

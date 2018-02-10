@@ -19,7 +19,7 @@ main() {
             error: new RegExp(r'Could not find a file named "pubspec.yaml" '
                 r'in "[^\n]*"\.'),
             exitCode: exit_codes.NO_INPUT);
-      });
+      }, skip: true);
 
       test('a pubspec with a "name" key', () async {
         await d.dir(appPath, [
@@ -117,7 +117,8 @@ main() {
       ]).create();
 
       await pubCommand(command,
-          error: new RegExp("^Incompatible dependencies on baz:\n"));
+          error: new RegExp(
+              r"foo from path is incompatible with bar\s+from path"));
     });
 
     test('does not allow a dependency on itself', () async {

@@ -52,6 +52,11 @@ class PartialSolution {
   void assign(PackageName package, bool isPositive,
       {Incompatibility cause, bool decision: false}) {
     if (decision) {
+      // When we make a new decision after backtracking, count an additional
+      // attempted solution. If we backtrack multiple times in a row, though, we
+      // only want to count one, since we haven't actually started attempting a
+      // new solution.
+      if (_backtracking) _attemptedSolutions++;
       _backtracking = false;
       _decisionLevel++;
     }
@@ -66,10 +71,6 @@ class PartialSolution {
   /// Resets the current decision level to [decisionLevel], and removes all
   /// assignments made after that level.
   void backtrack(int decisionLevel) {
-    // When we start backtracking, count an additional attempted solution. If we
-    // backtrack multiple times in a row, though, we only want to count one,
-    // since we haven't actually started attempting a new solution.
-    if (!_backtracking) _attemptedSolutions++;
     _backtracking = true;
 
     var packages = new Set<String>();
@@ -104,13 +105,14 @@ class PartialSolution {
     var ref = assignment.package.toRef();
     var negativeByRef = negative[name];
     var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
-    if (oldNegative != null) assignment = assignment.intersect(oldNegative);
+    var term =
+        oldNegative == null ? assignment : assignment.intersect(oldNegative);
 
-    if (assignment.isPositive) {
+    if (term.isPositive) {
       negative.remove(name);
-      positive[name] = assignment;
+      positive[name] = term;
     } else {
-      negative.putIfAbsent(name, () => {})[ref] = assignment;
+      negative.putIfAbsent(name, () => {})[ref] = term;
     }
   }
 

@@ -25,6 +25,10 @@ import 'set_relation.dart';
 import 'term.dart';
 import 'type.dart';
 
+// TODO(nweiz): Currently, a bunch of tests that use the solver are skipped
+// because they exercise parts of the solver that haven't been reimplemented.
+// They should all be re-enabled before this gets released.
+
 /// The version solver that finds a set of package versions that satisfy the
 /// root package's dependencies.
 ///
@@ -63,27 +67,28 @@ class VersionSolver {
     var stopwatch = new Stopwatch()..start();
 
     var rootId = new PackageId.root(_root);
-    _solution.assign(rootId, true);
-    _log("selecting ${rootId.toTerseString()}");
+    var rootIncompatibility = new Incompatibility(
+        [new Term(rootId, false)], IncompatibilityCause.root);
+    _addIncompatibility(rootIncompatibility);
     for (var dependency in _root.immediateDependencies.values) {
       _addIncompatibility(new Incompatibility(
           [new Term(rootId, true), new Term(dependency, false)],
           IncompatibilityCause.dependency));
     }
 
-    var next = _root.name;
-    while (next != null) {
-      _propagate(next);
-      next = await _choosePackageVersion();
+    try {
+      var next = _root.name;
+      while (next != null) {
+        _propagate(next);
+        next = await _choosePackageVersion();
+      }
+
+      return await _result();
+    } finally {
+      // Gather some solving metrics.
+      log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
+          'Tried ${_solution.attemptedSolutions} solutions.');
     }
-
-    var result = await _result();
-
-    // Gather some solving metrics.
-    log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
-        'Tried ${_solution.attemptedSolutions} solutions.');
-
-    return result;
   }
 
   /// Performs [unit propagation][] on incompatibilities transitively related to

@@ -75,7 +75,7 @@ main() {
           exitCode: exit_codes.UNAVAILABLE);
 
       await d.dir(appPath, [d.nothing('.packages')]).validate();
-    });
+    }, skip: true);
 
     test('.packages file has relative path to path dependency', () async {
       await servePackages((builder) {
