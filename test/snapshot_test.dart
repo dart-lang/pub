@@ -348,7 +348,7 @@ main() {
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
-    }, skip: true);
+    });
 
     test("for a package that depends on the entrypoint", () async {
       await servePackages((builder) {
@@ -495,7 +495,7 @@ main() {
         d.file('sdk-version', '0.1.2+3\n'),
         d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
       ]).validate();
-    }, skip: true);
+    });
   });
 
   test("prints errors for broken snapshot compilation", () async {

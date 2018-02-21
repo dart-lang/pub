@@ -84,7 +84,7 @@ main() {
           .file("$appPath/pubspec.lock",
               allOf([isNot(contains("0.0.1")), contains("0.0.2")]))
           .validate();
-    });
+    }, skip: true);
 
     group("fails if", () {
       test("the version constraint doesn't match", () async {

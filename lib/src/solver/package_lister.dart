@@ -24,6 +24,12 @@ class PackageLister {
   /// The package that is being listed.
   final PackageRef _ref;
 
+  /// The version of this package in the lockfile.
+  ///
+  /// This is `null` if this package isn't locked or if the current version
+  /// solve isn't a `pub get`.
+  final PackageId _locked;
+
   /// The source from which [_ref] comes.
   final BoundSource _source;
 
@@ -42,6 +48,9 @@ class PackageLister {
   /// [incompatibilitiesFor] multiple times.
   var _knownInvalidSdks = VersionConstraint.empty;
 
+  /// Whether we've returned incompatibilities for [_locked].
+  var _listedLockedVersion = false;
+
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
   List<PackageId> get cachedVersions => _versionsCache?.result?.asValue?.value;
@@ -58,17 +67,23 @@ class PackageLister {
 
   ResultFuture<List<PackageId>> _versionsCache;
 
-  PackageLister(SystemCache cache, this._ref)
+  PackageLister(SystemCache cache, this._ref, this._locked)
       : _source = cache.source(_ref.source);
 
   /// Returns the number of versions of this package that match [constraint].
-  Future<int> countVersions(VersionConstraint constraint) async =>
-      (await _versions).where((id) => constraint.allows(id.version)).length;
+  Future<int> countVersions(VersionConstraint constraint) async {
+    if (_locked != null && constraint.allows(_locked.version)) return 1;
+    return (await _versions)
+        .where((id) => constraint.allows(id.version))
+        .length;
+  }
 
   /// Returns the best version of this package that matches [constraint]
   /// according to the solver's prioritization scheme, or `null` if no versions
   /// match.
   Future<PackageId> bestVersion(VersionConstraint constraint) async {
+    if (_locked != null && constraint.allows(_locked.version)) return _locked;
+
     var versions = await _versions;
     var min = constraint is VersionRange ? constraint.min : null;
 
@@ -98,6 +113,21 @@ class PackageLister {
     if (_knownInvalidSdks.allows(id.version)) return const [];
 
     var pubspec = await _source.describe(id);
+    if (_versionsCache == null && id.version == _locked.version) {
+      if (_listedLockedVersion) return const [];
+      _listedLockedVersion = true;
+      if (!_matchesSdkConstraint(pubspec)) {
+        return [
+          new Incompatibility([new Term(id, true)], IncompatibilityCause.sdk)
+        ];
+      } else {
+        return pubspec.dependencies.values
+            .map((range) => new Incompatibility(
+                [new Term(id, true), new Term(range, false)],
+                IncompatibilityCause.dependency))
+            .toList();
+      }
+    }
 
     var versions = await _versions;
     var index = indexWhere(versions, (other) => identical(id, other));

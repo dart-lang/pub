@@ -214,7 +214,7 @@ main() {
       d.dir(".dart_tool/pub/deps/debug/foo/lib",
           [d.file("foo.dart", "final message = 'See ya!';")])
     ]).validate();
-  }, skip: true);
+  });
 
   test("recaches when a transitive dependency is updated", () async {
     await servePackages((builder) {
@@ -240,7 +240,7 @@ main() {
 
     await globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
     await pubUpgrade(output: contains("Precompiled foo."));
-  }, skip: true);
+  });
 
   test("doesn't recache when an unrelated dependency is updated", () async {
     await servePackages((builder) {
@@ -265,7 +265,7 @@ main() {
 
     await globalPackageServer.add((builder) => builder.serve("bar", "6.0.0"));
     await pubUpgrade(output: isNot(contains("Precompiled foo.")));
-  }, skip: true);
+  });
 
   test("caches the dependency in debug mode", () async {
     await servePackages((builder) {
@@ -679,7 +679,7 @@ foo|lib/list_transformer.dart.copy""");
         d.dir(".dart_tool/pub/deps/debug/foo/lib",
             [d.file("foo.dart", "final message = 'Goodbye!';")])
       ]).validate();
-    }, skip: true);
+    });
   });
 }
 
