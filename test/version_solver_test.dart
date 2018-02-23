@@ -485,7 +485,7 @@ void unsolvable() {
         error: allOf([
       contains('Because every version of foo depends on shared from hosted on '
           'http://localhost:'),
-      contains(' and every\n   version of bar depends on shared from hosted on '
+      contains(' and every\n  version of bar depends on shared from hosted on '
           'http://localhost:'),
       contains(', foo is incompatible with\n  bar.'),
       contains('So, because myapp depends on both bar 1.0.0 and foo 1.0.0, '

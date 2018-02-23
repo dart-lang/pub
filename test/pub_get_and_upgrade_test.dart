@@ -118,7 +118,7 @@ main() {
 
       await pubCommand(command,
           error: new RegExp(
-              r"foo from path is incompatible with bar\s+from path"));
+              r"foo from path is incompatible with bar from\s+path"));
     });
 
     test('does not allow a dependency on itself', () async {
