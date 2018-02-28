@@ -1104,124 +1104,143 @@ void dartSdkConstraint() {
     await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
   });
 
-  test('root package allows 2.0.0-dev by default', () async {
-    await d.dir(appPath, [
-      await d.pubspec({'name': 'myapp'})
-    ]).create();
+  group('pre-release overrides', () {
+    group('for the root package', () {
+      test('allow 2.0.0-dev by default', () async {
+        await d.dir(appPath, [
+          await d.pubspec({'name': 'myapp'})
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
+      });
 
-  test('root package allows 2.0.0 by default', () async {
-    await d.dir(appPath, [
-      await d.pubspec({'name': 'myapp'})
-    ]).create();
+      test('allow 2.0.0 by default', () async {
+        await d.dir(appPath, [
+          await d.pubspec({'name': 'myapp'})
+        ]).create();
 
-    await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
-  });
+        await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
+      });
 
-  test('package deps allow 2.0.0-dev by default', () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
-    await d.dir('bar', [
-      await d.pubspec({'name': 'bar'})
-    ]).create();
+      test("allow pre-release versions of the upper bound", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3'}
+          })
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'},
-        }
-      })
-    ]).create();
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
+    });
 
-    await expectResolves(
-      environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
-      // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
-      // variable and mention the foo and bar packages specifically.
-      output: allOf(
-          contains('PUB_ALLOW_PRERELEASE_SDK'), anyOf(contains('bar, foo'))),
-    );
-  });
+    group('for a dependency', () {
+      test('disallow 2.0.0 by default', () async {
+        await d.dir('foo', [
+          await d.pubspec({'name': 'foo'})
+        ]).create();
 
-  test(
-      "pub doesn't log about pre-release SDK overrides if "
-      "PUB_ALLOW_PRERELEASE_SDK=quiet", () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'dependencies': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'},
-        }
-      })
-    ]).create();
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
+            error: equalsIgnoringWhitespace('''
+          The current Dart SDK version is 2.0.0.
 
-    await expectResolves(
-      environment: {
-        '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
-        'PUB_ALLOW_PRERELEASE_SDK': 'quiet'
-      },
-      // Log output should not mention the PUB_ALLOW_RELEASE_SDK environment
-      // variable.
-      output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')),
-    );
-  });
+          Because myapp depends on foo from path which requires SDK version
+            <2.0.0, version solving failed.
+        '''));
+      });
 
-  test('package deps disallow 2.0.0-dev if PUB_ALLOW_PRERELEASE_SDK is false',
-      () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+      test('allow 2.0.0-dev by default', () async {
+        await d.dir('foo', [
+          await d.pubspec({'name': 'foo'})
+        ]).create();
+        await d.dir('bar', [
+          await d.pubspec({'name': 'bar'})
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
-    ]).create();
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'dependencies': {
+              'foo': {'path': '../foo'},
+              'bar': {'path': '../bar'},
+            }
+          })
+        ]).create();
 
-    await expectResolves(
+        await expectResolves(
+          environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
+          // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
+          // variable and mention the foo and bar packages specifically.
+          output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+              anyOf(contains('bar, foo'))),
+        );
+      });
+    });
+
+    test("don't log if PUB_ALLOW_PRERELEASE_SDK is quiet", () async {
+      await d.dir('foo', [
+        await d.pubspec({'name': 'foo'})
+      ]).create();
+
+      await d.dir(appPath, [
+        await d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': {'path': '../foo'},
+          }
+        })
+      ]).create();
+
+      await expectResolves(
         environment: {
           '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
-          'PUB_ALLOW_PRERELEASE_SDK': 'false'
+          'PUB_ALLOW_PRERELEASE_SDK': 'quiet'
         },
-        error: 'Package foo requires SDK version <2.0.0 but the '
-            'current SDK is 2.0.0-dev.99.');
-  });
+        // Log output should not mention the PUB_ALLOW_RELEASE_SDK environment
+        // variable.
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')),
+      );
+    });
 
-  test('package deps disallow 2.0.0 by default', () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+    test('are disabled if PUB_ALLOW_PRERELEASE_SDK is false', () async {
+      await d.dir('foo', [
+        await d.pubspec({'name': 'foo'})
+      ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
-    ]).create();
+      await d.dir(appPath, [
+        await d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': {'path': '../foo'}
+          }
+        })
+      ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package foo requires SDK version <2.0.0 but the '
-            'current SDK is 2.0.0.');
-  });
+      await expectResolves(
+          environment: {
+            '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
+            'PUB_ALLOW_PRERELEASE_SDK': 'false'
+          },
+          error: 'Package foo requires SDK version <2.0.0 but the '
+              'current SDK is 2.0.0.');
+    });
 
-  group("pre-release override", () {
-    group("requires", () {
-      test("major SDK versions to match", () async {
+    group("don't apply if", () {
+      test("major SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1234,7 +1253,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("minor SDK versions to match", () async {
+      test("minor SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1247,7 +1266,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("patch SDK versions to match", () async {
+      test("patch SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1260,7 +1279,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("exclusive max", () async {
+      test("SDK max is inclusive", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1273,7 +1292,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("pre-release SDK", () async {
+      test("SDK isn't pre-release", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1287,7 +1306,7 @@ void dartSdkConstraint() {
                 'SDK is 1.2.3.');
       });
 
-      test("no max pre-release constraint", () async {
+      test("upper bound is pre-release", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1300,8 +1319,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("no min pre-release constraint that matches the current SDK",
-          () async {
+      test("lower bound is pre-release and matches SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1314,7 +1332,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("no build release constraints", () async {
+      test("upper bound has build identifier", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1328,8 +1346,8 @@ void dartSdkConstraint() {
       });
     });
 
-    group("allows", () {
-      test("an exclusive max that matches the current SDK", () async {
+    group("apply if", () {
+      test("upper bound is exclusive and matches SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1343,7 +1361,7 @@ void dartSdkConstraint() {
                 contains('<=1.2.3-dev.1.0'), contains('myapp')));
       });
 
-      test("a pre-release min that doesn't match the current SDK", () async {
+      test("lower bound is pre-release but doesn't match SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
