@@ -223,7 +223,7 @@ class Incompatibility {
         .join(' or ');
 
     var buffer =
-        new StringBuffer("${_terse(thisPositive, details, allowEvery: true)} ");
+        new StringBuffer(_terse(thisPositive, details, allowEvery: true) + " ");
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
     buffer.write(isDependency ? "depends on" : "requires");
