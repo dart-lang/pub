@@ -8,18 +8,22 @@ import 'incompatibility.dart';
 abstract class IncompatibilityCause {
   /// The incompatibility represents the requirement that the root package
   /// exists.
-  static const IncompatibilityCause root = const _RootCause();
+  static const IncompatibilityCause root = const _Cause("root");
 
   /// The incompatibility represents a package's dependency.
-  static const IncompatibilityCause dependency = const _DependencyCause();
+  static const IncompatibilityCause dependency = const _Cause("dependency");
 
   /// The incompatibility represents a package's SDK constraint being
   /// incompatible with the current SDK.
   static const IncompatibilityCause sdk = const _SdkCause();
 
-  /// The incompatibility represents that the package has no versions that match
+  /// The incompatibility indicates that the package has no versions that match
   /// the given constraint.
-  static const IncompatibilityCause noVersions = const _NoVersionsCause();
+  static const IncompatibilityCause noVersions = const _Cause("no versions");
+
+  /// The incompatibility indicates that the package has an unknown source.
+  static const IncompatibilityCause unknownSource =
+      const _Cause("unknown source");
 }
 
 /// The incompatibility was derived from two existing incompatibilities during
@@ -36,16 +40,13 @@ class ConflictCause implements IncompatibilityCause {
   ConflictCause(this.conflict, this.other);
 }
 
-class _RootCause implements IncompatibilityCause {
-  const _RootCause();
-}
+/// A class for stateless [IncompatibilityCause]s.
+class _Cause implements IncompatibilityCause {
+  final String _name;
 
-class _DependencyCause implements IncompatibilityCause {
-  const _DependencyCause();
-}
+  const _Cause(this._name);
 
-class _NoVersionsCause implements IncompatibilityCause {
-  const _NoVersionsCause();
+  String toString() => _name;
 }
 
 // TODO(nweiz): Include more information about what SDK versions are allowed

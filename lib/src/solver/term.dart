@@ -40,7 +40,9 @@ class Term {
   /// Returns whether [this] satisfies [other].
   ///
   /// That is, whether [this] being true means that [other] must also be true.
-  bool satisfies(Term other) => relation(other) == SetRelation.subset;
+  bool satisfies(Term other) =>
+      package.name == other.package.name &&
+      relation(other) == SetRelation.subset;
 
   /// Returns the relationship between the package versions allowed by [this]
   /// and by [other].

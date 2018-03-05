@@ -112,6 +112,11 @@ class Incompatibility {
       assert(terms.first.isPositive);
       return "no versions of ${_terseRef(terms.first, details)} "
           "match ${terms.first.constraint}";
+    } else if (cause == IncompatibilityCause.unknownSource) {
+      assert(terms.length == 1);
+      assert(terms.first.isPositive);
+      return '${terms.first.package.name} comes from unknown source '
+          '"${terms.first.package.source}"';
     } else if (cause == IncompatibilityCause.root) {
       // [IncompatibilityCause.root] is only used when a package depends on the
       // entrypoint with an incompatible version, so we want to print the
@@ -191,6 +196,10 @@ class Incompatibility {
     var requiresThrough =
         _tryRequiresThrough(other, details, thisLine, otherLine);
     if (requiresThrough != null) return requiresThrough;
+
+    var requiresForbidden =
+        _tryRequiresForbidden(other, details, thisLine, otherLine);
+    if (requiresForbidden != null) return requiresForbidden;
 
     var buffer = new StringBuffer(this.toString(details));
     if (thisLine != null) buffer.write(" $thisLine");
@@ -305,6 +314,73 @@ class Incompatibility {
         .where((term) => !term.isPositive)
         .map((term) => _terse(term, details))
         .join(' or '));
+
+    if (latterLine != null) buffer.write(" ($latterLine)");
+
+    return buffer.toString();
+  }
+
+  /// If "[this] and [other]" can be expressed as "X requires Y which is
+  /// forbidden", this returns that expression.
+  ///
+  /// Otherwise, this returns `null`.
+  String _tryRequiresForbidden(Incompatibility other,
+      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+    if (terms.length != 1 && other.terms.length != 1) return null;
+
+    Incompatibility prior;
+    Incompatibility latter;
+    int priorLine;
+    int latterLine;
+    if (terms.length == 1) {
+      prior = other;
+      latter = this;
+      priorLine = otherLine;
+      latterLine = thisLine;
+    } else {
+      prior = this;
+      latter = other;
+      priorLine = thisLine;
+      latterLine = otherLine;
+    }
+
+    var negative = prior._singleTermWhere((term) => !term.isPositive);
+    if (negative == null) return null;
+    if (!negative.inverse.satisfies(latter.terms.first)) return null;
+
+    var positives = prior.terms.where((term) => term.isPositive);
+
+    var buffer = new StringBuffer();
+    if (positives.length > 1) {
+      var priorString =
+          positives.map((term) => _terse(term, details)).join(' or ');
+      buffer.write("if $priorString then ");
+    } else {
+      buffer.write(_terse(positives.first, details, allowEvery: true));
+      buffer.write(prior.cause == IncompatibilityCause.dependency
+          ? " depends on "
+          : " requires ");
+    }
+
+    if (latter.cause == IncompatibilityCause.unknownSource) {
+      var package = latter.terms.first.package;
+      buffer.write("${package.name} ");
+      if (priorLine != null) buffer.write("($priorLine) ");
+      buffer.write('from unknown source "${package.source}"');
+      if (latterLine != null) buffer.write(" ($latterLine)");
+      return buffer.toString();
+    }
+
+    buffer.write("${_terse(latter.terms.first, details)} ");
+    if (priorLine != null) buffer.write("($priorLine) ");
+
+    if (latter.cause == IncompatibilityCause.sdk) {
+      buffer.write("which is incompatible with the current SDK");
+    } else if (latter.cause == IncompatibilityCause.noVersions) {
+      buffer.write("which doesn't match any versions");
+    } else {
+      buffer.write("which is forbidden");
+    }
 
     if (latterLine != null) buffer.write(" ($latterLine)");
 
