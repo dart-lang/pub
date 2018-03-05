@@ -8,10 +8,11 @@ import 'package:async/async.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../flutter.dart' as flutter;
+import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
-import '../source.dart';
 import '../sdk.dart' as sdk;
+import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -67,8 +68,18 @@ class PackageLister {
 
   ResultFuture<List<PackageId>> _versionsCache;
 
+  /// Creates a package lister for the dependency identified by [ref].
   PackageLister(SystemCache cache, this._ref, this._locked)
       : _source = cache.source(_ref.source);
+
+  /// Creates a package lister for the root [package].
+  PackageLister.root(Package package)
+      : _ref = new PackageRef.root(package),
+        _source = new _RootSource(package),
+        // Treat the package as locked so we avoid the logic for finding the
+        // boundaries of various constraints, which is useless for the root
+        // package.
+        _locked = new PackageId.root(package);
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -113,7 +124,9 @@ class PackageLister {
     if (_knownInvalidSdks.allows(id.version)) return const [];
 
     var pubspec = await _source.describe(id);
-    if (_versionsCache == null && id.version == _locked.version) {
+    if (_versionsCache == null &&
+        _locked != null &&
+        id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
       _listedLockedVersion = true;
       if (!_matchesSdkConstraint(pubspec)) {
@@ -121,7 +134,12 @@ class PackageLister {
           new Incompatibility([new Term(id, true)], IncompatibilityCause.sdk)
         ];
       } else {
-        return pubspec.dependencies.values
+        var dependencies = id.isRoot
+            ? (new Map.from(pubspec.dependencies)
+              ..addAll(pubspec.devDependencies)
+              ..addAll(pubspec.dependencyOverrides))
+            : pubspec.dependencies;
+        return dependencies.values
             .map((range) => new Incompatibility(
                 [new Term(id, true), new Term(range, false)],
                 IncompatibilityCause.dependency))
@@ -258,4 +276,36 @@ class PackageLister {
     }
     return true;
   }
+}
+
+/// A fake source that contains only the root package.
+///
+/// This only implements the subset of the [BoundSource] API that
+/// [PackageLister] uses to find information about packages.
+class _RootSource extends BoundSource {
+  /// An error to throw for unused source methods.
+  UnsupportedError get _unsupported =>
+      new UnsupportedError("_RootSource is not a full source.");
+
+  /// The entrypoint package.
+  final Package _package;
+
+  _RootSource(this._package);
+
+  Future<List<PackageId>> getVersions(PackageRef ref) {
+    assert(ref.isRoot);
+    return new Future.value([new PackageId.root(_package)]);
+  }
+
+  Future<Pubspec> describe(PackageId id) {
+    assert(id.isRoot);
+    return new Future.value(_package.pubspec);
+  }
+
+  Source get source => throw _unsupported;
+  SystemCache get systemCache => throw _unsupported;
+  Future<List<PackageId>> doGetVersions(PackageRef ref) => throw _unsupported;
+  Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
+  Future get(PackageId id, String symlink) => throw _unsupported;
+  String getDirectory(PackageId id) => throw _unsupported;
 }

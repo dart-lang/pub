@@ -248,10 +248,9 @@ incompatibilities above):
 The core of Pubgrub works as follows:
 
 * Begin by adding an incompatibility indicating that the current version of the
-  root package must be selected (for example, `{not root 1.0.0}`).
-
-* Add incompatibilities representing the root package's dependencies (for
-  example, `{root 1.0.0, not foo ^1.0.0}`).
+  root package must be selected (for example, `{not root 1.0.0}`). Note that
+  although there's only one version of the root package, this is just an
+  incompatibility, not an assignment.
 
 * Let `next` be the name of the root package.
 
@@ -267,7 +266,8 @@ The core of Pubgrub works as follows:
 
   * Once there are no more derivations to be found,
     [make a decision](#decision-making) and set `next` to the package name
-    returned by the decision-making process.
+    returned by the decision-making process. Note that the first decision will
+    always select the single available version of the root package.
 
     * Decision making may determine that there's no more work to do, in which
       case version solving is done and the partial solution represents a total
@@ -394,10 +394,16 @@ decisions. It works as follows:
       this is the case, `previousSatisfier` may refer to the same package as
       `satisfier`.
 
-  * If `satisfier`'s decision level is 0, version solving has failed.
+  * Let `previousSatisfierLevel` be `previousSatisfier`'s decision level, or
+    decision level 1 if there is no `previousSatisfier`.
 
-  * If `satisfier` is a decision or if `previousSatisfier` has a different
-    decision level than `satisfier`:
+    * Note: decision level 1 is the level where the root package was selected.
+      It's safe to go back to decision level 0, but stopping at 1 tends to
+      produce better error messages, because references to the root package end
+      up closer to the final conclusion that no solution exists.
+
+  * If `satisfier` is a decision or if `previousSatisfierLevel` is different
+    than `satisfier`'s decision level:
 
     * If `incompatibility` is different than the original input, add it to the
       solver's incompatibility set. (If the conflicting incompatibility was
@@ -405,8 +411,7 @@ decisions. It works as follows:
       distinct root cause.)
 
     * Backtrack by removing all assignments whose decision level is greater than
-      `previousSatisfier`'s from the partial solution, or whose decision level
-      is greater than 0 if there is no `previousSatisfier`.
+      `previousSatisfierLevel` from the partial solution.
 
     * Return `incompatibility`.
 
