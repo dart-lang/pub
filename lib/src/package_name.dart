@@ -97,6 +97,9 @@ class PackageRef extends PackageName {
   PackageRef(String name, Source source, description)
       : super._(name, source, description);
 
+  /// Creates a reference to the given root package.
+  PackageRef.root(Package package) : super._(package.name, null, package.name);
+
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name) : super._magic(name);
 
@@ -200,6 +203,12 @@ class PackageRange extends PackageName {
       : constraint = Version.none,
         features = const {},
         super._magic(name);
+
+  /// Creates a range that selects the root package.
+  PackageRange.root(Package package)
+      : constraint = package.version,
+        features = const {},
+        super._(package.name, null, package.name);
 
   /// Returns a description of [features], or the empty string if [features] is
   /// empty.

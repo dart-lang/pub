@@ -71,14 +71,9 @@ class VersionSolver {
     var stopwatch = new Stopwatch()..start();
 
     var rootId = new PackageId.root(_root);
-    var rootIncompatibility = new Incompatibility(
-        [new Term(rootId, false)], IncompatibilityCause.root);
-    _addIncompatibility(rootIncompatibility);
-    for (var dependency in _root.immediateDependencies.values) {
-      _addIncompatibility(new Incompatibility(
-          [new Term(rootId, true), new Term(dependency, false)],
-          IncompatibilityCause.dependency));
-    }
+    _addIncompatibility(new Incompatibility(
+        [new Term(new PackageRange.root(_root), false)],
+        IncompatibilityCause.root));
 
     try {
       var next = _root.name;
@@ -212,7 +207,12 @@ class VersionSolver {
       // [mostRecentSatisfier] such that [incompatibility] is satisfied by
       // [_solution.assignments] up to and including this assignment plus
       // [mostRecentSatisfier].
-      var maxDecisionLevel = 0;
+      //
+      // Decision level 1 is the level where the root package was selected. It's
+      // safe to go back to decision level 0, but stopping at 1 tends to produce
+      // better error messages, because references to the root package end up
+      // closer to the final conclusion that no solution exists.
+      var previousSatisfierLevel = 1;
 
       for (var term in incompatibility.terms) {
         var satisfier = _solution.satisfier(term);
@@ -220,14 +220,14 @@ class VersionSolver {
           mostRecentTerm = term;
           mostRecentSatisfier = satisfier;
         } else if (mostRecentSatisfier.index < satisfier.index) {
-          maxDecisionLevel =
-              math.max(maxDecisionLevel, mostRecentSatisfier.decisionLevel);
+          previousSatisfierLevel = math.max(
+              previousSatisfierLevel, mostRecentSatisfier.decisionLevel);
           mostRecentTerm = term;
           mostRecentSatisfier = satisfier;
           difference = null;
         } else {
-          maxDecisionLevel =
-              math.max(maxDecisionLevel, satisfier.decisionLevel);
+          previousSatisfierLevel =
+              math.max(previousSatisfierLevel, satisfier.decisionLevel);
         }
 
         if (mostRecentTerm == term) {
@@ -236,7 +236,7 @@ class VersionSolver {
           // satisfies the remainder.
           difference = mostRecentSatisfier.difference(mostRecentTerm);
           if (difference != null) {
-            maxDecisionLevel = math.max(maxDecisionLevel,
+            previousSatisfierLevel = math.max(previousSatisfierLevel,
                 _solution.satisfier(difference.inverse).decisionLevel);
           }
         }
@@ -245,11 +245,11 @@ class VersionSolver {
       // If [mostRecentSatisfier] is the only satisfier left at its decision
       // level, or if it has no cause (indicating that it's a decision rather
       // than a derivation), then [incompatibility] is the root cause. We then
-      // backjump to [maxDecisionLevel], where [incompatibility] is guaranteed
-      // to allow [_propagate] to produce more assignments.
-      if (maxDecisionLevel < mostRecentSatisfier.decisionLevel ||
+      // backjump to [previousSatisfierLevel], where [incompatibility] is
+      // guaranteed to allow [_propagate] to produce more assignments.
+      if (previousSatisfierLevel < mostRecentSatisfier.decisionLevel ||
           mostRecentSatisfier.cause == null) {
-        _solution.backtrack(maxDecisionLevel);
+        _solution.backtrack(previousSatisfierLevel);
         if (newIncompatibility) _addIncompatibility(incompatibility);
         return incompatibility;
       }
@@ -425,6 +425,8 @@ class VersionSolver {
   PackageLister _packageLister(PackageName package) {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
+      if (ref.isRoot) return new PackageLister.root(_root);
+
       var locked = _type == SolveType.GET ? _lockFile.packages[ref.name] : null;
       if (locked != null && !locked.samePackage(ref)) locked = null;
       return new PackageLister(_systemCache, ref, locked);
