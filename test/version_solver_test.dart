@@ -26,7 +26,7 @@ main() {
   group('Dart SDK constraint', dartSdkConstraint);
   group('Flutter SDK constraint', flutterSdkConstraint);
   group('pre-release', prerelease);
-  group('override', override, skip: true);
+  group('override', override);
   group('downgrade', downgrade, skip: true);
   group('features', features, skip: true);
 }
@@ -1742,10 +1742,10 @@ void override() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package foo has no versions that match >=1.0.0 <2.0.0 derived '
-            'from:\n'
-            '- myapp depends on version >=1.0.0 <2.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
+        version solving failed.
+    """));
   });
 
   test('overrides a bad source without error', () async {
@@ -1759,6 +1759,23 @@ void override() {
         'dependencies': {
           'foo': {'bad': 'any'}
         },
+        'dependency_overrides': {'foo': 'any'}
+      })
+    ]).create();
+
+    await expectResolves(result: {'foo': '0.0.0'});
+  });
+
+  test('overrides an unmatched SDK constraint', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '0.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
+    });
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
         'dependency_overrides': {'foo': 'any'}
       })
     ]).create();
