@@ -397,7 +397,6 @@ class VersionSolver {
         _root,
         _lockFile,
         packages,
-        [],
         pubspecs,
         _getAvailableVersions(packages),
         _solution.attemptedSolutions);

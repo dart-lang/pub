@@ -19,9 +19,6 @@ class SolveResult {
   /// reachable from the root.
   final List<PackageId> packages;
 
-  /// The dependency overrides that were used in the solution.
-  final List<PackageRange> overrides;
-
   /// A map from package names to the pubspecs for the versions of those
   /// packages that were installed.
   final Map<String, Pubspec> pubspecs;
@@ -88,15 +85,8 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(
-      this._sources,
-      this._root,
-      this._previousLockFile,
-      this.packages,
-      this.overrides,
-      this.pubspecs,
-      this.availableVersions,
-      this.attemptedSolutions);
+  SolveResult(this._sources, this._root, this._previousLockFile, this.packages,
+      this.pubspecs, this.availableVersions, this.attemptedSolutions);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
