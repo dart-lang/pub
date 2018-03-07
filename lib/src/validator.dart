@@ -19,10 +19,10 @@ import 'validator/license.dart';
 import 'validator/name.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
+import 'validator/readme.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
 import 'validator/strict_dependencies.dart';
-import 'validator/utf8_readme.dart';
 
 /// The base class for validators that check whether a package is fit for
 /// uploading.
@@ -108,7 +108,7 @@ abstract class Validator {
       new DirectoryValidator(entrypoint),
       new ExecutableValidator(entrypoint),
       new CompiledDartdocValidator(entrypoint),
-      new Utf8ReadmeValidator(entrypoint),
+      new ReadmeValidator(entrypoint),
       new SdkConstraintValidator(entrypoint),
       new StrictDependenciesValidator(entrypoint),
     ];
