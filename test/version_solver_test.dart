@@ -27,7 +27,7 @@ main() {
   group('Flutter SDK constraint', flutterSdkConstraint);
   group('pre-release', prerelease);
   group('override', override);
-  group('downgrade', downgrade, skip: true);
+  group('downgrade', downgrade);
   group('features', features, skip: true);
 }
 

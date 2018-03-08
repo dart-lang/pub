@@ -431,7 +431,7 @@ class VersionSolver {
     return _packageListers.putIfAbsent(ref, () {
       if (ref.isRoot) return new PackageLister.root(_root);
 
-      var locked = _type == SolveType.GET ? _lockFile.packages[ref.name] : null;
+      var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
       var overridden = _overriddenPackages;
@@ -441,8 +441,26 @@ class VersionSolver {
         overridden = new Set.from(overridden)..add(_root.name);
       }
 
-      return new PackageLister(_systemCache, ref, locked, overridden);
+      return new PackageLister(_systemCache, ref, locked, overridden,
+          downgrade: _type == SolveType.DOWNGRADE);
     });
+  }
+
+  /// Gets the version of [ref] currently locked in the lock file.
+  ///
+  /// Returns `null` if it isn't in the lockfile (or has been unlocked).
+  PackageId _getLocked(String package) {
+    if (_type == SolveType.GET) return _lockFile.packages[package];
+
+    // When downgrading, we don't want to force the latest versions of
+    // non-hosted packages, since they don't support multiple versions and thus
+    // can't be downgraded.
+    if (_type == SolveType.DOWNGRADE) {
+      var locked = _lockFile.packages[package];
+      if (locked != null && !locked.source.hasMultipleVersions) return locked;
+    }
+
+    return null;
   }
 
   /// Logs [message] in the context of the current selected packages.

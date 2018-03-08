@@ -336,46 +336,39 @@ void processResult(String executable, PubProcessResult result) {
 }
 
 /// Logs an exception.
-void exception(toLog, [StackTrace trace]) {
-  if (toLog is SilentException) return;
+void exception(exception, [StackTrace trace]) {
+  if (exception is SilentException) return;
 
   var chain = trace == null ? new Chain.current() : new Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
-  try {
-    if (toLog is SourceSpanException) {
-      error(toLog.toString(color: canUseSpecialChars));
-    } else {
-      error(getErrorMessage(toLog));
-    }
-  } catch (error, stackTrace) {
-    // If [toString] produces an error, handle that gracefully.
-    exception(error, stackTrace);
-    return;
+  if (exception is SourceSpanException) {
+    error(exception.toString(color: canUseSpecialChars));
+  } else {
+    error(getErrorMessage(exception));
   }
-
-  fine("Exception type: ${toLog.runtimeType}");
+  fine("Exception type: ${exception.runtimeType}");
 
   if (json.enabled) {
-    if (toLog is UsageException) {
+    if (exception is UsageException) {
       // Don't print usage info in JSON output.
-      json.error(toLog.message);
+      json.error(exception.message);
     } else {
-      json.error(toLog);
+      json.error(exception);
     }
   }
 
-  if (!isUserFacingException(toLog)) {
+  if (!isUserFacingException(exception)) {
     error(chain.terse);
   } else {
     fine(chain.terse);
   }
 
-  if (toLog is WrappedException && toLog.innerError != null) {
-    var message = "Wrapped exception: ${toLog.innerError}";
-    if (toLog.innerChain != null) {
-      message = "$message\n${toLog.innerChain}";
+  if (exception is WrappedException && exception.innerError != null) {
+    var message = "Wrapped exception: ${exception.innerError}";
+    if (exception.innerChain != null) {
+      message = "$message\n${exception.innerChain}";
     }
     fine(message);
   }
