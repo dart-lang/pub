@@ -161,7 +161,8 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
         suppressPackageWarnings:
             _configBool('suppressPackageWarnings', defaultsTo: true),
         terse: _configBool('terse'),
-        includeSourceMapUrls: _generateSourceMaps);
+        includeSourceMapUrls: _generateSourceMaps,
+        platformBinaries: provider.libraryRoot.resolve('lib/_internal/').path);
   }
 
   /// Parses and returns the "commandLineOptions" configuration option.
@@ -395,7 +396,13 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     return new Future.sync(() {
       // Find the corresponding asset in barback.
       var id = _sourceUrlToId(url);
-      if (id != null) return _transform.readInputAsString(id);
+      if (id != null) {
+        if (id.extension == '.dill') {
+          return _transform.readInput(id);
+        } else {
+          return _transform.readInputAsString(id);
+        }
+      }
 
       // Don't allow arbitrary file paths that point to things not in packages.
       // Doing so won't work in Dartium.
