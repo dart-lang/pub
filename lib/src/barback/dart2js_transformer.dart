@@ -281,7 +281,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   }
 
   /// A [CompilerInputProvider] for dart2js.
-  Future<String> provideInput(Uri resourceUri) {
+  Future provideInput(Uri resourceUri) {
     // We only expect to get absolute "file:" URLs from dart2js.
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
@@ -392,13 +392,16 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     }
   }
 
-  Future<String> _readResource(Uri url) {
-    return new Future.sync(() {
+  Future _readResource(Uri url) {
+    return new Future.sync(() async {
       // Find the corresponding asset in barback.
       var id = _sourceUrlToId(url);
       if (id != null) {
         if (id.extension == '.dill') {
-          return _transform.readInput(id);
+          var stream = _transform.readInput(id);
+          var bytes = <int>[];
+          await stream.forEach(bytes.addAll);
+          return bytes;
         } else {
           return _transform.readInputAsString(id);
         }

@@ -148,10 +148,10 @@ class PubPackageProvider implements StaticPackageProvider {
           files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
         }
 
-        bool isIncluded(extension) =>
-            extension == '.dart' || extension == '.dill';
-        return new Stream.fromIterable(
-            files.where((file) => isIncluded(p.extension(file))).map((file) {
+        return new Stream.fromIterable(files
+            .where((file) =>
+                p.extension(file) == '.dart' || p.extension(file) == '.dill')
+            .map((file) {
           var idPath = p.join("lib", "lib", p.relative(file, from: libPath));
           return new AssetId('\$sdk', p.toUri(idPath).toString());
         }));
