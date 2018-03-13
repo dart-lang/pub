@@ -282,7 +282,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   }
 
   /// A [CompilerInputProvider] for dart2js.
-  Future/* <String | List<int>> */ provideInput(Uri resourceUri) {
+  Future /* <String | List<int>> */ provideInput(Uri resourceUri) {
     // We only expect to get absolute "file:" URLs from dart2js.
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
