@@ -75,8 +75,9 @@ class PubPackageProvider implements StaticPackageProvider {
     }
 
     // "$sdk" is a pseudo-package that provides access to the Dart library
-    // sources in the SDK. The dart2js transformer uses this to locate the Dart
-    // sources for "dart:" libraries.
+    // sources and kernel .dill files in the SDK. The dart2js transformer uses
+    // this to locate the Dart sources for "dart:" libraries and the
+    // dart2js_platform.dill files.
     if (id.package == r'$sdk') {
       // The asset path contains two "lib" entries. The first represents pub's
       // concept that all public assets are in "lib". The second comes from the
@@ -147,8 +148,10 @@ class PubPackageProvider implements StaticPackageProvider {
           files = files.map((file) => file.replaceAll(trailingUnderscore, ""));
         }
 
-        return new Stream.fromIterable(
-            files.where((file) => p.extension(file) == ".dart").map((file) {
+        return new Stream.fromIterable(files
+            .where((file) =>
+                p.extension(file) == '.dart' || p.extension(file) == '.dill')
+            .map((file) {
           var idPath = p.join("lib", "lib", p.relative(file, from: libPath));
           return new AssetId('\$sdk', p.toUri(idPath).toString());
         }));

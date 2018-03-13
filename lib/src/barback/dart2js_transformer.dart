@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:analyzer/analyzer.dart';
+import 'package:async/async.dart';
 import 'package:barback/barback.dart';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -161,7 +162,8 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
         suppressPackageWarnings:
             _configBool('suppressPackageWarnings', defaultsTo: true),
         terse: _configBool('terse'),
-        includeSourceMapUrls: _generateSourceMaps);
+        includeSourceMapUrls: _generateSourceMaps,
+        platformBinaries: provider.libraryRoot.resolve('lib/_internal/').path);
   }
 
   /// Parses and returns the "commandLineOptions" configuration option.
@@ -280,7 +282,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   }
 
   /// A [CompilerInputProvider] for dart2js.
-  Future<String> provideInput(Uri resourceUri) {
+  Future /* <String | List<int>> */ provideInput(Uri resourceUri) {
     // We only expect to get absolute "file:" URLs from dart2js.
     assert(resourceUri.isAbsolute);
     assert(resourceUri.scheme == "file");
@@ -391,11 +393,17 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     }
   }
 
-  Future<String> _readResource(Uri url) {
+  Future _readResource(Uri url) {
     return new Future.sync(() {
       // Find the corresponding asset in barback.
       var id = _sourceUrlToId(url);
-      if (id != null) return _transform.readInputAsString(id);
+      if (id != null) {
+        if (id.extension == '.dill') {
+          return collectBytes(_transform.readInput(id));
+        } else {
+          return _transform.readInputAsString(id);
+        }
+      }
 
       // Don't allow arbitrary file paths that point to things not in packages.
       // Doing so won't work in Dartium.

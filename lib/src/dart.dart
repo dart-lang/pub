@@ -68,7 +68,8 @@ Future compile(String entrypoint, CompilerProvider provider,
     bool suppressPackageWarnings: true,
     bool terse: false,
     bool includeSourceMapUrls: false,
-    bool toDart: false}) async {
+    bool toDart: false,
+    String platformBinaries}) async {
   // dart2js chokes on relative paths. Including "/./" can also confuse it, so
   // we normalize as well.
   entrypoint = p.normalize(p.absolute(entrypoint));
@@ -85,6 +86,9 @@ Future compile(String entrypoint, CompilerProvider provider,
   if (!suppressPackageWarnings) options.add('--show-package-warnings');
   if (terse) options.add('--terse');
   if (toDart) options.add('--output-type=dart');
+  if (platformBinaries != null) {
+    options.add('--platform-binaries=$platformBinaries');
+  }
 
   var sourceUrl = p.toUri(entrypoint);
   options.add("--out=$sourceUrl.js");
