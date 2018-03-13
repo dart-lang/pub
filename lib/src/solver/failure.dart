@@ -3,8 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import '../exceptions.dart';
+import '../flutter.dart' as flutter;
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../sdk.dart' as sdk;
 import '../utils.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
@@ -75,14 +77,44 @@ class _Writer {
   }
 
   String write() {
-    _visit(_root, const {});
+    var buffer = new StringBuffer();
+
+    var hasDartSdkCause = false;
+    var hasFlutterSdkCause = false;
+    for (var cause in _root.externalCauses) {
+      if (cause is SdkCause) {
+        if (cause.isFlutter) {
+          hasFlutterSdkCause = true;
+        } else {
+          hasDartSdkCause = true;
+        }
+      }
+    }
+
+    // If the failure was caused in part by unsatisfied SDK constraints,
+    // indicate the actual versions so we don't have to list them (possibly
+    // multiple times) in the main body of the error message.
+    if (hasDartSdkCause) {
+      buffer.writeln("The current Dart SDK version is ${sdk.version}.");
+    }
+    if (hasFlutterSdkCause && flutter.isAvailable) {
+      buffer.writeln("The current Flutter SDK version is ${flutter.version}.");
+    }
+    if (hasDartSdkCause || (hasFlutterSdkCause && flutter.isAvailable)) {
+      buffer.writeln();
+    }
+
+    if (_root.cause is ConflictCause) {
+      _visit(_root, const {});
+    } else {
+      _write(_root, "Because $_root, version solving failed.");
+    }
 
     // Only add line numbers if the derivation actually needs to refer to a line
     // by number.
     var padding =
         _lineNumbers.isEmpty ? 0 : "(${_lineNumbers.values.last}) ".length;
 
-    var buffer = new StringBuffer();
     var lastWasEmpty = false;
     for (var line in _lines) {
       var message = line.first;
@@ -102,6 +134,13 @@ class _Writer {
       }
 
       buffer.writeln(wordWrap(message, prefix: " " * (padding + 2)));
+    }
+
+    if (hasFlutterSdkCause && !flutter.isAvailable) {
+      buffer.writeln();
+      buffer.writeln(
+          "Flutter users should run `flutter packages get` instead of `pub "
+          "get`.");
     }
 
     return buffer.toString();

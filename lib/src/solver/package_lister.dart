@@ -129,9 +129,15 @@ class PackageLister {
         id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
       _listedLockedVersion = true;
-      if (!_matchesSdkConstraint(pubspec)) {
+      if (!_matchesDartSdkConstraint(pubspec)) {
         return [
-          new Incompatibility([new Term(id, true)], IncompatibilityCause.sdk)
+          new Incompatibility(
+              [new Term(id, true)], new SdkCause(pubspec.dartSdkConstraint))
+        ];
+      } else if (!_matchesFlutterSdkConstraint(pubspec)) {
+        return [
+          new Incompatibility([new Term(id, true)],
+              new SdkCause(pubspec.flutterSdkConstraint, flutter: true))
         ];
       } else {
         var dependencies = id.isRoot
@@ -150,18 +156,12 @@ class PackageLister {
     var versions = await _versions;
     var index = indexWhere(versions, (other) => identical(id, other));
 
-    if (!_matchesSdkConstraint(pubspec)) {
-      var lower = await _unmatchedSdkBound(index, upper: false);
-      var upper = await _unmatchedSdkBound(index, upper: true);
-      var constraint = new VersionRange(
-          min: lower, includeMin: true, max: upper, includeMax: true);
-      _knownInvalidSdks = constraint.union(_knownInvalidSdks);
+    var dartSdkIncompatibility = await _checkSdkConstraint(index);
+    if (dartSdkIncompatibility != null) return [dartSdkIncompatibility];
 
-      return [
-        new Incompatibility([new Term(_ref.withConstraint(constraint), true)],
-            IncompatibilityCause.sdk)
-      ];
-    }
+    var flutterSdkIncompatibility =
+        await _checkSdkConstraint(index, flutter: true);
+    if (flutterSdkIncompatibility != null) return [flutterSdkIncompatibility];
 
     // Don't recompute dependencies that have already been emitted.
     var dependencies = new Map.from(pubspec.dependencies);
@@ -192,29 +192,64 @@ class PackageLister {
     }).toList();
   }
 
-  /// Returns a version bound indicating where in [_versions] this package
-  /// stopped having an incompatible SDK constraint.
+  /// If the version at [index] in [_versions] isn't compatible with the current
+  /// SDK version, returns an [Incompatibility] indicating that.
   ///
-  /// If [inclusive] is `true`, this returns the last version in [_versions]
-  /// with an incompatible SDK constraint. If it's `false`, it returns the first
-  /// version in [_versions] with a compatible SDK constraint.
-  ///
-  /// This may return `null`, indicating that all [_versions] have an
-  /// incompatible SDK constraint.
-  Future<Version> _unmatchedSdkBound(int index, {bool upper: true}) async {
+  /// Otherwise, returns `null`.
+  Future<Incompatibility> _checkSdkConstraint(int index,
+      {bool flutter: false}) async {
     var versions = await _versions;
-    var previous = versions[index];
-    for (var id in upper
-        ? versions.skip(index + 1)
-        : versions.reversed.skip(versions.length - index)) {
-      var pubspec = await _source.describe(id);
-      if (_matchesSdkConstraint(pubspec)) {
-        return (upper ? id : previous).version;
-      }
-      previous = id;
+
+    bool allowsSdk(Pubspec pubspec) => flutter
+        ? _matchesFlutterSdkConstraint(pubspec)
+        : _matchesDartSdkConstraint(pubspec);
+
+    if (allowsSdk(await _source.describe(versions[index]))) return null;
+
+    var bounds = await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
+    var incompatibleVersions = new VersionRange(
+        min: bounds.first == 0 ? null : versions[bounds.first].version,
+        includeMin: true,
+        max: bounds.last == versions.length - 1
+            ? null
+            : versions[bounds.last + 1].version,
+        includeMax: false);
+    _knownInvalidSdks = incompatibleVersions.union(_knownInvalidSdks);
+
+    var sdkConstraint = await foldAsync(
+        slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
+        (previous, version) async {
+      var pubspec = await _source.describe(version);
+      return previous.union(
+          flutter ? pubspec.flutterSdkConstraint : pubspec.dartSdkConstraint);
+    });
+
+    return new Incompatibility(
+        [new Term(_ref.withConstraint(incompatibleVersions), true)],
+        new SdkCause(sdkConstraint, flutter: flutter));
+  }
+
+  /// Returns the first and last indices in [_versions] of the contiguous set of
+  /// versions whose pubspecs match [match].
+  ///
+  /// Assumes [match] returns true for the pubspec whose version is at [index].
+  Future<Pair<int, int>> _findBounds(
+      int start, bool match(Pubspec pubspec)) async {
+    var versions = await _versions;
+
+    var first = start - 1;
+    while (first > 0) {
+      if (!match(await _source.describe(versions[first]))) break;
+      first--;
     }
 
-    return null;
+    var last = start + 1;
+    while (last < versions.length) {
+      if (!match(await _source.describe(versions[last]))) break;
+      last++;
+    }
+
+    return new Pair(first + 1, last - 1);
   }
 
   /// Returns a map where each key is a package name and each value is the upper
@@ -243,7 +278,8 @@ class PackageLister {
 
       // Once we hit an incompatible version, it doesn't matter whether it has
       // the same dependencies.
-      if (!_matchesSdkConstraint(pubspec)) {
+      if (!_matchesDartSdkConstraint(pubspec) ||
+          !_matchesFlutterSdkConstraint(pubspec)) {
         for (var name in dependencies.keys) {
           bounds.putIfAbsent(name, () => boundary);
         }
@@ -264,18 +300,17 @@ class PackageLister {
     return bounds;
   }
 
-  /// Returns whether [pubspec]'s SDK constraint matches the current SDK
-  /// version.
-  bool _matchesSdkConstraint(Pubspec pubspec) {
-    if (!pubspec.dartSdkConstraint.allows(sdk.version)) {
-      return false;
-    }
-    if (pubspec.flutterSdkConstraint != null) {
-      if (!flutter.isAvailable) return false;
-      if (!pubspec.flutterSdkConstraint.allows(flutter.version)) return false;
-    }
-    return true;
-  }
+  /// Returns whether [pubspec]'s Dart SDK constraint matches the current Dart
+  /// SDK version.
+  bool _matchesDartSdkConstraint(Pubspec pubspec) =>
+      pubspec.dartSdkConstraint.allows(sdk.version);
+
+  /// Returns whether [pubspec]'s Flutter SDK constraint matches the current Flutter
+  /// SDK version.
+  bool _matchesFlutterSdkConstraint(Pubspec pubspec) =>
+      pubspec.flutterSdkConstraint == null ||
+      (flutter.isAvailable &&
+          pubspec.flutterSdkConstraint.allows(flutter.version));
 }
 
 /// A fake source that contains only the root package.
