@@ -44,26 +44,29 @@ class PartialSolution {
   /// Whether the solver is currently backtracking.
   var _backtracking = false;
 
-  /// Adds an assignment of [package] to [isPositive] to [assignments].
-  ///
-  /// If [decision] is `true`, this is a decision (a speculative assignment
-  /// rather than one that's automatically propagated from incompatibilities)
-  /// and the [decisionLevel] should be incremented.
-  void assign(PackageName package, bool isPositive,
-      {Incompatibility cause, bool decision: false}) {
-    if (decision) {
-      // When we make a new decision after backtracking, count an additional
-      // attempted solution. If we backtrack multiple times in a row, though, we
-      // only want to count one, since we haven't actually started attempting a
-      // new solution.
-      if (_backtracking) _attemptedSolutions++;
-      _backtracking = false;
-      _decisionLevel++;
-    }
+  /// Adds an assignment of [package] as a decision (a speculative assignment
+  /// rather than one that's automatically propagated from incompatibilities) to
+  /// [assignments] and increments the [decisionLevel].
+  void decide(PackageId package) {
+    // When we make a new decision after backtracking, count an additional
+    // attempted solution. If we backtrack multiple times in a row, though, we
+    // only want to count one, since we haven't actually started attempting a
+    // new solution.
+    if (_backtracking) _attemptedSolutions++;
+    _backtracking = false;
+    _decisionLevel++;
+    _assign(new Assignment(package, true, _decisionLevel, assignments.length));
+  }
 
-    var assignment = new Assignment(
+  /// Adds an assignment of [package] as a derivation to [assignments].
+  void derive(PackageName package, bool isPositive, Incompatibility cause) {
+    _assign(new Assignment(
         package, isPositive, _decisionLevel, assignments.length,
-        cause: cause);
+        cause: cause));
+  }
+
+  /// Adds [assignment] to [assignments] and [positive] or [negative].
+  void _assign(Assignment assignment) {
     assignments.add(assignment);
     _register(assignment);
   }

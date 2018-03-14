@@ -175,8 +175,8 @@ class VersionSolver {
 
     _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
         "${unsatisfied.package}");
-    _solution.assign(unsatisfied.package, !unsatisfied.isPositive,
-        cause: incompatibility);
+    _solution.derive(
+        unsatisfied.package, !unsatisfied.isPositive, incompatibility);
     return unsatisfied.package.name;
   }
 
@@ -351,7 +351,7 @@ class VersionSolver {
     }
 
     if (!conflict) {
-      _solution.assign(version, true, decision: true);
+      _solution.decide(version);
       _log("selecting $version");
     }
 
