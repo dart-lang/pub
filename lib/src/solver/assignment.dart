@@ -19,22 +19,17 @@ class Assignment extends Term {
   /// if the assignment isn't a derivation.
   final Incompatibility cause;
 
-  /// The single package version selected by this assignment, or `null` if
-  /// [isDecision] is `false`.
-  final PackageId id;
-
-  /// Whether this assignment is a decision to select a single package version.
-  bool get isDecision => id != null;
+  /// Whether this assignment is a decision, as opposed to a derivation.
+  bool get isDecision => cause == null;
 
   /// Creates a decision: a speculative assignment of a single package version.
-  Assignment.decision(this.id, this.decisionLevel, this.index)
+  Assignment.decision(PackageId package, this.decisionLevel, this.index)
       : cause = null,
-        super(id, true);
+        super(package, true);
 
   /// Creates a derivation: an assignment that's automatically propagated from
   /// incompatibilities.
   Assignment.derivation(PackageName package, bool isPositive, this.cause,
       this.decisionLevel, this.index)
-      : id = null,
-        super(package, isPositive);
+      : super(package, isPositive);
 }

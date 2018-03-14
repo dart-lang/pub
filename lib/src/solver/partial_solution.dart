@@ -18,10 +18,11 @@ class PartialSolution {
   /// assigned.
   final _assignments = <Assignment>[];
 
+  /// The decisions made for each package.
+  final _decisions = <String, PackageId>{};
+
   /// Returns all the decisions that have been made in this partial solution.
-  Iterable<PackageId> get decisions => _assignments
-      .where((assignment) => assignment.isDecision)
-      .map((assignment) => assignment.id);
+  Iterable<PackageId> get decisions => _decisions.values;
 
   /// The intersection of all positive [Assignment]s for each package, minus any
   /// negative [Assignment]s that refer to that package.
@@ -38,8 +39,7 @@ class PartialSolution {
   final negative = <String, Map<PackageRef, Term>>{};
 
   // The current decision level—that is, the length of [decisions].
-  int get decisionLevel => _decisionLevel;
-  var _decisionLevel = 0;
+  int get decisionLevel => _decisions.length;
 
   /// The number of distinct solutions that have been attempted so far.
   int get attemptedSolutions => _attemptedSolutions;
@@ -57,15 +57,15 @@ class PartialSolution {
     // new solution.
     if (_backtracking) _attemptedSolutions++;
     _backtracking = false;
-    _decisionLevel++;
+    _decisions[package.name] = package;
     _assign(
-        new Assignment.decision(package, _decisionLevel, _assignments.length));
+        new Assignment.decision(package, decisionLevel, _assignments.length));
   }
 
   /// Adds an assignment of [package] as a derivation.
   void derive(PackageName package, bool isPositive, Incompatibility cause) {
     _assign(new Assignment.derivation(
-        package, isPositive, cause, _decisionLevel, _assignments.length));
+        package, isPositive, cause, decisionLevel, _assignments.length));
   }
 
   /// Adds [assignment] to [_assignments] and [positive] or [negative].
@@ -83,8 +83,8 @@ class PartialSolution {
     while (_assignments.last.decisionLevel > decisionLevel) {
       var removed = _assignments.removeLast();
       packages.add(removed.package.name);
+      if (removed.isDecision) _decisions.remove(removed.package.name);
     }
-    _decisionLevel = decisionLevel;
 
     // Re-compute [positive] and [negative] for the packages that were removed.
     for (var package in packages) {
