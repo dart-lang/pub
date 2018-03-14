@@ -16,12 +16,17 @@ import 'term.dart';
 class PartialSolution {
   /// The assignments that have been made so far, in the order they were
   /// assigned.
-  final assignments = <Assignment>[];
+  final _assignments = <Assignment>[];
+
+  /// Returns all the decisions that have been made in this partial solution.
+  Iterable<PackageId> get decisions => _assignments
+      .where((assignment) => assignment.isDecision)
+      .map((assignment) => assignment.id);
 
   /// The intersection of all positive [Assignment]s for each package, minus any
   /// negative [Assignment]s that refer to that package.
   ///
-  /// This is derived from [assignments].
+  /// Implementation note: this is derived from [_assignments].
   final positive = <String, Term>{};
 
   /// The union of all negative [Assignment]s for each package.
@@ -29,11 +34,10 @@ class PartialSolution {
   /// If a package has any positive [Assignment]s, it doesn't appear in this
   /// map.
   ///
-  /// This is derived from [assignments].
+  /// Implementation note: this is derived from [_assignments].
   final negative = <String, Map<PackageRef, Term>>{};
 
-  // The current decision level—that is, the number of decisions in
-  // [assignments].
+  // The current decision level—that is, the length of [decisions].
   int get decisionLevel => _decisionLevel;
   var _decisionLevel = 0;
 
@@ -44,9 +48,8 @@ class PartialSolution {
   /// Whether the solver is currently backtracking.
   var _backtracking = false;
 
-  /// Adds an assignment of [package] as a decision (a speculative assignment
-  /// rather than one that's automatically propagated from incompatibilities) to
-  /// [assignments] and increments the [decisionLevel].
+  /// Adds an assignment of [package] as a decision and increments the
+  /// [decisionLevel].
   void decide(PackageId package) {
     // When we make a new decision after backtracking, count an additional
     // attempted solution. If we backtrack multiple times in a row, though, we
@@ -55,19 +58,19 @@ class PartialSolution {
     if (_backtracking) _attemptedSolutions++;
     _backtracking = false;
     _decisionLevel++;
-    _assign(new Assignment(package, true, _decisionLevel, assignments.length));
+    _assign(
+        new Assignment.decision(package, _decisionLevel, _assignments.length));
   }
 
-  /// Adds an assignment of [package] as a derivation to [assignments].
+  /// Adds an assignment of [package] as a derivation.
   void derive(PackageName package, bool isPositive, Incompatibility cause) {
-    _assign(new Assignment(
-        package, isPositive, _decisionLevel, assignments.length,
-        cause: cause));
+    _assign(new Assignment.derivation(
+        package, isPositive, cause, _decisionLevel, _assignments.length));
   }
 
-  /// Adds [assignment] to [assignments] and [positive] or [negative].
+  /// Adds [assignment] to [_assignments] and [positive] or [negative].
   void _assign(Assignment assignment) {
-    assignments.add(assignment);
+    _assignments.add(assignment);
     _register(assignment);
   }
 
@@ -77,8 +80,8 @@ class PartialSolution {
     _backtracking = true;
 
     var packages = new Set<String>();
-    while (assignments.last.decisionLevel > decisionLevel) {
-      var removed = assignments.removeLast();
+    while (_assignments.last.decisionLevel > decisionLevel) {
+      var removed = _assignments.removeLast();
       packages.add(removed.package.name);
     }
     _decisionLevel = decisionLevel;
@@ -89,7 +92,7 @@ class PartialSolution {
       negative.remove(package);
     }
 
-    for (var assignment in assignments) {
+    for (var assignment in _assignments) {
       if (packages.contains(assignment.package.name)) {
         _register(assignment);
       }
@@ -119,14 +122,13 @@ class PartialSolution {
     }
   }
 
-  /// Returns the first entry in [assignments] such that the sublist of
-  /// assignments up to and including that entry collectively satisfies
-  /// [term].
+  /// Returns the first [Assignment] in this solution such that the sublist of
+  /// assignments up to and including that entry collectively satisfies [term].
   ///
   /// Throws a [StateError] if [term] isn't satisfied by [this].
   Assignment satisfier(Term term) {
     Term assignedTerm;
-    for (var assignment in assignments) {
+    for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
 
       if (!assignment.package.isRoot &&
@@ -152,8 +154,8 @@ class PartialSolution {
 
   /// Returns whether [this] satisfies [other].
   ///
-  /// That is, whether [other] must be true given that [assignments] are all
-  /// true.
+  /// That is, whether [other] must be true given the assignments in this
+  /// partial solution.
   bool satisfies(Term term) => relation(term) == SetRelation.subset;
 
   /// Returns the relationship between the package versions allowed by all

@@ -198,8 +198,7 @@ class VersionSolver {
       Term mostRecentTerm;
 
       // The earliest assignment in [_solution] such that [incompatibility] is
-      // satisfied by [_solution.assignments] up to and including this
-      // assignment.
+      // satisfied by [_solution] up to and including this assignment.
       Assignment mostRecentSatisfier;
 
       // The difference between [mostRecentSatisfier] and [mostRecentTerm];
@@ -210,7 +209,7 @@ class VersionSolver {
 
       // The decision level of the earliest assignment in [_solution] *before*
       // [mostRecentSatisfier] such that [incompatibility] is satisfied by
-      // [_solution.assignments] up to and including this assignment plus
+      // [_solution] up to and including this assignment plus
       // [mostRecentSatisfier].
       //
       // Decision level 1 is the level where the root package was selected. It's
@@ -371,13 +370,9 @@ class VersionSolver {
 
   /// Creates a [SolveResult] from the decisions in [_solution].
   Future<SolveResult> _result() async {
-    var packages = _solution.assignments
-        .where((assignment) => assignment.package is PackageId)
-        .map((assignment) => assignment.package as PackageId)
-        .toList();
-
+    var decisions = _solution.decisions.toList();
     var pubspecs = <String, Pubspec>{};
-    for (var id in packages) {
+    for (var id in decisions) {
       if (id.isRoot) {
         pubspecs[id.name] = _root.pubspec;
       } else {
@@ -386,7 +381,7 @@ class VersionSolver {
     }
 
     var availableVersions = <String, List<Version>>{};
-    for (var id in packages) {
+    for (var id in decisions) {
       if (id.isRoot) {
         availableVersions[id.name] = [id.version];
       }
@@ -396,9 +391,9 @@ class VersionSolver {
         _systemCache.sources,
         _root,
         _lockFile,
-        packages,
+        decisions,
         pubspecs,
-        _getAvailableVersions(packages),
+        _getAvailableVersions(decisions),
         _solution.attemptedSolutions);
   }
 
@@ -406,9 +401,8 @@ class VersionSolver {
   /// package in [packages].
   ///
   /// The version list may not always be complete. If the package is the root
-  /// root package, or if it's a package that we didn't unlock while solving
-  /// because we weren't trying to upgrade it, we will just know the current
-  /// version.
+  /// package, or if it's a package that we didn't unlock while solving because
+  /// we weren't trying to upgrade it, we will just know the current version.
   Map<String, List<Version>> _getAvailableVersions(List<PackageId> packages) {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
