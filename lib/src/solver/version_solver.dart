@@ -304,10 +304,7 @@ class VersionSolver {
   /// propagated by [_propagate], or `null` indicating that version solving is
   /// complete and a solution has been found.
   Future<String> _choosePackageVersion() async {
-    var unsatisfied = _solution.positive.values
-        .where((term) => term.package is! PackageId)
-        .map((term) => term.package as PackageRange)
-        .toList();
+    var unsatisfied = _solution.unsatisfied.toList();
     if (unsatisfied.isEmpty) return null;
 
     // If we require a package from an unknown source, add an incompatibility

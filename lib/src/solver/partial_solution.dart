@@ -21,22 +21,28 @@ class PartialSolution {
   /// The decisions made for each package.
   final _decisions = <String, PackageId>{};
 
-  /// Returns all the decisions that have been made in this partial solution.
-  Iterable<PackageId> get decisions => _decisions.values;
-
   /// The intersection of all positive [Assignment]s for each package, minus any
   /// negative [Assignment]s that refer to that package.
   ///
-  /// Implementation note: this is derived from [_assignments].
-  final positive = <String, Term>{};
+  /// This is derived from [_assignments].
+  final _positive = <String, Term>{};
 
   /// The union of all negative [Assignment]s for each package.
   ///
   /// If a package has any positive [Assignment]s, it doesn't appear in this
   /// map.
   ///
-  /// Implementation note: this is derived from [_assignments].
-  final negative = <String, Map<PackageRef, Term>>{};
+  /// This is derived from [_assignments].
+  final _negative = <String, Map<PackageRef, Term>>{};
+
+  /// Returns all the decisions that have been made in this partial solution.
+  Iterable<PackageId> get decisions => _decisions.values;
+
+  /// Returns all [PackageRange]s that have been assigned but are not yet
+  /// satisfied.
+  Iterable<PackageRange> get unsatisfied => _positive.values
+      .where((term) => !_decisions.containsKey(term.package.name))
+      .map((term) => term.package as PackageRange);
 
   // The current decision level—that is, the length of [decisions].
   int get decisionLevel => _decisions.length;
@@ -68,7 +74,7 @@ class PartialSolution {
         package, isPositive, cause, decisionLevel, _assignments.length));
   }
 
-  /// Adds [assignment] to [_assignments] and [positive] or [negative].
+  /// Adds [assignment] to [_assignments] and [_positive] or [_negative].
   void _assign(Assignment assignment) {
     _assignments.add(assignment);
     _register(assignment);
@@ -86,10 +92,10 @@ class PartialSolution {
       if (removed.isDecision) _decisions.remove(removed.package.name);
     }
 
-    // Re-compute [positive] and [negative] for the packages that were removed.
+    // Re-compute [_positive] and [_negative] for the packages that were removed.
     for (var package in packages) {
-      positive.remove(package);
-      negative.remove(package);
+      _positive.remove(package);
+      _negative.remove(package);
     }
 
     for (var assignment in _assignments) {
@@ -99,26 +105,26 @@ class PartialSolution {
     }
   }
 
-  /// Registers [assignment] in [positive] or [negative].
+  /// Registers [assignment] in [_positive] or [_negative].
   void _register(Assignment assignment) {
     var name = assignment.package.name;
-    var oldPositive = positive[name];
+    var oldPositive = _positive[name];
     if (oldPositive != null) {
-      positive[name] = oldPositive.intersect(assignment);
+      _positive[name] = oldPositive.intersect(assignment);
       return;
     }
 
     var ref = assignment.package.toRef();
-    var negativeByRef = negative[name];
+    var negativeByRef = _negative[name];
     var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
     var term =
         oldNegative == null ? assignment : assignment.intersect(oldNegative);
 
     if (term.isPositive) {
-      negative.remove(name);
-      positive[name] = term;
+      _negative.remove(name);
+      _positive[name] = term;
     } else {
-      negative.putIfAbsent(name, () => {})[ref] = term;
+      _negative.putIfAbsent(name, () => {})[ref] = term;
     }
   }
 
@@ -161,13 +167,13 @@ class PartialSolution {
   /// Returns the relationship between the package versions allowed by all
   /// assignments in [this] and those allowed by [term].
   SetRelation relation(Term term) {
-    var positive = this.positive[term.package.name];
+    var positive = _positive[term.package.name];
     if (positive != null) return positive.relation(term);
 
     // If there are no assignments related to [term], that means the
     // assignments allow any version of any package, which is a superset of
     // [term].
-    var byRef = this.negative[term.package.name];
+    var byRef = _negative[term.package.name];
     if (byRef == null) return SetRelation.overlapping;
 
     // not foo from git is a superset of foo from hosted
