@@ -42,7 +42,7 @@ class PartialSolution {
   /// satisfied.
   Iterable<PackageRange> get unsatisfied => _positive.values
       .where((term) => !_decisions.containsKey(term.package.name))
-      .map((term) => term.package as PackageRange);
+      .map((term) => term.package);
 
   // The current decision level—that is, the length of [decisions].
   int get decisionLevel => _decisions.length;

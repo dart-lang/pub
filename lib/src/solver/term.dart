@@ -20,22 +20,15 @@ class Term {
   final bool isPositive;
 
   /// The range of package versions referred to by this term.
-  ///
-  /// This may be either a [PackageRange] or a [PackageId].
-  final PackageName package;
+  final PackageRange package;
 
   /// A copy of this term with the opposite [isPositive] value.
   Term get inverse => new Term(package, !isPositive);
 
-  Term(PackageName package, this.isPositive)
-      : package =
-            package is PackageRange ? package.withTerseConstraint() : package;
+  Term(PackageRange package, this.isPositive)
+      : package = package.withTerseConstraint();
 
-  /// The constraint of [package].
-  VersionConstraint get constraint {
-    if (package is PackageId) return (package as PackageId).version;
-    return (package as PackageRange).constraint;
-  }
+  VersionConstraint get constraint => package.constraint;
 
   /// Returns whether [this] satisfies [other].
   ///
@@ -126,15 +119,14 @@ class Term {
         // foo ^1.0.0 ∩ not foo ^1.5.0 → foo >=1.0.0 <1.5.0
         var positive = isPositive ? this : other;
         var negative = isPositive ? other : this;
-        return _derivedTerm(
-            positive.constraint.difference(negative.constraint), true, other);
+        return _nonEmptyTerm(
+            positive.constraint.difference(negative.constraint), true);
       } else if (isPositive) {
         // foo ^1.0.0 ∩ foo >=1.5.0 <3.0.0 → foo ^1.5.0
-        return _derivedTerm(
-            constraint.intersect(other.constraint), true, other);
+        return _nonEmptyTerm(constraint.intersect(other.constraint), true);
       } else {
         // not foo ^1.0.0 ∩ not foo >=1.5.0 <3.0.0 → not foo >=1.0.0 <3.0.0
-        return _derivedTerm(constraint.union(other.constraint), false, other);
+        return _nonEmptyTerm(constraint.union(other.constraint), false);
       }
     } else if (isPositive != other.isPositive) {
       // foo from git ∩ not foo from hosted → foo from git
@@ -164,20 +156,17 @@ class Term {
       if (isPositive) {
         if (other.isPositive) {
           // foo ^1.0.0 / foo ^1.5.0 → foo >=1.0.0 <1.5.0
-          return _derivedTerm(
-              constraint.difference(other.constraint), true, other);
+          return _nonEmptyTerm(constraint.difference(other.constraint), true);
         } else {
           // foo ^1.0.0 / not foo ^1.5.0 → foo ^1.5.0
-          return _derivedTerm(
-              constraint.intersect(other.constraint), true, other);
+          return _nonEmptyTerm(constraint.intersect(other.constraint), true);
         }
       } else if (other.isPositive) {
         // not foo ^1.0.0 / foo >=1.5.0 <3.0.0 → not foo >=1.0.0 <3.0.0
-        return _derivedTerm(constraint.union(other.constraint), false, other);
+        return _nonEmptyTerm(constraint.union(other.constraint), false);
       } else {
         // not foo ^1.0.0 / not foo >=1.5.0 <3.0.0 → foo ^2.0.0
-        return _derivedTerm(
-            other.constraint.difference(constraint), true, other);
+        return _nonEmptyTerm(other.constraint.difference(constraint), true);
       }
     } else {
       if (isPositive) {
@@ -195,33 +184,16 @@ class Term {
   }
 
   /// Returns whether [other] is compatible with [package].
-  bool _compatiblePackage(PackageName other) =>
+  bool _compatiblePackage(PackageRange other) =>
       package.isRoot || other.isRoot || other.samePackage(package);
 
   /// Returns a new [Term] with the same package as [this] and with
   /// [constraint], unless that would produce a term that allows no packages,
   /// in which case this returns `null`.
-  ///
-  /// If [constraint] is a single version and [this] or [other] has a
-  /// [PackageId], this will return a term with that [PackageId].
-  Term _derivedTerm(VersionConstraint constraint, bool isPositive, Term other) {
-    if (constraint.isEmpty) return null;
-
-    PackageName package;
-    if (_isIdWithVersion(this.package, constraint)) {
-      package = this.package;
-    } else if (_isIdWithVersion(other.package, constraint)) {
-      package = other.package;
-    } else {
-      package = this.package.withConstraint(constraint);
-    }
-
-    return new Term(package, isPositive);
-  }
-
-  /// Returns whether [name] is a [PackageId] with the given [constraint].
-  bool _isIdWithVersion(PackageName name, VersionConstraint constraint) =>
-      name is PackageId && name.version == constraint;
+  Term _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>
+      constraint.isEmpty
+          ? null
+          : new Term(package.withConstraint(constraint), isPositive);
 
   String toString() => "${isPositive ? '' : 'not '}$package";
 }

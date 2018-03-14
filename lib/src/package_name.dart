@@ -161,6 +161,9 @@ class PackageId extends PackageName {
   bool operator ==(other) =>
       other is PackageId && samePackage(other) && other.version == version;
 
+  /// Returns a [PackageRange] that allows only [version] of this package.
+  PackageRange toRange() => withConstraint(version);
+
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
     if (isMagic) return name;
@@ -243,11 +246,13 @@ class PackageRange extends PackageName {
 
     var buffer = new StringBuffer(name);
     if (detail.showVersion ??
-        !constraint.isAny || (source is! PathSource && source is! GitSource)) {
+        !isRoot &&
+            (!constraint.isAny ||
+                (source is! PathSource && source is! GitSource))) {
       buffer.write(" $constraint");
     }
 
-    if (detail.showSource ?? source is! HostedSource) {
+    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
       buffer.write(" from $source");
       if (detail.showDescription) {
         buffer.write(" ${source.formatDescription(description)}");
