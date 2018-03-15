@@ -134,13 +134,13 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
 
     var entrypoint = _environment.graph.packages[id.package].path(id.path);
 
-    // We define the packageRoot in terms of the entrypoint directory, and not
-    // the rootPackage, to ensure that the generated source-maps are valid.
+    // We define the .packages file in terms of the entrypoint directory, and
+    // not the rootPackage, to ensure that the generated source-maps are valid.
     // Source-maps contain relative URLs to package sources and these relative
     // URLs should be self-contained within the paths served by pub-serve.
     // See #1511 for details.
     var buildDir = _environment.getSourceDirectoryContaining(id.path);
-    var packageRoot = _environment.rootPackage.path(buildDir, "packages");
+    var packageConfig = _environment.rootPackage.path(buildDir, ".packages");
 
     // TODO(rnystrom): Should have more sophisticated error-handling here. Need
     // to report compile errors to the user in an easily visible way. Need to
@@ -154,7 +154,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
             defaultsTo: _settings.mode == BarbackMode.RELEASE),
         verbose: _configBool('verbose'),
         environment: _configEnvironment,
-        packageRoot: packageRoot,
+        packageConfig: packageConfig,
         analyzeAll: _configBool('analyzeAll'),
         preserveUris: _configBool('preserveUris'),
         suppressWarnings: _configBool('suppressWarnings'),
@@ -223,6 +223,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
   final AssetEnvironment _environment;
   final Transform _transform;
   String _libraryRootPath;
+  String _packagesFileContents;
 
   /// The map of previously loaded files.
   ///
@@ -279,6 +280,18 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
         .getSourceDirectoryContaining(_transform.primaryInput.id.path);
     _libraryRootPath =
         _environment.rootPackage.path(buildDir, "packages", r"$sdk");
+
+    // We also define the entries within the .packages file in terms of the
+    // entrypoint directory, and not the rootPackage, to ensure that the
+    // generated source-maps are valid.
+    // Source-maps contain relative URLs to package sources and these relative
+    // URLs should be self-contained within the paths served by pub-serve.
+    // See #1511 for details.
+    var sb = new StringBuffer();
+    for (var package in _environment.graph.packages.keys) {
+      sb.write('$package:packages/$package/\n');
+    }
+    _packagesFileContents = '$sb';
   }
 
   /// A [CompilerInputProvider] for dart2js.
@@ -400,6 +413,8 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
       if (id != null) {
         if (id.extension == '.dill') {
           return collectBytes(_transform.readInput(id));
+        } else if (id.path.endsWith('/.packages')) {
+          return _packagesFileContents;
         } else {
           return _transform.readInputAsString(id);
         }
