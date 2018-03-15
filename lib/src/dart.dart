@@ -89,6 +89,7 @@ Future compile(String entrypoint, CompilerProvider provider,
   if (platformBinaries != null) {
     options.add('--platform-binaries=$platformBinaries');
   }
+  options.add('--use-old-frontend');
 
   var sourceUrl = p.toUri(entrypoint);
   options.add("--out=$sourceUrl.js");
