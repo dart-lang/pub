@@ -10,7 +10,6 @@ import 'dart:isolate';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
-import 'package:compiler_unsupported/src/filenames.dart' show appendSlash;
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -51,8 +50,8 @@ abstract class CompilerProvider {
 /// Uses [provider] to communcate between dart2js and the caller. Returns a
 /// future that completes when compilation is done.
 ///
-/// By default, the package root is assumed to be adjacent to [entrypoint], but
-/// if [packageRoot] is passed that will be used instead.
+/// By default, the .packages file is assumed to be adjacent to [entrypoint],
+/// but if [packageConfig] is passed that will be used instead.
 Future compile(String entrypoint, CompilerProvider provider,
     {Iterable<String> commandLineOptions,
     bool checked: false,
@@ -60,7 +59,7 @@ Future compile(String entrypoint, CompilerProvider provider,
     bool minify: true,
     bool verbose: false,
     Map<String, String> environment,
-    String packageRoot,
+    String packageConfig,
     bool analyzeAll: false,
     bool preserveUris: false,
     bool suppressWarnings: false,
@@ -89,7 +88,6 @@ Future compile(String entrypoint, CompilerProvider provider,
   if (platformBinaries != null) {
     options.add('--platform-binaries=$platformBinaries');
   }
-  options.add('--use-old-frontend');
 
   var sourceUrl = p.toUri(entrypoint);
   options.add("--out=$sourceUrl.js");
@@ -102,21 +100,22 @@ Future compile(String entrypoint, CompilerProvider provider,
   if (environment == null) environment = {};
   if (commandLineOptions != null) options.addAll(commandLineOptions);
 
-  if (packageRoot == null) {
-    packageRoot = p.join(p.dirname(entrypoint), 'packages');
+  if (packageConfig == null) {
+    packageConfig = p.join(p.dirname(entrypoint), '.packages');
   } else {
-    packageRoot = p.normalize(p.absolute(packageRoot));
+    packageConfig = p.normalize(p.absolute(packageConfig));
   }
 
   await compiler.compile(
       p.toUri(entrypoint),
       provider.libraryRoot,
-      p.toUri(appendSlash(packageRoot)),
+      null,
       provider.provideInput,
       provider.handleDiagnostic,
       options,
       provider.provideOutput,
-      environment);
+      environment,
+      p.toUri(packageConfig));
 }
 
 /// Returns whether [dart] looks like an entrypoint file.
