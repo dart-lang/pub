@@ -10,7 +10,6 @@ import 'dart:isolate';
 import 'package:analyzer/analyzer.dart';
 import 'package:barback/barback.dart';
 import 'package:compiler_unsupported/compiler.dart' as compiler;
-import 'package:compiler_unsupported/src/filenames.dart' show appendSlash;
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
