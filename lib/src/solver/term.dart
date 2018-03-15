@@ -146,42 +146,7 @@ class Term {
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
   /// same name as [package].
-  Term difference(Term other) {
-    if (package.name != other.package.name) {
-      throw new ArgumentError.value(
-          other, 'other', 'should refer to package ${package.name}');
-    }
-
-    if (_compatiblePackage(other.package)) {
-      if (isPositive) {
-        if (other.isPositive) {
-          // foo ^1.0.0 / foo ^1.5.0 → foo >=1.0.0 <1.5.0
-          return _nonEmptyTerm(constraint.difference(other.constraint), true);
-        } else {
-          // foo ^1.0.0 / not foo ^1.5.0 → foo ^1.5.0
-          return _nonEmptyTerm(constraint.intersect(other.constraint), true);
-        }
-      } else if (other.isPositive) {
-        // not foo ^1.0.0 / foo >=1.5.0 <3.0.0 → not foo >=1.0.0 <3.0.0
-        return _nonEmptyTerm(constraint.union(other.constraint), false);
-      } else {
-        // not foo ^1.0.0 / not foo >=1.5.0 <3.0.0 → foo ^2.0.0
-        return _nonEmptyTerm(other.constraint.difference(constraint), true);
-      }
-    } else {
-      if (isPositive) {
-        // foo from git / foo from hosted → foo from git
-        if (other.isPositive) return this;
-
-        // foo from git / not foo from hosted → empty
-        return null;
-      } else {
-        // not foo from git /     foo from hosted → empty
-        // not foo from git / not foo from hosted → no single term
-        return null;
-      }
-    }
-  }
+  Term difference(Term other) => intersect(other.inverse); // A ∖ B → A ∩ not B
 
   /// Returns whether [other] is compatible with [package].
   bool _compatiblePackage(PackageRange other) =>
