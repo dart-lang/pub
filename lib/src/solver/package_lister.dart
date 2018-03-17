@@ -8,7 +8,9 @@ import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import '../flutter.dart' as flutter;
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -51,11 +53,11 @@ class PackageLister {
   final _alreadyListedDependencies = <String, VersionConstraint>{};
 
   /// A constraint indicating which versions of [_ref] are already known to be
-  /// incompatible with the current version of the SDK.
+  /// invalid for some reason.
   ///
   /// This allows us to avoid returning the same incompatibilities from
   /// [incompatibilitiesFor] multiple times.
-  var _knownInvalidSdks = VersionConstraint.empty;
+  var _knownInvalidVersions = VersionConstraint.empty;
 
   /// Whether we've returned incompatibilities for [_locked].
   var _listedLockedVersion = false;
@@ -151,9 +153,29 @@ class PackageLister {
   /// won't return incompatibilities that have already been returned by a
   /// previous call to [incompatibilitiesFor].
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
-    if (_knownInvalidSdks.allows(id.version)) return const [];
+    if (_knownInvalidVersions.allows(id.version)) return const [];
 
-    var pubspec = await _source.describe(id);
+    Pubspec pubspec;
+    try {
+      pubspec = await _source.describe(id);
+    } on PubspecException catch (error) {
+      // The lockfile for the pubspec couldn't be parsed,
+      log.fine("Failed to parse pubspec for $id:\n$error");
+      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+      return [
+        new Incompatibility(
+            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+      ];
+    } on PackageNotFoundException {
+      // We can only get here if the lockfile refers to a specific package
+      // version that doesn't exist (probably because it was yanked).
+      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+      return [
+        new Incompatibility(
+            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+      ];
+    }
+
     if (_versionsCache == null &&
         _locked != null &&
         id.version == _locked.version) {
@@ -266,7 +288,7 @@ class PackageLister {
             ? null
             : versions[bounds.last + 1].version,
         includeMax: false);
-    _knownInvalidSdks = incompatibleVersions.union(_knownInvalidSdks);
+    _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
     var sdkConstraint = await foldAsync(
         slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
