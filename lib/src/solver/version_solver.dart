@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -353,7 +354,15 @@ class VersionSolver {
       return await _packageLister(package).countVersions(package.constraint);
     });
 
-    var version = await _packageLister(package).bestVersion(package.constraint);
+    PackageId version;
+    try {
+      version = await _packageLister(package).bestVersion(package.constraint);
+    } on PackageNotFoundException catch (error) {
+      _addIncompatibility(new Incompatibility(
+          [new Term(package.withConstraint(VersionConstraint.any), true)],
+          new PackageNotFoundCause(error)));
+      return package.name;
+    }
 
     if (version == null) {
       // If there are no versions that satisfy [package.constraint], add an

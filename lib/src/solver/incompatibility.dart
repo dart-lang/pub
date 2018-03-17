@@ -137,6 +137,13 @@ class Incompatibility {
       assert(terms.first.isPositive);
       return "no versions of ${_terseRef(terms.first, details)} "
           "match ${terms.first.constraint}";
+    } else if (cause is PackageNotFoundCause) {
+      assert(terms.length == 1);
+      assert(terms.first.isPositive);
+
+      var cause = this.cause as PackageNotFoundCause;
+      return "${_terseRef(terms.first, details)} doesn't exist "
+          "(${cause.exception})";
     } else if (cause == IncompatibilityCause.unknownSource) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -414,6 +421,9 @@ class Incompatibility {
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");
+    } else if (cause is PackageNotFoundCause) {
+      buffer.write(
+          "which doesn't exist (${(cause as PackageNotFoundCause).exception})");
     } else {
       buffer.write("which is forbidden");
     }

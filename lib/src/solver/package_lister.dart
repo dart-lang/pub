@@ -64,19 +64,16 @@ class PackageLister {
 
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
-  List<PackageId> get cachedVersions => _versionsCache?.result?.asValue?.value;
+  List<PackageId> get cachedVersions => _cachedVersions;
+  List<PackageId> _cachedVersions;
 
   /// All versions of the package, sorted by [Version.compareTo].
-  Future<List<PackageId>> get _versions {
-    _versionsCache ??=
-        new ResultFuture(_source.getVersions(_ref).then((versions) {
-      versions.sort((id1, id2) => id1.version.compareTo(id2.version));
-      return versions;
-    }));
-    return _versionsCache;
-  }
-
-  ResultFuture<List<PackageId>> _versionsCache;
+  Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
+        _cachedVersions = await _source.getVersions(_ref);
+        _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
+        return _cachedVersions;
+      });
+  final _versionsMemo = new AsyncMemoizer<List<PackageId>>();
 
   /// The most recent version of this package (or the oldest, if we're
   /// downgrading).
@@ -105,14 +102,24 @@ class PackageLister {
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return 1;
-    return (await _versions)
-        .where((id) => constraint.allows(id.version))
-        .length;
+    try {
+      return (await _versions)
+          .where((id) => constraint.allows(id.version))
+          .length;
+    } on PackageNotFoundException {
+      // If it fails for any reason, just treat that as no versions. This will
+      // sort this reference higher so that we can traverse into it and report
+      // the error in a user-friendly way.
+      return 0;
+    }
   }
 
   /// Returns the best version of this package that matches [constraint]
   /// according to the solver's prioritization scheme, or `null` if no versions
   /// match.
+  ///
+  /// Throws a [PackageNotFoundException] if this lister's package doesn't
+  /// exist.
   Future<PackageId> bestVersion(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return _locked;
 
@@ -176,7 +183,7 @@ class PackageLister {
       ];
     }
 
-    if (_versionsCache == null &&
+    if (_cachedVersions == null &&
         _locked != null &&
         id.version == _locked.version) {
       if (_listedLockedVersion) return const [];

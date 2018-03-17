@@ -4,6 +4,7 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
@@ -62,4 +63,13 @@ class SdkCause implements IncompatibilityCause {
   final bool isFlutter;
 
   SdkCause(this.constraint, {bool flutter: false}) : isFlutter = flutter;
+}
+
+/// The incompatibility represents a package that couldn't be found by its
+/// source.
+class PackageNotFoundCause implements IncompatibilityCause {
+  /// The exception indicating why the package couldn't be found.
+  final PackageNotFoundException exception;
+
+  PackageNotFoundCause(this.exception);
 }
