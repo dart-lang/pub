@@ -316,11 +316,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
-              "derived from:\n"
-              "- myapp depends on version >=1.0.0 <3.0.0\n"
-              "- myapp depends on version >=2.0.0 <4.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because no versions of foo match ^2.0.0 and myapp depends on foo
+          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
+      """));
     });
 
     test("fails when dev dependency isn't satisfied", () async {
@@ -336,11 +336,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
-              "derived from:\n"
-              "- myapp depends on version >=1.0.0 <3.0.0\n"
-              "- myapp depends on version >=2.0.0 <4.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because no versions of foo match ^2.0.0 and myapp depends on foo
+          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
+      """));
     });
 
     test("fails when dev and main constraints are incompatible", () async {
@@ -356,11 +356,10 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error:
-              "Package foo has no versions that match <empty> derived from:\n"
-              "- myapp depends on version >=1.0.0 <2.0.0\n"
-              "- myapp depends on version >=2.0.0 <3.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version
+          solving failed.
+      """));
     });
 
     test("fails when dev and main sources are incompatible", () async {
@@ -378,10 +377,10 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Incompatible dependencies on foo:\n"
-              "- myapp depends on it from source hosted\n"
-              "- myapp depends on it from source path");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo from hosted and foo from path, version
+          solving failed.
+      """));
     });
 
     test("fails when dev and main descriptions are incompatible", () async {
@@ -401,14 +400,12 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Incompatible dependencies on foo:\n'
-              '- myapp depends on it with description '
-              '{"path":"foo","relative":true}\n'
-              '- myapp depends on it with description '
-              '{"path":"../foo","relative":true}');
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo from path foo and foo from path
+          ../foo, version solving failed.
+      """));
     });
-  }, skip: true);
+  });
 }
 
 void unsolvable() {

@@ -152,27 +152,40 @@ class PackageLister {
         _locked != null &&
         id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
+
+      var depender = id.toRange();
       _listedLockedVersion = true;
       if (!_matchesDartSdkConstraint(pubspec)) {
         return [
-          new Incompatibility([new Term(id.toRange(), true)],
+          new Incompatibility([new Term(depender, true)],
               new SdkCause(pubspec.dartSdkConstraint))
         ];
       } else if (!_matchesFlutterSdkConstraint(pubspec)) {
         return [
-          new Incompatibility([new Term(id.toRange(), true)],
+          new Incompatibility([new Term(depender, true)],
               new SdkCause(pubspec.flutterSdkConstraint, flutter: true))
         ];
+      } else if (id.isRoot) {
+        var incompatibilities = <Incompatibility>[];
+
+        for (var range in pubspec.dependencies.values) {
+          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          incompatibilities.add(_dependency(depender, range));
+        }
+
+        for (var range in pubspec.devDependencies.values) {
+          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          incompatibilities.add(_dependency(depender, range));
+        }
+
+        for (var range in pubspec.dependencyOverrides.values) {
+          incompatibilities.add(_dependency(depender, range));
+        }
+
+        return incompatibilities;
       } else {
-        var dependencies = id.isRoot
-            ? (new Map.from(pubspec.dependencies)
-              ..addAll(pubspec.devDependencies)
-              ..addAll(pubspec.dependencyOverrides))
-            : pubspec.dependencies;
-        return dependencies.values
-            .map((range) => new Incompatibility(
-                [new Term(id.toRange(), true), new Term(range, false)],
-                IncompatibilityCause.dependency))
+        return pubspec.dependencies.values
+            .map((range) => _dependency(depender, range))
             .toList();
       }
     }
@@ -214,12 +227,16 @@ class PackageLister {
       _alreadyListedDependencies[package] = constraint.union(
           _alreadyListedDependencies[package] ?? VersionConstraint.empty);
 
-      return new Incompatibility([
-        new Term(_ref.withConstraint(constraint), true),
-        new Term(dependencies[package], false)
-      ], IncompatibilityCause.dependency);
+      return _dependency(
+          _ref.withConstraint(constraint), dependencies[package]);
     }).toList();
   }
+
+  /// Returns an [Incompatibility] that represents a dependency from [depender]
+  /// onto [target].
+  Incompatibility _dependency(PackageRange depender, PackageRange target) =>
+      new Incompatibility([new Term(depender, true), new Term(target, false)],
+          IncompatibilityCause.dependency);
 
   /// If the version at [index] in [_versions] isn't compatible with the current
   /// SDK version, returns an [Incompatibility] indicating that.
