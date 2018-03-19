@@ -21,6 +21,23 @@ class SolveFailure implements ApplicationException {
 
   String get message => toString();
 
+  /// Returns whether this failure was transitively caused (at least in part) by
+  /// a package not being found.
+  bool get causedByPackageNotFound => _causedByPackageNotFound(incompatibility);
+
+  /// Returns whether [incompatibility] was transitively caused by a package not
+  /// being found.
+  bool _causedByPackageNotFound(Incompatibility incompatibility) {
+    var cause = incompatibility.cause;
+    if (cause is PackageNotFoundCause) return true;
+    if (cause is ConflictCause) {
+      return _causedByPackageNotFound(cause.conflict) ||
+          _causedByPackageNotFound(cause.other);
+    } else {
+      return false;
+    }
+  }
+
   SolveFailure(this.incompatibility) {
     assert(incompatibility.terms.single.package.isRoot);
   }

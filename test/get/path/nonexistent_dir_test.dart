@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
-@Skip()
-
 import 'package:test/test.dart';
 
 import 'package:path/path.dart' as path;
@@ -22,9 +20,10 @@ main() {
       })
     ]).create();
 
-    await pubGet(error: """
-        Could not find package foo at "$badPath".
-        Depended on by:
-        - myapp""", exitCode: exit_codes.NO_INPUT);
+    await pubGet(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo from path which doesn't exist (Could not find
+        package foo at "/tmp/dart_test_GDFEFO/bad_path".), version solving
+        failed.
+    """), exitCode: exit_codes.NO_INPUT);
   });
 }
