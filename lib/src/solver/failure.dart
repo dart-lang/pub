@@ -96,9 +96,11 @@ class _Writer {
   String write() {
     var buffer = new StringBuffer();
 
+    var hasFlutterCause = false;
     var hasDartSdkCause = false;
     var hasFlutterSdkCause = false;
     for (var cause in _root.externalCauses) {
+      if (cause.isFlutter) hasFlutterCause = true;
       if (cause is SdkCause) {
         if (cause.isFlutter) {
           hasFlutterSdkCause = true;
@@ -153,7 +155,7 @@ class _Writer {
       buffer.writeln(wordWrap(message, prefix: " " * (padding + 2)));
     }
 
-    if (hasFlutterSdkCause && !flutter.isAvailable) {
+    if (hasFlutterCause && !flutter.isAvailable) {
       buffer.writeln();
       buffer.writeln(
           "Flutter users should run `flutter packages get` instead of `pub "

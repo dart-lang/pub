@@ -323,7 +323,9 @@ class BoundHostedSource extends CachedSource {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw new PackageNotFoundException(
-            "could not find package $package at $url", error, stackTrace);
+            "could not find package $package at $url",
+            innerError: error,
+            innerTrace: stackTrace);
       }
 
       fail(
