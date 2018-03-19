@@ -21,8 +21,8 @@ main() {
     ]).create();
 
     await pubGet(error: equalsIgnoringWhitespace("""
-      Because myapp depends on foo from path which doesn't exist (Could not find
-        package foo at "/tmp/dart_test_GDFEFO/bad_path".), version solving
+      Because myapp depends on foo from path which doesn't exist (could not find
+        package foo at "/tmp/dart_test_GDFEFO/bad_path"), version solving
         failed.
     """), exitCode: exit_codes.NO_INPUT);
   });

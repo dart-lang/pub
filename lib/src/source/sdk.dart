@@ -65,9 +65,9 @@ class BoundSdkSource extends BoundSource {
     var sdk = ref.description as String;
     if (sdk == 'dart') {
       throw new PackageNotFoundException(
-          'Could not find package ${ref.name} in the Dart SDK.');
+          'could not find package ${ref.name} in the Dart SDK');
     } else if (sdk != 'flutter') {
-      throw new PackageNotFoundException('Unknown SDK "$sdk".');
+      throw new PackageNotFoundException('unknown SDK "$sdk"');
     }
 
     var pubspec = _loadPubspec(ref.name);
@@ -96,16 +96,14 @@ class BoundSdkSource extends BoundSource {
   /// contain the package.
   String _verifiedPackagePath(String name) {
     if (!flutter.isAvailable) {
-      throw new PackageNotFoundException("The Flutter SDK is not available.\n"
-          "Flutter users should run `flutter packages get` instead of `pub "
-          "get`.");
+      throw new PackageNotFoundException("the Flutter SDK is not available");
     }
 
     var path = flutter.packagePath(name);
     if (dirExists(path)) return path;
 
     throw new PackageNotFoundException(
-        'Could not find package $name in the Flutter SDK.');
+        'could not find package $name in the Flutter SDK');
   }
 
   String getDirectory(PackageId id) => flutter.packagePath(id.name);

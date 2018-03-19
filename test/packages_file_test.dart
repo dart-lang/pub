@@ -69,8 +69,8 @@ main() {
 
       await pubCommand(command,
           args: ['--offline'], error: equalsIgnoringWhitespace("""
-            Because myapp depends on foo any which doesn't exist (Could not find
-              package foo in cache.), version solving failed.
+            Because myapp depends on foo any which doesn't exist (could not find
+              package foo in cache), version solving failed.
           """), exitCode: exit_codes.UNAVAILABLE);
 
       await d.dir(appPath, [d.nothing('.packages')]).validate();
