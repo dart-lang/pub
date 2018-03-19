@@ -140,7 +140,7 @@ main() {
       await pubCommand(command, args: ['--offline']);
 
       await d.appPackagesFile({"foo": "1.2.2"}).validate();
-    }, skip: true);
+    });
 
     test('skips invalid locked versions', () async {
       // Run the server so that we know what URL to use in the system cache.
@@ -161,6 +161,6 @@ main() {
       await pubCommand(command, args: ['--offline']);
 
       await d.appPackagesFile({"foo": "1.2.2"}).validate();
-    }, skip: true);
+    });
   });
 }
