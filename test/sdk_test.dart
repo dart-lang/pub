@@ -84,7 +84,7 @@ main() {
           .file("$appPath/pubspec.lock",
               allOf([isNot(contains("0.0.1")), contains("0.0.2")]))
           .validate();
-    }, skip: true);
+    });
 
     group("fails if", () {
       test("the version constraint doesn't match", () async {
@@ -93,9 +93,10 @@ main() {
         }).create();
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-            error: 'Package foo has no versions that match >=1.0.0 <2.0.0 '
-                'derived from:\n'
-                '- myapp depends on version ^1.0.0');
+            error: equalsIgnoringWhitespace("""
+              Because myapp depends on foo ^1.0.0 from sdk which doesn't match
+                any versions, version solving failed.
+            """));
       });
 
       test("the SDK is unknown", () async {
@@ -103,9 +104,10 @@ main() {
           "foo": {"sdk": "unknown"}
         }).create();
         await pubCommand(command,
-            error: 'Unknown SDK "unknown".\n'
-                'Depended on by:\n'
-                '- myapp',
+            error: equalsIgnoringWhitespace("""
+              Because myapp depends on foo any from sdk which doesn't exist
+                (unknown SDK "unknown"), version solving failed.
+            """),
             exitCode: exit_codes.UNAVAILABLE);
       });
 
@@ -114,11 +116,13 @@ main() {
           "foo": {"sdk": "flutter"}
         }).create();
         await pubCommand(command,
-            error: 'The Flutter SDK is not available.\n'
-                'Flutter users should run `flutter packages get` instead of '
-                '`pub get`.\n'
-                'Depended on by:\n'
-                '- myapp',
+            error: equalsIgnoringWhitespace("""
+              Because myapp depends on foo any from sdk which doesn't exist (the
+                Flutter SDK is not available), version solving failed.
+
+              Flutter users should run `flutter packages get` instead of `pub
+                get`.
+            """),
             exitCode: exit_codes.UNAVAILABLE);
       });
 
@@ -128,9 +132,11 @@ main() {
         }).create();
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-            error: 'Could not find package bar in the Flutter SDK.\n'
-                'Depended on by:\n'
-                '- myapp',
+            error: equalsIgnoringWhitespace("""
+              Because myapp depends on bar any from sdk which doesn't exist
+                (could not find package bar in the Flutter SDK), version solving
+                failed.
+            """),
             exitCode: exit_codes.UNAVAILABLE);
       });
 
@@ -139,11 +145,13 @@ main() {
           "bar": {"sdk": "dart"}
         }).create();
         await pubCommand(command,
-            error: 'Could not find package bar in the Dart SDK.\n'
-                'Depended on by:\n'
-                '- myapp',
+            error: equalsIgnoringWhitespace("""
+              Because myapp depends on bar any from sdk which doesn't exist
+                (could not find package bar in the Dart SDK), version solving
+                failed.
+            """),
             exitCode: exit_codes.UNAVAILABLE);
       });
-    }, skip: true);
+    });
   });
 }

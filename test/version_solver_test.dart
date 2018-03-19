@@ -1236,13 +1236,15 @@ void dartSdkConstraint() {
         })
       ]).create();
 
-      await expectResolves(
-          environment: {
-            '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
-            'PUB_ALLOW_PRERELEASE_SDK': 'false'
-          },
-          error: 'Package foo requires SDK version <2.0.0 but the '
-              'current SDK is 2.0.0.');
+      await expectResolves(environment: {
+        '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
+        'PUB_ALLOW_PRERELEASE_SDK': 'false'
+      }, error: equalsIgnoringWhitespace('''
+        The current Dart SDK version is 2.0.0-dev.99.
+
+        Because myapp depends on foo from path which requires SDK version
+          <2.0.0, version solving failed.
+      '''));
     });
 
     group("don't apply if", () {
@@ -1384,7 +1386,7 @@ void dartSdkConstraint() {
                 contains('<=1.2.3-dev.1.0'), contains('myapp')));
       });
     });
-  }, skip: true);
+  });
 }
 
 void flutterSdkConstraint() {

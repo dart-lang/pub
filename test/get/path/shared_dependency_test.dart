@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
-@Skip()
-
 import 'package:test/test.dart';
 
 import 'package:path/path.dart' as path;
@@ -106,5 +104,5 @@ main() {
       "bar": "../bar",
       "shared": path.join(d.sandbox, "shared")
     }).validate();
-  });
+  }, skip: true);
 }
