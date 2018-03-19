@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
@@ -62,15 +63,19 @@ class VersionSolver {
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
+  /// The set of package names that were overridden by the root package, for
+  /// which other packages' constraints should be ignored.
+  final Set<String> _overriddenPackages;
+
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
-      List<String> useLatest);
+      List<String> useLatest)
+      : _overriddenPackages = new MapKeySet(_root.pubspec.dependencyOverrides);
 
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
     var stopwatch = new Stopwatch()..start();
 
-    var rootId = new PackageId.root(_root);
     _addIncompatibility(new Incompatibility(
         [new Term(new PackageRange.root(_root), false)],
         IncompatibilityCause.root));
@@ -392,7 +397,6 @@ class VersionSolver {
         _root,
         _lockFile,
         packages,
-        [],
         pubspecs,
         _getAvailableVersions(packages),
         _solution.attemptedSolutions);
@@ -429,7 +433,15 @@ class VersionSolver {
 
       var locked = _type == SolveType.GET ? _lockFile.packages[ref.name] : null;
       if (locked != null && !locked.samePackage(ref)) locked = null;
-      return new PackageLister(_systemCache, ref, locked);
+
+      var overridden = _overriddenPackages;
+      if (overridden.contains(package.name)) {
+        // If the package is overridden, ignore its dependencies back onto the
+        // root package.
+        overridden = new Set.from(overridden)..add(_root.name);
+      }
+
+      return new PackageLister(_systemCache, ref, locked, overridden);
     });
   }
 

@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:async/async.dart';
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../flutter.dart' as flutter;
@@ -33,6 +34,9 @@ class PackageLister {
 
   /// The source from which [_ref] comes.
   final BoundSource _source;
+
+  /// The set of package names that were overridden by the root package.
+  final Set<String> _overriddenPackages;
 
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
@@ -69,7 +73,8 @@ class PackageLister {
   ResultFuture<List<PackageId>> _versionsCache;
 
   /// Creates a package lister for the dependency identified by [ref].
-  PackageLister(SystemCache cache, this._ref, this._locked)
+  PackageLister(
+      SystemCache cache, this._ref, this._locked, this._overriddenPackages)
       : _source = cache.source(_ref.source);
 
   /// Creates a package lister for the root [package].
@@ -79,7 +84,8 @@ class PackageLister {
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
         // package.
-        _locked = new PackageId.root(package);
+        _locked = new PackageId.root(package),
+        _overriddenPackages = const UnmodifiableSetView.empty();
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -164,8 +170,13 @@ class PackageLister {
     if (flutterSdkIncompatibility != null) return [flutterSdkIncompatibility];
 
     // Don't recompute dependencies that have already been emitted.
-    var dependencies = new Map.from(pubspec.dependencies);
+    var dependencies = new Map<String, PackageRange>.from(pubspec.dependencies);
     for (var package in dependencies.keys.toList()) {
+      if (_overriddenPackages.contains(package)) {
+        dependencies.remove(package);
+        continue;
+      }
+
       var constraint = _alreadyListedDependencies[package];
       if (constraint != null && constraint.allows(id.version)) {
         dependencies.remove(package);
@@ -175,7 +186,7 @@ class PackageLister {
     var lower = await _dependencyBounds(dependencies, index, upper: false);
     var upper = await _dependencyBounds(dependencies, index, upper: true);
 
-    return ordered(pubspec.dependencies.keys).map((package) {
+    return ordered(dependencies.keys).map((package) {
       var constraint = new VersionRange(
           min: lower[package],
           includeMin: true,
@@ -187,7 +198,7 @@ class PackageLister {
 
       return new Incompatibility([
         new Term(_ref.withConstraint(constraint), true),
-        new Term(pubspec.dependencies[package], false)
+        new Term(dependencies[package], false)
       ], IncompatibilityCause.dependency);
     }).toList();
   }
@@ -303,12 +314,14 @@ class PackageLister {
   /// Returns whether [pubspec]'s Dart SDK constraint matches the current Dart
   /// SDK version.
   bool _matchesDartSdkConstraint(Pubspec pubspec) =>
+      _overriddenPackages.contains(pubspec.name) ||
       pubspec.dartSdkConstraint.allows(sdk.version);
 
   /// Returns whether [pubspec]'s Flutter SDK constraint matches the current Flutter
   /// SDK version.
   bool _matchesFlutterSdkConstraint(Pubspec pubspec) =>
       pubspec.flutterSdkConstraint == null ||
+      _overriddenPackages.contains(pubspec.name) ||
       (flutter.isAvailable &&
           pubspec.flutterSdkConstraint.allows(flutter.version));
 }
