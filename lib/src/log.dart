@@ -491,33 +491,41 @@ String gray(text) {
 /// that supports that.
 ///
 /// Use this to highlight something interesting but neither good nor bad.
-String cyan(text) => sparkle ? "$text" : "$_cyan$text$_noColor";
+String cyan(text) => _addColor(text, _cyan);
 
 /// Wraps [text] in the ANSI escape codes to color it green when on a platform
 /// that supports that.
 ///
 /// Use this to highlight something successful or otherwise positive.
-String green(text) => sparkle ? "$text" : "$_green$text$_noColor";
+String green(text) => _addColor(text, _green);
 
 /// Wraps [text] in the ANSI escape codes to color it magenta when on a
 /// platform that supports that.
 ///
 /// Use this to highlight something risky that the user should be aware of but
 /// may intend to do.
-String magenta(text) => sparkle ? "$text" : "$_magenta$text$_noColor";
+String magenta(text) => _addColor(text, _magenta);
 
 /// Wraps [text] in the ANSI escape codes to color it red when on a platform
 /// that supports that.
 ///
 /// Use this to highlight unequivocal errors, problems, or failures.
-String red(text) => sparkle ? "$text" : "$_red$text$_noColor";
+String red(text) => _addColor(text, _red);
 
 /// Wraps [text] in the ANSI escape codes to color it yellow when on a platform
 /// that supports that.
 ///
 /// Use this to highlight warnings, cautions or other things that are bad but
 /// do not prevent the user's goal from being reached.
-String yellow(text) => sparkle ? "$text" : "$_yellow$text$_noColor";
+String yellow(text) => _addColor(text, _yellow);
+
+/// Returns [text] colored using the given [colorCode].
+///
+/// This is resilient to the text containing other colors or bold text.
+String _addColor(Object text, String colorCode) {
+  if (sparkle) return text.toString();
+  return colorCode + text.toString().replaceAll(_none, _none + colorCode).replaceAll(_noColor, _none + colorCode) + _noColor;
+}
 
 /// Log function that prints the message to stdout.
 void _logToStdout(Entry entry) {
