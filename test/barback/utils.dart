@@ -37,9 +37,12 @@ void pubBuildAndServeShouldFail(String description,
   Object serveExpectation = serveError;
   if (exitCode == exit_codes.USAGE) {
     buildExpectation =
-        allOf(startsWith(buildExpectation), contains("Usage: pub build"));
+        allOf(contains(buildExpectation), contains("Usage: pub build"));
     serveExpectation =
-        allOf(startsWith(serveExpectation), contains("Usage: pub serve"));
+        allOf(contains(serveExpectation), contains("Usage: pub serve"));
+  } else {
+    buildExpectation = contains(buildExpectation);
+    serveExpectation = contains(serveExpectation);
   }
 
   test("build fails $description", () {
