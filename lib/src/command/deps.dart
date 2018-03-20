@@ -10,8 +10,10 @@ import 'package:path/path.dart' as p;
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../dart.dart';
+import '../flutter.dart' as flutter;
 import '../log.dart' as log;
 import '../package.dart';
+import '../sdk.dart' as sdk;
 import '../utils.dart';
 
 /// Returns `true` if [path] looks like a Dart entrypoint.
@@ -64,6 +66,12 @@ class DepsCommand extends PubCommand {
     if (argResults['executables']) {
       _outputExecutables();
     } else {
+      _buffer.writeln("${log.bold('Dart SDK')} ${sdk.version}");
+
+      if (flutter.isAvailable) {
+        _buffer.writeln("${log.bold('Flutter SDK')} ${flutter.version}");
+      }
+
       _buffer.writeln(_labelPackage(entrypoint.root));
 
       switch (argResults["style"]) {
