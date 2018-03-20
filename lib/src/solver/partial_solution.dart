@@ -16,26 +16,36 @@ import 'term.dart';
 class PartialSolution {
   /// The assignments that have been made so far, in the order they were
   /// assigned.
-  final assignments = <Assignment>[];
+  final _assignments = <Assignment>[];
+
+  /// The decisions made for each package.
+  final _decisions = <String, PackageId>{};
 
   /// The intersection of all positive [Assignment]s for each package, minus any
   /// negative [Assignment]s that refer to that package.
   ///
-  /// This is derived from [assignments].
-  final positive = <String, Term>{};
+  /// This is derived from [_assignments].
+  final _positive = <String, Term>{};
 
   /// The union of all negative [Assignment]s for each package.
   ///
   /// If a package has any positive [Assignment]s, it doesn't appear in this
   /// map.
   ///
-  /// This is derived from [assignments].
-  final negative = <String, Map<PackageRef, Term>>{};
+  /// This is derived from [_assignments].
+  final _negative = <String, Map<PackageRef, Term>>{};
 
-  // The current decision level—that is, the number of decisions in
-  // [assignments].
-  int get decisionLevel => _decisionLevel;
-  var _decisionLevel = 0;
+  /// Returns all the decisions that have been made in this partial solution.
+  Iterable<PackageId> get decisions => _decisions.values;
+
+  /// Returns all [PackageRange]s that have been assigned but are not yet
+  /// satisfied.
+  Iterable<PackageRange> get unsatisfied => _positive.values
+      .where((term) => !_decisions.containsKey(term.package.name))
+      .map((term) => term.package);
+
+  // The current decision level—that is, the length of [decisions].
+  int get decisionLevel => _decisions.length;
 
   /// The number of distinct solutions that have been attempted so far.
   int get attemptedSolutions => _attemptedSolutions;
@@ -44,27 +54,29 @@ class PartialSolution {
   /// Whether the solver is currently backtracking.
   var _backtracking = false;
 
-  /// Adds an assignment of [package] to [isPositive] to [assignments].
-  ///
-  /// If [decision] is `true`, this is a decision (a speculative assignment
-  /// rather than one that's automatically propagated from incompatibilities)
-  /// and the [decisionLevel] should be incremented.
-  void assign(PackageName package, bool isPositive,
-      {Incompatibility cause, bool decision: false}) {
-    if (decision) {
-      // When we make a new decision after backtracking, count an additional
-      // attempted solution. If we backtrack multiple times in a row, though, we
-      // only want to count one, since we haven't actually started attempting a
-      // new solution.
-      if (_backtracking) _attemptedSolutions++;
-      _backtracking = false;
-      _decisionLevel++;
-    }
+  /// Adds an assignment of [package] as a decision and increments the
+  /// [decisionLevel].
+  void decide(PackageId package) {
+    // When we make a new decision after backtracking, count an additional
+    // attempted solution. If we backtrack multiple times in a row, though, we
+    // only want to count one, since we haven't actually started attempting a
+    // new solution.
+    if (_backtracking) _attemptedSolutions++;
+    _backtracking = false;
+    _decisions[package.name] = package;
+    _assign(
+        new Assignment.decision(package, decisionLevel, _assignments.length));
+  }
 
-    var assignment = new Assignment(
-        package, isPositive, _decisionLevel, assignments.length,
-        cause: cause);
-    assignments.add(assignment);
+  /// Adds an assignment of [package] as a derivation.
+  void derive(PackageName package, bool isPositive, Incompatibility cause) {
+    _assign(new Assignment.derivation(
+        package, isPositive, cause, decisionLevel, _assignments.length));
+  }
+
+  /// Adds [assignment] to [_assignments] and [_positive] or [_negative].
+  void _assign(Assignment assignment) {
+    _assignments.add(assignment);
     _register(assignment);
   }
 
@@ -74,56 +86,55 @@ class PartialSolution {
     _backtracking = true;
 
     var packages = new Set<String>();
-    while (assignments.last.decisionLevel > decisionLevel) {
-      var removed = assignments.removeLast();
+    while (_assignments.last.decisionLevel > decisionLevel) {
+      var removed = _assignments.removeLast();
       packages.add(removed.package.name);
+      if (removed.isDecision) _decisions.remove(removed.package.name);
     }
-    _decisionLevel = decisionLevel;
 
-    // Re-compute [positive] and [negative] for the packages that were removed.
+    // Re-compute [_positive] and [_negative] for the packages that were removed.
     for (var package in packages) {
-      positive.remove(package);
-      negative.remove(package);
+      _positive.remove(package);
+      _negative.remove(package);
     }
 
-    for (var assignment in assignments) {
+    for (var assignment in _assignments) {
       if (packages.contains(assignment.package.name)) {
         _register(assignment);
       }
     }
   }
 
-  /// Registers [assignment] in [positive] or [negative].
+  /// Registers [assignment] in [_positive] or [_negative].
   void _register(Assignment assignment) {
     var name = assignment.package.name;
-    var oldPositive = positive[name];
+    var oldPositive = _positive[name];
     if (oldPositive != null) {
-      positive[name] = oldPositive.intersect(assignment);
+      _positive[name] = oldPositive.intersect(assignment);
       return;
     }
 
     var ref = assignment.package.toRef();
-    var negativeByRef = negative[name];
+    var negativeByRef = _negative[name];
     var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
     var term =
         oldNegative == null ? assignment : assignment.intersect(oldNegative);
 
     if (term.isPositive) {
-      negative.remove(name);
-      positive[name] = term;
+      _negative.remove(name);
+      _positive[name] = term;
     } else {
-      negative.putIfAbsent(name, () => {})[ref] = term;
+      _negative.putIfAbsent(name, () => {})[ref] = term;
     }
   }
 
-  /// Returns the first entry in [assignments] such that the sublist of
-  /// assignments up to and including that entry collectively satisfies
-  /// [term].
+  /// Returns the first [Assignment] in this solution such that the sublist of
+  /// assignments up to and including that entry collectively satisfies [term].
   ///
   /// Throws a [StateError] if [term] isn't satisfied by [this].
   Assignment satisfier(Term term) {
     Term assignedTerm;
-    for (var assignment in assignments) {
+    for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
 
       if (!assignment.package.isRoot &&
@@ -149,20 +160,20 @@ class PartialSolution {
 
   /// Returns whether [this] satisfies [other].
   ///
-  /// That is, whether [other] must be true given that [assignments] are all
-  /// true.
+  /// That is, whether [other] must be true given the assignments in this
+  /// partial solution.
   bool satisfies(Term term) => relation(term) == SetRelation.subset;
 
   /// Returns the relationship between the package versions allowed by all
   /// assignments in [this] and those allowed by [term].
   SetRelation relation(Term term) {
-    var positive = this.positive[term.package.name];
+    var positive = _positive[term.package.name];
     if (positive != null) return positive.relation(term);
 
     // If there are no assignments related to [term], that means the
     // assignments allow any version of any package, which is a superset of
     // [term].
-    var byRef = this.negative[term.package.name];
+    var byRef = _negative[term.package.name];
     if (byRef == null) return SetRelation.overlapping;
 
     // not foo from git is a superset of foo from hosted

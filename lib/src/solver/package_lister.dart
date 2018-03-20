@@ -155,12 +155,12 @@ class PackageLister {
       _listedLockedVersion = true;
       if (!_matchesDartSdkConstraint(pubspec)) {
         return [
-          new Incompatibility(
-              [new Term(id, true)], new SdkCause(pubspec.dartSdkConstraint))
+          new Incompatibility([new Term(id.toRange(), true)],
+              new SdkCause(pubspec.dartSdkConstraint))
         ];
       } else if (!_matchesFlutterSdkConstraint(pubspec)) {
         return [
-          new Incompatibility([new Term(id, true)],
+          new Incompatibility([new Term(id.toRange(), true)],
               new SdkCause(pubspec.flutterSdkConstraint, flutter: true))
         ];
       } else {
@@ -171,7 +171,7 @@ class PackageLister {
             : pubspec.dependencies;
         return dependencies.values
             .map((range) => new Incompatibility(
-                [new Term(id, true), new Term(range, false)],
+                [new Term(id.toRange(), true), new Term(range, false)],
                 IncompatibilityCause.dependency))
             .toList();
       }
