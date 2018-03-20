@@ -228,6 +228,13 @@ final httpClient = new ThrottleClient(
     new _ThrowingClient(new RetryClient(_pubClient,
         retries: 5,
         when: (response) => const [502, 503, 504].contains(response.statusCode),
+        whenError: (error, stackTrace) {
+          if (error is! IOException) return false;
+
+          var chain = new Chain.forTrace(stackTrace);
+          log.io("HTTP error:\n$error\n\n${chain.terse}");
+          return true;
+        },
         delay: (retryCount) {
           if (retryCount < 3) {
             // Retry quickly a couple times in case of a short transient error.
