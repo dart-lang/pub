@@ -30,10 +30,10 @@ main() {
     await requestShould404("main.dart.js");
     expect(
         server.stderr,
-        emitsLines('Build error:\n'
+        emitsThrough(emitsLines('Build error:\n'
             'Transform Dart2JS on myapp|web/main.dart threw error: '
             'Invalid value for \$dart2js.environment: "foo" '
-            '(expected map from strings to strings).'));
+            '(expected map from strings to strings).')));
     await endPubServe();
   });
 }

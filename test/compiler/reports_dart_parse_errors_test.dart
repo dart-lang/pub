@@ -107,5 +107,6 @@ Future _expectErrors(PubProcess pub, Compiler compiler,
 
   // It's nondeterministic what order the dart2js transformers start running,
   // so we allow the error messages to be emitted in either order.
-  await expectLater(pub.stderr, emitsInAnyOrder([consumeFile, consumeSubfile]));
+  await expectLater(
+      pub.stderr, emitsThrough(emitsInAnyOrder([consumeFile, consumeSubfile])));
 }
