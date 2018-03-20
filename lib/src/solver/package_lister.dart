@@ -38,6 +38,10 @@ class PackageLister {
   /// The set of package names that were overridden by the root package.
   final Set<String> _overriddenPackages;
 
+  /// Whether this is a downgrade, in which case the package priority should be
+  /// reversed.
+  final bool _isDowngrade;
+
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
   /// by [incompatibilitiesFor].
@@ -74,8 +78,10 @@ class PackageLister {
 
   /// Creates a package lister for the dependency identified by [ref].
   PackageLister(
-      SystemCache cache, this._ref, this._locked, this._overriddenPackages)
-      : _source = cache.source(_ref.source);
+      SystemCache cache, this._ref, this._locked, this._overriddenPackages,
+      {bool downgrade: false})
+      : _source = cache.source(_ref.source),
+        _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(Package package)
@@ -85,7 +91,8 @@ class PackageLister {
         // boundaries of various constraints, which is useless for the root
         // package.
         _locked = new PackageId.root(package),
-        _overriddenPackages = const UnmodifiableSetView.empty();
+        _overriddenPackages = const UnmodifiableSetView.empty(),
+        _isDowngrade = false;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -102,15 +109,26 @@ class PackageLister {
     if (_locked != null && constraint.allows(_locked.version)) return _locked;
 
     var versions = await _versions;
-    var min = constraint is VersionRange ? constraint.min : null;
+
+    // If [constraint] has a minimum (or a maximum in downgrade mode), we can
+    // bail early once we're past it.
+    var isPastLimit = (Version _) => false;
+    if (constraint is VersionRange) {
+      if (_isDowngrade) {
+        var max = constraint.max;
+        if (max != null) isPastLimit = (version) => version > max;
+      } else {
+        var min = constraint.min;
+        if (min != null) isPastLimit = (version) => version < min;
+      }
+    }
 
     // Return the most preferable version that matches [constraint]: the latest
     // non-prerelease version if one exists, or the latest prerelease version
     // otherwise.
     PackageId bestPrerelease;
-    for (var id in versions.reversed) {
-      // If [constraint] has a minimum, we can bail early once we're past it.
-      if (min != null && id.version < min) break;
+    for (var id in _isDowngrade ? versions : versions.reversed) {
+      if (isPastLimit != null && isPastLimit(id.version)) break;
 
       if (!constraint.allows(id.version)) continue;
       if (!id.version.isPreRelease) return id;
