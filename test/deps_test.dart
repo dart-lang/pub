@@ -135,7 +135,10 @@ main() {
       await pubGet();
 
       await d.dir('flutter', [d.file('version', '4.3.2+1')]).create();
-      await runPub(args: ['deps'], output: contains('Flutter SDK 4.3.2+1'), environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
+      await runPub(
+          args: ['deps'],
+          output: contains('Flutter SDK 4.3.2+1'),
+          environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
     });
   });
 
