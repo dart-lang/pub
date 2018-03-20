@@ -245,10 +245,7 @@ class PackageRange extends PackageName {
     if (isMagic) return name;
 
     var buffer = new StringBuffer(name);
-    if (detail.showVersion ??
-        !isRoot &&
-            (!constraint.isAny ||
-                (source is! PathSource && source is! GitSource))) {
+    if (detail.showVersion ?? _showVersionConstraint) {
       buffer.write(" $constraint");
     }
 
@@ -264,6 +261,15 @@ class PackageRange extends PackageName {
     }
 
     return buffer.toString();
+  }
+
+  /// Whether to include the version constraint in [toString] by default.
+  bool get _showVersionConstraint {
+    if (isRoot) return false;
+    if (!constraint.isAny) return true;
+    if (source is PathSource) return false;
+    if (source is GitSource) return false;
+    return true;
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
