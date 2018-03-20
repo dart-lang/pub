@@ -19,8 +19,10 @@ main() {
 
     await pubGet();
     var pub = await startPubServe();
-    expect(pub.stderr,
-        emits('Transformer library "package:myapp/transform.dart" not found.'));
+    expect(
+        pub.stderr,
+        emitsThrough(
+            'Transformer library "package:myapp/transform.dart" not found.'));
     await pub.shouldExit(1);
   });
 }

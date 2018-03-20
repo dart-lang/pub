@@ -42,8 +42,8 @@ main() {
     var server = await pubServe();
     await expectLater(
         server.stderr,
-        emitsLines('Build error:\n'
-            'Transform Rewrite on myapp|web/foo.txt threw error: oh no!'));
+        emitsThrough(emitsLines('Build error:\n'
+            'Transform Rewrite on myapp|web/foo.txt threw error: oh no!')));
     await endPubServe();
   });
 }

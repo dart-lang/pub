@@ -40,9 +40,9 @@ main() {
     var server = await pubServe();
     await expectLater(
         server.stderr,
-        emitsLines("Build error:\n"
+        emitsThrough(emitsLines("Build error:\n"
             "Transform Rewrite on myapp|web/foo.txt threw error: Class "
-            "'RewriteTransformer' has no instance method 'apply'."));
+            "'RewriteTransformer' has no instance method 'apply'.")));
     await endPubServe();
   });
 }

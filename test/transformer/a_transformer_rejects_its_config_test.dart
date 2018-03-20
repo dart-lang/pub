@@ -46,7 +46,7 @@ main() {
     var pub = await startPubServe();
     expect(
         pub.stderr,
-        emits(endsWith('Error loading transformer: I hate these '
+        emitsThrough(endsWith('Error loading transformer: I hate these '
             'settings!')));
     await pub.shouldExit(1);
   });

@@ -33,7 +33,7 @@ main() {
     var pub = await startPubServe();
     expect(
         pub.stderr,
-        emits(startsWith('No transformers that accept configuration '
+        emitsThrough(startsWith('No transformers that accept configuration '
             'were defined in ')));
     await pub.shouldExit(1);
   });

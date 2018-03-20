@@ -59,6 +59,6 @@ main() {
 
     // Since the AssetNotFoundException was caught and handled, the server
     // shouldn't print any error information for it.
-    expect(server.stderr, emitsDone);
+    expect(server.stderr, neverEmits(contains("nonexistent")));
   });
 }

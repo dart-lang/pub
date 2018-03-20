@@ -28,7 +28,8 @@ main() {
 
     await pubGet();
     var pub = await startPubServe();
-    expect(pub.stderr, emits("Unable to spawn isolate: Unhandled exception:"));
+    expect(pub.stderr,
+        emitsThrough("Unable to spawn isolate: Unhandled exception:"));
     expect(pub.stderr, emits(startsWith('Could not import "')));
     await pub.shouldExit(1);
   });

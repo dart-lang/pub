@@ -23,7 +23,8 @@ main() {
 
     await pubGet();
     var pub = await startPubServe();
-    expect(pub.stderr, emits(startsWith('No transformers were defined in ')));
+    expect(pub.stderr,
+        emitsThrough(startsWith('No transformers were defined in ')));
     expect(pub.stderr, emits(startsWith('required by myapp.')));
     expect(pub.stderrStream(),
         neverEmits(contains('This is an unexpected error')));
