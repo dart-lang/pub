@@ -524,7 +524,12 @@ String yellow(text) => _addColor(text, _yellow);
 /// This is resilient to the text containing other colors or bold text.
 String _addColor(Object text, String colorCode) {
   if (sparkle) return text.toString();
-  return colorCode + text.toString().replaceAll(_none, _none + colorCode).replaceAll(_noColor, _none + colorCode) + _noColor;
+  return colorCode +
+      text
+          .toString()
+          .replaceAll(_none, _none + colorCode)
+          .replaceAll(_noColor, _none + colorCode) +
+      _noColor;
 }
 
 /// Log function that prints the message to stdout.
