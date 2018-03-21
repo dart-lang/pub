@@ -472,7 +472,8 @@ class VersionSolver {
         overridden = new Set.from(overridden)..add(_root.name);
       }
 
-      return new PackageLister(_systemCache, ref, locked, overridden,
+      return new PackageLister(_systemCache, ref, locked,
+          _root.dependencyType(package.name), overridden,
           downgrade: _type == SolveType.DOWNGRADE);
     });
   }

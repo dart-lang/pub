@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
 import '../flutter.dart' as flutter;
+import '../http.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -36,6 +37,9 @@ class PackageLister {
 
   /// The source from which [_ref] comes.
   final BoundSource _source;
+
+  /// The type of the dependency from the root package onto [_ref].
+  final DependencyType _dependencyType;
 
   /// The set of package names that were overridden by the root package.
   final Set<String> _overriddenPackages;
@@ -69,7 +73,8 @@ class PackageLister {
 
   /// All versions of the package, sorted by [Version.compareTo].
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
-        _cachedVersions = await _source.getVersions(_ref);
+        _cachedVersions = await withDependencyType(
+            _dependencyType, () => _source.getVersions(_ref));
         _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
         return _cachedVersions;
       });
@@ -82,8 +87,8 @@ class PackageLister {
   final _latestMemo = new AsyncMemoizer<PackageId>();
 
   /// Creates a package lister for the dependency identified by [ref].
-  PackageLister(
-      SystemCache cache, this._ref, this._locked, this._overriddenPackages,
+  PackageLister(SystemCache cache, this._ref, this._locked,
+      this._dependencyType, this._overriddenPackages,
       {bool downgrade: false})
       : _source = cache.source(_ref.source),
         _isDowngrade = downgrade;
@@ -96,6 +101,7 @@ class PackageLister {
         // boundaries of various constraints, which is useless for the root
         // package.
         _locked = new PackageId.root(package),
+        _dependencyType = DependencyType.none,
         _overriddenPackages = const UnmodifiableSetView.empty(),
         _isDowngrade = false;
 
@@ -164,7 +170,8 @@ class PackageLister {
 
     Pubspec pubspec;
     try {
-      pubspec = await _source.describe(id);
+      pubspec =
+          await withDependencyType(_dependencyType, () => _source.describe(id));
     } on PubspecException catch (error) {
       // The lockfile for the pubspec couldn't be parsed,
       log.fine("Failed to parse pubspec for $id:\n$error");
@@ -388,7 +395,8 @@ class PackageLister {
   /// keeping the actual error handling in a central location.
   Future<Pubspec> _describeSafe(PackageId id) async {
     try {
-      return await _source.describe(id);
+      return await withDependencyType(
+          _dependencyType, () => _source.describe(id));
     } catch (_) {
       return new Pubspec(id.name, version: id.version);
     }
