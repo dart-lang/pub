@@ -113,7 +113,7 @@ class Incompatibility {
       assert(terms.length == 1);
 
       var forbidden = terms.last;
-      assert(latest.isPositive);
+      assert(forbidden.isPositive);
 
       return "the latest version of ${_terseRef(forbidden, details)} "
           "(${VersionConstraint.any.difference(forbidden.constraint)}) "
