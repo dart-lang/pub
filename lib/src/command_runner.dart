@@ -234,7 +234,9 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       var packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
-    while (exception is WrappedException) exception = exception.innerError;
+    while (exception is WrappedException && exception.innerError is Exception) {
+      exception = exception.innerError;
+    }
 
     if (exception is HttpException ||
         exception is http.ClientException ||

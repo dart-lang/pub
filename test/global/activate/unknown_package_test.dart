@@ -15,8 +15,8 @@ main() {
         args: ["global", "activate", "foo"],
         error: allOf([
           contains(
-              "Because pub global activate depends on foo which doesn't exist "
-              "(could not find package foo at\n"),
+              "Because pub global activate depends on foo any which doesn't "
+              "exist (could not find package foo at\n"),
           contains("http://localhost:"),
           contains("), version solving failed.")
         ]),
