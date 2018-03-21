@@ -323,7 +323,9 @@ class BoundHostedSource extends CachedSource {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw new PackageNotFoundException(
-            "Could not find package $package at $url.", error, stackTrace);
+            "could not find package $package at $url",
+            innerError: error,
+            innerTrace: stackTrace);
       }
 
       fail(
@@ -451,7 +453,7 @@ class _OfflineHostedSource extends BoundHostedSource {
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw new PackageNotFoundException(
-          "Could not find package ${ref.name} in cache.");
+          "could not find package ${ref.name} in cache");
     }
 
     return versions;
@@ -466,6 +468,6 @@ class _OfflineHostedSource extends BoundHostedSource {
 
   Future<Pubspec> describeUncached(PackageId id) {
     throw new PackageNotFoundException(
-        "${id.name} ${id.version} is not available in your system cache.");
+        "${id.name} ${id.version} is not available in your system cache");
   }
 }

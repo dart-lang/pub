@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-@Skip()
-
 import 'package:test/test.dart';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -18,10 +16,15 @@ main() {
 
       await d.appDir({"foo": "1.2.3"}).create();
 
-      await pubCommand(command, error: new RegExp(r"""
-Could not find package foo at http://localhost:\d+\.
-Depended on by:
-- myapp""", multiLine: true), exitCode: exit_codes.UNAVAILABLE);
+      await pubCommand(command,
+          error: allOf([
+            contains(
+                "Because myapp depends on foo any which doesn't exist (could "
+                "not find package foo at\n"),
+            contains("http://localhost:"),
+            contains("), version solving failed.")
+          ]),
+          exitCode: exit_codes.UNAVAILABLE);
     });
   });
 }

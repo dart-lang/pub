@@ -21,6 +21,18 @@ class SolveFailure implements ApplicationException {
 
   String get message => toString();
 
+  /// Returns a [PackageNotFoundException] that (transitively) caused this
+  /// failure, or `null` if it wasn't caused by a [PackageNotFoundException].
+  ///
+  /// If multiple [PackageNotFoundException]s caused the error, it's undefined
+  /// which one is returned.
+  PackageNotFoundException get packageNotFound {
+    for (var cause in incompatibility.externalCauses) {
+      if (cause is PackageNotFoundCause) return cause.exception;
+    }
+    return null;
+  }
+
   SolveFailure(this.incompatibility) {
     assert(incompatibility.terms.single.package.isRoot);
   }
@@ -79,9 +91,11 @@ class _Writer {
   String write() {
     var buffer = new StringBuffer();
 
+    var hasFlutterCause = false;
     var hasDartSdkCause = false;
     var hasFlutterSdkCause = false;
     for (var cause in _root.externalCauses) {
+      if (cause.isFlutter) hasFlutterCause = true;
       if (cause is SdkCause) {
         if (cause.isFlutter) {
           hasFlutterSdkCause = true;
@@ -136,7 +150,7 @@ class _Writer {
       buffer.writeln(wordWrap(message, prefix: " " * (padding + 2)));
     }
 
-    if (hasFlutterSdkCause && !flutter.isAvailable) {
+    if (hasFlutterCause && !flutter.isAvailable) {
       buffer.writeln();
       buffer.writeln(
           "Flutter users should run `flutter packages get` instead of `pub "

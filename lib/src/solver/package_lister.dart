@@ -8,7 +8,9 @@ import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import '../flutter.dart' as flutter;
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -51,30 +53,27 @@ class PackageLister {
   final _alreadyListedDependencies = <String, VersionConstraint>{};
 
   /// A constraint indicating which versions of [_ref] are already known to be
-  /// incompatible with the current version of the SDK.
+  /// invalid for some reason.
   ///
   /// This allows us to avoid returning the same incompatibilities from
   /// [incompatibilitiesFor] multiple times.
-  var _knownInvalidSdks = VersionConstraint.empty;
+  var _knownInvalidVersions = VersionConstraint.empty;
 
   /// Whether we've returned incompatibilities for [_locked].
   var _listedLockedVersion = false;
 
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
-  List<PackageId> get cachedVersions => _versionsCache?.result?.asValue?.value;
+  List<PackageId> get cachedVersions => _cachedVersions;
+  List<PackageId> _cachedVersions;
 
   /// All versions of the package, sorted by [Version.compareTo].
-  Future<List<PackageId>> get _versions {
-    _versionsCache ??=
-        new ResultFuture(_source.getVersions(_ref).then((versions) {
-      versions.sort((id1, id2) => id1.version.compareTo(id2.version));
-      return versions;
-    }));
-    return _versionsCache;
-  }
-
-  ResultFuture<List<PackageId>> _versionsCache;
+  Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
+        _cachedVersions = await _source.getVersions(_ref);
+        _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
+        return _cachedVersions;
+      });
+  final _versionsMemo = new AsyncMemoizer<List<PackageId>>();
 
   /// The most recent version of this package (or the oldest, if we're
   /// downgrading).
@@ -103,14 +102,24 @@ class PackageLister {
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return 1;
-    return (await _versions)
-        .where((id) => constraint.allows(id.version))
-        .length;
+    try {
+      return (await _versions)
+          .where((id) => constraint.allows(id.version))
+          .length;
+    } on PackageNotFoundException {
+      // If it fails for any reason, just treat that as no versions. This will
+      // sort this reference higher so that we can traverse into it and report
+      // the error in a user-friendly way.
+      return 0;
+    }
   }
 
   /// Returns the best version of this package that matches [constraint]
   /// according to the solver's prioritization scheme, or `null` if no versions
   /// match.
+  ///
+  /// Throws a [PackageNotFoundException] if this lister's package doesn't
+  /// exist.
   Future<PackageId> bestVersion(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return _locked;
 
@@ -151,10 +160,30 @@ class PackageLister {
   /// won't return incompatibilities that have already been returned by a
   /// previous call to [incompatibilitiesFor].
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
-    if (_knownInvalidSdks.allows(id.version)) return const [];
+    if (_knownInvalidVersions.allows(id.version)) return const [];
 
-    var pubspec = await _source.describe(id);
-    if (_versionsCache == null &&
+    Pubspec pubspec;
+    try {
+      pubspec = await _source.describe(id);
+    } on PubspecException catch (error) {
+      // The lockfile for the pubspec couldn't be parsed,
+      log.fine("Failed to parse pubspec for $id:\n$error");
+      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+      return [
+        new Incompatibility(
+            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+      ];
+    } on PackageNotFoundException {
+      // We can only get here if the lockfile refers to a specific package
+      // version that doesn't exist (probably because it was yanked).
+      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+      return [
+        new Incompatibility(
+            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+      ];
+    }
+
+    if (_cachedVersions == null &&
         _locked != null &&
         id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
@@ -266,7 +295,7 @@ class PackageLister {
             ? null
             : versions[bounds.last + 1].version,
         includeMax: false);
-    _knownInvalidSdks = incompatibleVersions.union(_knownInvalidSdks);
+    _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
     var sdkConstraint = await foldAsync(
         slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,

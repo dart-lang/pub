@@ -73,8 +73,14 @@ class DataException extends ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
-  PackageNotFoundException(String message, [innerError, StackTrace innerTrace])
+  /// Whether this exception was caused by the Flutter SDK being unavailable.
+  final bool missingFlutterSdk;
+
+  PackageNotFoundException(String message,
+      {innerError, StackTrace innerTrace, this.missingFlutterSdk: false})
       : super(message, innerError, innerTrace);
+
+  String toString() => "Package doesn't exist ($message).";
 }
 
 /// All the names of user-facing exceptions.

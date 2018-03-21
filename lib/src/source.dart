@@ -209,7 +209,7 @@ abstract class BoundSource {
     pubspec = await doDescribe(id);
     if (pubspec.version != id.version) {
       throw new PackageNotFoundException(
-          "The pubspec for $id has version ${pubspec.version}.");
+          "the pubspec for $id has version ${pubspec.version}");
     }
 
     _pubspecs[id] = pubspec;
