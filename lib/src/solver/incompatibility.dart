@@ -143,7 +143,7 @@ class Incompatibility {
 
       var cause = this.cause as PackageNotFoundCause;
       return "${_terseRef(terms.first, details)} doesn't exist "
-          "(${cause.exception})";
+          "(${cause.exception.message})";
     } else if (cause == IncompatibilityCause.unknownSource) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -422,8 +422,8 @@ class Incompatibility {
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");
     } else if (cause is PackageNotFoundCause) {
-      buffer.write(
-          "which doesn't exist (${(cause as PackageNotFoundCause).exception})");
+      buffer.write("which doesn't exist "
+          "(${(cause as PackageNotFoundCause).exception.message})");
     } else {
       buffer.write("which is forbidden");
     }

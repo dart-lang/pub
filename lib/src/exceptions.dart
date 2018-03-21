@@ -79,6 +79,8 @@ class PackageNotFoundException extends WrappedException {
   PackageNotFoundException(String message,
       {innerError, StackTrace innerTrace, this.missingFlutterSdk: false})
       : super(message, innerError, innerTrace);
+
+  String toString() => "Package doesn't exist ($message).";
 }
 
 /// All the names of user-facing exceptions.

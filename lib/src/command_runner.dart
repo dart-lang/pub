@@ -238,6 +238,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
         exception is TlsException ||
         exception is PubHttpException ||
         exception is git.GitException ||
+        exception is PackageNotFoundException ||
         (exception is SolveFailure && exception.causedByPackageNotFound)) {
       return exit_codes.UNAVAILABLE;
     } else if (exception is FileSystemException || exception is FileException) {
