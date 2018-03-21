@@ -28,7 +28,7 @@ export 'solver/type.dart';
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, List<String> useLatest}) {
+    {LockFile lockFile, Iterable<String> useLatest}) {
   return log.progress('Resolving dependencies', () {
     return new VersionSolver(type, cache, root,
             lockFile ?? new LockFile.empty(), useLatest ?? const [])

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub_semver/pub_semver.dart';
+
 import '../flutter.dart' as flutter;
 import '../package_name.dart';
 import 'incompatibility_cause.dart';
@@ -107,6 +109,15 @@ class Incompatibility {
 
       return "${_terse(depender, details, allowEvery: true)} depends on "
           "${_terse(dependee, details)}";
+    } else if (cause == IncompatibilityCause.useLatest) {
+      assert(terms.length == 1);
+
+      var forbidden = terms.last;
+      assert(forbidden.isPositive);
+
+      return "the latest version of ${_terseRef(forbidden, details)} "
+          "(${VersionConstraint.any.difference(forbidden.constraint)}) "
+          "is required";
     } else if (cause is SdkCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -388,7 +399,11 @@ class Incompatibility {
     buffer.write("${_terse(latter.terms.first, details)} ");
     if (priorLine != null) buffer.write("($priorLine) ");
 
-    if (latter.cause is SdkCause) {
+    if (latter.cause == IncompatibilityCause.useLatest) {
+      var latest =
+          VersionConstraint.any.difference(latter.terms.single.constraint);
+      buffer.write("but the latest version ($latest) is required");
+    } else if (latter.cause is SdkCause) {
       var cause = latter.cause as SdkCause;
       buffer.write("which requires ");
       if (cause.isFlutter && !flutter.isAvailable) {

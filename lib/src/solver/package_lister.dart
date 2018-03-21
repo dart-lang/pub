@@ -76,6 +76,12 @@ class PackageLister {
 
   ResultFuture<List<PackageId>> _versionsCache;
 
+  /// The most recent version of this package (or the oldest, if we're
+  /// downgrading).
+  Future<PackageId> get latest =>
+      _latestMemo.runOnce(() => bestVersion(VersionConstraint.any));
+  final _latestMemo = new AsyncMemoizer<PackageId>();
+
   /// Creates a package lister for the dependency identified by [ref].
   PackageLister(
       SystemCache cache, this._ref, this._locked, this._overriddenPackages,
