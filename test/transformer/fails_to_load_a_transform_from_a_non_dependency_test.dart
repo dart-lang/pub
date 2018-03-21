@@ -21,7 +21,7 @@ main() {
 
     await pubGet();
     var pub = await startPubServe();
-    expect(pub.stderr, emits(contains('"foo" is not a dependency.')));
+    expect(pub.stderr, emitsThrough(contains('"foo" is not a dependency.')));
     await pub.shouldExit(exit_codes.DATA);
   });
 }

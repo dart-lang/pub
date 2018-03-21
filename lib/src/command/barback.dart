@@ -83,6 +83,11 @@ abstract class BarbackCommand extends PubCommand {
     log.json.enabled =
         argResults.options.contains("format") && argResults["format"] == "json";
 
+    log.warning(
+        log.yellow("Dart 2 will have a new build system. Learn how to migrate "
+            "from ${log.bold('pub build')} and\n"
+            "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n"));
+
     _parseSourceDirectories();
     return onRunTransformerCommand();
   }

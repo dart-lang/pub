@@ -27,7 +27,7 @@ main() {
 
     await pubGet();
     var pub = await startPubServe();
-    expect(pub.stderr, emits(contains("unexpected token 'syntax'")));
+    expect(pub.stderr, emitsThrough(contains("unexpected token 'syntax'")));
     expect(pub.stderrStream(),
         neverEmits(contains('This is an unexpected error')));
     await pub.shouldExit(1);

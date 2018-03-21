@@ -61,10 +61,10 @@ main() {
 [Rewrite on myapp|web/foo.txt]:
 info!"""));
 
-    expect(pub.stderr, emitsLines("""
+    expect(pub.stderr, emitsThrough(emitsLines("""
 [Rewrite on myapp|web/foo.txt with input myapp|web/foo.foo]:
 Warning!
-[Rewrite on myapp|web/foo.txt]:"""));
+[Rewrite on myapp|web/foo.txt]:""")));
 
     // The details of the analyzer's error message change pretty frequently,
     // so instead of validating the entire line, just look for a couple of

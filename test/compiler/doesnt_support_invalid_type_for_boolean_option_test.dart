@@ -29,10 +29,10 @@ main() {
     await requestShould404("main.dart.js");
     expect(
         server.stderr,
-        emitsLines('Build error:\n'
+        emitsThrough(emitsLines('Build error:\n'
             'Transform Dart2JS on myapp|web/main.dart threw error: '
             'Invalid value for \$dart2js.checked: "foo" '
-            '(expected true or false).'));
+            '(expected true or false).')));
     await endPubServe();
   });
 }

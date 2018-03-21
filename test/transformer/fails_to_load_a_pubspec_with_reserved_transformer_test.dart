@@ -29,7 +29,7 @@ main() {
     var pub = await startPubServe();
     expect(
         pub.stderr,
-        emits(contains('Invalid transformer config: Unsupported '
+        emitsThrough(contains('Invalid transformer config: Unsupported '
             'built-in transformer \$nonexistent.')));
     await pub.shouldExit(exit_codes.DATA);
   });

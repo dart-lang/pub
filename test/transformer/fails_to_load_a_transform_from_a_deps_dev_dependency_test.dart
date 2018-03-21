@@ -46,7 +46,7 @@ main() {
     var pub = await startPubServe();
     expect(
         pub.stderr,
-        emits(contains('Error loading transformer "bar": package '
+        emitsThrough(contains('Error loading transformer "bar": package '
             '"bar" is not a dependency.')));
     await pub.shouldExit(exit_codes.DATA);
   });
