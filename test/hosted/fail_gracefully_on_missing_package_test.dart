@@ -19,7 +19,7 @@ main() {
       await pubCommand(command,
           error: allOf([
             contains(
-                "Because myapp depends on foo any which doesn't exist (Could "
+                "Because myapp depends on foo any which doesn't exist (could "
                 "not find package foo at\n"),
             contains("http://localhost:"),
             contains("), version solving failed.")
