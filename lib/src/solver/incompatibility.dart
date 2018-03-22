@@ -24,15 +24,15 @@ class Incompatibility {
   bool get isFailure =>
       terms.isEmpty || (terms.length == 1 && terms.first.package.isRoot);
 
-  /// Returns the causes of all external incompatibilities in this
-  /// incompatibility's derivation graph.
-  Iterable<IncompatibilityCause> get externalCauses sync* {
+  /// Returns all external incompatibilities in this incompatibility's
+  /// derivation graph.
+  Iterable<Incompatibility> get externalIncompatibilities sync* {
     if (cause is ConflictCause) {
       var cause = this.cause as ConflictCause;
-      yield* cause.conflict.externalCauses;
-      yield* cause.other.externalCauses;
+      yield* cause.conflict.externalIncompatibilities;
+      yield* cause.other.externalIncompatibilities;
     } else {
-      yield cause;
+      yield this;
     }
   }
 

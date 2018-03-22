@@ -27,7 +27,8 @@ class SolveFailure implements ApplicationException {
   /// If multiple [PackageNotFoundException]s caused the error, it's undefined
   /// which one is returned.
   PackageNotFoundException get packageNotFound {
-    for (var cause in incompatibility.externalCauses) {
+    for (var incompatibility in incompatibility.externalIncompatibilities) {
+      var cause = incompatibility.cause;
       if (cause is PackageNotFoundCause) return cause.exception;
     }
     return null;
@@ -94,7 +95,8 @@ class _Writer {
     var hasFlutterCause = false;
     var hasDartSdkCause = false;
     var hasFlutterSdkCause = false;
-    for (var cause in _root.externalCauses) {
+    for (var incompatibility in _root.externalIncompatibilities) {
+      var cause = incompatibility.cause;
       if (cause.isFlutter) hasFlutterCause = true;
       if (cause is SdkCause) {
         if (cause.isFlutter) {
