@@ -80,8 +80,7 @@ main() {
       await d.appDir({"foo": ">2.0.0"}).create();
 
       await pubCommand(command,
-          args: ['--offline'],
-          error: equalsIgnoringWhitespace("""
+          args: ['--offline'], error: equalsIgnoringWhitespace("""
             Because myapp depends on foo >2.0.0 which doesn't match any
               versions, version solving failed.
           """));

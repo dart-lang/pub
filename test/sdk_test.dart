@@ -103,27 +103,23 @@ main() {
         await d.appDir({
           "foo": {"sdk": "unknown"}
         }).create();
-        await pubCommand(command,
-            error: equalsIgnoringWhitespace("""
+        await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on foo any from sdk which doesn't exist
                 (unknown SDK "unknown"), version solving failed.
-            """),
-            exitCode: exit_codes.UNAVAILABLE);
+            """), exitCode: exit_codes.UNAVAILABLE);
       });
 
       test("the SDK is unavailable", () async {
         await d.appDir({
           "foo": {"sdk": "flutter"}
         }).create();
-        await pubCommand(command,
-            error: equalsIgnoringWhitespace("""
+        await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on foo any from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
               Flutter users should run `flutter packages get` instead of `pub
                 get`.
-            """),
-            exitCode: exit_codes.UNAVAILABLE);
+            """), exitCode: exit_codes.UNAVAILABLE);
       });
 
       test("the SDK doesn't contain the package", () async {
@@ -144,13 +140,11 @@ main() {
         await d.appDir({
           "bar": {"sdk": "dart"}
         }).create();
-        await pubCommand(command,
-            error: equalsIgnoringWhitespace("""
+        await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on bar any from sdk which doesn't exist
                 (could not find package bar in the Dart SDK), version solving
                 failed.
-            """),
-            exitCode: exit_codes.UNAVAILABLE);
+            """), exitCode: exit_codes.UNAVAILABLE);
       });
     });
   });
