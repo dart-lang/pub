@@ -285,7 +285,7 @@ class PackageLister {
         ? _matchesFlutterSdkConstraint(pubspec)
         : _matchesDartSdkConstraint(pubspec);
 
-    if (allowsSdk(await _source.describe(versions[index]))) return null;
+    if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
     var bounds = await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
     var incompatibleVersions = new VersionRange(
@@ -300,7 +300,7 @@ class PackageLister {
     var sdkConstraint = await foldAsync(
         slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
         (previous, version) async {
-      var pubspec = await _source.describe(version);
+      var pubspec = await _describeSafe(version);
       return previous.union(
           flutter ? pubspec.flutterSdkConstraint : pubspec.dartSdkConstraint);
     });
@@ -320,13 +320,13 @@ class PackageLister {
 
     var first = start - 1;
     while (first > 0) {
-      if (!match(await _source.describe(versions[first]))) break;
+      if (!match(await _describeSafe(versions[first]))) break;
       first--;
     }
 
     var last = start + 1;
     while (last < versions.length) {
-      if (!match(await _source.describe(versions[last]))) break;
+      if (!match(await _describeSafe(versions[last]))) break;
       last++;
     }
 
@@ -350,7 +350,7 @@ class PackageLister {
     for (var id in upper
         ? versions.skip(index + 1)
         : versions.reversed.skip(versions.length - index)) {
-      var pubspec = await _source.describe(id);
+      var pubspec = await _describeSafe(id);
 
       // The upper bound is exclusive and so is the first package with a
       // different dependency. The lower bound is inclusive, and so is the last
@@ -379,6 +379,19 @@ class PackageLister {
     }
 
     return bounds;
+  }
+
+  /// Returns the pubspec for [id], or an empty pubpsec matching [id] if the
+  /// real pubspec for [id] fails to load for any reason.
+  ///
+  /// This makes the bounds-finding logic resilient to broken pubspecs while
+  /// keeping the actual error handling in a central location.
+  Future<Pubspec> _describeSafe(PackageId id) async {
+    try {
+      return await _source.describe(id);
+    } catch (_) {
+      return new Pubspec(id.name, version: id.version);
+    }
   }
 
   /// Returns whether [pubspec]'s Dart SDK constraint matches the current Dart

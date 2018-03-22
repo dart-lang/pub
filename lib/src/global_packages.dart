@@ -24,6 +24,7 @@ import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
 import 'solver.dart';
+import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -175,7 +176,18 @@ class GlobalPackages {
     //
     // TODO(nweiz): If this produces a SolveFailure that's caused by [dep] not
     // being available, report that as a [dataError].
-    var result = await resolveVersions(SolveType.GET, cache, root);
+    SolveResult result;
+    try {
+      result = await resolveVersions(SolveType.GET, cache, root);
+    } on SolveFailure catch (error) {
+      for (var incompatibility
+          in error.incompatibility.externalIncompatibilities) {
+        if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
+        if (incompatibility.terms.single.package.name != dep.name) continue;
+        dataError(error.toString());
+      }
+      rethrow;
+    }
 
     result.showReport(SolveType.GET);
 

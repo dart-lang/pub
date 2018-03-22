@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE d.file.
 
-@Skip()
-
 import 'dart:convert';
 
 import 'package:test/test.dart';
@@ -18,8 +16,10 @@ main() {
         "foo": {"bad": "foo"}
       }).create();
 
-      await pubCommand(command,
-          error: 'Package myapp depends on foo from unknown source "bad".');
+      await pubCommand(command, error: equalsIgnoringWhitespace("""
+        Because myapp depends on foo from unknown source "bad", version solving
+          failed.
+      """));
     });
 
     test(
@@ -36,8 +36,11 @@ main() {
         "foo": {"path": "../foo"}
       }).create();
 
-      await pubCommand(command,
-          error: 'Package foo depends on bar from unknown source "bad".');
+      await pubCommand(command, error: equalsIgnoringWhitespace("""
+        Because every version of foo from path depends on bar from unknown
+          source "bad", foo from path is forbidden.
+        So, because myapp depends on foo from path, version solving failed.
+      """));
     });
 
     test('ignores unknown source in lockfile', () async {
