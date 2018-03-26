@@ -19,6 +19,11 @@ abstract class IncompatibilityCause {
   /// The incompatibility represents a package's dependency.
   static const IncompatibilityCause dependency = const _Cause("dependency");
 
+  /// The incompatibility represents pub's own dependency, which is activated
+  /// when barback is selected.
+  static const IncompatibilityCause pubDependency =
+      const _Cause("pub dependency");
+
   /// The incompatibility represents the user's request that we use the latest
   /// version of a given package.
   static const IncompatibilityCause useLatest = const _Cause("use latest");
