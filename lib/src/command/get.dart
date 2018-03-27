@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import '../command.dart';
-import '../solver/version_solver.dart';
+import '../solver.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {

@@ -81,7 +81,7 @@ dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -104,7 +104,7 @@ dev_dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.devDependencies[0];
+      var foo = pubspec.devDependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -127,7 +127,7 @@ dependency_overrides:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencyOverrides[0];
+      var foo = pubspec.dependencyOverrides['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -149,7 +149,7 @@ dependencies:
     unknown: blah
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['unknown']));
     });
@@ -161,7 +161,7 @@ dependencies:
     version: 1.2.3
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['hosted']));
     });

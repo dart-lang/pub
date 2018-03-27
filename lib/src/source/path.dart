@@ -129,12 +129,9 @@ class PathSource extends Source {
   }
 
   /// Converts a parsed relative path to its original relative form.
-  String formatDescription(String containingPath, description) {
+  String formatDescription(description) {
     var sourcePath = description["path"];
-    if (description["relative"]) {
-      sourcePath = p.relative(description['path'], from: containingPath);
-    }
-
+    if (description["relative"]) sourcePath = p.relative(description['path']);
     return sourcePath;
   }
 }
@@ -189,8 +186,7 @@ class BoundPathSource extends BoundSource {
           'not a file. Was "$dir".');
     }
 
-    throw new PackageNotFoundException(
-        'Could not find package $name at "$dir".',
-        new FileException('$dir does not exist.', dir));
+    throw new PackageNotFoundException('could not find package $name at "$dir"',
+        innerError: new FileException('$dir does not exist.', dir));
   }
 }

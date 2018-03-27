@@ -10,7 +10,8 @@ import '../package.dart';
 import '../package_name.dart';
 import '../source_registry.dart';
 import '../utils.dart';
-import 'version_solver.dart';
+import 'result.dart';
+import 'type.dart';
 
 /// Unlike [SolveResult], which is the static data describing a resolution,
 /// this class contains the mutable state used while generating the report
@@ -117,13 +118,12 @@ class SolveReport {
   void _reportOverrides() {
     _output.clear();
 
-    if (_result.overrides.isNotEmpty) {
+    if (_root.dependencyOverrides.isNotEmpty) {
       _output.writeln("Warning: You are using these overridden dependencies:");
-      var overrides = _result.overrides.map((dep) => dep.name).toList();
-      overrides.sort((a, b) => a.compareTo(b));
 
-      overrides.forEach((name) =>
-          _reportPackage(name, alwaysShow: true, highlightOverride: false));
+      for (var name in ordered(_root.dependencyOverrides.keys)) {
+        _reportPackage(name, alwaysShow: true, highlightOverride: false);
+      }
 
       log.warning(_output);
     }
@@ -140,8 +140,7 @@ class SolveReport {
     var oldId = _previousLockFile.packages[name];
     var id = newId != null ? newId : oldId;
 
-    var isOverridden =
-        _result.overrides.map((dep) => dep.name).contains(id.name);
+    var isOverridden = _root.dependencyOverrides.containsKey(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.
@@ -239,7 +238,7 @@ class SolveReport {
     _output.write(id.version);
 
     if (id.source != _sources.defaultSource) {
-      var description = id.source.formatDescription(_root.dir, id.description);
+      var description = id.source.formatDescription(id.description);
       _output.write(" from ${id.source} $description");
     }
   }

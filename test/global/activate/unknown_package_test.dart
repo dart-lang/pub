@@ -13,7 +13,13 @@ main() {
 
     await runPub(
         args: ["global", "activate", "foo"],
-        error: startsWith("Could not find package foo at"),
+        error: allOf([
+          contains(
+              "Because pub global activate depends on foo any which doesn't "
+              "exist (could not find package foo at\n"),
+          contains("http://localhost:"),
+          contains("), version solving failed.")
+        ]),
         exitCode: exit_codes.UNAVAILABLE);
   });
 }

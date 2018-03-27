@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
+import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -24,7 +25,7 @@ import 'package_name.dart';
 import 'package_graph.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -224,8 +225,6 @@ class Entrypoint {
       }
     }
 
-    if (!result.succeeded) throw result.error;
-
     result.showReport(type);
 
     if (dryRun) {
@@ -384,10 +383,9 @@ class Entrypoint {
     migrateCache();
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = new Map<String, List<AssetId>>.fromIterable(
+    var executables = mapMap<String, PackageRange, String, List<AssetId>>(
         root.immediateDependencies,
-        key: (dep) => dep.name,
-        value: (dep) => _executablesForPackage(dep.name));
+        value: (name, _) => _executablesForPackage(name));
 
     for (var package in executables.keys.toList()) {
       if (executables[package].isEmpty) executables.remove(package);
@@ -621,12 +619,12 @@ class Entrypoint {
   /// or that don't match what's in there, this will throw a [DataError]
   /// describing the issue.
   void _assertLockFileUpToDate() {
-    if (!root.immediateDependencies.every(_isDependencyUpToDate)) {
+    if (!root.immediateDependencies.values.every(_isDependencyUpToDate)) {
       dataError('The pubspec.yaml file has changed since the pubspec.lock '
           'file was generated, please run "pub get" again.');
     }
 
-    var overrides = root.dependencyOverrides.map((dep) => dep.name).toSet();
+    var overrides = new MapKeySet(root.dependencyOverrides);
 
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
@@ -635,7 +633,7 @@ class Entrypoint {
       if (source is CachedSource) continue;
 
       try {
-        if (cache.load(id).dependencies.every((dep) =>
+        if (cache.load(id).dependencies.values.every((dep) =>
             overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
           continue;
         }

@@ -148,10 +148,11 @@ main() {
 
     await d.appDir({"barback": "any"}).create();
 
-    await pubGet(error: """
-Package barback has no versions that match >=$current <$max derived from:
-- myapp depends on version any
-- pub itself depends on version >=$current <$max""");
+    await pubGet(error: equalsIgnoringWhitespace("""
+      Because no versions of barback match >=0.15.0 <0.15.3 and pub itself
+        depends on barback >=0.15.0 <0.15.3, barback is forbidden.
+      So, because myapp depends on barback any, version solving failed.
+    """));
   });
 
   test(
@@ -167,9 +168,9 @@ Package barback has no versions that match >=$current <$max derived from:
 
     await d.appDir({"barback": previous}).create();
 
-    await pubGet(error: """
-Incompatible version constraints on barback:
-- myapp depends on version $previous
-- pub itself depends on version >=$current <$max""");
+    await pubGet(error: equalsIgnoringWhitespace("""
+      Because pub itself depends on barback >=0.15.0 <0.15.3 and myapp depends
+        on barback 0.14.0, version solving failed.
+    """));
   });
 }

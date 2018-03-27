@@ -49,31 +49,24 @@ class Package {
   final Pubspec pubspec;
 
   /// The immediate dependencies this package specifies in its pubspec.
-  List<PackageRange> get dependencies => pubspec.dependencies;
+  Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
-  List<PackageRange> get devDependencies => pubspec.devDependencies;
+  Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
   /// The dependency overrides this package specifies in its pubspec.
-  List<PackageRange> get dependencyOverrides => pubspec.dependencyOverrides;
+  Map<String, PackageRange> get dependencyOverrides =>
+      pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
   /// This includes regular, dev dependencies, and overrides.
-  List<PackageRange> get immediateDependencies {
-    var deps = <String, PackageRange>{};
-
-    addToMap(dep) {
-      deps[dep.name] = dep;
-    }
-
-    dependencies.forEach(addToMap);
-    devDependencies.forEach(addToMap);
-
-    // Make sure to add these last so they replace normal dependencies.
-    dependencyOverrides.forEach(addToMap);
-
-    return deps.values.toList();
+  Map<String, PackageRange> get immediateDependencies {
+    // Make sure to add overrides last so they replace normal dependencies.
+    return {}
+      ..addAll(dependencies)
+      ..addAll(devDependencies)
+      ..addAll(dependencyOverrides);
   }
 
   /// Returns a list of asset ids for all Dart executables in this package's bin

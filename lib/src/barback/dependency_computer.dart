@@ -194,7 +194,7 @@ class DependencyComputer {
               packageName == _graph.entrypoint.root.name
           ? package.immediateDependencies
           : package.dependencies;
-      for (var dep in dependencies) {
+      for (var dep in dependencies.values) {
         try {
           traversePackage(dep.name);
         } on CycleException catch (error) {
@@ -355,7 +355,7 @@ class _PackageDependencyComputer {
         return _applicableTransformers
             .map((config) => config.id)
             .toSet()
-            .union(unionAll(dependencies.map((dep) {
+            .union(unionAll(dependencies.values.map((dep) {
           try {
             return _dependencyComputer._transformersNeededByPackage(dep.name);
           } on CycleException catch (error) {

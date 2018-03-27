@@ -163,38 +163,38 @@ class Pubspec {
   Version _version;
 
   /// The additional packages this package depends on.
-  List<PackageRange> get dependencies {
+  Map<String, PackageRange> get dependencies {
     if (_dependencies != null) return _dependencies;
     _dependencies =
         _parseDependencies('dependencies', fields.nodes['dependencies']);
     return _dependencies;
   }
 
-  List<PackageRange> _dependencies;
+  Map<String, PackageRange> _dependencies;
 
   /// The packages this package depends on when it is the root package.
-  List<PackageRange> get devDependencies {
+  Map<String, PackageRange> get devDependencies {
     if (_devDependencies != null) return _devDependencies;
     _devDependencies = _parseDependencies(
         'dev_dependencies', fields.nodes['dev_dependencies']);
     return _devDependencies;
   }
 
-  List<PackageRange> _devDependencies;
+  Map<String, PackageRange> _devDependencies;
 
   /// The dependency constraints that this package overrides when it is the
   /// root package.
   ///
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
-  List<PackageRange> get dependencyOverrides {
+  Map<String, PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides;
     _dependencyOverrides = _parseDependencies(
         'dependency_overrides', fields.nodes['dependency_overrides']);
     return _dependencyOverrides;
   }
 
-  List<PackageRange> _dependencyOverrides;
+  Map<String, PackageRange> _dependencyOverrides;
 
   Map<String, Feature> get features {
     if (_features != null) return _features;
@@ -235,7 +235,7 @@ class Pubspec {
 
           var sdkConstraints = _parseEnvironment(specNode);
 
-          return new Feature(nameNode.value, dependencies,
+          return new Feature(nameNode.value, dependencies.values,
               requires: requires,
               dartSdkConstraint: sdkConstraints.first,
               flutterSdkConstraint: sdkConstraints.last,
@@ -608,11 +608,16 @@ class Pubspec {
       Map fields,
       SourceRegistry sources})
       : _version = version,
-        _dependencies = dependencies == null ? null : dependencies.toList(),
-        _devDependencies =
-            devDependencies == null ? null : devDependencies.toList(),
-        _dependencyOverrides =
-            dependencyOverrides == null ? null : dependencyOverrides.toList(),
+        _dependencies = dependencies == null
+            ? null
+            : new Map.fromIterable(dependencies, key: (range) => range.name),
+        _devDependencies = devDependencies == null
+            ? null
+            : new Map.fromIterable(devDependencies, key: (range) => range.name),
+        _dependencyOverrides = dependencyOverrides == null
+            ? null
+            : new Map.fromIterable(dependencyOverrides,
+                key: (range) => range.name),
         _dartSdkConstraint =
             dartSdkConstraint ?? includeDefaultSdkConstraint == true
                 ? _defaultUpperBoundSdkConstraint
@@ -629,8 +634,8 @@ class Pubspec {
       : _sources = null,
         _name = null,
         _version = Version.none,
-        _dependencies = <PackageRange>[],
-        _devDependencies = <PackageRange>[],
+        _dependencies = {},
+        _devDependencies = {},
         _dartSdkConstraint = VersionConstraint.any,
         _flutterSdkConstraint = null,
         _includeDefaultSdkConstraint = false,
@@ -715,9 +720,9 @@ class Pubspec {
   }
 
   /// Parses the dependency field named [field], and returns the corresponding
-  /// list of dependencies.
-  List<PackageRange> _parseDependencies(String field, YamlNode node) {
-    var dependencies = <PackageRange>[];
+  /// map of dependency names to dependencies.
+  Map<String, PackageRange> _parseDependencies(String field, YamlNode node) {
+    var dependencies = <String, PackageRange>{};
 
     // Allow an empty dependencies key.
     if (node == null || node.value == null) return dependencies;
@@ -799,8 +804,8 @@ class Pubspec {
             containingPath: pubspecPath);
       });
 
-      dependencies
-          .add(ref.withConstraint(versionConstraint).withFeatures(features));
+      dependencies[name] =
+          ref.withConstraint(versionConstraint).withFeatures(features);
     });
 
     return dependencies;

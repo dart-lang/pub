@@ -69,6 +69,19 @@ const reservedWords = const [
 /// An cryptographically secure instance of [math.Random].
 final random = new math.Random.secure();
 
+/// The default line length for output when there isn't a terminal attached to
+/// stdout.
+const _defaultLineLength = 100;
+
+/// The maximum line length for output.
+final int lineLength = () {
+  try {
+    return stdout.terminalColumns;
+  } on StdoutException {
+    return _defaultLineLength;
+  }
+}();
+
 /// A pair of values.
 class Pair<E, F> {
   E first;
@@ -327,6 +340,48 @@ T maxAll<T extends Comparable>(Iterable<T> iter,
   if (compare == null) compare = Comparable.compare;
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
+}
+
+/// Like [minBy], but with an asynchronous [orderBy] callback.
+Future<S> minByAsync<S, T>(
+    Iterable<S> values, Future<T> orderBy(S element)) async {
+  S minValue;
+  T minOrderBy;
+  for (var element in values) {
+    var elementOrderBy = await orderBy(element);
+    if (minOrderBy == null ||
+        (elementOrderBy as Comparable).compareTo(minOrderBy) < 0) {
+      minValue = element;
+      minOrderBy = elementOrderBy;
+    }
+  }
+  return minValue;
+}
+
+/// Like [List.sublist], but for any iterable.
+Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
+  if (end <= start) {
+    throw new RangeError.range(
+        end, start + 1, null, "end", "must be greater than start");
+  }
+  return values.skip(start).take(end - start);
+}
+
+/// Like [Iterable.fold], but for an asynchronous [combine] function.
+Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
+        Future<S> combine(S previous, T element)) =>
+    values.fold(
+        new Future.value(initialValue),
+        (previousFuture, element) =>
+            previousFuture.then((previous) => combine(previous, element)));
+
+/// Returns the first index in [list] for which [callback] returns `true`, or
+/// `-1` if there is no such index.
+int indexWhere<T>(List<T> list, bool callback(T element)) {
+  for (var i = 0; i < list.length; i++) {
+    if (callback(list[i])) return i;
+  }
+  return -1;
 }
 
 /// Replace each instance of [matcher] in [source] with the return value of
@@ -764,3 +819,48 @@ String createUuid([List<int> bytes]) {
   return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
       '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
 }
+
+/// Wraps [text] so that it fits within [lineLength].
+///
+/// This preserves existing newlines and doesn't consider terminal color escapes
+/// part of a word's length. It only splits words on spaces, not on other sorts
+/// of whitespace.
+///
+/// If [prefix] is passed, it's added at the beginning of any wrapped lines.
+String wordWrap(String text, {String prefix}) {
+  prefix ??= "";
+  return text.split("\n").map((originalLine) {
+    var buffer = new StringBuffer();
+    var lengthSoFar = 0;
+    var firstLine = true;
+    for (var word in originalLine.split(" ")) {
+      var wordLength = withoutColors(word).length;
+      if (wordLength > lineLength) {
+        if (lengthSoFar != 0) buffer.writeln();
+        if (!firstLine) buffer.write(prefix);
+        buffer.writeln(word);
+        firstLine = false;
+      } else if (lengthSoFar == 0) {
+        if (!firstLine) buffer.write(prefix);
+        buffer.write(word);
+        lengthSoFar = wordLength + prefix.length;
+      } else if (lengthSoFar + 1 + wordLength > lineLength) {
+        buffer.writeln();
+        buffer.write(prefix);
+        buffer.write(word);
+        lengthSoFar = wordLength + prefix.length;
+        firstLine = false;
+      } else {
+        buffer.write(" $word");
+        lengthSoFar += 1 + wordLength;
+      }
+    }
+    return buffer.toString();
+  }).join("\n");
+}
+
+/// A regular expression matching terminal color codes.
+final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
+
+/// Returns [str] without any color codes.
+String withoutColors(String str) => str.replaceAll(_colorCode, '');

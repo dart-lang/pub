@@ -23,7 +23,8 @@ import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'solver.dart';
+import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -172,14 +173,22 @@ class GlobalPackages {
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
-    var result = await resolveVersions(SolveType.GET, cache, root);
-    if (!result.succeeded) {
-      // If the package specified by the user doesn't exist, we want to
-      // surface that as a [DataError] with the associated exit code.
-      if (result.error.package != dep.name) throw result.error;
-      if (result.error is NoVersionException) dataError(result.error.message);
-      throw result.error;
+    //
+    // TODO(nweiz): If this produces a SolveFailure that's caused by [dep] not
+    // being available, report that as a [dataError].
+    SolveResult result;
+    try {
+      result = await resolveVersions(SolveType.GET, cache, root);
+    } on SolveFailure catch (error) {
+      for (var incompatibility
+          in error.incompatibility.externalIncompatibilities) {
+        if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
+        if (incompatibility.terms.single.package.name != dep.name) continue;
+        dataError(error.toString());
+      }
+      rethrow;
     }
+
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.

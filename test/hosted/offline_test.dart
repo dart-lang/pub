@@ -63,9 +63,10 @@ main() {
       await pubCommand(command,
           args: ['--offline'],
           exitCode: exit_codes.UNAVAILABLE,
-          error: "Could not find package foo in cache.\n"
-              "Depended on by:\n"
-              "- myapp");
+          error: equalsIgnoringWhitespace("""
+            Because myapp depends on foo any which doesn't exist (could not find
+              package foo in cache), version solving failed.
+          """));
     });
 
     test('fails gracefully if no cached versions match', () async {
@@ -79,9 +80,10 @@ main() {
       await d.appDir({"foo": ">2.0.0"}).create();
 
       await pubCommand(command,
-          args: ['--offline'],
-          error: "Package foo has no versions that match >2.0.0 derived from:\n"
-              "- myapp depends on version >2.0.0");
+          args: ['--offline'], error: equalsIgnoringWhitespace("""
+            Because myapp depends on foo >2.0.0 which doesn't match any
+              versions, version solving failed.
+          """));
     });
 
     test(
@@ -97,9 +99,10 @@ main() {
       await pubCommand(command,
           args: ['--offline'],
           exitCode: exit_codes.UNAVAILABLE,
-          error: "Could not find package foo in cache.\n"
-              "Depended on by:\n"
-              "- myapp");
+          error: equalsIgnoringWhitespace("""
+            Because myapp depends on foo any which doesn't exist (could not find
+              package foo in cache), version solving failed.
+          """));
     });
 
     test('downgrades to the version in the cache if necessary', () async {
