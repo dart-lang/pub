@@ -202,6 +202,27 @@ void withLockFile() {
       'newdep': '2.0.0'
     }, tries: 2);
   });
+
+  // Issue 1853
+  test(
+      "produces a nice message for a locked dependency that's the only "
+      "version of its package", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'});
+      builder.serve('bar', '1.0.0');
+      builder.serve('bar', '2.0.0');
+    });
+
+    await d.appDir({'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
+
+    await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
+    await expectResolves(error: equalsIgnoringWhitespace('''
+      Because every version of foo depends on bar >=2.0.0 and myapp depends on
+        bar <2.0.0, foo is forbidden.
+      So, because myapp depends on foo any, version solving failed.
+    '''));
+  });
 }
 
 void rootDependency() {
