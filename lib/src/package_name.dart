@@ -372,4 +372,12 @@ class PackageDetail {
       : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false,
         showFeatures = showFeatures ?? true;
+
+  /// Returns a [PackageDetail] with the maximum amount of detail between [this]
+  /// and [other].
+  PackageDetail max(PackageDetail other) => new PackageDetail(
+      showVersion: this.showVersion || other.showVersion,
+      showSource: this.showSource || other.showSource,
+      showDescription: this.showDescription || other.showDescription,
+      showFeatures: this.showFeatures || other.showFeatures);
 }
