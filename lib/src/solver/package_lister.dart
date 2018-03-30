@@ -233,7 +233,10 @@ class PackageLister {
     }
 
     var versions = await _versions;
-    var index = indexWhere(versions, (other) => identical(id, other));
+    var index = lowerBound(versions, id,
+        compare: (id1, id2) => id1.version.compareTo(id2.version));
+    assert(index < versions.length);
+    assert(versions[index].version == id.version);
 
     var dartSdkIncompatibility = await _checkSdkConstraint(index);
     if (dartSdkIncompatibility != null) return [dartSdkIncompatibility];

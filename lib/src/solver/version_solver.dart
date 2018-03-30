@@ -388,11 +388,20 @@ class VersionSolver {
     }
 
     if (version == null) {
-      // If there are no versions that satisfy [package.constraint], add an
-      // incompatibility that indicates that.
-      _addIncompatibility(new Incompatibility(
-          [new Term(package, true)], IncompatibilityCause.noVersions));
-      return package.name;
+      // If the constraint excludes only a single version, it must have come
+      // from the inverse of a lockfile's dependency. In that case, we request
+      // any version instead so that the lister gives us more general
+      // incompatibilities. This makes error reporting much nicer.
+      if (_excludesSingleVersion(package.constraint)) {
+        version =
+            await _packageLister(package).bestVersion(VersionConstraint.any);
+      } else {
+        // If there are no versions that satisfy [package.constraint], add an
+        // incompatibility that indicates that.
+        _addIncompatibility(new Incompatibility(
+            [new Term(package, true)], IncompatibilityCause.noVersions));
+        return package.name;
+      }
     }
 
     var conflict = false;
@@ -427,6 +436,10 @@ class VersionSolver {
           .add(incompatibility);
     }
   }
+
+  /// Returns whether [constraint] allows all versions except one.
+  bool _excludesSingleVersion(VersionConstraint constraint) =>
+      VersionConstraint.any.difference(constraint) is Version;
 
   /// Creates a [SolveResult] from the decisions in [_solution].
   Future<SolveResult> _result() async {

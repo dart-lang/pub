@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
+
 import '../exceptions.dart';
 import '../flutter.dart' as flutter;
 import '../log.dart' as log;
@@ -278,6 +280,10 @@ class _Writer {
         var collapsedExt = derivedCause.conflict.cause is ConflictCause
             ? derivedCause.other
             : derivedCause.conflict;
+
+        detailsForCause = mergeMaps(
+            detailsForCause, _detailsForCause(derivedCause),
+            value: (detail1, detail2) => detail1.max(detail2));
 
         _visit(collapsedDerived, detailsForCause);
         _write(
