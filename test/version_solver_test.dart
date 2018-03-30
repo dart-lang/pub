@@ -1797,6 +1797,29 @@ void override() {
 
     await expectResolves(result: {'foo': '0.0.0'});
   });
+
+  // Regression test for #1853
+  test("overrides a locked package's dependency", () async {
+    await servePackages((builder) {
+      builder.serve("foo", "1.2.3", deps: {"bar": "1.2.3"});
+      builder.serve("bar", "1.2.3");
+      builder.serve("bar", "0.0.1");
+    });
+
+    await d.appDir({"foo": "any"}).create();
+
+    await expectResolves(result: {'foo': '1.2.3', 'bar': '1.2.3'});
+
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "dependencies": {"foo": "any"},
+        "dependency_overrides": {"bar": '0.0.1'}
+      })
+    ]).create();
+
+    await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
+  });
 }
 
 void downgrade() {

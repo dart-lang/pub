@@ -227,6 +227,7 @@ class PackageLister {
         return incompatibilities;
       } else {
         return pubspec.dependencies.values
+            .where((range) => !_overriddenPackages.contains(range.name))
             .map((range) => _dependency(depender, range))
             .toList();
       }
