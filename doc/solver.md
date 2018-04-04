@@ -87,7 +87,8 @@ The fundamental unit on which Pubgrub operates is a `Term`, which represents a
 statement about a package that may be true or false for a given selection of
 package versions. For example, `foo ^1.0.0` is a term that's true if `foo 1.2.3`
 is selected and false if `foo 2.3.4` is selected. Conversely, `not foo ^1.0.0`
-is false if `foo 1.2.3` is selected and true if `foo 2.3.4` is selected.
+is false if `foo 1.2.3` is selected and true if `foo 2.3.4` is selected or if
+no version of `foo` is selected at all.
 
 We say that a set of terms `S` "satisfies" a term `t` if `t` must be true
 whenever every term in `S` is true. Conversely, `S` "contradicts" `t` if `t`
