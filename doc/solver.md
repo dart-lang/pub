@@ -181,7 +181,7 @@ than the root package. This is used to determine how far back to look for root
 causes during [conflict resolution](#conflict-resolution), and how far back to
 jump when a conflict is found.
 
-If a partial solution has, for every positive assignment, a corresponding
+If a partial solution has, for every positive derivation, a corresponding
 decision that satisfies that assignment, it's a total solution and version
 solving has succeeded.
 
