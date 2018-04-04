@@ -97,7 +97,7 @@ we say that `S` is "inconclusive" for `t`. As a shorthand, we say that a term
 `v` satisfies or contradicts `t` if `{v}` satisfies or contradicts it. For
 example:
 
-* `{foo >=1.0.0, foo <2.0.0}` satisfies `foo ^2.0.0`,
+* `{foo >=1.0.0, foo <2.0.0}` satisfies `foo ^1.0.0`,
 * `foo ^1.5.0` contradicts `not foo ^1.0.0`,
 * and `foo ^1.0.0` is inconclusive for `foo ^1.5.0`.
 
