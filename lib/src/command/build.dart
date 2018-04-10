@@ -74,7 +74,7 @@ class BuildCommand extends BarbackCommand {
         if (logToStdError) log.error(log.red("Build error:\n$error"));
         hasError = true;
 
-        if (log.json.enabled) {
+        if (log.jsonLog.enabled) {
           // Wrap the error in a map in case we end up decorating it with
           // more properties later.
           errorsJson.add({"error": error.toString()});
@@ -87,7 +87,7 @@ class BuildCommand extends BarbackCommand {
 
       // If we're using JSON output, the regular server logging is disabled.
       // Instead, we collect it here to include in the final JSON result.
-      if (log.json.enabled) {
+      if (log.jsonLog.enabled) {
         environment.barback.log
             .listen((entry) => logJson.add(_logEntryToJson(entry)));
       }
@@ -120,7 +120,7 @@ class BuildCommand extends BarbackCommand {
 
       if (hasError) {
         log.error(log.red("Build failed."));
-        log.json.message(
+        log.jsonLog.message(
             {"buildResult": "failure", "errors": errorsJson, "log": logJson});
         return flushThenExit(exit_codes.DATA);
       } else {
@@ -134,7 +134,7 @@ class BuildCommand extends BarbackCommand {
 
         log.message('Built $builtFiles ${pluralize('file', builtFiles)} '
             'to "$outputDirectory".');
-        log.json.message({
+        log.jsonLog.message({
           "buildResult": "success",
           "outputDirectory": outputDirectory,
           "numFiles": builtFiles,
@@ -145,7 +145,7 @@ class BuildCommand extends BarbackCommand {
       // If [getAllAssets()] throws a BarbackException, the error has already
       // been reported.
       log.error(log.red("Build failed."));
-      log.json.message(
+      log.jsonLog.message(
           {"buildResult": "failure", "errors": errorsJson, "log": logJson});
 
       return flushThenExit(exit_codes.DATA);

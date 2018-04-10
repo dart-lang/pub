@@ -41,7 +41,7 @@ class Progress {
     // with non-JSON output.
     if (stdioType(stdout) != StdioType.TERMINAL ||
         !log.verbosity.isLevelVisible(level) ||
-        log.json.enabled ||
+        log.jsonLog.enabled ||
         fine ||
         log.verbosity.isLevelVisible(log.Level.FINE)) {
       // Not animating, so just log the start and wait until the task is

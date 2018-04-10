@@ -85,7 +85,7 @@ class AssetEnvironment {
     basePort ??= 0;
     environmentConstants ??= {};
     compiler ??= Compiler.dart2JS;
-    buildDelay ??= Duration.ZERO;
+    buildDelay ??= Duration.zero;
 
     return log.progress("Loading asset environment", () async {
       var graph = _adjustPackageGraph(entrypoint.packageGraph, mode, packages);
@@ -677,7 +677,7 @@ class AssetEnvironment {
   /// place.
   void _scheduleUpdate() {
     if (_updatesPaused) return;
-    if (_buildDelay == Duration.ZERO) {
+    if (_buildDelay == Duration.zero) {
       _doUpdate();
       return;
     }

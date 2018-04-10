@@ -54,7 +54,7 @@ main() {
     await pubGet();
     var server = await pubServe();
     await requestShouldSucceed(
-        "foo.txt", JSON.encode({"package": "myapp", "path": "nonexistent"}));
+        "foo.txt", json.encode({"package": "myapp", "path": "nonexistent"}));
     await endPubServe();
 
     // Since the AssetNotFoundException was caught and handled, the server

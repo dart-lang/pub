@@ -20,8 +20,8 @@ import 'utils.dart';
 
 /// The singleton instance so that we can have a nice api like:
 ///
-///     log.json.error(...);
-final json = new _JsonLogger();
+///     log.jsonLog.error(...);
+final jsonLog = new _JsonLogger();
 
 /// The current logging verbosity.
 Verbosity verbosity = Verbosity.NORMAL;
@@ -350,12 +350,12 @@ void exception(exception, [StackTrace trace]) {
   }
   fine("Exception type: ${exception.runtimeType}");
 
-  if (json.enabled) {
+  if (jsonLog.enabled) {
     if (exception is UsageException) {
       // Don't print usage info in JSON output.
-      json.error(exception.message);
+      jsonLog.error(exception.message);
     } else {
-      json.error(exception);
+      jsonLog.error(exception);
     }
   }
 
@@ -553,7 +553,7 @@ void _logToStderrWithLabel(Entry entry) {
 }
 
 void _logToStream(IOSink sink, Entry entry, {bool showLabel}) {
-  if (json.enabled) return;
+  if (jsonLog.enabled) return;
 
   _printToStream(sink, entry, showLabel: showLabel);
 }
@@ -617,7 +617,7 @@ class _JsonLogger {
   void message(message) {
     if (!enabled) return;
 
-    print(JSON.encode(message));
+    print(json.encode(message));
   }
 }
 

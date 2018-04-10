@@ -72,7 +72,7 @@ main() {
 
     await pubGet();
     await pubServe();
-    await requestShouldSucceed("foo.json", JSON.encode(configuration));
+    await requestShouldSucceed("foo.json", json.encode(configuration));
     await requestShould404("foo.out");
     await endPubServe();
   });

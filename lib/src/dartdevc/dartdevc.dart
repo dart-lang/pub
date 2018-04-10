@@ -175,8 +175,9 @@ for (let moduleName of Object.getOwnPropertyNames(modulePaths)) {
       modulePaths.forEach((name, path) {
         if (name != path) customModulePaths[name] = path;
       });
-      var json = const JsonEncoder.withIndent(" ").convert(customModulePaths);
-      bootstrapContent.write('let customModulePaths = ${json};\n');
+      var encoded =
+          const JsonEncoder.withIndent(" ").convert(customModulePaths);
+      bootstrapContent.write('let customModulePaths = ${encoded};\n');
     }
 
     bootstrapContent.write('''

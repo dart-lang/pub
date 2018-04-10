@@ -176,7 +176,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
     }
 
     throw new FormatException('Invalid value for '
-        '\$dart2js.commandLineOptions: ${JSON.encode(options)} (expected list '
+        '\$dart2js.commandLineOptions: ${json.encode(options)} (expected list '
         'of strings).');
   }
 
@@ -195,7 +195,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
     }
 
     throw new FormatException('Invalid value for \$dart2js.environment: '
-        '${JSON.encode(environment)} (expected map from strings to strings).');
+        '${json.encode(environment)} (expected map from strings to strings).');
   }
 
   /// Parses and returns a boolean configuration option.
@@ -206,7 +206,7 @@ class Dart2JSTransformer extends Transformer implements LazyTransformer {
     var value = _settings.configuration[name];
     if (value is bool) return value;
     throw new FormatException('Invalid value for \$dart2js.$name: '
-        '${JSON.encode(value)} (expected true or false).');
+        '${json.encode(value)} (expected true or false).');
   }
 }
 
@@ -337,7 +337,7 @@ class _BarbackCompilerProvider implements dart.CompilerProvider {
     var sink = new StreamController<String>();
 
     // dart2js gives us strings, but stream assets expect byte lists.
-    var stream = UTF8.encoder.bind(sink.stream);
+    var stream = utf8.encoder.bind(sink.stream);
 
     // And give it to barback as a stream it can read from.
     _transform.addOutput(new Asset.fromStream(id, stream));

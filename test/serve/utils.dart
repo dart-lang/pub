@@ -323,7 +323,7 @@ Future _ensureWebSocket() async {
   _webSocket = socket;
   // TODO(rnystrom): Works around #13913.
   _webSocketBroadcastStream = _webSocket
-      .map((message) => JSON.decode(message as String))
+      .map((message) => json.decode(message as String))
       .asBroadcastStream();
 }
 
@@ -403,7 +403,7 @@ Future<Map> _jsonRpcRequest(String method, [Map params]) async {
   var id = _rpcId++;
   var message = {"jsonrpc": "2.0", "method": method, "id": id};
   if (params != null) message["params"] = params;
-  _webSocket.add(JSON.encode(message));
+  _webSocket.add(json.encode(message));
 
   var value = await _webSocketBroadcastStream
       .firstWhere((response) => response["id"] == id);

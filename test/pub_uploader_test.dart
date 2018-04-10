@@ -70,7 +70,7 @@ main() {
         expect(body, equals('email=email'));
 
         return new shelf.Response.ok(
-            JSON.encode({
+            json.encode({
               'success': {'message': 'Good job!'}
             }),
             headers: {'content-type': 'application/json'});
@@ -90,7 +90,7 @@ main() {
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
         (request) {
       return new shelf.Response.ok(
-          JSON.encode({
+          json.encode({
             'success': {'message': 'Good job!'}
           }),
           headers: {'content-type': 'application/json'});
@@ -110,7 +110,7 @@ main() {
     server.handler.expect('POST', '/api/packages/test_pkg/uploaders',
         (request) {
       return new shelf.Response.ok(
-          JSON.encode({
+          json.encode({
             'success': {'message': 'Good job!'}
           }),
           headers: {'content-type': 'application/json'});
@@ -128,7 +128,7 @@ main() {
 
     server.handler.expect('POST', '/api/packages/pkg/uploaders', (request) {
       return new shelf.Response(400,
-          body: JSON.encode({
+          body: json.encode({
             'error': {'message': 'Bad job!'}
           }),
           headers: {'content-type': 'application/json'});
@@ -147,7 +147,7 @@ main() {
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail',
         (request) {
       return new shelf.Response(400,
-          body: JSON.encode({
+          body: json.encode({
             'error': {'message': 'Bad job!'}
           }),
           headers: {'content-type': 'application/json'});

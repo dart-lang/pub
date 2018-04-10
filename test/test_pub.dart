@@ -56,7 +56,7 @@ Matcher isUnminifiedDart2JSOutput =
 final _entrypoint = new Entrypoint(pubRoot, new SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
-String yaml(value) => JSON.encode(value);
+String yaml(value) => json.encode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
@@ -409,7 +409,7 @@ class PubProcess extends TestProcess {
       description = "$humanExecutable ${arguments.join(" ")}";
     }
 
-    encoding ??= UTF8;
+    encoding ??= utf8;
     return new PubProcess(process, description,
         encoding: encoding, forwardStdio: forwardStdio);
   }
@@ -720,7 +720,7 @@ void _validateOutputJson(
     List<String> failures, String pipe, expected, String actualText) {
   var actual;
   try {
-    actual = JSON.decode(actualText);
+    actual = json.decode(actualText);
   } on FormatException {
     failures.add('Expected $pipe JSON:');
     failures.add(expected);

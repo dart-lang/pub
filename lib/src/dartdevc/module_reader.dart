@@ -114,7 +114,7 @@ class ModuleReader {
     return _moduleConfigFutures.putIfAbsent(moduleConfigId, () async {
       var modules = <Module>[];
       var content = await assetReader(moduleConfigId);
-      var serializedModules = JSON.decode(content) as List<List<List<dynamic>>>;
+      var serializedModules = json.decode(content) as List<List<List<dynamic>>>;
       for (var serializedModule in serializedModules) {
         var module = new Module.fromJson(serializedModule);
         modules.add(module);

@@ -76,8 +76,8 @@ Future moduleRequestShouldSucceed(
   var expected = unorderedMatches(
       expectedModules.map((module) => equalsModule(module)).toList());
   var response = await requestFromPub(uri);
-  var json = JSON.decode(response.body);
+  var decoded = json.decode(response.body);
   var modules =
-      json.map((serialized) => new Module.fromJson(serialized)).toList();
+      decoded.map((serialized) => new Module.fromJson(serialized)).toList();
   expect(modules, expected);
 }
