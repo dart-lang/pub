@@ -113,7 +113,7 @@ class TransformerIsolate {
       var transformers = (await call<List>(_port, {
         'library': _idsToUrls[config.id].toString(),
         'mode': _mode.name,
-        'configuration': JSON.encode(config.configuration)
+        'configuration': jsonEncode(config.configuration)
       }))
           .map((transformer) => deserializeTransformerLike(transformer, config))
           .toSet();

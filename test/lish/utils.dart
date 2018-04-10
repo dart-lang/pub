@@ -22,7 +22,7 @@ void handleUploadForm(ShelfTestServer server, [Map body]) {
       };
     }
 
-    return new shelf.Response.ok(JSON.encode(body),
+    return new shelf.Response.ok(jsonEncode(body),
         headers: {'content-type': 'application/json'});
   });
 }

@@ -22,7 +22,7 @@ main() {
     await confirmPublish(pub);
 
     server.handler.expect('GET', '/api/packages/versions/new', (request) {
-      return new shelf.Response.notFound(JSON.encode({
+      return new shelf.Response.notFound(jsonEncode({
         'error': {'message': 'your request sucked'}
       }));
     });

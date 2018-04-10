@@ -25,7 +25,7 @@ main() {
       // A lock file with the hosted source.
       d.file(
           "pubspec.lock",
-          JSON.encode({
+          jsonEncode({
             'packages': {
               'foo': {
                 'version': '0.0.0',

@@ -1076,7 +1076,7 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       // relative to the current working directory, not the "--directory"
       // argument.
       var process = await startProcess("tar", args, workingDir: baseDir);
-      process.stdin.add(UTF8.encode(stdin));
+      process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
     }

@@ -144,7 +144,7 @@ class BoundHostedSource extends CachedSource {
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
 
-    var doc = JSON.decode(body);
+    var doc = jsonDecode(body);
     return doc['versions'].map((map) {
       var pubspec = new Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
@@ -180,7 +180,7 @@ class BoundHostedSource extends CachedSource {
     var version;
     try {
       version =
-          JSON.decode(await httpClient.read(url, headers: PUB_API_HEADERS));
+          jsonDecode(await httpClient.read(url, headers: PUB_API_HEADERS));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);

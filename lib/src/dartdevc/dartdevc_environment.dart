@@ -209,7 +209,7 @@ class DartDevcEnvironment {
     var moduleMode =
         moduleDir == 'lib' ? ModuleMode.public : ModuleMode.private;
     var modules = await computeModules(moduleMode, moduleAssets);
-    var encoded = JSON.encode(modules);
+    var encoded = jsonEncode(modules);
     return new Asset.fromString(id, encoded);
   }
 

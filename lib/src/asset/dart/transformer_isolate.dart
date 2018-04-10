@@ -23,7 +23,7 @@ void loadTransformers(SendPort replyTo) {
     // TODO(nweiz): When issue 19228 is fixed, spin up a separate isolate for
     // libraries loaded beyond the first so they can run in parallel.
     respond(wrappedMessage, (message) {
-      var configuration = JSON.decode(message['configuration']);
+      var configuration = jsonDecode(message['configuration']);
       var mode = new BarbackMode(message['mode']);
       return _initialize(message['library'], configuration, mode)
           .map(serializeTransformerLike)

@@ -107,7 +107,7 @@ class InMemoryModuleConfigManager {
     var package = modules.first.id.package;
     assert(modules.every((m) => m.id.package == package));
     configId ??= new AssetId(package, 'lib/$moduleConfigName');
-    _moduleConfigs[configId] = JSON.encode(modules);
+    _moduleConfigs[configId] = jsonEncode(modules);
     return configId;
   }
 

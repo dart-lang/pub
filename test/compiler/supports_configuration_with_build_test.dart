@@ -22,7 +22,7 @@ main() {
         d.dir('packages', [
           d.file(
               'browser',
-              JSON.encode({
+              jsonEncode({
                 'versions': [
                   packageVersionApiMap(packageMap('browser', '1.0.0'))
                 ]
@@ -31,7 +31,7 @@ main() {
             d.dir('versions', [
               d.file(
                   '1.0.0',
-                  JSON.encode(packageVersionApiMap(
+                  jsonEncode(packageVersionApiMap(
                       packageMap('browser', '1.0.0'),
                       full: true)))
             ])

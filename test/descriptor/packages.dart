@@ -44,7 +44,7 @@ class PackagesFileDescriptor extends Descriptor {
       });
       var buffer = new StringBuffer();
       packages_file.write(buffer, mapping);
-      contents = UTF8.encode(buffer.toString());
+      contents = utf8.encode(buffer.toString());
     }
     return new File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
   }

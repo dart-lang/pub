@@ -14,7 +14,7 @@ void main() {
   group('ModuleId', () {
     test('can go to and from json', () {
       var id = makeModuleId();
-      var newId = new ModuleId.fromJson(JSON.decode(JSON.encode(id)));
+      var newId = new ModuleId.fromJson(jsonDecode(jsonEncode(id)));
       expect(newId, equals(id));
       expect(newId.hashCode, equals(id.hashCode));
     });
@@ -23,15 +23,15 @@ void main() {
   group('Module', () {
     test('can go to and from json', () {
       var module = makeModule();
-      var newModule = new Module.fromJson(JSON.decode(JSON.encode(module)));
+      var newModule = new Module.fromJson(jsonDecode(jsonEncode(module)));
       expect(module, equalsModule(newModule));
     });
 
     test('can be serialized in a list', () {
       var modules = makeModules();
-      var serialized = JSON.encode(modules);
+      var serialized = jsonEncode(modules);
       var newModules =
-          JSON.decode(serialized).map((s) => new Module.fromJson(s)).toList();
+          jsonDecode(serialized).map((s) => new Module.fromJson(s)).toList();
       expect(modules.length, equals(newModules.length));
       for (int i = 0; i < modules.length; i++) {
         expect(modules[i], equalsModule(newModules[i]));

@@ -34,7 +34,7 @@ main() {
     server.handler.expect('POST', '/token', (request) {
       return drainStream(request.read()).then((_) {
         return new shelf.Response(400,
-            body: JSON.encode({"error": "invalid_request"}),
+            body: jsonEncode({"error": "invalid_request"}),
             headers: {'content-type': 'application/json'});
       });
     });
