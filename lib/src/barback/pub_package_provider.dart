@@ -17,7 +17,7 @@ import '../io.dart';
 import '../package.dart';
 import '../package_graph.dart';
 import '../preprocess.dart';
-import '../sdk.dart' as sdk;
+import '../sdk.dart';
 
 /// The path to the lib directory of the compiler_unsupported package used by
 /// pub.

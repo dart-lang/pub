@@ -18,7 +18,7 @@ import 'feature.dart';
 import 'io.dart';
 import 'log.dart';
 import 'package_name.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
@@ -237,8 +237,7 @@ class Pubspec {
 
           return new Feature(nameNode.value, dependencies.values,
               requires: requires,
-              dartSdkConstraint: sdkConstraints.first,
-              flutterSdkConstraint: sdkConstraints.last,
+              sdkConstraints: sdkConstraints,
               onByDefault: onByDefault);
         });
     return _features;
@@ -322,57 +321,45 @@ class Pubspec {
     });
   }
 
-  /// The constraint on the Dart SDK, with [_defaultUpperBoundSdkConstraint] if
-  /// none is specified.
-  ///
-  /// This also includes the pre-release override if
-  /// [allowPreReleaseTwoDotZeroSdk] is `true`.
-  VersionConstraint get dartSdkConstraint {
+  /// A map from SDK identifiers to constraints on those SDK versions.
+  Map<String, VersionConstraint> get sdkConstraints {
     _ensureEnvironment();
-    return _dartSdkConstraint;
+    return _sdkConstraints;
   }
 
-  VersionConstraint _dartSdkConstraint;
+  Map<String, VersionConstraint> _sdkConstraints;
 
-  /// The original Dart SDK constraint, if [dartSdkWasOverridden] is `true`,
-  /// otherwise this will be identical to [dartSdkConstraint].
+  /// The original Dart SDK constraint as written in the pubspec.
+  ///
+  /// If [dartSdkWasOverridden] is `false`, this will be identical to
+  /// `sdkConstraints["dart"]`.
   VersionConstraint get originalDartSdkConstraint {
     _ensureEnvironment();
-    return _originalDartSdkConstraint ?? dartSdkConstraint;
+    return _originalDartSdkConstraint ?? sdkConstraints["dart"];
   }
 
   VersionConstraint _originalDartSdkConstraint;
 
-  /// The constraint on the Flutter SDK, or `null` if none is specified.
-  VersionConstraint get flutterSdkConstraint {
-    _ensureEnvironment();
-    return _flutterSdkConstraint;
-  }
-
-  VersionConstraint _flutterSdkConstraint;
-
   /// Ensures that the top-level "environment" field has been parsed and
-  /// [_dartSdkConstraint] and [_flutterSdkConstraint] are set accordingly.
+  /// [_sdkConstraints] is set accordingly.
   void _ensureEnvironment() {
-    if (_dartSdkConstraint != null) return;
+    if (_sdkConstraints != null) return;
 
-    var pair = _parseEnvironment(fields);
-    var parsedDartSdkConstraint = pair.first;
+    var sdkConstraints = _parseEnvironment(fields);
+    var parsedDartSdkConstraint = sdkConstraints["dart"];
 
     if (parsedDartSdkConstraint is VersionRange &&
         _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
       _originalDartSdkConstraint = parsedDartSdkConstraint;
       _dartSdkWasOverridden = true;
-      _dartSdkConstraint = new VersionRange(
+      sdkConstraints["dart"] = new VersionRange(
           min: parsedDartSdkConstraint.min,
           includeMin: parsedDartSdkConstraint.includeMin,
           max: sdk.version,
           includeMax: true);
-    } else {
-      _dartSdkConstraint = parsedDartSdkConstraint;
     }
 
-    _flutterSdkConstraint = pair.last;
+    _sdkConstraints = new UnmodifiableMapView(sdkConstraints);
   }
 
   /// Whether or not we should override [sdkConstraint] to be <= the user's
@@ -405,16 +392,16 @@ class Pubspec {
         sdkConstraint.max.patch == sdk.version.patch;
   }
 
-  /// Parses the "environment" field in [parent] and returns the Dart and
-  /// Flutter SDK constraints, respectively.
-  Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
+  /// Parses the "environment" field in [parent] and returns a map from SDK
+  /// identifiers to constraints on those SDKs.
+  Map<String, VersionConstraint> _parseEnvironment(YamlMap parent) {
     var yaml = parent['environment'];
     if (yaml == null) {
-      return new Pair(
-          _includeDefaultSdkConstraint
-              ? _defaultUpperBoundSdkConstraint
-              : VersionConstraint.any,
-          null);
+      return {
+        "dart": _includeDefaultSdkConstraint
+            ? _defaultUpperBoundSdkConstraint
+            : VersionConstraint.any
+      };
     }
 
     if (yaml is! Map) {
@@ -422,14 +409,24 @@ class Pubspec {
           parent.nodes['environment'].span);
     }
 
-    return new Pair(
-        _parseVersionConstraint(yaml.nodes['sdk'],
-            defaultUpperBoundConstraint: _includeDefaultSdkConstraint
-                ? _defaultUpperBoundSdkConstraint
-                : null),
-        yaml.containsKey('flutter')
-            ? _parseVersionConstraint(yaml.nodes['flutter'])
-            : null);
+    var constraints = {
+      "dart": _parseVersionConstraint(yaml.nodes['sdk'],
+          defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+              ? _defaultUpperBoundSdkConstraint
+              : null)
+    };
+    yaml.nodes.forEach((name, constraint) {
+      if (name.value is! String) {
+        _error('SDK names must be strings.', name.span);
+      } else if (name.value == "dart") {
+        _error('Use "sdk" to for Dart SDK constraints.', name.span);
+      }
+      if (name.value == "sdk") return;
+
+      constraints[name.value as String] = _parseVersionConstraint(constraint);
+    });
+
+    return constraints;
   }
 
   /// The URL of the server that the package should default to being published
@@ -601,9 +598,6 @@ class Pubspec {
       Iterable<PackageRange> dependencies,
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
-      VersionConstraint dartSdkConstraint,
-      bool includeDefaultSdkConstraint,
-      VersionConstraint flutterSdkConstraint,
       Iterable<Iterable<TransformerConfig>> transformers,
       Map fields,
       SourceRegistry sources})
@@ -618,12 +612,9 @@ class Pubspec {
             ? null
             : new Map.fromIterable(dependencyOverrides,
                 key: (range) => range.name),
-        _dartSdkConstraint =
-            dartSdkConstraint ?? includeDefaultSdkConstraint == true
-                ? _defaultUpperBoundSdkConstraint
-                : VersionConstraint.any,
-        _flutterSdkConstraint = flutterSdkConstraint,
-        _includeDefaultSdkConstraint = includeDefaultSdkConstraint,
+        _sdkConstraints =
+            new UnmodifiableMapView({"dart": VersionConstraint.any}),
+        _includeDefaultSdkConstraint = false,
         _transformers = transformers == null
             ? []
             : transformers.map((phase) => phase.toSet()).toList(),
@@ -636,8 +627,7 @@ class Pubspec {
         _version = Version.none,
         _dependencies = {},
         _devDependencies = {},
-        _dartSdkConstraint = VersionConstraint.any,
-        _flutterSdkConstraint = null,
+        _sdkConstraints = {"dart": VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
         _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();

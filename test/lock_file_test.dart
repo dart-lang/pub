@@ -105,9 +105,11 @@ packages:
 
       test("allows an old-style SDK constraint", () {
         var lockFile = new LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
-        expect(lockFile.dartSdkConstraint,
-            equals(new VersionConstraint.parse('>=1.2.3 <4.0.0')));
-        expect(lockFile.flutterSdkConstraint, isNull);
+        expect(
+            lockFile.sdkConstraints,
+            containsPair(
+                'dart', new VersionConstraint.parse('>=1.2.3 <4.0.0')));
+        expect(lockFile.sdkConstraints, isNot(contains('flutter')));
       });
 
       test("allows new-style SDK constraints", () {
@@ -116,10 +118,12 @@ sdks:
   dart: ">=1.2.3 <4.0.0"
   flutter: ^0.1.2
 ''', sources);
-        expect(lockFile.dartSdkConstraint,
-            equals(new VersionConstraint.parse('>=1.2.3 <4.0.0')));
-        expect(lockFile.flutterSdkConstraint,
-            equals(new VersionConstraint.parse('^0.1.2')));
+        expect(
+            lockFile.sdkConstraints,
+            containsPair(
+                'dart', new VersionConstraint.parse('>=1.2.3 <4.0.0')));
+        expect(lockFile.sdkConstraints,
+            containsPair('flutter', new VersionConstraint.parse('^0.1.2')));
       });
 
       test("throws if the top level is not a map", () {

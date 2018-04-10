@@ -28,7 +28,8 @@ main() {
         d.dir('bin/cache/pkg', [
           d.dir('baz',
               [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')])
-        ])
+        ]),
+        d.file('version', '1.2.3')
       ]).create();
     });
 

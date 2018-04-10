@@ -18,7 +18,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.

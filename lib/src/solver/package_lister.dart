@@ -9,13 +9,12 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
-import '../flutter.dart' as flutter;
 import '../http.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
-import '../sdk.dart' as sdk;
+import '../sdk.dart';
 import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -197,17 +196,16 @@ class PackageLister {
 
       var depender = id.toRange();
       _listedLockedVersion = true;
-      if (!_matchesDartSdkConstraint(pubspec)) {
-        return [
-          new Incompatibility([new Term(depender, true)],
-              new SdkCause(pubspec.dartSdkConstraint))
-        ];
-      } else if (!_matchesFlutterSdkConstraint(pubspec)) {
-        return [
-          new Incompatibility([new Term(depender, true)],
-              new SdkCause(pubspec.flutterSdkConstraint, flutter: true))
-        ];
-      } else if (id.isRoot) {
+      for (var sdk in sdks.values) {
+        if (!_matchesSdkConstraint(pubspec, sdk)) {
+          return [
+            new Incompatibility([new Term(depender, true)],
+                new SdkCause(pubspec.sdkConstraints[sdk.identifier], sdk))
+          ];
+        }
+      }
+
+      if (id.isRoot) {
         var incompatibilities = <Incompatibility>[];
 
         for (var range in pubspec.dependencies.values) {
@@ -239,12 +237,10 @@ class PackageLister {
     assert(index < versions.length);
     assert(versions[index].version == id.version);
 
-    var dartSdkIncompatibility = await _checkSdkConstraint(index);
-    if (dartSdkIncompatibility != null) return [dartSdkIncompatibility];
-
-    var flutterSdkIncompatibility =
-        await _checkSdkConstraint(index, flutter: true);
-    if (flutterSdkIncompatibility != null) return [flutterSdkIncompatibility];
+    for (var sdk in sdks.values) {
+      var sdkIncompatibility = await _checkSdkConstraint(index, sdk);
+      if (sdkIncompatibility != null) return [sdkIncompatibility];
+    }
 
     // Don't recompute dependencies that have already been emitted.
     var dependencies = new Map<String, PackageRange>.from(pubspec.dependencies);
@@ -285,16 +281,13 @@ class PackageLister {
           IncompatibilityCause.dependency);
 
   /// If the version at [index] in [_versions] isn't compatible with the current
-  /// SDK version, returns an [Incompatibility] indicating that.
+  /// version of [sdk], returns an [Incompatibility] indicating that.
   ///
   /// Otherwise, returns `null`.
-  Future<Incompatibility> _checkSdkConstraint(int index,
-      {bool flutter: false}) async {
+  Future<Incompatibility> _checkSdkConstraint(int index, Sdk sdk) async {
     var versions = await _versions;
 
-    bool allowsSdk(Pubspec pubspec) => flutter
-        ? _matchesFlutterSdkConstraint(pubspec)
-        : _matchesDartSdkConstraint(pubspec);
+    bool allowsSdk(Pubspec pubspec) => _matchesSdkConstraint(pubspec, sdk);
 
     if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
@@ -313,12 +306,12 @@ class PackageLister {
         (previous, version) async {
       var pubspec = await _describeSafe(version);
       return previous.union(
-          flutter ? pubspec.flutterSdkConstraint : pubspec.dartSdkConstraint);
+          pubspec.sdkConstraints[sdk.identifier] ?? VersionConstraint.any);
     });
 
     return new Incompatibility(
         [new Term(_ref.withConstraint(incompatibleVersions), true)],
-        new SdkCause(sdkConstraint, flutter: flutter));
+        new SdkCause(sdkConstraint, sdk));
   }
 
   /// Returns the first and last indices in [_versions] of the contiguous set of
@@ -358,6 +351,7 @@ class PackageLister {
     var versions = await _versions;
     var bounds = <String, Version>{};
     var previous = versions[index];
+    outer:
     for (var id in upper
         ? versions.skip(index + 1)
         : versions.reversed.skip(versions.length - index)) {
@@ -370,12 +364,12 @@ class PackageLister {
 
       // Once we hit an incompatible version, it doesn't matter whether it has
       // the same dependencies.
-      if (!_matchesDartSdkConstraint(pubspec) ||
-          !_matchesFlutterSdkConstraint(pubspec)) {
+      for (var sdk in sdks.values) {
+        if (_matchesSdkConstraint(pubspec, sdk)) continue;
         for (var name in dependencies.keys) {
           bounds.putIfAbsent(name, () => boundary);
         }
-        break;
+        break outer;
       }
 
       for (var range in dependencies.values) {
@@ -406,19 +400,16 @@ class PackageLister {
     }
   }
 
-  /// Returns whether [pubspec]'s Dart SDK constraint matches the current Dart
-  /// SDK version.
-  bool _matchesDartSdkConstraint(Pubspec pubspec) =>
-      _overriddenPackages.contains(pubspec.name) ||
-      pubspec.dartSdkConstraint.allows(sdk.version);
+  /// Returns whether [pubspec]'s constraint on [sdk] matches the current
+  /// version.
+  bool _matchesSdkConstraint(Pubspec pubspec, Sdk sdk) {
+    if (_overriddenPackages.contains(pubspec.name)) return true;
 
-  /// Returns whether [pubspec]'s Flutter SDK constraint matches the current Flutter
-  /// SDK version.
-  bool _matchesFlutterSdkConstraint(Pubspec pubspec) =>
-      pubspec.flutterSdkConstraint == null ||
-      _overriddenPackages.contains(pubspec.name) ||
-      (flutter.isAvailable &&
-          pubspec.flutterSdkConstraint.allows(flutter.version));
+    var constraint = pubspec.sdkConstraints[sdk.identifier];
+    if (constraint == null) return true;
+
+    return sdk.isAvailable && constraint.allows(sdk.version);
+  }
 }
 
 /// A fake source that contains only the root package.

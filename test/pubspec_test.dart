@@ -5,7 +5,7 @@
 import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart' as sdk;
+import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
@@ -447,27 +447,31 @@ dependencies:
         var sdkVersionString = sdk.version.toString();
         if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
           expect(
-              pubspec.dartSdkConstraint,
-              new VersionConstraint.parse(
-                  '${pubspec.dartSdkConstraint} <=$sdkVersionString'));
+              pubspec.sdkConstraints,
+              containsPair(
+                  'dart',
+                  new VersionConstraint.parse(
+                      '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
         } else {
           expect(
-              pubspec.dartSdkConstraint,
-              new VersionConstraint.parse(
-                  "${pubspec.dartSdkConstraint} <2.0.0"));
+              pubspec.sdkConstraints,
+              containsPair(
+                  'dart',
+                  new VersionConstraint.parse(
+                      "${pubspec.sdkConstraints["dart"]} <2.0.0")));
         }
       }
 
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('name: testing', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
       });
 
       test("default SDK constraint can be omitted with empty environment", () {
         var pubspec = new Pubspec.parse('', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
       });
 
       test("defaults the upper constraint for the SDK", () {
@@ -477,7 +481,7 @@ dependencies:
     sdk: ">1.0.0"
   ''', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
       });
 
       test(
@@ -487,14 +491,14 @@ dependencies:
   environment:
     sdk: ">3.0.0"
   ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">3.0.0")));
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints,
+            containsPair('dart', new VersionConstraint.parse(">3.0.0")));
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
       });
 
       test("throws if the environment value isn't a map", () {
         expectPubspecException(
-            'environment: []', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: []', (pubspec) => pubspec.sdkConstraints);
       });
 
       test("allows a version constraint for the SDKs", () {
@@ -503,28 +507,30 @@ environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
 ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">=1.2.3 <2.3.4")));
-        expect(pubspec.flutterSdkConstraint,
-            equals(new VersionConstraint.parse("^0.1.2")));
+        expect(
+            pubspec.sdkConstraints,
+            containsPair(
+                'dart', new VersionConstraint.parse(">=1.2.3 <2.3.4")));
+        expect(pubspec.sdkConstraints,
+            containsPair('flutter', new VersionConstraint.parse("^0.1.2")));
       });
 
       test("throws if the sdk isn't a string", () {
         expectPubspecException(
-            'environment: {sdk: []}', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: {sdk: []}', (pubspec) => pubspec.sdkConstraints);
         expectPubspecException(
-            'environment: {sdk: 1.0}', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: {sdk: 1.0}', (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: []}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: 1.0}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
       });
 
       test("throws if the sdk isn't a valid version constraint", () {
         expectPubspecException('environment: {sdk: "oopies"}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: "oopies"}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
       });
     });
 
@@ -740,10 +746,10 @@ features:
         expect(pubspec.features, contains('foobar'));
 
         var feature = pubspec.features['foobar'];
-        expect(feature.dartSdkConstraint,
-            equals(new VersionConstraint.parse("^1.0.0")));
-        expect(feature.flutterSdkConstraint,
-            equals(new VersionConstraint.parse("^2.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('dart', new VersionConstraint.parse("^1.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('flutter', new VersionConstraint.parse("^2.0.0")));
       });
 
       test("throws if the default value isn't a boolean", () {

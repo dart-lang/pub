@@ -46,20 +46,16 @@ class SolveResult {
             (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
         .toList();
 
-    var dartMerged = new VersionConstraint.intersection(
-        nonOverrides.map((pubspec) => pubspec.dartSdkConstraint));
-
-    var flutterConstraints = nonOverrides
-        .map((pubspec) => pubspec.flutterSdkConstraint)
-        .where((constraint) => constraint != null)
-        .toList();
-    var flutterMerged = flutterConstraints.isEmpty
-        ? null
-        : new VersionConstraint.intersection(flutterConstraints);
+    var sdkConstraints = <String, VersionConstraint>{};
+    for (var pubspec in nonOverrides) {
+      pubspec.sdkConstraints.forEach((identifier, constraint) {
+        sdkConstraints[identifier] = constraint
+            .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
+      });
+    }
 
     return new LockFile(packages,
-        dartSdkConstraint: dartMerged,
-        flutterSdkConstraint: flutterMerged,
+        sdkConstraints: sdkConstraints,
         mainDependencies: new MapKeySet(_root.dependencies),
         devDependencies: new MapKeySet(_root.devDependencies),
         overriddenDependencies: new MapKeySet(_root.dependencyOverrides));
