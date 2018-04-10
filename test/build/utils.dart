@@ -18,14 +18,14 @@ Future serveBrowserPackage() {
       d.dir('packages', [
         d.file(
             'browser',
-            JSON.encode({
+            json.encode({
               'versions': [packageVersionApiMap(packageMap('browser', '1.0.0'))]
             })),
         d.dir('browser', [
           d.dir('versions', [
             d.file(
                 '1.0.0',
-                JSON.encode(packageVersionApiMap(packageMap('browser', '1.0.0'),
+                json.encode(packageVersionApiMap(packageMap('browser', '1.0.0'),
                     full: true)))
           ])
         ])

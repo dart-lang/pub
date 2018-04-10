@@ -24,7 +24,7 @@ class ListPackageDirsCommand extends PubCommand {
   }
 
   void run() {
-    log.json.enabled = true;
+    log.jsonLog.enabled = true;
 
     if (!fileExists(entrypoint.lockFilePath)) {
       dataError('Package "myapp" has no lockfile. Please run "pub get" first.');
@@ -54,6 +54,6 @@ class ListPackageDirsCommand extends PubCommand {
       p.normalize(p.absolute(entrypoint.pubspecPath))
     ];
 
-    log.json.message(output);
+    log.jsonLog.message(output);
   }
 }

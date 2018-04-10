@@ -23,7 +23,7 @@ main() {
           "foo": {"path": "../foo"}
         }
       }),
-      d.file("pubspec.lock", JSON.encode({'packages': {}}))
+      d.file("pubspec.lock", json.encode({'packages': {}}))
     ]).create();
 
     await pubGet();

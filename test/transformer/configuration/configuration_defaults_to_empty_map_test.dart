@@ -51,7 +51,7 @@ main() {
 
     await pubGet();
     await pubServe();
-    await requestShouldSucceed("foo.json", JSON.encode({}));
+    await requestShouldSucceed("foo.json", json.encode({}));
     await endPubServe();
   });
 }

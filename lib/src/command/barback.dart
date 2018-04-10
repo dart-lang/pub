@@ -80,7 +80,7 @@ abstract class BarbackCommand extends PubCommand {
     // Switch to JSON output if specified. We need to do this before parsing
     // the source directories so an error will be correctly reported in JSON
     // format.
-    log.json.enabled =
+    log.jsonLog.enabled =
         argResults.options.contains("format") && argResults["format"] == "json";
 
     log.warning(

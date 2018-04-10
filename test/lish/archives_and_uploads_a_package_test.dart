@@ -29,7 +29,7 @@ main() {
     handleUpload(server);
 
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.ok(JSON.encode({
+      return new shelf.Response.ok(json.encode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });
@@ -63,7 +63,7 @@ main() {
     handleUpload(server);
 
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.ok(JSON.encode({
+      return new shelf.Response.ok(json.encode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });

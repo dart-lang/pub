@@ -85,12 +85,12 @@ abstract class BaseServer<T> {
 
     if (asset != null) {
       body.writeln("<p>Could not find asset "
-          "<code>${HTML_ESCAPE.convert(asset.path)}</code> in package "
-          "<code>${HTML_ESCAPE.convert(asset.package)}</code>.</p>");
+          "<code>${htmlEscape.convert(asset.path)}</code> in package "
+          "<code>${htmlEscape.convert(asset.package)}</code>.</p>");
     }
 
     if (error != null) {
-      body.writeln("<p>Error: ${HTML_ESCAPE.convert(error)}</p>");
+      body.writeln("<p>Error: ${htmlEscape.convert(error)}</p>");
     }
 
     body.writeln("""

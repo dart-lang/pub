@@ -26,11 +26,11 @@ main() {
 
     var body = {'success': 'Your package was awesome.'};
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.ok(JSON.encode(body));
+      return new shelf.Response.ok(json.encode(body));
     });
 
     expect(pub.stderr, emits('Invalid server response:'));
-    expect(pub.stderr, emits(JSON.encode(body)));
+    expect(pub.stderr, emits(json.encode(body)));
     await pub.shouldExit(1);
   });
 }

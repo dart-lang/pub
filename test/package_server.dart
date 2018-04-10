@@ -104,7 +104,7 @@ class PackageServer {
       _servedApiPackageDir.contents.addAll([
         d.file(
             '$name',
-            JSON.encode({
+            json.encode({
               'name': name,
               'uploaders': ['nweiz@google.com'],
               'versions': versions
@@ -114,7 +114,7 @@ class PackageServer {
         d.dir(name, [
           d.dir('versions', versions.map((version) {
             return d.file(version.version.toString(),
-                JSON.encode(packageVersionApiMap(version.pubspec, full: true)));
+                json.encode(packageVersionApiMap(version.pubspec, full: true)));
           }))
         ])
       ]);
