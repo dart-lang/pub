@@ -390,7 +390,7 @@ class GlobalPackages {
       if (sdk == null) {
         dataError('${log.bold(name)} ${entrypoint.root.version} requires '
             'unknown SDK "$name".');
-      } else if (name == "dart") {
+      } else if (sdkName == "dart") {
         if (constraint.allows(sdk.version)) return;
         dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
             "support Dart ${sdk.version}.");
