@@ -1481,7 +1481,7 @@ void flutterSdkConstraint() {
       await d.dir(appPath, [
         await d.pubspec({
           'name': 'myapp',
-          'environment': {'dart': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 

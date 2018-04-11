@@ -41,7 +41,7 @@ class SdkConstraintValidator extends Validator {
       }
     }
 
-    if (entrypoint.root.pubspec.flutterSdkConstraint != null &&
+    if (entrypoint.root.pubspec.sdkConstraints.containsKey('flutter') &&
         dartConstraint.allowsAny(_preFlutterSupport)) {
       var newDartConstraint = dartConstraint.difference(_preFlutterSupport);
       if (newDartConstraint.isEmpty ||

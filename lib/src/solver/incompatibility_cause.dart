@@ -5,13 +5,11 @@
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../sdk.dart';
 import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
 abstract class IncompatibilityCause {
-  /// Whether this incompatibility was caused by the lack of the Flutter SDK.
-  bool get isFlutter;
-
   /// The incompatibility represents the requirement that the root package
   /// exists.
   static const IncompatibilityCause root = const _Cause("root");
@@ -48,16 +46,12 @@ class ConflictCause implements IncompatibilityCause {
   /// from which the target incompatibility was derived.
   final Incompatibility other;
 
-  bool get isFlutter => false;
-
   ConflictCause(this.conflict, this.other);
 }
 
 /// A class for stateless [IncompatibilityCause]s.
 class _Cause implements IncompatibilityCause {
   final String _name;
-
-  bool get isFlutter => false;
 
   const _Cause(this._name);
 
@@ -70,9 +64,10 @@ class SdkCause implements IncompatibilityCause {
   /// The union of all the incompatible versions' constraints on the SDK.
   final VersionConstraint constraint;
 
-  final bool isFlutter;
+  /// The SDK with which the package was incompatible.
+  final Sdk sdk;
 
-  SdkCause(this.constraint, {bool flutter: false}) : isFlutter = flutter;
+  SdkCause(this.constraint, this.sdk);
 }
 
 /// The incompatibility represents a package that couldn't be found by its
@@ -81,7 +76,11 @@ class PackageNotFoundCause implements IncompatibilityCause {
   /// The exception indicating why the package couldn't be found.
   final PackageNotFoundException exception;
 
-  bool get isFlutter => exception.missingFlutterSdk;
+  /// If the incompatibility was caused by an SDK being unavailable, this is
+  /// that SDK.
+  ///
+  /// Otherwise `null`.
+  Sdk get sdk => exception.missingSdk;
 
   PackageNotFoundCause(this.exception);
 }

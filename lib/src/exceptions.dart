@@ -12,6 +12,7 @@ import "package:stack_trace/stack_trace.dart";
 import "package:yaml/yaml.dart";
 
 import 'asset/dart/serialize.dart';
+import 'sdk.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -73,11 +74,11 @@ class DataException extends ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
-  /// Whether this exception was caused by the Flutter SDK being unavailable.
-  final bool missingFlutterSdk;
+  /// If this failure was caused by an SDK being unavailable, this is that SDK.
+  final Sdk missingSdk;
 
   PackageNotFoundException(String message,
-      {innerError, StackTrace innerTrace, this.missingFlutterSdk: false})
+      {innerError, StackTrace innerTrace, this.missingSdk})
       : super(message, innerError, innerTrace);
 
   String toString() => "Package doesn't exist ($message).";

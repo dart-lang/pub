@@ -225,6 +225,10 @@ String pluralize(String name, int number, {String plural}) {
   return '${name}s';
 }
 
+/// Returns [text] with the first letter capitalized.
+String capitalize(String text) =>
+    text.substring(0, 1).toUpperCase() + text.substring(1);
+
 /// Escapes any regex metacharacters in [string] so that using as a [RegExp]
 /// pattern will match the string literally.
 // TODO(rnystrom): Remove when #4706 is fixed.

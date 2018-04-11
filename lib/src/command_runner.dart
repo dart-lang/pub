@@ -29,7 +29,7 @@ import 'git.dart' as git;
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'solver.dart';
 import 'utils.dart';
 

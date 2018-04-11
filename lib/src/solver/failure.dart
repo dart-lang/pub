@@ -5,10 +5,9 @@
 import 'package:collection/collection.dart';
 
 import '../exceptions.dart';
-import '../flutter.dart' as flutter;
 import '../log.dart' as log;
 import '../package_name.dart';
-import '../sdk.dart' as sdk;
+import '../sdk.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
@@ -94,33 +93,36 @@ class _Writer {
   String write() {
     var buffer = new StringBuffer();
 
-    var hasFlutterCause = false;
-    var hasDartSdkCause = false;
-    var hasFlutterSdkCause = false;
+    // SDKs whose version constraints weren't matched.
+    var sdkConstraintCauses = new Set<Sdk>();
+
+    // SDKs implicated in any way in the solve failure.
+    var sdkCauses = new Set<Sdk>();
+
     for (var incompatibility in _root.externalIncompatibilities) {
       var cause = incompatibility.cause;
-      if (cause.isFlutter) hasFlutterCause = true;
-      if (cause is SdkCause) {
-        if (cause.isFlutter) {
-          hasFlutterSdkCause = true;
-        } else {
-          hasDartSdkCause = true;
-        }
+      if (cause is PackageNotFoundCause && cause.sdk != null) {
+        sdkCauses.add(cause.sdk);
+      } else if (cause is SdkCause) {
+        sdkCauses.add(cause.sdk);
+        sdkConstraintCauses.add(cause.sdk);
       }
     }
 
     // If the failure was caused in part by unsatisfied SDK constraints,
     // indicate the actual versions so we don't have to list them (possibly
     // multiple times) in the main body of the error message.
-    if (hasDartSdkCause) {
-      buffer.writeln("The current Dart SDK version is ${sdk.version}.");
+    //
+    // Iterate through [sdks] to ensure that SDKs versions are printed in a
+    // consistent order
+    var wroteLine = false;
+    for (var sdk in sdks.values) {
+      if (!sdkConstraintCauses.contains(sdk)) continue;
+      if (!sdk.isAvailable) continue;
+      wroteLine = true;
+      buffer.writeln("The current ${sdk.name} SDK version is ${sdk.version}.");
     }
-    if (hasFlutterSdkCause && flutter.isAvailable) {
-      buffer.writeln("The current Flutter SDK version is ${flutter.version}.");
-    }
-    if (hasDartSdkCause || (hasFlutterSdkCause && flutter.isAvailable)) {
-      buffer.writeln();
-    }
+    if (wroteLine) buffer.writeln();
 
     if (_root.cause is ConflictCause) {
       _visit(_root, const {});
@@ -154,11 +156,14 @@ class _Writer {
       buffer.writeln(wordWrap(message, prefix: " " * (padding + 2)));
     }
 
-    if (hasFlutterCause && !flutter.isAvailable) {
+    // Iterate through [sdks] to ensure that SDKs versions are printed in a
+    // consistent order
+    for (var sdk in sdks.values) {
+      if (!sdkCauses.contains(sdk)) continue;
+      if (sdk.isAvailable) continue;
+      if (sdk.installMessage == null) continue;
       buffer.writeln();
-      buffer.writeln(
-          "Flutter users should run `flutter packages get` instead of `pub "
-          "get`.");
+      buffer.writeln(sdk.installMessage);
     }
 
     return buffer.toString();

@@ -15,7 +15,6 @@ import 'barback/asset_environment.dart';
 import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
-import 'flutter.dart' as flutter;
 import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
@@ -24,33 +23,30 @@ import 'package.dart';
 import 'package_name.dart';
 import 'package_graph.dart';
 import 'pubspec.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'solver.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// A RegExp to match the Dart SDK constraint in a lock file.
-///
-/// This matches both the old-style constraint:
-///
-/// ```yaml
-/// sdk: ">=1.2.3 <2.0.0"
-/// ```
-///
-/// and the new-style constraint:
-///
-/// ```yaml
-/// sdks:
-///   dart: ">=1.2.3 <2.0.0"
-/// ```
-final _dartSdkConstraint =
-    new RegExp(r'^(  dart|sdk): "?([^"]*)"?$', multiLine: true);
-
-/// A RegExp to match the Flutter SDK constraint in a lock file.
-final _flutterSdkConstraint =
-    new RegExp(r'^  flutter: "?([^"]*)"?$', multiLine: true);
+/// A RegExp to match SDK constraints in a lockfile.
+final _sdkConstraint = () {
+  // This matches both the old-style constraint:
+  //
+  // ```yaml
+  // sdk: ">=1.2.3 <2.0.0"
+  // ```
+  //
+  // and the new-style constraint:
+  //
+  // ```yaml
+  // sdks:
+  //   dart: ">=1.2.3 <2.0.0"
+  // ```
+  var sdkNames = sdks.keys.map((name) => "  " + name).join('|');
+  return new RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
+}();
 
 /// The context surrounding the root package pub is operating on.
 ///
@@ -587,26 +583,19 @@ class Entrypoint {
       touch(packagesFile);
     }
 
-    var dartSdkConstraint = _dartSdkConstraint.firstMatch(lockFileText);
-    if (dartSdkConstraint != null) {
-      var parsedConstraint = new VersionConstraint.parse(dartSdkConstraint[2]);
+    for (var match in _sdkConstraint.allMatches(lockFileText)) {
+      var identifier = match[1] == 'sdk' ? 'dart' : match[1].trim();
+      var sdk = sdks[identifier];
+
+      // Don't complain if there's an SDK constraint for an unavailable SDK. For
+      // example, the Flutter SDK being unavailable just means that we aren't
+      // running from within the `flutter` executable, and we want users to be
+      // able to `pub run` non-Flutter tools even in a Flutter app.
+      if (!sdk.isAvailable) continue;
+
+      var parsedConstraint = new VersionConstraint.parse(match[2]);
       if (!parsedConstraint.allows(sdk.version)) {
-        dataError("Dart ${sdk.version} is incompatible with your dependencies' "
-            "SDK constraints. Please run \"pub get\" again.");
-      }
-    }
-
-    // Don't complain if there's a Flutter constraint but Flutter is
-    // unavailable. Flutter being unavailable just means that we aren't running
-    // from within the `flutter` executable, and we want users to be able to
-    // `pub run` non-Flutter tools even in a Flutter app.
-    var flutterSdkConstraint = _flutterSdkConstraint.firstMatch(lockFileText);
-    if (flutterSdkConstraint != null && flutter.isAvailable) {
-      var parsedConstraint =
-          new VersionConstraint.parse(flutterSdkConstraint[1]);
-
-      if (!parsedConstraint.allows(flutter.version)) {
-        dataError("Flutter ${flutter.version} is incompatible with your "
+        dataError("${sdk.name} ${sdk.version} is incompatible with your "
             "dependencies' SDK constraints. Please run \"pub get\" again.");
       }
     }

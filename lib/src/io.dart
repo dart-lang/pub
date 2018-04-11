@@ -19,7 +19,7 @@ import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;

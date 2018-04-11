@@ -22,7 +22,7 @@ import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
@@ -385,15 +385,20 @@ class GlobalPackages {
           isGlobal: true);
     }
 
-    if (entrypoint.root.pubspec.flutterSdkConstraint != null) {
-      dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
-          "Flutter SDK, which is unsupported for global executables.");
-    }
-
-    if (!entrypoint.root.pubspec.dartSdkConstraint.allows(sdk.version)) {
-      dataError("${log.bold(name)} ${entrypoint.root.version} doesn't support "
-          "Dart ${sdk.version}.");
-    }
+    entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
+      var sdk = sdks[sdkName];
+      if (sdk == null) {
+        dataError('${log.bold(name)} ${entrypoint.root.version} requires '
+            'unknown SDK "$name".');
+      } else if (sdkName == "dart") {
+        if (constraint.allows(sdk.version)) return;
+        dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
+            "support Dart ${sdk.version}.");
+      } else {
+        dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
+            "${sdk.name} SDK, which is unsupported for global executables.");
+      }
+    });
 
     return entrypoint;
   }

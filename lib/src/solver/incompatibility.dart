@@ -4,7 +4,6 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../flutter.dart' as flutter;
 import '../package_name.dart';
 import 'incompatibility_cause.dart';
 import 'term.dart';
@@ -145,10 +144,10 @@ class Incompatibility {
       var cause = this.cause as SdkCause;
       var buffer = new StringBuffer(
           "${_terse(terms.first, details, allowEvery: true)} requires ");
-      if (cause.isFlutter && !flutter.isAvailable) {
-        buffer.write("the Flutter SDK");
+      if (!cause.sdk.isAvailable) {
+        buffer.write("the ${cause.sdk.name} SDK");
       } else {
-        if (cause.isFlutter) buffer.write("Flutter ");
+        if (cause.sdk.name != "Dart") buffer.write(cause.sdk.name + " ");
         buffer.write("SDK version ${cause.constraint}");
       }
       return buffer.toString();
@@ -436,10 +435,10 @@ class Incompatibility {
     } else if (latter.cause is SdkCause) {
       var cause = latter.cause as SdkCause;
       buffer.write("which requires ");
-      if (cause.isFlutter && !flutter.isAvailable) {
-        buffer.write("the Flutter SDK");
+      if (!cause.sdk.isAvailable) {
+        buffer.write("the ${cause.sdk.name} SDK");
       } else {
-        if (cause.isFlutter) buffer.write("Flutter ");
+        if (cause.sdk.name != "Dart") buffer.write(cause.sdk.name + " ");
         buffer.write("SDK version ${cause.constraint}");
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {

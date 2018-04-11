@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import '../io.dart';
 import '../log.dart' as log;
 import '../package_graph.dart';
-import '../sdk.dart' as sdk;
+import '../sdk.dart';
 import '../utils.dart';
 import 'transformer_id.dart';
 
