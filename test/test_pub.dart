@@ -409,7 +409,7 @@ class PubProcess extends TestProcess {
       description = "$humanExecutable ${arguments.join(" ")}";
     }
 
-    encoding ??= UTF8;
+    encoding ??= utf8;
     return new PubProcess(process, description,
         encoding: encoding, forwardStdio: forwardStdio);
   }
