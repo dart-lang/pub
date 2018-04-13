@@ -26,7 +26,7 @@ class GetInputTransformer extends Transformer {
         .catchError((error) {
       if (error is! AssetNotFoundException) throw error;
       transform.addOutput(new Asset.fromString(transform.primaryInput.id,
-          JSON.encode({
+          jsonEncode({
         'package': error.id.package,
         'path': error.id.path
       })));
@@ -54,7 +54,7 @@ main() {
     await pubGet();
     var server = await pubServe();
     await requestShouldSucceed(
-        "foo.txt", JSON.encode({"package": "myapp", "path": "nonexistent"}));
+        "foo.txt", jsonEncode({"package": "myapp", "path": "nonexistent"}));
     await endPubServe();
 
     // Since the AssetNotFoundException was caught and handled, the server

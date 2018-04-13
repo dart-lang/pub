@@ -27,7 +27,7 @@ class ConfigTransformer extends Transformer {
     return transform.primaryInput.readAsString().then((contents) {
       var id = transform.primaryInput.id.changeExtension(".json");
       transform.addOutput(
-          new Asset.fromString(id, JSON.encode(settings.configuration)));
+          new Asset.fromString(id, jsonEncode(settings.configuration)));
     });
   }
 }
@@ -72,7 +72,7 @@ main() {
 
     await pubGet();
     await pubServe();
-    await requestShouldSucceed("foo.json", JSON.encode(configuration));
+    await requestShouldSucceed("foo.json", jsonEncode(configuration));
     await requestShould404("foo.out");
     await endPubServe();
   });

@@ -26,11 +26,11 @@ main() {
 
     var body = {'error': 'Your package was too boring.'};
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.notFound(JSON.encode(body));
+      return new shelf.Response.notFound(jsonEncode(body));
     });
 
     expect(pub.stderr, emits('Invalid server response:'));
-    expect(pub.stderr, emits(JSON.encode(body)));
+    expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);
   });
 }

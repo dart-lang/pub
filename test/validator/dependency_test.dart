@@ -42,7 +42,7 @@ Future setUpDependency(Map dep, {List<String> hostedVersions}) {
       return new Future.value(new http.Response("not found", 404));
     } else {
       return new Future.value(new http.Response(
-          JSON.encode({
+          jsonEncode({
             "name": "foo",
             "uploaders": ["nweiz@google.com"],
             "versions": hostedVersions
@@ -215,7 +215,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'bar': {
                       'version': '1.2.3',
@@ -244,7 +244,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'foo': {
                       'version': '1.2.3',
@@ -268,7 +268,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "any"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'foo': {
                       'version': '0.1.2',
@@ -317,7 +317,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'bar': {
                       'version': '1.2.3',
@@ -346,7 +346,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<3.0.0"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'foo': {
                       'version': '1.2.3',
@@ -368,7 +368,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=3.0.0"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'foo': {
                       'version': '1.2.3',
@@ -392,7 +392,7 @@ main() {
             d.libPubspec("test_pkg", "1.0.0", deps: {"foo": "<=1.2.3"}),
             d.file(
                 "pubspec.lock",
-                JSON.encode({
+                jsonEncode({
                   'packages': {
                     'foo': {
                       'version': '1.2.3',

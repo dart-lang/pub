@@ -404,7 +404,7 @@ String replace(String source, Pattern matcher, String fn(Match match)) {
 
 /// Returns the hex-encoded sha1 hash of [source].
 String sha1(String source) =>
-    crypto.sha1.convert(UTF8.encode(source)).toString();
+    crypto.sha1.convert(utf8.encode(source)).toString();
 
 /// Returns the base64-encoded sha1 hash of [stream].
 Future<String> sha1Stream(Stream<List<int>> stream) async {
@@ -429,7 +429,7 @@ Future<String> sha1Stream(Stream<List<int>> stream) async {
   // Does not cause any problems in the mean time.
   digestSink.close();
 
-  return BASE64.encode(digest.bytes);
+  return base64Encode(digest.bytes);
 }
 
 /// Configures [future] so that its result (success or exception) is passed on
@@ -755,7 +755,7 @@ String yamlToString(data) {
 
         var keyString = key;
         if (key is! String || !_unquotableYamlString.hasMatch(key)) {
-          keyString = JSON.encode(key);
+          keyString = jsonEncode(key);
         }
 
         buffer.write('$indent$keyString:');
@@ -771,7 +771,7 @@ String yamlToString(data) {
 
     // Don't quote plain strings if not needed.
     if (data is! String || !_unquotableYamlString.hasMatch(data)) {
-      string = JSON.encode(data);
+      string = jsonEncode(data);
     }
 
     if (isMapValue) {

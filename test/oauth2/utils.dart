@@ -42,7 +42,7 @@ void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {
     expect(body, matches(new RegExp(r'(^|&)code=access\+code(&|$)')));
 
     return new shelf.Response.ok(
-        JSON.encode({"access_token": accessToken, "token_type": "bearer"}),
+        jsonEncode({"access_token": accessToken, "token_type": "bearer"}),
         headers: {'content-type': 'application/json'});
   });
 }

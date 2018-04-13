@@ -58,7 +58,7 @@ main() {
       await d.dir(appPath, [
         d.file(
             "pubspec.lock",
-            JSON.encode({
+            jsonEncode({
               'packages': {
                 'foo': {
                   'version': '0.0.0',

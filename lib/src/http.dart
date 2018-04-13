@@ -311,7 +311,7 @@ void handleJsonError(http.Response response) {
 Map parseJsonResponse(http.Response response) {
   var value;
   try {
-    value = JSON.decode(response.body);
+    value = jsonDecode(response.body);
   } on FormatException {
     invalidServerResponse(response);
   }

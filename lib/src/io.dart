@@ -150,7 +150,7 @@ String resolveLink(String link) {
 
 /// Reads the contents of the text file [file].
 String readTextFile(String file) =>
-    new File(file).readAsStringSync(encoding: UTF8);
+    new File(file).readAsStringSync(encoding: utf8);
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
@@ -165,7 +165,7 @@ List<int> readBinaryFile(String file) {
 /// If [dontLogContents] is true, the contents of the file will never be logged.
 String writeTextFile(String file, String contents,
     {bool dontLogContents: false, Encoding encoding}) {
-  if (encoding == null) encoding = UTF8;
+  if (encoding == null) encoding = utf8;
 
   // Sanity check: don't spew a huge file.
   log.io("Writing ${contents.length} characters to text file $file.");
@@ -1076,7 +1076,7 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       // relative to the current working directory, not the "--directory"
       // argument.
       var process = await startProcess("tar", args, workingDir: baseDir);
-      process.stdin.add(UTF8.encode(stdin));
+      process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
     }

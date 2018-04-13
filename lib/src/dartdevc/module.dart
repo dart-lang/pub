@@ -37,7 +37,7 @@ class Module {
             json[2].map((d) => new AssetId.deserialize(d)));
 
   /// Serialize this [Module] to a nested [List] which can be encoded with
-  /// `JSON.encode` and then decoded later with `JSON.decode`.
+  /// `jsonEncode` and then decoded later with `jsonDecode`.
   ///
   /// The resulting [List] will have 3 values, representing the [id],
   /// [assetIds], and [directDependencies] fields in that order.
@@ -88,7 +88,7 @@ class ModuleId {
         dir = json[2];
 
   /// Serialize this [ModuleId] to a nested [List] which can be encoded with
-  /// `JSON.encode` and then decoded later with `JSON.decode`.
+  /// `jsonEncode` and then decoded later with `jsonDecode`.
   ///
   /// The resulting [List] will have 3 values, representing the [package],
   /// [name], and [dir] fields in that order.

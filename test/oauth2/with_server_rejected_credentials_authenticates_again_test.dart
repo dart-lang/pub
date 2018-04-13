@@ -24,7 +24,7 @@ main() {
 
     server.handler.expect('GET', '/api/packages/versions/new', (request) {
       return new shelf.Response(401,
-          body: JSON.encode({
+          body: jsonEncode({
             'error': {'message': 'your token sucks'}
           }),
           headers: {

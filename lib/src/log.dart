@@ -617,7 +617,7 @@ class _JsonLogger {
   void message(message) {
     if (!enabled) return;
 
-    print(JSON.encode(message));
+    print(jsonEncode(message));
   }
 }
 
