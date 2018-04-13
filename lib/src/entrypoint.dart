@@ -5,14 +5,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:barback/barback.dart';
 import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
+import 'asset/id.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'http.dart' as http;
@@ -20,8 +18,8 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_name.dart';
 import 'package_graph.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -141,13 +139,6 @@ class Entrypoint {
     return newPath;
   }
 
-  /// The path to the directory containing precompiled dependencies.
-  ///
-  /// We just precompile the debug version of a package. We're mostly interested
-  /// in improving speed for development iteration loops, which usually use
-  /// debug mode.
-  String get _precompiledDepsPath => p.join(cachePath, 'deps', 'debug');
-
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
@@ -247,129 +238,19 @@ class Entrypoint {
     /// Build a package graph from the version solver results so we don't
     /// have to reload and reparse all the pubspecs.
     _packageGraph = new PackageGraph.fromSolveResult(this, result);
-    packageGraph.loadTransformerCache().clearIfOutdated(result.changedPackages);
 
     writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
 
     try {
       if (precompile) {
-        await _precompileDependencies(changed: result.changedPackages);
         await precompileExecutables(changed: result.changedPackages);
       } else {
-        // If precompilation is disabled, delete any stale cached dependencies
-        // or snapshots.
-        _deletePrecompiledDependencies(
-            _dependenciesToPrecompile(changed: result.changedPackages));
         _deleteExecutableSnapshots(changed: result.changedPackages);
       }
     } catch (error, stackTrace) {
       // Just log exceptions here. Since the method is just about acquiring
       // dependencies, it shouldn't fail unless that fails.
       log.exception(error, stackTrace);
-    }
-  }
-
-  /// Precompile any transformed dependencies of the entrypoint.
-  ///
-  /// If [changed] is passed, only dependencies whose contents might be changed
-  /// if one of the given packages changes will be recompiled.
-  Future _precompileDependencies({Iterable<String> changed}) async {
-    if (changed != null) changed = changed.toSet();
-
-    var dependenciesToPrecompile = _dependenciesToPrecompile(changed: changed);
-    _deletePrecompiledDependencies(dependenciesToPrecompile);
-    if (dependenciesToPrecompile.isEmpty) return;
-
-    try {
-      await log.progress("Precompiling dependencies", () async {
-        var packagesToLoad = unionAll(dependenciesToPrecompile
-                .map(packageGraph.transitiveDependencies))
-            .map((package) => package.name)
-            .toSet();
-
-        var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
-            packages: packagesToLoad, compiler: Compiler.none);
-
-        /// Ignore barback errors since they'll be emitted via [getAllAssets]
-        /// below.
-        environment.barback.errors.listen((_) {});
-
-        // TODO(nweiz): only get assets from [dependenciesToPrecompile] so as
-        // not to trigger unnecessary lazy transformers.
-        var assets = await environment.barback.getAllAssets();
-        await waitAndPrintErrors(assets.map((asset) async {
-          if (!dependenciesToPrecompile.contains(asset.id.package)) return;
-
-          var destPath = p.join(
-              _precompiledDepsPath, asset.id.package, p.fromUri(asset.id.path));
-          ensureDir(p.dirname(destPath));
-          await createFileFromStream(asset.read(), destPath);
-        }));
-
-        log.message("Precompiled " +
-            toSentence(ordered(dependenciesToPrecompile).map(log.bold)) +
-            ".");
-      });
-    } catch (_) {
-      // TODO(nweiz): When barback does a better job of associating errors with
-      // assets (issue 19491), catch and handle compilation errors on a
-      // per-package basis.
-      for (var package in dependenciesToPrecompile) {
-        deleteEntry(p.join(_precompiledDepsPath, package));
-      }
-      rethrow;
-    }
-  }
-
-  /// Returns the set of dependencies that need to be precompiled.
-  ///
-  /// If [changed] is passed, only dependencies whose contents might be changed
-  /// if one of the given packages changes will be returned.
-  Set<String> _dependenciesToPrecompile({Set<String> changed}) {
-    return packageGraph.packages.values
-        .where((package) {
-          if (package.pubspec.transformers.isEmpty) return false;
-          if (packageGraph.isPackageMutable(package.name)) return false;
-          if (!dirExists(p.join(_precompiledDepsPath, package.name)))
-            return true;
-          if (changed == null) return true;
-
-          /// Only recompile [package] if any of its transitive dependencies have
-          /// changed. We check all transitive dependencies because it's possible
-          /// that a transformer makes decisions based on their contents.
-          return overlaps(
-              packageGraph
-                  .transitiveDependencies(package.name)
-                  .map((package) => package.name)
-                  .toSet(),
-              changed);
-        })
-        .map((package) => package.name)
-        .toSet();
-  }
-
-  /// Deletes outdated precompiled dependencies.
-  ///
-  /// This deletes the precompilations of all packages in [packages], as well as
-  /// any packages that are now untransformed or mutable.
-  void _deletePrecompiledDependencies([Iterable<String> packages]) {
-    if (!dirExists(_precompiledDepsPath)) return;
-
-    // Delete any cached dependencies that are going to be recached.
-    packages ??= [];
-    for (var package in packages) {
-      var path = p.join(_precompiledDepsPath, package);
-      if (dirExists(path)) deleteEntry(path);
-    }
-
-    // Also delete any cached dependencies that should no longer be cached.
-    for (var subdir in listDir(_precompiledDepsPath)) {
-      var package = packageGraph.packages[p.basename(subdir)];
-      if (package == null ||
-          package.pubspec.transformers.isEmpty ||
-          packageGraph.isPackageMutable(package.name)) {
-        deleteEntry(subdir);
-      }
     }
   }
 
@@ -396,23 +277,12 @@ class Entrypoint {
       // SDK's.
       writeTextFile(p.join(_snapshotPath, 'sdk-version'), "${sdk.version}\n");
 
-      var packagesToLoad =
-          unionAll(executables.keys.map(packageGraph.transitiveDependencies))
-              .toSet();
-
-      // Try to avoid starting up an asset server to precompile packages if
-      // possible. This is faster and produces better error messages.
-      if (packagesToLoad
-          .every((package) => package.pubspec.transformers.isEmpty)) {
-        await _precompileExecutablesWithoutBarback(executables);
-      } else {
-        await _precompileExecutablesWithBarback(executables, packagesToLoad);
-      }
+        await _precompileExecutables(executables);
     });
   }
 
   //// Precompiles [executables] to snapshots from the filesystem.
-  Future _precompileExecutablesWithoutBarback(
+  Future _precompileExecutables(
       Map<String, List<AssetId>> executables) {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
@@ -424,30 +294,6 @@ class Entrypoint {
             url, p.join(dir, p.url.basename(id.path) + '.snapshot'),
             packagesFile: p.toUri(packagesFile), id: id);
       }));
-    }));
-  }
-
-  //// Precompiles [executables] to snapshots from a barback asset environment.
-  ////
-  //// The [packagesToLoad] set should include all packages that are
-  //// transitively imported by [executables].
-  Future _precompileExecutablesWithBarback(
-      Map<String, List<AssetId>> executables,
-      Set<Package> packagesToLoad) async {
-    var executableIds = unionAll(executables.values.map((ids) => ids.toSet()));
-    var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
-        packages: packagesToLoad.map((package) => package.name),
-        entrypoints: executableIds,
-        compiler: Compiler.none);
-    environment.barback.errors.listen((error) {
-      log.error(log.red("Build error:\n$error"));
-    });
-
-    await waitAndPrintErrors(executables.keys.map((package) async {
-      var dir = p.join(_snapshotPath, package);
-      cleanDir(dir);
-      await environment.precompileExecutables(package, dir,
-          executableIds: executables[package]);
     }));
   }
 

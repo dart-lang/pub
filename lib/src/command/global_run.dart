@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
@@ -20,14 +19,9 @@ class GlobalRunCommand extends PubCommand {
   String get invocation => "pub global run <package>:<executable> [args...]";
   bool get allowTrailingOptions => false;
 
-  /// The mode for barback transformers.
-  BarbackMode get mode => new BarbackMode(argResults["mode"]);
-
   GlobalRunCommand() {
     argParser.addFlag("checked",
         abbr: "c", help: "Enable runtime type checks and assertions.");
-    argParser.addOption("mode",
-        defaultsTo: "release", help: 'Mode to run transformers in.');
   }
 
   Future run() async {
@@ -53,7 +47,7 @@ class GlobalRunCommand extends PubCommand {
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,
-        checked: argResults["checked"], mode: mode);
+        checked: argResults["checked"]);
     await flushThenExit(exitCode);
   }
 }

@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
@@ -56,17 +55,8 @@ class RunCommand extends PubCommand {
       package = executable;
     }
 
-    var mode;
-    if (argResults['mode'] != null) {
-      mode = new BarbackMode(argResults['mode']);
-    } else if (package == entrypoint.root.name) {
-      mode = BarbackMode.DEBUG;
-    } else {
-      mode = BarbackMode.RELEASE;
-    }
-
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['checked'], mode: mode);
+        checked: argResults['checked']);
     await flushThenExit(exitCode);
   }
 }

@@ -466,7 +466,7 @@ foo:http://example.com/
 /// If [environment] is passed, it's called to produce a map that's merged into
 /// the OS environment for the pub commands.
 void _requiresPubGet(String message) {
-  for (var command in ["build", "serve", "run", "deps"]) {
+  for (var command in ["run", "deps"]) {
     test("for pub $command", () {
       var args = [command];
       if (command == "run") args.add("script");
@@ -483,7 +483,7 @@ void _requiresPubGet(String message) {
 /// sometimes not desirable, since it uses slightly stronger checks for pubspec
 /// and lockfile consistency.
 void _runsSuccessfully({bool runDeps: true}) {
-  var commands = ["build", "serve", "run"];
+  var commands = ["run"];
   if (runDeps) commands.add("deps");
 
   for (var command in commands) {
@@ -491,14 +491,7 @@ void _runsSuccessfully({bool runDeps: true}) {
       var args = [command];
       if (command == "run") args.add("bin/script.dart");
 
-      if (command != "serve") {
-        await runPub(args: args);
-      } else {
-        var pub = await startPub(args: ["serve", "--port=0"]);
-        await expectLater(
-            pub.stdout, emitsThrough(startsWith("Serving myapp web")));
-        pub.kill();
-      }
+      await runPub(args: args);
 
       // If pub determines that everything is up-to-date, it should set the
       // mtimes to indicate that.

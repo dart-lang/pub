@@ -6,8 +6,6 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
-import 'barback/transformer_config.dart';
-import 'compiler.dart';
 import 'feature.dart';
 import 'io.dart';
 import 'package.dart';
@@ -96,9 +94,6 @@ class _CachedPubspec implements Pubspec {
   bool get isPrivate => _inner.isPrivate;
   bool get isEmpty => _inner.isEmpty;
   List<PubspecException> get allErrors => _inner.allErrors;
-  Map<String, Compiler> get webCompiler => _inner.webCompiler;
-
-  List<Set<TransformerConfig>> get transformers => const [];
 
   _CachedPubspec(this._inner);
 }

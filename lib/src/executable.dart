@@ -6,11 +6,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
@@ -33,9 +30,7 @@ import 'utils.dart';
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args,
-    {bool isGlobal: false, bool checked: false, BarbackMode mode}) async {
-  if (mode == null) mode = BarbackMode.RELEASE;
-
+    {bool isGlobal: false, bool checked: false}) async {
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
   if (entrypoint.root.name != package &&
@@ -62,12 +57,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   var localSnapshotPath =
       p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
-  if (!isGlobal &&
-      fileExists(localSnapshotPath) &&
-      // Dependencies are only snapshotted in release mode, since that's the
-      // default mode for them to run. We can't run them in a different mode
-      // using the snapshot.
-      mode == BarbackMode.RELEASE) {
+  if (!isGlobal && fileExists(localSnapshotPath)) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
     entrypoint.assertUpToDate();
@@ -81,8 +71,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var executableUrl = await _executableUrl(entrypoint, package, executable,
-      isGlobal: isGlobal, mode: mode);
+  var executableUrl =
+      await _executableUrl(entrypoint, package, executable, isGlobal: isGlobal);
 
   if (executableUrl == null) {
     var message = "Could not find ${log.bold(executable)}";
@@ -119,53 +109,13 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 /// [path] must be relative to the root of [package]. If [path] doesn't exist,
 /// returns `null`.
 Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
-    {bool isGlobal: false, BarbackMode mode}) async {
+    {bool isGlobal: false}) async {
   assert(p.isRelative(path));
 
-  // If neither the executable nor any of its dependencies are transformed,
-  // there's no need to spin up a barback server. Just run the VM directly
-  // against the filesystem.
-  if (!entrypoint.packageGraph.isPackageTransformed(package) &&
-      fileExists(entrypoint.packagesFile)) {
-    var fullPath = entrypoint.packageGraph.packages[package].path(path);
-    if (!fileExists(fullPath)) return null;
-    return p.toUri(p.absolute(fullPath));
-  }
-
-  var assetPath = p.url.joinAll(p.split(path));
-  var id = new AssetId(package, assetPath);
-
-  // TODO(nweiz): Use [packages] to only load assets from packages that the
-  // executable might load.
-  var environment = await AssetEnvironment
-      .create(entrypoint, mode, compiler: Compiler.none, entrypoints: [id]);
-  environment.barback.errors.listen((error) {
-    log.error(log.red("Build error:\n$error"));
-  });
-
-  var server;
-  if (package == entrypoint.root.name) {
-    // Serve the entire root-most directory containing the entrypoint. That
-    // ensures that, for example, things like `import '../../utils.dart';`
-    // will work from within some deeply nested script.
-    server = await environment.serveDirectory(p.split(path).first);
-  } else {
-    assert(p.split(path).first == "bin");
-
-    // For other packages, always use the "bin" directory.
-    server = await environment.servePackageBinDirectory(package);
-  }
-
-  try {
-    await environment.barback.getAssetById(id);
-  } on AssetNotFoundException catch (_) {
-    return null;
-  }
-
-  // Get the URL of the executable, relative to the server's root directory.
-  var relativePath = p.url
-      .relative(assetPath, from: p.url.joinAll(p.split(server.rootDirectory)));
-  return server.url.resolve(relativePath);
+  if (!fileExists(entrypoint.packagesFile)) return null;
+  var fullPath = entrypoint.packageGraph.packages[package].path(path);
+  if (!fileExists(fullPath)) return null;
+  return p.toUri(p.absolute(fullPath));
 }
 
 /// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and

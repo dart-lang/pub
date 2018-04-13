@@ -38,14 +38,6 @@ Future servePackages(void callback(PackageServerBuilder builder)) async {
 /// This will always replace a previous server.
 Future serveNoPackages() => servePackages((_) {});
 
-/// A shortcut for [servePackages] that serves the version of barback used by
-/// pub.
-Future serveBarback() {
-  return servePackages((builder) {
-    builder.serveRealPackage('barback');
-  });
-}
-
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
   DescriptorServer _inner;

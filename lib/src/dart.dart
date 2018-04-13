@@ -8,115 +8,12 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:analyzer/analyzer.dart';
-import 'package:barback/barback.dart';
-import 'package:compiler_unsupported/compiler.dart' as compiler;
 import 'package:path/path.dart' as p;
 
+import 'asset/id.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
-
-/// Interface to communicate with dart2js.
-///
-/// This is basically an amalgamation of dart2js's
-/// [compiler.CompilerInputProvider], [compiler.CompilerOutputProvider], and
-/// [compiler.DiagnosticHandler] function types so that we can provide them
-/// as a single unit.
-abstract class CompilerProvider {
-  /// The URI to the root directory where "dart:" libraries can be found.
-  ///
-  /// This is used as the base URL to generate library URLs that are then sent
-  /// back to [provideInput].
-  Uri get libraryRoot;
-
-  /// Given [uri], responds with a future that completes to the contents of
-  /// the input file at that URI.
-  ///
-  /// The future can complete to a string or a list of bytes.
-  Future provideInput(Uri uri);
-
-  /// Reports a diagnostic message from dart2js to the user.
-  void handleDiagnostic(
-      Uri uri, int begin, int end, String message, compiler.Diagnostic kind);
-
-  /// Given a [name] (which will be "" for the entrypoint) and a file extension,
-  /// returns an [EventSink] that dart2js can write to to emit an output file.
-  EventSink<String> provideOutput(String name, String extension);
-}
-
-/// Compiles [entrypoint] to JavaScript (or to Dart if [toDart] is true) as
-/// well as any ancillary outputs dart2js creates.
-///
-/// Uses [provider] to communcate between dart2js and the caller. Returns a
-/// future that completes when compilation is done.
-///
-/// By default, the .packages file is assumed to be adjacent to [entrypoint],
-/// but if [packageConfig] is passed that will be used instead.
-Future compile(String entrypoint, CompilerProvider provider,
-    {Iterable<String> commandLineOptions,
-    bool checked: false,
-    bool csp: false,
-    bool minify: true,
-    bool verbose: false,
-    Map<String, String> environment,
-    String packageConfig,
-    bool analyzeAll: false,
-    bool preserveUris: false,
-    bool suppressWarnings: false,
-    bool suppressHints: false,
-    bool suppressPackageWarnings: true,
-    bool terse: false,
-    bool includeSourceMapUrls: false,
-    bool toDart: false,
-    String platformBinaries}) async {
-  // dart2js chokes on relative paths. Including "/./" can also confuse it, so
-  // we normalize as well.
-  entrypoint = p.normalize(p.absolute(entrypoint));
-
-  var options = <String>['--categories=Client,Server'];
-  if (checked) options.add('--enable-checked-mode');
-  if (csp) options.add('--csp');
-  if (minify) options.add('--minify');
-  if (verbose) options.add('--verbose');
-  if (analyzeAll) options.add('--analyze-all');
-  if (preserveUris) options.add('--preserve-uris');
-  if (suppressWarnings) options.add('--suppress-warnings');
-  if (suppressHints) options.add('--suppress-hints');
-  if (!suppressPackageWarnings) options.add('--show-package-warnings');
-  if (terse) options.add('--terse');
-  if (toDart) options.add('--output-type=dart');
-  if (platformBinaries != null) {
-    options.add('--platform-binaries=$platformBinaries');
-  }
-
-  var sourceUrl = p.toUri(entrypoint);
-  options.add("--out=$sourceUrl.js");
-
-  // Add the source map URLs.
-  if (includeSourceMapUrls) {
-    options.add("--source-map=$sourceUrl.js.map");
-  }
-
-  if (environment == null) environment = {};
-  if (commandLineOptions != null) options.addAll(commandLineOptions);
-
-  if (packageConfig == null) {
-    packageConfig = p.join(p.dirname(entrypoint), '.packages');
-  } else {
-    packageConfig = p.normalize(p.absolute(packageConfig));
-  }
-
-  await compiler.compile(
-      p.toUri(entrypoint),
-      provider.libraryRoot,
-      null,
-      provider.provideInput,
-      provider.handleDiagnostic,
-      options,
-      provider.provideOutput,
-      environment,
-      p.toUri(packageConfig));
-}
 
 /// Returns whether [dart] looks like an entrypoint file.
 bool isEntrypoint(CompilationUnit dart) {
