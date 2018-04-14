@@ -277,13 +277,12 @@ class Entrypoint {
       // SDK's.
       writeTextFile(p.join(_snapshotPath, 'sdk-version'), "${sdk.version}\n");
 
-        await _precompileExecutables(executables);
+      await _precompileExecutables(executables);
     });
   }
 
   //// Precompiles [executables] to snapshots from the filesystem.
-  Future _precompileExecutables(
-      Map<String, List<AssetId>> executables) {
+  Future _precompileExecutables(Map<String, List<AssetId>> executables) {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
