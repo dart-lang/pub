@@ -4,8 +4,6 @@
 
 import 'package:test/test.dart';
 
-import 'package:path/path.dart' as path;
-
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
