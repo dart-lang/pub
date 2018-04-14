@@ -19,8 +19,6 @@ Must specify an executable to run.
 Usage: pub run <executable> [args...]
 -h, --help            Print this usage information.
 -c, --[no-]checked    Enable runtime type checks and assertions.
-    --mode            Mode to run transformers in.
-                      (defaults to "release" for dependencies, "debug" for entrypoint)
 
 Run "pub help" to see global options.
 """, exitCode: exit_codes.USAGE);

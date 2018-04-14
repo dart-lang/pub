@@ -17,8 +17,6 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
-export 'asset/dart/utils.dart';
-
 /// Whether Pub is running its own tests under Travis.CI.
 final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
 
@@ -868,3 +866,14 @@ final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
 
 /// Returns [str] without any color codes.
 String withoutColors(String str) => str.replaceAll(_colorCode, '');
+
+/// A regular expression to match the exception prefix that some exceptions'
+/// [Object.toString] values contain.
+final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
+
+/// Get a string description of an exception.
+///
+/// Many exceptions include the exception class name at the beginning of their
+/// [toString], so we remove that if it exists.
+String getErrorMessage(error) =>
+    error.toString().replaceFirst(_exceptionPrefix, '');

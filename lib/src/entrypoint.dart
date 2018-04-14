@@ -179,7 +179,7 @@ class Entrypoint {
   /// [dryRun] is `true`, no physical changes are made.
   ///
   /// If [precompile] is `true` (the default), this snapshots dependencies'
-  /// executables and runs transformers on transformed dependencies.
+  /// executables.
   ///
   /// If [packagesDir] is `true`, this will create "packages" directory with
   /// symlinks to the installed packages. This directory will be symlinked into

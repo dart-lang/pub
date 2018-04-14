@@ -7,7 +7,6 @@ import 'barback.dart';
 /// Handles the `serve` pub command.
 class ServeCommand extends BarbackCommand {
   String get name => "serve";
-  String get description => 'Run a local web development server.\n\n'
-      'By default, this serves "web/" and "test/", but an explicit list of \n'
-      'directories to serve can be provided as well.';
+  String get description => "Deprecated command";
+  bool get hidden => true;
 }

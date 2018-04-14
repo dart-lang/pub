@@ -21,10 +21,6 @@ class RunCommand extends PubCommand {
   RunCommand() {
     argParser.addFlag("checked",
         abbr: "c", help: "Enable runtime type checks and assertions.");
-    argParser.addOption("mode",
-        help: 'Mode to run transformers in.\n'
-            '(defaults to "release" for dependencies, "debug" for '
-            'entrypoint)');
   }
 
   Future run() async {

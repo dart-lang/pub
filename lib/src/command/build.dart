@@ -7,5 +7,6 @@ import 'barback.dart';
 /// Handles the `build` pub command.
 class BuildCommand extends BarbackCommand {
   String get name => "build";
-  String get description => "Apply transformers to build a package.";
+  String get description => "Deprecated command";
+  bool get hidden => true;
 }
