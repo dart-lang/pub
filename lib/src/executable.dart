@@ -14,6 +14,7 @@ import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'utils.dart';
+import 'system_cache.dart';
 
 /// Runs [executable] from [package] reachable from [entrypoint].
 ///
@@ -30,7 +31,8 @@ import 'utils.dart';
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args,
-    {bool isGlobal: false, bool checked: false}) async {
+    {bool isGlobal: false, bool checked: false, SystemCache cache}) async {
+  assert(!isGlobal || cache != null);
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
   if (entrypoint.root.name != package &&
@@ -71,8 +73,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var executableUrl =
-      await _executableUrl(entrypoint, package, executable, isGlobal: isGlobal);
+  var executableUrl = await _executableUrl(entrypoint, package, executable,
+      isGlobal: isGlobal, cache: cache);
 
   if (executableUrl == null) {
     var message = "Could not find ${log.bold(executable)}";
@@ -109,10 +111,14 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 /// [path] must be relative to the root of [package]. If [path] doesn't exist,
 /// returns `null`.
 Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
-    {bool isGlobal: false}) async {
+    {bool isGlobal: false, SystemCache cache}) async {
   assert(p.isRelative(path));
 
-  if (!fileExists(entrypoint.packagesFile)) return null;
+  if (!fileExists(entrypoint.packagesFile)) {
+    if (!isGlobal) return null;
+    await writeTextFile(
+        entrypoint.packagesFile, entrypoint.lockFile.packagesFile(cache));
+  }
   var fullPath = entrypoint.packageGraph.packages[package].path(path);
   if (!fileExists(fullPath)) return null;
   return p.toUri(p.absolute(fullPath));
