@@ -7,7 +7,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
-import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
 import 'io.dart';
