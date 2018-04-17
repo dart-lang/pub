@@ -73,10 +73,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var executableUrl = await _executableUrl(entrypoint, package, executable,
+  var executablePath = await _executablePath(entrypoint, package, executable,
       isGlobal: isGlobal, cache: cache);
 
-  if (executableUrl == null) {
+  if (executablePath == null) {
     var message = "Could not find ${log.bold(executable)}";
     if (isGlobal || package != entrypoint.root.name) {
       message += " in package ${log.bold(package)}";
@@ -85,32 +85,26 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     return exit_codes.NO_INPUT;
   }
 
-  // If we're running an executable directly from the filesystem, make sure that
-  // it knows where to load the packages. If it's a dependency's executable, for
-  // example, it may not have the right packages directory itself. Otherwise,
-  // default to Dart's automatic package: logic.
-  Uri packageConfig;
-  if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
-    // We use an absolute path here not because the VM insists but because it's
-    // helpful for the subprocess to be able to spawn Dart with
-    // Platform.executableArguments and have that work regardless of the working
-    // directory.
-    packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
-  }
+  // We use an absolute path here not because the VM insists but because it's
+  // helpful for the subprocess to be able to spawn Dart with
+  // Platform.executableArguments and have that work regardless of the working
+  // directory.
+  Uri packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
 
-  await isolate.runUri(executableUrl, args.toList(), null,
-      buffered: executableUrl.scheme == 'http',
+  await isolate.runUri(p.toUri(executablePath), args.toList(), null,
       checked: checked,
       automaticPackageResolution: packageConfig == null,
       packageConfig: packageConfig);
   return exitCode;
 }
 
-/// Returns the URL the VM should use to load the executable at [path].
+/// Returns the full path the VM should use to load the executable at [path].
 ///
 /// [path] must be relative to the root of [package]. If [path] doesn't exist,
-/// returns `null`.
-Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
+/// returns `null`. If the executable is global and doesn't already have a
+/// `.packages` file one will be created.
+Future<String> _executablePath(
+    Entrypoint entrypoint, String package, String path,
     {bool isGlobal: false, SystemCache cache}) async {
   assert(p.isRelative(path));
 
@@ -121,7 +115,7 @@ Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
   }
   var fullPath = entrypoint.packageGraph.packages[package].path(path);
   if (!fileExists(fullPath)) return null;
-  return p.toUri(p.absolute(fullPath));
+  return p.absolute(fullPath);
 }
 
 /// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and
