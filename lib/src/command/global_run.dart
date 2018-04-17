@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../utils.dart';
 
 /// Handles the `global run` pub command.
@@ -22,6 +23,7 @@ class GlobalRunCommand extends PubCommand {
   GlobalRunCommand() {
     argParser.addFlag("checked",
         abbr: "c", help: "Enable runtime type checks and assertions.");
+    argParser.addOption("mode", help: "Deprecated option", hide: true);
   }
 
   Future run() async {
@@ -44,6 +46,10 @@ class GlobalRunCommand extends PubCommand {
     if (p.split(executable).length > 1) {
       usageException('Cannot run an executable in a subdirectory of a global '
           'package.');
+    }
+
+    if(argResults.wasParsed("mode")) {
+      log.warning("The --mode flag is deprecated and has no effect.");
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,

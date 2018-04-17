@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../command.dart';
 import '../executable.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../utils.dart';
 
 /// Handles the `run` pub command.
@@ -21,6 +22,7 @@ class RunCommand extends PubCommand {
   RunCommand() {
     argParser.addFlag("checked",
         abbr: "c", help: "Enable runtime type checks and assertions.");
+    argParser.addOption("mode", help: "Deprecated option", hide: true);
   }
 
   Future run() async {
@@ -49,6 +51,10 @@ class RunCommand extends PubCommand {
       // "pub run foo" means the same thing as "pub run foo:foo" as long as
       // "foo" is a valid Dart identifier (and thus package name).
       package = executable;
+    }
+
+    if(argResults.wasParsed("mode")) {
+      log.warning("The --mode flag is deprecated and has no effect.");
     }
 
     var exitCode = await runExecutable(entrypoint, package, executable, args,
