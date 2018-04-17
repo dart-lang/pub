@@ -89,7 +89,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // helpful for the subprocess to be able to spawn Dart with
   // Platform.executableArguments and have that work regardless of the working
   // directory.
-  Uri packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
+  var packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
 
   await isolate.runUri(p.toUri(executablePath), args.toList(), null,
       checked: checked,
