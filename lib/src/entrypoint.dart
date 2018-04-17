@@ -354,9 +354,7 @@ class Entrypoint {
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath,
-        packageName,
-        "${p.url.basename(executable)}.snapshot")));
+        _snapshotPath, packageName, "${p.url.basename(executable)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
