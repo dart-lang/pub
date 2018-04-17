@@ -222,37 +222,25 @@ class GlobalPackages {
   /// successfully precompiled.
   Future<Map<String, String>> _precompileExecutables(
       Entrypoint entrypoint, String packageName) {
-    return log.progress("Precompiling executables", () {
+    return log.progress("Precompiling executables", () async {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
-      return _precompileExecutablesWithoutBarback(package, binDir);
+      var precompiled = {};
+      await waitAndPrintErrors(package.executableIds.map((id) async {
+        var url = p.toUri(package.dir);
+        url = url.replace(path: p.url.join(url.path, id.path));
+        var basename = p.url.basename(id.path);
+        var snapshotPath = p.join(binDir, '$basename.snapshot');
+        await dart.snapshot(url, snapshotPath,
+            packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
+        precompiled[p.withoutExtension(basename)] = snapshotPath;
+      }));
+      return precompiled;
     });
-  }
-
-  //// Precompiles all executables in [package] to snapshots from the
-  //// filesystem.
-  ////
-  //// The snapshots are placed in [dir].
-  ////
-  //// Returns a map from executable basenames without extensions to the paths
-  //// to those executables.
-  Future<Map<String, String>> _precompileExecutablesWithoutBarback(
-      Package package, String dir) async {
-    var precompiled = {};
-    await waitAndPrintErrors(package.executableIds.map((id) async {
-      var url = p.toUri(package.dir);
-      url = url.replace(path: p.url.join(url.path, id.path));
-      var basename = p.url.basename(id.path);
-      var snapshotPath = p.join(dir, '$basename.snapshot');
-      await dart.snapshot(url, snapshotPath,
-          packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
-      precompiled[p.withoutExtension(basename)] = snapshotPath;
-    }));
-    return precompiled;
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
