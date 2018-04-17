@@ -10,14 +10,11 @@ import 'dart:math' as math;
 
 import "package:crypto/crypto.dart" as crypto;
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
-
-export 'asset/dart/utils.dart';
 
 /// Whether Pub is running its own tests under Travis.CI.
 final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
@@ -285,22 +282,6 @@ bool isLoopback(String host) {
 /// Randomly chooses a single element in [elements].
 T choose<T>(List<T> elements) => elements[random.nextInt(elements.length)];
 
-/// Returns a set containing all elements in [minuend] that are not in
-/// [subtrahend].
-Set setMinus(Iterable minuend, Iterable subtrahend) {
-  var minuendSet = new Set.from(minuend);
-  minuendSet.removeAll(subtrahend);
-  return minuendSet;
-}
-
-/// Returns whether there's any overlap between [set1] and [set2].
-bool overlaps(Set set1, Set set2) {
-  // Iterate through the smaller set.
-  var smaller = set1.length > set2.length ? set1 : set2;
-  var larger = smaller == set1 ? set2 : set1;
-  return smaller.any(larger.contains);
-}
-
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
   var list = iter.toList();
@@ -379,15 +360,6 @@ Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
         (previousFuture, element) =>
             previousFuture.then((previous) => combine(previous, element)));
 
-/// Returns the first index in [list] for which [callback] returns `true`, or
-/// `-1` if there is no such index.
-int indexWhere<T>(List<T> list, bool callback(T element)) {
-  for (var i = 0; i < list.length; i++) {
-    if (callback(list[i])) return i;
-  }
-  return -1;
-}
-
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String fn(Match match)) {
@@ -405,32 +377,6 @@ String replace(String source, Pattern matcher, String fn(Match match)) {
 /// Returns the hex-encoded sha1 hash of [source].
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
-
-/// Returns the base64-encoded sha1 hash of [stream].
-Future<String> sha1Stream(Stream<List<int>> stream) async {
-  crypto.Digest digest;
-
-  var digestSink =
-      new ChunkedConversionSink<crypto.Digest>.withCallback((digests) {
-    digest = digests.single;
-  });
-
-  var byteSink = crypto.sha1.startChunkedConversion(digestSink);
-
-  await stream.forEach((chunk) {
-    byteSink.add(chunk);
-  });
-
-  byteSink.close();
-
-  // TODO(rnystrom): this call to `close` should not be needed. Remove when
-  //   https://github.com/dart-lang/crypto/issues/33
-  // is fixed.
-  // Does not cause any problems in the mean time.
-  digestSink.close();
-
-  return base64Encode(digest.bytes);
-}
 
 /// Configures [future] so that its result (success or exception) is passed on
 /// to [completer].
@@ -589,24 +535,6 @@ String mapToQuery(Map<String, String> map) {
   }).join("&");
 }
 
-/// Returns the union of all elements in each set in [sets].
-Set<T> unionAll<T>(Iterable<Set<T>> sets) =>
-    sets.fold(new Set(), (union, set) => union.union(set));
-
-/// Returns a human-friendly representation of [inputPath].
-///
-/// If [inputPath] isn't too distant from the current working directory, this
-/// will return the relative path to it. Otherwise, it will return the absolute
-/// path.
-String nicePath(String inputPath) {
-  var relative = path.relative(inputPath);
-  var split = path.split(relative);
-  if (split.length > 1 && split[0] == '..' && split[1] == '..') {
-    return path.absolute(inputPath);
-  }
-  return relative;
-}
-
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
   var hasMinutes = duration.inMinutes > 0;
@@ -695,31 +623,6 @@ bool get isAprilFools {
 
   var date = new DateTime.now();
   return date.month == 4 && date.day == 1;
-}
-
-/// Wraps [fn] to guard against several different kinds of stack overflow
-/// exceptions:
-///
-/// * A sufficiently long [Future] chain can cause a stack overflow if there are
-///   no asynchronous operations in it (issue 9583).
-/// * A recursive function that recurses too deeply without an asynchronous
-///   operation can cause a stack overflow.
-/// * Even if the former is guarded against by adding asynchronous operations,
-///   returning a value through the [Future] chain can still cause a stack
-///   overflow.
-Future resetStack(fn()) {
-  // Using a [Completer] breaks the [Future] chain for the return value and
-  // avoids the third case described above.
-  var completer = new Completer();
-
-  // Using [new Future] adds an asynchronous operation that works around the
-  // first and second cases described above.
-  newFuture(fn).then((val) {
-    scheduleMicrotask(() => completer.complete(val));
-  }).catchError((err, stackTrace) {
-    scheduleMicrotask(() => completer.completeError(err, stackTrace));
-  });
-  return completer.future;
 }
 
 /// The subset of strings that don't need quoting in YAML.
@@ -868,3 +771,14 @@ final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
 
 /// Returns [str] without any color codes.
 String withoutColors(String str) => str.replaceAll(_colorCode, '');
+
+/// A regular expression to match the exception prefix that some exceptions'
+/// [Object.toString] values contain.
+final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
+
+/// Get a string description of an exception.
+///
+/// Many exceptions include the exception class name at the beginning of their
+/// [toString], so we remove that if it exists.
+String getErrorMessage(error) =>
+    error.toString().replaceFirst(_exceptionPrefix, '');

@@ -6,10 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
-import 'package:yaml/yaml.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -37,14 +35,6 @@ Future servePackages(void callback(PackageServerBuilder builder)) async {
 ///
 /// This will always replace a previous server.
 Future serveNoPackages() => servePackages((_) {});
-
-/// A shortcut for [servePackages] that serves the version of barback used by
-/// pub.
-Future serveBarback() {
-  return servePackages((builder) {
-    builder.serveRealPackage('barback');
-  });
-}
 
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
@@ -167,34 +157,6 @@ class PackageServerBuilder {
 
     var packages = _packages.putIfAbsent(name, () => []);
     packages.add(new _ServedPackage(pubspecFields, contents));
-  }
-
-  /// Serves the versions of [package] and all its dependencies that are
-  /// currently depended on by pub.
-  void serveRealPackage(String package) {
-    _addPackage(name) {
-      if (_packages.containsKey(name)) return;
-      _packages[name] = [];
-
-      var root = packagePath(name);
-      var pubspec =
-          new Map.from(loadYaml(readTextFile(p.join(root, 'pubspec.yaml'))));
-
-      // Remove any SDK constraints since we don't have a valid SDK version
-      // while testing.
-      pubspec.remove('environment');
-
-      _packages[name].add(new _ServedPackage(pubspec, [
-        d.file('pubspec.yaml', yaml(pubspec)),
-        new d.DirectoryDescriptor.fromFilesystem('lib', p.join(root, 'lib'))
-      ]));
-
-      if (pubspec.containsKey('dependencies')) {
-        pubspec['dependencies'].keys.forEach(_addPackage);
-      }
-    }
-
-    _addPackage(package);
   }
 
   /// Clears all existing packages from this builder.

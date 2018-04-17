@@ -29,7 +29,6 @@ main() {
         -v, --verbose          Shortcut for "--verbosity=all".
 
         Available commands:
-          build       Apply transformers to build a package.
           cache       Work with the system cache.
           deps        Print package dependencies.
           downgrade   Downgrade the current package's dependencies to oldest versions.
@@ -38,7 +37,6 @@ main() {
           help        Display help information for pub.
           publish     Publish the current package to pub.dartlang.org.
           run         Run an executable from a package.
-          serve       Run a local web development server.
           upgrade     Upgrade the current package's dependencies to latest versions.
           uploader    Manage uploaders for a package on pub.dartlang.org.
           version     Print pub version.

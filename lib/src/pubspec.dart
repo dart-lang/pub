@@ -11,8 +11,6 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
-import 'barback/transformer_config.dart';
-import 'compiler.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
@@ -245,82 +243,6 @@ class Pubspec {
 
   Map<String, Feature> _features;
 
-  /// The configurations of the transformers to use for this package.
-  List<Set<TransformerConfig>> get transformers {
-    if (_transformers != null) return _transformers;
-
-    _transformers = _parseList(fields.nodes['transformers']).nodes.map((phase) {
-      var phaseNodes = phase is YamlList ? phase.nodes : [phase];
-      return phaseNodes.map((transformerNode) {
-        var transformer = transformerNode.value;
-        if (transformer is! String && transformer is! Map) {
-          _error(
-              'A transformer must be a string or map.', transformerNode.span);
-        }
-
-        var libraryNode;
-        var configurationNode;
-        if (transformer is String) {
-          libraryNode = transformerNode;
-        } else {
-          if (transformer.length != 1) {
-            _error(
-                'A transformer map must have a single key: the transformer '
-                'identifier.',
-                transformerNode.span);
-          } else if (transformer.keys.single is! String) {
-            _error('A transformer identifier must be a string.',
-                transformer.nodes.keys.single.span);
-          }
-
-          libraryNode = transformer.nodes.keys.single;
-          configurationNode = transformer.nodes.values.single;
-          if (configurationNode is! YamlMap) {
-            _error("A transformer's configuration must be a map.",
-                configurationNode.span);
-          }
-        }
-
-        var config = _wrapSpanFormatException('transformer config', () {
-          return new TransformerConfig.parse(
-              libraryNode.value, libraryNode.span, configurationNode);
-        });
-
-        var package = config.id.package;
-        if (package != name &&
-            !config.id.isBuiltInTransformer &&
-            !_hasDependency(package)) {
-          _error('"$package" is not a dependency.', libraryNode.span);
-        }
-
-        return config;
-      }).toSet();
-    }).toList();
-
-    return _transformers;
-  }
-
-  List<Set<TransformerConfig>> _transformers;
-
-  /// Returns whether this pubspec has any kind of dependency on [package].
-  ///
-  /// This explicitly avoids calling [_parseDependencies] because parsing dev
-  /// dependencies can fail for a hosted package's pubspec (e.g. if that package
-  /// has a relative path dev dependency).
-  bool _hasDependency(String package) {
-    return ['dependencies', 'dev_dependencies', 'dependency_overrides']
-        .any((field) {
-      var map = fields[field];
-      if (map == null) return false;
-
-      if (map is! Map) {
-        _error('"$field" field must be a map.', fields.nodes[field].span);
-      }
-
-      return map.containsKey(package);
-    });
-  }
-
   /// A map from SDK identifiers to constraints on those SDK versions.
   Map<String, VersionConstraint> get sdkConstraints {
     _ensureEnvironment();
@@ -518,49 +440,6 @@ class Pubspec {
 
   Map<String, String> _executables;
 
-  /// The settings for which web compiler to use in which mode.
-  ///
-  /// It is a map of [String] to [Compiler]. Each key is the name of a mode, and
-  /// the value is the web compiler to use in that mode.
-  ///
-  /// Valid compiler values are all of [Compiler.names].
-  Map<String, Compiler> get webCompiler {
-    if (_webCompiler != null) return _webCompiler;
-
-    _webCompiler = <String, Compiler>{};
-    var webYaml = fields.nodes['web'];
-    if (webYaml?.value == null) return _webCompiler;
-
-    if (webYaml is! Map) {
-      _error('"web" field must be a map.', webYaml.span);
-    }
-
-    var compilerYaml = (webYaml as YamlMap)['compiler'];
-    if (compilerYaml == null) return _webCompiler;
-
-    if (compilerYaml is! Map) {
-      _error('"compiler" field must be a map.',
-          (webYaml as YamlMap).nodes['compiler'].span);
-    }
-
-    compilerYaml.nodes.forEach((key, value) {
-      if (key.value is! String) {
-        _error('"compiler" keys must be strings.', key.span);
-      }
-
-      if (!Compiler.names.contains(value.value)) {
-        _error(
-            '"compiler" values must be one of ${Compiler.names}.', value.span);
-      }
-
-      _webCompiler[key.value] = Compiler.byName(value.value);
-    });
-
-    return _webCompiler;
-  }
-
-  Map<String, Compiler> _webCompiler;
-
   /// Whether the package is private and cannot be published.
   ///
   /// This is specified in the pubspec by setting "publish_to" to "none".
@@ -598,7 +477,6 @@ class Pubspec {
       Iterable<PackageRange> dependencies,
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
-      Iterable<Iterable<TransformerConfig>> transformers,
       Map fields,
       SourceRegistry sources})
       : _version = version,
@@ -615,9 +493,6 @@ class Pubspec {
         _sdkConstraints =
             new UnmodifiableMapView({"dart": VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
-        _transformers = transformers == null
-            ? []
-            : transformers.map((phase) => phase.toSet()).toList(),
         fields = fields == null ? new YamlMap() : new YamlMap.wrap(fields),
         _sources = sources;
 
@@ -629,7 +504,6 @@ class Pubspec {
         _devDependencies = {},
         _sdkConstraints = {"dart": VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
 
   /// Returns a Pubspec object for an already-parsed map representing its
@@ -702,7 +576,6 @@ class Pubspec {
     _getError(() => this.version);
     _getError(() => this.dependencies);
     _getError(() => this.devDependencies);
-    _getError(() => this.transformers);
     _getError(() => this.publishTo);
     _getError(() => this.features);
     _getError(() => this._ensureEnvironment());
@@ -899,14 +772,6 @@ class Pubspec {
       return fn();
     } on FormatException catch (e) {
       _error('Invalid $description: ${e.message}', span);
-    }
-  }
-
-  T _wrapSpanFormatException<T>(String description, T fn()) {
-    try {
-      return fn();
-    } on SourceSpanFormatException catch (e) {
-      _error('Invalid $description: ${e.message}', e.span);
     }
   }
 

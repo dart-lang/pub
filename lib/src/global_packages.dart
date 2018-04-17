@@ -6,11 +6,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
@@ -225,62 +222,26 @@ class GlobalPackages {
   /// successfully precompiled.
   Future<Map<String, String>> _precompileExecutables(
       Entrypoint entrypoint, String packageName) {
-    return log.progress("Precompiling executables", () {
+    return log.progress("Precompiling executables", () async {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
-      if (entrypoint.packageGraph
-          .transitiveDependencies(packageName)
-          .every((package) => package.pubspec.transformers.isEmpty)) {
-        return _precompileExecutablesWithoutBarback(package, binDir);
-      } else {
-        return _precompileExecutablesWithBarback(entrypoint, package, binDir);
-      }
+      var precompiled = {};
+      await waitAndPrintErrors(package.executableIds.map((path) async {
+        var url = p.toUri(package.dir);
+        url = url.replace(path: p.url.join(url.path, path));
+        var basename = p.url.basename(path);
+        var snapshotPath = p.join(binDir, '$basename.snapshot');
+        await dart.snapshot(url, snapshotPath,
+            packagesFile: p.toUri(_getPackagesFilePath(package.name)),
+            name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
+        precompiled[p.withoutExtension(basename)] = snapshotPath;
+      }));
+      return precompiled;
     });
-  }
-
-  //// Precompiles all executables in [package] to snapshots from the
-  //// filesystem.
-  ////
-  //// The snapshots are placed in [dir].
-  ////
-  //// Returns a map from executable basenames without extensions to the paths
-  //// to those executables.
-  Future<Map<String, String>> _precompileExecutablesWithoutBarback(
-      Package package, String dir) async {
-    var precompiled = {};
-    await waitAndPrintErrors(package.executableIds.map((id) async {
-      var url = p.toUri(package.dir);
-      url = url.replace(path: p.url.join(url.path, id.path));
-      var basename = p.url.basename(id.path);
-      var snapshotPath = p.join(dir, '$basename.snapshot');
-      await dart.snapshot(url, snapshotPath,
-          packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
-      precompiled[p.withoutExtension(basename)] = snapshotPath;
-    }));
-    return precompiled;
-  }
-
-  //// Precompiles all executables in [package] to snapshots from a barback
-  //// asset environment.
-  ////
-  //// The snapshots are placed in [dir].
-  ////
-  //// Returns a map from executable basenames without extensions to the paths
-  //// to those executables.
-  Future<Map<String, String>> _precompileExecutablesWithBarback(
-      Entrypoint entrypoint, Package package, String dir) async {
-    var environment = await AssetEnvironment.create(
-        entrypoint, BarbackMode.RELEASE,
-        entrypoints: package.executableIds, compiler: Compiler.none);
-    environment.barback.errors.listen((error) {
-      log.error(log.red("Build error:\n$error"));
-    });
-
-    return environment.precompileExecutables(package.name, dir);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -409,21 +370,16 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [checked] is true, the program is run in checked mode. If [mode] is
-  /// passed, it's used as the barback mode; it defaults to
-  /// [BarbackMode.RELEASE].
+  /// If [checked] is true, the program is run in checked mode.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
-      {bool checked: false, BarbackMode mode}) {
-    if (mode == null) mode = BarbackMode.RELEASE;
-
+      {bool checked: false}) {
     var binDir = p.join(_directory, package, 'bin');
-    if (mode != BarbackMode.RELEASE ||
-        !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
+    if (!fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
       return exe.runExecutable(find(package), package, executable, args,
-          isGlobal: true, checked: checked, mode: mode);
+          isGlobal: true, checked: checked, cache: cache);
     }
 
     // Unless the user overrides the verbosity, we want to filter out the

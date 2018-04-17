@@ -4,11 +4,9 @@
 
 import 'dart:io';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'barback/transformer_id.dart';
 import 'git.dart' as git;
 import 'io.dart';
 import 'package_name.dart';
@@ -71,13 +69,11 @@ class Package {
 
   /// Returns a list of asset ids for all Dart executables in this package's bin
   /// directory.
-  List<AssetId> get executableIds {
+  List<String> get executableIds {
     return ordered(listFiles(beneath: "bin", recursive: false))
         .where((executable) => p.extension(executable) == '.dart')
-        .map((executable) {
-      return new AssetId(
-          name, p.toUri(p.relative(executable, from: dir)).toString());
-    }).toList();
+        .map((executable) => p.relative(executable, from: dir))
+        .toList();
   }
 
   /// Returns the path to the README file at the root of the entrypoint, or null
@@ -144,8 +140,7 @@ class Package {
   ///
   /// This is similar to `p.join(dir, part1, ...)`, except that subclasses may
   /// override it to report that certain paths exist elsewhere than within
-  /// [dir]. For example, a [CachedPackage]'s `lib` directory is in the
-  /// `.dart_tool/pub/deps` directory.
+  /// [dir].
   String path(String part1,
       [String part2,
       String part3,
@@ -168,19 +163,6 @@ class Package {
           "on disk.");
     }
     return p.relative(path, from: dir);
-  }
-
-  /// Returns the path to the library identified by [id] within [this].
-  String transformerPath(TransformerId id) {
-    if (id.package != name) {
-      throw new ArgumentError("Transformer $id isn't in package $name.");
-    }
-
-    if (id.path != null) return path('lib', p.fromUri('${id.path}.dart'));
-
-    var transformerPath = path('lib/transformer.dart');
-    if (fileExists(transformerPath)) return transformerPath;
-    return path('lib/$name.dart');
   }
 
   /// Returns the type of dependency from this package onto [name].

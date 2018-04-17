@@ -108,26 +108,6 @@ class Incompatibility {
 
       return "${_terse(depender, details, allowEvery: true)} depends on "
           "${_terse(dependee, details)}";
-    } else if (cause == IncompatibilityCause.pubDependency) {
-      if (terms.length == 1) {
-        var forbidden = terms.first;
-        assert(forbidden.isPositive);
-
-        // The only one-term pub dependency is on barback, which forbids
-        // versions outside the range pub supports.
-        return "pub itself depends on ${_terseRef(forbidden, details)} "
-            "${VersionConstraint.any.difference(forbidden.constraint)}";
-      }
-
-      assert(terms.length == 2);
-      assert(terms.first.isPositive);
-      assert(terms.first.package.name == "barback");
-
-      var dependee = terms.last;
-      assert(!dependee.isPositive);
-
-      return "when barback is in use pub itself depends on " +
-          _terse(dependee, details);
     } else if (cause == IncompatibilityCause.useLatest) {
       assert(terms.length == 1);
 
@@ -241,19 +221,16 @@ class Incompatibility {
   /// that should be associated with [this] and [other], respectively.
   String andToString(Incompatibility other,
       [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
-    if (this.cause != IncompatibilityCause.pubDependency &&
-        other.cause != IncompatibilityCause.pubDependency) {
-      var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
-      if (requiresBoth != null) return requiresBoth;
+    var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
+    if (requiresBoth != null) return requiresBoth;
 
-      var requiresThrough =
-          _tryRequiresThrough(other, details, thisLine, otherLine);
-      if (requiresThrough != null) return requiresThrough;
+    var requiresThrough =
+        _tryRequiresThrough(other, details, thisLine, otherLine);
+    if (requiresThrough != null) return requiresThrough;
 
-      var requiresForbidden =
-          _tryRequiresForbidden(other, details, thisLine, otherLine);
-      if (requiresForbidden != null) return requiresForbidden;
-    }
+    var requiresForbidden =
+        _tryRequiresForbidden(other, details, thisLine, otherLine);
+    if (requiresForbidden != null) return requiresForbidden;
 
     var buffer = new StringBuffer(this.toString(details));
     if (thisLine != null) buffer.write(" $thisLine");

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
@@ -250,134 +249,6 @@ dependencies:
           'version: not version', (pubspec) => pubspec.version);
     });
 
-    test("throws if transformers isn't a list", () {
-      expectPubspecException(
-          'transformers: "not list"', (pubspec) => pubspec.transformers);
-    });
-
-    test("throws if a transformer isn't a string or map", () {
-      expectPubspecException(
-          'transformers: [12]',
-          (pubspec) => pubspec.transformers,
-          'A transformer must be a string or map.');
-    });
-
-    test("throws if a transformer's configuration isn't a map", () {
-      expectPubspecException(
-          'transformers: [{pkg: 12}]',
-          (pubspec) => pubspec.transformers,
-          "A transformer's configuration must be a map.");
-    });
-
-    test(
-        "throws if a transformer's configuration contains an unknown "
-        "reserved key at the top level", () {
-      expectPubspecException('''
-name: pkg
-transformers: [{pkg: {\$key: "value"}}]''', (pubspec) => pubspec.transformers,
-          'Invalid transformer config: Unknown reserved field.');
-    });
-
-    test(
-        "doesn't throw if a transformer's configuration contains a "
-        "non-top-level key beginning with a dollar sign", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-transformers:
-- pkg: {outer: {\$inner: value}}
-''', sources);
-
-      var pkg = pubspec.transformers[0].single;
-      expect(pkg.configuration["outer"]["\$inner"], equals("value"));
-    });
-
-    test("throws if the \$include value is not a string or list", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$include: 123}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$include" field must be a string or '
-          'list.');
-    });
-
-    test("throws if the \$include list contains a non-string", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$include: ["ok", 123, "alright", null]}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$include" field may contain only '
-          'strings.');
-    });
-
-    test("throws if the \$exclude value is not a string or list", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$exclude: 123}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$exclude" field must be a string or '
-          'list.');
-    });
-
-    test("throws if the \$exclude list contains a non-string", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$exclude: ["ok", 123, "alright", null]}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$exclude" field may contain only '
-          'strings.');
-    });
-
-    test("throws if a transformer is not from a dependency", () {
-      expectPubspecException('''
-name: pkg
-transformers: [foo]
-''', (pubspec) => pubspec.transformers, '"foo" is not a dependency.');
-    });
-
-    test("allows a transformer from a normal dependency", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dependencies:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
-    test("allows a transformer from a dev dependency", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dev_dependencies:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
-    test("allows a transformer from a dependency override", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dependency_overrides:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
     test("allows comment-only files", () {
       var pubspec = new Pubspec.parse('''
 # No external dependencies yet
@@ -620,65 +491,6 @@ executables:
   command:
 ''', sources);
         expect(pubspec.executables['command'], equals('command'));
-      });
-    });
-
-    group("web", () {
-      test("can be empty", () {
-        var pubspec = new Pubspec.parse('web: {}', sources);
-        expect(pubspec.webCompiler, isEmpty);
-      });
-
-      group("compiler", () {
-        test("defaults to an empty map if omitted", () {
-          var pubspec = new Pubspec.parse('', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("defaults to an empty map if web is null", () {
-          var pubspec = new Pubspec.parse('web:', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("defaults to an empty map if compiler is null", () {
-          var pubspec = new Pubspec.parse('web: {compiler:}', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("allows simple names for keys and valid compilers in values", () {
-          var pubspec = new Pubspec.parse('''
-web:
-  compiler:
-    abcDEF-123_: none
-    debug: dartdevc
-    release: dart2js
-''', sources);
-          expect(pubspec.webCompiler['abcDEF-123_'], equals(Compiler.none));
-          expect(pubspec.webCompiler['debug'], equals(Compiler.dartDevc));
-          expect(pubspec.webCompiler['release'], equals(Compiler.dart2JS));
-        });
-
-        test("throws if not a map", () {
-          expectPubspecException(
-              'web: {compiler: dartdevc}', (pubspec) => pubspec.webCompiler);
-          expectPubspecException(
-              'web: {compiler: [dartdevc]}', (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if key is not a string", () {
-          expectPubspecException('web: {compiler: {123: dartdevc}}',
-              (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if a value is not a supported compiler", () {
-          expectPubspecException('web: {compiler: {debug: frog}}',
-              (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if the value is null", () {
-          expectPubspecException(
-              'web: {compiler: {debug: }}', (pubspec) => pubspec.webCompiler);
-        });
       });
     });
 

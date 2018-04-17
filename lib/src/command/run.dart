@@ -4,12 +4,12 @@
 
 import 'dart:async';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../executable.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../utils.dart';
 
 /// Handles the `run` pub command.
@@ -22,10 +22,7 @@ class RunCommand extends PubCommand {
   RunCommand() {
     argParser.addFlag("checked",
         abbr: "c", help: "Enable runtime type checks and assertions.");
-    argParser.addOption("mode",
-        help: 'Mode to run transformers in.\n'
-            '(defaults to "release" for dependencies, "debug" for '
-            'entrypoint)');
+    argParser.addOption("mode", help: "Deprecated option", hide: true);
   }
 
   Future run() async {
@@ -56,17 +53,12 @@ class RunCommand extends PubCommand {
       package = executable;
     }
 
-    var mode;
-    if (argResults['mode'] != null) {
-      mode = new BarbackMode(argResults['mode']);
-    } else if (package == entrypoint.root.name) {
-      mode = BarbackMode.DEBUG;
-    } else {
-      mode = BarbackMode.RELEASE;
+    if (argResults.wasParsed("mode")) {
+      log.warning("The --mode flag is deprecated and has no effect.");
     }
 
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['checked'], mode: mode);
+        checked: argResults['checked']);
     await flushThenExit(exitCode);
   }
 }

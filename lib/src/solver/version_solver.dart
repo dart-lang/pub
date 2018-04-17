@@ -8,7 +8,6 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../barback.dart';
 import '../exceptions.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -80,29 +79,7 @@ class VersionSolver {
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> useLatest)
       : _overriddenPackages = new MapKeySet(_root.pubspec.dependencyOverrides),
-        _useLatest = new Set.from(useLatest) {
-    _addImplicitIncompatibilities();
-  }
-
-  /// Adds incompatibilities representing the dependencies pub itself has on
-  /// various packages to support barback at runtime.
-  void _addImplicitIncompatibilities() {
-    var barbackOverride = _root.pubspec.dependencyOverrides["barback"];
-    var barbackRef = barbackOverride == null
-        ? _systemCache.sources.hosted.refFor("barback")
-        : barbackOverride.toRef();
-
-    pubConstraints.forEach((name, constraint) {
-      if (_root.pubspec.dependencyOverrides.containsKey(name)) return;
-
-      _addIncompatibility(new Incompatibility([
-        new Term(barbackRef.withConstraint(VersionConstraint.any), true),
-        new Term(
-            _systemCache.sources.hosted.refFor(name).withConstraint(constraint),
-            false)
-      ], IncompatibilityCause.pubDependency));
-    });
-  }
+        _useLatest = new Set.from(useLatest);
 
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
