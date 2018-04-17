@@ -13,6 +13,7 @@ import 'utils.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
+import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/license.dart';
@@ -105,6 +106,7 @@ abstract class Validator {
       new PubspecFieldValidator(entrypoint),
       new DependencyValidator(entrypoint),
       new DependencyOverrideValidator(entrypoint),
+      new DeprecatedFieldsValidator(entrypoint),
       new DirectoryValidator(entrypoint),
       new ExecutableValidator(entrypoint),
       new CompiledDartdocValidator(entrypoint),
