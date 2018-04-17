@@ -878,7 +878,7 @@ class Pubspec {
         _error('Must be a string.', element.span);
       }
     }
-    return DelegatingList.typed(list);
+    return list.cast<String>();
   }
 
   /// Verifies that [node] is a list and returns it.
