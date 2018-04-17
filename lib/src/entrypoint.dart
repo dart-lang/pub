@@ -291,8 +291,7 @@ class Entrypoint {
         return dart.snapshot(
             url, p.join(dir, p.url.basename(path) + '.snapshot'),
             packagesFile: p.toUri(packagesFile),
-            packageName: package,
-            pathInPackage: path);
+            name: '$package:${p.url.basenameWithoutExtension(path)}');
       }));
     }));
   }

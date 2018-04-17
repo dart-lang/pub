@@ -50,13 +50,11 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 /// executable. Otherwise, a `packages/` directory or a package spec is inferred
 /// from the executable's location.
 ///
-/// If [packageName] and [pathInPackage] are passed, they are used to describe the
-/// executable in logs and error messages.
+/// If [name] is passed, it is used to describe the executable in logs and error
+/// messages.
 Future snapshot(Uri executableUrl, String snapshotPath,
-    {Uri packagesFile, String packageName, String pathInPackage}) async {
-  var name = log.bold(packageName == null || pathInPackage == null
-      ? executableUrl.toString()
-      : "${packageName}:${p.url.basenameWithoutExtension(pathInPackage)}");
+    {Uri packagesFile, String name}) async {
+  name = log.bold(name ?? executableUrl.toString());
 
   var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
   if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
