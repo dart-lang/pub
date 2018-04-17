@@ -110,6 +110,8 @@ Future<String> _executablePath(
 
   if (!fileExists(entrypoint.packagesFile)) {
     if (!isGlobal) return null;
+    // A .packages file may not already exist if the global executable has a
+    // 1.6-style lock file instead.
     await writeTextFile(
         entrypoint.packagesFile, entrypoint.lockFile.packagesFile(cache));
   }
