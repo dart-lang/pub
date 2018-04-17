@@ -5,7 +5,6 @@
 /// A library for compiling Dart code and manipulating analyzer parse trees.
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:path/path.dart' as p;
