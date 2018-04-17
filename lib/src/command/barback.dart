@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import '../command.dart';
 import '../log.dart' as log;
+import '../utils.dart';
 
 /// Shared base class for [BuildCommand] and [ServeCommand].
 abstract class BarbackCommand extends PubCommand {
@@ -16,9 +15,8 @@ abstract class BarbackCommand extends PubCommand {
     log.json.enabled =
         argResults.options.contains("format") && argResults["format"] == "json";
 
-    log.error(log.red("Dart 2 has a new build system. Learn how to migrate "
+    fail(log.red("Dart 2 has a new build system. Learn how to migrate "
         "from ${log.bold('pub build')} and\n"
         "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n"));
-    exit(-1);
   }
 }
