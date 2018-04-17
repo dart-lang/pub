@@ -48,7 +48,7 @@ class GlobalRunCommand extends PubCommand {
           'package.');
     }
 
-    if(argResults.wasParsed("mode")) {
+    if (argResults.wasParsed("mode")) {
       log.warning("The --mode flag is deprecated and has no effect.");
     }
 
