@@ -24,7 +24,7 @@ main() {
   group('bad source', badSource);
   group('backtracking', backtracking);
   group('Dart SDK constraint', dartSdkConstraint);
-  group('Flutter SDK constraint', flutterSdkConstraint);
+  group('SDK constraint', sdkConstraint);
   group('pre-release', prerelease);
   group('override', override);
   group('downgrade', downgrade);
@@ -1431,7 +1431,7 @@ void dartSdkConstraint() {
   });
 }
 
-void flutterSdkConstraint() {
+void sdkConstraint() {
   group('without a Flutter SDK', () {
     test('fails for the root package', () async {
       await d.dir(appPath, [
@@ -1491,6 +1491,22 @@ void flutterSdkConstraint() {
         Flutter users should run `flutter packages get` instead of `pub get`.
       '''));
     });
+  });
+
+  test('without a Fuchsia SDK fails for the root package', () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'fuchsia': '1.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Fuchsia SDK, version solving failed.
+
+        Please set the FUCHSIA_DART_SDK_ROOT environment variable to point to
+          the root of the Fuchsia SDK for Dart.
+      '''));
   });
 
   group('with a Flutter SDK', () {

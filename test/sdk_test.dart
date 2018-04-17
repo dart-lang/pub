@@ -148,5 +148,24 @@ main() {
             """), exitCode: exit_codes.UNAVAILABLE);
       });
     });
+
+    test("supports the Fuchsia SDK", () async {
+      await renameDir(
+          p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
+
+      await d.appDir({
+        "foo": {"sdk": "fuchsia"}
+      }).create();
+      await pubCommand(command,
+          environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')});
+
+      await d.dir(appPath, [
+        d.packagesFile({
+          'myapp': '.',
+          'foo': p.join(d.sandbox, 'fuchsia', 'packages', 'foo'),
+          'bar': '1.0.0'
+        })
+      ]).validate();
+    });
   });
 }
