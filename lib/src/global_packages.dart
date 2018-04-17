@@ -230,13 +230,15 @@ class GlobalPackages {
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
       var precompiled = {};
-      await waitAndPrintErrors(package.executableIds.map((id) async {
+      await waitAndPrintErrors(package.executableIds.map((path) async {
         var url = p.toUri(package.dir);
-        url = url.replace(path: p.url.join(url.path, id.path));
-        var basename = p.url.basename(id.path);
+        url = url.replace(path: p.url.join(url.path, path));
+        var basename = p.url.basename(path);
         var snapshotPath = p.join(binDir, '$basename.snapshot');
         await dart.snapshot(url, snapshotPath,
-            packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
+            packagesFile: p.toUri(_getPackagesFilePath(package.name)),
+            packageName: package.name,
+            pathInPackage: path);
         precompiled[p.withoutExtension(basename)] = snapshotPath;
       }));
       return precompiled;

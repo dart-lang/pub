@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:analyzer/analyzer.dart';
 import 'package:path/path.dart' as p;
 
-import 'asset/id.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -51,13 +50,13 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 /// executable. Otherwise, a `packages/` directory or a package spec is inferred
 /// from the executable's location.
 ///
-/// If [id] is passed, it's used to describe the executable in logs and error
-/// messages.
+/// If [packageName] and [pathInPackage] are passed, they are used to describe the
+/// executable in logs and error messages.
 Future snapshot(Uri executableUrl, String snapshotPath,
-    {Uri packagesFile, AssetId id}) async {
-  var name = log.bold(id == null
+    {Uri packagesFile, String packageName, String pathInPackage}) async {
+  var name = log.bold(packageName == null || pathInPackage == null
       ? executableUrl.toString()
-      : "${id.package}:${p.url.basenameWithoutExtension(id.path)}");
+      : "${packageName}:${p.url.basenameWithoutExtension(pathInPackage)}");
 
   var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
   if (packagesFile != null) args.insert(0, "--packages=$packagesFile");

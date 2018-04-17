@@ -10,7 +10,6 @@ import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'asset/id.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'http.dart' as http;
@@ -260,7 +259,7 @@ class Entrypoint {
     migrateCache();
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = mapMap<String, PackageRange, String, List<AssetId>>(
+    var executables = mapMap<String, PackageRange, String, List<String>>(
         root.immediateDependencies,
         value: (name, _) => _executablesForPackage(name));
 
@@ -282,16 +281,18 @@ class Entrypoint {
   }
 
   //// Precompiles [executables] to snapshots from the filesystem.
-  Future _precompileExecutables(Map<String, List<AssetId>> executables) {
+  Future _precompileExecutables(Map<String, List<String>> executables) {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
-      return waitAndPrintErrors(executables[package].map((id) {
-        var url = p.toUri(packageGraph.packages[id.package].dir);
-        url = url.replace(path: p.url.join(url.path, id.path));
+      return waitAndPrintErrors(executables[package].map((path) {
+        var url = p.toUri(packageGraph.packages[package].dir);
+        url = url.replace(path: p.url.join(url.path, path));
         return dart.snapshot(
-            url, p.join(dir, p.url.basename(id.path) + '.snapshot'),
-            packagesFile: p.toUri(packagesFile), id: id);
+            url, p.join(dir, p.url.basename(path) + '.snapshot'),
+            packagesFile: p.toUri(packagesFile),
+            packageName: package,
+            pathInPackage: path);
       }));
     }));
   }
@@ -335,9 +336,9 @@ class Entrypoint {
     }
   }
 
-  /// Returns the list of all executable assets for [packageName] that should be
+  /// Returns the list of all paths within [packageName] that should be
   /// precompiled.
-  List<AssetId> _executablesForPackage(String packageName) {
+  List<String> _executablesForPackage(String packageName) {
     var package = packageGraph.packages[packageName];
     var binDir = package.path('bin');
     if (!dirExists(binDir)) return [];
@@ -355,7 +356,7 @@ class Entrypoint {
     var executablesExist = executables.every((executable) => fileExists(p.join(
         _snapshotPath,
         packageName,
-        "${p.url.basename(executable.path)}.snapshot")));
+        "${p.url.basename(executable)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.

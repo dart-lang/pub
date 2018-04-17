@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'asset/id.dart';
 import 'git.dart' as git;
 import 'io.dart';
 import 'package_name.dart';
@@ -70,13 +69,11 @@ class Package {
 
   /// Returns a list of asset ids for all Dart executables in this package's bin
   /// directory.
-  List<AssetId> get executableIds {
+  List<String> get executableIds {
     return ordered(listFiles(beneath: "bin", recursive: false))
         .where((executable) => p.extension(executable) == '.dart')
-        .map((executable) {
-      return new AssetId(
-          name, p.toUri(p.relative(executable, from: dir)).toString());
-    }).toList();
+        .map((executable) => p.relative(executable, from: dir))
+        .toList();
   }
 
   /// Returns the path to the README file at the root of the entrypoint, or null
