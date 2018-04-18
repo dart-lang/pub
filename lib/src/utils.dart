@@ -96,10 +96,6 @@ class Pair<E, F> {
   int get hashCode => first.hashCode ^ last.hashCode;
 }
 
-/// Like [new Future], but avoids around issue 11911 by using [new Future.value]
-/// under the covers.
-Future newFuture(callback()) => new Future.value().then((_) => callback());
-
 /// Runs [callback] in an error zone and pipes any unhandled error to the
 /// returned [Future].
 ///
