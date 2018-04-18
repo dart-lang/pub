@@ -66,9 +66,9 @@ class _PubHttpClient extends http.BaseClient {
     var streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
-    } on SocketException catch (error, stackTrace) {
+    } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      final defaultedStackTrace = stackTrace ?? new Chain.current();
+      var stackTrace = stackTraceOrNull ?? new Chain.current();
 
       if (error.osError == null) rethrow;
 
@@ -78,13 +78,13 @@ class _PubHttpClient extends http.BaseClient {
           error.osError.errorCode == 11001 ||
           error.osError.errorCode == 11004) {
         fail('Could not resolve URL "${request.url.origin}".', error,
-            defaultedStackTrace);
+            stackTrace);
       } else if (error.osError.errorCode == -12276) {
         fail(
             'Unable to validate SSL certificate for '
             '"${request.url.origin}".',
             error,
-            defaultedStackTrace);
+            stackTrace);
       } else {
         rethrow;
       }
