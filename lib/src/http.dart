@@ -66,9 +66,9 @@ class _PubHttpClient extends http.BaseClient {
     var streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
-    } on SocketException catch (error, stackTrace) {
+    } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      if (stackTrace == null) stackTrace = new Chain.current();
+      var stackTrace = stackTraceOrNull ?? new Chain.current();
 
       if (error.osError == null) rethrow;
 
