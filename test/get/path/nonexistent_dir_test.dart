@@ -23,7 +23,7 @@ main() {
     await pubGet(
         error: allOf([
           contains("Because myapp depends on foo from path which doesn't exist "
-              "(could not find package foo at\n"),
+              "(could not find package foo at"),
           contains('bad_path"), version solving failed.')
         ]),
         exitCode: exit_codes.NO_INPUT);

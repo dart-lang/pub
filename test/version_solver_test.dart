@@ -503,9 +503,9 @@ void unsolvable() {
         error: allOf([
       contains('Because every version of foo depends on shared from hosted on '
           'http://localhost:'),
-      contains(' and every\n  version of bar depends on shared from hosted on '
+      contains(' and every version of bar depends on shared from hosted on '
           'http://localhost:'),
-      contains(', foo is incompatible with\n  bar.'),
+      contains(', foo is incompatible with bar.'),
       contains('So, because myapp depends on both bar 1.0.0 and foo 1.0.0, '
           'version solving failed.')
     ]));
@@ -753,14 +753,12 @@ void backtracking() {
         // We avoid equalsIgnoringWhitespace() here because we want to test the
         // formatting of the line number.
         error: '    Because foo <1.1.0 depends on a ^1.0.0 which depends on b '
-            '^2.0.0, foo <1.1.0 requires b\n'
-            '      ^2.0.0.\n'
+            '^2.0.0, foo <1.1.0 requires b ^2.0.0.\n'
             '(1) So, because foo <1.1.0 depends on b ^1.0.0, foo <1.1.0 is '
             'forbidden.\n'
             '\n'
             '    Because foo >=1.1.0 depends on x ^1.0.0 which depends on y '
-            '^2.0.0, foo >=1.1.0 requires y\n'
-            '      ^2.0.0.\n'
+            '^2.0.0, foo >=1.1.0 requires y ^2.0.0.\n'
             '    And because foo >=1.1.0 depends on y ^1.0.0, foo >=1.1.0 is '
             'forbidden.\n'
             '    And because foo <1.1.0 is forbidden (1), foo is forbidden.\n'
@@ -931,7 +929,7 @@ void backtracking() {
         error: allOf([
       contains('Because every version of b depends on a from hosted on '
           'http://localhost:'),
-      contains(' and myapp depends on\n  a from hosted on http://localhost:'),
+      contains(' and myapp depends on a from hosted on http://localhost:'),
       contains(', b is forbidden.'),
       contains('So, because myapp depends on b any, version solving failed.')
     ]));
