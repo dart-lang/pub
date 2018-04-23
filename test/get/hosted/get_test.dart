@@ -33,8 +33,7 @@ main() {
         error: allOf([
           contains(
               "Because myapp depends on bad name! any which doesn't exist (could "
-              "not find package bad name! at\n"),
-          contains("http://localhost:"),
+              "not find package bad name! at http://localhost:"),
           contains("), version solving failed.")
         ]),
         exitCode: exit_codes.UNAVAILABLE);

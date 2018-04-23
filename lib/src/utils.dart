@@ -66,16 +66,15 @@ const reservedWords = const [
 /// An cryptographically secure instance of [math.Random].
 final random = new math.Random.secure();
 
-/// The default line length for output when there isn't a terminal attached to
-/// stdout.
-const _defaultLineLength = 100;
-
 /// The maximum line length for output.
+///
+/// If pub isn't attached to a terminal, uses an infinite line length and does
+/// not wrap text.
 final int lineLength = () {
   try {
     return stdout.terminalColumns;
   } on StdoutException {
-    return _defaultLineLength;
+    return null;
   }
 }();
 
@@ -723,7 +722,7 @@ String createUuid([List<int> bytes]) {
       '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
 }
 
-/// Wraps [text] so that it fits within [lineLength].
+/// Wraps [text] so that it fits within [lineLength], if there is a line length.
 ///
 /// This preserves existing newlines and doesn't consider terminal color escapes
 /// part of a word's length. It only splits words on spaces, not on other sorts
@@ -731,6 +730,9 @@ String createUuid([List<int> bytes]) {
 ///
 /// If [prefix] is passed, it's added at the beginning of any wrapped lines.
 String wordWrap(String text, {String prefix}) {
+  // If there is no limit, don't wrap.
+  if (lineLength == null) return text;
+
   prefix ??= "";
   return text.split("\n").map((originalLine) {
     var buffer = new StringBuffer();
