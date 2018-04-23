@@ -69,14 +69,14 @@ abstract class Validator {
       // Unless the user is using a dev SDK themselves, suggest that they use a
       // non-dev SDK constraint, even if there were some dev versions that are
       // allowed.
-      firstSdkVersion = firstSdkVersion.nextMinor;
+      firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
     var allowedSdks = new VersionRange(
         min: firstSdkVersion,
         includeMin: true,
         max: firstSdkVersion.isPreRelease
-            ? firstSdkVersion.nextMinor
+            ? firstSdkVersion.nextPatch
             : firstSdkVersion.nextBreaking);
 
     var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint

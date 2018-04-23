@@ -132,7 +132,7 @@ main() {
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
-          "environment": {"sdk": ">=2.0.0-dev.48.0 <2.0.0"},
+          "environment": {"sdk": ">=2.0.0-dev.51.0 <2.0.0"},
           "dependencies": {
             "foo": {"sdk": "fuchsia", "version": ">=1.2.3 <2.0.0"}
           }
@@ -617,14 +617,14 @@ main() {
         d.pubspec({
           "name": "test_pkg",
           "version": "1.0.0",
-          "environment": {"sdk": ">=2.0.0-dev.47.0 <2.0.0"},
+          "environment": {"sdk": ">=2.0.0-dev.50.0 <2.0.0"},
           "dependencies": {
             "foo": {"sdk": "fuchsia", "version": ">=1.2.3 <2.0.0"}
           }
         })
       ]).create();
 
-      expectDependencyValidationError('sdk: ">=2.0.0-dev.48.0 <2.0.0"');
+      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
     });
 
     test("depends on a Fuchsia package with no SDK constraint", () async {
@@ -638,7 +638,7 @@ main() {
         })
       ]).create();
 
-      expectDependencyValidationError('sdk: ">=2.0.0-dev.48.0 <2.0.0"');
+      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
     });
   });
 }
