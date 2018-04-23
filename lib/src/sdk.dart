@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'sdk/dart.dart';
 import 'sdk/flutter.dart';
+import 'sdk/fuchsia.dart';
 
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
@@ -27,6 +28,9 @@ abstract class Sdk {
   /// The SDK's version number, or `null` if the SDK is unavailable.
   Version get version;
 
+  /// The version of pub that added support for this SDK.
+  Version get firstPubVersion;
+
   /// A message to indicate to the user how to make this SDK available.
   ///
   /// This is printed after a version solve where the SDK wasn't found. It may
@@ -45,7 +49,7 @@ abstract class Sdk {
 /// A map from SDK identifiers that appear in pubspecs to the implementations of
 /// those SDKs.
 final sdks = new UnmodifiableMapView<String, Sdk>(
-    {"dart": sdk, "flutter": new FlutterSdk()});
+    {"dart": sdk, "flutter": new FlutterSdk(), "fuchsia": new FuchsiaSdk()});
 
 /// The core Dart SDK.
 final sdk = new DartSdk();

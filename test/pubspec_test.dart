@@ -337,12 +337,14 @@ dependencies:
         var pubspec = new Pubspec.parse('name: testing', sources);
         expectDefaultSdkConstraint(pubspec);
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("default SDK constraint can be omitted with empty environment", () {
         var pubspec = new Pubspec.parse('', sources);
         expectDefaultSdkConstraint(pubspec);
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("defaults the upper constraint for the SDK", () {
@@ -353,6 +355,7 @@ dependencies:
   ''', sources);
         expectDefaultSdkConstraint(pubspec);
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test(
@@ -365,6 +368,7 @@ dependencies:
         expect(pubspec.sdkConstraints,
             containsPair('dart', new VersionConstraint.parse(">3.0.0")));
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("throws if the environment value isn't a map", () {
@@ -377,6 +381,7 @@ dependencies:
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
+  fuchsia: ^5.6.7
 ''', sources);
         expect(
             pubspec.sdkConstraints,
@@ -384,6 +389,8 @@ environment:
                 'dart', new VersionConstraint.parse(">=1.2.3 <2.3.4")));
         expect(pubspec.sdkConstraints,
             containsPair('flutter', new VersionConstraint.parse("^0.1.2")));
+        expect(pubspec.sdkConstraints,
+            containsPair('fuchsia', new VersionConstraint.parse("^5.6.7")));
       });
 
       test("throws if the sdk isn't a string", () {
@@ -553,6 +560,7 @@ features:
     environment:
       sdk: ^1.0.0
       flutter: ^2.0.0
+      fuchsia: ^3.0.0
 ''', sources);
 
         expect(pubspec.features, contains('foobar'));
@@ -562,6 +570,8 @@ features:
             containsPair('dart', new VersionConstraint.parse("^1.0.0")));
         expect(feature.sdkConstraints,
             containsPair('flutter', new VersionConstraint.parse("^2.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('fuchsia', new VersionConstraint.parse("^3.0.0")));
       });
 
       test("throws if the default value isn't a boolean", () {

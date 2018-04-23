@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/io.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -147,6 +148,25 @@ main() {
                 failed.
             """), exitCode: exit_codes.UNAVAILABLE);
       });
+    });
+
+    test("supports the Fuchsia SDK", () async {
+      await renameDir(
+          p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
+
+      await d.appDir({
+        "foo": {"sdk": "fuchsia"}
+      }).create();
+      await pubCommand(command,
+          environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')});
+
+      await d.dir(appPath, [
+        d.packagesFile({
+          'myapp': '.',
+          'foo': p.join(d.sandbox, 'fuchsia', 'packages', 'foo'),
+          'bar': '1.0.0'
+        })
+      ]).validate();
     });
   });
 }

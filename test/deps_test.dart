@@ -140,6 +140,16 @@ main() {
           output: contains('Flutter SDK 4.3.2+1'),
           environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
     });
+
+    test("with the Fuchsia SDK, if applicable", () async {
+      await pubGet();
+
+      await d.dir('fuchsia', [d.file('version', '4.3.2+1')]).create();
+      await runPub(
+          args: ['deps'],
+          output: contains('Fuchsia SDK 4.3.2+1'),
+          environment: {"FUCHSIA_DART_SDK_ROOT": p.join(d.sandbox, 'fuchsia')});
+    });
   });
 
   group("lists non-dev dependencies", () {

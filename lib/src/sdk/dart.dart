@@ -17,6 +17,7 @@ class DartSdk extends Sdk {
   String get name => "Dart";
   bool get isAvailable => true;
   String get installMessage => null;
+  Version get firstPubVersion => Version.none;
 
   /// The path to the root directory of the SDK.
   ///

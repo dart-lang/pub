@@ -95,8 +95,47 @@ main() {
 
     test('depends on Flutter from an SDK source', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", deps: {
-          "flutter": {"sdk": ">=1.2.3 <2.0.0"}
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=1.19.0 <2.0.0"},
+          "dependencies": {
+            "flutter": {"sdk": "flutter"}
+          }
+        })
+      ]).create();
+
+      expectNoValidationError(dependency);
+    });
+
+    test(
+        'depends on a package from Flutter with an appropriate Dart SDK '
+        'constraint', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=1.19.0 <2.0.0"},
+          "dependencies": {
+            "foo": {"sdk": "flutter", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectNoValidationError(dependency);
+    });
+
+    test(
+        'depends on a package from Fuchsia with an appropriate Dart SDK '
+        'constraint', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=2.0.0-dev.51.0 <2.0.0"},
+          "dependencies": {
+            "foo": {"sdk": "fuchsia", "version": ">=1.2.3 <2.0.0"}
+          }
         })
       ]).create();
 
@@ -461,7 +500,8 @@ main() {
 
         expect(
             validatePackage(dependency),
-            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+            completion(pairOf(
+                anyElement(contains('  sdk: ">=2.0.0-dev.1.0 <2.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
 
@@ -481,7 +521,8 @@ main() {
 
         expect(
             validatePackage(dependency),
-            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+            completion(pairOf(
+                anyElement(contains('  sdk: ">=2.0.0-dev.1.0 <2.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
     });
@@ -523,6 +564,81 @@ main() {
       ]).create();
 
       expectDependencyValidationError('sdk: >=1.2.3 <2.0.0');
+    });
+
+    test("depends on a Flutter package from an unknown SDK", () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "dependencies": {
+            "foo": {"sdk": "fblthp", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectDependencyValidationError(
+          'Unknown SDK "fblthp" for dependency "foo".');
+    });
+
+    test("depends on a Flutter package with a too-broad SDK constraint",
+        () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=1.18.0 <2.0.0"},
+          "dependencies": {
+            "foo": {"sdk": "flutter", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectDependencyValidationError('sdk: ">=1.19.0 <2.0.0"');
+    });
+
+    test("depends on a Flutter package with no SDK constraint", () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "dependencies": {
+            "foo": {"sdk": "flutter", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectDependencyValidationError('sdk: ">=1.19.0 <2.0.0"');
+    });
+
+    test("depends on a Fuchsia package with a too-broad SDK constraint",
+        () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=2.0.0-dev.50.0 <2.0.0"},
+          "dependencies": {
+            "foo": {"sdk": "fuchsia", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
+    });
+
+    test("depends on a Fuchsia package with no SDK constraint", () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "dependencies": {
+            "foo": {"sdk": "fuchsia", "version": ">=1.2.3 <2.0.0"}
+          }
+        })
+      ]).create();
+
+      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
     });
   });
 }

@@ -201,10 +201,11 @@ String namedSequence(String name, Iterable iter, [String plural]) {
 /// Returns a sentence fragment listing the elements of [iter].
 ///
 /// This converts each element of [iter] to a string and separates them with
-/// commas and/or "and" where appropriate.
-String toSentence(Iterable iter) {
+/// commas and/or [conjunction] (`"and"` by default) where appropriate.
+String toSentence(Iterable iter, {String conjunction}) {
   if (iter.length == 1) return iter.first.toString();
-  return iter.take(iter.length - 1).join(", ") + " and ${iter.last}";
+  conjunction ??= 'and';
+  return iter.take(iter.length - 1).join(", ") + " $conjunction ${iter.last}";
 }
 
 /// Returns [name] if [number] is 1, or the plural of [name] otherwise.

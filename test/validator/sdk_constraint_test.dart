@@ -40,6 +40,19 @@ main() {
       ]).create();
       expectNoValidationError(sdkConstraint);
     });
+
+    test(
+        'has a Fuchsia SDK constraint with an appropriate Dart SDK '
+        'constraint', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=2.0.0-dev.51.0 <2.0.0", "fuchsia": "^1.2.3"}
+        })
+      ]).create();
+      expectNoValidationError(sdkConstraint);
+    });
   });
 
   group("should consider a package invalid if it", () {
@@ -99,6 +112,36 @@ main() {
           validatePackage(sdkConstraint),
           completion(
               pairOf(anyElement(contains('">=1.19.0 <2.0.0"')), isEmpty)));
+    });
+
+    test(
+        "has a Fuchsia SDK constraint with a too-broad SDK "
+        "constraint", () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"sdk": ">=2.0.0-dev.50.0 <2.0.0", "fuchsia": "^1.2.3"}
+        })
+      ]).create();
+      expect(
+          validatePackage(sdkConstraint),
+          completion(pairOf(
+              anyElement(contains('">=2.0.0-dev.51.0 <2.0.0"')), isEmpty)));
+    });
+
+    test("has a Fuchsia SDK constraint with no SDK constraint", () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          "name": "test_pkg",
+          "version": "1.0.0",
+          "environment": {"fuchsia": "^1.2.3"}
+        })
+      ]).create();
+      expect(
+          validatePackage(sdkConstraint),
+          completion(pairOf(
+              anyElement(contains('">=2.0.0-dev.51.0 <2.0.0"')), isEmpty)));
     });
   });
 }
