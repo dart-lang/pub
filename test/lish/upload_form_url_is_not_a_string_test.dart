@@ -28,7 +28,7 @@ main() {
 
     handleUploadForm(server, body);
     expect(pub.stderr, emits('Invalid server response:'));
-    expect(pub.stderr, emits(JSON.encode(body)));
+    expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);
   });
 }

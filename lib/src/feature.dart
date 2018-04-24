@@ -26,13 +26,8 @@ class Feature {
   /// Other features that this feature requires.
   final List<String> requires;
 
-  /// This feature's constraint on the Dart SDK, or [VersionConstraint.any] if
-  /// none is specified.
-  final VersionConstraint dartSdkConstraint;
-
-  /// This feature's constraint on the Flutter SDK, or `null` if none is
-  /// specified.
-  final VersionConstraint flutterSdkConstraint;
+  /// A map from SDK identifiers to this feature's constraints on those SDKs.
+  final Map<String, VersionConstraint> sdkConstraints;
 
   /// Returns the set of features in [features] that are enabled by
   /// [dependencies].
@@ -63,14 +58,15 @@ class Feature {
 
   Feature(this.name, Iterable<PackageRange> dependencies,
       {Iterable<String> requires,
-      VersionConstraint dartSdkConstraint,
-      this.flutterSdkConstraint,
+      Map<String, VersionConstraint> sdkConstraints,
       this.onByDefault: true})
       : dependencies = new UnmodifiableListView(dependencies.toList()),
         requires = requires == null
             ? const []
             : new UnmodifiableListView(requires.toList()),
-        dartSdkConstraint = dartSdkConstraint ?? VersionConstraint.any;
+        sdkConstraints = new UnmodifiableMapView(sdkConstraints == null
+            ? {"dart": VersionConstraint.any}
+            : sdkConstraints);
 
   String toString() => name;
 }

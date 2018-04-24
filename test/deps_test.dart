@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -46,6 +47,7 @@ main() {
     test("in compact form", () async {
       await pubGet();
       await runPub(args: ['deps', '-s', 'compact'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -73,6 +75,7 @@ main() {
     test("in list form", () async {
       await pubGet();
       await runPub(args: ['deps', '--style', 'list'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -106,9 +109,10 @@ main() {
           ''');
     });
 
-    test("lists dependencies in tree form", () async {
+    test("in tree form", () async {
       await pubGet();
       await runPub(args: ['deps'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3
@@ -126,12 +130,33 @@ main() {
                       '-- myapp...
           ''');
     });
+
+    test("with the Flutter SDK, if applicable", () async {
+      await pubGet();
+
+      await d.dir('flutter', [d.file('version', '4.3.2+1')]).create();
+      await runPub(
+          args: ['deps'],
+          output: contains('Flutter SDK 4.3.2+1'),
+          environment: {"FLUTTER_ROOT": p.join(d.sandbox, 'flutter')});
+    });
+
+    test("with the Fuchsia SDK, if applicable", () async {
+      await pubGet();
+
+      await d.dir('fuchsia', [d.file('version', '4.3.2+1')]).create();
+      await runPub(
+          args: ['deps'],
+          output: contains('Fuchsia SDK 4.3.2+1'),
+          environment: {"FUCHSIA_DART_SDK_ROOT": p.join(d.sandbox, 'fuchsia')});
+    });
   });
 
   group("lists non-dev dependencies", () {
     test("in compact form", () async {
       await pubGet();
       await runPub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -155,6 +180,7 @@ main() {
     test("in list form", () async {
       await pubGet();
       await runPub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -185,6 +211,7 @@ main() {
     test("in tree form", () async {
       await pubGet();
       await runPub(args: ['deps', '--no-dev'], output: '''
+          Dart SDK 0.1.2+3
           myapp 0.0.0
           |-- from_path 1.2.3
           |-- normal 1.2.3

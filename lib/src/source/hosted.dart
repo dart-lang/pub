@@ -68,6 +68,9 @@ class HostedSource extends Source {
     return {'name': name, 'url': url.toString()};
   }
 
+  String formatDescription(description) =>
+      "on ${_parseDescription(description).last}";
+
   bool descriptionsEqual(description1, description2) =>
       _parseDescription(description1) == _parseDescription(description2);
 
@@ -141,7 +144,7 @@ class BoundHostedSource extends CachedSource {
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
 
-    var doc = JSON.decode(body);
+    var doc = jsonDecode(body);
     return doc['versions'].map((map) {
       var pubspec = new Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
@@ -177,7 +180,7 @@ class BoundHostedSource extends CachedSource {
     var version;
     try {
       version =
-          JSON.decode(await httpClient.read(url, headers: PUB_API_HEADERS));
+          jsonDecode(await httpClient.read(url, headers: PUB_API_HEADERS));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
@@ -320,7 +323,9 @@ class BoundHostedSource extends CachedSource {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw new PackageNotFoundException(
-            "Could not find package $package at $url.", error, stackTrace);
+            "could not find package $package at $url",
+            innerError: error,
+            innerTrace: stackTrace);
       }
 
       fail(
@@ -448,7 +453,7 @@ class _OfflineHostedSource extends BoundHostedSource {
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw new PackageNotFoundException(
-          "Could not find package ${ref.name} in cache.");
+          "could not find package ${ref.name} in cache");
     }
 
     return versions;
@@ -463,6 +468,6 @@ class _OfflineHostedSource extends BoundHostedSource {
 
   Future<Pubspec> describeUncached(PackageId id) {
     throw new PackageNotFoundException(
-        "${id.name} ${id.version} is not available in your system cache.");
+        "${id.name} ${id.version} is not available in your system cache");
   }
 }

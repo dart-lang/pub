@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/compiler.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart' as sdk;
+import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
@@ -81,7 +80,7 @@ dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -104,7 +103,7 @@ dev_dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.devDependencies[0];
+      var foo = pubspec.devDependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -127,7 +126,7 @@ dependency_overrides:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencyOverrides[0];
+      var foo = pubspec.dependencyOverrides['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
@@ -149,7 +148,7 @@ dependencies:
     unknown: blah
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['unknown']));
     });
@@ -161,7 +160,7 @@ dependencies:
     version: 1.2.3
 ''', sources);
 
-      var foo = pubspec.dependencies[0];
+      var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['hosted']));
     });
@@ -250,134 +249,6 @@ dependencies:
           'version: not version', (pubspec) => pubspec.version);
     });
 
-    test("throws if transformers isn't a list", () {
-      expectPubspecException(
-          'transformers: "not list"', (pubspec) => pubspec.transformers);
-    });
-
-    test("throws if a transformer isn't a string or map", () {
-      expectPubspecException(
-          'transformers: [12]',
-          (pubspec) => pubspec.transformers,
-          'A transformer must be a string or map.');
-    });
-
-    test("throws if a transformer's configuration isn't a map", () {
-      expectPubspecException(
-          'transformers: [{pkg: 12}]',
-          (pubspec) => pubspec.transformers,
-          "A transformer's configuration must be a map.");
-    });
-
-    test(
-        "throws if a transformer's configuration contains an unknown "
-        "reserved key at the top level", () {
-      expectPubspecException('''
-name: pkg
-transformers: [{pkg: {\$key: "value"}}]''', (pubspec) => pubspec.transformers,
-          'Invalid transformer config: Unknown reserved field.');
-    });
-
-    test(
-        "doesn't throw if a transformer's configuration contains a "
-        "non-top-level key beginning with a dollar sign", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-transformers:
-- pkg: {outer: {\$inner: value}}
-''', sources);
-
-      var pkg = pubspec.transformers[0].single;
-      expect(pkg.configuration["outer"]["\$inner"], equals("value"));
-    });
-
-    test("throws if the \$include value is not a string or list", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$include: 123}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$include" field must be a string or '
-          'list.');
-    });
-
-    test("throws if the \$include list contains a non-string", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$include: ["ok", 123, "alright", null]}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$include" field may contain only '
-          'strings.');
-    });
-
-    test("throws if the \$exclude value is not a string or list", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$exclude: 123}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$exclude" field must be a string or '
-          'list.');
-    });
-
-    test("throws if the \$exclude list contains a non-string", () {
-      expectPubspecException(
-          '''
-name: pkg
-transformers:
-- pkg: {\$exclude: ["ok", 123, "alright", null]}''',
-          (pubspec) => pubspec.transformers,
-          'Invalid transformer config: "\$exclude" field may contain only '
-          'strings.');
-    });
-
-    test("throws if a transformer is not from a dependency", () {
-      expectPubspecException('''
-name: pkg
-transformers: [foo]
-''', (pubspec) => pubspec.transformers, '"foo" is not a dependency.');
-    });
-
-    test("allows a transformer from a normal dependency", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dependencies:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
-    test("allows a transformer from a dev dependency", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dev_dependencies:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
-    test("allows a transformer from a dependency override", () {
-      var pubspec = new Pubspec.parse('''
-name: pkg
-dependency_overrides:
-  foo:
-    mock: ok
-transformers:
-- foo''', sources);
-
-      expect(pubspec.transformers[0].single.id.package, equals("foo"));
-    });
-
     test("allows comment-only files", () {
       var pubspec = new Pubspec.parse('''
 # No external dependencies yet
@@ -447,27 +318,33 @@ dependencies:
         var sdkVersionString = sdk.version.toString();
         if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
           expect(
-              pubspec.dartSdkConstraint,
-              new VersionConstraint.parse(
-                  '${pubspec.dartSdkConstraint} <=$sdkVersionString'));
+              pubspec.sdkConstraints,
+              containsPair(
+                  'dart',
+                  new VersionConstraint.parse(
+                      '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
         } else {
           expect(
-              pubspec.dartSdkConstraint,
-              new VersionConstraint.parse(
-                  "${pubspec.dartSdkConstraint} <2.0.0"));
+              pubspec.sdkConstraints,
+              containsPair(
+                  'dart',
+                  new VersionConstraint.parse(
+                      "${pubspec.sdkConstraints["dart"]} <2.0.0")));
         }
       }
 
       test("allows an omitted environment", () {
         var pubspec = new Pubspec.parse('name: testing', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("default SDK constraint can be omitted with empty environment", () {
         var pubspec = new Pubspec.parse('', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("defaults the upper constraint for the SDK", () {
@@ -477,7 +354,8 @@ dependencies:
     sdk: ">1.0.0"
   ''', sources);
         expectDefaultSdkConstraint(pubspec);
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test(
@@ -487,14 +365,15 @@ dependencies:
   environment:
     sdk: ">3.0.0"
   ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">3.0.0")));
-        expect(pubspec.flutterSdkConstraint, isNull);
+        expect(pubspec.sdkConstraints,
+            containsPair('dart', new VersionConstraint.parse(">3.0.0")));
+        expect(pubspec.sdkConstraints, isNot(contains('flutter')));
+        expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("throws if the environment value isn't a map", () {
         expectPubspecException(
-            'environment: []', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: []', (pubspec) => pubspec.sdkConstraints);
       });
 
       test("allows a version constraint for the SDKs", () {
@@ -502,29 +381,34 @@ dependencies:
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
+  fuchsia: ^5.6.7
 ''', sources);
-        expect(pubspec.dartSdkConstraint,
-            equals(new VersionConstraint.parse(">=1.2.3 <2.3.4")));
-        expect(pubspec.flutterSdkConstraint,
-            equals(new VersionConstraint.parse("^0.1.2")));
+        expect(
+            pubspec.sdkConstraints,
+            containsPair(
+                'dart', new VersionConstraint.parse(">=1.2.3 <2.3.4")));
+        expect(pubspec.sdkConstraints,
+            containsPair('flutter', new VersionConstraint.parse("^0.1.2")));
+        expect(pubspec.sdkConstraints,
+            containsPair('fuchsia', new VersionConstraint.parse("^5.6.7")));
       });
 
       test("throws if the sdk isn't a string", () {
         expectPubspecException(
-            'environment: {sdk: []}', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: {sdk: []}', (pubspec) => pubspec.sdkConstraints);
         expectPubspecException(
-            'environment: {sdk: 1.0}', (pubspec) => pubspec.dartSdkConstraint);
+            'environment: {sdk: 1.0}', (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: []}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: 1.0}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
       });
 
       test("throws if the sdk isn't a valid version constraint", () {
         expectPubspecException('environment: {sdk: "oopies"}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
         expectPubspecException('environment: {sdk: 1.2.3, flutter: "oopies"}',
-            (pubspec) => pubspec.dartSdkConstraint);
+            (pubspec) => pubspec.sdkConstraints);
       });
     });
 
@@ -617,65 +501,6 @@ executables:
       });
     });
 
-    group("web", () {
-      test("can be empty", () {
-        var pubspec = new Pubspec.parse('web: {}', sources);
-        expect(pubspec.webCompiler, isEmpty);
-      });
-
-      group("compiler", () {
-        test("defaults to an empty map if omitted", () {
-          var pubspec = new Pubspec.parse('', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("defaults to an empty map if web is null", () {
-          var pubspec = new Pubspec.parse('web:', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("defaults to an empty map if compiler is null", () {
-          var pubspec = new Pubspec.parse('web: {compiler:}', sources);
-          expect(pubspec.webCompiler, isEmpty);
-        });
-
-        test("allows simple names for keys and valid compilers in values", () {
-          var pubspec = new Pubspec.parse('''
-web:
-  compiler:
-    abcDEF-123_: none
-    debug: dartdevc
-    release: dart2js
-''', sources);
-          expect(pubspec.webCompiler['abcDEF-123_'], equals(Compiler.none));
-          expect(pubspec.webCompiler['debug'], equals(Compiler.dartDevc));
-          expect(pubspec.webCompiler['release'], equals(Compiler.dart2JS));
-        });
-
-        test("throws if not a map", () {
-          expectPubspecException(
-              'web: {compiler: dartdevc}', (pubspec) => pubspec.webCompiler);
-          expectPubspecException(
-              'web: {compiler: [dartdevc]}', (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if key is not a string", () {
-          expectPubspecException('web: {compiler: {123: dartdevc}}',
-              (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if a value is not a supported compiler", () {
-          expectPubspecException('web: {compiler: {debug: frog}}',
-              (pubspec) => pubspec.webCompiler);
-        });
-
-        test("throws if the value is null", () {
-          expectPubspecException(
-              'web: {compiler: {debug: }}', (pubspec) => pubspec.webCompiler);
-        });
-      });
-    });
-
     group("features", () {
       test("can be null", () {
         var pubspec = new Pubspec.parse('features:', sources);
@@ -735,15 +560,18 @@ features:
     environment:
       sdk: ^1.0.0
       flutter: ^2.0.0
+      fuchsia: ^3.0.0
 ''', sources);
 
         expect(pubspec.features, contains('foobar'));
 
         var feature = pubspec.features['foobar'];
-        expect(feature.dartSdkConstraint,
-            equals(new VersionConstraint.parse("^1.0.0")));
-        expect(feature.flutterSdkConstraint,
-            equals(new VersionConstraint.parse("^2.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('dart', new VersionConstraint.parse("^1.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('flutter', new VersionConstraint.parse("^2.0.0")));
+        expect(feature.sdkConstraints,
+            containsPair('fuchsia', new VersionConstraint.parse("^3.0.0")));
       });
 
       test("throws if the default value isn't a boolean", () {

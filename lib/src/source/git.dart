@@ -141,14 +141,14 @@ class GitSource extends Source {
   ///
   /// This helps distinguish different git commits with the same pubspec
   /// version.
-  String formatDescription(String containingPath, description) {
+  String formatDescription(description) {
     if (description is Map && description.containsKey('resolved-ref')) {
       var result = "${description['url']} at "
           "${description['resolved-ref'].substring(0, 6)}";
       if (description["path"] != ".") result += " in ${description["path"]}";
       return result;
     } else {
-      return super.formatDescription(containingPath, description);
+      return super.formatDescription(description);
     }
   }
 

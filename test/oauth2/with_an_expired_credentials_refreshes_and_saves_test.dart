@@ -33,7 +33,7 @@ main() {
             matches(new RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
 
         return new shelf.Response.ok(
-            JSON.encode(
+            jsonEncode(
                 {"access_token": "new access token", "token_type": "bearer"}),
             headers: {'content-type': 'application/json'});
       });

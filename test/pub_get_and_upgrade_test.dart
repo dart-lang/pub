@@ -117,7 +117,8 @@ main() {
       ]).create();
 
       await pubCommand(command,
-          error: new RegExp("^Incompatible dependencies on baz:\n"));
+          error: new RegExp(
+              r"foo from path is incompatible with bar from\s+path"));
     });
 
     test('does not allow a dependency on itself', () async {

@@ -10,6 +10,7 @@ import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../sdk.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
@@ -33,7 +34,7 @@ class DependencyValidator extends Validator {
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() async {
-    await _validateDependencies(entrypoint.root.pubspec.dependencies);
+    await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
     for (var feature in entrypoint.root.pubspec.features.values) {
       // Allow off-by-default features, since older pubs will just ignore them
@@ -58,11 +59,13 @@ class DependencyValidator extends Validator {
   }
 
   /// Validates all dependencies in [dependencies].
-  Future _validateDependencies(List<PackageRange> dependencies) async {
+  Future _validateDependencies(Iterable<PackageRange> dependencies) async {
     for (var dependency in dependencies) {
       var constraint = dependency.constraint;
       if (dependency.name == "flutter") {
         _warnAboutFlutterSdk(dependency);
+      } else if (dependency.source is SdkSource) {
+        _warnAboutSdkSource(dependency);
       } else if (dependency.source is! HostedSource) {
         await _warnAboutSource(dependency);
 
@@ -91,7 +94,10 @@ class DependencyValidator extends Validator {
 
   /// Warn about improper dependencies on Flutter.
   void _warnAboutFlutterSdk(PackageRange dep) {
-    if (dep.source is SdkSource) return;
+    if (dep.source is SdkSource) {
+      _warnAboutSdkSource(dep);
+      return;
+    }
 
     errors.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
         'source. Use the SDK source instead. For example:\n'
@@ -101,6 +107,20 @@ class DependencyValidator extends Validator {
         '    sdk: ${dep.constraint}\n'
         '\n'
         'The Flutter SDK is downloaded and managed outside of pub.');
+  }
+
+  /// Emit an error for dependencies from unknown SDKs or without appropriate
+  /// constraints on the Dart SDK.
+  void _warnAboutSdkSource(PackageRange dep) {
+    var identifier = dep.description as String;
+    var sdk = sdks[identifier];
+    if (sdk == null) {
+      errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
+      return;
+    }
+
+    validateSdkConstraint(sdk.firstPubVersion,
+        "Older versions of pub don't support the ${sdk.name} SDK.");
   }
 
   /// Warn that dependencies should use the hosted source.

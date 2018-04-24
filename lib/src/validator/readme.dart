@@ -24,8 +24,8 @@ class ReadmeValidator extends Validator {
 
       var bytes = readBinaryFile(readme);
       try {
-        // UTF8.decode doesn't allow invalid UTF-8.
-        UTF8.decode(bytes);
+        // utf8.decode doesn't allow invalid UTF-8.
+        utf8.decode(bytes);
       } on FormatException catch (_) {
         warnings.add("$readme contains invalid UTF-8.\n"
             "This will cause it to be displayed incorrectly on "

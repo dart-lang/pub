@@ -7,6 +7,9 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
+import 'source/git.dart';
+import 'source/hosted.dart';
+import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
@@ -48,12 +51,6 @@ abstract class PackageName {
         description = null,
         isMagic = true;
 
-  String toString() {
-    if (isRoot) return "$name (root)";
-    if (isMagic) return name;
-    return "$name from $source";
-  }
-
   /// Returns a [PackageRef] with this one's [name], [source], and
   /// [description].
   PackageRef toRef() => isMagic
@@ -82,6 +79,11 @@ abstract class PackageName {
         source.hashCode ^
         source.hashDescription(description);
   }
+
+  /// Returns a string representation of this package name.
+  ///
+  /// If [detail] is passed, it controls exactly which details are included.
+  String toString([PackageDetail detail]);
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
@@ -95,8 +97,26 @@ class PackageRef extends PackageName {
   PackageRef(String name, Source source, description)
       : super._(name, source, description);
 
+  /// Creates a reference to the given root package.
+  PackageRef.root(Package package) : super._(package.name, null, package.name);
+
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name) : super._magic(name);
+
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
+    if (isMagic || isRoot) return name;
+
+    var buffer = new StringBuffer(name);
+    if (detail.showSource ?? source is! HostedSource) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
+    }
+
+    return buffer.toString();
+  }
 
   bool operator ==(other) => other is PackageRef && samePackage(other);
 }
@@ -141,10 +161,24 @@ class PackageId extends PackageName {
   bool operator ==(other) =>
       other is PackageId && samePackage(other) && other.version == version;
 
-  String toString() {
-    if (isRoot) return "$name $version (root)";
+  /// Returns a [PackageRange] that allows only [version] of this package.
+  PackageRange toRange() => withConstraint(version);
+
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
     if (isMagic) return name;
-    return "$name $version from $source";
+
+    var buffer = new StringBuffer(name);
+    if (detail.showVersion ?? !isRoot) buffer.write(" $version");
+
+    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
+    }
+
+    return buffer.toString();
   }
 }
 
@@ -173,6 +207,12 @@ class PackageRange extends PackageName {
         features = const {},
         super._magic(name);
 
+  /// Creates a range that selects the root package.
+  PackageRange.root(Package package)
+      : constraint = package.version,
+        features = const {},
+        super._(package.name, null, package.name);
+
   /// Returns a description of [features], or the empty string if [features] is
   /// empty.
   String get featureDescription {
@@ -200,18 +240,36 @@ class PackageRange extends PackageName {
     return description;
   }
 
-  String toString() {
-    String prefix;
-    if (isRoot) {
-      prefix = "$name $constraint (root)";
-    } else if (isMagic) {
-      prefix = name;
-    } else {
-      prefix = "$name $constraint from $source";
+  String toString([PackageDetail detail]) {
+    detail ??= PackageDetail.defaults;
+    if (isMagic) return name;
+
+    var buffer = new StringBuffer(name);
+    if (detail.showVersion ?? _showVersionConstraint) {
+      buffer.write(" $constraint");
     }
 
-    if (features.isNotEmpty) prefix += " $featureDescription";
-    return "$prefix ($description)";
+    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
+      buffer.write(" from $source");
+      if (detail.showDescription) {
+        buffer.write(" ${source.formatDescription(description)}");
+      }
+    }
+
+    if (detail.showFeatures && features.isNotEmpty) {
+      buffer.write(" $featureDescription");
+    }
+
+    return buffer.toString();
+  }
+
+  /// Whether to include the version constraint in [toString] by default.
+  bool get _showVersionConstraint {
+    if (isRoot) return false;
+    if (!constraint.isAny) return true;
+    if (source is PathSource) return false;
+    if (source is GitSource) return false;
+    return true;
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
@@ -219,6 +277,23 @@ class PackageRange extends PackageName {
     if (features.isEmpty) return this;
     return new PackageRange(name, source, constraint, description,
         features: new Map.from(this.features)..addAll(features));
+  }
+
+  /// Returns a copy of [this] with the same semantics, but with a `^`-style
+  /// constraint if possible.
+  PackageRange withTerseConstraint() {
+    if (constraint is! VersionRange) return this;
+    if (constraint.toString().startsWith("^")) return this;
+
+    var range = constraint as VersionRange;
+    if (range.includeMin &&
+        !range.includeMax &&
+        range.min != null &&
+        range.max == range.min.nextBreaking) {
+      return withConstraint(new VersionConstraint.compatibleWith(range.min));
+    } else {
+      return this;
+    }
   }
 
   /// Whether [id] satisfies this dependency.
@@ -258,4 +333,51 @@ class FeatureDependency {
   const FeatureDependency._(this._name);
 
   String toString() => _name;
+}
+
+/// An enum of different levels of detail that can be used when displaying a
+/// terse package name.
+class PackageDetail {
+  /// The default [PackageDetail] configuration.
+  static const defaults = const PackageDetail();
+
+  /// Whether to show the package version or version range.
+  ///
+  /// If this is `null`, the version is shown for all packages other than root
+  /// [PackageId]s or [PackageRange]s with `git` or `path` sources and `any`
+  /// constraints.
+  final bool showVersion;
+
+  /// Whether to show the package source.
+  ///
+  /// If this is `null`, the source is shown for all non-hosted, non-root
+  /// packages. It's always `true` if [showDescription] is `true`.
+  final bool showSource;
+
+  /// Whether to show the package description.
+  ///
+  /// This defaults to `false`.
+  final bool showDescription;
+
+  /// Whether to show the package features.
+  ///
+  /// This defaults to `true`.
+  final bool showFeatures;
+
+  const PackageDetail(
+      {this.showVersion,
+      bool showSource,
+      bool showDescription,
+      bool showFeatures})
+      : showSource = showDescription == true ? true : showSource,
+        showDescription = showDescription ?? false,
+        showFeatures = showFeatures ?? true;
+
+  /// Returns a [PackageDetail] with the maximum amount of detail between [this]
+  /// and [other].
+  PackageDetail max(PackageDetail other) => new PackageDetail(
+      showVersion: this.showVersion || other.showVersion,
+      showSource: this.showSource || other.showSource,
+      showDescription: this.showDescription || other.showDescription,
+      showFeatures: this.showFeatures || other.showFeatures);
 }

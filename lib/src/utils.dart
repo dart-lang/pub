@@ -10,14 +10,11 @@ import 'dart:math' as math;
 
 import "package:crypto/crypto.dart" as crypto;
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
 import "package:stack_trace/stack_trace.dart";
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
-
-export 'asset/dart/utils.dart';
 
 /// Whether Pub is running its own tests under Travis.CI.
 final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
@@ -69,6 +66,18 @@ const reservedWords = const [
 /// An cryptographically secure instance of [math.Random].
 final random = new math.Random.secure();
 
+/// The maximum line length for output.
+///
+/// If pub isn't attached to a terminal, uses an infinite line length and does
+/// not wrap text.
+final int lineLength = () {
+  try {
+    return stdout.terminalColumns;
+  } on StdoutException {
+    return null;
+  }
+}();
+
 /// A pair of values.
 class Pair<E, F> {
   E first;
@@ -85,10 +94,6 @@ class Pair<E, F> {
 
   int get hashCode => first.hashCode ^ last.hashCode;
 }
-
-/// Like [new Future], but avoids around issue 11911 by using [new Future.value]
-/// under the covers.
-Future newFuture(callback()) => new Future.value().then((_) => callback());
 
 /// Runs [callback] in an error zone and pipes any unhandled error to the
 /// returned [Future].
@@ -196,10 +201,11 @@ String namedSequence(String name, Iterable iter, [String plural]) {
 /// Returns a sentence fragment listing the elements of [iter].
 ///
 /// This converts each element of [iter] to a string and separates them with
-/// commas and/or "and" where appropriate.
-String toSentence(Iterable iter) {
+/// commas and/or [conjunction] (`"and"` by default) where appropriate.
+String toSentence(Iterable iter, {String conjunction}) {
   if (iter.length == 1) return iter.first.toString();
-  return iter.take(iter.length - 1).join(", ") + " and ${iter.last}";
+  conjunction ??= 'and';
+  return iter.take(iter.length - 1).join(", ") + " $conjunction ${iter.last}";
 }
 
 /// Returns [name] if [number] is 1, or the plural of [name] otherwise.
@@ -211,6 +217,10 @@ String pluralize(String name, int number, {String plural}) {
   if (plural != null) return plural;
   return '${name}s';
 }
+
+/// Returns [text] with the first letter capitalized.
+String capitalize(String text) =>
+    text.substring(0, 1).toUpperCase() + text.substring(1);
 
 /// Escapes any regex metacharacters in [string] so that using as a [RegExp]
 /// pattern will match the string literally.
@@ -268,22 +278,6 @@ bool isLoopback(String host) {
 /// Randomly chooses a single element in [elements].
 T choose<T>(List<T> elements) => elements[random.nextInt(elements.length)];
 
-/// Returns a set containing all elements in [minuend] that are not in
-/// [subtrahend].
-Set setMinus(Iterable minuend, Iterable subtrahend) {
-  var minuendSet = new Set.from(minuend);
-  minuendSet.removeAll(subtrahend);
-  return minuendSet;
-}
-
-/// Returns whether there's any overlap between [set1] and [set2].
-bool overlaps(Set set1, Set set2) {
-  // Iterate through the smaller set.
-  var smaller = set1.length > set2.length ? set1 : set2;
-  var larger = smaller == set1 ? set2 : set1;
-  return smaller.any(larger.contains);
-}
-
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
   var list = iter.toList();
@@ -329,6 +323,39 @@ T maxAll<T extends Comparable>(Iterable<T> iter,
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }
 
+/// Like [minBy], but with an asynchronous [orderBy] callback.
+Future<S> minByAsync<S, T>(
+    Iterable<S> values, Future<T> orderBy(S element)) async {
+  S minValue;
+  T minOrderBy;
+  for (var element in values) {
+    var elementOrderBy = await orderBy(element);
+    if (minOrderBy == null ||
+        (elementOrderBy as Comparable).compareTo(minOrderBy) < 0) {
+      minValue = element;
+      minOrderBy = elementOrderBy;
+    }
+  }
+  return minValue;
+}
+
+/// Like [List.sublist], but for any iterable.
+Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
+  if (end <= start) {
+    throw new RangeError.range(
+        end, start + 1, null, "end", "must be greater than start");
+  }
+  return values.skip(start).take(end - start);
+}
+
+/// Like [Iterable.fold], but for an asynchronous [combine] function.
+Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
+        Future<S> combine(S previous, T element)) =>
+    values.fold(
+        new Future.value(initialValue),
+        (previousFuture, element) =>
+            previousFuture.then((previous) => combine(previous, element)));
+
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String fn(Match match)) {
@@ -345,33 +372,7 @@ String replace(String source, Pattern matcher, String fn(Match match)) {
 
 /// Returns the hex-encoded sha1 hash of [source].
 String sha1(String source) =>
-    crypto.sha1.convert(UTF8.encode(source)).toString();
-
-/// Returns the base64-encoded sha1 hash of [stream].
-Future<String> sha1Stream(Stream<List<int>> stream) async {
-  crypto.Digest digest;
-
-  var digestSink =
-      new ChunkedConversionSink<crypto.Digest>.withCallback((digests) {
-    digest = digests.single;
-  });
-
-  var byteSink = crypto.sha1.startChunkedConversion(digestSink);
-
-  await stream.forEach((chunk) {
-    byteSink.add(chunk);
-  });
-
-  byteSink.close();
-
-  // TODO(rnystrom): this call to `close` should not be needed. Remove when
-  //   https://github.com/dart-lang/crypto/issues/33
-  // is fixed.
-  // Does not cause any problems in the mean time.
-  digestSink.close();
-
-  return BASE64.encode(digest.bytes);
-}
+    crypto.sha1.convert(utf8.encode(source)).toString();
 
 /// Configures [future] so that its result (success or exception) is passed on
 /// to [completer].
@@ -530,24 +531,6 @@ String mapToQuery(Map<String, String> map) {
   }).join("&");
 }
 
-/// Returns the union of all elements in each set in [sets].
-Set<T> unionAll<T>(Iterable<Set<T>> sets) =>
-    sets.fold(new Set(), (union, set) => union.union(set));
-
-/// Returns a human-friendly representation of [inputPath].
-///
-/// If [inputPath] isn't too distant from the current working directory, this
-/// will return the relative path to it. Otherwise, it will return the absolute
-/// path.
-String nicePath(String inputPath) {
-  var relative = path.relative(inputPath);
-  var split = path.split(relative);
-  if (split.length > 1 && split[0] == '..' && split[1] == '..') {
-    return path.absolute(inputPath);
-  }
-  return relative;
-}
-
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
   var hasMinutes = duration.inMinutes > 0;
@@ -638,31 +621,6 @@ bool get isAprilFools {
   return date.month == 4 && date.day == 1;
 }
 
-/// Wraps [fn] to guard against several different kinds of stack overflow
-/// exceptions:
-///
-/// * A sufficiently long [Future] chain can cause a stack overflow if there are
-///   no asynchronous operations in it (issue 9583).
-/// * A recursive function that recurses too deeply without an asynchronous
-///   operation can cause a stack overflow.
-/// * Even if the former is guarded against by adding asynchronous operations,
-///   returning a value through the [Future] chain can still cause a stack
-///   overflow.
-Future resetStack(fn()) {
-  // Using a [Completer] breaks the [Future] chain for the return value and
-  // avoids the third case described above.
-  var completer = new Completer();
-
-  // Using [new Future] adds an asynchronous operation that works around the
-  // first and second cases described above.
-  newFuture(fn).then((val) {
-    scheduleMicrotask(() => completer.complete(val));
-  }).catchError((err, stackTrace) {
-    scheduleMicrotask(() => completer.completeError(err, stackTrace));
-  });
-  return completer.future;
-}
-
 /// The subset of strings that don't need quoting in YAML.
 ///
 /// This pattern does not strictly follow the plain scalar grammar of YAML,
@@ -696,7 +654,7 @@ String yamlToString(data) {
 
         var keyString = key;
         if (key is! String || !_unquotableYamlString.hasMatch(key)) {
-          keyString = JSON.encode(key);
+          keyString = jsonEncode(key);
         }
 
         buffer.write('$indent$keyString:');
@@ -712,7 +670,7 @@ String yamlToString(data) {
 
     // Don't quote plain strings if not needed.
     if (data is! String || !_unquotableYamlString.hasMatch(data)) {
-      string = JSON.encode(data);
+      string = jsonEncode(data);
     }
 
     if (isMapValue) {
@@ -764,3 +722,62 @@ String createUuid([List<int> bytes]) {
   return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
       '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
 }
+
+/// Wraps [text] so that it fits within [lineLength], if there is a line length.
+///
+/// This preserves existing newlines and doesn't consider terminal color escapes
+/// part of a word's length. It only splits words on spaces, not on other sorts
+/// of whitespace.
+///
+/// If [prefix] is passed, it's added at the beginning of any wrapped lines.
+String wordWrap(String text, {String prefix}) {
+  // If there is no limit, don't wrap.
+  if (lineLength == null) return text;
+
+  prefix ??= "";
+  return text.split("\n").map((originalLine) {
+    var buffer = new StringBuffer();
+    var lengthSoFar = 0;
+    var firstLine = true;
+    for (var word in originalLine.split(" ")) {
+      var wordLength = withoutColors(word).length;
+      if (wordLength > lineLength) {
+        if (lengthSoFar != 0) buffer.writeln();
+        if (!firstLine) buffer.write(prefix);
+        buffer.writeln(word);
+        firstLine = false;
+      } else if (lengthSoFar == 0) {
+        if (!firstLine) buffer.write(prefix);
+        buffer.write(word);
+        lengthSoFar = wordLength + prefix.length;
+      } else if (lengthSoFar + 1 + wordLength > lineLength) {
+        buffer.writeln();
+        buffer.write(prefix);
+        buffer.write(word);
+        lengthSoFar = wordLength + prefix.length;
+        firstLine = false;
+      } else {
+        buffer.write(" $word");
+        lengthSoFar += 1 + wordLength;
+      }
+    }
+    return buffer.toString();
+  }).join("\n");
+}
+
+/// A regular expression matching terminal color codes.
+final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
+
+/// Returns [str] without any color codes.
+String withoutColors(String str) => str.replaceAll(_colorCode, '');
+
+/// A regular expression to match the exception prefix that some exceptions'
+/// [Object.toString] values contain.
+final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
+
+/// Get a string description of an exception.
+///
+/// Many exceptions include the exception class name at the beginning of their
+/// [toString], so we remove that if it exists.
+String getErrorMessage(error) =>
+    error.toString().replaceFirst(_exceptionPrefix, '');

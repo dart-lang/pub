@@ -29,7 +29,8 @@ import 'git.dart' as git;
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
+import 'solver.dart';
 import 'utils.dart';
 
 class PubCommandRunner extends CommandRunner {
@@ -229,6 +230,10 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
   /// appropriate exit code could be found.
   int _chooseExitCode(exception) {
+    if (exception is SolveFailure) {
+      var packageNotFound = exception.packageNotFound;
+      if (packageNotFound != null) exception = packageNotFound;
+    }
     while (exception is WrappedException && exception.innerError is Exception) {
       exception = exception.innerError;
     }

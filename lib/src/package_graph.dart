@@ -4,12 +4,10 @@
 
 import 'package:collection/collection.dart';
 
-import 'barback/transformer_cache.dart';
-import 'compiler.dart';
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';
-import 'solver/version_solver.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
@@ -33,9 +31,6 @@ class PackageGraph {
   /// A map of transitive dependencies for each package.
   Map<String, Set<Package>> _transitiveDependencies;
 
-  /// The transformer cache, if it's been loaded.
-  TransformerCache _transformerCache;
-
   PackageGraph(this.entrypoint, this.lockFile, this.packages);
 
   /// Creates a package graph using the data from [result].
@@ -56,21 +51,6 @@ class PackageGraph {
     return new PackageGraph(entrypoint, result.lockFile, packages);
   }
 
-  /// Loads the transformer cache for this graph.
-  ///
-  /// This may only be called if [entrypoint] represents a physical package.
-  /// This may modify the cache.
-  TransformerCache loadTransformerCache() {
-    if (_transformerCache == null) {
-      if (entrypoint.root.dir == null) {
-        throw new StateError("Can't load the transformer cache for virtual "
-            "entrypoint ${entrypoint.root.name}.");
-      }
-      _transformerCache = new TransformerCache.load(this);
-    }
-    return _transformerCache;
-  }
-
   /// Returns all transitive dependencies of [package].
   ///
   /// For the entrypoint this returns all packages in [packages], which includes
@@ -82,8 +62,7 @@ class PackageGraph {
     if (_transitiveDependencies == null) {
       var closure = transitiveClosure(
           mapMap<String, Package, String, Iterable<String>>(packages,
-              value: (_, package) =>
-                  package.dependencies.map((dep) => dep.name)));
+              value: (_, package) => package.dependencies.keys));
       _transitiveDependencies =
           mapMap<String, Set<String>, String, Set<Package>>(closure,
               value: (depender, names) {
@@ -94,34 +73,6 @@ class PackageGraph {
     }
 
     return _transitiveDependencies[package];
-  }
-
-  /// Returns whether [package], or any of its transitive dependencies, have
-  /// transformers that run on any of their public assets.
-  ///
-  /// This is pessimistic; if any package can't be determined to be transformed,
-  /// this returns `true`.
-  bool isPackageTransformed(String packageName) {
-    if (_isIndividualPackageTransformed(packages[packageName])) return true;
-
-    return transitiveDependencies(packageName)
-        .any(_isIndividualPackageTransformed);
-  }
-
-  /// Returns whether [package] itself has transformers that run on any of its
-  /// public assets.
-  bool _isIndividualPackageTransformed(Package package) {
-    // If the caller passed in an unknown package name to isPackageTransformed,
-    // the package will be null.
-    if (package == null) return true;
-
-    if (package.name == entrypoint.root.name) {
-      return package.pubspec.transformers.isNotEmpty;
-    }
-
-    return package.pubspec.transformers.any((phase) {
-      return phase.any((config) => config.canTransformPublicFiles);
-    });
   }
 
   /// Returns whether [package] is mutable.
@@ -145,23 +96,5 @@ class PackageGraph {
 
       return entrypoint.cache.source(depId.source) is! CachedSource;
     });
-  }
-
-  /// Returns whether [package] is static.
-  ///
-  /// A package is considered to be static if it's not transformed and it came
-  /// from a cached source. Static packages don't need to be fully processed by
-  /// barback.
-  ///
-  /// If [compiler] is [Compiler.dartDevc] then no package is static because the
-  /// transformer will be added to all packages.
-  ///
-  /// Note that a static package isn't the same as an immutable package (see
-  /// [isPackageMutable]).
-  bool isPackageStatic(String package, Compiler compiler) {
-    var id = lockFile.packages[package];
-    if (id == null) return false;
-    if (entrypoint.cache.source(id.source) is! CachedSource) return false;
-    return packages[package].pubspec.transformers.isEmpty;
   }
 }

@@ -5,51 +5,45 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:barback/barback.dart';
+import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
-import 'flutter.dart' as flutter;
 import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_name.dart';
 import 'package_graph.dart';
+import 'package_name.dart';
 import 'pubspec.dart';
-import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'sdk.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// A RegExp to match the Dart SDK constraint in a lock file.
-///
-/// This matches both the old-style constraint:
-///
-/// ```yaml
-/// sdk: ">=1.2.3 <2.0.0"
-/// ```
-///
-/// and the new-style constraint:
-///
-/// ```yaml
-/// sdks:
-///   dart: ">=1.2.3 <2.0.0"
-/// ```
-final _dartSdkConstraint =
-    new RegExp(r'^(  dart|sdk): "?([^"]*)"?$', multiLine: true);
-
-/// A RegExp to match the Flutter SDK constraint in a lock file.
-final _flutterSdkConstraint =
-    new RegExp(r'^  flutter: "?([^"]*)"?$', multiLine: true);
+/// A RegExp to match SDK constraints in a lockfile.
+final _sdkConstraint = () {
+  // This matches both the old-style constraint:
+  //
+  // ```yaml
+  // sdk: ">=1.2.3 <2.0.0"
+  // ```
+  //
+  // and the new-style constraint:
+  //
+  // ```yaml
+  // sdks:
+  //   dart: ">=1.2.3 <2.0.0"
+  // ```
+  var sdkNames = sdks.keys.map((name) => "  " + name).join('|');
+  return new RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
+}();
 
 /// The context surrounding the root package pub is operating on.
 ///
@@ -144,13 +138,6 @@ class Entrypoint {
     return newPath;
   }
 
-  /// The path to the directory containing precompiled dependencies.
-  ///
-  /// We just precompile the debug version of a package. We're mostly interested
-  /// in improving speed for development iteration loops, which usually use
-  /// debug mode.
-  String get _precompiledDepsPath => p.join(cachePath, 'deps', 'debug');
-
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
@@ -191,7 +178,7 @@ class Entrypoint {
   /// [dryRun] is `true`, no physical changes are made.
   ///
   /// If [precompile] is `true` (the default), this snapshots dependencies'
-  /// executables and runs transformers on transformed dependencies.
+  /// executables.
   ///
   /// If [packagesDir] is `true`, this will create "packages" directory with
   /// symlinks to the installed packages. This directory will be symlinked into
@@ -224,8 +211,6 @@ class Entrypoint {
       }
     }
 
-    if (!result.succeeded) throw result.error;
-
     result.showReport(type);
 
     if (dryRun) {
@@ -252,19 +237,13 @@ class Entrypoint {
     /// Build a package graph from the version solver results so we don't
     /// have to reload and reparse all the pubspecs.
     _packageGraph = new PackageGraph.fromSolveResult(this, result);
-    packageGraph.loadTransformerCache().clearIfOutdated(result.changedPackages);
 
     writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
 
     try {
       if (precompile) {
-        await _precompileDependencies(changed: result.changedPackages);
         await precompileExecutables(changed: result.changedPackages);
       } else {
-        // If precompilation is disabled, delete any stale cached dependencies
-        // or snapshots.
-        _deletePrecompiledDependencies(
-            _dependenciesToPrecompile(changed: result.changedPackages));
         _deleteExecutableSnapshots(changed: result.changedPackages);
       }
     } catch (error, stackTrace) {
@@ -274,120 +253,15 @@ class Entrypoint {
     }
   }
 
-  /// Precompile any transformed dependencies of the entrypoint.
-  ///
-  /// If [changed] is passed, only dependencies whose contents might be changed
-  /// if one of the given packages changes will be recompiled.
-  Future _precompileDependencies({Iterable<String> changed}) async {
-    if (changed != null) changed = changed.toSet();
-
-    var dependenciesToPrecompile = _dependenciesToPrecompile(changed: changed);
-    _deletePrecompiledDependencies(dependenciesToPrecompile);
-    if (dependenciesToPrecompile.isEmpty) return;
-
-    try {
-      await log.progress("Precompiling dependencies", () async {
-        var packagesToLoad = unionAll(dependenciesToPrecompile
-                .map(packageGraph.transitiveDependencies))
-            .map((package) => package.name)
-            .toSet();
-
-        var environment = await AssetEnvironment.create(this, BarbackMode.DEBUG,
-            packages: packagesToLoad, compiler: Compiler.none);
-
-        /// Ignore barback errors since they'll be emitted via [getAllAssets]
-        /// below.
-        environment.barback.errors.listen((_) {});
-
-        // TODO(nweiz): only get assets from [dependenciesToPrecompile] so as
-        // not to trigger unnecessary lazy transformers.
-        var assets = await environment.barback.getAllAssets();
-        await waitAndPrintErrors(assets.map((asset) async {
-          if (!dependenciesToPrecompile.contains(asset.id.package)) return;
-
-          var destPath = p.join(
-              _precompiledDepsPath, asset.id.package, p.fromUri(asset.id.path));
-          ensureDir(p.dirname(destPath));
-          await createFileFromStream(asset.read(), destPath);
-        }));
-
-        log.message("Precompiled " +
-            toSentence(ordered(dependenciesToPrecompile).map(log.bold)) +
-            ".");
-      });
-    } catch (_) {
-      // TODO(nweiz): When barback does a better job of associating errors with
-      // assets (issue 19491), catch and handle compilation errors on a
-      // per-package basis.
-      for (var package in dependenciesToPrecompile) {
-        deleteEntry(p.join(_precompiledDepsPath, package));
-      }
-      rethrow;
-    }
-  }
-
-  /// Returns the set of dependencies that need to be precompiled.
-  ///
-  /// If [changed] is passed, only dependencies whose contents might be changed
-  /// if one of the given packages changes will be returned.
-  Set<String> _dependenciesToPrecompile({Set<String> changed}) {
-    return packageGraph.packages.values
-        .where((package) {
-          if (package.pubspec.transformers.isEmpty) return false;
-          if (packageGraph.isPackageMutable(package.name)) return false;
-          if (!dirExists(p.join(_precompiledDepsPath, package.name)))
-            return true;
-          if (changed == null) return true;
-
-          /// Only recompile [package] if any of its transitive dependencies have
-          /// changed. We check all transitive dependencies because it's possible
-          /// that a transformer makes decisions based on their contents.
-          return overlaps(
-              packageGraph
-                  .transitiveDependencies(package.name)
-                  .map((package) => package.name)
-                  .toSet(),
-              changed);
-        })
-        .map((package) => package.name)
-        .toSet();
-  }
-
-  /// Deletes outdated precompiled dependencies.
-  ///
-  /// This deletes the precompilations of all packages in [packages], as well as
-  /// any packages that are now untransformed or mutable.
-  void _deletePrecompiledDependencies([Iterable<String> packages]) {
-    if (!dirExists(_precompiledDepsPath)) return;
-
-    // Delete any cached dependencies that are going to be recached.
-    packages ??= [];
-    for (var package in packages) {
-      var path = p.join(_precompiledDepsPath, package);
-      if (dirExists(path)) deleteEntry(path);
-    }
-
-    // Also delete any cached dependencies that should no longer be cached.
-    for (var subdir in listDir(_precompiledDepsPath)) {
-      var package = packageGraph.packages[p.basename(subdir)];
-      if (package == null ||
-          package.pubspec.transformers.isEmpty ||
-          packageGraph.isPackageMutable(package.name)) {
-        deleteEntry(subdir);
-      }
-    }
-  }
-
   /// Precompiles all executables from dependencies that don't transitively
   /// depend on [this] or on a path dependency.
   Future precompileExecutables({Iterable<String> changed}) async {
     migrateCache();
     _deleteExecutableSnapshots(changed: changed);
 
-    var executables = new Map<String, List<AssetId>>.fromIterable(
+    var executables = mapMap<String, PackageRange, String, List<String>>(
         root.immediateDependencies,
-        key: (dep) => dep.name,
-        value: (dep) => _executablesForPackage(dep.name));
+        value: (name, _) => _executablesForPackage(name));
 
     for (var package in executables.keys.toList()) {
       if (executables[package].isEmpty) executables.remove(package);
@@ -402,58 +276,23 @@ class Entrypoint {
       // SDK's.
       writeTextFile(p.join(_snapshotPath, 'sdk-version'), "${sdk.version}\n");
 
-      var packagesToLoad =
-          unionAll(executables.keys.map(packageGraph.transitiveDependencies))
-              .toSet();
-
-      // Try to avoid starting up an asset server to precompile packages if
-      // possible. This is faster and produces better error messages.
-      if (packagesToLoad
-          .every((package) => package.pubspec.transformers.isEmpty)) {
-        await _precompileExecutablesWithoutBarback(executables);
-      } else {
-        await _precompileExecutablesWithBarback(executables, packagesToLoad);
-      }
+      await _precompileExecutables(executables);
     });
   }
 
   //// Precompiles [executables] to snapshots from the filesystem.
-  Future _precompileExecutablesWithoutBarback(
-      Map<String, List<AssetId>> executables) {
+  Future _precompileExecutables(Map<String, List<String>> executables) {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
-      return waitAndPrintErrors(executables[package].map((id) {
-        var url = p.toUri(packageGraph.packages[id.package].dir);
-        url = url.replace(path: p.url.join(url.path, id.path));
+      return waitAndPrintErrors(executables[package].map((path) {
+        var url = p.toUri(packageGraph.packages[package].dir);
+        url = url.replace(path: p.url.join(url.path, path));
         return dart.snapshot(
-            url, p.join(dir, p.url.basename(id.path) + '.snapshot'),
-            packagesFile: p.toUri(packagesFile), id: id);
+            url, p.join(dir, p.url.basename(path) + '.snapshot'),
+            packagesFile: p.toUri(packagesFile),
+            name: '$package:${p.url.basenameWithoutExtension(path)}');
       }));
-    }));
-  }
-
-  //// Precompiles [executables] to snapshots from a barback asset environment.
-  ////
-  //// The [packagesToLoad] set should include all packages that are
-  //// transitively imported by [executables].
-  Future _precompileExecutablesWithBarback(
-      Map<String, List<AssetId>> executables,
-      Set<Package> packagesToLoad) async {
-    var executableIds = unionAll(executables.values.map((ids) => ids.toSet()));
-    var environment = await AssetEnvironment.create(this, BarbackMode.RELEASE,
-        packages: packagesToLoad.map((package) => package.name),
-        entrypoints: executableIds,
-        compiler: Compiler.none);
-    environment.barback.errors.listen((error) {
-      log.error(log.red("Build error:\n$error"));
-    });
-
-    await waitAndPrintErrors(executables.keys.map((package) async {
-      var dir = p.join(_snapshotPath, package);
-      cleanDir(dir);
-      await environment.precompileExecutables(package, dir,
-          executableIds: executables[package]);
     }));
   }
 
@@ -496,9 +335,9 @@ class Entrypoint {
     }
   }
 
-  /// Returns the list of all executable assets for [packageName] that should be
+  /// Returns the list of all paths within [packageName] that should be
   /// precompiled.
-  List<AssetId> _executablesForPackage(String packageName) {
+  List<String> _executablesForPackage(String packageName) {
     var package = packageGraph.packages[packageName];
     var binDir = package.path('bin');
     if (!dirExists(binDir)) return [];
@@ -514,9 +353,7 @@ class Entrypoint {
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath,
-        packageName,
-        "${p.url.basename(executable.path)}.snapshot")));
+        _snapshotPath, packageName, "${p.url.basename(executable)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
@@ -589,26 +426,19 @@ class Entrypoint {
       touch(packagesFile);
     }
 
-    var dartSdkConstraint = _dartSdkConstraint.firstMatch(lockFileText);
-    if (dartSdkConstraint != null) {
-      var parsedConstraint = new VersionConstraint.parse(dartSdkConstraint[2]);
+    for (var match in _sdkConstraint.allMatches(lockFileText)) {
+      var identifier = match[1] == 'sdk' ? 'dart' : match[1].trim();
+      var sdk = sdks[identifier];
+
+      // Don't complain if there's an SDK constraint for an unavailable SDK. For
+      // example, the Flutter SDK being unavailable just means that we aren't
+      // running from within the `flutter` executable, and we want users to be
+      // able to `pub run` non-Flutter tools even in a Flutter app.
+      if (!sdk.isAvailable) continue;
+
+      var parsedConstraint = new VersionConstraint.parse(match[2]);
       if (!parsedConstraint.allows(sdk.version)) {
-        dataError("Dart ${sdk.version} is incompatible with your dependencies' "
-            "SDK constraints. Please run \"pub get\" again.");
-      }
-    }
-
-    // Don't complain if there's a Flutter constraint but Flutter is
-    // unavailable. Flutter being unavailable just means that we aren't running
-    // from within the `flutter` executable, and we want users to be able to
-    // `pub run` non-Flutter tools even in a Flutter app.
-    var flutterSdkConstraint = _flutterSdkConstraint.firstMatch(lockFileText);
-    if (flutterSdkConstraint != null && flutter.isAvailable) {
-      var parsedConstraint =
-          new VersionConstraint.parse(flutterSdkConstraint[1]);
-
-      if (!parsedConstraint.allows(flutter.version)) {
-        dataError("Flutter ${flutter.version} is incompatible with your "
+        dataError("${sdk.name} ${sdk.version} is incompatible with your "
             "dependencies' SDK constraints. Please run \"pub get\" again.");
       }
     }
@@ -621,12 +451,12 @@ class Entrypoint {
   /// or that don't match what's in there, this will throw a [DataError]
   /// describing the issue.
   void _assertLockFileUpToDate() {
-    if (!root.immediateDependencies.every(_isDependencyUpToDate)) {
+    if (!root.immediateDependencies.values.every(_isDependencyUpToDate)) {
       dataError('The pubspec.yaml file has changed since the pubspec.lock '
           'file was generated, please run "pub get" again.');
     }
 
-    var overrides = root.dependencyOverrides.map((dep) => dep.name).toSet();
+    var overrides = new MapKeySet(root.dependencyOverrides);
 
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
@@ -635,7 +465,7 @@ class Entrypoint {
       if (source is CachedSource) continue;
 
       try {
-        if (cache.load(id).dependencies.every((dep) =>
+        if (cache.load(id).dependencies.values.every((dep) =>
             overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
           continue;
         }

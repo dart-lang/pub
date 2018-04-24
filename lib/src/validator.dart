@@ -9,10 +9,12 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
+import 'sdk.dart';
 import 'utils.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
+import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/license.dart';
@@ -63,20 +65,20 @@ abstract class Validator {
       return;
     }
 
-    // Suggest that users use a non-dev SDK constraint, even if there were some
-    // dev versions that are allowed.
-    var nextNonDevVersion = firstSdkVersion.isPreRelease
-        ? firstSdkVersion.nextMinor
-        : firstSdkVersion;
-    var allowedSdks =
-        new VersionConstraint.compatibleWith(nextNonDevVersion) as VersionRange;
+    if (firstSdkVersion.isPreRelease &&
+        !_isSamePreRelease(firstSdkVersion, sdk.version)) {
+      // Unless the user is using a dev SDK themselves, suggest that they use a
+      // non-dev SDK constraint, even if there were some dev versions that are
+      // allowed.
+      firstSdkVersion = firstSdkVersion.nextPatch;
+    }
 
-    // Avoid ^ constraints, since they aren't supported in SDK constraints.
-    allowedSdks = new VersionRange(
-        min: allowedSdks.min,
-        max: allowedSdks.max,
-        includeMin: allowedSdks.includeMin,
-        includeMax: allowedSdks.includeMax);
+    var allowedSdks = new VersionRange(
+        min: firstSdkVersion,
+        includeMin: true,
+        max: firstSdkVersion.isPreRelease
+            ? firstSdkVersion.nextPatch
+            : firstSdkVersion.nextBreaking);
 
     var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
         .intersect(allowedSdks);
@@ -88,6 +90,14 @@ abstract class Validator {
         "environment:\n"
         "  sdk: \"$newSdkConstraint\"");
   }
+
+  /// Returns whether [version1] and [version2] are pre-releases of the same version.
+  bool _isSamePreRelease(Version version1, Version version2) =>
+      version1.isPreRelease &&
+      version2.isPreRelease &&
+      version1.patch == version2.patch &&
+      version1.minor == version2.minor &&
+      version1.major == version2.major;
 
   /// Run all validators on the [entrypoint] package and print their results.
   ///
@@ -105,6 +115,7 @@ abstract class Validator {
       new PubspecFieldValidator(entrypoint),
       new DependencyValidator(entrypoint),
       new DependencyOverrideValidator(entrypoint),
+      new DeprecatedFieldsValidator(entrypoint),
       new DirectoryValidator(entrypoint),
       new ExecutableValidator(entrypoint),
       new CompiledDartdocValidator(entrypoint),

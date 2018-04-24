@@ -18,7 +18,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -66,9 +66,9 @@ class _PubHttpClient extends http.BaseClient {
     var streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
-    } on SocketException catch (error, stackTrace) {
+    } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      if (stackTrace == null) stackTrace = new Chain.current();
+      var stackTrace = stackTraceOrNull ?? new Chain.current();
 
       if (error.osError == null) rethrow;
 
@@ -228,6 +228,13 @@ final httpClient = new ThrottleClient(
     new _ThrowingClient(new RetryClient(_pubClient,
         retries: 5,
         when: (response) => const [502, 503, 504].contains(response.statusCode),
+        whenError: (error, stackTrace) {
+          if (error is! IOException) return false;
+
+          var chain = new Chain.forTrace(stackTrace);
+          log.io("HTTP error:\n$error\n\n${chain.terse}");
+          return true;
+        },
         delay: (retryCount) {
           if (retryCount < 3) {
             // Retry quickly a couple times in case of a short transient error.
@@ -304,7 +311,7 @@ void handleJsonError(http.Response response) {
 Map parseJsonResponse(http.Response response) {
   var value;
   try {
-    value = JSON.decode(response.body);
+    value = jsonDecode(response.body);
   } on FormatException {
     invalidServerResponse(response);
   }

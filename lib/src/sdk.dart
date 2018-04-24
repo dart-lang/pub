@@ -2,73 +2,54 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// Operations relative to the user's installed Dart SDK.
-import 'dart:io';
+import 'dart:collection';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'io.dart';
+import 'sdk/dart.dart';
+import 'sdk/flutter.dart';
+import 'sdk/fuchsia.dart';
 
-/// The path to the root directory of the SDK.
-///
-/// Note that if pub is running from source within the Dart repo (for example
-/// when building Observatory), this will be the repo's "sdk/" directory, which
-/// doesn't look exactly like the built SDK.
-final String rootDirectory = (() {
-  if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
+/// An SDK that can provide packages and on which pubspecs can express version
+/// constraints.
+abstract class Sdk {
+  /// This SDK's human-readable name.
+  String get name;
 
-  // The Dart exectuable is in "/path/to/sdk/bin/dart", so two levels up is
-  // "/path/to/sdk".
-  var aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
-  assert(fileExists(p.join(aboveExecutable, 'version')));
-  return aboveExecutable;
-})();
+  /// The identifier used in pubspecs to refer to this SDK.
+  ///
+  /// This should match the key used in [sdks].
+  String get identifier => name.toLowerCase();
 
-/// The SDK's revision number formatted to be a semantic version.
-///
-/// This can be set so that the version solver tests can artificially select
-/// different SDK versions.
-final version = _getVersion();
+  /// Whether the user has this SDK installed and configured so that it's
+  /// accessible to pub.
+  bool get isAvailable;
 
-/// Determine the SDK's version number.
-Version _getVersion() {
-  // Some of the pub integration tests require an SDK version number, but the
-  // tests on the bots are not run from a built SDK so this lets us avoid
-  // parsing the missing version file.
-  var sdkVersion = Platform.environment["_PUB_TEST_SDK_VERSION"];
-  if (sdkVersion != null) return new Version.parse(sdkVersion);
+  /// The SDK's version number, or `null` if the SDK is unavailable.
+  Version get version;
 
-  if (!runningFromDartRepo) {
-    // Read the "version" file.
-    var version = readTextFile(p.join(rootDirectory, "version")).trim();
-    return new Version.parse(version);
-  }
+  /// The version of pub that added support for this SDK.
+  Version get firstPubVersion;
 
-  // When running from the Dart repo, read the canonical VERSION file in tools/.
-  // This makes it possible to run pub without having built the SDK first.
-  var contents = readTextFile(p.join(dartRepoRoot, "tools/VERSION"));
+  /// A message to indicate to the user how to make this SDK available.
+  ///
+  /// This is printed after a version solve where the SDK wasn't found. It may
+  /// be `null`, indicating that no such message should be printed.
+  String get installMessage;
 
-  parseField(name) {
-    var pattern = new RegExp("^$name ([a-z0-9]+)", multiLine: true);
-    var match = pattern.firstMatch(contents);
-    return match[1];
-  }
+  /// Returns the path to the package [name] within this SDK.
+  ///
+  /// Returns `null` if the SDK isn't available or if it doesn't contain a
+  /// package with the given name.
+  String packagePath(String name);
 
-  var channel = parseField("CHANNEL");
-  var major = parseField("MAJOR");
-  var minor = parseField("MINOR");
-  var patch = parseField("PATCH");
-  var prerelease = parseField("PRERELEASE");
-  var prereleasePatch = parseField("PRERELEASE_PATCH");
-
-  var version = "$major.$minor.$patch";
-  if (channel == "be") {
-    // TODO(rnystrom): tools/utils.py includes the svn commit here. Should we?
-    version += "-edge";
-  } else if (channel == "dev") {
-    version += "-dev.$prerelease.$prereleasePatch";
-  }
-
-  return new Version.parse(version);
+  String toString() => name;
 }
+
+/// A map from SDK identifiers that appear in pubspecs to the implementations of
+/// those SDKs.
+final sdks = new UnmodifiableMapView<String, Sdk>(
+    {"dart": sdk, "flutter": new FlutterSdk(), "fuchsia": new FuchsiaSdk()});
+
+/// The core Dart SDK.
+final sdk = new DartSdk();

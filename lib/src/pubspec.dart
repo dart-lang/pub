@@ -11,14 +11,12 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
-import 'barback/transformer_config.dart';
-import 'compiler.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
 import 'log.dart';
 import 'package_name.dart';
-import 'sdk.dart' as sdk;
+import 'sdk.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
@@ -163,38 +161,38 @@ class Pubspec {
   Version _version;
 
   /// The additional packages this package depends on.
-  List<PackageRange> get dependencies {
+  Map<String, PackageRange> get dependencies {
     if (_dependencies != null) return _dependencies;
     _dependencies =
         _parseDependencies('dependencies', fields.nodes['dependencies']);
     return _dependencies;
   }
 
-  List<PackageRange> _dependencies;
+  Map<String, PackageRange> _dependencies;
 
   /// The packages this package depends on when it is the root package.
-  List<PackageRange> get devDependencies {
+  Map<String, PackageRange> get devDependencies {
     if (_devDependencies != null) return _devDependencies;
     _devDependencies = _parseDependencies(
         'dev_dependencies', fields.nodes['dev_dependencies']);
     return _devDependencies;
   }
 
-  List<PackageRange> _devDependencies;
+  Map<String, PackageRange> _devDependencies;
 
   /// The dependency constraints that this package overrides when it is the
   /// root package.
   ///
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
-  List<PackageRange> get dependencyOverrides {
+  Map<String, PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides;
     _dependencyOverrides = _parseDependencies(
         'dependency_overrides', fields.nodes['dependency_overrides']);
     return _dependencyOverrides;
   }
 
-  List<PackageRange> _dependencyOverrides;
+  Map<String, PackageRange> _dependencyOverrides;
 
   Map<String, Feature> get features {
     if (_features != null) return _features;
@@ -235,10 +233,9 @@ class Pubspec {
 
           var sdkConstraints = _parseEnvironment(specNode);
 
-          return new Feature(nameNode.value, dependencies,
+          return new Feature(nameNode.value, dependencies.values,
               requires: requires,
-              dartSdkConstraint: sdkConstraints.first,
-              flutterSdkConstraint: sdkConstraints.last,
+              sdkConstraints: sdkConstraints,
               onByDefault: onByDefault);
         });
     return _features;
@@ -246,133 +243,45 @@ class Pubspec {
 
   Map<String, Feature> _features;
 
-  /// The configurations of the transformers to use for this package.
-  List<Set<TransformerConfig>> get transformers {
-    if (_transformers != null) return _transformers;
-
-    _transformers = _parseList(fields.nodes['transformers']).nodes.map((phase) {
-      var phaseNodes = phase is YamlList ? phase.nodes : [phase];
-      return phaseNodes.map((transformerNode) {
-        var transformer = transformerNode.value;
-        if (transformer is! String && transformer is! Map) {
-          _error(
-              'A transformer must be a string or map.', transformerNode.span);
-        }
-
-        var libraryNode;
-        var configurationNode;
-        if (transformer is String) {
-          libraryNode = transformerNode;
-        } else {
-          if (transformer.length != 1) {
-            _error(
-                'A transformer map must have a single key: the transformer '
-                'identifier.',
-                transformerNode.span);
-          } else if (transformer.keys.single is! String) {
-            _error('A transformer identifier must be a string.',
-                transformer.nodes.keys.single.span);
-          }
-
-          libraryNode = transformer.nodes.keys.single;
-          configurationNode = transformer.nodes.values.single;
-          if (configurationNode is! YamlMap) {
-            _error("A transformer's configuration must be a map.",
-                configurationNode.span);
-          }
-        }
-
-        var config = _wrapSpanFormatException('transformer config', () {
-          return new TransformerConfig.parse(
-              libraryNode.value, libraryNode.span, configurationNode);
-        });
-
-        var package = config.id.package;
-        if (package != name &&
-            !config.id.isBuiltInTransformer &&
-            !_hasDependency(package)) {
-          _error('"$package" is not a dependency.', libraryNode.span);
-        }
-
-        return config;
-      }).toSet();
-    }).toList();
-
-    return _transformers;
-  }
-
-  List<Set<TransformerConfig>> _transformers;
-
-  /// Returns whether this pubspec has any kind of dependency on [package].
-  ///
-  /// This explicitly avoids calling [_parseDependencies] because parsing dev
-  /// dependencies can fail for a hosted package's pubspec (e.g. if that package
-  /// has a relative path dev dependency).
-  bool _hasDependency(String package) {
-    return ['dependencies', 'dev_dependencies', 'dependency_overrides']
-        .any((field) {
-      var map = fields[field];
-      if (map == null) return false;
-
-      if (map is! Map) {
-        _error('"$field" field must be a map.', fields.nodes[field].span);
-      }
-
-      return map.containsKey(package);
-    });
-  }
-
-  /// The constraint on the Dart SDK, with [_defaultUpperBoundSdkConstraint] if
-  /// none is specified.
-  ///
-  /// This also includes the pre-release override if
-  /// [allowPreReleaseTwoDotZeroSdk] is `true`.
-  VersionConstraint get dartSdkConstraint {
+  /// A map from SDK identifiers to constraints on those SDK versions.
+  Map<String, VersionConstraint> get sdkConstraints {
     _ensureEnvironment();
-    return _dartSdkConstraint;
+    return _sdkConstraints;
   }
 
-  VersionConstraint _dartSdkConstraint;
+  Map<String, VersionConstraint> _sdkConstraints;
 
-  /// The original Dart SDK constraint, if [dartSdkWasOverridden] is `true`,
-  /// otherwise this will be identical to [dartSdkConstraint].
+  /// The original Dart SDK constraint as written in the pubspec.
+  ///
+  /// If [dartSdkWasOverridden] is `false`, this will be identical to
+  /// `sdkConstraints["dart"]`.
   VersionConstraint get originalDartSdkConstraint {
     _ensureEnvironment();
-    return _originalDartSdkConstraint ?? dartSdkConstraint;
+    return _originalDartSdkConstraint ?? sdkConstraints["dart"];
   }
 
   VersionConstraint _originalDartSdkConstraint;
 
-  /// The constraint on the Flutter SDK, or `null` if none is specified.
-  VersionConstraint get flutterSdkConstraint {
-    _ensureEnvironment();
-    return _flutterSdkConstraint;
-  }
-
-  VersionConstraint _flutterSdkConstraint;
-
   /// Ensures that the top-level "environment" field has been parsed and
-  /// [_dartSdkConstraint] and [_flutterSdkConstraint] are set accordingly.
+  /// [_sdkConstraints] is set accordingly.
   void _ensureEnvironment() {
-    if (_dartSdkConstraint != null) return;
+    if (_sdkConstraints != null) return;
 
-    var pair = _parseEnvironment(fields);
-    var parsedDartSdkConstraint = pair.first;
+    var sdkConstraints = _parseEnvironment(fields);
+    var parsedDartSdkConstraint = sdkConstraints["dart"];
 
     if (parsedDartSdkConstraint is VersionRange &&
         _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
       _originalDartSdkConstraint = parsedDartSdkConstraint;
       _dartSdkWasOverridden = true;
-      _dartSdkConstraint = new VersionRange(
+      sdkConstraints["dart"] = new VersionRange(
           min: parsedDartSdkConstraint.min,
           includeMin: parsedDartSdkConstraint.includeMin,
           max: sdk.version,
           includeMax: true);
-    } else {
-      _dartSdkConstraint = parsedDartSdkConstraint;
     }
 
-    _flutterSdkConstraint = pair.last;
+    _sdkConstraints = new UnmodifiableMapView(sdkConstraints);
   }
 
   /// Whether or not we should override [sdkConstraint] to be <= the user's
@@ -405,16 +314,16 @@ class Pubspec {
         sdkConstraint.max.patch == sdk.version.patch;
   }
 
-  /// Parses the "environment" field in [parent] and returns the Dart and
-  /// Flutter SDK constraints, respectively.
-  Pair<VersionConstraint, VersionConstraint> _parseEnvironment(YamlMap parent) {
+  /// Parses the "environment" field in [parent] and returns a map from SDK
+  /// identifiers to constraints on those SDKs.
+  Map<String, VersionConstraint> _parseEnvironment(YamlMap parent) {
     var yaml = parent['environment'];
     if (yaml == null) {
-      return new Pair(
-          _includeDefaultSdkConstraint
-              ? _defaultUpperBoundSdkConstraint
-              : VersionConstraint.any,
-          null);
+      return {
+        "dart": _includeDefaultSdkConstraint
+            ? _defaultUpperBoundSdkConstraint
+            : VersionConstraint.any
+      };
     }
 
     if (yaml is! Map) {
@@ -422,14 +331,24 @@ class Pubspec {
           parent.nodes['environment'].span);
     }
 
-    return new Pair(
-        _parseVersionConstraint(yaml.nodes['sdk'],
-            defaultUpperBoundConstraint: _includeDefaultSdkConstraint
-                ? _defaultUpperBoundSdkConstraint
-                : null),
-        yaml.containsKey('flutter')
-            ? _parseVersionConstraint(yaml.nodes['flutter'])
-            : null);
+    var constraints = {
+      "dart": _parseVersionConstraint(yaml.nodes['sdk'],
+          defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+              ? _defaultUpperBoundSdkConstraint
+              : null)
+    };
+    yaml.nodes.forEach((name, constraint) {
+      if (name.value is! String) {
+        _error('SDK names must be strings.', name.span);
+      } else if (name.value == "dart") {
+        _error('Use "sdk" to for Dart SDK constraints.', name.span);
+      }
+      if (name.value == "sdk") return;
+
+      constraints[name.value as String] = _parseVersionConstraint(constraint);
+    });
+
+    return constraints;
   }
 
   /// The URL of the server that the package should default to being published
@@ -521,49 +440,6 @@ class Pubspec {
 
   Map<String, String> _executables;
 
-  /// The settings for which web compiler to use in which mode.
-  ///
-  /// It is a map of [String] to [Compiler]. Each key is the name of a mode, and
-  /// the value is the web compiler to use in that mode.
-  ///
-  /// Valid compiler values are all of [Compiler.names].
-  Map<String, Compiler> get webCompiler {
-    if (_webCompiler != null) return _webCompiler;
-
-    _webCompiler = <String, Compiler>{};
-    var webYaml = fields.nodes['web'];
-    if (webYaml?.value == null) return _webCompiler;
-
-    if (webYaml is! Map) {
-      _error('"web" field must be a map.', webYaml.span);
-    }
-
-    var compilerYaml = (webYaml as YamlMap)['compiler'];
-    if (compilerYaml == null) return _webCompiler;
-
-    if (compilerYaml is! Map) {
-      _error('"compiler" field must be a map.',
-          (webYaml as YamlMap).nodes['compiler'].span);
-    }
-
-    compilerYaml.nodes.forEach((key, value) {
-      if (key.value is! String) {
-        _error('"compiler" keys must be strings.', key.span);
-      }
-
-      if (!Compiler.names.contains(value.value)) {
-        _error(
-            '"compiler" values must be one of ${Compiler.names}.', value.span);
-      }
-
-      _webCompiler[key.value] = Compiler.byName(value.value);
-    });
-
-    return _webCompiler;
-  }
-
-  Map<String, Compiler> _webCompiler;
-
   /// Whether the package is private and cannot be published.
   ///
   /// This is specified in the pubspec by setting "publish_to" to "none".
@@ -601,27 +477,22 @@ class Pubspec {
       Iterable<PackageRange> dependencies,
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
-      VersionConstraint dartSdkConstraint,
-      bool includeDefaultSdkConstraint,
-      VersionConstraint flutterSdkConstraint,
-      Iterable<Iterable<TransformerConfig>> transformers,
       Map fields,
       SourceRegistry sources})
       : _version = version,
-        _dependencies = dependencies == null ? null : dependencies.toList(),
-        _devDependencies =
-            devDependencies == null ? null : devDependencies.toList(),
-        _dependencyOverrides =
-            dependencyOverrides == null ? null : dependencyOverrides.toList(),
-        _dartSdkConstraint =
-            dartSdkConstraint ?? includeDefaultSdkConstraint == true
-                ? _defaultUpperBoundSdkConstraint
-                : VersionConstraint.any,
-        _flutterSdkConstraint = flutterSdkConstraint,
-        _includeDefaultSdkConstraint = includeDefaultSdkConstraint,
-        _transformers = transformers == null
-            ? []
-            : transformers.map((phase) => phase.toSet()).toList(),
+        _dependencies = dependencies == null
+            ? null
+            : new Map.fromIterable(dependencies, key: (range) => range.name),
+        _devDependencies = devDependencies == null
+            ? null
+            : new Map.fromIterable(devDependencies, key: (range) => range.name),
+        _dependencyOverrides = dependencyOverrides == null
+            ? null
+            : new Map.fromIterable(dependencyOverrides,
+                key: (range) => range.name),
+        _sdkConstraints =
+            new UnmodifiableMapView({"dart": VersionConstraint.any}),
+        _includeDefaultSdkConstraint = false,
         fields = fields == null ? new YamlMap() : new YamlMap.wrap(fields),
         _sources = sources;
 
@@ -629,12 +500,10 @@ class Pubspec {
       : _sources = null,
         _name = null,
         _version = Version.none,
-        _dependencies = <PackageRange>[],
-        _devDependencies = <PackageRange>[],
-        _dartSdkConstraint = VersionConstraint.any,
-        _flutterSdkConstraint = null,
+        _dependencies = {},
+        _devDependencies = {},
+        _sdkConstraints = {"dart": VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        _transformers = <Set<TransformerConfig>>[],
         fields = new YamlMap();
 
   /// Returns a Pubspec object for an already-parsed map representing its
@@ -707,7 +576,6 @@ class Pubspec {
     _getError(() => this.version);
     _getError(() => this.dependencies);
     _getError(() => this.devDependencies);
-    _getError(() => this.transformers);
     _getError(() => this.publishTo);
     _getError(() => this.features);
     _getError(() => this._ensureEnvironment());
@@ -715,9 +583,9 @@ class Pubspec {
   }
 
   /// Parses the dependency field named [field], and returns the corresponding
-  /// list of dependencies.
-  List<PackageRange> _parseDependencies(String field, YamlNode node) {
-    var dependencies = <PackageRange>[];
+  /// map of dependency names to dependencies.
+  Map<String, PackageRange> _parseDependencies(String field, YamlNode node) {
+    var dependencies = <String, PackageRange>{};
 
     // Allow an empty dependencies key.
     if (node == null || node.value == null) return dependencies;
@@ -799,8 +667,8 @@ class Pubspec {
             containingPath: pubspecPath);
       });
 
-      dependencies
-          .add(ref.withConstraint(versionConstraint).withFeatures(features));
+      dependencies[name] =
+          ref.withConstraint(versionConstraint).withFeatures(features);
     });
 
     return dependencies;
@@ -883,7 +751,7 @@ class Pubspec {
         _error('Must be a string.', element.span);
       }
     }
-    return DelegatingList.typed(list);
+    return list.cast<String>();
   }
 
   /// Verifies that [node] is a list and returns it.
@@ -904,14 +772,6 @@ class Pubspec {
       return fn();
     } on FormatException catch (e) {
       _error('Invalid $description: ${e.message}', span);
-    }
-  }
-
-  T _wrapSpanFormatException<T>(String description, T fn()) {
-    try {
-      return fn();
-    } on SourceSpanFormatException catch (e) {
-      _error('Invalid $description: ${e.message}', e.span);
     }
   }
 

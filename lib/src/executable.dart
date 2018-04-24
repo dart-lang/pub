@@ -6,17 +6,15 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:barback/barback.dart';
 import 'package:path/path.dart' as p;
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'utils.dart';
+import 'system_cache.dart';
 
 /// Runs [executable] from [package] reachable from [entrypoint].
 ///
@@ -33,14 +31,12 @@ import 'utils.dart';
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args,
-    {bool isGlobal: false, bool checked: false, BarbackMode mode}) async {
-  if (mode == null) mode = BarbackMode.RELEASE;
-
+    {bool isGlobal: false, bool checked: false, SystemCache cache}) async {
+  assert(!isGlobal || cache != null);
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
   if (entrypoint.root.name != package &&
-      !entrypoint.root.immediateDependencies
-          .any((dep) => dep.name == package)) {
+      !entrypoint.root.immediateDependencies.containsKey(package)) {
     if (entrypoint.packageGraph.packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
           'Cannot run executables in transitive dependencies.');
@@ -63,12 +59,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   var localSnapshotPath =
       p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
-  if (!isGlobal &&
-      fileExists(localSnapshotPath) &&
-      // Dependencies are only snapshotted in release mode, since that's the
-      // default mode for them to run. We can't run them in a different mode
-      // using the snapshot.
-      mode == BarbackMode.RELEASE) {
+  if (!isGlobal && fileExists(localSnapshotPath)) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
     entrypoint.assertUpToDate();
@@ -82,10 +73,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // "bin".
   if (p.split(executable).length == 1) executable = p.join("bin", executable);
 
-  var executableUrl = await _executableUrl(entrypoint, package, executable,
-      isGlobal: isGlobal, mode: mode);
+  var executablePath = await _executablePath(entrypoint, package, executable,
+      isGlobal: isGlobal, cache: cache);
 
-  if (executableUrl == null) {
+  if (executablePath == null) {
     var message = "Could not find ${log.bold(executable)}";
     if (isGlobal || package != entrypoint.root.name) {
       message += " in package ${log.bold(package)}";
@@ -94,79 +85,39 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     return exit_codes.NO_INPUT;
   }
 
-  // If we're running an executable directly from the filesystem, make sure that
-  // it knows where to load the packages. If it's a dependency's executable, for
-  // example, it may not have the right packages directory itself. Otherwise,
-  // default to Dart's automatic package: logic.
-  Uri packageConfig;
-  if (executableUrl.scheme == 'file' || executableUrl.scheme == '') {
-    // We use an absolute path here not because the VM insists but because it's
-    // helpful for the subprocess to be able to spawn Dart with
-    // Platform.executableArguments and have that work regardless of the working
-    // directory.
-    packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
-  }
+  // We use an absolute path here not because the VM insists but because it's
+  // helpful for the subprocess to be able to spawn Dart with
+  // Platform.executableArguments and have that work regardless of the working
+  // directory.
+  var packageConfig = p.toUri(p.absolute(entrypoint.packagesFile));
 
-  await isolate.runUri(executableUrl, args.toList(), null,
-      buffered: executableUrl.scheme == 'http',
+  await isolate.runUri(p.toUri(executablePath), args.toList(), null,
       checked: checked,
       automaticPackageResolution: packageConfig == null,
       packageConfig: packageConfig);
   return exitCode;
 }
 
-/// Returns the URL the VM should use to load the executable at [path].
+/// Returns the full path the VM should use to load the executable at [path].
 ///
 /// [path] must be relative to the root of [package]. If [path] doesn't exist,
-/// returns `null`.
-Future<Uri> _executableUrl(Entrypoint entrypoint, String package, String path,
-    {bool isGlobal: false, BarbackMode mode}) async {
+/// returns `null`. If the executable is global and doesn't already have a
+/// `.packages` file one will be created.
+Future<String> _executablePath(
+    Entrypoint entrypoint, String package, String path,
+    {bool isGlobal: false, SystemCache cache}) async {
   assert(p.isRelative(path));
 
-  // If neither the executable nor any of its dependencies are transformed,
-  // there's no need to spin up a barback server. Just run the VM directly
-  // against the filesystem.
-  if (!entrypoint.packageGraph.isPackageTransformed(package) &&
-      fileExists(entrypoint.packagesFile)) {
-    var fullPath = entrypoint.packageGraph.packages[package].path(path);
-    if (!fileExists(fullPath)) return null;
-    return p.toUri(p.absolute(fullPath));
+  if (!fileExists(entrypoint.packagesFile)) {
+    if (!isGlobal) return null;
+    // A .packages file may not already exist if the global executable has a
+    // 1.6-style lock file instead.
+    await writeTextFile(
+        entrypoint.packagesFile, entrypoint.lockFile.packagesFile(cache));
   }
-
-  var assetPath = p.url.joinAll(p.split(path));
-  var id = new AssetId(package, assetPath);
-
-  // TODO(nweiz): Use [packages] to only load assets from packages that the
-  // executable might load.
-  var environment = await AssetEnvironment
-      .create(entrypoint, mode, compiler: Compiler.none, entrypoints: [id]);
-  environment.barback.errors.listen((error) {
-    log.error(log.red("Build error:\n$error"));
-  });
-
-  var server;
-  if (package == entrypoint.root.name) {
-    // Serve the entire root-most directory containing the entrypoint. That
-    // ensures that, for example, things like `import '../../utils.dart';`
-    // will work from within some deeply nested script.
-    server = await environment.serveDirectory(p.split(path).first);
-  } else {
-    assert(p.split(path).first == "bin");
-
-    // For other packages, always use the "bin" directory.
-    server = await environment.servePackageBinDirectory(package);
-  }
-
-  try {
-    await environment.barback.getAssetById(id);
-  } on AssetNotFoundException catch (_) {
-    return null;
-  }
-
-  // Get the URL of the executable, relative to the server's root directory.
-  var relativePath = p.url
-      .relative(assetPath, from: p.url.joinAll(p.split(server.rootDirectory)));
-  return server.url.resolve(relativePath);
+  var fullPath = entrypoint.packageGraph.packages[package].path(path);
+  if (!fileExists(fullPath)) return null;
+  return p.absolute(fullPath);
 }
 
 /// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and

@@ -17,9 +17,10 @@ main() {
 
     await runPub(
         args: ["global", "activate", "foo", ">1.1.0"],
-        error: """
-            Package foo has no versions that match >1.1.0 derived from:
-            - pub global activate depends on version >1.1.0""",
+        error: equalsIgnoringWhitespace("""
+          Because pub global activate depends on foo >1.1.0 which doesn't match
+            any versions, version solving failed.
+        """),
         exitCode: exit_codes.DATA);
   });
 }

@@ -11,7 +11,7 @@ import "package:http/http.dart" as http;
 import "package:stack_trace/stack_trace.dart";
 import "package:yaml/yaml.dart";
 
-import 'asset/dart/serialize.dart';
+import 'sdk.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -73,36 +73,20 @@ class DataException extends ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
-  PackageNotFoundException(String message, [innerError, StackTrace innerTrace])
-      : super(message, innerError, innerTrace);
-}
+  /// If this failure was caused by an SDK being unavailable, this is that SDK.
+  final Sdk missingSdk;
 
-/// All the names of user-facing exceptions.
-final _userFacingExceptions = new Set<String>.from([
-  'ApplicationException', 'GitException',
-  // This refers to http.ClientException.
-  'ClientException',
-  // Errors coming from the Dart analyzer are probably caused by syntax errors
-  // in user code, so they're user-facing.
-  'AnalyzerError', 'AnalyzerErrorGroup',
-  // An error spawning an isolate probably indicates a transformer with an
-  // invalid import.
-  'IsolateSpawnException',
-  // IOException and subclasses.
-  'CertificateException', 'FileSystemException', 'HandshakeException',
-  'HttpException', 'IOException', 'ProcessException', 'RedirectException',
-  'SignalException', 'SocketException', 'StdoutException', 'TlsException',
-  'WebSocketException'
-]);
+  PackageNotFoundException(String message,
+      {innerError, StackTrace innerTrace, this.missingSdk})
+      : super(message, innerError, innerTrace);
+
+  String toString() => "Package doesn't exist ($message).";
+}
 
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
 bool isUserFacingException(error) {
-  if (error is CrossIsolateException) {
-    return _userFacingExceptions.contains(error.type);
-  }
-
   // TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
   // fixed.
   return error is ApplicationException ||

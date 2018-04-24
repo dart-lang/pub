@@ -6,11 +6,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:barback/barback.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import 'barback/asset_environment.dart';
-import 'compiler.dart';
 import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
@@ -22,8 +19,9 @@ import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'sdk.dart' as sdk;
-import 'solver/version_solver.dart';
+import 'sdk.dart';
+import 'solver.dart';
+import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -172,14 +170,22 @@ class GlobalPackages {
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
-    var result = await resolveVersions(SolveType.GET, cache, root);
-    if (!result.succeeded) {
-      // If the package specified by the user doesn't exist, we want to
-      // surface that as a [DataError] with the associated exit code.
-      if (result.error.package != dep.name) throw result.error;
-      if (result.error is NoVersionException) dataError(result.error.message);
-      throw result.error;
+    //
+    // TODO(nweiz): If this produces a SolveFailure that's caused by [dep] not
+    // being available, report that as a [dataError].
+    SolveResult result;
+    try {
+      result = await resolveVersions(SolveType.GET, cache, root);
+    } on SolveFailure catch (error) {
+      for (var incompatibility
+          in error.incompatibility.externalIncompatibilities) {
+        if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
+        if (incompatibility.terms.single.package.name != dep.name) continue;
+        dataError(error.toString());
+      }
+      rethrow;
     }
+
     result.showReport(SolveType.GET);
 
     // Make sure all of the dependencies are locally installed.
@@ -216,62 +222,26 @@ class GlobalPackages {
   /// successfully precompiled.
   Future<Map<String, String>> _precompileExecutables(
       Entrypoint entrypoint, String packageName) {
-    return log.progress("Precompiling executables", () {
+    return log.progress("Precompiling executables", () async {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
-      if (entrypoint.packageGraph
-          .transitiveDependencies(packageName)
-          .every((package) => package.pubspec.transformers.isEmpty)) {
-        return _precompileExecutablesWithoutBarback(package, binDir);
-      } else {
-        return _precompileExecutablesWithBarback(entrypoint, package, binDir);
-      }
+      var precompiled = {};
+      await waitAndPrintErrors(package.executableIds.map((path) async {
+        var url = p.toUri(package.dir);
+        url = url.replace(path: p.url.join(url.path, path));
+        var basename = p.url.basename(path);
+        var snapshotPath = p.join(binDir, '$basename.snapshot');
+        await dart.snapshot(url, snapshotPath,
+            packagesFile: p.toUri(_getPackagesFilePath(package.name)),
+            name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
+        precompiled[p.withoutExtension(basename)] = snapshotPath;
+      }));
+      return precompiled;
     });
-  }
-
-  //// Precompiles all executables in [package] to snapshots from the
-  //// filesystem.
-  ////
-  //// The snapshots are placed in [dir].
-  ////
-  //// Returns a map from executable basenames without extensions to the paths
-  //// to those executables.
-  Future<Map<String, String>> _precompileExecutablesWithoutBarback(
-      Package package, String dir) async {
-    var precompiled = {};
-    await waitAndPrintErrors(package.executableIds.map((id) async {
-      var url = p.toUri(package.dir);
-      url = url.replace(path: p.url.join(url.path, id.path));
-      var basename = p.url.basename(id.path);
-      var snapshotPath = p.join(dir, '$basename.snapshot');
-      await dart.snapshot(url, snapshotPath,
-          packagesFile: p.toUri(_getPackagesFilePath(package.name)), id: id);
-      precompiled[p.withoutExtension(basename)] = snapshotPath;
-    }));
-    return precompiled;
-  }
-
-  //// Precompiles all executables in [package] to snapshots from a barback
-  //// asset environment.
-  ////
-  //// The snapshots are placed in [dir].
-  ////
-  //// Returns a map from executable basenames without extensions to the paths
-  //// to those executables.
-  Future<Map<String, String>> _precompileExecutablesWithBarback(
-      Entrypoint entrypoint, Package package, String dir) async {
-    var environment = await AssetEnvironment.create(
-        entrypoint, BarbackMode.RELEASE,
-        entrypoints: package.executableIds, compiler: Compiler.none);
-    environment.barback.errors.listen((error) {
-      log.error(log.red("Build error:\n$error"));
-    });
-
-    return environment.precompileExecutables(package.name, dir);
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -376,15 +346,20 @@ class GlobalPackages {
           isGlobal: true);
     }
 
-    if (entrypoint.root.pubspec.flutterSdkConstraint != null) {
-      dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
-          "Flutter SDK, which is unsupported for global executables.");
-    }
-
-    if (!entrypoint.root.pubspec.dartSdkConstraint.allows(sdk.version)) {
-      dataError("${log.bold(name)} ${entrypoint.root.version} doesn't support "
-          "Dart ${sdk.version}.");
-    }
+    entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
+      var sdk = sdks[sdkName];
+      if (sdk == null) {
+        dataError('${log.bold(name)} ${entrypoint.root.version} requires '
+            'unknown SDK "$name".');
+      } else if (sdkName == "dart") {
+        if (constraint.allows(sdk.version)) return;
+        dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
+            "support Dart ${sdk.version}.");
+      } else {
+        dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
+            "${sdk.name} SDK, which is unsupported for global executables.");
+      }
+    });
 
     return entrypoint;
   }
@@ -395,21 +370,16 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [checked] is true, the program is run in checked mode. If [mode] is
-  /// passed, it's used as the barback mode; it defaults to
-  /// [BarbackMode.RELEASE].
+  /// If [checked] is true, the program is run in checked mode.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
-      {bool checked: false, BarbackMode mode}) {
-    if (mode == null) mode = BarbackMode.RELEASE;
-
+      {bool checked: false}) {
     var binDir = p.join(_directory, package, 'bin');
-    if (mode != BarbackMode.RELEASE ||
-        !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
+    if (!fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
       return exe.runExecutable(find(package), package, executable, args,
-          isGlobal: true, checked: checked, mode: mode);
+          isGlobal: true, checked: checked, cache: cache);
     }
 
     // Unless the user overrides the verbosity, we want to filter out the

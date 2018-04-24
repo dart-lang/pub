@@ -24,11 +24,11 @@ main() {
   group('bad source', badSource);
   group('backtracking', backtracking);
   group('Dart SDK constraint', dartSdkConstraint);
-  group('Flutter SDK constraint', flutterSdkConstraint);
+  group('SDK constraint', sdkConstraint);
   group('pre-release', prerelease);
   group('override', override);
   group('downgrade', downgrade);
-  group('features', features);
+  group('features', features, skip: true);
 }
 
 void basicGraph() {
@@ -200,7 +200,28 @@ void withLockFile() {
       'baz': '2.0.0',
       'qux': '1.0.0',
       'newdep': '2.0.0'
-    }, tries: 4);
+    }, tries: 2);
+  });
+
+  // Issue 1853
+  test(
+      "produces a nice message for a locked dependency that's the only "
+      "version of its package", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'});
+      builder.serve('bar', '1.0.0');
+      builder.serve('bar', '2.0.0');
+    });
+
+    await d.appDir({'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
+
+    await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
+    await expectResolves(error: equalsIgnoringWhitespace('''
+      Because every version of foo depends on bar >=2.0.0 and myapp depends on
+        bar <2.0.0, foo is forbidden.
+      So, because myapp depends on foo any, version solving failed.
+    '''));
   });
 }
 
@@ -223,10 +244,7 @@ void rootDependency() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(
-        error: "Incompatible dependencies on myapp:\n"
-            "- bar 1.0.0 depends on it from source git\n"
-            "- foo 1.0.0 depends on it from source hosted");
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test('with wrong version', () async {
@@ -235,9 +253,11 @@ void rootDependency() {
     });
 
     await d.appDir({'foo': '1.0.0'}).create();
-    await expectResolves(
-        error: "Package myapp has no versions that match >0.0.0 derived from:\n"
-            "- foo 1.0.0 depends on version >0.0.0");
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0,
+        myapp >0.0.0 is required.
+      So, because myapp is 0.0.0, version solving failed.
+    """));
   });
 }
 
@@ -317,11 +337,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
-              "derived from:\n"
-              "- myapp depends on version >=1.0.0 <3.0.0\n"
-              "- myapp depends on version >=2.0.0 <4.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because no versions of foo match ^2.0.0 and myapp depends on foo
+          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
+      """));
     });
 
     test("fails when dev dependency isn't satisfied", () async {
@@ -337,11 +357,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Package foo has no versions that match >=2.0.0 <3.0.0 "
-              "derived from:\n"
-              "- myapp depends on version >=1.0.0 <3.0.0\n"
-              "- myapp depends on version >=2.0.0 <4.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because no versions of foo match ^2.0.0 and myapp depends on foo
+          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
+      """));
     });
 
     test("fails when dev and main constraints are incompatible", () async {
@@ -357,11 +377,10 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error:
-              "Package foo has no versions that match <empty> derived from:\n"
-              "- myapp depends on version >=1.0.0 <2.0.0\n"
-              "- myapp depends on version >=2.0.0 <3.0.0");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version
+          solving failed.
+      """));
     });
 
     test("fails when dev and main sources are incompatible", () async {
@@ -379,10 +398,10 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: "Incompatible dependencies on foo:\n"
-              "- myapp depends on it from source hosted\n"
-              "- myapp depends on it from source path");
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo from hosted and foo from path, version
+          solving failed.
+      """));
     });
 
     test("fails when dev and main descriptions are incompatible", () async {
@@ -402,12 +421,10 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Incompatible dependencies on foo:\n'
-              '- myapp depends on it with description '
-              '{"path":"foo","relative":true}\n'
-              '- myapp depends on it with description '
-              '{"path":"../foo","relative":true}');
+      await expectResolves(error: equalsIgnoringWhitespace("""
+        Because myapp depends on both foo from path foo and foo from path
+          ../foo, version solving failed.
+      """));
     });
   });
 }
@@ -420,10 +437,10 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
-    await expectResolves(
-        error: 'Package foo has no versions that match >=1.0.0 <2.0.0 derived '
-            'from:\n'
-            '- myapp depends on version >=1.0.0 <2.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
+        version solving failed.
+    """));
   });
 
   test('no version that matches combined constraint', () async {
@@ -435,11 +452,15 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(
-        error: 'Package shared has no versions that match >=2.9.0 <3.0.0 '
-            'derived from:\n'
-            '- bar 1.0.0 depends on version >=2.9.0 <4.0.0\n'
-            '- foo 1.0.0 depends on version >=2.0.0 <3.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because every version of bar depends on shared >=2.9.0 <4.0.0 and no
+        versions of shared match ^2.9.0, every version of bar requires
+        shared ^3.0.0.
+      And because every version of foo depends on shared ^2.0.0, foo is
+        incompatible with bar.
+      So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version
+        solving failed.
+    """));
   });
 
   test('disjoint constraints', () async {
@@ -451,10 +472,13 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(
-        error: 'Incompatible version constraints on shared:\n'
-            '- bar 1.0.0 depends on version >3.0.0\n'
-            '- foo 1.0.0 depends on version <=2.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because every version of foo depends on shared <=2.0.0 and every
+        version of bar depends on shared >3.0.0, foo is incompatible with
+        bar.
+      So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version
+        solving failed.
+    """));
   });
 
   test('mismatched descriptions', () async {
@@ -474,11 +498,16 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+
     await expectResolves(
         error: allOf([
-      contains('Incompatible dependencies on shared:'),
-      contains('- bar 1.0.0 depends on it with description'),
-      contains('- foo 1.0.0 depends on it with description "shared"')
+      contains('Because every version of foo depends on shared from hosted on '
+          'http://localhost:'),
+      contains(' and every version of bar depends on shared from hosted on '
+          'http://localhost:'),
+      contains(', foo is incompatible with bar.'),
+      contains('So, because myapp depends on both bar 1.0.0 and foo 1.0.0, '
+          'version solving failed.')
     ]));
   });
 
@@ -494,10 +523,13 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(
-        error: 'Incompatible dependencies on shared:\n'
-            '- bar 1.0.0 depends on it from source path\n'
-            '- foo 1.0.0 depends on it from source hosted');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because every version of foo depends on shared from hosted and every
+        version of bar depends on shared from path, foo is incompatible with
+        bar.
+      So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version
+        solving failed.
+    """));
   });
 
   test('no valid solution', () async {
@@ -509,11 +541,14 @@ void unsolvable() {
     });
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
-    await expectResolves(
-        error: 'Package a has no versions that match 2.0.0 derived from:\n'
-            '- b 1.0.0 depends on version 2.0.0\n'
-            '- myapp depends on version any',
-        tries: 2);
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because b <2.0.0 depends on a 2.0.0 which depends on b 2.0.0, b <2.0.0 is
+        forbidden.
+      Because b >=2.0.0 depends on a 1.0.0 which depends on b 1.0.0, b >=2.0.0
+        is forbidden.
+      Thus, b is forbidden.
+      So, because myapp depends on b any, version solving failed.
+    """), tries: 2);
   });
 
   // This is a regression test for #15550.
@@ -524,9 +559,10 @@ void unsolvable() {
     });
 
     await d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
-    await expectResolves(
-        error: 'Package b has no versions that match >1.0.0 derived from:\n'
-            '- myapp depends on version >1.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on b >1.0.0 which doesn't match any versions,
+        version solving failed.
+    """));
   });
 
   // This is a regression test for #18300.
@@ -546,11 +582,12 @@ void unsolvable() {
     });
 
     await d.appDir({'angular': 'any', 'collection': 'any'}).create();
-    await expectResolves(
-        error: 'Package analyzer has no versions that match >=0.13.0 <0.14.0 '
-            'derived from:\n'
-            '- di 0.0.36 depends on version >=0.13.0 <0.14.0',
-        tries: 2);
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because every version of angular depends on di ^0.0.32 which depends on
+        analyzer ^0.13.0, every version of angular requires analyzer ^0.13.0.
+      So, because no versions of analyzer match ^0.13.0 and myapp depends on
+        angular any, version solving failed.
+    """));
   });
 }
 
@@ -559,8 +596,10 @@ void badSource() {
     await d.appDir({
       'foo': {'bad': 'any'}
     }).create();
-    await expectResolves(
-        error: 'Package myapp depends on foo from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo from unknown source "bad", version solving
+        failed.
+    """));
   });
 
   test('fail if the root package has a bad source in dev dep', () async {
@@ -573,8 +612,10 @@ void badSource() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package myapp depends on foo from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo from unknown source "bad", version solving
+        failed.
+    """));
   });
 
   test('fail if all versions have bad source in dep', () async {
@@ -591,8 +632,16 @@ void badSource() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package foo depends on bar from unknown source "bad".');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
+        forbidden.
+      And because foo >=1.0.1 <1.0.2 depends on baz any from bad, foo <1.0.2
+        requires baz any from bad.
+      And because baz comes from unknown source "bad" and foo >=1.0.2 depends on
+        bang any from bad, every version of foo requires bang any from bad.
+      So, because bang comes from unknown source "bad" and myapp depends on foo
+        any, version solving failed.
+    """), tries: 3);
   });
 
   test('ignore versions with bad source in dep', () async {
@@ -608,7 +657,28 @@ void badSource() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
+  });
+
+  // Issue 1853
+  test('reports a nice error across a collapsed cause', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
+      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
+      builder.serve('baz', '1.0.0');
+    });
+    await d.dir('baz', [d.libPubspec('baz', '1.0.0')]).create();
+
+    await d.appDir({
+      'foo': 'any',
+      'baz': {'path': '../baz'}
+    }).create();
+    await expectResolves(error: equalsIgnoringWhitespace('''
+      Because every version of foo depends on bar any which depends on baz any,
+        every version of foo requires baz from hosted.
+      So, because myapp depends on both baz from path and foo any, version
+        solving failed.
+    '''));
   });
 }
 
@@ -622,6 +692,79 @@ void backtracking() {
 
     await d.appDir({'a': '>=1.0.0'}).create();
     await expectResolves(result: {'a': '1.0.0'}, tries: 2);
+  });
+
+  test("diamond dependency graph", () async {
+    await servePackages((builder) {
+      builder.serve('a', '2.0.0', deps: {'c': '^1.0.0'});
+      builder.serve('a', '1.0.0');
+
+      builder.serve('b', '2.0.0', deps: {'c': '^3.0.0'});
+      builder.serve('b', '1.0.0', deps: {'c': '^2.0.0'});
+
+      builder.serve('c', '3.0.0');
+      builder.serve('c', '2.0.0');
+      builder.serve('c', '1.0.0');
+    });
+
+    await d.appDir({"a": "any", "b": "any"}).create();
+    await expectResolves(result: {'a': '1.0.0', 'b': '2.0.0', 'c': '3.0.0'});
+  });
+
+  // c 2.0.0 is incompatible with y 2.0.0 because it requires x 1.0.0, but that
+  // requirement only exists because of both a and b. The solver should be able
+  // to deduce c 2.0.0's incompatibility and select c 1.0.0 instead.
+  test("backjumps after a partial satisfier", () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0', deps: {'x': '>=1.0.0'});
+      builder.serve('b', '1.0.0', deps: {'x': '<2.0.0'});
+
+      builder.serve('c', '1.0.0');
+      builder.serve('c', '2.0.0', deps: {'a': 'any', 'b': 'any'});
+
+      builder.serve('x', '0.0.0');
+      builder.serve('x', '1.0.0', deps: {'y': '1.0.0'});
+      builder.serve('x', '2.0.0');
+
+      builder.serve('y', '1.0.0');
+      builder.serve('y', '2.0.0');
+    });
+
+    await d.appDir({"c": "any", "y": "^2.0.0"}).create();
+    await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
+  });
+
+  // This matches the Branching Error Reporting example in the version solver
+  // documentation, and tests that we display line numbers correctly.
+  test("branching error reporting", () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'a': '^1.0.0', 'b': '^1.0.0'});
+      builder.serve('foo', '1.1.0', deps: {'x': '^1.0.0', 'y': '^1.0.0'});
+      builder.serve('a', '1.0.0', deps: {'b': '^2.0.0'});
+      builder.serve('b', '1.0.0');
+      builder.serve('b', '2.0.0');
+      builder.serve('x', '1.0.0', deps: {'y': '^2.0.0'});
+      builder.serve('y', '1.0.0');
+      builder.serve('y', '2.0.0');
+    });
+
+    await d.appDir({"foo": "^1.0.0"}).create();
+    await expectResolves(
+        // We avoid equalsIgnoringWhitespace() here because we want to test the
+        // formatting of the line number.
+        error: '    Because foo <1.1.0 depends on a ^1.0.0 which depends on b '
+            '^2.0.0, foo <1.1.0 requires b ^2.0.0.\n'
+            '(1) So, because foo <1.1.0 depends on b ^1.0.0, foo <1.1.0 is '
+            'forbidden.\n'
+            '\n'
+            '    Because foo >=1.1.0 depends on x ^1.0.0 which depends on y '
+            '^2.0.0, foo >=1.1.0 requires y ^2.0.0.\n'
+            '    And because foo >=1.1.0 depends on y ^1.0.0, foo >=1.1.0 is '
+            'forbidden.\n'
+            '    And because foo <1.1.0 is forbidden (1), foo is forbidden.\n'
+            '    So, because myapp depends on foo ^1.0.0, version solving '
+            'failed.',
+        tries: 2);
   });
 
   // The latest versions of a and b disagree on c. An older version of either
@@ -755,10 +898,11 @@ void backtracking() {
     });
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
-    await expectResolves(
-        error: 'Incompatible dependencies on a:\n'
-            '- b 1.0.0 depends on it from source path\n'
-            '- myapp depends on it from source hosted');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because every version of b depends on a from path and myapp depends on
+        a from hosted, b is forbidden.
+      So, because myapp depends on b any, version solving failed.
+    """));
   });
 
   test('failing backjump to conflicting description', () async {
@@ -783,9 +927,11 @@ void backtracking() {
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(
         error: allOf([
-      contains('Incompatible dependencies on a:'),
-      contains('- b 1.0.0 depends on it with description'),
-      contains('- myapp depends on it with description "a"')
+      contains('Because every version of b depends on a from hosted on '
+          'http://localhost:'),
+      contains(' and myapp depends on a from hosted on http://localhost:'),
+      contains(', b is forbidden.'),
+      contains('So, because myapp depends on b any, version solving failed.')
     ]));
   });
 
@@ -811,31 +957,6 @@ void backtracking() {
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '4.0.0', 'b': '4.0.0', 'c': '2.0.0'});
-  });
-
-  // This is similar to the above test. When getting the number of versions of
-  // a package to determine which to traverse first, versions that are
-  // disallowed by the root package's constraints should not be considered.
-  // Here, foo has more versions of bar in total (4), but fewer that meet
-  // myapp's constraints (only 2). There is no solution, but we will do less
-  // backtracking if foo is tested first.
-  test('take root package constraints into counting versions', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'none': '2.0.0'});
-      builder.serve('foo', '2.0.0', deps: {'none': '2.0.0'});
-      builder.serve('foo', '3.0.0', deps: {'none': '2.0.0'});
-      builder.serve('foo', '4.0.0', deps: {'none': '2.0.0'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '2.0.0');
-      builder.serve('bar', '3.0.0');
-      builder.serve('none', '1.0.0');
-    });
-
-    await d.appDir({"foo": ">2.0.0", "bar": "any"}).create();
-    await expectResolves(
-        error: 'Package none has no versions that match 2.0.0 derived from:\n'
-            '- foo 3.0.0 depends on version 2.0.0',
-        tries: 2);
   });
 
   test('complex backtrack', () async {
@@ -921,9 +1042,11 @@ void dartSdkConstraint() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package myapp requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace('''
+      The current Dart SDK version is 0.1.2+3.
+
+      Because myapp requires SDK version 0.0.0, version solving failed.
+    '''));
   });
 
   test('dependency does not match SDK', () async {
@@ -934,9 +1057,12 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package foo requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      The current Dart SDK version is 0.1.2+3.
+
+      Because myapp depends on foo any which requires SDK version 0.0.0, version
+        solving failed.
+    """));
   });
 
   test('transitive dependency does not match SDK', () async {
@@ -948,9 +1074,13 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(
-        error: 'Package bar requires SDK version 0.0.0 but the '
-            'current SDK is 0.1.2+3.');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      The current Dart SDK version is 0.1.2+3.
+
+      Because every version of foo depends on bar any which requires SDK version
+        0.0.0, foo is forbidden.
+      So, because myapp depends on foo any, version solving failed.
+    """));
   });
 
   test('selects a dependency version that allows the SDK', () async {
@@ -1017,127 +1147,148 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 3);
+    await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 2);
   });
 
-  test('root package allows 2.0.0-dev by default', () async {
-    await d.dir(appPath, [
-      await d.pubspec({'name': 'myapp'})
-    ]).create();
+  group('pre-release overrides', () {
+    group('for the root package', () {
+      test('allow 2.0.0-dev by default', () async {
+        await d.dir(appPath, [
+          await d.pubspec({'name': 'myapp'})
+        ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
-  });
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
+      });
 
-  test('root package allows 2.0.0 by default', () async {
-    await d.dir(appPath, [
-      await d.pubspec({'name': 'myapp'})
-    ]).create();
+      test('allow 2.0.0 by default', () async {
+        await d.dir(appPath, [
+          await d.pubspec({'name': 'myapp'})
+        ]).create();
 
-    await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
-  });
+        await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
+      });
 
-  test('package deps allow 2.0.0-dev by default', () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
-    await d.dir('bar', [
-      await d.pubspec({'name': 'bar'})
-    ]).create();
+      test("allow pre-release versions of the upper bound", () async {
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'environment': {'sdk': '<1.2.3'}
+          })
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'},
-        }
-      })
-    ]).create();
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '1.2.3-dev.1.0'},
+            output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+                contains('<=1.2.3-dev.1.0'), contains('myapp')));
+      });
+    });
 
-    await expectResolves(
-      environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
-      // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
-      // variable and mention the foo and bar packages specifically.
-      output: allOf(
-          contains('PUB_ALLOW_PRERELEASE_SDK'), anyOf(contains('bar, foo'))),
-    );
-  });
+    group('for a dependency', () {
+      test('disallow 2.0.0 by default', () async {
+        await d.dir('foo', [
+          await d.pubspec({'name': 'foo'})
+        ]).create();
 
-  test(
-      "pub doesn't log about pre-release SDK overrides if "
-      "PUB_ALLOW_PRERELEASE_SDK=quiet", () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'dependencies': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'},
-        }
-      })
-    ]).create();
+        await expectResolves(
+            environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
+            error: equalsIgnoringWhitespace('''
+          The current Dart SDK version is 2.0.0.
 
-    await expectResolves(
-      environment: {
-        '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
-        'PUB_ALLOW_PRERELEASE_SDK': 'quiet'
-      },
-      // Log output should not mention the PUB_ALLOW_RELEASE_SDK environment
-      // variable.
-      output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')),
-    );
-  });
+          Because myapp depends on foo from path which requires SDK version
+            <2.0.0, version solving failed.
+        '''));
+      });
 
-  test('package deps disallow 2.0.0-dev if PUB_ALLOW_PRERELEASE_SDK is false',
-      () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+      test('allow 2.0.0-dev by default', () async {
+        await d.dir('foo', [
+          await d.pubspec({'name': 'foo'})
+        ]).create();
+        await d.dir('bar', [
+          await d.pubspec({'name': 'bar'})
+        ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
-    ]).create();
+        await d.dir(appPath, [
+          await d.pubspec({
+            'name': 'myapp',
+            'dependencies': {
+              'foo': {'path': '../foo'},
+              'bar': {'path': '../bar'},
+            }
+          })
+        ]).create();
 
-    await expectResolves(
+        await expectResolves(
+          environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
+          // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
+          // variable and mention the foo and bar packages specifically.
+          output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
+              anyOf(contains('bar, foo'))),
+        );
+      });
+    });
+
+    test("don't log if PUB_ALLOW_PRERELEASE_SDK is quiet", () async {
+      await d.dir('foo', [
+        await d.pubspec({'name': 'foo'})
+      ]).create();
+
+      await d.dir(appPath, [
+        await d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': {'path': '../foo'},
+          }
+        })
+      ]).create();
+
+      await expectResolves(
         environment: {
           '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
-          'PUB_ALLOW_PRERELEASE_SDK': 'false'
+          'PUB_ALLOW_PRERELEASE_SDK': 'quiet'
         },
-        error: 'Package foo requires SDK version <2.0.0 but the '
-            'current SDK is 2.0.0-dev.99.');
-  });
+        // Log output should not mention the PUB_ALLOW_RELEASE_SDK environment
+        // variable.
+        output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')),
+      );
+    });
 
-  test('package deps disallow 2.0.0 by default', () async {
-    await d.dir('foo', [
-      await d.pubspec({'name': 'foo'})
-    ]).create();
+    test('are disabled if PUB_ALLOW_PRERELEASE_SDK is false', () async {
+      await d.dir('foo', [
+        await d.pubspec({'name': 'foo'})
+      ]).create();
 
-    await d.dir(appPath, [
-      await d.pubspec({
-        'name': 'myapp',
-        'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
-    ]).create();
+      await d.dir(appPath, [
+        await d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': {'path': '../foo'}
+          }
+        })
+      ]).create();
 
-    await expectResolves(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        error: 'Package foo requires SDK version <2.0.0 but the '
-            'current SDK is 2.0.0.');
-  });
+      await expectResolves(environment: {
+        '_PUB_TEST_SDK_VERSION': '2.0.0-dev.99',
+        'PUB_ALLOW_PRERELEASE_SDK': 'false'
+      }, error: equalsIgnoringWhitespace('''
+        The current Dart SDK version is 2.0.0-dev.99.
 
-  group("pre-release override", () {
-    group("requires", () {
-      test("major SDK versions to match", () async {
+        Because myapp depends on foo from path which requires SDK version
+          <2.0.0, version solving failed.
+      '''));
+    });
+
+    group("don't apply if", () {
+      test("major SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1150,7 +1301,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("minor SDK versions to match", () async {
+      test("minor SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1163,7 +1314,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("patch SDK versions to match", () async {
+      test("patch SDK versions differ", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1176,7 +1327,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("exclusive max", () async {
+      test("SDK max is inclusive", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1189,7 +1340,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("pre-release SDK", () async {
+      test("SDK isn't pre-release", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1199,11 +1350,14 @@ void dartSdkConstraint() {
 
         await expectResolves(
             environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
-            error: 'Package myapp requires SDK version <1.2.3 but the current '
-                'SDK is 1.2.3.');
+            error: equalsIgnoringWhitespace('''
+              The current Dart SDK version is 1.2.3.
+
+              Because myapp requires SDK version <1.2.3, version solving failed.
+            '''));
       });
 
-      test("no max pre-release constraint", () async {
+      test("upper bound is pre-release", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1216,8 +1370,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("no min pre-release constraint that matches the current SDK",
-          () async {
+      test("lower bound is pre-release and matches SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1230,7 +1383,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("no build release constraints", () async {
+      test("upper bound has build identifier", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1244,8 +1397,8 @@ void dartSdkConstraint() {
       });
     });
 
-    group("allows", () {
-      test("an exclusive max that matches the current SDK", () async {
+    group("apply if", () {
+      test("upper bound is exclusive and matches SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1259,7 +1412,7 @@ void dartSdkConstraint() {
                 contains('<=1.2.3-dev.1.0'), contains('myapp')));
       });
 
-      test("a pre-release min that doesn't match the current SDK", () async {
+      test("lower bound is pre-release but doesn't match SDK", () async {
         await d.dir(appPath, [
           await d.pubspec({
             'name': 'myapp',
@@ -1276,7 +1429,7 @@ void dartSdkConstraint() {
   });
 }
 
-void flutterSdkConstraint() {
+void sdkConstraint() {
   group('without a Flutter SDK', () {
     test('fails for the root package', () async {
       await d.dir(appPath, [
@@ -1286,9 +1439,11 @@ void flutterSdkConstraint() {
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Package myapp requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Flutter SDK, version solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
 
     test('fails for a dependency', () async {
@@ -1299,9 +1454,12 @@ void flutterSdkConstraint() {
       });
 
       await d.appDir({'foo': 'any'}).create();
-      await expectResolves(
-          error: 'Package foo requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp depends on foo any which requires the Flutter SDK, version
+          solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
 
     test("chooses a version that doesn't need Flutter", () async {
@@ -1321,14 +1479,32 @@ void flutterSdkConstraint() {
       await d.dir(appPath, [
         await d.pubspec({
           'name': 'myapp',
-          'environment': {'dart': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
-      await expectResolves(
-          error: 'Package myapp requires the Flutter SDK, which is not '
-              'available.');
+      await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Flutter SDK, version solving failed.
+
+        Flutter users should run `flutter packages get` instead of `pub get`.
+      '''));
     });
+  });
+
+  test('without a Fuchsia SDK fails for the root package', () async {
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
+        'environment': {'fuchsia': '1.2.3'}
+      })
+    ]).create();
+
+    await expectResolves(error: equalsIgnoringWhitespace('''
+        Because myapp requires the Fuchsia SDK, version solving failed.
+
+        Please set the FUCHSIA_DART_SDK_ROOT environment variable to point to
+          the root of the Fuchsia SDK for Dart.
+      '''));
   });
 
   group('with a Flutter SDK', () {
@@ -1359,8 +1535,12 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-              'current SDK is 1.2.3.');
+          error: equalsIgnoringWhitespace('''
+            The current Flutter SDK version is 1.2.3.
+
+            Because myapp requires Flutter SDK version >1.2.3, version solving
+              failed.
+          '''));
     });
 
     test('succeeds if both Flutter and Dart SDKs match', () async {
@@ -1386,8 +1566,12 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires Flutter SDK version >1.2.3 but the '
-              'current SDK is 1.2.3.');
+          error: equalsIgnoringWhitespace('''
+            The current Flutter SDK version is 1.2.3.
+
+            Because myapp requires Flutter SDK version >1.2.3, version solving
+              failed.
+          '''));
     });
 
     test("fails if Dart SDK doesn't match but Flutter does", () async {
@@ -1400,8 +1584,11 @@ void flutterSdkConstraint() {
 
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: 'Package myapp requires SDK version >0.1.2+3 but the '
-              'current SDK is 0.1.2+3.');
+          error: equalsIgnoringWhitespace('''
+            The current Dart SDK version is 0.1.2+3.
+
+            Because myapp requires SDK version >0.1.2+3, version solving failed.
+          '''));
     });
 
     test('selects the latest dependency with a matching constraint', () async {
@@ -1610,10 +1797,10 @@ void override() {
       })
     ]).create();
 
-    await expectResolves(
-        error: 'Package foo has no versions that match >=1.0.0 <2.0.0 derived '
-            'from:\n'
-            '- myapp depends on version >=1.0.0 <2.0.0');
+    await expectResolves(error: equalsIgnoringWhitespace("""
+      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
+        version solving failed.
+    """));
   });
 
   test('overrides a bad source without error', () async {
@@ -1627,6 +1814,23 @@ void override() {
         'dependencies': {
           'foo': {'bad': 'any'}
         },
+        'dependency_overrides': {'foo': 'any'}
+      })
+    ]).create();
+
+    await expectResolves(result: {'foo': '0.0.0'});
+  });
+
+  test('overrides an unmatched SDK constraint', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '0.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      });
+    });
+
+    await d.dir(appPath, [
+      await d.pubspec({
+        'name': 'myapp',
         'dependency_overrides': {'foo': 'any'}
       })
     ]).create();
@@ -1648,6 +1852,29 @@ void override() {
     ]).create();
 
     await expectResolves(result: {'foo': '0.0.0'});
+  });
+
+  // Regression test for #1853
+  test("overrides a locked package's dependency", () async {
+    await servePackages((builder) {
+      builder.serve("foo", "1.2.3", deps: {"bar": "1.2.3"});
+      builder.serve("bar", "1.2.3");
+      builder.serve("bar", "0.0.1");
+    });
+
+    await d.appDir({"foo": "any"}).create();
+
+    await expectResolves(result: {'foo': '1.2.3', 'bar': '1.2.3'});
+
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "dependencies": {"foo": "any"},
+        "dependency_overrides": {"bar": '0.0.1'}
+      })
+    ]).create();
+
+    await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
   });
 }
 
@@ -2635,7 +2862,7 @@ Future expectResolves(
   var resultPubspec = new Pubspec.fromMap({"dependencies": result}, registry);
 
   var ids = new Map.from(lockFile.packages);
-  for (var dep in resultPubspec.dependencies) {
+  for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
 

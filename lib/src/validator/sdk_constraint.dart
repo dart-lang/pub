@@ -7,11 +7,9 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
+import '../sdk.dart';
+import '../utils.dart';
 import '../validator.dart';
-
-/// The range of all Dart SDK versions that don't support Flutter SDK
-/// constraints.
-final _preFlutterSupport = new VersionConstraint.parse("<1.19.0");
 
 /// A validator that validates that a package's SDK constraint doesn't use the
 /// "^" syntax.
@@ -41,22 +39,12 @@ class SdkConstraintValidator extends Validator {
       }
     }
 
-    if (entrypoint.root.pubspec.flutterSdkConstraint != null &&
-        dartConstraint.allowsAny(_preFlutterSupport)) {
-      var newDartConstraint = dartConstraint.difference(_preFlutterSupport);
-      if (newDartConstraint.isEmpty ||
-          newDartConstraint ==
-              VersionConstraint.any.difference(_preFlutterSupport)) {
-        newDartConstraint = new VersionConstraint.parse("<2.0.0")
-            .difference(_preFlutterSupport);
+    for (var sdk in sdks.values) {
+      if (sdk.identifier == 'dart') continue;
+      if (entrypoint.root.pubspec.sdkConstraints.containsKey(sdk.identifier)) {
+        validateSdkConstraint(sdk.firstPubVersion,
+            "Older versions of pub don't support ${sdk.name} SDK constraints.");
       }
-
-      errors
-          .add("Older versions of pub don't support Flutter SDK constraints.\n"
-              "Make sure your SDK constraint excludes those old versions:\n"
-              "\n"
-              "environment:\n"
-              "  sdk: \"$newDartConstraint\"");
     }
   }
 }

@@ -16,8 +16,10 @@ main() {
         "foo": {"bad": "foo"}
       }).create();
 
-      await pubCommand(command,
-          error: 'Package myapp depends on foo from unknown source "bad".');
+      await pubCommand(command, error: equalsIgnoringWhitespace("""
+        Because myapp depends on foo from unknown source "bad", version solving
+          failed.
+      """));
     });
 
     test(
@@ -34,8 +36,11 @@ main() {
         "foo": {"path": "../foo"}
       }).create();
 
-      await pubCommand(command,
-          error: 'Package foo depends on bar from unknown source "bad".');
+      await pubCommand(command, error: equalsIgnoringWhitespace("""
+        Because every version of foo from path depends on bar from unknown
+          source "bad", foo from path is forbidden.
+        So, because myapp depends on foo from path, version solving failed.
+      """));
     });
 
     test('ignores unknown source in lockfile', () async {
@@ -53,7 +58,7 @@ main() {
       await d.dir(appPath, [
         d.file(
             "pubspec.lock",
-            JSON.encode({
+            jsonEncode({
               'packages': {
                 'foo': {
                   'version': '0.0.0',

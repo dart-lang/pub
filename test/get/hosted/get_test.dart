@@ -30,8 +30,12 @@ main() {
     await d.appDir({"bad name!": "1.2.3"}).create();
 
     await pubGet(
-        error: new RegExp(
-            r"Could not find package bad name! at http://localhost:\d+\."),
+        error: allOf([
+          contains(
+              "Because myapp depends on bad name! any which doesn't exist (could "
+              "not find package bad name! at http://localhost:"),
+          contains("), version solving failed.")
+        ]),
         exitCode: exit_codes.UNAVAILABLE);
   });
 
