@@ -286,12 +286,10 @@ class Entrypoint {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
       return waitAndPrintErrors(executables[package].map((path) {
-        var url = p.toUri(packageGraph.packages[package].dir);
-        url = url.replace(path: p.url.join(url.path, path));
-        return dart.snapshot(
-            url, p.join(dir, p.url.basename(path) + '.snapshot'),
+        var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
+        return dart.snapshot(url, p.join(dir, p.basename(path) + '.snapshot'),
             packagesFile: p.toUri(packagesFile),
-            name: '$package:${p.url.basenameWithoutExtension(path)}');
+            name: '$package:${p.basenameWithoutExtension(path)}');
       }));
     }));
   }
@@ -343,7 +341,7 @@ class Entrypoint {
     if (!dirExists(binDir)) return [];
     if (packageGraph.isPackageMutable(packageName)) return [];
 
-    var executables = package.executableIds;
+    var executables = package.executablePaths;
 
     // If any executables don't exist, recompile all executables.
     //
@@ -353,7 +351,7 @@ class Entrypoint {
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath, packageName, "${p.url.basename(executable)}.snapshot")));
+        _snapshotPath, packageName, "${p.basename(executable)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.

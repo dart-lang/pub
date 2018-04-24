@@ -275,7 +275,7 @@ class DepsCommand extends PubCommand {
   /// Lists all Dart files in the `bin` directory of the [package].
   ///
   /// Returns file names without extensions.
-  List<String> _getExecutablesFor(Package package) => package.executableIds
+  List<String> _getExecutablesFor(Package package) => package.executablePaths
       .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
       .map((e) => p.basenameWithoutExtension(e));
 
