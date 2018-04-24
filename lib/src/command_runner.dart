@@ -262,7 +262,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   /// If it isn't, it prints an error message and exits. Completes when the
   /// validation is done.
   Future _validatePlatform() async {
-    if (Platform.operatingSystem != 'windows') return;
+    if (!Platform.isWindows) return;
 
     var result = await runProcess('ver', []);
     if (result.stdout.join('\n').contains('XP')) {

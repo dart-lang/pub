@@ -660,8 +660,7 @@ class GlobalPackages {
   String _createBinStub(Package package, String executable, String script,
       {bool overwrite, String snapshot}) {
     var binStubPath = p.join(_binStubDir, executable);
-
-    if (Platform.operatingSystem == "windows") binStubPath += ".bat";
+    if (Platform.isWindows) binStubPath += ".bat";
 
     // See if the binstub already exists. If so, it's for another package
     // since we already deleted all of this package's binstubs.
@@ -688,7 +687,7 @@ class GlobalPackages {
       invocation = "pub global run ${package.name}:$script";
     }
 
-    if (Platform.operatingSystem == "windows") {
+    if (Platform.isWindows) {
       var batch = """
 @echo off
 rem This file was created by pub v${sdk.version}.
@@ -786,7 +785,7 @@ pub global run ${package.name}:$script "\$@"
   /// [installed] should be the name of an installed executable that can be used
   /// to test whether accessing it on the path works.
   void _suggestIfNotOnPath(String installed) {
-    if (Platform.operatingSystem == "windows") {
+    if (Platform.isWindows) {
       // See if the shell can find one of the binstubs.
       // "\q" means return exit code 0 if found or 1 if not.
       var result = runProcessSync("where", [r"\q", installed + ".bat"]);

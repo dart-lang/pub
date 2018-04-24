@@ -239,8 +239,9 @@ class Package {
       // totally empty directories, but a submodule that's not checked out
       // behaves like one.
       files = files.where((file) => file != './').map((file) {
-        if (Platform.operatingSystem != 'windows') return "$beneath/$file";
-        return "$beneath\\${file.replaceAll("/", "\\")}";
+        return Platform.isWindows
+            ? "$beneath\\${file.replaceAll("/", "\\")}"
+            : "$beneath/$file";
       }).expand((file) {
         if (fileExists(file)) return [file];
         if (!dirExists(file)) return [];

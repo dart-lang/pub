@@ -239,7 +239,8 @@ class BoundGitSource extends CachedSource {
     var repoPath = _repoCachePath(ref);
 
     // Normalize the path because Git treats "./" at the beginning of a path
-    // specially.
+    // specially. Replace backslashes with forward slashes because Pub on
+    // Windows
     var pubspecPath = p.normalize(p.join(p.fromUri(path), 'pubspec.yaml'));
 
     var lines;

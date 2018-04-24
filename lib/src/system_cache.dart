@@ -34,7 +34,7 @@ class SystemCache {
   static String defaultDir = (() {
     if (Platform.environment.containsKey('PUB_CACHE')) {
       return Platform.environment['PUB_CACHE'];
-    } else if (Platform.operatingSystem == 'windows') {
+    } else if (Platform.isWindows) {
       var appData = Platform.environment['APPDATA'];
       return p.join(appData, 'Pub', 'Cache');
     } else {
