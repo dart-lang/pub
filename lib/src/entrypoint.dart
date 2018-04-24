@@ -286,10 +286,9 @@ class Entrypoint {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
       return waitAndPrintErrors(executables[package].map((path) {
-        var fullPath = p.join(packageGraph.packages[package].dir, path);
-        return dart.snapshot(
-            fullPath, p.join(dir, p.basename(path) + '.snapshot'),
-            packagesFilePath: packagesFile,
+        var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
+        return dart.snapshot(url, p.join(dir, p.basename(path) + '.snapshot'),
+            packagesFile: p.toUri(packagesFile),
             name: '$package:${p.basenameWithoutExtension(path)}');
       }));
     }));
@@ -342,7 +341,7 @@ class Entrypoint {
     if (!dirExists(binDir)) return [];
     if (packageGraph.isPackageMutable(packageName)) return [];
 
-    var executables = package.executableIds;
+    var executables = package.executablePaths;
 
     // If any executables don't exist, recompile all executables.
     //
