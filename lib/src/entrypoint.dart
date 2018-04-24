@@ -288,9 +288,9 @@ class Entrypoint {
       return waitAndPrintErrors(executables[package].map((path) {
         var fullPath = p.join(packageGraph.packages[package].dir, path);
         return dart.snapshot(
-            fullPath, p.join(dir, p.url.basename(path) + '.snapshot'),
-            packagesFile: p.toUri(packagesFile),
-            name: '$package:${p.url.basenameWithoutExtension(path)}');
+            fullPath, p.join(dir, p.basename(path) + '.snapshot'),
+            packagesFilePath: packagesFile,
+            name: '$package:${p.basenameWithoutExtension(path)}');
       }));
     }));
   }
@@ -352,7 +352,7 @@ class Entrypoint {
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath, packageName, "${p.url.basename(executable)}.snapshot")));
+        _snapshotPath, packageName, "${p.basename(executable)}.snapshot")));
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.

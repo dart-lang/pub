@@ -45,18 +45,18 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 /// Snapshots the Dart executable at [executableUrl] to a snapshot at
 /// [snapshotPath].
 ///
-/// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
+/// If [packagesFilePath] is passed, it's used to resolve `package:` URIs in the
 /// executable. Otherwise, a `packages/` directory or a package spec is inferred
 /// from the executable's location.
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
 Future snapshot(String executablePath, String snapshotPath,
-    {Uri packagesFile, String name}) async {
+    {String packagesFilePath, String name}) async {
   name = log.bold(name ?? executablePath);
 
   var args = ['--snapshot=$snapshotPath', executablePath];
-  if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
+  if (packagesFilePath != null) args.insert(0, "--packages=$packagesFilePath");
   var result = await runProcess(Platform.executable, args);
 
   if (result.success) {

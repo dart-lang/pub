@@ -232,11 +232,11 @@ class GlobalPackages {
       var precompiled = {};
       await waitAndPrintErrors(package.executableIds.map((path) async {
         var fullPath = p.join(package.dir, path);
-        var basename = p.url.basename(path);
+        var basename = p.basename(path);
         var snapshotPath = p.join(binDir, '$basename.snapshot');
         await dart.snapshot(fullPath, snapshotPath,
-            packagesFile: p.toUri(_getPackagesFilePath(package.name)),
-            name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
+            packagesFilePath: _getPackagesFilePath(package.name),
+            name: '${package.name}:${p.basenameWithoutExtension(path)}');
         precompiled[p.withoutExtension(basename)] = snapshotPath;
       }));
       return precompiled;
