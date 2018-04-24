@@ -286,10 +286,9 @@ class Entrypoint {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
       return waitAndPrintErrors(executables[package].map((path) {
-        var url = p.toUri(packageGraph.packages[package].dir);
-        url = url.replace(path: p.url.join(url.path, path));
+        var fullPath = p.join(packageGraph.packages[package].dir, path);
         return dart.snapshot(
-            url, p.join(dir, p.url.basename(path) + '.snapshot'),
+            fullPath, p.join(dir, p.url.basename(path) + '.snapshot'),
             packagesFile: p.toUri(packagesFile),
             name: '$package:${p.url.basenameWithoutExtension(path)}');
       }));

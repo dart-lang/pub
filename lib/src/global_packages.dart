@@ -231,11 +231,10 @@ class GlobalPackages {
       var package = entrypoint.packageGraph.packages[packageName];
       var precompiled = {};
       await waitAndPrintErrors(package.executableIds.map((path) async {
-        var url = p.toUri(package.dir);
-        url = url.replace(path: p.url.join(url.path, path));
+        var fullPath = p.join(package.dir, path);
         var basename = p.url.basename(path);
         var snapshotPath = p.join(binDir, '$basename.snapshot');
-        await dart.snapshot(url, snapshotPath,
+        await dart.snapshot(fullPath, snapshotPath,
             packagesFile: p.toUri(_getPackagesFilePath(package.name)),
             name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
         precompiled[p.withoutExtension(basename)] = snapshotPath;

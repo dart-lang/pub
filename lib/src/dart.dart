@@ -51,11 +51,11 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
-Future snapshot(Uri executableUrl, String snapshotPath,
+Future snapshot(String executablePath, String snapshotPath,
     {Uri packagesFile, String name}) async {
-  name = log.bold(name ?? executableUrl.toString());
+  name = log.bold(name ?? executablePath);
 
-  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
+  var args = ['--snapshot=$snapshotPath', executablePath];
   if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
   var result = await runProcess(Platform.executable, args);
 
