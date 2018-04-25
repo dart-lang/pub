@@ -8,7 +8,6 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
 import '../sdk.dart';
-import '../utils.dart';
 import '../validator.dart';
 
 /// A validator that validates that a package's SDK constraint doesn't use the

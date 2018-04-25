@@ -3,8 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/io.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
@@ -28,7 +30,7 @@ class TarFileDescriptor extends FileDescriptor {
           await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
       var file = path.join(parent ?? sandbox, name);
-      writeBinaryFile(file, bytes);
+      _writeBinaryFile(file, bytes);
       return file;
     });
   }
@@ -48,4 +50,15 @@ class TarFileDescriptor extends FileDescriptor {
       return await readBinaryFile(path.join(tempDir, name));
     }));
   }
+}
+
+/// Creates [file] and writes [contents] to it.
+String _writeBinaryFile(String file, List<int> contents) {
+  log.io("Writing ${contents.length} bytes to binary file $file.");
+  deleteIfLink(file);
+  new File(file).openSync(mode: FileMode.WRITE)
+    ..writeFromSync(contents)
+    ..closeSync();
+  log.fine("Wrote text file $file.");
+  return file;
 }

@@ -6,8 +6,6 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
-import 'package:pub/src/io.dart';
-
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
@@ -24,7 +22,7 @@ main() {
     handleUploadForm(server);
 
     server.handler.expect('POST', '/upload', (request) {
-      return drainStream(request.read()).then((_) {
+      return request.read().drain().then((_) {
         return new shelf.Response.notFound(
             '<Error><Message>Your request sucked.</Message></Error>',
             headers: {'content-type': 'application/xml'});

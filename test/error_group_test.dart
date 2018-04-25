@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import 'package:pub/src/error_group.dart';
-import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
 
 ErrorGroup errorGroup;

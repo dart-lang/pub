@@ -70,7 +70,7 @@ String canonicalize(String pathString) {
   while (components.isNotEmpty) {
     seen.add(path.join(newPath, path.joinAll(components)));
     var resolvedPath =
-        resolveLink(path.join(newPath, components.removeFirst()));
+        _resolveLink(path.join(newPath, components.removeFirst()));
     var relative = path.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
@@ -138,7 +138,7 @@ String canonicalize(String pathString) {
 /// return `"B"`).
 ///
 /// This accepts paths to non-links or broken links, and returns them as-is.
-String resolveLink(String link) {
+String _resolveLink(String link) {
   var seen = new Set<String>();
   while (linkExists(link) && !seen.contains(link)) {
     seen.add(link);
@@ -173,19 +173,8 @@ String writeTextFile(String file, String contents,
     log.fine("Contents:\n$contents");
   }
 
-  _deleteIfLink(file);
+  deleteIfLink(file);
   new File(file).writeAsStringSync(contents, encoding: encoding);
-  return file;
-}
-
-/// Creates [file] and writes [contents] to it.
-String writeBinaryFile(String file, List<int> contents) {
-  log.io("Writing ${contents.length} bytes to binary file $file.");
-  _deleteIfLink(file);
-  new File(file).openSync(mode: FileMode.WRITE)
-    ..writeFromSync(contents)
-    ..closeSync();
-  log.fine("Wrote text file $file.");
   return file;
 }
 
@@ -193,12 +182,12 @@ String writeBinaryFile(String file, List<int> contents) {
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
+Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io("Creating $file from stream.");
 
   return _descriptorPool.withResource(() async {
-    _deleteIfLink(file);
+    deleteIfLink(file);
     await stream.pipe(new File(file).openWrite());
     log.fine("Created $file from stream.");
     return file;
@@ -209,34 +198,10 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
 ///
 /// The [File] class overwrites the symlink targets when writing to a file,
 /// which is never what we want, so this delete the symlink first if necessary.
-void _deleteIfLink(String file) {
+void deleteIfLink(String file) {
   if (!linkExists(file)) return;
   log.io("Deleting symlink at $file.");
   new Link(file).deleteSync();
-}
-
-/// Copies all files in [files] to the directory [destination].
-///
-/// Their locations in [destination] will be determined by their relative
-/// location to [baseDir]. Any existing files at those paths will be
-/// overwritten.
-void copyFiles(Iterable<String> files, String baseDir, String destination) {
-  for (var file in files) {
-    var newPath = path.join(destination, path.relative(file, from: baseDir));
-    ensureDir(path.dirname(newPath));
-    copyFile(file, newPath);
-  }
-}
-
-/// Copies a file from [source] to [destination].
-void copyFile(String source, String destination) {
-  writeBinaryFile(destination, readBinaryFile(source));
-}
-
-/// Creates a directory [dir].
-String createDir(String dir) {
-  new Directory(dir).createSync();
-  return dir;
 }
 
 /// Ensures that [dir] and all its parent directories exist.
@@ -261,7 +226,7 @@ String createTempDir(String base, String prefix) {
 /// 'pub_' with characters appended to it to make a unique name.
 ///
 /// Returns the path of the created directory.
-String createSystemTempDir() {
+String _createSystemTempDir() {
   var tempDir = Directory.systemTemp.createTempSync('pub_');
   log.io("Created temp directory ${tempDir.path}");
   return tempDir.resolveSymbolicLinksSync();
@@ -508,7 +473,7 @@ final bool runningAsTest =
 /// test package's test runner.
 ///
 /// The test runner starts all tests from a `data:` URI.
-final bool runningAsTestRunner = Platform.script.scheme == 'data';
+final bool _runningAsTestRunner = Platform.script.scheme == 'data';
 
 /// Whether the current process is a pub subprocess being run from a test.
 ///
@@ -518,7 +483,7 @@ final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
 
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
-final bool runningFromSdk =
+final bool _runningFromSdk =
     !runningFromTest && Platform.script.path.endsWith('.snapshot');
 
 /// A regular expression to match the script path of a pub script running from
@@ -534,7 +499,7 @@ final _dartRepoRegExp = new RegExp(r"/third_party/pkg/pub/("
 /// This can happen when running tests against the repo, as well as when
 /// building Observatory.
 final bool runningFromDartRepo = (() {
-  if (runningAsTestRunner) {
+  if (_runningAsTestRunner) {
     // When running from the test runner, we can't find our location via
     // Platform.script since the runner munges that. However, it guarantees that
     // the working directory is <repo>/third_party/pkg/pub.
@@ -545,15 +510,10 @@ final bool runningFromDartRepo = (() {
   }
 })();
 
-/// Resolves [target] relative to the path to pub's `asset` directory.
-String assetPath(String target) => runningFromSdk
-    ? sdkAssetPath(target)
-    : path.join(pubRoot, 'lib', 'src', 'asset', target);
-
 /// Resolves [target] relative to the Dart SDK's `asset` directory.
 ///
 /// Throws a [StateError] if called from within the Dart repo.
-String sdkAssetPath(String target) {
+String _sdkAssetPath(String target) {
   if (runningFromDartRepo) {
     throw new StateError("Can't get SDK assets from within the Dart repo.");
   }
@@ -566,12 +526,12 @@ String sdkAssetPath(String target) {
 ///
 /// This throws a [StateError] if it's called when running pub from the SDK.
 final String pubRoot = (() {
-  if (runningFromSdk) {
+  if (_runningFromSdk) {
     throw new StateError("Can't get pub's root from the SDK.");
   }
 
   // The test runner always runs from the working directory.
-  if (runningAsTestRunner) return path.current;
+  if (_runningAsTestRunner) return path.current;
 
   var script = path.fromUri(Platform.script);
   if (runningAsTest) {
@@ -595,7 +555,7 @@ final String dartRepoRoot = (() {
     throw new StateError("Not running from source in the Dart repo.");
   }
 
-  if (runningAsTestRunner) {
+  if (_runningAsTestRunner) {
     // When running in test code started by the test runner, the working
     // directory will always be <repo>/third_party/pkg/pub.
     return path.dirname(path.dirname(path.dirname(path.current)));
@@ -609,7 +569,7 @@ final String dartRepoRoot = (() {
 })();
 
 /// A line-by-line stream of standard input.
-final Stream<String> stdinLines =
+final Stream<String> _stdinLines =
     streamToLines(new ByteStream(stdin).toStringStream());
 
 /// Displays a message and reads a yes/no confirmation from the user.
@@ -626,15 +586,8 @@ Future<bool> confirm(String message) {
   } else {
     stdout.write(log.format("$message (y/n)? "));
   }
-  return streamFirst(stdinLines)
+  return streamFirst(_stdinLines)
       .then((line) => new RegExp(r"^[yY]").hasMatch(line));
-}
-
-/// Reads and discards all output from [stream].
-///
-/// Returns a [Future] that completes when the stream is closed.
-Future drainStream(Stream stream) {
-  return stream.fold(null, (x, y) {});
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
@@ -651,7 +604,7 @@ Future flushThenExit(int status) {
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
-Pair<EventSink<T>, Future> consumerToSink<T>(StreamConsumer<T> consumer) {
+Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
   var controller = new StreamController<T>(sync: true);
   var done = controller.stream.pipe(consumer);
   return new Pair(controller.sink, done);
@@ -668,7 +621,7 @@ Pair<EventSink<T>, Future> consumerToSink<T>(StreamConsumer<T> consumer) {
 /// more data or errors will be piped from [stream] to [sink]. If
 /// [cancelOnError] and [closeSink] are both true, [sink] will then be
 /// closed.
-Future store(Stream stream, EventSink sink,
+Future _store(Stream stream, EventSink sink,
     {bool cancelOnError: true, bool closeSink: true}) {
   var completer = new Completer();
   stream.listen(sink.add, onError: (e, stackTrace) {
@@ -715,7 +668,7 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcess> startProcess(String executable, List<String> args,
+Future<_PubProcess> _startProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell: false}) {
   return _descriptorPool.request().then((resource) async {
     var ioProcess = await _doProcess(Process.start, executable, args,
@@ -723,7 +676,7 @@ Future<PubProcess> startProcess(String executable, List<String> args,
         environment: environment,
         runInShell: runInShell);
 
-    var process = new PubProcess(ioProcess);
+    var process = new _PubProcess(ioProcess);
     process.exitCode.whenComplete(resource.release);
     return process;
   });
@@ -743,7 +696,7 @@ PubProcessResult runProcessSync(String executable, List<String> args,
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
-class PubProcess {
+class _PubProcess {
   /// The underlying `dart:io` [Process].
   final Process _process;
 
@@ -802,11 +755,11 @@ class PubProcess {
   /// error handler unless nothing has handled it.
   Future<int> get exitCode => _exitCode;
 
-  /// Creates a new [PubProcess] wrapping [process].
-  PubProcess(Process process) : _process = process {
+  /// Creates a new [_PubProcess] wrapping [process].
+  _PubProcess(Process process) : _process = process {
     var errorGroup = new ErrorGroup();
 
-    var pair = consumerToSink(process.stdin);
+    var pair = _consumerToSink(process.stdin);
     _stdin = pair.first;
     _stdinClosed = errorGroup.registerFuture(pair.last);
 
@@ -867,7 +820,7 @@ void touch(String path) {
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
 Future<T> withTempDir<T>(Future<T> fn(String path)) async {
-  var tempDir = createSystemTempDir();
+  var tempDir = _createSystemTempDir();
   try {
     return await fn(tempDir);
   } finally {
@@ -911,15 +864,15 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     args.insert(0, "--warning=no-unknown-keyword");
   }
 
-  var process = await startProcess("tar", args);
+  var process = await _startProcess("tar", args);
 
   // Ignore errors on process.std{out,err}. They'll be passed to
   // process.exitCode, and we don't want them being top-levelled by
   // std{out,err}Sink.
-  store(process.stdout.handleError((_) {}), stdout, closeSink: false);
-  store(process.stderr.handleError((_) {}), stderr, closeSink: false);
+  _store(process.stdout.handleError((_) {}), stdout, closeSink: false);
+  _store(process.stderr.handleError((_) {}), stderr, closeSink: false);
   var results =
-      await Future.wait([store(stream, process.stdin), process.exitCode]);
+      await Future.wait([_store(stream, process.stdin), process.exitCode]);
 
   var exitCode = results[1];
   if (exitCode != exit_codes.SUCCESS) {
@@ -951,8 +904,8 @@ bool _computeNoUnknownKeyword() {
   return major >= 2 || (major == 1 && minor >= 23);
 }
 
-final String pathTo7zip = (() {
-  if (!runningFromDartRepo) return sdkAssetPath(path.join('7zip', '7za.exe'));
+final String _pathTo7zip = (() {
+  if (!runningFromDartRepo) return _sdkAssetPath(path.join('7zip', '7za.exe'));
   return path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe');
 })();
 
@@ -967,14 +920,14 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
   return withTempDir((tempDir) async {
     // Write the archive to a temp file.
     var dataFile = path.join(tempDir, 'data.tar.gz');
-    await createFileFromStream(stream, dataFile);
+    await _createFileFromStream(stream, dataFile);
 
     // 7zip can't unarchive from gzip -> tar -> destination all in one step
     // first we un-gzip it to a tar file.
     // Note: Setting the working directory instead of passing in a full file
     // path because 7zip says "A full path is not allowed here."
-    var unzipResult =
-        await runProcess(pathTo7zip, ['e', 'data.tar.gz'], workingDir: tempDir);
+    var unzipResult = await runProcess(_pathTo7zip, ['e', 'data.tar.gz'],
+        workingDir: tempDir);
 
     if (unzipResult.exitCode != exit_codes.SUCCESS) {
       throw new Exception(
@@ -991,7 +944,7 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
 
     // Untar the archive into the destination directory.
     var untarResult =
-        await runProcess(pathTo7zip, ['x', tarFile], workingDir: destination);
+        await runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination);
     if (untarResult.exitCode != exit_codes.SUCCESS) {
       throw new Exception(
           'Could not un-tar (exit code ${untarResult.exitCode}). Error:\n'
@@ -1075,7 +1028,7 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       // input file, relative paths in the mtree file are interpreted as
       // relative to the current working directory, not the "--directory"
       // argument.
-      var process = await startProcess("tar", args, workingDir: baseDir);
+      var process = await _startProcess("tar", args, workingDir: baseDir);
       process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
@@ -1083,7 +1036,7 @@ ByteStream createTarGz(List contents, {String baseDir}) {
 
     // Don't use [withTempDir] here because we don't want to delete the temp
     // directory until the returned stream has closed.
-    var tempDir = createSystemTempDir();
+    var tempDir = _createSystemTempDir();
 
     try {
       // Create the file containing the list of files to compress.
@@ -1099,12 +1052,12 @@ ByteStream createTarGz(List contents, {String baseDir}) {
       // files added to the archive have the correct relative path in the
       // archive. The latter enables relative paths in the "-i" args to be
       // resolved.
-      await runProcess(pathTo7zip, args, workingDir: baseDir);
+      await runProcess(_pathTo7zip, args, workingDir: baseDir);
 
       // GZIP it. 7zip doesn't support doing both as a single operation.
       // Send the output to stdout.
       args = ["a", "unused", "-tgzip", "-so", tarFile];
-      return (await startProcess(pathTo7zip, args))
+      return (await _startProcess(_pathTo7zip, args))
           .stdout
           .transform(onDoneTransformer(() => deleteEntry(tempDir)));
     } catch (_) {
@@ -1132,22 +1085,4 @@ class PubProcessResult {
   }
 
   bool get success => exitCode == exit_codes.SUCCESS;
-}
-
-/// Returns the top level directory in [uri].
-///
-/// Throws an [ArgumentError] if [uri] is just a filename with no directory.
-String topLevelDir(String uri) {
-  var parts = path.url.split(path.url.normalize(uri));
-  String error;
-  if (parts.length == 1) {
-    error = 'The uri `$uri` does not contain a directory.';
-  } else if (parts.first == '..') {
-    error = 'The uri `$uri` reaches outside the root directory.';
-  }
-  if (error != null) {
-    throw new ArgumentError(
-        'Cannot compute top level dir for path `$uri`. $error');
-  }
-  return parts.first;
 }

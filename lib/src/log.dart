@@ -42,14 +42,12 @@ const _MAX_TRANSCRIPT = 10000;
 
 /// The list of recorded log messages. Will only be recorded if
 /// [recordTranscript()] is called.
-Transcript<Entry> _transcript;
+Transcript<_Entry> _transcript;
 
 /// The currently-animated progress indicator, if any.
 ///
 /// This will also be in [_progresses].
 Progress _animatedProgress;
-
-_Collapser _collapser;
 
 final _cyan = getSpecial('\u001b[36m');
 final _green = getSpecial('\u001b[32m');
@@ -103,7 +101,7 @@ class Level {
   String toString() => name;
 }
 
-typedef _LogFn(Entry entry);
+typedef _LogFn(_Entry entry);
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
@@ -189,11 +187,11 @@ class Verbosity {
 }
 
 /// A single log entry.
-class Entry {
+class _Entry {
   final Level level;
   final List<String> lines;
 
-  Entry(this.level, this.lines);
+  _Entry(this.level, this.lines);
 }
 
 /// Logs [message] at [Level.ERROR].
@@ -227,9 +225,6 @@ void fine(message) => write(Level.FINE, message);
 
 /// Logs [message] at [level].
 void write(Level level, message) {
-  // Don't allow interleaving collapsible messages with other kinds.
-  if (_collapser != null) _collapser.end();
-
   message = message.toString();
   var lines = splitLines(message);
 
@@ -239,7 +234,7 @@ void write(Level level, message) {
     lines.removeLast();
   }
 
-  var entry = new Entry(level, lines.map(format).toList());
+  var entry = new _Entry(level, lines.map(format).toList());
 
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
@@ -269,32 +264,6 @@ String format(String string) {
   }
 
   return string;
-}
-
-/// Logs an asynchronous IO operation.
-///
-/// Logs [startMessage] before the operation starts, then when [operation]
-/// completes, invokes [endMessage] with the completion value and logs the
-/// result of that. Returns a future that completes after the logging is done.
-///
-/// If [endMessage] is omitted, then logs "Begin [startMessage]" before the
-/// operation and "End [startMessage]" after it.
-Future ioAsync(String startMessage, Future operation,
-    [String endMessage(value)]) {
-  if (endMessage == null) {
-    io("Begin $startMessage.");
-  } else {
-    io(startMessage);
-  }
-
-  return operation.then((result) {
-    if (endMessage == null) {
-      io("End $startMessage.");
-    } else {
-      io(endMessage(result));
-    }
-    return result;
-  });
 }
 
 /// Logs the spawning of an [executable] process with [arguments] at [IO]
@@ -376,7 +345,7 @@ void exception(exception, [StackTrace trace]) {
 
 /// Enables recording of log entries.
 void recordTranscript() {
-  _transcript = new Transcript<Entry>(_MAX_TRANSCRIPT);
+  _transcript = new Transcript<_Entry>(_MAX_TRANSCRIPT);
 }
 
 /// If [recordTranscript()] was called, then prints the previously recorded log
@@ -438,31 +407,6 @@ void muteProgress() {
 void unmuteProgress() {
   assert(_numMutes > 0);
   _numMutes--;
-}
-
-/// Logs a collapsible [message].
-///
-/// If a number of collapsible messages are printed in short succession, they
-/// are collapsed to just showing [template] with "##" replaced with the number
-/// of collapsed messages. Avoids spamming the output with not-very-interesting
-/// output.
-void collapsible(String message, String template) {
-  // Only collapse messages when the output is not verbose.
-  if (verbosity._loggers[Level.MESSAGE] != _logToStdout) {
-    write(Level.MESSAGE, message);
-    return;
-  }
-
-  // If this is a different set of collapsed messages, end the previous ones.
-  if (_collapser != null && _collapser._template != template) {
-    _collapser.end();
-  }
-
-  if (_collapser != null) {
-    _collapser.increment();
-  } else {
-    _collapser = new _Collapser(message, template);
-  }
 }
 
 /// Wraps [text] in the ANSI escape codes to make it bold when on a platform
@@ -533,32 +477,32 @@ String _addColor(Object text, String colorCode) {
 }
 
 /// Log function that prints the message to stdout.
-void _logToStdout(Entry entry) {
+void _logToStdout(_Entry entry) {
   _logToStream(stdout, entry, showLabel: false);
 }
 
 /// Log function that prints the message to stdout with the level name.
-void _logToStdoutWithLabel(Entry entry) {
+void _logToStdoutWithLabel(_Entry entry) {
   _logToStream(stdout, entry, showLabel: true);
 }
 
 /// Log function that prints the message to stderr.
-void _logToStderr(Entry entry) {
+void _logToStderr(_Entry entry) {
   _logToStream(stderr, entry, showLabel: false);
 }
 
 /// Log function that prints the message to stderr with the level name.
-void _logToStderrWithLabel(Entry entry) {
+void _logToStderrWithLabel(_Entry entry) {
   _logToStream(stderr, entry, showLabel: true);
 }
 
-void _logToStream(IOSink sink, Entry entry, {bool showLabel}) {
+void _logToStream(IOSink sink, _Entry entry, {bool showLabel}) {
   if (json.enabled) return;
 
   _printToStream(sink, entry, showLabel: showLabel);
 }
 
-void _printToStream(IOSink sink, Entry entry, {bool showLabel}) {
+void _printToStream(IOSink sink, _Entry entry, {bool showLabel}) {
   _stopProgress();
 
   bool firstLine = true;
@@ -618,59 +562,5 @@ class _JsonLogger {
     if (!enabled) return;
 
     print(jsonEncode(message));
-  }
-}
-
-/// Collapses a series of collapsible messages into a single line of output if
-/// they happen within a short window of time.
-class _Collapser {
-  /// The window of time where a series of calls to [collapsible] will be
-  /// collapsed to a single message.
-  static final _window = new Duration(milliseconds: 100);
-
-  /// The Timer used to coalesce a number of collapsible messages.
-  ///
-  /// This is `null` if no collapsible messages are waiting to be displayed.
-  Timer _timer;
-
-  /// The first collapsible message waiting to be displayed.
-  String _firstMessage;
-
-  /// The template used to display the number of collapsed messages when more
-  /// than one collapsible message is logged within the window of time.
-  ///
-  /// Inside the template, "##" will be replaced with the number of collapsed
-  /// messages.
-  String _template;
-
-  /// The number of collapsible messages that are waiting to be logged.
-  int _count = 1;
-
-  _Collapser(this._firstMessage, this._template) {
-    _initTimer();
-  }
-
-  void increment() {
-    // Reset the timer.
-    _timer.cancel();
-    _initTimer();
-
-    _count++;
-  }
-
-  void end() {
-    // Clear this first so we don't stack overflow when we call message() below.
-    _collapser = null;
-
-    _timer.cancel();
-    if (_count == 1) {
-      message(_firstMessage);
-    } else {
-      message(_template.replaceAll("##", _count.toString()));
-    }
-  }
-
-  void _initTimer() {
-    _timer = new Timer(_window, end);
   }
 }

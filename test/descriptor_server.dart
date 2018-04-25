@@ -83,7 +83,7 @@ class DescriptorServer {
       requestedPaths.add(path);
 
       try {
-        var stream = await validateStream(_baseDir.load(path));
+        var stream = await _validateStream(_baseDir.load(path));
         return new shelf.Response.ok(stream);
       } catch (_) {
         return new shelf.Response.notFound('File "$path" not found.');
@@ -102,4 +102,47 @@ class DescriptorServer {
 
   /// Closes this server.
   Future close() => _server.close();
+}
+
+/// Ensures that [stream] can emit at least one value successfully (or close
+/// without any values).
+///
+/// For example, reading asynchronously from a non-existent file will return a
+/// stream that fails on the first chunk. In order to handle that more
+/// gracefully, you may want to check that the stream looks like it's working
+/// before you pipe the stream to something else.
+///
+/// This lets you do that. It returns a [Future] that completes to a [Stream]
+/// emitting the same values and errors as [stream], but only if at least one
+/// value can be read successfully. If an error occurs before any values are
+/// emitted, the returned Future completes to that error.
+Future<Stream<T>> _validateStream<T>(Stream<T> stream) {
+  var completer = new Completer<Stream>();
+  var controller = new StreamController(sync: true);
+
+  StreamSubscription subscription;
+  subscription = stream.listen((value) {
+    // We got a value, so the stream is valid.
+    if (!completer.isCompleted) completer.complete(controller.stream);
+    controller.add(value);
+  }, onError: (error, [StackTrace stackTrace]) {
+    // If the error came after values, it's OK.
+    if (completer.isCompleted) {
+      controller.addError(error, stackTrace);
+      return;
+    }
+
+    // Otherwise, the error came first and the stream is invalid.
+    completer.completeError(error, stackTrace);
+
+    // We won't be returning the stream at all in this case, so unsubscribe
+    // and swallow the error.
+    subscription.cancel();
+  }, onDone: () {
+    // It closed with no errors, so the stream is valid.
+    if (!completer.isCompleted) completer.complete(controller.stream);
+    controller.close();
+  });
+
+  return completer.future;
 }
