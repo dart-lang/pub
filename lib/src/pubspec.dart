@@ -42,11 +42,11 @@ final VersionRange _defaultUpperBoundSdkConstraint =
 ///
 /// This has a default value of `true` but can be overridden with the
 /// PUB_ALLOW_PRERELEASE_SDK system environment variable.
-bool get allowPreReleaseSdk => allowPreReleaseSdkValue != 'false';
+bool get _allowPreReleaseSdk => _allowPreReleaseSdkValue != 'false';
 
 /// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
 /// to `true`.
-final String allowPreReleaseSdkValue = () {
+final String _allowPreReleaseSdkValue = () {
   var value =
       Platform.environment["PUB_ALLOW_PRERELEASE_SDK"]?.toLowerCase() ?? 'true';
   if (!['true', 'quiet', 'false'].contains(value)) {
@@ -61,7 +61,7 @@ Using a default value of `true`.
 }();
 
 /// Whether or not to warn about pre-release SDK overrides.
-bool get warnAboutPreReleaseSdkOverrides => allowPreReleaseSdkValue != 'quiet';
+bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 
 /// The parsed contents of a pubspec file.
 ///
@@ -289,7 +289,7 @@ class Pubspec {
   ///
   /// This is true if the following conditions are met:
   ///
-  ///   - [allowPreReleaseSdk] is `true`
+  ///   - [_allowPreReleaseSdk] is `true`
   ///   - The user's current SDK is a pre-release version.
   ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
   ///     is `false`).
@@ -297,7 +297,7 @@ class Pubspec {
   ///   - The original [sdkConstraint] matches the exact same major, minor, and
   ///     patch versions as the user's current SDK.
   bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
-    if (!allowPreReleaseSdk) return false;
+    if (!_allowPreReleaseSdk) return false;
     if (!sdk.version.isPreRelease) return false;
     if (sdkConstraint.includeMax) return false;
     if (sdkConstraint.min != null &&

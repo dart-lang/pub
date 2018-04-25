@@ -70,7 +70,7 @@ final random = new math.Random.secure();
 ///
 /// If pub isn't attached to a terminal, uses an infinite line length and does
 /// not wrap text.
-final int lineLength = () {
+final int _lineLength = () {
   try {
     return stdout.terminalColumns;
   } on StdoutException {
@@ -163,23 +163,10 @@ StreamTransformer<T, T> onDoneTransformer<T>(void onDone()) {
   });
 }
 
-// TODO(rnystrom): Move into String?
-/// Pads [source] to [length] by adding spaces at the end.
-String padRight(String source, int length) {
-  final result = new StringBuffer();
-  result.write(source);
-
-  while (result.length < length) {
-    result.write(' ');
-  }
-
-  return result.toString();
-}
-
 /// Pads [source] to [length] by adding [char]s at the beginning.
 ///
 /// If [char] is `null`, it defaults to a space.
-String padLeft(String source, int length, [String char]) {
+String _padLeft(String source, int length, [String char]) {
   if (char == null) char = ' ';
   if (source.length >= length) return source;
 
@@ -235,23 +222,6 @@ String quoteRegExp(String string) {
   }
 
   return string;
-}
-
-/// Creates a URL string for [address]:[port].
-///
-/// Handles properly formatting IPv6 addresses.
-Uri baseUrlForAddress(InternetAddress address, int port) {
-  if (address.isLoopback) {
-    return new Uri(scheme: "http", host: "localhost", port: port);
-  }
-
-  // IPv6 addresses in URLs need to be enclosed in square brackets to avoid
-  // URL ambiguity with the ":" in the address.
-  if (address.type == InternetAddressType.IP_V6) {
-    return new Uri(scheme: "http", host: "[${address.address}]", port: port);
-  }
-
-  return new Uri(scheme: "http", host: address.address, port: port);
 }
 
 /// Returns whether [host] is a host for a localhost or loopback URL.
@@ -380,49 +350,6 @@ void chainToCompleter(Future future, Completer completer) {
   future.then(completer.complete, onError: completer.completeError);
 }
 
-/// Ensures that [stream] can emit at least one value successfully (or close
-/// without any values).
-///
-/// For example, reading asynchronously from a non-existent file will return a
-/// stream that fails on the first chunk. In order to handle that more
-/// gracefully, you may want to check that the stream looks like it's working
-/// before you pipe the stream to something else.
-///
-/// This lets you do that. It returns a [Future] that completes to a [Stream]
-/// emitting the same values and errors as [stream], but only if at least one
-/// value can be read successfully. If an error occurs before any values are
-/// emitted, the returned Future completes to that error.
-Future<Stream<T>> validateStream<T>(Stream<T> stream) {
-  var completer = new Completer<Stream>();
-  var controller = new StreamController(sync: true);
-
-  StreamSubscription subscription;
-  subscription = stream.listen((value) {
-    // We got a value, so the stream is valid.
-    if (!completer.isCompleted) completer.complete(controller.stream);
-    controller.add(value);
-  }, onError: (error, [StackTrace stackTrace]) {
-    // If the error came after values, it's OK.
-    if (completer.isCompleted) {
-      controller.addError(error, stackTrace);
-      return;
-    }
-
-    // Otherwise, the error came first and the stream is invalid.
-    completer.completeError(error, stackTrace);
-
-    // We won't be returning the stream at all in this case, so unsubscribe
-    // and swallow the error.
-    subscription.cancel();
-  }, onDone: () {
-    // It closed with no errors, so the stream is valid.
-    if (!completer.isCompleted) completer.complete(controller.stream);
-    controller.close();
-  });
-
-  return completer.future;
-}
-
 // TODO(nweiz): remove this when issue 7964 is fixed.
 /// Returns a [Future] that will complete to the first element of [stream].
 ///
@@ -493,14 +420,6 @@ List<String> split1(String toSplit, String pattern) {
   ];
 }
 
-/// Adds additional query parameters to [url], overwriting the original
-/// parameters if a name conflict occurs.
-Uri addQueryParameters(Uri url, Map<String, String> parameters) {
-  var queryMap = queryToMap(url.query);
-  queryMap.addAll(parameters);
-  return url.resolve("?${mapToQuery(queryMap)}");
-}
-
 /// Convert a URL query string (or `application/x-www-form-urlencoded` body)
 /// into a [Map] from parameter names to values.
 Map<String, String> queryToMap(String queryList) {
@@ -508,27 +427,11 @@ Map<String, String> queryToMap(String queryList) {
   for (var pair in queryList.split("&")) {
     var split = split1(pair, "=");
     if (split.isEmpty) continue;
-    var key = urlDecode(split[0]);
-    var value = split.length > 1 ? urlDecode(split[1]) : "";
+    var key = _urlDecode(split[0]);
+    var value = split.length > 1 ? _urlDecode(split[1]) : "";
     map[key] = value;
   }
   return map;
-}
-
-/// Convert a [Map] from parameter names to values to a URL query string.
-String mapToQuery(Map<String, String> map) {
-  var pairs = <List<String>>[];
-  map.forEach((key, value) {
-    key = Uri.encodeQueryComponent(key);
-    value = (value == null || value.isEmpty)
-        ? null
-        : Uri.encodeQueryComponent(value);
-    pairs.add([key, value]);
-  });
-  return pairs.map((pair) {
-    if (pair[1] == null) return pair[0];
-    return "${pair[0]}=${pair[1]}";
-  }).join("&");
 }
 
 /// Returns a human-friendly representation of [duration].
@@ -542,42 +445,18 @@ String niceDuration(Duration duration) {
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
   var msString = log.verbosity.isLevelVisible(log.Level.FINE)
-      ? padLeft(ms.toString(), 3, '0')
+      ? _padLeft(ms.toString(), 3, '0')
       : (ms ~/ 100).toString();
 
-  return "$result${hasMinutes ? padLeft(s.toString(), 2, '0') : s}"
+  return "$result${hasMinutes ? _padLeft(s.toString(), 2, '0') : s}"
       ".${msString}s";
 }
 
 /// Decodes a URL-encoded string.
 ///
 /// Unlike [Uri.decodeComponent], this includes replacing `+` with ` `.
-String urlDecode(String encoded) =>
+String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll("+", " "));
-
-/// Takes a simple data structure (composed of [Map]s, [Iterable]s, scalar
-/// objects, and [Future]s) and recursively resolves all the [Future]s contained
-/// within.
-///
-/// Completes with the fully resolved structure.
-Future<T> awaitObject<T>(T object) async {
-  // Unroll nested futures.
-  if (object is Future) return await awaitObject(await object);
-
-  if (object is Iterable) {
-    return await Future.wait(object.map(awaitObject)) as T;
-  }
-
-  if (object is Map) {
-    var newMap = {};
-    await Future.wait(object.keys.map((key) async {
-      newMap[key] = await awaitObject(await object[key]);
-    }));
-    return newMap as T;
-  }
-
-  return object;
-}
 
 /// Whether "special" strings such as Unicode characters or color escapes are
 /// safe to use.
@@ -723,7 +602,7 @@ String createUuid([List<int> bytes]) {
       '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
 }
 
-/// Wraps [text] so that it fits within [lineLength], if there is a line length.
+/// Wraps [text] so that it fits within [_lineLength], if there is a line length.
 ///
 /// This preserves existing newlines and doesn't consider terminal color escapes
 /// part of a word's length. It only splits words on spaces, not on other sorts
@@ -732,7 +611,7 @@ String createUuid([List<int> bytes]) {
 /// If [prefix] is passed, it's added at the beginning of any wrapped lines.
 String wordWrap(String text, {String prefix}) {
   // If there is no limit, don't wrap.
-  if (lineLength == null) return text;
+  if (_lineLength == null) return text;
 
   prefix ??= "";
   return text.split("\n").map((originalLine) {
@@ -740,8 +619,8 @@ String wordWrap(String text, {String prefix}) {
     var lengthSoFar = 0;
     var firstLine = true;
     for (var word in originalLine.split(" ")) {
-      var wordLength = withoutColors(word).length;
-      if (wordLength > lineLength) {
+      var wordLength = _withoutColors(word).length;
+      if (wordLength > _lineLength) {
         if (lengthSoFar != 0) buffer.writeln();
         if (!firstLine) buffer.write(prefix);
         buffer.writeln(word);
@@ -750,7 +629,7 @@ String wordWrap(String text, {String prefix}) {
         if (!firstLine) buffer.write(prefix);
         buffer.write(word);
         lengthSoFar = wordLength + prefix.length;
-      } else if (lengthSoFar + 1 + wordLength > lineLength) {
+      } else if (lengthSoFar + 1 + wordLength > _lineLength) {
         buffer.writeln();
         buffer.write(prefix);
         buffer.write(word);
@@ -769,7 +648,7 @@ String wordWrap(String text, {String prefix}) {
 final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
 
 /// Returns [str] without any color codes.
-String withoutColors(String str) => str.replaceAll(_colorCode, '');
+String _withoutColors(String str) => str.replaceAll(_colorCode, '');
 
 /// A regular expression to match the exception prefix that some exceptions'
 /// [Object.toString] values contain.

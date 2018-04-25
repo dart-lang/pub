@@ -4,7 +4,6 @@
 
 import 'dart:convert';
 
-import 'package:pub/src/io.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
@@ -32,7 +31,7 @@ main() {
     await confirmPublish(pub);
 
     server.handler.expect('POST', '/token', (request) {
-      return drainStream(request.read()).then((_) {
+      return request.read().drain().then((_) {
         return new shelf.Response(400,
             body: jsonEncode({"error": "invalid_request"}),
             headers: {'content-type': 'application/json'});

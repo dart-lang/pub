@@ -8,8 +8,6 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
-import 'package:pub/src/io.dart';
-
 void handleUploadForm(ShelfTestServer server, [Map body]) {
   server.handler.expect('GET', '/api/packages/versions/new', (request) {
     expect(
@@ -31,7 +29,9 @@ void handleUpload(ShelfTestServer server) {
   server.handler.expect('POST', '/upload', (request) {
     // TODO(nweiz): Once a multipart/form-data parser in Dart exists, validate
     // that the request body is correctly formatted. See issue 6952.
-    return drainStream(request.read())
+    return request
+        .read()
+        .drain()
         .then((_) => server.url)
         .then((url) => new shelf.Response.found(url.resolve('/create')));
   });

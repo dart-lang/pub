@@ -34,7 +34,7 @@ final _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
 /// a refresh token from the server. See the [Google OAuth2 documentation][].
 ///
 /// [Google OAuth2 documentation]: https://developers.google.com/accounts/docs/OAuth2WebServer#offline
-final authorizationEndpoint =
+final _authorizationEndpoint =
     Uri.parse('https://accounts.google.com/o/oauth2/auth?access_type=offline'
         '&approval_prompt=force');
 
@@ -67,7 +67,7 @@ final _scopes = ['https://www.googleapis.com/auth/userinfo.email'];
 Credentials _credentials;
 
 /// Delete the cached credentials, if they exist.
-void clearCredentials(SystemCache cache) {
+void _clearCredentials(SystemCache cache) {
   _credentials = null;
   var credentialsFile = _credentialsFile(cache);
   if (entryExists(credentialsFile)) deleteEntry(credentialsFile);
@@ -97,7 +97,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
         message = "$message (${error.description})";
       }
       log.error("$message.");
-      clearCredentials(cache);
+      _clearCredentials(cache);
       return withClient(cache, fn);
     } else {
       throw error;
@@ -171,7 +171,7 @@ String _credentialsFile(SystemCache cache) =>
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() {
   var grant = new AuthorizationCodeGrant(
-      _identifier, authorizationEndpoint, tokenEndpoint,
+      _identifier, _authorizationEndpoint, tokenEndpoint,
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
