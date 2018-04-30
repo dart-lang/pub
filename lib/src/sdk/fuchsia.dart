@@ -24,12 +24,14 @@ class FuchsiaSdk extends Sdk {
       "Please set the FUCHSIA_DART_SDK_ROOT environment variable to point to "
       "the root of the Fuchsia SDK for Dart.";
 
-  final Version version = () {
+  Version get version {
     if (!_isAvailable) return null;
 
-    return new Version.parse(
+    _version ??= new Version.parse(
         readTextFile(p.join(_rootDirectory, "version")).trim());
-  }();
+    return _version;
+  }
+  Version _version;
 
   String packagePath(String name) {
     if (!isAvailable) return null;
