@@ -31,6 +31,7 @@ class FuchsiaSdk extends Sdk {
         readTextFile(p.join(_rootDirectory, "version")).trim());
     return _version;
   }
+
   Version _version;
 
   String packagePath(String name) {

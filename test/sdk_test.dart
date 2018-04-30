@@ -89,7 +89,8 @@ main() {
     });
 
     // Regression test for #1883
-    test("doesn't fail if the Flutter SDK's version file doesn't exist when "
+    test(
+        "doesn't fail if the Flutter SDK's version file doesn't exist when "
         "nothing depends on Flutter", () async {
       await d.appDir().create();
       await deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
@@ -97,9 +98,7 @@ main() {
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
       await d.dir(appPath, [
-        d.packagesFile({
-          'myapp': '.'
-        })
+        d.packagesFile({'myapp': '.'})
       ]).validate();
     });
 
