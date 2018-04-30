@@ -22,12 +22,15 @@ class FlutterSdk extends Sdk {
   String get installMessage =>
       "Flutter users should run `flutter packages get` instead of `pub get`.";
 
-  final Version version = () {
+  Version get version {
     if (!_isAvailable) return null;
 
-    return new Version.parse(
+    _version ??= new Version.parse(
         readTextFile(p.join(_rootDirectory, "version")).trim());
-  }();
+    return _version;
+  }
+
+  Version _version;
 
   String packagePath(String name) {
     if (!isAvailable) return null;
