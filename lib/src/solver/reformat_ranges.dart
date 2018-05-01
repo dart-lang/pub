@@ -1,0 +1,109 @@
+// Copyright (c) 2018, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+import 'package:pub_semver/pub_semver.dart';
+
+import '../package_name.dart';
+import '../utils.dart';
+import 'incompatibility.dart';
+import 'incompatibility_cause.dart';
+import 'package_lister.dart';
+import 'term.dart';
+
+/// Replaces version ranges in [incompatibility] and its causes with more
+/// human-readable (but less technically-accurate) ranges.
+///
+/// We use a lot of ranges in the solver that explicitly allow pre-release
+/// versions, such as `>=1.0.0-0 <2.0.0` or `>=1.0.0 <2.0.0-∞`. These ensure
+/// that adjacent ranges can be merged together, which makes the solver's job
+/// much easier. However, they're not super human-friendly, and in practice most
+/// package versions don't actually have pre-releases available.
+///
+/// This replaces lower bounds like `>=1.0.0-0` with the first version that
+/// actually exists for a package, and upper bounds like `<2.0.0-∞` either with
+/// the release version (`<2.0.0`) if no pre-releases exist or with an inclusive
+/// bound on the last pre-release version that actually exists
+/// (`<=2.0.0-dev.1`).
+Incompatibility reformatRanges(Map<PackageRef, PackageLister> packageListers,
+    Incompatibility incompatibility) {
+  var cause = incompatibility.cause;
+  if (cause is ConflictCause) {
+    var conflict = cause as ConflictCause;
+    cause = new ConflictCause(reformatRanges(packageListers, conflict.conflict),
+        reformatRanges(packageListers, conflict.other));
+  }
+
+  var terms = incompatibility.terms.map((term) {
+    var versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
+
+    if (term.package.constraint is! VersionRange) return term;
+    var range = term.package.constraint as VersionRange;
+
+    var min = range.min;
+    if (min != null && range.includeMin && min.isFirstPreRelease) {
+      var index = _lowerBound(versions, min);
+      var next = index == versions.length ? null : versions[index].version;
+
+      // If there's a real pre-release version of [min], use that as the
+      // min. Otherwise, use the release version.
+      min = next != null && equalsIgnoringPreRelease(min, next)
+          ? next
+          : new Version(min.major, min.minor, min.patch);
+    }
+
+    var max = range.max;
+    var includeMax = range.includeMax;
+    var minIsPreReleaseOfMax =
+        min != null && min.isPreRelease && equalsIgnoringPreRelease(min, max);
+    if (max != null &&
+        !includeMax &&
+        !max.isPreRelease &&
+        !minIsPreReleaseOfMax) {
+      var index = _lowerBound(versions, max);
+      var previous = index == 0 ? null : versions[index - 1].version;
+
+      print("original range: $range, previous version: $previous");
+      if (previous != null && equalsIgnoringPreRelease(previous, max)) {
+        max = previous;
+        includeMax = true;
+      } else {
+        max = max.firstPreRelease;
+      }
+    }
+
+    if (identical(min, range.min) && identical(max, range.max)) return term;
+    return new Term(
+        term.package.withConstraint(new VersionRange(
+            min: min,
+            max: max,
+            includeMin: range.includeMin,
+            includeMax: includeMax,
+            alwaysIncludeMaxPreRelease: true)),
+        term.isPositive);
+  });
+
+  return new Incompatibility(terms.toList(), cause);
+}
+
+/// Returns the first index in [ids] (which is sorted by version) whose version
+/// is greater than or equal to [version].
+///
+/// Returns `ids.length` if all the versions in `ids` are less than [version].
+///
+/// We can't use the `collection` package's `lowerBound()` function here because
+/// [version] isn't the same as [ids]' element type.
+PackageVersion _lowerBound(List<PackageId> ids, Version version) {
+  var min = 0;
+  var max = ids.length;
+  while (min < max) {
+    var mid = min + ((max - min) >> 1);
+    var id = ids[mid];
+    if (id.version.compareTo(version) < 0) {
+      min = mid + 1;
+    } else {
+      max = mid;
+    }
+  }
+  return min;
+}

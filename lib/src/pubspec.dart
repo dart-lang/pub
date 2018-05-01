@@ -302,16 +302,15 @@ class Pubspec {
     if (sdkConstraint.includeMax) return false;
     if (sdkConstraint.min != null &&
         sdkConstraint.min.isPreRelease &&
-        sdkConstraint.min.major == sdk.version.major &&
-        sdkConstraint.min.minor == sdk.version.minor &&
-        sdkConstraint.min.patch == sdk.version.patch) {
+        equalsIgnoringPreRelease(sdkConstraint.min, sdk.version)) {
       return false;
     }
     if (sdkConstraint.max == null) return false;
-    if (sdkConstraint.max.isPreRelease) return false;
-    return sdkConstraint.max.major == sdk.version.major &&
-        sdkConstraint.max.minor == sdk.version.minor &&
-        sdkConstraint.max.patch == sdk.version.patch;
+    if (sdkConstraint.max.isPreRelease &&
+        !sdkConstraint.max.isFirstPreRelease) {
+      return false;
+    }
+    return equalsIgnoringPreRelease(sdkConstraint.max, sdk.version);
   }
 
   /// Parses the "environment" field in [parent] and returns a map from SDK
