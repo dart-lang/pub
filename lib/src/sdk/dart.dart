@@ -42,8 +42,7 @@ class DartSdk extends Sdk {
     if (sdkVersion != null) return new Version.parse(sdkVersion);
 
     if (!runningFromDartRepo) {
-      // Read the "version" file.
-      var version = readTextFile(p.join(_rootDirectory, "version")).trim();
+      var version = Platform.version.split(' ').first;
       return new Version.parse(version);
     }
 
