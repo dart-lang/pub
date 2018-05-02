@@ -8,6 +8,12 @@ import '../utils.dart';
 
 /// Shared base class for [BuildCommand] and [ServeCommand].
 abstract class BarbackCommand extends PubCommand {
+  BarbackCommand() {
+    argParser.addOption("mode", hide: true);
+    argParser.addFlag("all", hide: true);
+    argParser.addOption("web-compiler", hide: true);
+  }
+
   run() {
     // Switch to JSON output if specified. We need to do this before parsing
     // the source directories so an error will be correctly reported in JSON

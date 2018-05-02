@@ -9,4 +9,10 @@ class BuildCommand extends BarbackCommand {
   String get name => "build";
   String get description => "Deprecated command";
   bool get hidden => true;
+
+  BuildCommand() {
+    argParser.addOption("define", hide: true);
+    argParser.addOption("format", hide: true);
+    argParser.addOption("output", hide: true);
+  }
 }
