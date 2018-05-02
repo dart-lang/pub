@@ -34,56 +34,70 @@ Incompatibility reformatRanges(Map<PackageRef, PackageLister> packageListers,
         reformatRanges(packageListers, conflict.other));
   }
 
-  var terms = incompatibility.terms.map((term) {
-    var versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
+  return new Incompatibility(
+      incompatibility.terms
+          .map((term) => _reformatTerm(packageListers, term))
+          .toList(),
+      _reformatCause(packageListers, cause));
+}
 
-    if (term.package.constraint is! VersionRange) return term;
-    var range = term.package.constraint as VersionRange;
+/// Returns [term] with the upper and lower bounds of its package range
+/// reformatted if necessary.
+Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
+  var versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
 
-    var min = range.min;
-    if (min != null && range.includeMin && min.isFirstPreRelease) {
-      var index = _lowerBound(versions, min);
-      var next = index == versions.length ? null : versions[index].version;
+  if (term.package.constraint is! VersionRange) return term;
+  var range = term.package.constraint as VersionRange;
 
-      // If there's a real pre-release version of [min], use that as the
-      // min. Otherwise, use the release version.
-      min = next != null && equalsIgnoringPreRelease(min, next)
-          ? next
-          : new Version(min.major, min.minor, min.patch);
-    }
+  var min = _reformatMin(versions, range);
+  var tuple = _reformatMax(versions, range);
+  var max = tuple?.first;
+  var includeMax = tuple?.last;
 
-    var max = range.max;
-    var includeMax = range.includeMax;
-    var minIsPreReleaseOfMax =
-        min != null && min.isPreRelease && equalsIgnoringPreRelease(min, max);
-    if (max != null &&
-        !includeMax &&
-        !max.isPreRelease &&
-        !minIsPreReleaseOfMax) {
-      var index = _lowerBound(versions, max);
-      var previous = index == 0 ? null : versions[index - 1].version;
+  if (min == null && max == null) return term;
+  return new Term(
+      term.package.withConstraint(new VersionRange(
+          min: min ?? range.min,
+          max: max ?? range.max,
+          includeMin: range.includeMin,
+          includeMax: includeMax ?? range.includeMax,
+          alwaysIncludeMaxPreRelease: true)),
+      term.isPositive);
+}
 
-      print("original range: $range, previous version: $previous");
-      if (previous != null && equalsIgnoringPreRelease(previous, max)) {
-        max = previous;
-        includeMax = true;
-      } else {
-        max = max.firstPreRelease;
-      }
-    }
+/// Returns the new minimum version to use for [range], or `null` if it doesn't
+/// need to be reformatted.
+Version _reformatMin(List<PackageId> versions, VersionRange range) {
+  if (range.min == null) return null;
+  if (!range.includeMin) return null;
+  if (!min.isFirstPreRelease) return null;
 
-    if (identical(min, range.min) && identical(max, range.max)) return term;
-    return new Term(
-        term.package.withConstraint(new VersionRange(
-            min: min,
-            max: max,
-            includeMin: range.includeMin,
-            includeMax: includeMax,
-            alwaysIncludeMaxPreRelease: true)),
-        term.isPositive);
-  });
+  var index = _lowerBound(versions, range.min);
+  var next = index == versions.length ? null : versions[index].version;
 
-  return new Incompatibility(terms.toList(), cause);
+  // If there's a real pre-release version of [range.min], use that as the min.
+  // Otherwise, use the release version.
+  return next != null && equalsIgnoringPreRelease(range.min, next)
+      ? next
+      : new Version(range.min.major, range.min.minor, range.min.patch);
+}
+
+/// Returns the new maximum version to use for [range] and whether that maximum
+/// is inclusive, or `null` if it doesn't need to be reformatted.
+Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
+  if (range.max == null) return null;
+  if (!range.includeMax) return null;
+  if (max.isPreRelease) return null;
+  if (min != null && min.isPreRelease && equalsIgnoringPreRelease(min, max)) {
+    return null;
+  }
+
+  var index = _lowerBound(versions, max);
+  var previous = index == 0 ? null : versions[index - 1].version;
+
+  return previous != null && equalsIgnoringPreRelease(previous, max)
+      ? new Pair(previous, true)
+      : new Pair(max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version
@@ -93,7 +107,7 @@ Incompatibility reformatRanges(Map<PackageRef, PackageLister> packageListers,
 ///
 /// We can't use the `collection` package's `lowerBound()` function here because
 /// [version] isn't the same as [ids]' element type.
-PackageVersion _lowerBound(List<PackageId> ids, Version version) {
+int _lowerBound(List<PackageId> ids, Version version) {
   var min = 0;
   var max = ids.length;
   while (min < max) {
@@ -107,3 +121,15 @@ PackageVersion _lowerBound(List<PackageId> ids, Version version) {
   }
   return min;
 }
+
+/// If [cause] is a [ConflictCause], returns a copy of it with the
+/// incompatibilities reformatted.
+///
+/// Otherwise, returns it as-is.
+IncompatibilityCause _reformatCause(
+        Map<PackageRef, PackageLister> packageListers,
+        IncompatibilityCause cause) =>
+    cause is ConflictCause
+        ? new ConflictCause(reformatRanges(packageListers, cause.conflict),
+            reformatRanges(packageListers, cause.other))
+        : cause;
