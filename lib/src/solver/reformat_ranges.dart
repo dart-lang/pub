@@ -57,12 +57,14 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
 
   if (min == null && max == null) return term;
   return new Term(
-      term.package.withConstraint(new VersionRange(
-          min: min ?? range.min,
-          max: max ?? range.max,
-          includeMin: range.includeMin,
-          includeMax: includeMax ?? range.includeMax,
-          alwaysIncludeMaxPreRelease: true)),
+      term.package
+          .withConstraint(new VersionRange(
+              min: min ?? range.min,
+              max: max ?? range.max,
+              includeMin: range.includeMin,
+              includeMax: includeMax ?? range.includeMax,
+              alwaysIncludeMaxPreRelease: true))
+          .withTerseConstraint(),
       term.isPositive);
 }
 
@@ -87,7 +89,7 @@ Version _reformatMin(List<PackageId> versions, VersionRange range) {
 /// is inclusive, or `null` if it doesn't need to be reformatted.
 Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
   if (range.max == null) return null;
-  if (!range.includeMax) return null;
+  if (range.includeMax) return null;
   if (range.max.isPreRelease) return null;
   if (range.min != null &&
       range.min.isPreRelease &&
