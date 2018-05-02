@@ -754,8 +754,8 @@ Future<Pair<List<String>, List<String>>> validatePackage(
 }
 
 /// A matcher that matches a Pair.
-Matcher pairOf(Matcher firstMatcher, Matcher lastMatcher) =>
-    new _PairMatcher(firstMatcher, lastMatcher);
+Matcher pairOf(firstMatcher, lastMatcher) =>
+    new _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
 
 class _PairMatcher extends Matcher {
   final Matcher _firstMatcher;

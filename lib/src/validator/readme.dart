@@ -9,14 +9,19 @@ import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
 
-/// Validates that a package's README is valid utf-8.
-class Utf8ReadmeValidator extends Validator {
-  Utf8ReadmeValidator(Entrypoint entrypoint) : super(entrypoint);
+/// Validates that a package's README exists and is valid utf-8.
+class ReadmeValidator extends Validator {
+  ReadmeValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return new Future.sync(() {
       var readme = entrypoint.root.readmePath;
-      if (readme == null) return;
+      if (readme == null) {
+        warnings
+            .add("Please add a README.md file that describes your package.");
+        return;
+      }
+
       var bytes = readBinaryFile(readme);
       try {
         // utf8.decode doesn't allow invalid UTF-8.
