@@ -4,14 +4,12 @@
 
 import 'package:args/command_runner.dart';
 
+import '../command.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
 /// Shared base class for [BuildCommand] and [ServeCommand].
-abstract class BarbackCommand extends Command {
-  @override
-  bool get takesArguments => false;
-
+abstract class BarbackCommand extends PubCommand {
   @override
   usageException(_) => throw new UsageException(_deprecationError, '');
 
