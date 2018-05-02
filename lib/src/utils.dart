@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import "package:crypto/crypto.dart" as crypto;
 import 'package:meta/meta.dart';
+import 'package:pub_semver/pub_semver.dart';
 import "package:stack_trace/stack_trace.dart";
 
 import 'exceptions.dart';
@@ -660,3 +661,10 @@ final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 /// [toString], so we remove that if it exists.
 String getErrorMessage(error) =>
     error.toString().replaceFirst(_exceptionPrefix, '');
+
+/// Returns whether [version1] and [version2] are the same, ignoring the
+/// pre-release modifiers on each if they exist.
+bool equalsIgnoringPreRelease(Version version1, Version version2) =>
+    version1.major == version2.major &&
+    version1.minor == version2.minor &&
+    version1.patch == version2.patch;

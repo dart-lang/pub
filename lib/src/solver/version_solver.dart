@@ -23,6 +23,7 @@ import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 import 'package_lister.dart';
 import 'partial_solution.dart';
+import 'reformat_ranges.dart';
 import 'result.dart';
 import 'set_relation.dart';
 import 'term.dart';
@@ -305,7 +306,7 @@ class VersionSolver {
       _log("$bang thus: $incompatibility");
     }
 
-    throw new SolveFailure(incompatibility);
+    throw new SolveFailure(reformatRanges(_packageListers, incompatibility));
   }
 
   /// Tries to select a version of a required package.
