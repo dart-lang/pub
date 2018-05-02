@@ -2,21 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:args/command_runner.dart';
-
 import '../command.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
 /// Shared base class for [BuildCommand] and [ServeCommand].
 abstract class BarbackCommand extends PubCommand {
-  @override
-  usageException(_) => throw new UsageException(_deprecationError, '');
-
-  String get _deprecationError =>
-      log.red("Dart 2 has a new build system. Learn how to migrate "
-          "from ${log.bold('pub build')} and\n"
-          "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n");
+  BarbackCommand() {
+    argParser.addOption("mode", hide: true);
+    argParser.addFlag("all", hide: true);
+    argParser.addOption("web-compiler", hide: true);
+  }
 
   run() {
     // Switch to JSON output if specified. We need to do this before parsing
@@ -25,6 +21,8 @@ abstract class BarbackCommand extends PubCommand {
     log.json.enabled =
         argResults.options.contains("format") && argResults["format"] == "json";
 
-    fail(_deprecationError);
+    fail(log.red("Dart 2 has a new build system. Learn how to migrate "
+        "from ${log.bold('pub build')} and\n"
+        "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n"));
   }
 }

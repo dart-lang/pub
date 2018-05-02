@@ -9,4 +9,15 @@ class ServeCommand extends BarbackCommand {
   String get name => "serve";
   String get description => "Deprecated command";
   bool get hidden => true;
+
+  ServeCommand() {
+    argParser.addOption("define", hide: true);
+    argParser.addOption('hostname', hide: true);
+    argParser.addOption('port', hide: true);
+    argParser.addFlag('log-admin-url', hide: true);
+    argParser.addOption('admin-port', hide: true);
+    argParser.addOption('build-delay', hide: true);
+    argParser.addFlag('dart2js', hide: true);
+    argParser.addFlag('force-poll', hide: true);
+  }
 }
