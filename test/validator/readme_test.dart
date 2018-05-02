@@ -22,7 +22,7 @@ main() {
   group('should consider a package valid if it', () {
     test('looks normal', () => expectNoValidationError(readme));
 
-    test('has a non-primary readme-8', () async {
+    test('has a non-primary readme', () async {
       deleteEntry(p.join(d.sandbox, "myapp/README.md"));
 
       await d.dir(appPath, [d.file("README.whatever")]).create();
