@@ -47,6 +47,7 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   var versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
 
   if (term.package.constraint is! VersionRange) return term;
+  if (term.package.constraint is Version) return term;
   var range = term.package.constraint as VersionRange;
 
   var min = _reformatMin(versions, range);
