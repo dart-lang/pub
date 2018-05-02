@@ -70,7 +70,7 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
 Version _reformatMin(List<PackageId> versions, VersionRange range) {
   if (range.min == null) return null;
   if (!range.includeMin) return null;
-  if (!min.isFirstPreRelease) return null;
+  if (!range.min.isFirstPreRelease) return null;
 
   var index = _lowerBound(versions, range.min);
   var next = index == versions.length ? null : versions[index].version;
@@ -87,17 +87,19 @@ Version _reformatMin(List<PackageId> versions, VersionRange range) {
 Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
   if (range.max == null) return null;
   if (!range.includeMax) return null;
-  if (max.isPreRelease) return null;
-  if (min != null && min.isPreRelease && equalsIgnoringPreRelease(min, max)) {
+  if (range.max.isPreRelease) return null;
+  if (range.min != null &&
+      range.min.isPreRelease &&
+      equalsIgnoringPreRelease(range.min, range.max)) {
     return null;
   }
 
-  var index = _lowerBound(versions, max);
+  var index = _lowerBound(versions, range.max);
   var previous = index == 0 ? null : versions[index - 1].version;
 
-  return previous != null && equalsIgnoringPreRelease(previous, max)
+  return previous != null && equalsIgnoringPreRelease(previous, range.max)
       ? new Pair(previous, true)
-      : new Pair(max.firstPreRelease, false);
+      : new Pair(range.max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version
