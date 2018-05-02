@@ -286,10 +286,11 @@ class PackageRange extends PackageName {
     if (constraint.toString().startsWith("^")) return this;
 
     var range = constraint as VersionRange;
-    if (range.includeMin &&
-        !range.includeMax &&
-        range.min != null &&
-        range.max == range.min.nextBreaking) {
+    if (!range.includeMin) return this;
+    if (range.includeMax) return this;
+    if (range.min == null) return this;
+    if (range.max == range.min.nextBreaking.firstPreRelease ||
+        (range.min.isPreRelease && range.max == range.min.nextBreaking)) {
       return withConstraint(new VersionConstraint.compatibleWith(range.min));
     } else {
       return this;

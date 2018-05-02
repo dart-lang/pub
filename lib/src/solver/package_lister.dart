@@ -264,7 +264,8 @@ class PackageLister {
           min: lower[package],
           includeMin: true,
           max: upper[package],
-          includeMax: false);
+          includeMax: false,
+          alwaysIncludeMaxPreRelease: true);
 
       _alreadyListedDependencies[package] = constraint.union(
           _alreadyListedDependencies[package] ?? VersionConstraint.empty);
@@ -298,7 +299,8 @@ class PackageLister {
         max: bounds.last == versions.length - 1
             ? null
             : versions[bounds.last + 1].version,
-        includeMax: false);
+        includeMax: false,
+        alwaysIncludeMaxPreRelease: true);
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
     var sdkConstraint = await foldAsync(
