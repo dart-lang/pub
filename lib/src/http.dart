@@ -227,7 +227,8 @@ final httpClient = new ThrottleClient(
     16,
     new _ThrowingClient(new RetryClient(_pubClient,
         retries: 5,
-        when: (response) => const [502, 503, 504].contains(response.statusCode),
+        when: (response) =>
+            const [500, 502, 503, 504].contains(response.statusCode),
         whenError: (error, stackTrace) {
           if (error is! IOException) return false;
 
