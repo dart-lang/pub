@@ -21,7 +21,10 @@ import 'log.dart' as log;
 final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
 
 /// Whether Pub is running with Dart 2 runtime semantics.
-final isDart2 = (<T>() => T)<String>() == String;
+final bool isDart2 = () {
+  Type checkType<T>() => T;
+  return checkType<String>() == String;
+}();
 
 /// A regular expression matching a Dart identifier.
 ///
