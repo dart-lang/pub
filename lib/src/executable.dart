@@ -59,7 +59,9 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   var localSnapshotPath =
       p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
-  if (!isGlobal && fileExists(localSnapshotPath)) {
+  // Snapshots are compiled in Dart 1 mode, so in Dart 2 mode we always run
+  // executables from source.
+  if (!isDart2 && !isGlobal && fileExists(localSnapshotPath)) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
     entrypoint.assertUpToDate();

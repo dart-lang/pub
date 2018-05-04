@@ -376,7 +376,9 @@ class GlobalPackages {
       String package, String executable, Iterable<String> args,
       {bool checked: false}) {
     var binDir = p.join(_directory, package, 'bin');
-    if (!fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
+    // Snapshots are compiled in Dart 1 mode, so in Dart 2 mode we always run
+    // executables from source.
+    if (isDart2 || !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
       return exe.runExecutable(find(package), package, executable, args,
           isGlobal: true, checked: checked, cache: cache);
     }
