@@ -1022,8 +1022,9 @@ ByteStream createTarGz(List contents, {String baseDir}) {
         // ignored.
         stdin = mtreeHeader +
             contents
-                .map((String content) =>
-                    content.replaceAll(new RegExp(r' '), r'\040'))
+                .map((content) => content is String
+                    ? content.replaceAll(new RegExp(r' '), r'\040')
+                    : content)
                 .join("\n") +
             "\n";
       }
