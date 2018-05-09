@@ -1020,7 +1020,12 @@ ByteStream createTarGz(List contents, {String baseDir}) {
 
         // We need a newline at the end, otherwise the last file would get
         // ignored.
-        stdin = mtreeHeader + contents.join("\n") + "\n";
+        stdin = mtreeHeader +
+            contents
+                .map((String content) =>
+                    content.replaceAll(new RegExp(r' '), r'\040'))
+                .join("\n") +
+            "\n";
       }
 
       // Setting the working directory should be unnecessary since we pass an
