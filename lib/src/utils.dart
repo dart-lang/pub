@@ -270,7 +270,7 @@ List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
 Set<String> createFileFilter(Iterable<String> files) {
   return files.expand<String>((file) {
     var result = ["/$file"];
-    if (Platform.operatingSystem == 'windows') result.add("\\$file");
+    if (Platform.isWindows) result.add("\\$file");
     return result;
   }).toSet();
 }
@@ -283,7 +283,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     var result = ["/$dir/"];
-    if (Platform.operatingSystem == 'windows') {
+    if (Platform.isWindows) {
       result..add("/$dir\\")..add("\\$dir/")..add("\\$dir\\");
     }
     return result;
@@ -473,7 +473,7 @@ String _urlDecode(String encoded) =>
 bool get canUseSpecialChars =>
     !runningFromTest &&
     !runningAsTest &&
-    Platform.operatingSystem != 'windows' &&
+    !Platform.isWindows &&
     stdioType(stdout) == StdioType.TERMINAL;
 
 /// Gets a "special" string (ANSI escape or Unicode).

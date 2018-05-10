@@ -24,8 +24,8 @@ main() {
   // the built SDK directory, and not the live pub code directly in the repo.
   test('parse the real SDK "version" file', () async {
     // Get the path to the pub binary in the SDK.
-    var pubPath = path.join(sdk.rootDirectory, 'bin',
-        Platform.operatingSystem == "windows" ? "pub.bat" : "pub");
+    var pubPath = path.join(
+        sdk.rootDirectory, 'bin', Platform.isWindows ? "pub.bat" : "pub");
 
     var pub = await TestProcess.start(pubPath, ['version']);
     expect(pub.stdout, emits(startsWith("Pub")));

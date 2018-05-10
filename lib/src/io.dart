@@ -293,7 +293,7 @@ List<String> listDir(String dir,
         }
 
         if (pathInDir.contains("/.")) return false;
-        if (Platform.operatingSystem != "windows") return true;
+        if (!Platform.isWindows) return true;
         return !pathInDir.contains("\\.");
       })
       .map((entity) => entity.path)
@@ -314,7 +314,7 @@ bool dirExists(String dir) => new Directory(dir).existsSync();
 /// mitigate that, on Windows, this will retry the operation a few times if it
 /// fails.
 void _attempt(String description, void operation()) {
-  if (Platform.operatingSystem != 'windows') {
+  if (!Platform.isWindows) {
     operation();
     return;
   }
@@ -427,7 +427,7 @@ void createSymlink(String target, String symlink, {bool relative: false}) {
     // make sure we have a clean absolute path because it will interpret a
     // relative path to be relative to the cwd, not the symlink, and will be
     // confused by forward slashes.
-    if (Platform.operatingSystem == 'windows') {
+    if (Platform.isWindows) {
       target = path.normalize(path.absolute(target));
     } else {
       // If the directory where we're creating the symlink was itself reached
@@ -788,8 +788,7 @@ _doProcess(Function fn, String executable, List<String> args,
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
-  if ((Platform.operatingSystem == "windows") &&
-      (executable.indexOf('\\') == -1)) {
+  if (Platform.isWindows && executable.indexOf('\\') == -1) {
     args = ["/c", executable]..addAll(args);
     executable = "cmd";
   }
@@ -843,8 +842,7 @@ Future<HttpServer> bindServer(String host, int port) async {
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine("Extracting .tar.gz stream to $destination.");
-
-  if (Platform.operatingSystem == "windows") {
+  if (Platform.isWindows) {
     return await _extractTarGzWindows(stream, destination);
   }
 

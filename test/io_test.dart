@@ -318,7 +318,7 @@ void testExistencePredicate(String name, bool predicate(String path),
     });
 
     // Windows doesn't support symlinking to files.
-    if (Platform.operatingSystem != 'windows') {
+    if (!Platform.isWindows) {
       test('returns $forFileSymlink for a symlink to a file', () {
         expect(withTempDir((temp) {
           var targetPath = path.join(temp, "test.txt");

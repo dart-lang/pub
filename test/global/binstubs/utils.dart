@@ -13,7 +13,7 @@ import '../../test_pub.dart';
 /// explicitly includes it.
 Map getEnvironment() {
   var binDir = p.dirname(Platform.executable);
-  var separator = Platform.operatingSystem == "windows" ? ";" : ":";
+  var separator = Platform.isWindows ? ";" : ":";
   var path = "${Platform.environment["PATH"]}$separator$binDir";
 
   var environment = getPubTestEnvironment();

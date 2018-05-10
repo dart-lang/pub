@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -241,6 +242,9 @@ class BoundGitSource extends CachedSource {
     // Normalize the path because Git treats "./" at the beginning of a path
     // specially.
     var pubspecPath = p.normalize(p.join(p.fromUri(path), 'pubspec.yaml'));
+
+    // Git doesn't recognize backslashes in paths, even on Windows.
+    if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll("\\", "/");
 
     var lines;
     try {

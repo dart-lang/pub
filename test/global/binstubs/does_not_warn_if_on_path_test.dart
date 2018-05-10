@@ -23,7 +23,7 @@ main() {
 
     // Add the test's cache bin directory to the path.
     var binDir = p.dirname(Platform.executable);
-    var separator = Platform.operatingSystem == "windows" ? ";" : ":";
+    var separator = Platform.isWindows ? ";" : ":";
     var path = "${Platform.environment["PATH"]}$separator$binDir";
 
     await runPub(
