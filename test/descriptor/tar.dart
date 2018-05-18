@@ -56,7 +56,7 @@ class TarFileDescriptor extends FileDescriptor {
 String _writeBinaryFile(String file, List<int> contents) {
   log.io("Writing ${contents.length} bytes to binary file $file.");
   deleteIfLink(file);
-  new File(file).openSync(mode: FileMode.WRITE)
+  new File(file).openSync(mode: FileMode.write)
     ..writeFromSync(contents)
     ..closeSync();
   log.fine("Wrote text file $file.");

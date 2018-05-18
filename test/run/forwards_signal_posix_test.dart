@@ -12,11 +12,11 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 const _catchableSignals = const [
-  ProcessSignal.SIGHUP,
-  ProcessSignal.SIGTERM,
-  ProcessSignal.SIGUSR1,
-  ProcessSignal.SIGUSR2,
-  ProcessSignal.SIGWINCH,
+  ProcessSignal.sighup,
+  ProcessSignal.sigterm,
+  ProcessSignal.sigusr1,
+  ProcessSignal.sigusr2,
+  ProcessSignal.sigwinch,
 ];
 
 const SCRIPT = """

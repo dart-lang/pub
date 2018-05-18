@@ -474,7 +474,7 @@ bool get canUseSpecialChars =>
     !runningFromTest &&
     !runningAsTest &&
     !Platform.isWindows &&
-    stdioType(stdout) == StdioType.TERMINAL;
+    stdioType(stdout) == StdioType.terminal;
 
 /// Gets a "special" string (ANSI escape or Unicode).
 ///
