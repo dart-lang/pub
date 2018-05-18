@@ -23,19 +23,17 @@ class GlobalActivateCommand extends PubCommand {
         allowed: ["git", "hosted", "path"],
         defaultsTo: "hosted");
 
-    argParser.addOption("features",
-        abbr: "f", help: "Feature(s) to enable.", allowMultiple: true);
+    argParser.addMultiOption("features",
+        abbr: "f", help: "Feature(s) to enable.");
 
-    argParser.addOption("omit-features",
-        abbr: "F", help: "Feature(s) to disable.", allowMultiple: true);
+    argParser.addMultiOption("omit-features",
+        abbr: "F", help: "Feature(s) to disable.");
 
     argParser.addFlag("no-executables",
         negatable: false, help: "Do not put executables on PATH.");
 
-    argParser.addOption("executable",
-        abbr: "x",
-        help: "Executable(s) to place on PATH.",
-        allowMultiple: true);
+    argParser.addMultiOption("executable",
+        abbr: "x", help: "Executable(s) to place on PATH.");
 
     argParser.addFlag("overwrite",
         negatable: false,

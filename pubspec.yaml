@@ -3,8 +3,8 @@ name: pub
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
-  analyzer: ^0.31.2-alpha.1
-  args: ">=0.13.5 <2.0.0"
+  analyzer: ^0.32.0
+  args: ^1.4.1
   async: ^2.0.0
   collection: "^1.8.0"
   crypto: ">=1.0.0 <3.0.0"
@@ -31,4 +31,4 @@ dev_dependencies:
   test_process: "^1.0.0"
 
 environment:
-  sdk: ">=2.0.0-dev.22.0 <2.0.0"
+  sdk: ">=2.0.0-dev.54.0 <2.0.0"

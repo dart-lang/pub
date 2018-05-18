@@ -772,7 +772,7 @@ class _PubProcess {
   }
 
   /// Sends [signal] to the underlying process.
-  bool kill([ProcessSignal signal = ProcessSignal.SIGTERM]) =>
+  bool kill([ProcessSignal signal = ProcessSignal.sigterm]) =>
       _process.kill(signal);
 }
 
@@ -803,7 +803,7 @@ _doProcess(Function fn, String executable, List<String> args,
 
 /// Updates [path]'s modification time.
 void touch(String path) {
-  var file = new File(path).openSync(mode: FileMode.APPEND);
+  var file = new File(path).openSync(mode: FileMode.append);
   var originalLength = file.lengthSync();
   file.writeByteSync(0);
   file.truncateSync(originalLength);
