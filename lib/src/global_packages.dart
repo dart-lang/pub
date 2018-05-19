@@ -235,7 +235,7 @@ class GlobalPackages {
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
-      var precompiled = {};
+      var precompiled = <String, String>{};
       await waitAndPrintErrors(package.executablePaths.map((path) async {
         var url = p.toUri(p.join(package.dir, path));
         var basename = p.basename(path);

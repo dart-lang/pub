@@ -145,7 +145,7 @@ class BoundHostedSource extends CachedSource {
     }
 
     var doc = jsonDecode(body);
-    return doc['versions'].map((map) {
+    return (doc['versions'] as List).map((map) {
       var pubspec = new Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
