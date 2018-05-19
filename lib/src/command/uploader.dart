@@ -4,10 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
-
 import '../command.dart';
-import '../entrypoint.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
@@ -58,7 +55,7 @@ class UploaderCommand extends PubCommand {
     return new Future.sync(() {
       var package = argResults['package'];
       if (package != null) return package;
-      return new Entrypoint(path.current, cache).root.name;
+      return entrypoint.root.name;
     })
         .then((package) {
           var uploader = rest[0];

@@ -147,23 +147,31 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
+  /// Loads the entrypoint for the package at the current directory.
+  Entrypoint.current(SystemCache cache)
+      : root = new Package.load(null, '.', cache.sources, isRootPackage: true),
+        cache = cache,
+        _inMemory = false,
+        isGlobal = false;
+
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, SystemCache cache, {this.isGlobal: false})
+  Entrypoint(String rootDir, SystemCache cache)
       : root =
             new Package.load(null, rootDir, cache.sources, isRootPackage: true),
         cache = cache,
-        _inMemory = false;
+        _inMemory = false,
+        isGlobal = true;
 
   /// Creates an entrypoint given package and lockfile objects.
-  Entrypoint.inMemory(this.root, this._lockFile, this.cache,
-      {this.isGlobal: false})
-      : _inMemory = true;
+  Entrypoint.inMemory(this.root, this._lockFile, this.cache)
+      : _inMemory = true,
+        isGlobal = true;
 
   /// Creates an entrypoint given a package and a [solveResult], from which the
   /// package graph and lockfile will be computed.
-  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult,
-      {this.isGlobal: false})
-      : _inMemory = true {
+  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
+      : _inMemory = true,
+        isGlobal = true {
     _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
     _lockFile = _packageGraph.lockFile;
   }

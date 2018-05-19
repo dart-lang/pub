@@ -137,7 +137,7 @@ class GlobalPackages {
   /// Otherwise, the previous ones will be preserved.
   Future activatePath(String path, List<String> executables,
       {bool overwriteBinStubs}) async {
-    var entrypoint = new Entrypoint(path, cache, isGlobal: true);
+    var entrypoint = new Entrypoint(path, cache);
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.GET);
@@ -204,8 +204,7 @@ class GlobalPackages {
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
-    var entrypoint =
-        new Entrypoint.fromSolveResult(root, cache, result, isGlobal: true);
+    var entrypoint = new Entrypoint.fromSolveResult(root, cache, result);
     var snapshots = await _precompileExecutables(entrypoint, dep.name);
 
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
@@ -335,14 +334,12 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache,
-          isGlobal: true);
+      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
       entrypoint = new Entrypoint(
-          (id.source as PathSource).pathFromDescription(id.description), cache,
-          isGlobal: true);
+          (id.source as PathSource).pathFromDescription(id.description), cache);
     }
 
     entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
