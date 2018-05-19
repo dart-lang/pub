@@ -74,6 +74,9 @@ class Entrypoint {
   /// real directory on disk.
   final bool _inMemory;
 
+  /// Whether this entrypoint exists within the package cache.
+  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
+
   /// Whether this is an entrypoint for a globally-activated package.
   final bool isGlobal;
 

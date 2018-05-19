@@ -62,9 +62,15 @@ class RunCommand extends PubCommand {
 
     var snapshotPath =
         p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
+
+    /// Don't recompile missing snapshots for mutable packages.
+    var useSnapshot = fileExists(snapshotPath) ||
+        (package != entrypoint.root.name &&
+            !entrypoint.packageGraph.isPackageMutable(package));
+
     var exitCode = await runExecutable(entrypoint, package, executable, args,
         checked: argResults['checked'],
-        snapshotPath: snapshotPath,
+        snapshotPath: useSnapshot ? snapshotPath : null,
         recompile: entrypoint.precompileExecutables);
     await flushThenExit(exitCode);
   }

@@ -225,6 +225,13 @@ class GlobalPackages {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
+      var packagesFilePath = p.join(_directory, packageName, '.packages');
+      if (!fileExists(packagesFilePath)) {
+        // A .packages file may not already exist if the global executable has a
+        // 1.6-style lock file instead.
+        await writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
+      }
+
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
       var package = entrypoint.packageGraph.packages[packageName];
@@ -378,8 +385,10 @@ class GlobalPackages {
         checked: checked,
         packagesFile:
             entrypoint.isCached ? _getPackagesFilePath(package) : null,
-        snapshotPath:
-            p.join(_directory, package, 'bin', '$executable.dart.snapshot'),
+        // Don't use snapshots for executables activated from paths.
+        snapshotPath: entrypoint.isCached
+            ? p.join(_directory, package, 'bin', '$executable.dart.snapshot')
+            : null,
         recompile: () => _precompileExecutables(entrypoint, package));
   }
 
