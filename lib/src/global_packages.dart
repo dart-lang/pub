@@ -372,28 +372,15 @@ class GlobalPackages {
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
       {bool checked: false}) {
-    var binDir = p.join(_directory, package, 'bin');
-    // Snapshots are compiled in Dart 1 mode, so in Dart 2 mode we always run
-    // executables from source.
-    if (isDart2 || !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
-      return exe.runExecutable(find(package), package, executable, args,
-          isGlobal: true, checked: checked);
-    }
-
-    // Unless the user overrides the verbosity, we want to filter out the
-    // normal pub output shown while loading the environment.
-    if (log.verbosity == log.Verbosity.NORMAL) {
-      log.verbosity = log.Verbosity.WARNING;
-    }
-
-    var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
-    return exe.runSnapshot(snapshotPath, args, checked: checked,
-        recompile: () async {
-      log.fine("$package:$executable is out of date and needs to be "
-          "recompiled.");
-      await _precompileExecutables(
-          find(package).packageGraph.entrypoint, package);
-    });
+    var entrypoint = find(package);
+    return exe.runExecutable(
+        entrypoint, package, p.join('bin', '$executable.dart'), args,
+        checked: checked,
+        packagesFile:
+            entrypoint.isCached ? _getPackagesFilePath(package) : null,
+        snapshotPath:
+            p.join(_directory, package, 'bin', '$executable.dart.snapshot'),
+        recompile: () => _precompileExecutables(entrypoint, package));
   }
 
   /// Gets the path to the lock file for an activated cached package with

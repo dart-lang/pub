@@ -57,8 +57,15 @@ class RunCommand extends PubCommand {
       log.warning("The --mode flag is deprecated and has no effect.");
     }
 
+    // Ensure that there's a trailing extension.
+    if (p.extension(executable) != ".dart") executable += ".dart";
+
+    var snapshotPath =
+        p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['checked']);
+        checked: argResults['checked'],
+        snapshotPath: snapshotPath,
+        recompile: entrypoint.precompileExecutables);
     await flushThenExit(exitCode);
   }
 }
