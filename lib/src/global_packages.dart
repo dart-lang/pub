@@ -380,7 +380,7 @@ class GlobalPackages {
     // executables from source.
     if (isDart2 || !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
       return exe.runExecutable(find(package), package, executable, args,
-          isGlobal: true, checked: checked, cache: cache);
+          isGlobal: true, checked: checked);
     }
 
     // Unless the user overrides the verbosity, we want to filter out the

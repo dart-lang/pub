@@ -138,6 +138,12 @@ class Entrypoint {
     return newPath;
   }
 
+  /// Returns the contents of the `.packages` file for this entrypoint.
+  ///
+  /// This is based on the package's lockfile, so it works whether or not a
+  /// `.packages` file has been written.
+  String get packagesFileContents => lockFile.packagesFile(cache, root.name);
+
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
@@ -238,7 +244,7 @@ class Entrypoint {
     /// have to reload and reparse all the pubspecs.
     _packageGraph = new PackageGraph.fromSolveResult(this, result);
 
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    writeTextFile(packagesFile, packagesFileContents);
 
     try {
       if (precompile) {
