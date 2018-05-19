@@ -91,6 +91,49 @@ main() {
       await process.shouldExit();
     });
 
+    test("only for Dart 1 in Dart 1 mode", () async {
+      await servePackages((builder) {
+        builder.serve("foo", "1.2.3", contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
+        ]);
+      });
+
+      await d.appDir({"foo": "1.2.3"}).create();
+
+      await pubGet(output: allOf([contains("Precompiled foo:hello.")]));
+
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'),
+          [d.nothing('hello.dart.snapshot.dart2')]).validate();
+    });
+
+    test("for Dart 1 and 2 in Dart 2 mode", () async {
+      await servePackages((builder) {
+        builder.serve("foo", "1.2.3", contents: [
+          d.dir(
+              "bin", [d.file("hello.dart", "void main() => print('hello!');")])
+        ]);
+      });
+
+      await d.appDir({"foo": "1.2.3"}).create();
+
+      await pubGet(
+          output: allOf([contains("Precompiled foo:hello.")]), dart2: true);
+
+      await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
+        d.file('hello.dart.snapshot', contains('hello!')),
+        d.file('hello.dart.snapshot.dart2', contains('hello!'))
+      ]).validate();
+
+      var process = await pubRun(args: ['foo:hello']);
+      expect(process.stdout, emits("hello!"));
+      await process.shouldExit();
+
+      process = await pubRun(args: ['foo:hello'], dart2: true);
+      expect(process.stdout, emits("hello!"));
+      await process.shouldExit();
+    });
+
     group("again if", () {
       test("its package is updated", () async {
         await servePackages((builder) {
@@ -226,6 +269,83 @@ main() {
           d.file('sdk-version', '0.1.2+3\n'),
           d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
         ]).validate();
+      });
+
+      test("the SDK is out of date", () async {
+        await servePackages((builder) {
+          builder.serve("foo", "5.6.7", contents: [
+            d.dir("bin",
+                [d.file("hello.dart", "void main() => print('hello!');")])
+          ]);
+        });
+
+        await d.appDir({"foo": "5.6.7"}).create();
+
+        await pubGet(output: contains("Precompiled foo:hello."));
+
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
+          d.dir('foo', [d.outOfDateSnapshot('hello.dart.snapshot')])
+        ]).create();
+
+        var process = await pubRun(args: ['foo:hello']);
+
+        // In the real world this would just print "hello!", but since we
+        // collect all output we see the precompilation messages as well.
+        expect(process.stdout, emits("Precompiling executables..."));
+        expect(process.stdout, emitsThrough("hello!"));
+        await process.shouldExit();
+
+        await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
+          d.file('sdk-version', '0.1.2+3\n'),
+          d.dir('foo', [d.file('hello.dart.snapshot', contains('hello!'))])
+        ]).validate();
+      });
+
+      group("Dart 2 is newly in use for", () {
+        test("pub get", () async {
+          await servePackages((builder) {
+            builder.serve("foo", "5.6.7", contents: [
+              d.dir("bin",
+                  [d.file("hello.dart", "void main() => print('hello!');")])
+            ]);
+          });
+
+          await d.appDir({"foo": "5.6.7"}).create();
+
+          await pubGet(output: contains("Precompiled foo:hello."));
+          await pubGet(output: contains("Precompiled foo:hello."), dart2: true);
+
+          await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
+            d.file('hello.dart.snapshot', contains('hello!')),
+            d.file('hello.dart.snapshot.dart2', contains('hello!'))
+          ]).validate();
+        });
+
+        test("pub run", () async {
+          await servePackages((builder) {
+            builder.serve("foo", "5.6.7", contents: [
+              d.dir("bin",
+                  [d.file("hello.dart", "void main() => print('hello!');")])
+            ]);
+          });
+
+          await d.appDir({"foo": "5.6.7"}).create();
+
+          await pubGet(output: contains("Precompiled foo:hello."));
+
+          var process = await pubRun(args: ['foo:hello'], dart2: true);
+
+          // In the real world this would just print "hello!", but since we
+          // collect all output we see the precompilation messages as well.
+          expect(process.stdout, emits("Precompiling executables..."));
+          expect(process.stdout, emitsThrough("hello!"));
+          await process.shouldExit();
+
+          await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
+            d.file('hello.dart.snapshot', contains('hello!')),
+            d.file('hello.dart.snapshot.dart2', contains('hello!'))
+          ]).validate();
+        });
       });
     });
   });

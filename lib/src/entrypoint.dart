@@ -367,8 +367,12 @@ class Entrypoint {
     // executable will save us a few IO operations over checking each one. If
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
-    var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath, packageName, "${p.basename(executable)}.snapshot")));
+    var executablesExist = executables.every((executable) {
+      var snapshotPath = p.join(
+          _snapshotPath, packageName, "${p.basename(executable)}.snapshot");
+      if (!fileExists(snapshotPath)) return false;
+      if (isDart2 && !fileExists("$snapshotPath.dart2")) return false;
+    });
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
