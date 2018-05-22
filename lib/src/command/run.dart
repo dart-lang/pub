@@ -57,13 +57,15 @@ class RunCommand extends PubCommand {
       log.warning("The --mode flag is deprecated and has no effect.");
     }
 
-    // Ensure that there's a trailing extension.
+    // The user may pass in an executable without an extension, but the file
+    // to actually execute will always have one.
     if (p.extension(executable) != ".dart") executable += ".dart";
 
     var snapshotPath =
         p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
 
-    /// Don't recompile missing snapshots for mutable packages.
+    // Don't ever compile snapshots for mutable packages, since their code may
+    // change later on.
     var useSnapshot = fileExists(snapshotPath) ||
         (package != entrypoint.root.name &&
             !entrypoint.packageGraph.isPackageMutable(package));
