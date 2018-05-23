@@ -590,6 +590,37 @@ Future<bool> confirm(String message) {
       .then((line) => new RegExp(r"^[yY]").hasMatch(line));
 }
 
+enum YesNoPrintResponse { yes, no, print }
+
+/// Displays a message and reads a yes/no/print confirmation from the user.
+///
+/// Returns a [Future] that completes to:
+///   * `ViewContents.yes`: The user confirmed.
+///   * `ViewContents.no`: The user declined.
+///   * `ViewContents.print`: The user confirmed to show file contents.
+Future<YesNoPrintResponse> confirmOrPrint(String message) {
+  log.fine('Showing confirm or print message: $message');
+  if (runningFromTest) {
+    log.message("$message (y/n/print)?");
+  } else {
+    stdout.write(log.format("$message (y/n/print)? "));
+  }
+
+  stdout
+    ..writeln(message)
+    ..writeln()
+    ..writeln('  1) yes')
+    ..writeln('  2) no')
+    ..writeln('  3) print');
+
+  return streamFirst(_stdinLines).then((line) {
+    if (new RegExp(r"^[yY]").hasMatch(line)) return YesNoPrintResponse.yes;
+    if (new RegExp(r"^[nN]").hasMatch(line)) return YesNoPrintResponse.no;
+    if (new RegExp(r"^[pP]").hasMatch(line)) return YesNoPrintResponse.print;
+    return confirmOrPrint(message);
+  });
+}
+
 /// Flushes the stdout and stderr streams, then exits the program with the given
 /// status code.
 ///

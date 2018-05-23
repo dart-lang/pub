@@ -54,6 +54,10 @@ class AfterInstallCache {
   Future save(String rootDir) => new File(resolveCacheFilePath(rootDir))
       .writeAsString(json.encode(_cache));
 
+  /// Updates the cached timestamp for [path].
+  void update(String path) =>
+      _cache[path] = new DateTime.now().millisecondsSinceEpoch;
+
   /// Returns a combined cache containing the contents of both `this` and [other].
   ///
   /// Where there are conflicts, values in [other] are prioritized.

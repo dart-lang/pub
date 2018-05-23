@@ -4,13 +4,15 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
+import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'after_install.dart' as after_install;
+import 'after_install.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'http.dart' as http;
@@ -648,6 +650,7 @@ class Entrypoint {
 
   /// Execute any outstanding Dart scripts in `after_install`.
   Future runAfterInstallScripts(SolveResult result) async {
+    // Count how many scripts we could potentially run.
     var allScripts = <String, List<String>>{};
 
     for (var package in result.changedPackages) {
@@ -655,19 +658,71 @@ class Entrypoint {
       if (scripts.isNotEmpty) allScripts[package] = scripts;
     }
 
-    if (root.pubspec.afterInstall.isNotEmpty)
-      allScripts[root.name] = root.pubspec.afterInstall;
-
     // If no scripts need to be run, don't bother updating the cache.
     if (allScripts.isEmpty) return;
 
     // Figure out what the last time every script was run.
     // If a script has not changed since the last time it was run,
     // Don't run it.
+    var systemScriptCache = await AfterInstallCache.load(cache.rootDir);
+    var localScriptCache = await AfterInstallCache.load(cachePath);
+    var mergedCache = systemScriptCache.merge(localScriptCache);
 
-    for (var package in allScripts.keys) {
+    // Run scripts in dependencies.
+    for (var package in result.changedPackages) {
       var scripts = allScripts[package];
-      print(scripts);
+      if (scripts.isEmpty) continue;
+
+      var pkg = package == root.name
+          ? root
+          : cache.load(result.packages
+              .firstWhere((a) => a.name == package, orElse: () => null));
+
+      for (var script in scripts) {
+        var absolutePath = p.normalize(p.absolute(p.join(pkg.dir, script)));
+
+        // Don't run the script against there are new changes.
+        if (!await mergedCache.isOutdated(absolutePath)) continue;
+
+        // Never trust any third-party scripts. Show a prompt before running scripts.
+        if (true || pkg != root) {
+          var message = 'package:$package wants to run the script "$absolutePath".';
+
+          // 
+        }
+
+        var scriptFile = new File(absolutePath);
+
+        if (await scriptFile.exists()) {
+          // We need to change into the package's directory to run its scripts.
+          var currentDir = Directory.current;
+          Directory.current = pkg.dir;
+
+          // Spawn an isolate for the script.
+          var onError = new ReceivePort();
+          var onExit = new ReceivePort();
+          var onComplete = new Completer();
+
+          onExit.listen(
+              (x) => onComplete.isCompleted ? null : onComplete.complete());
+          onError.listen((x) =>
+              onComplete.isCompleted ? null : onComplete.completeError(x));
+
+          try {
+            Isolate.spawnUri(p.toUri(absolutePath), [], null,
+                onExit: onExit.sendPort, onError: onError.sendPort);
+            await onComplete.future;
+          } catch (e) {
+            // TODO: Handle errors in scripts!
+            print(e);
+          } finally {
+            // Switch back!
+            Directory.current = currentDir;
+            onError.close();
+            onExit.close();
+          }
+        }
+      }
     }
   }
 }
