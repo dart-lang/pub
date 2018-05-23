@@ -195,7 +195,7 @@ class DepsCommand extends PubCommand {
       var map = pair.last;
 
       if (visited.contains(package.name)) {
-        map[log.gray('${package.name}...')] = {};
+        map[log.gray('${package.name}...')] = <String, Map>{};
         continue;
       }
 
@@ -275,9 +275,10 @@ class DepsCommand extends PubCommand {
   /// Lists all Dart files in the `bin` directory of the [package].
   ///
   /// Returns file names without extensions.
-  List<String> _getExecutablesFor(Package package) => package.executablePaths
-      .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-      .map((e) => p.basenameWithoutExtension(e));
+  Iterable<String> _getExecutablesFor(Package package) =>
+      package.executablePaths
+          .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
+          .map((e) => p.basenameWithoutExtension(e));
 
   /// Returns formatted string that lists [executables] for the [packageName].
   /// Examples:
