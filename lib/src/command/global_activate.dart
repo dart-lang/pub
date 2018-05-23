@@ -67,7 +67,7 @@ class GlobalActivateCommand extends PubCommand {
     }
 
     var overwrite = argResults["overwrite"];
-    var args = argResults.rest;
+    Iterable<String> args = argResults.rest;
 
     readArg([String error]) {
       if (args.isEmpty) usageException(error);

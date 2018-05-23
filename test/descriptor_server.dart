@@ -117,8 +117,8 @@ class DescriptorServer {
 /// value can be read successfully. If an error occurs before any values are
 /// emitted, the returned Future completes to that error.
 Future<Stream<T>> _validateStream<T>(Stream<T> stream) {
-  var completer = new Completer<Stream>();
-  var controller = new StreamController(sync: true);
+  var completer = new Completer<Stream<T>>();
+  var controller = new StreamController<T>(sync: true);
 
   StreamSubscription subscription;
   subscription = stream.listen((value) {
