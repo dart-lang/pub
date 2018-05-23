@@ -731,7 +731,9 @@ class Entrypoint {
 
           try {
             Isolate.spawnUri(p.toUri(absolutePath), [], null,
-                onExit: onExit.sendPort, onError: onError.sendPort);
+                onExit: onExit.sendPort,
+                onError: onError.sendPort,
+                automaticPackageResolution: true);
             await onComplete.future;
 
             // Update the cache so this script does not run again redundantly.
