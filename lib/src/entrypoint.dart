@@ -672,7 +672,7 @@ class Entrypoint {
 
     // Run scripts in dependencies.
     for (var package in result.changedPackages) {
-      var scripts = allScripts[package];
+      var scripts = allScripts[package] ?? [];
       if (scripts.isEmpty) continue;
 
       var pkg = package == root.name
