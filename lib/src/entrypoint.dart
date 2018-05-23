@@ -670,24 +670,29 @@ class Entrypoint {
         : await AfterInstallCache.load(cachePath);
     var mergedCache = systemScriptCache.merge(localScriptCache);
 
-    // Run scripts in dependencies.
-    for (var package in result.changedPackages) {
-      var scripts = allScripts[package] ?? [];
-      if (scripts.isEmpty) continue;
+    // Sort so that the root's scripts run last.
+    var changedPackages = result.changedPackages.toList();
+    changedPackages.sort((a, b) => a == root.name ? 1 : a.compareTo(b));
 
+    // Run scripts in dependencies.
+    for (var package in changedPackages) {
       var pkg = package == root.name
           ? root
           : cache.load(result.packages
               .firstWhere((a) => a.name == package, orElse: () => null));
 
-      for (var script in scripts) {
+      for (var script in pkg.pubspec.afterInstall) {
         var absolutePath = p.normalize(p.absolute(p.join(pkg.dir, script)));
         var scriptFile = new File(absolutePath);
 
         // Don't run the script against there are new changes.
         if (!await mergedCache.isOutdated(absolutePath)) continue;
 
-        if (await scriptFile.exists()) {
+        if (!await scriptFile.exists()) {
+          if (pkg == root)
+            log.warning(log.yellow(
+                '"after_install" script "$absolutePath" does not exist.'));
+        } else {
           // Never trust any third-party scripts. Show a prompt before running scripts.
           //
           // The user can opt to print the contents of the script.
