@@ -598,26 +598,32 @@ enum YesNoPrintResponse { yes, no, print }
 ///   * `ViewContents.yes`: The user confirmed.
 ///   * `ViewContents.no`: The user declined.
 ///   * `ViewContents.print`: The user confirmed to show file contents.
-Future<YesNoPrintResponse> confirmOrPrint(String message) {
+Future<YesNoPrintResponse> confirmOrPrint(String message) async {
   log.fine('Showing confirm or print message: $message');
   if (runningFromTest) {
     log.message("$message (y/n/print)?");
   } else {
-    stdout.write(log.format("$message (y/n/print)? "));
+    while (true) {
+      stdout
+        ..writeln(log.format(message))
+        ..writeln()
+        ..writeln(log.format('  1) yes'))
+        ..writeln(log.format('  2) no'))
+        ..writeln(log.format('  3) print'));
+
+      var line = stdin.readLineSync().trim();
+      if (new RegExp(r"^[yY1]").hasMatch(line)) return YesNoPrintResponse.yes;
+      if (new RegExp(r"^[nN2]").hasMatch(line)) return YesNoPrintResponse.no;
+      if (new RegExp(r"^[pP3]").hasMatch(line)) return YesNoPrintResponse.print;
+      stdout.writeln(
+          log.format("Your choice of '$line' is not a valid selection."));
+    }
   }
 
-  stdout
-    ..writeln(message)
-    ..writeln()
-    ..writeln('  1) yes')
-    ..writeln('  2) no')
-    ..writeln('  3) print');
-
-  return streamFirst(_stdinLines).then((line) {
+  return await streamFirst(_stdinLines).then((line) {
     if (new RegExp(r"^[yY]").hasMatch(line)) return YesNoPrintResponse.yes;
     if (new RegExp(r"^[nN]").hasMatch(line)) return YesNoPrintResponse.no;
     if (new RegExp(r"^[pP]").hasMatch(line)) return YesNoPrintResponse.print;
-    return confirmOrPrint(message);
   });
 }
 

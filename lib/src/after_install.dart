@@ -51,8 +51,11 @@ class AfterInstallCache {
   }
 
   /// Saves the contents of the cache to a file in the given [rootDir].
-  Future save(String rootDir) => new File(resolveCacheFilePath(rootDir))
-      .writeAsString(json.encode(_cache));
+  Future save(String rootDir) async {
+    var file = new File(resolveCacheFilePath(rootDir));
+    await file.create(recursive: true);
+    await file.writeAsString(json.encode(_cache));
+  }
 
   /// Updates the cached timestamp for [path].
   void update(String path) =>

@@ -665,7 +665,9 @@ class Entrypoint {
     // If a script has not changed since the last time it was run,
     // Don't run it.
     var systemScriptCache = await AfterInstallCache.load(cache.rootDir);
-    var localScriptCache = await AfterInstallCache.load(cachePath);
+    var localScriptCache = p.equals(cache.rootDir, cachePath)
+        ? systemScriptCache
+        : await AfterInstallCache.load(cachePath);
     var mergedCache = systemScriptCache.merge(localScriptCache);
 
     // Run scripts in dependencies.
@@ -680,20 +682,38 @@ class Entrypoint {
 
       for (var script in scripts) {
         var absolutePath = p.normalize(p.absolute(p.join(pkg.dir, script)));
+        var scriptFile = new File(absolutePath);
 
         // Don't run the script against there are new changes.
         if (!await mergedCache.isOutdated(absolutePath)) continue;
 
-        // Never trust any third-party scripts. Show a prompt before running scripts.
-        if (true || pkg != root) {
-          var message = 'package:$package wants to run the script "$absolutePath".';
-
-          // 
-        }
-
-        var scriptFile = new File(absolutePath);
-
         if (await scriptFile.exists()) {
+          // Never trust any third-party scripts. Show a prompt before running scripts.
+          //
+          // The user can opt to print the contents of the script.
+          YesNoPrintResponse response = YesNoPrintResponse.yes;
+
+          if (pkg != root) {
+            var message =
+                '\npackage:$package wants to run the script "$absolutePath".';
+
+            do {
+              response = await confirmOrPrint(message);
+
+              if (response == YesNoPrintResponse.no) {
+                log.message('User declined to run script.');
+                continue;
+              }
+
+              if (response == YesNoPrintResponse.print) {
+                log.message(log.gray('Contents of "$absolutePath":'));
+                log.message(log.gray(await scriptFile.readAsString()));
+              }
+            } while (response == YesNoPrintResponse.print);
+          }
+
+          if (response != YesNoPrintResponse.yes) continue;
+
           // We need to change into the package's directory to run its scripts.
           var currentDir = Directory.current;
           Directory.current = pkg.dir;
@@ -705,16 +725,30 @@ class Entrypoint {
 
           onExit.listen(
               (x) => onComplete.isCompleted ? null : onComplete.complete());
-          onError.listen((x) =>
-              onComplete.isCompleted ? null : onComplete.completeError(x));
+          onError.listen((x) => onComplete.isCompleted
+              ? null
+              : onComplete.completeError(x[0], x[1]));
 
           try {
             Isolate.spawnUri(p.toUri(absolutePath), [], null,
                 onExit: onExit.sendPort, onError: onError.sendPort);
             await onComplete.future;
-          } catch (e) {
-            // TODO: Handle errors in scripts!
-            print(e);
+
+            // Update the cache so this script does not run again redundantly.
+            if (pkg == root)
+              localScriptCache.update(absolutePath);
+            else
+              systemScriptCache.update(absolutePath);
+          } catch (e, st) {
+            log.error(
+                log.red('An unhandled exception occurred in "$absolutePath".'),
+                log.red(e),
+                st);
+            log.error(log
+                .red('Below is the stack trace where the exception occurred:'));
+            log.error(log.red(st.toString()));
+            log.error(log.red(
+                '\nThis is not an error in Pub; Report this error to the author(s) of package:$package instead.'));
           } finally {
             // Switch back!
             Directory.current = currentDir;
@@ -724,5 +758,9 @@ class Entrypoint {
         }
       }
     }
+
+    // Now that we've run all scripts, update the cache files.
+    await systemScriptCache.save(cache.rootDir);
+    await localScriptCache.save(cachePath);
   }
 }
