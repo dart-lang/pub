@@ -10,6 +10,7 @@ import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'after_install.dart' as after_install;
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'http.dart' as http;
@@ -246,6 +247,8 @@ class Entrypoint {
       } else {
         _deleteExecutableSnapshots(changed: result.changedPackages);
       }
+
+      await runAfterInstallScripts(result);
     } catch (error, stackTrace) {
       // Just log exceptions here. Since the method is just about acquiring
       // dependencies, it shouldn't fail unless that fails.
@@ -641,5 +644,30 @@ class Entrypoint {
 
     ensureDir(p.dirname(newPath));
     renameDir(oldPath, newPath);
+  }
+
+  /// Execute any outstanding Dart scripts in `after_install`.
+  Future runAfterInstallScripts(SolveResult result) async {
+    var allScripts = <String, List<String>>{};
+
+    for (var package in result.changedPackages) {
+      var scripts = result.pubspecs[package].afterInstall;
+      if (scripts.isNotEmpty) allScripts[package] = scripts;
+    }
+
+    if (root.pubspec.afterInstall.isNotEmpty)
+      allScripts[root.name] = root.pubspec.afterInstall;
+
+    // If no scripts need to be run, don't bother updating the cache.
+    if (allScripts.isEmpty) return;
+
+    // Figure out what the last time every script was run.
+    // If a script has not changed since the last time it was run,
+    // Don't run it.
+
+    for (var package in allScripts.keys) {
+      var scripts = allScripts[package];
+      print(scripts);
+    }
   }
 }
