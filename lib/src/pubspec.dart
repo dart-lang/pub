@@ -241,6 +241,33 @@ class Pubspec {
     return _features;
   }
 
+  /// An optional list of paths to *.dart scripts that will be executed
+  /// upon package installation.
+  ///
+  /// This can be expressed in YAML as either a list, or a single string.
+  List<String> get afterInstall {
+    var value = fields['after_install'];
+
+    if (value == null)
+      return [];
+    else if (value is String)
+      return [value];
+    else if (value is List) {
+      int i = 0;
+      for (YamlNode child in fields['after_install'].value) {
+        if (child.value is! String)
+          _error('Value at index $i of "after_install" field must be a string.',
+              child.span);
+        i++;
+      }
+
+      return value.cast<String>();
+    } else {
+      _error('"after_install" field must be a string, or a list thereof."',
+          fields.nodes['after_install'].span);
+    }
+  }
+
   Map<String, Feature> _features;
 
   /// A map from SDK identifiers to constraints on those SDK versions.
