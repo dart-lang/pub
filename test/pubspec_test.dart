@@ -633,6 +633,35 @@ features:
               (pubspec) => pubspec.features);
         });
       });
+
+      group("after_install", () {
+        test("can be null", () {
+          var pubspec = new Pubspec.parse('after_install:', sources);
+          expect(pubspec.afterInstall, isEmpty);
+        });
+
+        test("can be a single string", () {
+          var pubspec =
+              new Pubspec.parse("after_install: tool/foo.dart", sources);
+          expect(pubspec.afterInstall, ["tool/foo.dart"]);
+        });
+
+        test("can be a string list", () {
+          var pubspec = new Pubspec.parse(
+              "after_install: [tool/foo.dart, tool/bar.dart]", sources);
+          expect(pubspec.afterInstall, ["tool/foo.dart", "tool/bar.dart"]);
+        });
+
+        test("must be a list", () {
+          expectPubspecException(
+              "after_install: {foo: bar}", (pubspec) => pubspec.afterInstall);
+        });
+
+        test("must be a string list", () {
+          expectPubspecException(
+              "after_install: [1, 2, 3, 4]", (pubspec) => pubspec.afterInstall);
+        });
+      });
     });
   });
 }

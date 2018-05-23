@@ -252,9 +252,9 @@ class Pubspec {
       return [];
     else if (value is String)
       return [value];
-    else if (value is List) {
+    else if (value is YamlList) {
       int i = 0;
-      for (YamlNode child in fields['after_install'].value) {
+      for (var child in value.nodes) {
         if (child.value is! String)
           _error('Value at index $i of "after_install" field must be a string.',
               child.span);
