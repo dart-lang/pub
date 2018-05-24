@@ -42,7 +42,7 @@ packages:
     ]).create();
 
     var pub = await pubRun(global: true, args: ["foo:script"]);
-    expect(pub.stdout, emits("bar 1.0.0"));
+    expect(pub.stdout, emitsThrough("bar 1.0.0"));
     await pub.shouldExit();
 
     await d.dir(cachePath, [

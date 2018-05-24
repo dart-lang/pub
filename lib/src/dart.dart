@@ -11,6 +11,7 @@ import 'package:analyzer/analyzer.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'utils.dart';
 
 /// Returns whether [dart] looks like an entrypoint file.
 bool isEntrypoint(CompilationUnit dart) {
@@ -51,18 +52,41 @@ class _DirectiveCollector extends GeneralizingAstVisitor {
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
+///
+/// When running in Dart 2 mode, this automatically creates a Dart 2-compatible
+/// snapshot as well at `$snapshotPath.dart2`.
 Future snapshot(Uri executableUrl, String snapshotPath,
     {Uri packagesFile, String name}) async {
   name = log.bold(name ?? executableUrl.toString());
 
-  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
-  if (packagesFile != null) args.insert(0, "--packages=$packagesFile");
-  var result = await runProcess(Platform.executable, args);
+  var dart1Args = ['--snapshot=$snapshotPath', executableUrl.toString()];
 
-  if (result.success) {
+  var dart2Path = '$snapshotPath.dart2';
+  var dart2Args = isDart2
+      ? ['--preview-dart-2', '--snapshot=$dart2Path', executableUrl.toString()]
+      : null;
+
+  if (packagesFile != null) {
+    dart1Args.insert(0, "--packages=$packagesFile");
+
+    // Resolve [packagesFile] in case it's relative to work around sdk#33177.
+    dart2Args?.insert(0, "--packages=${Uri.base.resolveUri(packagesFile)}");
+  }
+
+  var processes = [runProcess(Platform.executable, dart1Args)];
+  if (isDart2) processes.add(runProcess(Platform.executable, dart2Args));
+  var results = await Future.wait(processes);
+
+  var failure =
+      results.firstWhere((result) => !result.success, orElse: () => null);
+  if (failure == null) {
     log.message("Precompiled $name.");
   } else {
-    throw new ApplicationException(
-        log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
+    // Don't leave partial results.
+    deleteEntry(snapshotPath);
+    deleteEntry(dart2Path);
+
+    throw new ApplicationException(log.yellow("Failed to precompile $name:\n") +
+        failure.stderr.join('\n'));
   }
 }

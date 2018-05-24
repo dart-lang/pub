@@ -137,7 +137,7 @@ class GlobalPackages {
   /// Otherwise, the previous ones will be preserved.
   Future activatePath(String path, List<String> executables,
       {bool overwriteBinStubs}) async {
-    var entrypoint = new Entrypoint(path, cache, isGlobal: true);
+    var entrypoint = new Entrypoint(path, cache);
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.GET);
@@ -204,8 +204,7 @@ class GlobalPackages {
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
-    var entrypoint =
-        new Entrypoint.fromSolveResult(root, cache, result, isGlobal: true);
+    var entrypoint = new Entrypoint.fromSolveResult(root, cache, result);
     var snapshots = await _precompileExecutables(entrypoint, dep.name);
 
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
@@ -225,6 +224,13 @@ class GlobalPackages {
     return log.progress("Precompiling executables", () async {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
+
+      var packagesFilePath = p.join(_directory, packageName, '.packages');
+      if (!fileExists(packagesFilePath)) {
+        // A .packages file may not already exist if the global executable has a
+        // 1.6-style lock file instead.
+        await writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
+      }
 
       // Try to avoid starting up an asset server to precompile packages if
       // possible. This is faster and produces better error messages.
@@ -335,14 +341,12 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache,
-          isGlobal: true);
+      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
       entrypoint = new Entrypoint(
-          (id.source as PathSource).pathFromDescription(id.description), cache,
-          isGlobal: true);
+          (id.source as PathSource).pathFromDescription(id.description), cache);
     }
 
     entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
@@ -375,28 +379,17 @@ class GlobalPackages {
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
       {bool checked: false}) {
-    var binDir = p.join(_directory, package, 'bin');
-    // Snapshots are compiled in Dart 1 mode, so in Dart 2 mode we always run
-    // executables from source.
-    if (isDart2 || !fileExists(p.join(binDir, '$executable.dart.snapshot'))) {
-      return exe.runExecutable(find(package), package, executable, args,
-          isGlobal: true, checked: checked, cache: cache);
-    }
-
-    // Unless the user overrides the verbosity, we want to filter out the
-    // normal pub output shown while loading the environment.
-    if (log.verbosity == log.Verbosity.NORMAL) {
-      log.verbosity = log.Verbosity.WARNING;
-    }
-
-    var snapshotPath = p.join(binDir, '$executable.dart.snapshot');
-    return exe.runSnapshot(snapshotPath, args, checked: checked,
-        recompile: () async {
-      log.fine("$package:$executable is out of date and needs to be "
-          "recompiled.");
-      await _precompileExecutables(
-          find(package).packageGraph.entrypoint, package);
-    });
+    var entrypoint = find(package);
+    return exe.runExecutable(
+        entrypoint, package, p.join('bin', '$executable.dart'), args,
+        checked: checked,
+        packagesFile:
+            entrypoint.isCached ? _getPackagesFilePath(package) : null,
+        // Don't use snapshots for executables activated from paths.
+        snapshotPath: entrypoint.isCached
+            ? p.join(_directory, package, 'bin', '$executable.dart.snapshot')
+            : null,
+        recompile: () => _precompileExecutables(entrypoint, package));
   }
 
   /// Gets the path to the lock file for an activated cached package with

@@ -39,7 +39,7 @@ abstract class PubCommand extends Command {
   Entrypoint get entrypoint {
     // Lazy load it.
     if (_entrypoint == null) {
-      _entrypoint = new Entrypoint('.', cache);
+      _entrypoint = new Entrypoint.current(cache);
     }
     return _entrypoint;
   }

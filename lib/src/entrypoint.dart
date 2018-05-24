@@ -74,6 +74,9 @@ class Entrypoint {
   /// real directory on disk.
   final bool _inMemory;
 
+  /// Whether this entrypoint exists within the package cache.
+  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
+
   /// Whether this is an entrypoint for a globally-activated package.
   final bool isGlobal;
 
@@ -138,26 +141,40 @@ class Entrypoint {
     return newPath;
   }
 
+  /// Returns the contents of the `.packages` file for this entrypoint.
+  ///
+  /// This is based on the package's lockfile, so it works whether or not a
+  /// `.packages` file has been written.
+  String get packagesFileContents => lockFile.packagesFile(cache, root.name);
+
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
+  /// Loads the entrypoint for the package at the current directory.
+  Entrypoint.current(SystemCache cache)
+      : root = new Package.load(null, '.', cache.sources, isRootPackage: true),
+        cache = cache,
+        _inMemory = false,
+        isGlobal = false;
+
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, SystemCache cache, {this.isGlobal: false})
+  Entrypoint(String rootDir, SystemCache cache)
       : root =
             new Package.load(null, rootDir, cache.sources, isRootPackage: true),
         cache = cache,
-        _inMemory = false;
+        _inMemory = false,
+        isGlobal = true;
 
   /// Creates an entrypoint given package and lockfile objects.
-  Entrypoint.inMemory(this.root, this._lockFile, this.cache,
-      {this.isGlobal: false})
-      : _inMemory = true;
+  Entrypoint.inMemory(this.root, this._lockFile, this.cache)
+      : _inMemory = true,
+        isGlobal = true;
 
   /// Creates an entrypoint given a package and a [solveResult], from which the
   /// package graph and lockfile will be computed.
-  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult,
-      {this.isGlobal: false})
-      : _inMemory = true {
+  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
+      : _inMemory = true,
+        isGlobal = true {
     _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
     _lockFile = _packageGraph.lockFile;
   }
@@ -238,7 +255,7 @@ class Entrypoint {
     /// have to reload and reparse all the pubspecs.
     _packageGraph = new PackageGraph.fromSolveResult(this, result);
 
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    writeTextFile(packagesFile, packagesFileContents);
 
     try {
       if (precompile) {
@@ -350,8 +367,12 @@ class Entrypoint {
     // executable will save us a few IO operations over checking each one. If
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
-    var executablesExist = executables.every((executable) => fileExists(p.join(
-        _snapshotPath, packageName, "${p.basename(executable)}.snapshot")));
+    var executablesExist = executables.every((executable) {
+      var snapshotPath = p.join(
+          _snapshotPath, packageName, "${p.basename(executable)}.snapshot");
+      if (!fileExists(snapshotPath)) return false;
+      if (isDart2 && !fileExists("$snapshotPath.dart2")) return false;
+    });
     if (!executablesExist) return executables;
 
     // Otherwise, we don't need to recompile.
