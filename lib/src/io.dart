@@ -959,7 +959,7 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
 /// working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(List contents, {String baseDir}) {
+ByteStream createTarGz(List<String> contents, {String baseDir}) {
   return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
     var buffer = new StringBuffer();
     buffer.write('Creating .tar.gz stream containing:\n');
@@ -1018,7 +1018,8 @@ ByteStream createTarGz(List contents, {String baseDir}) {
 
         // We need a newline at the end, otherwise the last file would get
         // ignored.
-        stdin = mtreeHeader + contents.join("\n") + "\n";
+        stdin =
+            mtreeHeader + contents.join("\n").replaceAll(' ', r'\040') + "\n";
       }
 
       // Setting the working directory should be unnecessary since we pass an
