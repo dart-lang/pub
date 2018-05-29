@@ -802,8 +802,8 @@ pub global run ${package.name}:$script "\$@"
 
       var binDir = _binStubDir;
       if (binDir.startsWith(Platform.environment['HOME'])) {
-        binDir =
-            p.join("~", p.relative(binDir, from: Platform.environment['HOME']));
+        binDir = p.join(
+            r'$HOME', p.relative(binDir, from: Platform.environment['HOME']));
       }
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "
