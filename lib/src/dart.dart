@@ -6,7 +6,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/analysis/analysis_context.dart';
+import 'package:analyzer/dart/analysis/context_builder.dart';
+import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/session.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/error/error.dart';
+import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
 import 'io.dart';
@@ -25,22 +31,6 @@ bool isEntrypoint(CompilationUnit dart) {
         node.name.name == "main" &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
-}
-
-/// Efficiently parses the import and export directives in [contents].
-///
-/// If [name] is passed, it's used as the filename for error reporting.
-List<UriBasedDirective> parseImportsAndExports(String contents, {String name}) {
-  var collector = new _DirectiveCollector();
-  parseDirectives(contents, name: name).accept(collector);
-  return collector.directives;
-}
-
-/// A simple visitor that collects import and export nodes.
-class _DirectiveCollector extends GeneralizingAstVisitor {
-  final directives = <UriBasedDirective>[];
-
-  visitUriBasedDirective(UriBasedDirective node) => directives.add(node);
 }
 
 /// Snapshots the Dart executable at [executableUrl] to a snapshot at
@@ -89,4 +79,79 @@ Future snapshot(Uri executableUrl, String snapshotPath,
     throw new ApplicationException(log.yellow("Failed to precompile $name:\n") +
         failure.stderr.join('\n'));
   }
+}
+
+class AnalysisSessionManager {
+  final List<AnalysisContext> _contexts = [];
+
+  /// Parse the file with the given [path] into AST.
+  CompilationUnit parse(String path) {
+    var parseResult = _getSession(path).getParsedAstSync(path);
+    if (parseResult.errors.isNotEmpty) {
+      throw new AnalyzerErrorGroup(parseResult.errors);
+    }
+    return parseResult.unit;
+  }
+
+  /// Return import and export directives in the file with the given [path].
+  List<UriBasedDirective> parseImportsAndExports(String path) {
+    var unit = parse(path);
+    var uriDirectives = <UriBasedDirective>[];
+    for (var directive in unit.directives) {
+      if (directive is UriBasedDirective) {
+        uriDirectives.add(directive);
+      }
+    }
+    return uriDirectives;
+  }
+
+  AnalysisSession _getSession(String path) {
+    _throwIfNotAbsolutePath(path);
+
+    for (var context in _contexts) {
+      if (context.contextRoot.isAnalyzed(path)) {
+        return context.currentSession;
+      }
+    }
+
+    var dirPath = p.dirname(path);
+
+    var contextLocator = new ContextLocator();
+    var roots = contextLocator.locateRoots(includedPaths: [dirPath]);
+    for (var root in roots) {
+      var contextBuilder = new ContextBuilder();
+      var context = contextBuilder.createContext(contextRoot: root);
+      _contexts.add(context);
+    }
+
+    for (var context in _contexts) {
+      if (context.contextRoot.isAnalyzed(path)) {
+        return context.currentSession;
+      }
+    }
+
+    throw new StateError('Unable to find the context to $path');
+  }
+
+  /**
+   * The driver supports only absolute paths, this method is used to validate
+   * any input paths to prevent errors later.
+   */
+  void _throwIfNotAbsolutePath(String path) {
+    if (!p.isAbsolute(path)) {
+      throw new ArgumentError('Only absolute paths are supported: $path');
+    }
+  }
+}
+
+/// An error class that contains multiple [AnalysisError]s.
+class AnalyzerErrorGroup implements Exception {
+  final List<AnalysisError> errors;
+
+  AnalyzerErrorGroup(this.errors);
+
+  String get message => toString();
+
+  @override
+  String toString() => errors.join("\n");
 }

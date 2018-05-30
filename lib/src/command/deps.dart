@@ -4,7 +4,6 @@
 
 import 'dart:collection';
 
-import 'package:analyzer/analyzer.dart' as analyzer;
 import 'package:path/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
@@ -15,16 +14,6 @@ import '../package.dart';
 import '../sdk.dart';
 import '../utils.dart';
 
-/// Returns `true` if [path] looks like a Dart entrypoint.
-bool _isDartExecutable(String path) {
-  try {
-    var unit = analyzer.parseDartFile(path, parseFunctionBodies: false);
-    return isEntrypoint(unit);
-  } on analyzer.AnalyzerErrorGroup {
-    return false;
-  }
-}
-
 /// Handles the `deps` pub command.
 class DepsCommand extends PubCommand {
   String get name => "deps";
@@ -33,6 +22,9 @@ class DepsCommand extends PubCommand {
   String get invocation => "pub deps";
   String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-deps.html";
   bool get takesArguments => false;
+
+  final AnalysisSessionManager analysisSessionManager =
+      new AnalysisSessionManager();
 
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
@@ -269,6 +261,17 @@ class DepsCommand extends PubCommand {
       if (executables.isNotEmpty) {
         _buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }
+    }
+  }
+
+  /// Returns `true` if [path] looks like a Dart entrypoint.
+  bool _isDartExecutable(String path) {
+    try {
+      path = p.normalize(path);
+      var unit = analysisSessionManager.parse(path);
+      return isEntrypoint(unit);
+    } on AnalyzerErrorGroup {
+      return false;
     }
   }
 

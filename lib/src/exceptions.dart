@@ -5,12 +5,12 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import "package:analyzer/analyzer.dart";
 import 'package:args/command_runner.dart';
 import "package:http/http.dart" as http;
 import "package:stack_trace/stack_trace.dart";
 import "package:yaml/yaml.dart";
 
+import 'dart.dart';
 import 'sdk.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
@@ -90,7 +90,6 @@ bool isUserFacingException(error) {
   // TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
   // fixed.
   return error is ApplicationException ||
-      error is AnalyzerError ||
       error is AnalyzerErrorGroup ||
       error is IsolateSpawnException ||
       error is IOException ||
