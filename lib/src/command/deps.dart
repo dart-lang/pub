@@ -282,8 +282,8 @@ class DepsCommand extends PubCommand {
     var absolutePackagePath = p.absolute(package.dir);
     analysisContextManager.createContextsForDirectory(absolutePackagePath);
     return package.executablePaths
-          .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-          .map((e) => p.basenameWithoutExtension(e));
+        .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
+        .map((e) => p.basenameWithoutExtension(e));
   }
 
   /// Returns formatted string that lists [executables] for the [packageName].
