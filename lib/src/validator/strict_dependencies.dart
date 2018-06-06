@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 import 'package:collection/collection.dart';
 import 'package:pub/src/dart.dart';
@@ -18,7 +18,13 @@ import 'package:stack_trace/stack_trace.dart';
 
 /// Validates that Dart source files only import declared dependencies.
 class StrictDependenciesValidator extends Validator {
-  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint);
+  final AnalysisContextManager analysisContextManager =
+      new AnalysisContextManager();
+
+  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
+    var packagePath = p.absolute(entrypoint.root.dir);
+    analysisContextManager.createContextsForDirectory(packagePath);
+  }
 
   /// Lazily returns all dependency uses in [files].
   ///
@@ -29,7 +35,9 @@ class StrictDependenciesValidator extends Validator {
       List<UriBasedDirective> directives;
       var contents = readTextFile(file);
       try {
-        directives = parseImportsAndExports(contents, name: file);
+        var absolutePath = p.absolute(file);
+        directives =
+            analysisContextManager.parseImportsAndExports(absolutePath);
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));

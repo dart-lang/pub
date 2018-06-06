@@ -4,7 +4,6 @@
 
 import 'dart:collection';
 
-import 'package:analyzer/analyzer.dart' as analyzer;
 import 'package:path/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
@@ -15,16 +14,6 @@ import '../package.dart';
 import '../sdk.dart';
 import '../utils.dart';
 
-/// Returns `true` if [path] looks like a Dart entrypoint.
-bool _isDartExecutable(String path) {
-  try {
-    var unit = analyzer.parseDartFile(path, parseFunctionBodies: false);
-    return isEntrypoint(unit);
-  } on analyzer.AnalyzerErrorGroup {
-    return false;
-  }
-}
-
 /// Handles the `deps` pub command.
 class DepsCommand extends PubCommand {
   String get name => "deps";
@@ -33,6 +22,9 @@ class DepsCommand extends PubCommand {
   String get invocation => "pub deps";
   String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-deps.html";
   bool get takesArguments => false;
+
+  final AnalysisContextManager analysisContextManager =
+      new AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
@@ -272,13 +264,27 @@ class DepsCommand extends PubCommand {
     }
   }
 
+  /// Returns `true` if [path] looks like a Dart entrypoint.
+  bool _isDartExecutable(String path) {
+    try {
+      path = p.normalize(path);
+      var unit = analysisContextManager.parse(path);
+      return isEntrypoint(unit);
+    } on AnalyzerErrorGroup {
+      return false;
+    }
+  }
+
   /// Lists all Dart files in the `bin` directory of the [package].
   ///
   /// Returns file names without extensions.
-  Iterable<String> _getExecutablesFor(Package package) =>
-      package.executablePaths
-          .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-          .map((e) => p.basenameWithoutExtension(e));
+  Iterable<String> _getExecutablesFor(Package package) {
+    var absolutePackagePath = p.absolute(package.dir);
+    analysisContextManager.createContextsForDirectory(absolutePackagePath);
+    return package.executablePaths
+        .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
+        .map((e) => p.basenameWithoutExtension(e));
+  }
 
   /// Returns formatted string that lists [executables] for the [packageName].
   /// Examples:
