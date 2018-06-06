@@ -18,10 +18,13 @@ import 'package:stack_trace/stack_trace.dart';
 
 /// Validates that Dart source files only import declared dependencies.
 class StrictDependenciesValidator extends Validator {
-  final AnalysisSessionManager analysisSessionManager =
-      new AnalysisSessionManager();
+  final AnalysisContextManager analysisContextManager =
+      new AnalysisContextManager();
 
-  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint);
+  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
+    var packagePath = p.absolute(entrypoint.root.dir);
+    analysisContextManager.createContextsForDirectory(packagePath);
+  }
 
   /// Lazily returns all dependency uses in [files].
   ///
@@ -34,7 +37,7 @@ class StrictDependenciesValidator extends Validator {
       try {
         var absolutePath = p.absolute(file);
         directives =
-            analysisSessionManager.parseImportsAndExports(absolutePath);
+            analysisContextManager.parseImportsAndExports(absolutePath);
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));

@@ -23,8 +23,8 @@ class DepsCommand extends PubCommand {
   String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-deps.html";
   bool get takesArguments => false;
 
-  final AnalysisSessionManager analysisSessionManager =
-      new AnalysisSessionManager();
+  final AnalysisContextManager analysisContextManager =
+      new AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
@@ -268,7 +268,7 @@ class DepsCommand extends PubCommand {
   bool _isDartExecutable(String path) {
     try {
       path = p.normalize(path);
-      var unit = analysisSessionManager.parse(path);
+      var unit = analysisContextManager.parse(path);
       return isEntrypoint(unit);
     } on AnalyzerErrorGroup {
       return false;
@@ -278,10 +278,13 @@ class DepsCommand extends PubCommand {
   /// Lists all Dart files in the `bin` directory of the [package].
   ///
   /// Returns file names without extensions.
-  Iterable<String> _getExecutablesFor(Package package) =>
-      package.executablePaths
+  Iterable<String> _getExecutablesFor(Package package) {
+    var absolutePackagePath = p.absolute(package.dir);
+    analysisContextManager.createContextsForDirectory(absolutePackagePath);
+    return package.executablePaths
           .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
           .map((e) => p.basenameWithoutExtension(e));
+  }
 
   /// Returns formatted string that lists [executables] for the [packageName].
   /// Examples:

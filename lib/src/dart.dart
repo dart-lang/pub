@@ -81,12 +81,52 @@ Future snapshot(Uri executableUrl, String snapshotPath,
   }
 }
 
-class AnalysisSessionManager {
-  final List<AnalysisContext> _contexts = [];
+class AnalysisContextManager {
+  /// The map from a context root directory to to the context.
+  final Map<String, AnalysisContext> _contexts = {};
+
+  /// Ensure that there are analysis contexts for the directory with the
+  /// given [path]. If any previously added root covers the [path], keep
+  /// the previously created analysis context.
+  ///
+  /// This method does not discover analysis roots "up", it only looks down
+  /// the given [path]. It is expected that the client knows analysis roots
+  /// in advance. Pub does know, it is the packages it works with.
+  void createContextsForDirectory(String path) {
+    _throwIfNotAbsolutePath(path);
+
+    // We add all contexts below the given directory.
+    // So, children contexts must also have been added.
+    if (_contexts.containsKey(path)) {
+      return;
+    }
+
+    // Add new contexts for the given path.
+    var contextLocator = new ContextLocator();
+    var roots = contextLocator.locateRoots(includedPaths: [path]);
+    for (var root in roots) {
+      String contextRootPath = root.root.path;
+
+      // If there is already a context for this context root path, keep it.
+      if (_contexts.containsKey(contextRootPath)) {
+        continue;
+      }
+
+      var contextBuilder = new ContextBuilder();
+      var context = contextBuilder.createContext(contextRoot: root);
+      _contexts[contextRootPath] = context;
+    }
+  }
 
   /// Parse the file with the given [path] into AST.
+  ///
+  /// One of the containing directories must be used to create analysis
+  /// contexts using [createContextsForDirectory]. Throws [StateError] if
+  /// this has not been done.
+  ///
+  /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
-    var parseResult = _getSession(path).getParsedAstSync(path);
+    var parseResult = _getExistingSession(path).getParsedAstSync(path);
     if (parseResult.errors.isNotEmpty) {
       throw new AnalyzerErrorGroup(parseResult.errors);
     }
@@ -94,6 +134,12 @@ class AnalysisSessionManager {
   }
 
   /// Return import and export directives in the file with the given [path].
+  ///
+  /// One of the containing directories must be used to create analysis
+  /// contexts using [createContextsForDirectory]. Throws [StateError] if
+  /// this has not been done.
+  ///
+  /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   List<UriBasedDirective> parseImportsAndExports(String path) {
     var unit = parse(path);
     var uriDirectives = <UriBasedDirective>[];
@@ -105,26 +151,10 @@ class AnalysisSessionManager {
     return uriDirectives;
   }
 
-  AnalysisSession _getSession(String path) {
+  AnalysisSession _getExistingSession(String path) {
     _throwIfNotAbsolutePath(path);
 
-    for (var context in _contexts) {
-      if (context.contextRoot.isAnalyzed(path)) {
-        return context.currentSession;
-      }
-    }
-
-    var dirPath = p.dirname(path);
-
-    var contextLocator = new ContextLocator();
-    var roots = contextLocator.locateRoots(includedPaths: [dirPath]);
-    for (var root in roots) {
-      var contextBuilder = new ContextBuilder();
-      var context = contextBuilder.createContext(contextRoot: root);
-      _contexts.add(context);
-    }
-
-    for (var context in _contexts) {
+    for (var context in _contexts.values) {
       if (context.contextRoot.isAnalyzed(path)) {
         return context.currentSession;
       }
