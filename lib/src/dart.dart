@@ -163,10 +163,8 @@ class AnalysisContextManager {
     throw new StateError('Unable to find the context to $path');
   }
 
-  /**
-   * The driver supports only absolute paths, this method is used to validate
-   * any input paths to prevent errors later.
-   */
+  /// The driver supports only absolute paths, this method is used to validate
+  /// any input paths to prevent errors later.
   void _throwIfNotAbsolutePath(String path) {
     if (!p.isAbsolute(path)) {
       throw new ArgumentError('Only absolute paths are supported: $path');
