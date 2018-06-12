@@ -370,8 +370,8 @@ class Entrypoint {
     var executablesExist = executables.every((executable) {
       var snapshotPath = p.join(
           _snapshotPath, packageName, "${p.basename(executable)}.snapshot");
-      if (!fileExists(snapshotPath)) return false;
-      if (isDart2 && !fileExists("$snapshotPath.dart2")) return false;
+      return fileExists(snapshotPath) &&
+          (!isDart2 || fileExists("$snapshotPath.dart2"));
     });
     if (!executablesExist) return executables;
 
