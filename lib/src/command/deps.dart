@@ -279,8 +279,8 @@ class DepsCommand extends PubCommand {
   ///
   /// Returns file names without extensions.
   Iterable<String> _getExecutablesFor(Package package) {
-    var absolutePackagePath = p.absolute(package.dir);
-    analysisContextManager.createContextsForDirectory(absolutePackagePath);
+    var packagePath = p.normalize(p.absolute(package.dir));
+    analysisContextManager.createContextsForDirectory(packagePath);
     return package.executablePaths
         .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
         .map((e) => p.basenameWithoutExtension(e));
