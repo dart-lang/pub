@@ -22,7 +22,7 @@ class StrictDependenciesValidator extends Validator {
       new AnalysisContextManager();
 
   StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.absolute(entrypoint.root.dir);
+    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
     analysisContextManager.createContextsForDirectory(packagePath);
   }
 
@@ -35,9 +35,9 @@ class StrictDependenciesValidator extends Validator {
       List<UriBasedDirective> directives;
       var contents = readTextFile(file);
       try {
-        var absolutePath = p.absolute(file);
+        var normalizedPath = p.normalize(p.absolute(file));
         directives =
-            analysisContextManager.parseImportsAndExports(absolutePath);
+            analysisContextManager.parseImportsAndExports(normalizedPath);
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));
