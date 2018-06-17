@@ -39,18 +39,18 @@ main() {
     var sources = new SourceRegistry();
     sources.register(new MockSource());
 
-    var throwsPubspecException = throwsA(new isInstanceOf<PubspecException>());
+    var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
 
-    expectPubspecException(String contents, fn(Pubspec pubspec),
+    void expectPubspecException(String contents, fn(Pubspec pubspec),
         [String expectedContains]) {
-      var expectation = throwsPubspecException;
+      var expectation = const TypeMatcher<PubspecException>();
       if (expectedContains != null) {
-        expectation = throwsA(allOf(new isInstanceOf<PubspecException>(),
-            predicate((error) => error.message.contains(expectedContains))));
+        expectation = expectation.having(
+            (error) => error.message, 'message', contains(expectedContains));
       }
 
       var pubspec = new Pubspec.parse(contents, sources);
-      expect(() => fn(pubspec), expectation);
+      expect(() => fn(pubspec), throwsA(expectation));
     }
 
     test("doesn't eagerly throw an error for an invalid field", () {
