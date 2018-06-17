@@ -60,7 +60,7 @@ class _PubHttpClient extends http.BaseClient {
     }
 
     _requestStopwatches[request] = new Stopwatch()..start();
-    request.headers[HttpHeaders.USER_AGENT] = "Dart pub ${sdk.version}";
+    request.headers[HttpHeaders.userAgentHeader] = "Dart pub ${sdk.version}";
     _logRequest(request);
 
     var streamedResponse;
@@ -123,7 +123,7 @@ class _PubHttpClient extends http.BaseClient {
         .forEach((name, value) => requestLog.writeln(_logField(name, value)));
 
     if (request.method == 'POST') {
-      var contentTypeString = request.headers[HttpHeaders.CONTENT_TYPE];
+      var contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
       if (contentTypeString == null) contentTypeString = '';
       var contentType = ContentType.parse(contentTypeString);
       if (request is http.MultipartRequest) {
