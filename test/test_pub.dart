@@ -378,7 +378,7 @@ Future<PubProcess> startPub(
   if (fileExists(snapshotPath)) pubPath = snapshotPath;
 
   var dartArgs = [await PackageResolver.current.processArgument];
-  if (dart2) dartArgs.add('--preview-dart-2');
+  if (!dart2) dartArgs.add('--no-preview-dart-2');
   dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,

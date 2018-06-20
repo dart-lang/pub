@@ -16,8 +16,8 @@ dart_task:
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
 before_script:
-  - dart --no-checked --snapshot=bin/pub.dart.snapshot --snapshot-kind=app-jit bin/pub.dart --help
-  - dart --preview-dart-2 --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
+  - dart --no-preview-dart-2 --no-checked --snapshot=bin/pub.dart.snapshot --snapshot-kind=app-jit bin/pub.dart --help
+  - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
 
 # Only building these branches means that we don't run two builds for each pull
 # request.

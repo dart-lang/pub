@@ -150,27 +150,27 @@ main() {
 
     test('a complex example', () {
       var map = {
-        ".gitignore": {},
-        "README.md": {},
-        "TODO": {},
+        ".gitignore": <String, Map>{},
+        "README.md": <String, Map>{},
+        "TODO": <String, Map>{},
         "example": {
-          "console_example.dart": {},
-          "main.dart": {},
-          "web copy": {"web_example.dart": {}},
+          "console_example.dart": <String, Map>{},
+          "main.dart": <String, Map>{},
+          "web copy": {"web_example.dart": <String, Map>{}},
         },
-        "lib": {"path.dart": {}},
-        "pubspec.yaml": {},
+        "lib": {"path.dart": <String, Map>{}},
+        "pubspec.yaml": <String, Map>{},
         "test": {
-          "absolute_test.dart": {},
-          "basename_test.dart": {},
-          "dirname_test.dart": {},
-          "extension_test.dart": {},
-          "is_absolute_test.dart": {},
-          "is_relative_test.dart": {},
-          "join_test.dart": {},
-          "normalize_test.dart": {},
-          "relative_test.dart": {},
-          "split_test.dart": {}
+          "absolute_test.dart": <String, Map>{},
+          "basename_test.dart": <String, Map>{},
+          "dirname_test.dart": <String, Map>{},
+          "extension_test.dart": <String, Map>{},
+          "is_absolute_test.dart": <String, Map>{},
+          "is_relative_test.dart": <String, Map>{},
+          "join_test.dart": <String, Map>{},
+          "normalize_test.dart": <String, Map>{},
+          "relative_test.dart": <String, Map>{},
+          "split_test.dart": <String, Map>{}
         }
       };
 
@@ -204,18 +204,18 @@ main() {
   test('does not elide children if showAllChildren is true', () {
     var map = {
       'dir': {
-        'a.dart': {},
-        'b.dart': {},
-        'c.dart': {},
-        'd.dart': {},
-        'e.dart': {},
-        'f.dart': {},
-        'g.dart': {},
-        'h.dart': {},
-        'i.dart': {},
-        'j.dart': {},
-        'k.dart': {},
-        'l.dart': {},
+        'a.dart': <String, Map>{},
+        'b.dart': <String, Map>{},
+        'c.dart': <String, Map>{},
+        'd.dart': <String, Map>{},
+        'e.dart': <String, Map>{},
+        'f.dart': <String, Map>{},
+        'g.dart': <String, Map>{},
+        'h.dart': <String, Map>{},
+        'i.dart': <String, Map>{},
+        'j.dart': <String, Map>{},
+        'k.dart': <String, Map>{},
+        'l.dart': <String, Map>{},
       }
     };
     expect(tree.fromMap(map, showAllChildren: true), equals("""
