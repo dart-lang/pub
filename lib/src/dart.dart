@@ -49,12 +49,15 @@ Future snapshot(Uri executableUrl, String snapshotPath,
     {Uri packagesFile, String name}) async {
   name = log.bold(name ?? executableUrl.toString());
 
-  var dart1Args = ['--snapshot=$snapshotPath', executableUrl.toString()];
+  var dart1Args = [
+    '--no-preview-dart-2',
+    '--snapshot=$snapshotPath',
+    executableUrl.toString()
+  ];
 
   var dart2Path = '$snapshotPath.dart2';
-  var dart2Args = isDart2
-      ? ['--preview-dart-2', '--snapshot=$dart2Path', executableUrl.toString()]
-      : null;
+  var dart2Args =
+      isDart2 ? ['--snapshot=$dart2Path', executableUrl.toString()] : null;
 
   if (packagesFile != null) {
     dart1Args.insert(0, "--packages=$packagesFile");
