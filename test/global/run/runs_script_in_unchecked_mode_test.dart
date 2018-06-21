@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 const SCRIPT = """
 main() {
-  int a = true;
+  assert(false);
   print("no checks");
 }
 """;

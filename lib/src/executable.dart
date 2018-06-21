@@ -63,12 +63,8 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     log.verbosity = log.Verbosity.WARNING;
   }
 
-  // Snapshots are compiled in Dart 1 mode, so in Dart 2 mode we always run
-  // executables from source.
+  // Uncached packages are run from source.
   if (snapshotPath != null) {
-    // Look for the Dart 2-specific snapshot when running in Dart 2 mode.
-    if (isDart2) snapshotPath += '.dart2';
-
     // Since we don't access the package graph, this doesn't happen
     // automatically.
     entrypoint.assertUpToDate();

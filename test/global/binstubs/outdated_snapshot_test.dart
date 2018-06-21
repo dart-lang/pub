@@ -46,8 +46,8 @@ main() {
       d.dir('global_packages/foo/bin', [
         d.file(
             'script.dart.snapshot',
-            isNot(
-                equals(readBinaryFile(testAssetPath('out-of-date.snapshot')))))
+            isNot(equals(
+                readBinaryFile(testAssetPath('out-of-date.snapshot.dart2')))))
       ])
     ]).validate();
   });
