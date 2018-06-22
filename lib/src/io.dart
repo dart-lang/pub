@@ -484,7 +484,7 @@ final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
 /// Whether pub is running from within the Dart SDK, as opposed to from the Dart
 /// source repository.
 final bool _runningFromSdk =
-    !runningFromTest && Platform.script.path.endsWith('.snapshot.dart2');
+    !runningFromTest && Platform.script.path.endsWith('.snapshot');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
