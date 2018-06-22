@@ -11,7 +11,7 @@ main() {
   test('runs a script in checked mode', () async {
     await servePackages((builder) {
       builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [d.file("script.dart", "main() { int a = true; }")])
+        d.dir("bin", [d.file("script.dart", "main() { assert(false); }")])
       ]);
     });
 
@@ -19,7 +19,7 @@ main() {
 
     var pub = await pubRun(global: true, args: ["--checked", "foo:script"]);
     expect(pub.stderr,
-        emitsThrough(contains("'bool' is not a subtype of type 'int' of 'a'")));
+        emitsThrough(contains("Failed assertion")));
     await pub.shouldExit(255);
   });
 }

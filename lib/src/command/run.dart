@@ -62,7 +62,7 @@ class RunCommand extends PubCommand {
     if (p.extension(executable) != ".dart") executable += ".dart";
 
     var snapshotPath =
-        p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot");
+        p.join(entrypoint.cachePath, "bin", package, "$executable.snapshot.dart2");
 
     // Don't ever compile snapshots for mutable packages, since their code may
     // change later on.

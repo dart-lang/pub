@@ -239,7 +239,7 @@ class GlobalPackages {
       await waitAndPrintErrors(package.executablePaths.map((path) async {
         var url = p.toUri(p.join(package.dir, path));
         var basename = p.basename(path);
-        var snapshotPath = p.join(binDir, '$basename.snapshot');
+        var snapshotPath = p.join(binDir, '$basename.snapshot.dart2');
         await dart.snapshot(url, snapshotPath,
             packagesFile: p.toUri(_getPackagesFilePath(package.name)),
             name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
@@ -387,7 +387,7 @@ class GlobalPackages {
             entrypoint.isCached ? _getPackagesFilePath(package) : null,
         // Don't use snapshots for executables activated from paths.
         snapshotPath: entrypoint.isCached
-            ? p.join(_directory, package, 'bin', '$executable.dart.snapshot')
+            ? p.join(_directory, package, 'bin', '$executable.dart.snapshot.dart2')
             : null,
         recompile: () => _precompileExecutables(entrypoint, package));
   }

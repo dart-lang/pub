@@ -123,8 +123,7 @@ Future pubCommand(RunCommand command,
     silent,
     warning,
     int exitCode,
-    Map<String, String> environment,
-    bool dart2: false}) async {
+    Map<String, String> environment}) async {
   if (error != null && warning != null) {
     throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -146,8 +145,7 @@ Future pubCommand(RunCommand command,
       error: error,
       silent: silent,
       exitCode: exitCode,
-      environment: environment,
-      dart2: dart2);
+      environment: environment);
 }
 
 Future pubGet(
@@ -156,16 +154,14 @@ Future pubGet(
         error,
         warning,
         int exitCode,
-        Map<String, String> environment,
-        bool dart2: false}) =>
+        Map<String, String> environment}) =>
     pubCommand(RunCommand.get,
         args: args,
         output: output,
         error: error,
         warning: warning,
         exitCode: exitCode,
-        environment: environment,
-        dart2: dart2);
+        environment: environment);
 
 Future pubUpgrade(
         {Iterable<String> args,
@@ -173,16 +169,14 @@ Future pubUpgrade(
         error,
         warning,
         int exitCode,
-        Map<String, String> environment,
-        bool dart2: false}) =>
+        Map<String, String> environment}) =>
     pubCommand(RunCommand.upgrade,
         args: args,
         output: output,
         error: error,
         warning: warning,
         exitCode: exitCode,
-        environment: environment,
-        dart2: dart2);
+        environment: environment);
 
 Future pubDowngrade(
         {Iterable<String> args,
@@ -190,16 +184,14 @@ Future pubDowngrade(
         error,
         warning,
         int exitCode,
-        Map<String, String> environment,
-        bool dart2: false}) =>
+        Map<String, String> environment}) =>
     pubCommand(RunCommand.downgrade,
         args: args,
         output: output,
         error: error,
         warning: warning,
         exitCode: exitCode,
-        environment: environment,
-        dart2: dart2);
+        environment: environment);
 
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
@@ -209,10 +201,10 @@ Future pubDowngrade(
 ///
 /// Returns the `pub run` process.
 Future<PubProcess> pubRun(
-    {bool global: false, Iterable<String> args, bool dart2: false}) async {
+    {bool global: false, Iterable<String> args}) async {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
-  var pub = await startPub(args: pubArgs, dart2: dart2);
+  var pub = await startPub(args: pubArgs);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -253,16 +245,14 @@ Future runPub(
     silent,
     int exitCode: exit_codes.SUCCESS,
     String workingDirectory,
-    Map<String, String> environment,
-    bool dart2: false}) async {
+    Map<String, String> environment}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
       args: args,
       workingDirectory: workingDirectory,
-      environment: environment,
-      dart2: dart2);
+      environment: environment);
   await pub.shouldExit(exitCode);
 
   expect(() async {
@@ -351,8 +341,7 @@ Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
     String workingDirectory,
-    Map<String, String> environment,
-    bool dart2: false}) async {
+    Map<String, String> environment}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -373,12 +362,10 @@ Future<PubProcess> startPub(
   // TODO(nweiz): When the test runner supports plugins, create one to
   // auto-generate the snapshot before each run.
   var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
-  var snapshotPath = '$pubPath.snapshot';
-  if (dart2) snapshotPath += '.dart2';
+  var snapshotPath = '$pubPath.snapshot.dart2';
   if (fileExists(snapshotPath)) pubPath = snapshotPath;
 
   var dartArgs = [await PackageResolver.current.processArgument];
-  if (!dart2) dartArgs.add('--no-preview-dart-2');
   dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
