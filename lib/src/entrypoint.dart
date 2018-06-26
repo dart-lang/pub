@@ -242,8 +242,8 @@ class Entrypoint {
       deleteEntry(packagesPath);
     }
 
-    await Future
-        .wait(result.packages.map((id) => _get(id, packagesDir: packagesDir)));
+    await Future.wait(
+        result.packages.map((id) => _get(id, packagesDir: packagesDir)));
     _saveLockFile(result);
 
     if (packagesDir) _linkSelf();
@@ -304,7 +304,8 @@ class Entrypoint {
       cleanDir(dir);
       return waitAndPrintErrors(executables[package].map((path) {
         var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
-        return dart.snapshot(url, p.join(dir, p.basename(path) + '.snapshot.dart2'),
+        return dart.snapshot(
+            url, p.join(dir, p.basename(path) + '.snapshot.dart2'),
             packagesFile: p.toUri(packagesFile),
             name: '$package:${p.basenameWithoutExtension(path)}');
       }));
@@ -368,8 +369,8 @@ class Entrypoint {
     // some executables do exist and some do not, the directory is corrupted and
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) {
-      var snapshotPath = p.join(
-          _snapshotPath, packageName, "${p.basename(executable)}.snapshot.dart2");
+      var snapshotPath = p.join(_snapshotPath, packageName,
+          "${p.basename(executable)}.snapshot.dart2");
       return fileExists(snapshotPath);
     });
     if (!executablesExist) return executables;

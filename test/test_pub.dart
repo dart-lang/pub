@@ -200,8 +200,7 @@ Future pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun(
-    {bool global: false, Iterable<String> args}) async {
+Future<PubProcess> pubRun({bool global: false, Iterable<String> args}) async {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
   var pub = await startPub(args: pubArgs);
@@ -250,9 +249,7 @@ Future runPub(
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
-      args: args,
-      workingDirectory: workingDirectory,
-      environment: environment);
+      args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
   expect(() async {

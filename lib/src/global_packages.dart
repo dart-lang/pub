@@ -387,7 +387,8 @@ class GlobalPackages {
             entrypoint.isCached ? _getPackagesFilePath(package) : null,
         // Don't use snapshots for executables activated from paths.
         snapshotPath: entrypoint.isCached
-            ? p.join(_directory, package, 'bin', '$executable.dart.snapshot.dart2')
+            ? p.join(
+                _directory, package, 'bin', '$executable.dart.snapshot.dart2')
             : null,
         recompile: () => _precompileExecutables(entrypoint, package));
   }

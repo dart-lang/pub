@@ -18,8 +18,7 @@ main() {
     await runPub(args: ["global", "activate", "foo"]);
 
     var pub = await pubRun(global: true, args: ["--checked", "foo:script"]);
-    expect(pub.stderr,
-        emitsThrough(contains("Failed assertion")));
+    expect(pub.stderr, emitsThrough(contains("Failed assertion")));
     await pub.shouldExit(255);
   });
 }

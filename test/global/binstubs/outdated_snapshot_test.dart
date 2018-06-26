@@ -28,7 +28,7 @@ main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')])
+          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot.dart2')])
         ])
       ])
     ]).create();
@@ -38,14 +38,15 @@ main() {
         ["arg1", "arg2"],
         environment: getEnvironment());
 
-    expect(process.stderr, emits(startsWith("Wrong script snapshot version")));
+    expect(process.stderr,
+        emits(contains("Invalid kernel binary format version.")));
     expect(process.stdout, emitsThrough("ok [arg1, arg2]"));
     await process.shouldExit();
 
     await d.dir(cachePath, [
       d.dir('global_packages/foo/bin', [
         d.file(
-            'script.dart.snapshot',
+            'script.dart.snapshot.dart2',
             isNot(equals(
                 readBinaryFile(testAssetPath('out-of-date.snapshot.dart2')))))
       ])
