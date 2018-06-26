@@ -20,7 +20,7 @@ main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')])
+          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot.dart2')])
         ])
       ])
     ]).create();
@@ -35,7 +35,7 @@ main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.file('script.dart.snapshot', contains('ok'))])
+          d.dir('bin', [d.file('script.dart.snapshot.dart2', contains('ok'))])
         ])
       ])
     ]).validate();

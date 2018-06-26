@@ -168,7 +168,9 @@ Future<int> runSnapshot(String path, Iterable<String> args,
         packageConfig: packageConfig);
   } on IsolateSpawnException catch (error) {
     if (recompile == null) rethrow;
-    if (!error.message.contains("Wrong script snapshot version")) rethrow;
+    if (!error.message.contains("Invalid kernel binary format version")) {
+      rethrow;
+    }
 
     log.fine("Precompiled executable is out of date.");
     await recompile();
