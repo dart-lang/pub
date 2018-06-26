@@ -597,8 +597,8 @@ Future<bool> confirm(String message) {
 /// exited already. This is useful to prevent Future chains from proceeding
 /// after you've decided to exit.
 Future flushThenExit(int status) {
-  return Future
-      .wait([stdout.close(), stderr.close()]).then((_) => exit(status));
+  return Future.wait([stdout.close(), stderr.close()])
+      .then((_) => exit(status));
 }
 
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that

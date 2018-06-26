@@ -127,8 +127,7 @@ abstract class Validator {
       validators.add(new SizeValidator(entrypoint, packageSize));
     }
 
-    return Future
-        .wait(validators.map((validator) => validator.validate()))
+    return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {
       var errors = validators.expand((validator) => validator.errors).toList();
       var warnings =

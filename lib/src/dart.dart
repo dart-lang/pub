@@ -59,8 +59,8 @@ Future snapshot(Uri executableUrl, String snapshotPath,
     // Don't leave partial results.
     deleteEntry(snapshotPath);
 
-    throw new ApplicationException(log.yellow("Failed to precompile $name:\n") +
-        result.stderr.join('\n'));
+    throw new ApplicationException(
+        log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
   }
 }
 
