@@ -922,7 +922,7 @@ This example's dependency graph doesn't have a valid solution. It shows how
 error reporting works when the derivation graph is straightforwardly linear.
 Given the following packages:
 
-* `root 1.0.0` depends on `foo ^1.0.0` and `baz ^3.0.0`.
+* `root 1.0.0` depends on `foo ^1.0.0` and `baz ^1.0.0`.
 * `foo 1.0.0` depends on `bar ^2.0.0`.
 * `bar 2.0.0` depends on `baz ^3.0.0`.
 * `baz 1.0.0` and `3.0.0` have no dependencies.
