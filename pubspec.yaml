@@ -38,12 +38,12 @@ dependency_overrides:
   build_modules:
     git:
       url: https://github.com/dart-lang/build.git
-      ref: master
+      ref: run-precompiled-vm-tests
       path: build_modules
   build_vm_compilers:
     git:
       url: https://github.com/dart-lang/build.git
-      ref: master
+      ref: run-precompiled-vm-tests
       path: build_vm_compilers
 
 environment:

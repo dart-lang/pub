@@ -23,7 +23,7 @@ jobs:
     # Next, build the entire `test` directory
     - stage: build
       script:
-        - pub run build_runner build test
+        - pub run build_runner build --low-resources-mode test
     # Set up several jobs in the next stage, using the built in sharding
     # feature from the `test` package.
     #
@@ -32,19 +32,19 @@ jobs:
     # properly above!).
     - stage: unit_test
       script:
-        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 0
+        - pub run build_runner test --low-resources-mode -- --preset travis --total-shards 5 --shard-index 0
     - stage: unit_test
       script:
-        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 1
+        - pub run build_runner test --low-resources-mode -- --preset travis --total-shards 5 --shard-index 1
     - stage: unit_test
       script:
-        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 2
+        - pub run build_runner test --low-resources-mode -- --preset travis --total-shards 5 --shard-index 2
     - stage: unit_test
       script:
-        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 3
+        - pub run build_runner test --low-resources-mode -- --preset travis --total-shards 5 --shard-index 3
     - stage: unit_test
       script:
-        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 4
+        - pub run build_runner test --low-resources-mode -- --preset travis --total-shards 5 --shard-index 4
 
 # Specify the ordering of your stages
 stages:
