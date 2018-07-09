@@ -48,7 +48,7 @@ jobs:
 
 # Specify the ordering of your stages
 stages:
-  - analyze_format
+  - analyze_and_format
   - build
   - unit_test
 
