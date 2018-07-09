@@ -16,10 +16,10 @@ before_script:
 jobs:
   include:
     # First, check that everything analyzes properly and is formatted.
-    - stage: analyze_format
+    - stage: analyze_and_format
       script:
-        - datanalyzer .
-        - dartfmt .
+        - dartanalyzer --fatal-warnings .
+        - dartfmt -n --set-exit-if-changed .
     # Next, build the entire `test` directory
     - stage: build
       script:
