@@ -321,8 +321,8 @@ dependencies:
               pubspec.sdkConstraints,
               containsPair(
                   'dart',
-                  new VersionConstraint.parse(
-                      '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
+                  new VersionConstraint.parse('${pubspec
+                      .sdkConstraints["dart"]} <=$sdkVersionString')));
         } else {
           expect(
               pubspec.sdkConstraints,

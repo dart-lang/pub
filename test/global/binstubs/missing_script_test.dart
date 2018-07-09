@@ -23,7 +23,8 @@ main() {
     expect(
         pub.stderr,
         emits('Warning: Executable "missing" runs '
-            '"${p.join('bin', 'not_here.dart')}", which was not found in foo.'));
+            '"${p.join(
+                'bin', 'not_here.dart')}", which was not found in foo.'));
     expect(
         pub.stderr,
         emits('Warning: Executable "nope" runs '
