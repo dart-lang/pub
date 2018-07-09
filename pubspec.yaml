@@ -29,6 +29,22 @@ dev_dependencies:
   test: ^0.12.42
   test_descriptor: "^1.0.0"
   test_process: "^1.0.0"
+  build_runner: ^0.9.0
+  build_modules: ^0.3.0
+  build_test: ^0.10.0
+  build_vm_compilers: ^0.1.0
+
+dependency_overrides:
+  build_modules:
+    git:
+      url: https://github.com/dart-lang/build.git
+      ref: master
+      path: build_modules
+  build_vm_compilers:
+    git:
+      url: https://github.com/dart-lang/build.git
+      ref: master
+      path: build_vm_compilers
 
 environment:
   sdk: ">=2.0.0-dev.61.0 <2.0.0"

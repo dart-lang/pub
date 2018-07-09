@@ -4,25 +4,55 @@ sudo: false
 dart:
   - dev
 
-dart_task:
-  - test: --preset travis --total-shards 5 --shard-index 0
-  - test: --preset travis --total-shards 5 --shard-index 1
-  - test: --preset travis --total-shards 5 --shard-index 2
-  - test: --preset travis --total-shards 5 --shard-index 3
-  - test: --preset travis --total-shards 5 --shard-index 4
-  - dartfmt
-  - dartanalyzer
+branches:
+  only: [master, travis, /^feature\./]
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
 before_script:
+  - pub get
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
 
-# Only building these branches means that we don't run two builds for each pull
-# request.
-branches:
-  only: [master, travis, /^feature\./]
+jobs:
+  include:
+    # First, check that everything analyzes properly and is formatted.
+    - stage: analyze_format
+      script:
+        - datanalyzer .
+        - dartfmt .
+    # Next, build the entire `test` directory
+    - stage: build
+      script:
+        - pub run build_runner build test
+    # Set up several jobs in the next stage, using the built in sharding
+    # feature from the `test` package.
+    #
+    # Since a build already happened in the previous stage, these tasks will
+    # perform no-op builds which are fast (assuming you set up your cache
+    # properly above!).
+    - stage: unit_test
+      script:
+        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 0
+    - stage: unit_test
+      script:
+        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 1
+    - stage: unit_test
+      script:
+        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 2
+    - stage: unit_test
+      script:
+        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 3
+    - stage: unit_test
+      script:
+        - pub run build_runner test -- --preset travis --total-shards 5 --shard-index 4
+
+# Specify the ordering of your stages
+stages:
+  - analyze_format
+  - build
+  - unit_test
 
 cache:
   directories:
     - $HOME/.pub-cache
+    - .dart_tool/build
