@@ -10,7 +10,6 @@ branches:
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
 before_script:
-  - pub get
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
 
 jobs:
