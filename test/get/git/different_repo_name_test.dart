@@ -11,7 +11,7 @@ main() {
   test(
       'doesn\'t require the repository name to match the name in the '
       'pubspec', () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git('foo.git',
         [d.libDir('weirdname'), d.libPubspec('weirdname', '1.0.0')]).create();

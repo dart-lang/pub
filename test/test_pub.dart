@@ -295,7 +295,7 @@ Future confirmPublish(TestProcess pub) async {
       pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
   await expectLater(pub.stdout,
       emitsThrough("Looks great! Are you ready to upload your package (y/n)?"));
-  await pub.stdin.writeln("y");
+  pub.stdin.writeln("y");
 }
 
 /// Resolves [path] relative to the package cache in the sandbox.
