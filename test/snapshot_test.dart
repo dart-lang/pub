@@ -108,7 +108,7 @@ main() {
           d.file('hello.dart.snapshot.dart2', contains('hello!'))
         ]).validate();
 
-        await globalPackageServer.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve("foo", "1.2.4", contents: [
             d.dir("bin",
                 [d.file("hello.dart", "void main() => print('hello 2!');")])
@@ -152,7 +152,7 @@ main() {
           d.file('hello.dart.snapshot.dart2', contains('hello!'))
         ]).validate();
 
-        await globalPackageServer.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve("bar", "1.2.4", contents: [
             d.dir("lib", [d.file("bar.dart", "final message = 'hello 2!';")]),
           ]);
@@ -170,7 +170,7 @@ main() {
       });
 
       test("a git dependency of its package is updated", () async {
-        await ensureGit();
+        ensureGit();
 
         await d.git('foo.git', [
           d.pubspec({"name": "foo", "version": "0.0.1"}),

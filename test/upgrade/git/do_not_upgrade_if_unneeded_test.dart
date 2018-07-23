@@ -11,7 +11,7 @@ main() {
   test(
       "doesn't upgrade one locked Git package's dependencies if it's "
       "not necessary", () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git('foo.git', [
       d.libDir('foo'),

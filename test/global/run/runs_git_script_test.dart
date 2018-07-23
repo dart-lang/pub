@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 main() {
   test('runs a script in a git package', () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git('foo.git', [
       d.libPubspec("foo", "1.0.0"),

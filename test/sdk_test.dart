@@ -93,7 +93,7 @@ main() {
         "doesn't fail if the Flutter SDK's version file doesn't exist when "
         "nothing depends on Flutter", () async {
       await d.appDir().create();
-      await deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
+      deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
@@ -165,8 +165,7 @@ main() {
     });
 
     test("supports the Fuchsia SDK", () async {
-      await renameDir(
-          p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
+      renameDir(p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
 
       await d.appDir({
         "foo": {"sdk": "fuchsia"}

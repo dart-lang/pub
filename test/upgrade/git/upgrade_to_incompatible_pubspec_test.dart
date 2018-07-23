@@ -11,7 +11,7 @@ import '../../test_pub.dart';
 
 main() {
   test("upgrades Git packages to an incompatible pubspec", () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
