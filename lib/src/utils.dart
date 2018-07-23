@@ -600,8 +600,7 @@ String createUuid([List<int> bytes]) {
       .toUpperCase();
 
   return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
-      '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(
-          20, 32)}';
+      '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
 }
 
 /// Wraps [text] so that it fits within [_lineLength], if there is a line length.

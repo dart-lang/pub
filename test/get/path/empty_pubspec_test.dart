@@ -23,8 +23,8 @@ main() {
 
     await pubGet(
         exitCode: exit_codes.DATA,
-        error: 'Error on line 1, column 1 of ${p.join(
-                '..', 'foo', 'pubspec.yaml')}: '
+        error:
+            'Error on line 1, column 1 of ${p.join('..', 'foo', 'pubspec.yaml')}: '
             'Missing the required "name" field.');
   });
 }
