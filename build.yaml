@@ -4,6 +4,3 @@ targets:
       build_modules|modules:
         options:
           strategy: coarse
-      build_vm_compilers|entrypoint:
-        generate_for:
-          - test/ascii_tree_test.dart.vm_test.dart

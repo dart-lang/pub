@@ -35,22 +35,9 @@ dev_dependencies:
   build_vm_compilers: ^0.1.0
 
 dependency_overrides:
-  build_modules:
-    path: ../build/build_modules
-    # git:
-    #   url: https://github.com/dart-lang/build.git
-    #   ref: run-precompiled-vm-tests
-    #   path: build_modules
-  build_vm_compilers:
-    path: ../build/build_vm_compilers
-    # git:
-    #   url: https://github.com/dart-lang/build.git
-    #   ref: run-precompiled-vm-tests
-    #   path: build_vm_compilers
-  build_runner:
-    path: ../build/build_runner
-  build_runner_core:
-    path: ../build/build_runner_core
+  build_modules: ^0.3.0
+  build_vm_compilers: ^0.1.0
+  build_runner: ^0.9.0
 
 environment:
   sdk: ">=2.0.0-dev.61.0 <2.0.0"
