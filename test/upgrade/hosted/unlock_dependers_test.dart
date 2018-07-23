@@ -22,7 +22,7 @@ main() {
 
     await d.appPackagesFile({"foo": "1.0.0", "bar": "1.0.0"}).validate();
 
-    await globalPackageServer.add((builder) {
+    globalPackageServer.add((builder) {
       builder.serve("foo", "2.0.0", deps: {"bar": "<3.0.0"});
       builder.serve("bar", "2.0.0");
     });

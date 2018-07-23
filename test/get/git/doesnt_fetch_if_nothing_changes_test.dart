@@ -12,7 +12,7 @@ import '../../test_pub.dart';
 
 main() {
   test("doesn't re-fetch a repository if nothing changes", () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();

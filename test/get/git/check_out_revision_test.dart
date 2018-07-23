@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 main() {
   test('checks out a package at a specific revision from Git', () async {
-    await ensureGit();
+    ensureGit();
 
     var repo = d.git(
         'foo.git', [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')]);

@@ -5,6 +5,8 @@
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:test/test.dart';
 
+void hello4() {}
+
 main() {
   group('tree.fromFiles', () {
     test('no files', () {

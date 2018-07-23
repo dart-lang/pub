@@ -87,7 +87,7 @@ main() {
         ])
       ]).create();
 
-      await expect(
+      expect(
           entrypoint.root.listFiles(useGitIgnore: true),
           unorderedEquals([
             p.join(root, 'pubspec.yaml'),
@@ -96,7 +96,7 @@ main() {
             p.join(root, 'subdir', 'subfile2.text')
           ]));
 
-      await expect(
+      expect(
           entrypoint.root.listFiles(),
           unorderedEquals([
             p.join(root, 'pubspec.yaml'),

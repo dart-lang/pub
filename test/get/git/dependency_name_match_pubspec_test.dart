@@ -13,7 +13,7 @@ main() {
   test(
       'requires the dependency name to match the remote pubspec '
       'name', () async {
-    await ensureGit();
+    ensureGit();
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();

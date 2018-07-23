@@ -26,9 +26,18 @@ dependencies:
 
 dev_dependencies:
   shelf_test_handler: "^1.0.0"
-  test: ^0.12.42
+  test: ^1.2.0
   test_descriptor: "^1.0.0"
   test_process: "^1.0.0"
+  build_runner: ^0.9.0
+  build_modules: ^0.3.0
+  build_test: ^0.10.0
+  build_vm_compilers: ^0.1.0
+
+dependency_overrides:
+  build_modules: ^0.3.0
+  build_vm_compilers: ^0.1.0
+  build_runner: ^0.9.0
 
 environment:
   sdk: ">=2.0.0-dev.61.0 <2.0.0"

@@ -10,7 +10,7 @@ import '../../test_pub.dart';
 main() {
   group("(regression)", () {
     test('checks out a package from Git with a trailing slash', () async {
-      await ensureGit();
+      ensureGit();
 
       await d.git(
           'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
