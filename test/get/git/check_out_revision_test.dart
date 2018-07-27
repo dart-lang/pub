@@ -25,12 +25,17 @@ main() {
       }
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo 1";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [
+          d.gitPackageRepoCacheDir('foo'),
+        ]),
+        d.gitPackageRevisionCacheDir('foo', 1),
+      ])
     ]).validate();
+
+    expect(packageSpecLine('foo'), contains(commit));
   });
 }

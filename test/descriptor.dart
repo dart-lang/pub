@@ -92,24 +92,6 @@ Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
 Descriptor gitPackageRepoCacheDir(String name) =>
     hashDir(name, [dir('objects'), dir('refs')]);
 
-/// Describes the `packages/` directory containing all the given [packages],
-/// which should be name/version pairs. The packages will be validated against
-/// the format produced by the mock package server.
-///
-/// A package with a null version should not be downloaded.
-Descriptor packagesDir(Map<String, String> packages) {
-  var contents = <Descriptor>[];
-  packages.forEach((name, version) {
-    if (version == null) {
-      contents.add(nothing(name));
-    } else {
-      contents
-          .add(dir(name, [file("$name.dart", 'main() => "$name $version";')]));
-    }
-  });
-  return dir(packagesPath, contents);
-}
-
 /// Describes the global package cache directory containing all the given
 /// [packages], which should be name/version pairs. The packages will be
 /// validated against the format produced by the mock package server.

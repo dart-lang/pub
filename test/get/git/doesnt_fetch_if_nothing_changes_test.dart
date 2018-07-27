@@ -23,24 +23,16 @@ main() {
       }
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    final originalFooSpec = packageSpecLine('foo');
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.
     deleteEntry(p.join(d.sandbox, 'foo.git'));
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), originalFooSpec);
   });
 }

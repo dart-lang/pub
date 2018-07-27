@@ -22,12 +22,8 @@ main() {
       })
     ]).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('weirdname', [d.file('weirdname.dart', 'main() => "weirdname";')])
-    ]).validate();
+    expect(packageSpecLine('weirdname'), contains('foo'));
   });
 }

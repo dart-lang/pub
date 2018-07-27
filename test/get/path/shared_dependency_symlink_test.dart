@@ -38,12 +38,15 @@ main() {
     await d.dir("link").create();
     symlinkInSandbox("shared", path.join("link", "shared"));
 
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir("foo", [d.file("foo.dart", 'main() => "foo";')]),
-      d.dir("bar", [d.file("bar.dart", 'main() => "bar";')]),
-      d.dir("shared", [d.file("shared.dart", 'main() => "shared";')])
+    await d.dir(appPath, [
+      d.packagesFile({
+        'myapp': '.',
+        'foo': '../foo',
+        'bar': '../bar',
+        'shared': '../shared'
+      })
     ]).validate();
   });
 }

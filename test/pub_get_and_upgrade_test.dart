@@ -34,7 +34,7 @@ main() {
       });
     });
 
-    test('adds itself to the packages directory and .packages file', () async {
+    test('adds itself to the .packages file', () async {
       // The package should use the name in the pubspec, not the name of the
       // directory.
       await d.dir(appPath, [
@@ -42,47 +42,11 @@ main() {
         d.libDir('myapp_name')
       ]).create();
 
-      await pubCommand(command, args: ["--packages-dir"]);
-
-      await d.dir(packagesPath, [
-        d.dir("myapp_name",
-            [d.file('myapp_name.dart', 'main() => "myapp_name";')])
-      ]).validate();
+      await pubCommand(command);
 
       await d.dir("myapp", [
         d.packagesFile({"myapp_name": "."})
       ]).validate();
-    });
-
-    test(
-        'does not adds itself to the packages if it has no "lib" '
-        'directory', () async {
-      // The symlink should use the name in the pubspec, not the name of the
-      // directory.
-      await d.dir(appPath, [
-        d.pubspec({"name": "myapp_name"}),
-      ]).create();
-
-      await pubCommand(command, args: ["--packages-dir"]);
-
-      await d.dir(packagesPath, [d.nothing("myapp_name")]).validate();
-    });
-
-    test(
-        'does not add a package if it does not have a "lib" '
-        'directory', () async {
-      // Using a path source, but this should be true of all sources.
-      await d.dir('foo', [d.libPubspec('foo', '0.0.0-not.used')]).create();
-
-      await d.dir(appPath, [
-        d.appPubspec({
-          "foo": {"path": "../foo"}
-        })
-      ]).create();
-
-      await pubCommand(command, args: ["--packages-dir"]);
-
-      await d.packagesDir({"foo": null}).validate();
     });
 
     test('reports a solver failure', () async {

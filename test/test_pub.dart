@@ -66,13 +66,14 @@ final String cachePath = "cache";
 /// directory.
 final String appPath = "myapp";
 
-/// The path of the packages directory in the mock app used for tests, relative
-/// to the sandbox directory.
-final String packagesPath = "$appPath/packages";
-
 /// The path of the ".packages" file in the mock app used for tests, relative
 /// to the sandbox directory.
 final String packagesFilePath = "$appPath/.packages";
+
+/// The line from the `.packages` file for [packageName].
+String packageSpecLine(String packageName) => new File(d.path(packagesFilePath))
+    .readAsLinesSync()
+    .firstWhere((l) => l.startsWith('$packageName:'));
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.

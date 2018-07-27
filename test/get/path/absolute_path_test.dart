@@ -20,7 +20,7 @@ main() {
       })
     ]).create();
 
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
     await d.appPackagesFile({"foo": path.join(d.sandbox, "foo")}).validate();
   });

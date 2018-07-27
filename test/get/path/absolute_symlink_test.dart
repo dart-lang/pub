@@ -16,13 +16,18 @@ main() {
     await d
         .dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
 
+    final fooPath = d.path("foo");
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": path.join(d.sandbox, "foo")}
+        "foo": {"path": fooPath}
       })
     ]).create();
 
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
+
+    await d.dir(appPath, [
+      d.packagesFile({'myapp': '.', 'foo': fooPath})
+    ]).validate();
 
     await d.dir("moved").create();
 
@@ -31,8 +36,8 @@ main() {
     renameInSandbox(appPath, path.join("moved", appPath));
 
     await d.dir("moved", [
-      d.dir(packagesPath, [
-        d.dir("foo", [d.file("foo.dart", 'main() => "foo";')])
+      d.dir(appPath, [
+        d.packagesFile({'myapp': '.', 'foo': fooPath})
       ])
     ]).validate();
   });
