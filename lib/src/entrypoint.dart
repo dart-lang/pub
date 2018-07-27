@@ -238,8 +238,6 @@ class Entrypoint {
     // Install the packages and maybe link them into the entrypoint.
     if (packagesDir) {
       cleanDir(packagesPath);
-    } else {
-      deleteEntry(packagesPath);
     }
 
     await Future.wait(
@@ -247,7 +245,7 @@ class Entrypoint {
     _saveLockFile(result);
 
     if (packagesDir) _linkSelf();
-    _linkOrDeleteSecondaryPackageDirs(packagesDir: packagesDir);
+    _linkSecondaryPackageDirs(packagesDir: packagesDir);
 
     result.summarizeChanges(type, dryRun: dryRun);
 
@@ -591,36 +589,30 @@ class Entrypoint {
 
   /// If [packagesDir] is true, add "packages" directories to the whitelist of
   /// directories that may contain Dart entrypoints.
-  ///
-  /// Otherwise, delete any "packages" directories in the whitelist of
-  /// directories that may contain Dart entrypoints.
-  void _linkOrDeleteSecondaryPackageDirs({bool packagesDir: false}) {
+  void _linkSecondaryPackageDirs({bool packagesDir: false}) {
     // Only the main "bin" directory gets a "packages" directory, not its
     // subdirectories.
     var binDir = root.path('bin');
     if (dirExists(binDir)) {
-      _linkOrDeleteSecondaryPackageDir(binDir, packagesDir: packagesDir);
+      _linkSecondaryPackageDir(binDir, packagesDir: packagesDir);
     }
 
     // The others get "packages" directories in subdirectories too.
     for (var dir in ['benchmark', 'example', 'test', 'tool', 'web']) {
-      _linkOrDeleteSecondaryPackageDirsRecursively(root.path(dir),
+      _linkSecondaryPackageDirsRecursively(root.path(dir),
           packagesDir: packagesDir);
     }
   }
 
   /// If [packagesDir] is true, creates a symlink to the "packages" directory in
   /// [dir] and all its subdirectories.
-  ///
-  /// Otherwise, deletes any "packages" directories in [dir] and all its
-  /// subdirectories.
-  void _linkOrDeleteSecondaryPackageDirsRecursively(String dir,
+  void _linkSecondaryPackageDirsRecursively(String dir,
       {bool packagesDir: false}) {
     if (!dirExists(dir)) return;
-    _linkOrDeleteSecondaryPackageDir(dir, packagesDir: packagesDir);
+    _linkSecondaryPackageDir(dir, packagesDir: packagesDir);
     for (var subdir in _listDirWithoutPackages(dir)) {
       if (!dirExists(subdir)) continue;
-      _linkOrDeleteSecondaryPackageDir(subdir, packagesDir: packagesDir);
+      _linkSecondaryPackageDir(subdir, packagesDir: packagesDir);
     }
   }
 
@@ -639,12 +631,12 @@ class Entrypoint {
 
   /// If [packagesDir] is true, creates a symlink to the "packages" directory in
   /// [dir].
-  ///
-  /// Otherwise, deletes a "packages" directories in [dir] if one exists.
-  void _linkOrDeleteSecondaryPackageDir(String dir, {bool packagesDir: false}) {
+  void _linkSecondaryPackageDir(String dir, {bool packagesDir: false}) {
     var symlink = p.join(dir, 'packages');
-    if (entryExists(symlink)) deleteEntry(symlink);
-    if (packagesDir) createSymlink(packagesPath, symlink, relative: true);
+    if (packagesDir) {
+      if (entryExists(symlink)) deleteEntry(symlink);
+      createSymlink(packagesPath, symlink, relative: true);
+    }
   }
 
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
