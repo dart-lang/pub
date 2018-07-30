@@ -1,1 +1,1 @@
-export 'package:pub/src/command_runner.dart';
+import 'package:pub/src/command_runner.dart';
