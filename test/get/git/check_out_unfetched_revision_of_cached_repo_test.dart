@@ -29,7 +29,7 @@ main() {
 
     await pubGet();
 
-    final originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpecLine('foo');
 
     // Switch to a new cache.
     renameInSandbox(cachePath, "$cachePath.old");

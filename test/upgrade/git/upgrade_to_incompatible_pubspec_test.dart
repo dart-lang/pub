@@ -31,7 +31,7 @@ main() {
       ])
     ]).validate();
 
-    final originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpecLine('foo');
 
     await d.git(
         'foo.git', [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')]).commit();

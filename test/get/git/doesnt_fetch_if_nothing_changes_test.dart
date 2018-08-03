@@ -25,7 +25,7 @@ main() {
 
     await pubGet();
 
-    final originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpecLine('foo');
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.

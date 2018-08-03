@@ -40,7 +40,7 @@ main() {
       ])
     ]).validate();
 
-    final originalFooDepSpec = packageSpecLine('foo_dep');
+    var originalFooDepSpec = packageSpecLine('foo_dep');
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),

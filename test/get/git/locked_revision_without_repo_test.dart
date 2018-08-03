@@ -35,7 +35,7 @@ main() {
       ])
     ]).validate();
 
-    final originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpecLine('foo');
 
     // Delete the package spec and the cache to simulate a brand new checkout
     // of the application.

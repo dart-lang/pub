@@ -21,7 +21,7 @@ main() {
 
     await pubGet();
 
-    final originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpecLine('foo');
 
     await repo.runGit(['rm', 'pubspec.yaml']);
     await repo.runGit(['commit', '-m', 'delete']);
