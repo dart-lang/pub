@@ -43,8 +43,7 @@ class UpgradeCommand extends PubCommand {
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
-        precompile: argResults['precompile'],
-        packagesDir: false);
+        precompile: argResults['precompile']);
 
     if (isOffline) {
       log.warning("Warning: Upgrading when offline may not update you to the "
