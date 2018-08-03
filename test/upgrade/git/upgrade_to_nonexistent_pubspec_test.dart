@@ -19,26 +19,17 @@ main() {
       "foo": {"git": "../foo.git"}
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    var originalFooSpec = packageSpecLine('foo');
 
     await repo.runGit(['rm', 'pubspec.yaml']);
     await repo.runGit(['commit', '-m', 'delete']);
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
     await pubUpgrade(
-        args: ["--packages-dir"],
         error: new RegExp(r'Could not find a file named "pubspec.yaml" '
             r'in [^\n]*\.'));
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), originalFooSpec);
   });
 }

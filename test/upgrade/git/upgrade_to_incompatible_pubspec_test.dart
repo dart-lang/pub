@@ -20,26 +20,26 @@ main() {
       "foo": {"git": "../foo.git"}
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [
+          d.gitPackageRepoCacheDir('foo'),
+        ]),
+        d.gitPackageRevisionCacheDir('foo'),
+      ])
     ]).validate();
+
+    var originalFooSpec = packageSpecLine('foo');
 
     await d.git(
         'foo.git', [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')]).commit();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
     await pubUpgrade(
-        args: ['--packages-dir'],
         error: contains('"name" field doesn\'t match expected name "foo".'),
         exitCode: exit_codes.DATA);
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), originalFooSpec);
   });
 }

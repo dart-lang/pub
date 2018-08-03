@@ -29,6 +29,8 @@ main() {
 
     await pubGet();
 
+    var originalFooSpec = packageSpecLine('foo');
+
     // Switch to a new cache.
     renameInSandbox(cachePath, "$cachePath.old");
 
@@ -44,9 +46,7 @@ main() {
     renameInSandbox("$cachePath.old", cacheDir);
 
     // Get the updated version of the git dependency based on the lockfile.
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -56,8 +56,6 @@ main() {
       ])
     ]).validate();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), isNot(originalFooSpec));
   });
 }

@@ -22,27 +22,28 @@ main() {
     }).create();
 
     // This get should lock the foo.git dependency to the current revision.
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [
+          d.gitPackageRepoCacheDir('foo'),
+        ]),
+        d.gitPackageRevisionCacheDir('foo'),
+      ])
     ]).validate();
 
-    // Delete the packages path to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packagesPath));
+    var originalFooSpec = packageSpecLine('foo');
+
+    // Delete the package spec to simulate a new checkout of the application.
+    deleteEntry(path.join(d.sandbox, packagesFilePath));
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
     // This get shouldn't upgrade the foo.git dependency due to the lockfile.
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), originalFooSpec);
   });
 }

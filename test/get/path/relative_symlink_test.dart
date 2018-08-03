@@ -27,18 +27,23 @@ main() {
       })
     ]).create();
 
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
+
+    await d.dir(appPath, [
+      d.packagesFile({'myapp': '.', 'foo': '../foo'})
+    ]).validate();
 
     await d.dir("moved").create();
 
     // Move the app and package. Since they are still next to each other, it
-    // should still be found.
+    // should still be found and have the same relative path in the package
+    // spec.
     renameInSandbox("foo", path.join("moved", "foo"));
     renameInSandbox(appPath, path.join("moved", appPath));
 
     await d.dir("moved", [
-      d.dir(packagesPath, [
-        d.dir("foo", [d.file("foo.dart", 'main() => "foo";')])
+      d.dir(appPath, [
+        d.packagesFile({'myapp': '.', 'foo': '../foo'})
       ])
     ]).validate();
   });

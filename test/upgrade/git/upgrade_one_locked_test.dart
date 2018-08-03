@@ -22,14 +22,18 @@ main() {
       "bar": {"git": "../bar.git"}
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ['--packages-dir']);
+    await pubGet();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')]),
-      d.dir('bar', [d.file('bar.dart', 'main() => "bar";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache',
+            [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')]),
+        d.gitPackageRevisionCacheDir('foo'),
+        d.gitPackageRevisionCacheDir('bar'),
+      ])
     ]).validate();
+
+    var originalBarSpec = packageSpecLine('bar');
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
@@ -37,13 +41,14 @@ main() {
     await d.git('bar.git',
         [d.libDir('bar', 'bar 2'), d.libPubspec('bar', '1.0.0')]).commit();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubUpgrade(args: ['--packages-dir', 'foo']);
+    await pubUpgrade(args: ['foo']);
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')]),
-      d.dir('bar', [d.file('bar.dart', 'main() => "bar";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.gitPackageRevisionCacheDir('foo', 2),
+      ])
     ]).validate();
+
+    expect(packageSpecLine('bar'), originalBarSpec);
   });
 }

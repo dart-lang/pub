@@ -18,9 +18,7 @@ main() {
       "foo": {"git": "../foo.git"}
     }).create();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubGet(args: ["--packages-dir"]);
+    await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -29,17 +27,21 @@ main() {
       ])
     ]).validate();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [
+          d.gitPackageRepoCacheDir('foo'),
+        ]),
+        d.gitPackageRevisionCacheDir('foo'),
+      ])
     ]).validate();
+
+    var originalFooSpec = packageSpecLine('foo');
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    // TODO(rnystrom): Remove "--packages-dir" and validate using the
-    // ".packages" file instead of looking in the "packages" directory.
-    await pubUpgrade(
-        args: ["--packages-dir"], output: contains("Changed 1 dependency!"));
+    await pubUpgrade(output: contains("Changed 1 dependency!"));
 
     // When we download a new version of the git package, we should re-use the
     // git/cache directory but create a new git/ directory.
@@ -51,8 +53,6 @@ main() {
       ])
     ]).validate();
 
-    await d.dir(packagesPath, [
-      d.dir('foo', [d.file('foo.dart', 'main() => "foo 2";')])
-    ]).validate();
+    expect(packageSpecLine('foo'), isNot(originalFooSpec));
   });
 }

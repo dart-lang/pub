@@ -32,17 +32,19 @@ class UpgradeCommand extends PubCommand {
         defaultsTo: true,
         help: "Precompile executables and transformed dependencies.");
 
-    argParser.addFlag('packages-dir',
-        negatable: true,
-        help: "Generate a packages/ directory when installing packages.");
+    argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
 
   Future run() async {
+    if (argResults.wasParsed('packages-dir')) {
+      log.warning(log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.'));
+    }
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile'],
-        packagesDir: argResults['packages-dir']);
+        packagesDir: false);
 
     if (isOffline) {
       log.warning("Warning: Upgrading when offline may not update you to the "

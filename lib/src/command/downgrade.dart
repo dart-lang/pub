@@ -27,17 +27,17 @@ class DowngradeCommand extends PubCommand {
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
-    argParser.addFlag('packages-dir',
-        negatable: true,
-        help: "Generate a packages/ directory when installing packages.");
+    argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
 
   Future run() async {
+    if (argResults.wasParsed('packages-dir')) {
+      log.warning(log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.'));
+    }
     var dryRun = argResults['dry-run'];
     await entrypoint.acquireDependencies(SolveType.DOWNGRADE,
-        useLatest: argResults.rest,
-        dryRun: dryRun,
-        packagesDir: argResults['packages-dir']);
+        useLatest: argResults.rest, dryRun: dryRun, packagesDir: false);
 
     if (isOffline) {
       log.warning("Warning: Downgrading when offline may not update you to "

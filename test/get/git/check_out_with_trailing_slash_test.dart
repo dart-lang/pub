@@ -19,9 +19,7 @@ main() {
         "foo": {"git": "../foo.git/"}
       }).create();
 
-      // TODO(rnystrom): Remove "--packages-dir" and validate using the
-      // ".packages" file instead of looking in the "packages" directory.
-      await pubGet(args: ["--packages-dir"]);
+      await pubGet();
 
       await d.dir(cachePath, [
         d.dir('git', [
@@ -30,8 +28,13 @@ main() {
         ])
       ]).validate();
 
-      await d.dir(packagesPath, [
-        d.dir('foo', [d.file('foo.dart', 'main() => "foo";')])
+      await d.dir(cachePath, [
+        d.dir('git', [
+          d.dir('cache', [
+            d.gitPackageRepoCacheDir('foo'),
+          ]),
+          d.gitPackageRevisionCacheDir('foo'),
+        ])
       ]).validate();
     });
   });
