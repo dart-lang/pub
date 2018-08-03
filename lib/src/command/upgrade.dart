@@ -37,8 +37,8 @@ class UpgradeCommand extends PubCommand {
 
   Future run() async {
     if (argResults.wasParsed('packages-dir')) {
-      log.warning(
-          log.yellow('The --packages-dir flag is an unsupported no-op'));
+      log.warning(log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.'));
     }
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,

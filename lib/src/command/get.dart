@@ -35,8 +35,8 @@ class GetCommand extends PubCommand {
 
   Future run() {
     if (argResults.wasParsed('packages-dir')) {
-      log.warning(
-          log.yellow('The --packages-dir flag is an unsupported no-op'));
+      log.warning(log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.'));
     }
     return entrypoint.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'],
