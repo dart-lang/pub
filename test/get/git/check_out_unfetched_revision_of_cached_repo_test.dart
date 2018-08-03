@@ -38,7 +38,6 @@ main() {
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-
     await pubUpgrade(output: contains("Changed 1 dependency!"));
 
     // Switch back to the old cache.

@@ -26,10 +26,8 @@ main() {
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache', [
-          d.gitPackageRepoCacheDir('foo'),
-          d.gitPackageRepoCacheDir('bar')
-        ]),
+        d.dir('cache',
+            [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')]),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar'),
       ])
