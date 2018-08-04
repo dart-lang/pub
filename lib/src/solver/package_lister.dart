@@ -88,7 +88,7 @@ class PackageLister {
   /// Creates a package lister for the dependency identified by [ref].
   PackageLister(SystemCache cache, this._ref, this._locked,
       this._dependencyType, this._overriddenPackages,
-      {bool downgrade: false})
+      {bool downgrade = false})
       : _source = cache.source(_ref.source),
         _isDowngrade = downgrade;
 
@@ -349,7 +349,7 @@ class PackageLister {
   /// dependency.
   Future<Map<String, Version>> _dependencyBounds(
       Map<String, PackageRange> dependencies, int index,
-      {bool upper: true}) async {
+      {bool upper = true}) async {
     var versions = await _versions;
     var bounds = <String, Version>{};
     var previous = versions[index];

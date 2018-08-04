@@ -88,7 +88,7 @@ class AnalysisContextManager {
     var contextLocator = new ContextLocator();
     var roots = contextLocator.locateRoots(includedPaths: [path]);
     for (var root in roots) {
-      String contextRootPath = root.root.path;
+      var contextRootPath = root.root.path;
 
       // If there is already a context for this context root path, keep it.
       if (_contexts.containsKey(contextRootPath)) {

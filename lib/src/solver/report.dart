@@ -26,7 +26,7 @@ class SolveReport {
   final SolveResult _result;
 
   /// The dependencies in [_result], keyed by package name.
-  final _dependencies = new Map<String, PackageId>();
+  final _dependencies = <String, PackageId>{};
 
   final _output = new StringBuffer();
 
@@ -49,7 +49,7 @@ class SolveReport {
   /// be made) to the lockfile.
   ///
   /// If [dryRun] is true, describes it in terms of what would be done.
-  void summarize({bool dryRun: false}) {
+  void summarize({bool dryRun = false}) {
     // Count how many dependencies actually changed.
     var dependencies = _dependencies.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
@@ -135,7 +135,7 @@ class SolveReport {
   /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
   /// "(override)" next to overridden packages.
   void _reportPackage(String name,
-      {bool alwaysShow: false, bool highlightOverride: true}) {
+      {bool alwaysShow = false, bool highlightOverride = true}) {
     var newId = _dependencies[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId != null ? newId : oldId;

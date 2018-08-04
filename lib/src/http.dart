@@ -22,14 +22,14 @@ import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
-final _CENSORED_FIELDS = const ['refresh_token', 'authorization'];
+final _censoredFields = const ['refresh_token', 'authorization'];
 
 /// Headers required for pub.dartlang.org API requests.
 ///
 /// The Accept header tells pub.dartlang.org which version of the API we're
 /// expecting, so it can either serve that version or give us a 406 error if
 /// it's not supported.
-final PUB_API_HEADERS = const {'Accept': 'application/vnd.pub.v2+json'};
+final pubApiHeaders = const {'Accept': 'application/vnd.pub.v2+json'};
 
 /// A unique ID to identify this particular invocation of pub.
 final _sessionId = createUuid();
@@ -37,7 +37,7 @@ final _sessionId = createUuid();
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
 class _PubHttpClient extends http.BaseClient {
-  final _requestStopwatches = new Map<http.BaseRequest, Stopwatch>();
+  final _requestStopwatches = <http.BaseRequest, Stopwatch>{};
 
   http.Client _inner;
 
@@ -124,8 +124,7 @@ class _PubHttpClient extends http.BaseClient {
 
     if (request.method == 'POST') {
       var contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
-      if (contentTypeString == null) contentTypeString = '';
-      var contentType = ContentType.parse(contentTypeString);
+      var contentType = ContentType.parse(contentTypeString ?? '');
       if (request is http.MultipartRequest) {
         requestLog.writeln();
         requestLog.writeln("Body fields:");
@@ -169,7 +168,7 @@ class _PubHttpClient extends http.BaseClient {
   /// Returns a log-formatted string for the HTTP field or header with the given
   /// [name] and [value].
   String _logField(String name, String value) {
-    if (_CENSORED_FIELDS.contains(name.toLowerCase())) {
+    if (_censoredFields.contains(name.toLowerCase())) {
       return "$name: <censored>";
     } else {
       return "$name: $value";
@@ -203,8 +202,7 @@ class _ThrowingClient extends http.BaseClient {
       return streamedResponse;
     }
 
-    if (status == 406 &&
-        request.headers['Accept'] == PUB_API_HEADERS['Accept']) {
+    if (status == 406 && request.headers['Accept'] == pubApiHeaders['Accept']) {
       fail("Pub ${sdk.version} is incompatible with the current version of "
           "${request.url.host}.\n"
           "Upgrade pub to the latest version and try again.");

@@ -109,7 +109,7 @@ class Entrypoint {
     var packages = new Map<String, Package>.fromIterable(
         lockFile.packages.values,
         key: (id) => id.name,
-        value: (id) => cache.load(id));
+        value: cache.load);
     packages[root.name] = root;
 
     _packageGraph = new PackageGraph(this, lockFile, packages);
@@ -151,17 +151,15 @@ class Entrypoint {
   String get _snapshotPath => p.join(cachePath, 'bin');
 
   /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(SystemCache cache)
+  Entrypoint.current(this.cache)
       : root = new Package.load(null, '.', cache.sources, isRootPackage: true),
-        cache = cache,
         _inMemory = false,
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, SystemCache cache)
+  Entrypoint(String rootDir, this.cache)
       : root =
             new Package.load(null, rootDir, cache.sources, isRootPackage: true),
-        cache = cache,
         _inMemory = false,
         isGlobal = true;
 
@@ -200,8 +198,8 @@ class Entrypoint {
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type,
       {List<String> useLatest,
-      bool dryRun: false,
-      bool precompile: true}) async {
+      bool dryRun = false,
+      bool precompile = true}) async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
 
@@ -216,7 +214,7 @@ class Entrypoint {
       if (overriddenPackages.isNotEmpty) {
         log.message(log.yellow(
             'Overriding the upper bound Dart SDK constraint to <=${sdk.version} '
-            'for the following packages:\n\n${overriddenPackages}\n\n'
+            'for the following packages:\n\n$overriddenPackages\n\n'
             'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
             'environment variable to `false`, or you can silence this message '
             'by setting it to `quiet`.'));

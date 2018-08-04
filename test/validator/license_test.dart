@@ -57,7 +57,7 @@ main() {
     test('has a prefixed UNLICENSE file', () async {
       await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      d.file(path.join(appPath, 'MIT_UNLICENSE'), '').create();
+      await d.file(path.join(appPath, 'MIT_UNLICENSE'), '').create();
       expectValidationError(license);
     });
 

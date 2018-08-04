@@ -229,7 +229,7 @@ class GlobalPackages {
       if (!fileExists(packagesFilePath)) {
         // A .packages file may not already exist if the global executable has a
         // 1.6-style lock file instead.
-        await writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
+        writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
       }
 
       // Try to avoid starting up an asset server to precompile packages if
@@ -272,7 +272,7 @@ class GlobalPackages {
       if (source is GitSource) {
         var url = source.urlFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active from Git '
-            'repository "${url}".');
+            'repository "$url".');
       } else if (source is PathSource) {
         var path = source.pathFromDescription(id.description);
         log.message('Package ${log.bold(name)} is currently active at path '
@@ -378,7 +378,7 @@ class GlobalPackages {
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
-      {bool checked: false}) {
+      {bool checked = false}) {
     var entrypoint = find(package);
     return exe.runExecutable(
         entrypoint, package, p.join('bin', '$executable.dart'), args,
@@ -490,8 +490,7 @@ class GlobalPackages {
 
           var entrypoint = find(id.name);
           var snapshots = await _precompileExecutables(entrypoint, id.name);
-          var packageExecutables = executables.remove(id.name);
-          if (packageExecutables == null) packageExecutables = [];
+          var packageExecutables = executables.remove(id.name) ?? [];
           _updateBinStubs(
               entrypoint.packageGraph.packages[id.name], packageExecutables,
               overwriteBinStubs: true,
@@ -518,10 +517,9 @@ class GlobalPackages {
       var message = new StringBuffer("Binstubs exist for non-activated "
           "packages:\n");
       executables.forEach((package, executableNames) {
-        // TODO(nweiz): Use a normal for loop here when
-        // https://github.com/dart-lang/async_await/issues/68 is fixed.
-        executableNames.forEach(
-            (executable) => deleteEntry(p.join(_binStubDir, executable)));
+        for (var executable in executableNames) {
+          deleteEntry(p.join(_binStubDir, executable));
+        }
 
         message.writeln("  From ${log.bold(package)}: "
             "${toSentence(executableNames)}");
@@ -557,8 +555,8 @@ class GlobalPackages {
   void _updateBinStubs(Package package, List<String> executables,
       {bool overwriteBinStubs,
       Map<String, String> snapshots,
-      bool suggestIfNotOnPath: true}) {
-    if (snapshots == null) snapshots = const {};
+      bool suggestIfNotOnPath = true}) {
+    snapshots ??= const {};
 
     // Remove any previously activated binstubs for this package, in case the
     // list of executables has changed.
@@ -689,8 +687,8 @@ class GlobalPackages {
 rem This file was created by pub v${sdk.version}.
 rem Package: ${package.name}
 rem Version: ${package.version}
-rem Executable: ${executable}
-rem Script: ${script}
+rem Executable: $executable
+rem Script: $script
 $invocation %*
 """;
 
@@ -714,8 +712,8 @@ pub global run ${package.name}:$script %*
 # This file was created by pub v${sdk.version}.
 # Package: ${package.name}
 # Version: ${package.version}
-# Executable: ${executable}
-# Script: ${script}
+# Executable: $executable
+# Script: $script
 $invocation "\$@"
 """;
 

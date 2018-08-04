@@ -31,7 +31,7 @@ class Progress {
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.FINE]
   /// as opposed to [log.Level.MESSAGE].
-  Progress(this._message, {bool fine: false}) {
+  Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
     var level = fine ? log.Level.FINE : log.Level.MESSAGE;

@@ -17,7 +17,7 @@ class ExecutableValidator extends Validator {
   Future validate() async {
     var binFiles = entrypoint.root
         .listFiles(beneath: "bin", recursive: false, useGitIgnore: true)
-        .map((path) => entrypoint.root.relative(path))
+        .map(entrypoint.root.relative)
         .toList();
 
     entrypoint.root.pubspec.executables.forEach((executable, script) {

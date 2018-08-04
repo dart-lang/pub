@@ -283,7 +283,7 @@ class DepsCommand extends PubCommand {
     analysisContextManager.createContextsForDirectory(packagePath);
     return package.executablePaths
         .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-        .map((e) => p.basenameWithoutExtension(e));
+        .map(p.basenameWithoutExtension);
   }
 
   /// Returns formatted string that lists [executables] for the [packageName].
@@ -300,7 +300,7 @@ class DepsCommand extends PubCommand {
       // If executable matches the package name omit the name of executable in
       // the output.
       return executables.first != packageName
-          ? '${packageName}:${log.bold(executables.first)}'
+          ? '$packageName:${log.bold(executables.first)}'
           : log.bold(executables.first);
     }
 
@@ -315,6 +315,6 @@ class DepsCommand extends PubCommand {
         return e1.compareTo(e2);
     });
 
-    return '${packageName}: ${executables.map(log.bold).join(', ')}';
+    return '$packageName: ${executables.map(log.bold).join(', ')}';
   }
 }

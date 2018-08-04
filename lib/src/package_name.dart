@@ -377,8 +377,8 @@ class PackageDetail {
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
   PackageDetail max(PackageDetail other) => new PackageDetail(
-      showVersion: this.showVersion || other.showVersion,
-      showSource: this.showSource || other.showSource,
-      showDescription: this.showDescription || other.showDescription,
-      showFeatures: this.showFeatures || other.showFeatures);
+      showVersion: showVersion || other.showVersion,
+      showSource: showSource || other.showSource,
+      showDescription: showDescription || other.showDescription,
+      showFeatures: showFeatures || other.showFeatures);
 }

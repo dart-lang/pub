@@ -186,7 +186,7 @@ main() {
 }
 
 void createEntrypoint([String path]) {
-  if (path == null) path = appPath;
+  path ??= appPath;
   root = p.join(d.sandbox, path);
   entrypoint = new Entrypoint(root, new SystemCache(rootDir: root));
 

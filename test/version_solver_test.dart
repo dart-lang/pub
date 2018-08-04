@@ -604,7 +604,7 @@ void badSource() {
 
   test('fail if the root package has a bad source in dev dep', () async {
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
           'foo': {'bad': 'any'}
@@ -1025,7 +1025,7 @@ void backtracking() {
 void dartSdkConstraint() {
   test('root matches SDK', () async {
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '0.1.2+3'}
       })
@@ -1036,7 +1036,7 @@ void dartSdkConstraint() {
 
   test('root does not match SDK', () async {
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '0.0.0'}
       })
@@ -1154,7 +1154,7 @@ void dartSdkConstraint() {
     group('for the root package', () {
       test('allow 2.0.0-dev by default', () async {
         await d.dir(appPath, [
-          await d.pubspec({'name': 'myapp'})
+          d.pubspec({'name': 'myapp'})
         ]).create();
 
         await expectResolves(
@@ -1163,7 +1163,7 @@ void dartSdkConstraint() {
 
       test('allow 2.0.0 by default', () async {
         await d.dir(appPath, [
-          await d.pubspec({'name': 'myapp'})
+          d.pubspec({'name': 'myapp'})
         ]).create();
 
         await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
@@ -1171,7 +1171,7 @@ void dartSdkConstraint() {
 
       test("allow pre-release versions of the upper bound", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.3'}
           })
@@ -1187,11 +1187,11 @@ void dartSdkConstraint() {
     group('for a dependency', () {
       test('disallow 2.0.0 by default', () async {
         await d.dir('foo', [
-          await d.pubspec({'name': 'foo'})
+          d.pubspec({'name': 'foo'})
         ]).create();
 
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'dependencies': {
               'foo': {'path': '../foo'}
@@ -1211,14 +1211,14 @@ void dartSdkConstraint() {
 
       test('allow 2.0.0-dev by default', () async {
         await d.dir('foo', [
-          await d.pubspec({'name': 'foo'})
+          d.pubspec({'name': 'foo'})
         ]).create();
         await d.dir('bar', [
-          await d.pubspec({'name': 'bar'})
+          d.pubspec({'name': 'bar'})
         ]).create();
 
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'dependencies': {
               'foo': {'path': '../foo'},
@@ -1239,11 +1239,11 @@ void dartSdkConstraint() {
 
     test("don't log if PUB_ALLOW_PRERELEASE_SDK is quiet", () async {
       await d.dir('foo', [
-        await d.pubspec({'name': 'foo'})
+        d.pubspec({'name': 'foo'})
       ]).create();
 
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'dependencies': {
             'foo': {'path': '../foo'},
@@ -1264,11 +1264,11 @@ void dartSdkConstraint() {
 
     test('are disabled if PUB_ALLOW_PRERELEASE_SDK is false', () async {
       await d.dir('foo', [
-        await d.pubspec({'name': 'foo'})
+        d.pubspec({'name': 'foo'})
       ]).create();
 
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'dependencies': {
             'foo': {'path': '../foo'}
@@ -1290,7 +1290,7 @@ void dartSdkConstraint() {
     group("don't apply if", () {
       test("major SDK versions differ", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<2.2.3'}
           })
@@ -1303,7 +1303,7 @@ void dartSdkConstraint() {
 
       test("minor SDK versions differ", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.3.3'}
           })
@@ -1316,7 +1316,7 @@ void dartSdkConstraint() {
 
       test("patch SDK versions differ", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.4'}
           })
@@ -1329,7 +1329,7 @@ void dartSdkConstraint() {
 
       test("SDK max is inclusive", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<=1.2.3'}
           })
@@ -1342,7 +1342,7 @@ void dartSdkConstraint() {
 
       test("SDK isn't pre-release", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.3'}
           })
@@ -1359,7 +1359,7 @@ void dartSdkConstraint() {
 
       test("upper bound is pre-release", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.3-dev.2.0'}
           })
@@ -1372,7 +1372,7 @@ void dartSdkConstraint() {
 
       test("lower bound is pre-release and matches SDK", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '>=1.2.3-dev.2.0 <1.2.3'}
           })
@@ -1385,7 +1385,7 @@ void dartSdkConstraint() {
 
       test("upper bound has build identifier", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.3+1'}
           })
@@ -1400,7 +1400,7 @@ void dartSdkConstraint() {
     group("apply if", () {
       test("upper bound is exclusive and matches SDK", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '<1.2.3'}
           })
@@ -1414,7 +1414,7 @@ void dartSdkConstraint() {
 
       test("lower bound is pre-release but doesn't match SDK", () async {
         await d.dir(appPath, [
-          await d.pubspec({
+          d.pubspec({
             'name': 'myapp',
             'environment': {'sdk': '>=1.0.0-dev.1.0 <1.2.3'}
           })
@@ -1433,7 +1433,7 @@ void sdkConstraint() {
   group('without a Flutter SDK', () {
     test('fails for the root package', () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'flutter': '1.2.3'}
         })
@@ -1477,7 +1477,7 @@ void sdkConstraint() {
 
     test('fails even with a matching Dart SDK constraint', () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
         })
@@ -1493,7 +1493,7 @@ void sdkConstraint() {
 
   test('without a Fuchsia SDK fails for the root package', () async {
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'environment': {'fuchsia': '1.2.3'}
       })
@@ -1514,7 +1514,7 @@ void sdkConstraint() {
 
     test('succeeds with a matching constraint', () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'flutter': 'any'}
         })
@@ -1527,7 +1527,7 @@ void sdkConstraint() {
 
     test('fails with a non-matching constraint', () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'flutter': '>1.2.3'}
         })
@@ -1545,7 +1545,7 @@ void sdkConstraint() {
 
     test('succeeds if both Flutter and Dart SDKs match', () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
         })
@@ -1558,7 +1558,7 @@ void sdkConstraint() {
 
     test("fails if Flutter SDK doesn't match but Dart does", () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'sdk': '0.1.2+3', 'flutter': '>1.2.3'}
         })
@@ -1576,7 +1576,7 @@ void sdkConstraint() {
 
     test("fails if Dart SDK doesn't match but Flutter does", () async {
       await d.dir(appPath, [
-        await d.pubspec({
+        d.pubspec({
           'name': 'myapp',
           'environment': {'sdk': '>0.1.2+3', 'flutter': '1.2.3'}
         })
@@ -1672,7 +1672,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependencies': {'a': 'any'},
         'dependency_overrides': {'a': '<3.0.0'}
@@ -1690,7 +1690,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependency_overrides': {'a': '<3.0.0'}
       })
@@ -1709,7 +1709,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependencies': {'b': 'any', 'c': 'any'},
         'dependency_overrides': {'a': '2.0.0'}
@@ -1728,7 +1728,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependencies': {'shared': '2.0.0'},
         'dependency_overrides': {'a': '<3.0.0'}
@@ -1752,7 +1752,7 @@ void override() {
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependency_overrides': {'foo': '<1.0.2'}
       })
@@ -1775,7 +1775,7 @@ void override() {
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependency_overrides': {'foo': '>1.0.1'}
       })
@@ -1791,7 +1791,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependency_overrides': {'foo': '>=1.0.0 <2.0.0'}
       })
@@ -1809,7 +1809,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependencies': {
           'foo': {'bad': 'any'}
@@ -1829,7 +1829,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'dependency_overrides': {'foo': 'any'}
       })
@@ -1844,7 +1844,7 @@ void override() {
     });
 
     await d.dir(appPath, [
-      await d.pubspec({
+      d.pubspec({
         'name': 'myapp',
         'version': '2.0.0',
         'dependency_overrides': {'foo': 'any'}
@@ -2841,7 +2841,7 @@ Future expectResolves(
     output,
     int tries,
     Map<String, String> environment,
-    bool downgrade: false}) async {
+    bool downgrade = false}) async {
   await runPub(
       args: [downgrade ? 'downgrade' : 'get'],
       environment: environment,

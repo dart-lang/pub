@@ -128,8 +128,8 @@ String _getPrefix(bool isRoot, bool isLast) {
 
 void _draw(
     StringBuffer buffer, String prefix, String name, Map<String, Map> children,
-    {bool showAllChildren, bool isLast: false}) {
-  if (showAllChildren == null) showAllChildren = false;
+    {bool showAllChildren, bool isLast = false}) {
+  showAllChildren ??= false;
 
   // Don't draw a line for the root node.
   if (name != null) _drawLine(buffer, prefix, isLast, name);

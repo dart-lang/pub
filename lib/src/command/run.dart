@@ -42,10 +42,8 @@ class RunCommand extends PubCommand {
       executable = components[1];
 
       if (p.split(executable).length > 1) {
-        // TODO(nweiz): Use adjacent strings when the new async/await compiler
-        // lands.
         usageException(
-            "Cannot run an executable in a subdirectory of a " + "dependency.");
+            "Cannot run an executable in a subdirectory of a dependency.");
       }
     } else if (onlyIdentifierRegExp.hasMatch(executable)) {
       // "pub run foo" means the same thing as "pub run foo:foo" as long as

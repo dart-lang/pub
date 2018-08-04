@@ -571,13 +571,13 @@ class Pubspec {
       }
     }
 
-    _getError(() => this.name);
-    _getError(() => this.version);
-    _getError(() => this.dependencies);
-    _getError(() => this.devDependencies);
-    _getError(() => this.publishTo);
-    _getError(() => this.features);
-    _getError(() => this._ensureEnvironment());
+    _getError(() => name);
+    _getError(() => version);
+    _getError(() => dependencies);
+    _getError(() => devDependencies);
+    _getError(() => publishTo);
+    _getError(() => features);
+    _getError(_ensureEnvironment);
     return errors;
   }
 
@@ -611,7 +611,7 @@ class Pubspec {
       var sourceName;
 
       var versionConstraint = new VersionRange();
-      Map<String, FeatureDependency> features = const {};
+      var features = const <String, FeatureDependency>{};
       if (spec == null) {
         descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;

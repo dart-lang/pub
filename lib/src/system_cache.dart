@@ -71,7 +71,7 @@ class SystemCache {
   ///
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
-  SystemCache({String rootDir, bool isOffline: false})
+  SystemCache({String rootDir, bool isOffline = false})
       : rootDir = rootDir == null ? SystemCache.defaultDir : rootDir {
     for (var source in sources.all) {
       if (source is HostedSource) {

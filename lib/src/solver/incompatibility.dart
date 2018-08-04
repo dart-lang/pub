@@ -232,7 +232,7 @@ class Incompatibility {
         _tryRequiresForbidden(other, details, thisLine, otherLine);
     if (requiresForbidden != null) return requiresForbidden;
 
-    var buffer = new StringBuffer(this.toString(details));
+    var buffer = new StringBuffer(toString(details));
     if (thisLine != null) buffer.write(" $thisLine");
     buffer.write(" and ${other.toString(details)}");
     if (otherLine != null) buffer.write(" $thisLine");
@@ -457,7 +457,7 @@ class Incompatibility {
   /// If [allowEvery] is `true`, this will return "every version of foo" instead
   /// of "foo any".
   String _terse(Term term, Map<String, PackageDetail> details,
-      {bool allowEvery: false}) {
+      {bool allowEvery = false}) {
     if (allowEvery && term.constraint.isAny) {
       return "every version of ${_terseRef(term, details)}";
     } else {

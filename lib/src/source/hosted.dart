@@ -29,7 +29,7 @@ class HostedSource extends Source {
   final name = "hosted";
   final hasMultipleVersions = true;
 
-  BoundHostedSource bind(SystemCache systemCache, {bool isOffline: false}) =>
+  BoundHostedSource bind(SystemCache systemCache, {bool isOffline = false}) =>
       isOffline
           ? new _OfflineHostedSource(this, systemCache)
           : new BoundHostedSource(this, systemCache);
@@ -138,7 +138,7 @@ class BoundHostedSource extends CachedSource {
 
     var body;
     try {
-      body = await httpClient.read(url, headers: PUB_API_HEADERS);
+      body = await httpClient.read(url, headers: pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
@@ -180,7 +180,7 @@ class BoundHostedSource extends CachedSource {
     var version;
     try {
       version =
-          jsonDecode(await httpClient.read(url, headers: PUB_API_HEADERS));
+          jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
@@ -297,7 +297,7 @@ class BoundHostedSource extends CachedSource {
       String server, String package, Version version, String destPath) async {
     var url = Uri.parse("$server/packages/$package/versions/$version.tar.gz");
     log.io("Get package from $url.");
-    log.message('Downloading ${log.bold(package)} ${version}...');
+    log.message('Downloading ${log.bold(package)} $version...');
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
@@ -436,7 +436,7 @@ class _OfflineHostedSource extends BoundHostedSource {
 
     var versions;
     if (dirExists(dir)) {
-      versions = await listDir(dir)
+      versions = listDir(dir)
           .map((entry) {
             var components = p.basename(entry).split("-");
             if (components.first != ref.name) return null;

@@ -47,7 +47,7 @@ class TarFileDescriptor extends FileDescriptor {
   Stream<List<int>> readAsBytes() {
     return new Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
       await create(tempDir);
-      return await readBinaryFile(path.join(tempDir, name));
+      return readBinaryFile(path.join(tempDir, name));
     }));
   }
 }

@@ -34,7 +34,7 @@ class UploaderCommand extends PubCommand {
   Future run() {
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
-      this.printUsage();
+      printUsage();
       return flushThenExit(exit_codes.USAGE);
     }
 
@@ -44,11 +44,11 @@ class UploaderCommand extends PubCommand {
     var command = rest.removeAt(0);
     if (!['add', 'remove'].contains(command)) {
       log.error('Unknown uploader command "$command".');
-      this.printUsage();
+      printUsage();
       return flushThenExit(exit_codes.USAGE);
     } else if (rest.isEmpty) {
       log.error('No uploader given for "pub uploader $command".');
-      this.printUsage();
+      printUsage();
       return flushThenExit(exit_codes.USAGE);
     }
 
@@ -64,13 +64,13 @@ class UploaderCommand extends PubCommand {
               var url = server.resolve("/api/packages/"
                   "${Uri.encodeComponent(package)}/uploaders");
               return client.post(url,
-                  headers: PUB_API_HEADERS, body: {"email": uploader});
+                  headers: pubApiHeaders, body: {"email": uploader});
             } else {
               // command == 'remove'
               var url = server.resolve("/api/packages/"
                   "${Uri.encodeComponent(package)}/uploaders/"
                   "${Uri.encodeComponent(uploader)}");
-              return client.delete(url, headers: PUB_API_HEADERS);
+              return client.delete(url, headers: pubApiHeaders);
             }
           });
         })

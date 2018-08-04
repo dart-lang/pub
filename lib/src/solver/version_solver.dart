@@ -113,7 +113,7 @@ class VersionSolver {
   void _propagate(String package) {
     var changed = new Set.from([package]);
 
-    while (!changed.isEmpty) {
+    while (changed.isNotEmpty) {
       var package = changed.first;
       changed.remove(package);
 

@@ -22,7 +22,7 @@ export 'descriptor/tar.dart';
 GitRepoDescriptor git(String name, [Iterable<Descriptor> contents]) =>
     new GitRepoDescriptor(name, contents == null ? <Descriptor>[] : contents);
 
-/// Creates a new [TarRepoDescriptor] with [name] and [contents].
+/// Creates a new [TarFileDescriptor] with [name] and [contents].
 TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
     new TarFileDescriptor(name, contents == null ? <Descriptor>[] : contents);
 
@@ -70,7 +70,7 @@ Descriptor libPubspec(String name, String version,
 /// `<name>.dart` that contains a line of Dart code.
 Descriptor libDir(String name, [String code]) {
   // Default to printing the name if no other code was given.
-  if (code == null) code = name;
+  code ??= name;
   return dir("lib", [file("$name.dart", 'main() => "$code";')]);
 }
 
@@ -107,7 +107,7 @@ Descriptor gitPackageRepoCacheDir(String name) =>
 /// validated since they will often lack the dependencies section that the
 /// real pubspec being compared against has. You usually only need to pass
 /// `true` for this if you plan to call [create] on the resulting descriptor.
-Descriptor cacheDir(Map packages, {int port, bool includePubspecs: false}) {
+Descriptor cacheDir(Map packages, {int port, bool includePubspecs = false}) {
   var contents = <Descriptor>[];
   packages.forEach((name, versions) {
     if (versions is! List) versions = [versions];

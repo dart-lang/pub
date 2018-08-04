@@ -133,7 +133,7 @@ class PackageServer {
 /// A builder for specifying which packages should be served by [servePackages].
 class PackageServerBuilder {
   /// A map from package names to a list of concrete packages to serve.
-  final _packages = new Map<String, List<_ServedPackage>>();
+  final _packages = <String, List<_ServedPackage>>{};
 
   PackageServerBuilder._();
 
@@ -152,7 +152,7 @@ class PackageServerBuilder {
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields["dependencies"] = deps;
 
-    if (contents == null) contents = [d.libDir(name, "$name $version")];
+    contents ??= [d.libDir(name, "$name $version")];
     contents = [d.file("pubspec.yaml", yaml(pubspecFields))]..addAll(contents);
 
     var packages = _packages.putIfAbsent(name, () => []);

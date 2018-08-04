@@ -36,7 +36,7 @@ import 'utils.dart';
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args,
-    {bool checked: false,
+    {bool checked = false,
     String packagesFile,
     String snapshotPath,
     Future<void> recompile()}) async {
@@ -123,7 +123,7 @@ Future<String> _executablePath(
 Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
     {Future<void> recompile(),
     String packagesFile,
-    bool checked: false}) async {
+    bool checked = false}) async {
   if (!fileExists(path)) {
     if (recompile == null) return null;
     await recompile();
@@ -149,7 +149,7 @@ Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
 Future<int> runSnapshot(String path, Iterable<String> args,
     {Future<void> recompile(),
     String packagesFile,
-    bool checked: false}) async {
+    bool checked = false}) async {
   Uri packageConfig;
   if (packagesFile != null) {
     // We use an absolute path here not because the VM insists but because it's
