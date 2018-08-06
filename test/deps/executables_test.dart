@@ -10,7 +10,7 @@ import '../test_pub.dart';
 const _validMain = 'main() {}';
 
 main() {
-  _testExecutablesOutput(output, {bool dev: true}) => () async {
+  _testExecutablesOutput(output, {bool dev = true}) => () async {
         await pubGet();
         await runPub(
             args: ['deps', '--executables']

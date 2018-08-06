@@ -66,7 +66,7 @@ no: 1
     });
 
     test('handles non-string map keys', () {
-      var map = new Map();
+      var map = {};
       map[null] = "null";
       map[123] = "num";
       map[true] = "bool";

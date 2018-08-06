@@ -7,10 +7,10 @@ import 'dart:async';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'system_cache.dart';
 import 'solver/result.dart';
 import 'solver/type.dart';
 import 'solver/version_solver.dart';
+import 'system_cache.dart';
 
 export 'solver/failure.dart';
 export 'solver/result.dart';

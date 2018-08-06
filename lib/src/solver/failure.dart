@@ -148,7 +148,7 @@ class _Writer {
 
       var number = line.last;
       if (number != null) {
-        message = "(${number})".padRight(padding) + message;
+        message = "($number)".padRight(padding) + message;
       } else {
         message = " " * padding + message;
       }
@@ -176,7 +176,7 @@ class _Writer {
   /// [incompatibility] and [message] so that the message can be easily referred
   /// to later.
   void _write(Incompatibility incompatibility, String message,
-      {bool numbered: false}) {
+      {bool numbered = false}) {
     if (numbered) {
       var number = _lineNumbers.length + 1;
       _lineNumbers[incompatibility] = number;
@@ -196,7 +196,7 @@ class _Writer {
   /// be written for each package when converting [incompatibility] to a string.
   void _visit(Incompatibility incompatibility,
       Map<String, PackageDetail> detailsForIncompatibility,
-      {bool conclusion: false}) {
+      {bool conclusion = false}) {
     // Add explicit numbers for incompatibilities that are written far away
     // from their successors or that are used for multiple derivations.
     var numbered = conclusion || _derivations[incompatibility] > 1;

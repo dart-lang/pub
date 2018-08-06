@@ -95,7 +95,7 @@ class SolveResult {
   /// be made) to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
-  void summarizeChanges(SolveType type, {bool dryRun: false}) {
+  void summarizeChanges(SolveType type, {bool dryRun = false}) {
     new SolveReport(type, _sources, _root, _previousLockFile, this)
         .summarize(dryRun: dryRun);
   }

@@ -222,7 +222,7 @@ main() {
     });
 
     test('should pass through values from the stream', () {
-      StreamIterator iter = new StreamIterator(stream);
+      var iter = new StreamIterator(stream);
       iter.moveNext().then((hasNext) {
         expect(hasNext, isTrue);
         expect(iter.current, equals(1));

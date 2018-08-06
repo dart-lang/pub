@@ -477,7 +477,7 @@ class BoundGitSource extends CachedSource {
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
   Future _clone(String from, String to,
-      {bool mirror: false, bool shallow: false}) {
+      {bool mirror = false, bool shallow = false}) {
     return new Future.sync(() {
       // Git on Windows does not seem to automatically create the destination
       // directory.

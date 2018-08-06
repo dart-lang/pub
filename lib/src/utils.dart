@@ -103,7 +103,7 @@ class Pair<E, F> {
 /// [Chain]. By default, this chain will contain only the local stack trace, but
 /// if [captureStackChains] is passed, it will contain the full stack chain for
 /// the error.
-Future captureErrors(Future callback(), {bool captureStackChains: false}) {
+Future captureErrors(Future callback(), {bool captureStackChains = false}) {
   var completer = new Completer();
   var wrappedCallback = () {
     new Future.sync(callback)
@@ -168,7 +168,7 @@ StreamTransformer<T, T> onDoneTransformer<T>(void onDone()) {
 ///
 /// If [char] is `null`, it defaults to a space.
 String _padLeft(String source, int length, [String char]) {
-  if (char == null) char = ' ';
+  char ??= ' ';
   if (source.length >= length) return source;
 
   return char * (length - source.length) + source;
@@ -182,7 +182,7 @@ String _padLeft(String source, int length, [String char]) {
 String namedSequence(String name, Iterable iter, [String plural]) {
   if (iter.length == 1) return "$name ${iter.single}";
 
-  if (plural == null) plural = "${name}s";
+  plural ??= "${name}s";
   return "$plural ${toSentence(iter)}";
 }
 
@@ -289,7 +289,7 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// [compare] defaults to [Comparable.compare].
 T maxAll<T extends Comparable>(Iterable<T> iter,
     [int compare(T element1, T element2)]) {
-  if (compare == null) compare = Comparable.compare;
+  compare ??= Comparable.compare;
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }
@@ -480,7 +480,7 @@ String getSpecial(String special, [String onWindows = '']) =>
 /// Prepends each line in [text] with [prefix].
 ///
 /// If [firstPrefix] is passed, the first line is prefixed with that instead.
-String prefixLines(String text, {String prefix: '| ', String firstPrefix}) {
+String prefixLines(String text, {String prefix = '| ', String firstPrefix}) {
   var lines = text.split('\n');
   if (firstPrefix == null) {
     return lines.map((line) => '$prefix$line').join('\n');

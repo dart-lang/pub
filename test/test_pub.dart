@@ -132,7 +132,7 @@ Future pubCommand(RunCommand command,
   var allArgs = [command.name];
   if (args != null) allArgs.addAll(args);
 
-  if (output == null) output = command.success;
+  output ??= command.success;
 
   if (error != null && exitCode == null) exitCode = 1;
 
@@ -201,7 +201,7 @@ Future pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun({bool global: false, Iterable<String> args}) async {
+Future<PubProcess> pubRun({bool global = false, Iterable<String> args}) async {
   var pubArgs = global ? ["global", "run"] : ["run"];
   pubArgs.addAll(args);
   var pub = await startPub(args: pubArgs);
@@ -243,7 +243,7 @@ Future runPub(
     error,
     outputJson,
     silent,
-    int exitCode: exit_codes.SUCCESS,
+    int exitCode = exit_codes.SUCCESS,
     String workingDirectory,
     Map<String, String> environment}) async {
   // Cannot pass both output and outputJson.
@@ -280,8 +280,7 @@ Future runPub(
 Future<PubProcess> startPublish(ShelfTestServer server,
     {List<String> args}) async {
   var tokenEndpoint = server.url.resolve('/token').toString();
-  if (args == null) args = [];
-  args = ['lish', '--server', tokenEndpoint]..addAll(args);
+  args = ['lish', '--server', tokenEndpoint]..addAll(args ?? []);
   return await startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
@@ -390,11 +389,11 @@ class PubProcess extends TestProcess {
   static Future<PubProcess> start(String executable, Iterable<String> arguments,
       {String workingDirectory,
       Map<String, String> environment,
-      bool includeParentEnvironment: true,
-      bool runInShell: false,
+      bool includeParentEnvironment = true,
+      bool runInShell = false,
       String description,
       Encoding encoding,
-      bool forwardStdio: false}) async {
+      bool forwardStdio = false}) async {
     var process = await Process.start(executable, arguments.toList(),
         workingDirectory: workingDirectory,
         environment: environment,
@@ -415,7 +414,7 @@ class PubProcess extends TestProcess {
 
   /// This is protected.
   PubProcess(process, description,
-      {Encoding encoding, bool forwardStdio: false})
+      {Encoding encoding, bool forwardStdio = false})
       : super(process, description,
             encoding: encoding, forwardStdio: forwardStdio);
 
@@ -434,13 +433,12 @@ class PubProcess extends TestProcess {
 
   Stream<Pair<log.Level, String>> _outputToLog(
       Stream<String> stream, log.Level defaultLevel) {
-    var lastLevel;
+    log.Level lastLevel;
     return stream.map((line) {
       var match = _logLineRegExp.firstMatch(line);
       if (match == null) return new Pair<log.Level, String>(defaultLevel, line);
 
-      var level = _logLevels[match[1]];
-      if (level == null) level = lastLevel;
+      var level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
       return new Pair<log.Level, String>(level, match[2]);
     });
@@ -478,9 +476,6 @@ class PubProcess extends TestProcess {
 /// We require machines running these tests to have git installed. This
 /// validation gives an easier-to-understand error when that requirement isn't
 /// met than just failing in the middle of a test when pub invokes git.
-///
-/// This also increases the [Schedule] timeout to 30 seconds on Windows,
-/// where Git runs really slowly.
 void ensureGit() {
   if (!gitlib.isInstalled) fail("Git must be installed to run this test.");
 }
@@ -488,9 +483,7 @@ void ensureGit() {
 /// Creates a lock file for [package] without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
-/// directory. [pkg] is a list of packages in the Dart repo's "pkg" directory;
-/// each package listed here and all its dependencies will be linked to the
-/// version in the Dart repo.
+/// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
@@ -519,12 +512,10 @@ Future createPackagesFile(String package,
       [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
 }
 
-/// Creates a lock file for [package] without running `pub get`.
+/// Creates a lock file for [sources] without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
-/// directory. [pkg] is a list of packages in the Dart repo's "pkg" directory;
-/// each package listed here and all its dependencies will be linked to the
-/// version in the Dart repo.
+/// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
@@ -615,7 +606,7 @@ String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
 /// this returns the complete map, including metadata that's only included when
 /// requesting the package version directly.
-Map packageVersionApiMap(Map pubspec, {bool full: false}) {
+Map packageVersionApiMap(Map pubspec, {bool full = false}) {
   var name = pubspec['name'];
   var version = pubspec['version'];
   var map = {

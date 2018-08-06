@@ -59,7 +59,7 @@ class Feature {
   Feature(this.name, Iterable<PackageRange> dependencies,
       {Iterable<String> requires,
       Map<String, VersionConstraint> sdkConstraints,
-      this.onByDefault: true})
+      this.onByDefault = true})
       : dependencies = new UnmodifiableListView(dependencies.toList()),
         requires = requires == null
             ? const []

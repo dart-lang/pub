@@ -14,7 +14,7 @@ import 'pubspec.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
-final _README_REGEXP = new RegExp(r"^README($|\.)", caseSensitive: false);
+final _readmeRegexp = new RegExp(r"^README($|\.)", caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -85,7 +85,7 @@ class Package {
   String get readmePath {
     var readmes = listFiles(recursive: false, useGitIgnore: true)
         .map(p.basename)
-        .where((entry) => entry.contains(_README_REGEXP));
+        .where((entry) => entry.contains(_readmeRegexp));
     if (readmes.isEmpty) return null;
 
     return p.join(dir, readmes.reduce((readme1, readme2) {
@@ -122,10 +122,9 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String name, String packageDir, SourceRegistry sources,
-      {bool isRootPackage: false})
-      : dir = packageDir,
-        pubspec = new Pubspec.load(packageDir, sources,
+  Package.load(String name, this.dir, SourceRegistry sources,
+      {bool isRootPackage = false})
+      : pubspec = new Pubspec.load(dir, sources,
             expectedName: name, includeDefaultSdkConstraint: !isRootPackage);
 
   /// Constructs a package with the given pubspec.
@@ -177,7 +176,7 @@ class Package {
   }
 
   /// The basenames of files that are included in [list] despite being hidden.
-  static final _WHITELISTED_FILES = const ['.htaccess'];
+  static final _whitelistedFiles = const ['.htaccess'];
 
   /// A set of patterns that match paths to blacklisted files.
   static final _blacklistedFiles = createFileFilter(['pubspec.lock']);
@@ -199,7 +198,7 @@ class Package {
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
   List<String> listFiles(
-      {String beneath, bool recursive: true, bool useGitIgnore: false}) {
+      {String beneath, bool recursive = true, bool useGitIgnore = false}) {
     // An in-memory package has no files.
     if (dir == null) return [];
 
@@ -254,7 +253,7 @@ class Package {
       files = listDir(beneath,
           recursive: recursive,
           includeDirs: false,
-          whitelist: _WHITELISTED_FILES);
+          whitelist: _whitelistedFiles);
     }
 
     return files.where((file) {
@@ -299,7 +298,7 @@ class Package {
       // If the link points outside this repo, just use the default listing
       // logic.
       targetFiles = listDir(target,
-          recursive: true, includeDirs: false, whitelist: _WHITELISTED_FILES);
+          recursive: true, includeDirs: false, whitelist: _whitelistedFiles);
     }
 
     // Re-write the paths so they're underneath the symlink.

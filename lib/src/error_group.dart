@@ -56,7 +56,7 @@ class ErrorGroup {
 
   /// Creates a new group with no members.
   ErrorGroup() {
-    this._done = new _ErrorGroupFuture(this, _doneCompleter.future);
+    _done = new _ErrorGroupFuture(this, _doneCompleter.future);
   }
 
   /// Registers a [Future] as a member of [this].
@@ -264,11 +264,8 @@ class _ErrorGroupStream<T> extends Stream<T> {
     _stream = inner.isBroadcast
         ? _controller.stream.asBroadcastStream(onCancel: (sub) => sub.cancel())
         : _controller.stream;
-    _subscription = inner.listen((v) {
-      _controller.add(v);
-    }, onError: (e, [stackTrace]) {
-      _group._signalError(e, stackTrace);
-    }, onDone: () {
+    _subscription =
+        inner.listen(_controller.add, onError: _group._signalError, onDone: () {
       _isDone = true;
       _group._signalStreamComplete(this);
       _controller.close();

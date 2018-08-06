@@ -56,7 +56,7 @@ class PubspecFieldValidator extends Validator {
       return;
     }
 
-    if (authors == null) authors = [author];
+    authors ??= [author];
 
     var hasName = new RegExp(r"^ *[^< ]");
     var hasEmail = new RegExp(r"<[^>]+> *$");

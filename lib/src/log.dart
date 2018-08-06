@@ -281,7 +281,7 @@ void processResult(String executable, PubProcessResult result) {
   buffer.writeln("Finished $executable. Exit code ${result.exitCode}.");
 
   dumpOutput(String name, List<String> output) {
-    if (output.length == 0) {
+    if (output.isEmpty) {
       buffer.writeln("Nothing output on $name.");
     } else {
       buffer.writeln("$name:");
@@ -370,7 +370,7 @@ void dumpTranscript() {
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.FINE].
 Future<T> progress<T>(String message, Future<T> callback(),
-    {bool fine: false}) {
+    {bool fine = false}) {
   _stopProgress();
 
   var progress = new Progress(message, fine: fine);
@@ -505,7 +505,7 @@ void _logToStream(IOSink sink, _Entry entry, {bool showLabel}) {
 void _printToStream(IOSink sink, _Entry entry, {bool showLabel}) {
   _stopProgress();
 
-  bool firstLine = true;
+  var firstLine = true;
   for (var line in entry.lines) {
     if (showLabel) {
       if (firstLine) {
@@ -554,7 +554,7 @@ class _JsonLogger {
       errorJson["path"] = p.normalize(p.absolute(error.path));
     }
 
-    this.message(errorJson);
+    message(errorJson);
   }
 
   /// Encodes [message] to JSON and prints it if JSON output is enabled.

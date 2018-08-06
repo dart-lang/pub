@@ -64,7 +64,7 @@ main() {
     await expectLater(pub.stdout, emits("second"));
     pub.stdin.writeln("third");
     await expectLater(pub.stdout, emits("third"));
-    pub.stdin.close();
+    await pub.stdin.close();
     await pub.shouldExit(0);
   });
 }

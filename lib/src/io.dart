@@ -164,8 +164,8 @@ List<int> readBinaryFile(String file) {
 ///
 /// If [dontLogContents] is true, the contents of the file will never be logged.
 String writeTextFile(String file, String contents,
-    {bool dontLogContents: false, Encoding encoding}) {
-  if (encoding == null) encoding = utf8;
+    {bool dontLogContents = false, Encoding encoding}) {
+  encoding ??= utf8;
 
   // Sanity check: don't spew a huge file.
   log.io("Writing ${contents.length} characters to text file $file.");
@@ -251,11 +251,11 @@ String _createSystemTempDir() {
 /// The returned paths are guaranteed to begin with [dir]. Broken symlinks won't
 /// be returned.
 List<String> listDir(String dir,
-    {bool recursive: false,
-    bool includeHidden: false,
-    bool includeDirs: true,
+    {bool recursive = false,
+    bool includeHidden = false,
+    bool includeDirs = true,
     Iterable<String> whitelist}) {
-  if (whitelist == null) whitelist = [];
+  whitelist ??= [];
   var whitelistFilter = createFileFilter(whitelist);
 
   // This is used in some performance-sensitive paths and can list many, many
@@ -421,7 +421,7 @@ void renameDir(String from, String to) {
 /// symlink to the target. Otherwise, uses the [target] path unmodified.
 ///
 /// Note that on Windows, only directories may be symlinked to.
-void createSymlink(String target, String symlink, {bool relative: false}) {
+void createSymlink(String target, String symlink, {bool relative = false}) {
   if (relative) {
     // Relative junction points are not supported on Windows. Instead, just
     // make sure we have a clean absolute path because it will interpret a
@@ -451,7 +451,7 @@ void createSymlink(String target, String symlink, {bool relative: false}) {
 /// If [relative] is true, creates a symlink with a relative path from the
 /// symlink to the target. Otherwise, uses the [target] path unmodified.
 void createPackageSymlink(String name, String target, String symlink,
-    {bool isSelfLink: false, bool relative: false}) {
+    {bool isSelfLink = false, bool relative = false}) {
   // See if the package has a "lib" directory. If not, there's nothing to
   // symlink to.
   target = path.join(target, 'lib');
@@ -586,8 +586,7 @@ Future<bool> confirm(String message) {
   } else {
     stdout.write(log.format("$message (y/n)? "));
   }
-  return streamFirst(_stdinLines)
-      .then((line) => new RegExp(r"^[yY]").hasMatch(line));
+  return streamFirst(_stdinLines).then(new RegExp(r"^[yY]").hasMatch);
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
@@ -622,7 +621,7 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 /// [cancelOnError] and [closeSink] are both true, [sink] will then be
 /// closed.
 Future _store(Stream stream, EventSink sink,
-    {bool cancelOnError: true, bool closeSink: true}) {
+    {bool cancelOnError = true, bool closeSink = true}) {
   var completer = new Completer();
   stream.listen(sink.add, onError: (e, stackTrace) {
     sink.addError(e, stackTrace);
@@ -646,7 +645,7 @@ Future _store(Stream stream, EventSink sink,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell: false}) {
+    {workingDir, Map<String, String> environment, bool runInShell = false}) {
   return _descriptorPool.withResource(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
@@ -669,7 +668,7 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 Future<_PubProcess> _startProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell: false}) {
+    {workingDir, Map<String, String> environment, bool runInShell = false}) {
   return _descriptorPool.request().then((resource) async {
     var ioProcess = await _doProcess(Process.start, executable, args,
         workingDir: workingDir,
@@ -686,7 +685,7 @@ Future<_PubProcess> _startProcess(String executable, List<String> args,
 PubProcessResult runProcessSync(String executable, List<String> args,
     {String workingDir,
     Map<String, String> environment,
-    bool runInShell: false}) {
+    bool runInShell = false}) {
   var result = _doProcess(Process.runSync, executable, args,
       workingDir: workingDir, environment: environment, runInShell: runInShell);
   var pubResult =
@@ -783,12 +782,12 @@ class _PubProcess {
 _doProcess(Function fn, String executable, List<String> args,
     {String workingDir,
     Map<String, String> environment,
-    bool runInShell: false}) {
+    bool runInShell = false}) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
-  if (Platform.isWindows && executable.indexOf('\\') == -1) {
+  if (Platform.isWindows && !executable.contains('\\')) {
     args = ["/c", executable]..addAll(args);
     executable = "cmd";
   }
@@ -963,10 +962,10 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
   return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
     var buffer = new StringBuffer();
     buffer.write('Creating .tar.gz stream containing:\n');
-    contents.forEach((file) => buffer.write('$file\n'));
+    contents.forEach(buffer.writeln);
     log.fine(buffer.toString());
 
-    if (baseDir == null) baseDir = path.current;
+    baseDir ??= path.current;
     baseDir = path.absolute(baseDir);
     contents = contents.map((entry) {
       entry = path.absolute(entry);

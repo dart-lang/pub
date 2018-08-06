@@ -15,7 +15,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-final USAGE_STRING = '''
+final _usageString = '''
 Manage uploaders for a package on pub.dartlang.org.
 
 Usage: pub uploader [options] {add/remove} <email>
@@ -41,20 +41,20 @@ main() {
   group('displays usage', () {
     test('when run with no arguments', () {
       return runPub(
-          args: ['uploader'], output: USAGE_STRING, exitCode: exit_codes.USAGE);
+          args: ['uploader'], output: _usageString, exitCode: exit_codes.USAGE);
     });
 
     test('when run with only a command', () {
       return runPub(
           args: ['uploader', 'add'],
-          output: USAGE_STRING,
+          output: _usageString,
           exitCode: exit_codes.USAGE);
     });
 
     test('when run with an invalid command', () {
       return runPub(
           args: ['uploader', 'foo', 'email'],
-          output: USAGE_STRING,
+          output: _usageString,
           exitCode: exit_codes.USAGE);
     });
   });

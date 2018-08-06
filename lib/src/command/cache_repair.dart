@@ -32,12 +32,12 @@ class CacheRepairCommand extends PubCommand {
       }
     }
 
-    if (successes.length > 0) {
+    if (successes.isNotEmpty) {
       var packages = pluralize("package", successes.length);
       log.message("Reinstalled ${log.green(successes.length)} $packages.");
     }
 
-    if (failures.length > 0) {
+    if (failures.isNotEmpty) {
       var packages = pluralize("package", failures.length);
       var buffer = new StringBuffer(
           "Failed to reinstall ${log.red(failures.length)} $packages:\n");
@@ -54,23 +54,23 @@ class CacheRepairCommand extends PubCommand {
     }
 
     var results = await globals.repairActivatedPackages();
-    if (results.first.length > 0) {
+    if (results.first.isNotEmpty) {
       var packages = pluralize("package", results.first.length);
       log.message("Reactivated ${log.green(results.first.length)} $packages.");
     }
 
-    if (results.last.length > 0) {
+    if (results.last.isNotEmpty) {
       var packages = pluralize("package", results.last.length);
       log.message(
           "Failed to reactivate ${log.red(results.last.length)} $packages:\n" +
               results.last.map((name) => "- ${log.bold(name)}").join("\n"));
     }
 
-    if (successes.length == 0 && failures.length == 0) {
+    if (successes.isEmpty && failures.isEmpty) {
       log.message("No packages in cache, so nothing to repair.");
     }
 
-    if (failures.length > 0 || results.last.length > 0) {
+    if (failures.isNotEmpty || results.last.isNotEmpty) {
       await flushThenExit(exit_codes.UNAVAILABLE);
     }
   }

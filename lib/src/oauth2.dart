@@ -188,8 +188,7 @@ Future<Client> _authorize() {
       }
 
       log.message('Authorization received, processing...');
-      var queryString = request.url.query;
-      if (queryString == null) queryString = '';
+      var queryString = request.url.query ?? '';
 
       // Closing the server here is safe, since it will wait until the response
       // is sent to actually shut down.

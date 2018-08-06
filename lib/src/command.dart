@@ -16,19 +16,11 @@ import 'system_cache.dart';
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
 abstract class PubCommand extends Command {
-  SystemCache get cache {
-    if (_cache == null) _cache = new SystemCache(isOffline: isOffline);
-    return _cache;
-  }
+  SystemCache get cache => _cache ??= new SystemCache(isOffline: isOffline);
 
   SystemCache _cache;
 
-  GlobalPackages get globals {
-    if (_globals == null) {
-      _globals = new GlobalPackages(cache);
-    }
-    return _globals;
-  }
+  GlobalPackages get globals => _globals ??= new GlobalPackages(cache);
 
   GlobalPackages _globals;
 
@@ -36,13 +28,7 @@ abstract class PubCommand extends Command {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint {
-    // Lazy load it.
-    if (_entrypoint == null) {
-      _entrypoint = new Entrypoint.current(cache);
-    }
-    return _entrypoint;
-  }
+  Entrypoint get entrypoint => _entrypoint ??= new Entrypoint.current(cache);
 
   Entrypoint _entrypoint;
 
@@ -53,14 +39,10 @@ abstract class PubCommand extends Command {
   /// parsed after a non-option argument is parsed.
   bool get allowTrailingOptions => true;
 
-  ArgParser get argParser {
-    // Lazily initialize the parser because the superclass constructor requires
-    // it but we want to initialize it based on [allowTrailingOptions].
-    if (_argParser == null) {
-      _argParser = new ArgParser(allowTrailingOptions: allowTrailingOptions);
-    }
-    return _argParser;
-  }
+  // Lazily initialize the parser because the superclass constructor requires
+  // it but we want to initialize it based on [allowTrailingOptions].
+  ArgParser get argParser =>
+      _argParser ??= new ArgParser(allowTrailingOptions: allowTrailingOptions);
 
   ArgParser _argParser;
 

@@ -22,7 +22,7 @@ class Transcript<T> {
   /// This will be empty until the maximum number of entries is hit at which
   /// point the oldest half of the entries will be moved from [_newest] to
   /// here.
-  final _oldest = new List<T>();
+  final _oldest = <T>[];
 
   /// The most recent half of the entries.
   final _newest = new Queue<T>();
@@ -60,7 +60,7 @@ class Transcript<T> {
   /// where excess entries where dropped, invokes [onGap] with the number of
   /// dropped entries. If no more than [max] entries were added, does not
   /// invoke [onGap].
-  void forEach(void onEntry(T entry), [void onGap(int)]) {
+  void forEach(void onEntry(T entry), [void Function(int) onGap]) {
     if (_oldest.isNotEmpty) {
       _oldest.forEach(onEntry);
       if (onGap != null) onGap(discarded);
