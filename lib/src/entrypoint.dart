@@ -109,7 +109,7 @@ class Entrypoint {
     var packages = new Map<String, Package>.fromIterable(
         lockFile.packages.values,
         key: (id) => id.name,
-        value: cache.load);
+        value: (id) => cache.load(id));
     packages[root.name] = root;
 
     _packageGraph = new PackageGraph(this, lockFile, packages);
