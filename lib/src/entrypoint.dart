@@ -197,16 +197,11 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// If [packagesDir] is `true`, this will create "packages" directory with
-  /// symlinks to the installed packages. This directory will be symlinked into
-  /// any directory that might contain an entrypoint.
-  ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type,
       {List<String> useLatest,
       bool dryRun: false,
-      bool precompile: true,
-      bool packagesDir: false}) async {
+      bool precompile: true}) async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
 
@@ -235,17 +230,8 @@ class Entrypoint {
       return;
     }
 
-    // Install the packages and maybe link them into the entrypoint.
-    if (packagesDir) {
-      cleanDir(packagesPath);
-    }
-
-    await Future.wait(
-        result.packages.map((id) => _get(id, packagesDir: packagesDir)));
+    await Future.wait(result.packages.map(_get));
     _saveLockFile(result);
-
-    if (packagesDir) _linkSelf();
-    _linkSecondaryPackageDirs(packagesDir: packagesDir);
 
     result.summarizeChanges(type, dryRun: dryRun);
 
@@ -382,19 +368,12 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id, {bool packagesDir: false}) {
+  Future _get(PackageId id) {
     return http.withDependencyType(root.dependencyType(id.name), () async {
       if (id.isRoot) return;
 
       var source = cache.source(id.source);
-      if (!packagesDir) {
-        if (source is CachedSource) await source.downloadToSystemCache(id);
-        return;
-      }
-
-      var packagePath = p.join(packagesPath, id.name);
-      if (entryExists(packagePath)) deleteEntry(packagePath);
-      await source.get(id, packagePath);
+      if (source is CachedSource) await source.downloadToSystemCache(id);
     });
   }
 
@@ -574,69 +553,6 @@ class Entrypoint {
     _lockFile = result.lockFile;
     var lockFilePath = root.path('pubspec.lock');
     writeTextFile(lockFilePath, _lockFile.serialize(root.dir));
-  }
-
-  /// Creates a self-referential symlink in the `packages` directory that allows
-  /// a package to import its own files using `package:`.
-  void _linkSelf() {
-    var linkPath = p.join(packagesPath, root.name);
-    // Create the symlink if it doesn't exist.
-    if (entryExists(linkPath)) return;
-    ensureDir(packagesPath);
-    createPackageSymlink(root.name, root.dir, linkPath,
-        isSelfLink: true, relative: true);
-  }
-
-  /// If [packagesDir] is true, add "packages" directories to the whitelist of
-  /// directories that may contain Dart entrypoints.
-  void _linkSecondaryPackageDirs({bool packagesDir: false}) {
-    // Only the main "bin" directory gets a "packages" directory, not its
-    // subdirectories.
-    var binDir = root.path('bin');
-    if (dirExists(binDir)) {
-      _linkSecondaryPackageDir(binDir, packagesDir: packagesDir);
-    }
-
-    // The others get "packages" directories in subdirectories too.
-    for (var dir in ['benchmark', 'example', 'test', 'tool', 'web']) {
-      _linkSecondaryPackageDirsRecursively(root.path(dir),
-          packagesDir: packagesDir);
-    }
-  }
-
-  /// If [packagesDir] is true, creates a symlink to the "packages" directory in
-  /// [dir] and all its subdirectories.
-  void _linkSecondaryPackageDirsRecursively(String dir,
-      {bool packagesDir: false}) {
-    if (!dirExists(dir)) return;
-    _linkSecondaryPackageDir(dir, packagesDir: packagesDir);
-    for (var subdir in _listDirWithoutPackages(dir)) {
-      if (!dirExists(subdir)) continue;
-      _linkSecondaryPackageDir(subdir, packagesDir: packagesDir);
-    }
-  }
-
-  // TODO(nweiz): roll this into [listDir] in io.dart once issue 4775 is fixed.
-  /// Recursively lists the contents of [dir], excluding hidden `.DS_Store`
-  /// files and `package` files.
-  Iterable<String> _listDirWithoutPackages(dir) {
-    return listDir(dir).expand<String>((file) {
-      if (p.basename(file) == 'packages') return [];
-      if (!dirExists(file)) return [];
-      var fileAndSubfiles = [file];
-      fileAndSubfiles.addAll(_listDirWithoutPackages(file));
-      return fileAndSubfiles;
-    });
-  }
-
-  /// If [packagesDir] is true, creates a symlink to the "packages" directory in
-  /// [dir].
-  void _linkSecondaryPackageDir(String dir, {bool packagesDir: false}) {
-    var symlink = p.join(dir, 'packages');
-    if (packagesDir) {
-      if (entryExists(symlink)) deleteEntry(symlink);
-      createSymlink(packagesPath, symlink, relative: true);
-    }
   }
 
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it

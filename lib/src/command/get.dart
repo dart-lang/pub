@@ -39,8 +39,6 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     return entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'],
-        precompile: argResults['precompile'],
-        packagesDir: false);
+        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
   }
 }
