@@ -179,8 +179,7 @@ class BoundHostedSource extends CachedSource {
     log.io("Describe package at $url.");
     var version;
     try {
-      version =
-          jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
+      version = jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
