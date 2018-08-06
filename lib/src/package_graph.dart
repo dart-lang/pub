@@ -39,16 +39,16 @@ class PackageGraph {
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
       Entrypoint entrypoint, SolveResult result) {
-    var packages = new Map<String, Package>.fromIterable(result.packages,
+    var packages = Map<String, Package>.fromIterable(result.packages,
         key: (id) => id.name,
         value: (id) {
           if (id.name == entrypoint.root.name) return entrypoint.root;
 
-          return new Package(result.pubspecs[id.name],
+          return Package(result.pubspecs[id.name],
               entrypoint.cache.source(id.source).getDirectory(id));
         });
 
-    return new PackageGraph(entrypoint, result.lockFile, packages);
+    return PackageGraph(entrypoint, result.lockFile, packages);
   }
 
   /// Returns all transitive dependencies of [package].

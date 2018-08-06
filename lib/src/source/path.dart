@@ -20,7 +20,7 @@ class PathSource extends Source {
   final name = 'path';
 
   BoundSource bind(SystemCache systemCache) =>
-      new BoundPathSource(this, systemCache);
+      BoundPathSource(this, systemCache);
 
   /// Given a valid path reference description, returns the file path it
   /// describes.
@@ -31,14 +31,14 @@ class PathSource extends Source {
 
   /// Returns a reference to a path package named [name] at [path].
   PackageRef refFor(String name, String path) {
-    return new PackageRef(
+    return PackageRef(
         name, this, {"path": path, "relative": p.isRelative(path)});
   }
 
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
   PackageId idFor(String name, Version version, String path) {
-    return new PackageId(
+    return PackageId(
         name, this, version, {"path": path, "relative": p.isRelative(path)});
   }
 
@@ -59,7 +59,7 @@ class PathSource extends Source {
   /// "relative" key will be `true` if the original path was relative.
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (description is! String) {
-      throw new FormatException("The description must be a path string.");
+      throw FormatException("The description must be a path string.");
     }
 
     // Resolve the path relative to the containing file path, and remember
@@ -70,30 +70,30 @@ class PathSource extends Source {
       // system aren't allowed. This can happen if a hosted or git dependency
       // has a path dependency.
       if (containingPath == null) {
-        throw new FormatException('"$description" is a relative path, but this '
+        throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
 
       description = p.normalize(p.join(p.dirname(containingPath), description));
     }
 
-    return new PackageRef(
+    return PackageRef(
         name, this, {"path": description, "relative": isRelative});
   }
 
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (description is! Map) {
-      throw new FormatException("The description must be a map.");
+      throw FormatException("The description must be a map.");
     }
 
     if (description["path"] is! String) {
-      throw new FormatException("The 'path' field of the description must "
+      throw FormatException("The 'path' field of the description must "
           "be a string.");
     }
 
     if (description["relative"] is! bool) {
-      throw new FormatException("The 'relative' field of the description "
+      throw FormatException("The 'relative' field of the description "
           "must be a boolean.");
     }
 
@@ -102,16 +102,16 @@ class PathSource extends Source {
       // Relative paths coming from lockfiles that are not on the local file
       // system aren't allowed.
       if (containingPath == null) {
-        throw new FormatException('"$description" is a relative path, but this '
+        throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
 
-      description = new Map.from(description);
+      description = Map.from(description);
       description["path"] =
           p.normalize(p.join(p.dirname(containingPath), description["path"]));
     }
 
-    return new PackageId(name, this, version, description);
+    return PackageId(name, this, version, description);
   }
 
   /// Serializes path dependency's [description].
@@ -148,7 +148,7 @@ class BoundPathSource extends BoundSource {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);
-    var id = new PackageId(ref.name, source, pubspec.version, ref.description);
+    var id = PackageId(ref.name, source, pubspec.version, ref.description);
     memoizePubspec(id, pubspec);
     return [id];
   }
@@ -157,11 +157,11 @@ class BoundPathSource extends BoundSource {
 
   Pubspec _loadPubspec(PackageRef ref) {
     var dir = _validatePath(ref.name, ref.description);
-    return new Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
+    return Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
   }
 
   Future get(PackageId id, String symlink) {
-    return new Future.sync(() {
+    return Future.sync(() {
       var dir = _validatePath(id.name, id.description);
       createPackageSymlink(id.name, dir, symlink,
           relative: id.description["relative"]);
@@ -186,7 +186,7 @@ class BoundPathSource extends BoundSource {
           'not a file. Was "$dir".');
     }
 
-    throw new PackageNotFoundException('could not find package $name at "$dir"',
-        innerError: new FileException('$dir does not exist.', dir));
+    throw PackageNotFoundException('could not find package $name at "$dir"',
+        innerError: FileException('$dir does not exist.', dir));
   }
 }

@@ -30,7 +30,7 @@ export 'package:http/http.dart' show ByteStream;
 /// The maximum number of allocated descriptors is based on empirical tests that
 /// indicate that beyond 32, additional file reads don't provide substantial
 /// additional throughput.
-final _descriptorPool = new Pool(32);
+final _descriptorPool = Pool(32);
 
 /// Determines if a file or directory exists at [path].
 bool entryExists(String path) =>
@@ -40,13 +40,13 @@ bool entryExists(String path) =>
 ///
 /// This returns `true` for any symlink, regardless of what it points at or
 /// whether it's broken.
-bool linkExists(String link) => new Link(link).existsSync();
+bool linkExists(String link) => Link(link).existsSync();
 
 /// Returns whether [file] exists on the file system.
 ///
 /// This returns `true` for a symlink only if that symlink is unbroken and
 /// points to a file.
-bool fileExists(String file) => new File(file).existsSync();
+bool fileExists(String file) => File(file).existsSync();
 
 /// Returns the canonical path for [pathString].
 ///
@@ -57,9 +57,9 @@ bool fileExists(String file) => new File(file).existsSync();
 /// filesystem; nonexistent or unreadable path entries are treated as normal
 /// directories.
 String canonicalize(String pathString) {
-  var seen = new Set<String>();
-  var components = new Queue<String>.from(
-      path.split(path.normalize(path.absolute(pathString))));
+  var seen = Set<String>();
+  var components =
+      Queue<String>.from(path.split(path.normalize(path.absolute(pathString))));
 
   // The canonical path, built incrementally as we iterate through [components].
   var newPath = components.removeFirst();
@@ -78,7 +78,7 @@ String canonicalize(String pathString) {
     // can safely ignore such components.
     if (relative == '.') continue;
 
-    var relativeComponents = new Queue<String>.from(path.split(relative));
+    var relativeComponents = Queue<String>.from(path.split(relative));
 
     // If the resolved path is absolute relative to `newPath`, that means it's
     // on a different drive. We need to canonicalize the entire target of that
@@ -139,23 +139,22 @@ String canonicalize(String pathString) {
 ///
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
-  var seen = new Set<String>();
+  var seen = Set<String>();
   while (linkExists(link) && !seen.contains(link)) {
     seen.add(link);
-    link = path
-        .normalize(path.join(path.dirname(link), new Link(link).targetSync()));
+    link =
+        path.normalize(path.join(path.dirname(link), Link(link).targetSync()));
   }
   return link;
 }
 
 /// Reads the contents of the text file [file].
-String readTextFile(String file) =>
-    new File(file).readAsStringSync(encoding: utf8);
+String readTextFile(String file) => File(file).readAsStringSync(encoding: utf8);
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
   log.io("Reading binary file $file.");
-  var contents = new File(file).readAsBytesSync();
+  var contents = File(file).readAsBytesSync();
   log.io("Read ${contents.length} bytes from $file.");
   return contents;
 }
@@ -174,7 +173,7 @@ String writeTextFile(String file, String contents,
   }
 
   deleteIfLink(file);
-  new File(file).writeAsStringSync(contents, encoding: encoding);
+  File(file).writeAsStringSync(contents, encoding: encoding);
   return file;
 }
 
@@ -188,7 +187,7 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
 
   return _descriptorPool.withResource(() async {
     deleteIfLink(file);
-    await stream.pipe(new File(file).openWrite());
+    await stream.pipe(File(file).openWrite());
     log.fine("Created $file from stream.");
     return file;
   });
@@ -201,14 +200,14 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
 void deleteIfLink(String file) {
   if (!linkExists(file)) return;
   log.io("Deleting symlink at $file.");
-  new Link(file).deleteSync();
+  Link(file).deleteSync();
 }
 
 /// Ensures that [dir] and all its parent directories exist.
 ///
 /// If they don't exist, creates them.
 String ensureDir(String dir) {
-  new Directory(dir).createSync(recursive: true);
+  Directory(dir).createSync(recursive: true);
   return dir;
 }
 
@@ -217,7 +216,7 @@ String ensureDir(String dir) {
 ///
 /// Returns the path of the created directory.
 String createTempDir(String base, String prefix) {
-  var tempDir = new Directory(base).createTempSync(prefix);
+  var tempDir = Directory(base).createTempSync(prefix);
   log.io("Created temp directory ${tempDir.path}");
   return tempDir.path;
 }
@@ -263,7 +262,7 @@ List<String> listDir(String dir,
   // readability than most code in pub. In particular, it avoids using the path
   // package, since re-parsing a path is very expensive relative to string
   // operations.
-  return new Directory(dir)
+  return Directory(dir)
       .listSync(recursive: recursive, followLinks: true)
       .where((entity) {
         if (!includeDirs && entity is Directory) return false;
@@ -304,7 +303,7 @@ List<String> listDir(String dir,
 ///
 /// This returns `true` for a symlink only if that symlink is unbroken and
 /// points to a directory.
-bool dirExists(String dir) => new Directory(dir).existsSync();
+bool dirExists(String dir) => Directory(dir).existsSync();
 
 /// Tries to resiliently perform [operation].
 ///
@@ -345,7 +344,7 @@ void _attempt(String description, void operation()) {
 
       log.io("Failed to $description because $reason. "
           "Retrying in 50ms.");
-      sleep(new Duration(milliseconds: 50));
+      sleep(Duration(milliseconds: 50));
     }
   }
 
@@ -368,13 +367,13 @@ void deleteEntry(String path) {
   _attempt("delete entry", () {
     if (linkExists(path)) {
       log.io("Deleting link $path.");
-      new Link(path).deleteSync();
+      Link(path).deleteSync();
     } else if (dirExists(path)) {
       log.io("Deleting directory $path.");
-      new Directory(path).deleteSync(recursive: true);
+      Directory(path).deleteSync(recursive: true);
     } else if (fileExists(path)) {
       log.io("Deleting file $path.");
-      new File(path).deleteSync();
+      File(path).deleteSync();
     }
   });
 }
@@ -386,7 +385,7 @@ void tryDeleteEntry(String path) {
     deleteEntry(path);
   } catch (error, stackTrace) {
     log.fine("Failed to delete $path: $error\n"
-        "${new Chain.forTrace(stackTrace)}");
+        "${Chain.forTrace(stackTrace)}");
   }
 }
 
@@ -404,7 +403,7 @@ void renameDir(String from, String to) {
   _attempt("rename directory", () {
     log.io("Renaming directory $from to $to.");
     try {
-      new Directory(from).renameSync(to);
+      Directory(from).renameSync(to);
     } on IOException {
       // Ensure that [to] isn't left in an inconsistent state. See issue 12436.
       if (entryExists(to)) deleteEntry(to);
@@ -439,7 +438,7 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
   }
 
   log.fine("Creating $symlink pointing to $target");
-  new Link(symlink).createSync(target);
+  Link(symlink).createSync(target);
 }
 
 /// Creates a new symlink that creates an alias at [symlink] that points to the
@@ -488,7 +487,7 @@ final bool _runningFromSdk =
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
-final _dartRepoRegExp = new RegExp(r"/third_party/pkg/pub/("
+final _dartRepoRegExp = RegExp(r"/third_party/pkg/pub/("
     r"bin/pub\.dart"
     r"|"
     r"test/.*_test\.dart"
@@ -503,8 +502,7 @@ final bool runningFromDartRepo = (() {
     // When running from the test runner, we can't find our location via
     // Platform.script since the runner munges that. However, it guarantees that
     // the working directory is <repo>/third_party/pkg/pub.
-    return path.current
-        .contains(new RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
+    return path.current.contains(RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
   } else {
     return Platform.script.path.contains(_dartRepoRegExp);
   }
@@ -515,7 +513,7 @@ final bool runningFromDartRepo = (() {
 /// Throws a [StateError] if called from within the Dart repo.
 String _sdkAssetPath(String target) {
   if (runningFromDartRepo) {
-    throw new StateError("Can't get SDK assets from within the Dart repo.");
+    throw StateError("Can't get SDK assets from within the Dart repo.");
   }
 
   return path.join(
@@ -527,7 +525,7 @@ String _sdkAssetPath(String target) {
 /// This throws a [StateError] if it's called when running pub from the SDK.
 final String pubRoot = (() {
   if (_runningFromSdk) {
-    throw new StateError("Can't get pub's root from the SDK.");
+    throw StateError("Can't get pub's root from the SDK.");
   }
 
   // The test runner always runs from the working directory.
@@ -538,7 +536,7 @@ final String pubRoot = (() {
     // Running from "test/../some_test.dart".
     var components = path.split(script);
     var testIndex = components.indexOf("test");
-    if (testIndex == -1) throw new StateError("Can't find pub's root.");
+    if (testIndex == -1) throw StateError("Can't find pub's root.");
     return path.joinAll(components.take(testIndex));
   }
 
@@ -552,7 +550,7 @@ final String pubRoot = (() {
 /// in the Dart repo.
 final String dartRepoRoot = (() {
   if (!runningFromDartRepo) {
-    throw new StateError("Not running from source in the Dart repo.");
+    throw StateError("Not running from source in the Dart repo.");
   }
 
   if (_runningAsTestRunner) {
@@ -570,7 +568,7 @@ final String dartRepoRoot = (() {
 
 /// A line-by-line stream of standard input.
 final Stream<String> _stdinLines =
-    streamToLines(new ByteStream(stdin).toStringStream());
+    streamToLines(ByteStream(stdin).toStringStream());
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -586,7 +584,7 @@ Future<bool> confirm(String message) {
   } else {
     stdout.write(log.format("$message (y/n)? "));
   }
-  return streamFirst(_stdinLines).then(new RegExp(r"^[yY]").hasMatch);
+  return streamFirst(_stdinLines).then(RegExp(r"^[yY]").hasMatch);
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
@@ -604,9 +602,9 @@ Future flushThenExit(int status) {
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
 Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
-  var controller = new StreamController<T>(sync: true);
+  var controller = StreamController<T>(sync: true);
   var done = controller.stream.pipe(consumer);
-  return new Pair(controller.sink, done);
+  return Pair(controller.sink, done);
 }
 
 // TODO(nweiz): remove this when issue 7786 is fixed.
@@ -622,7 +620,7 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 /// closed.
 Future _store(Stream stream, EventSink sink,
     {bool cancelOnError = true, bool closeSink = true}) {
-  var completer = new Completer();
+  var completer = Completer();
   stream.listen(sink.add, onError: (e, stackTrace) {
     sink.addError(e, stackTrace);
     if (cancelOnError) {
@@ -653,7 +651,7 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
         runInShell: runInShell);
 
     var pubResult =
-        new PubProcessResult(result.stdout, result.stderr, result.exitCode);
+        PubProcessResult(result.stdout, result.stderr, result.exitCode);
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -675,7 +673,7 @@ Future<_PubProcess> _startProcess(String executable, List<String> args,
         environment: environment,
         runInShell: runInShell);
 
-    var process = new _PubProcess(ioProcess);
+    var process = _PubProcess(ioProcess);
     process.exitCode.whenComplete(resource.release);
     return process;
   });
@@ -689,7 +687,7 @@ PubProcessResult runProcessSync(String executable, List<String> args,
   var result = _doProcess(Process.runSync, executable, args,
       workingDir: workingDir, environment: environment, runInShell: runInShell);
   var pubResult =
-      new PubProcessResult(result.stdout, result.stderr, result.exitCode);
+      PubProcessResult(result.stdout, result.stderr, result.exitCode);
   log.processResult(executable, pubResult);
   return pubResult;
 }
@@ -756,16 +754,16 @@ class _PubProcess {
 
   /// Creates a new [_PubProcess] wrapping [process].
   _PubProcess(Process process) : _process = process {
-    var errorGroup = new ErrorGroup();
+    var errorGroup = ErrorGroup();
 
     var pair = _consumerToSink(process.stdin);
     _stdin = pair.first;
     _stdinClosed = errorGroup.registerFuture(pair.last);
 
-    _stdout = new ByteStream(errorGroup.registerStream(process.stdout));
-    _stderr = new ByteStream(errorGroup.registerStream(process.stderr));
+    _stdout = ByteStream(errorGroup.registerStream(process.stdout));
+    _stderr = ByteStream(errorGroup.registerStream(process.stderr));
 
-    var exitCodeCompleter = new Completer<int>();
+    var exitCodeCompleter = Completer<int>();
     _exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
     _process.exitCode.then((code) => exitCodeCompleter.complete(code));
   }
@@ -802,7 +800,7 @@ _doProcess(Function fn, String executable, List<String> args,
 
 /// Updates [path]'s modification time.
 void touch(String path) {
-  var file = new File(path).openSync(mode: FileMode.append);
+  var file = File(path).openSync(mode: FileMode.append);
   var originalLength = file.lengthSync();
   file.writeByteSync(0);
   file.truncateSync(originalLength);
@@ -873,7 +871,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
   var exitCode = results[1];
   if (exitCode != exit_codes.SUCCESS) {
-    throw new Exception("Failed to extract .tar.gz stream to $destination "
+    throw Exception("Failed to extract .tar.gz stream to $destination "
         "(exit code $exitCode).");
   }
   log.fine("Extracted .tar.gz stream to $destination. Exit code $exitCode.");
@@ -888,12 +886,12 @@ bool _computeNoUnknownKeyword() {
   if (!Platform.isLinux) return false;
   var result = Process.runSync("tar", ["--version"]);
   if (result.exitCode != 0) {
-    throw new ApplicationException(
+    throw ApplicationException(
         "Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}");
   }
 
   var match =
-      new RegExp(r"^tar \(GNU tar\) (\d+).(\d+)\n").firstMatch(result.stdout);
+      RegExp(r"^tar \(GNU tar\) (\d+).(\d+)\n").firstMatch(result.stdout);
   if (match == null) return false;
 
   var major = int.parse(match[1]);
@@ -927,7 +925,7 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
         workingDir: tempDir);
 
     if (unzipResult.exitCode != exit_codes.SUCCESS) {
-      throw new Exception(
+      throw Exception(
           'Could not un-gzip (exit code ${unzipResult.exitCode}). Error:\n'
           '${unzipResult.stdout.join("\n")}\n'
           '${unzipResult.stderr.join("\n")}');
@@ -936,14 +934,14 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
     // Find the tar file we just created since we don't know its name.
     var tarFile = listDir(tempDir)
         .firstWhere((file) => path.extension(file) == '.tar', orElse: () {
-      throw new FormatException('The gzip file did not contain a tar file.');
+      throw FormatException('The gzip file did not contain a tar file.');
     });
 
     // Untar the archive into the destination directory.
     var untarResult =
         await runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination);
     if (untarResult.exitCode != exit_codes.SUCCESS) {
-      throw new Exception(
+      throw Exception(
           'Could not un-tar (exit code ${untarResult.exitCode}). Error:\n'
           '${untarResult.stdout.join("\n")}\n'
           '${untarResult.stderr.join("\n")}');
@@ -959,8 +957,8 @@ Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(List<String> contents, {String baseDir}) {
-  return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
-    var buffer = new StringBuffer();
+  return ByteStream(StreamCompleter.fromFuture(Future.sync(() async {
+    var buffer = StringBuffer();
     buffer.write('Creating .tar.gz stream containing:\n');
     contents.forEach(buffer.writeln);
     log.fine(buffer.toString());
@@ -970,7 +968,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
     contents = contents.map((entry) {
       entry = path.absolute(entry);
       if (!path.isWithin(baseDir, entry)) {
-        throw new ArgumentError('Entry $entry is not inside $baseDir.');
+        throw ArgumentError('Entry $entry is not inside $baseDir.');
       }
       return path.relative(entry, from: baseDir);
     }).toList();

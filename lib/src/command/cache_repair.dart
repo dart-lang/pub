@@ -39,7 +39,7 @@ class CacheRepairCommand extends PubCommand {
 
     if (failures.isNotEmpty) {
       var packages = pluralize("package", failures.length);
-      var buffer = new StringBuffer(
+      var buffer = StringBuffer(
           "Failed to reinstall ${log.red(failures.length)} $packages:\n");
 
       for (var id in failures) {

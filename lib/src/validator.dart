@@ -60,7 +60,7 @@ abstract class Validator {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
     if (entrypoint.root.pubspec.originalDartSdkConstraint
-        .intersect(new VersionRange(max: firstSdkVersion))
+        .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
     }
@@ -73,7 +73,7 @@ abstract class Validator {
       firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
-    var allowedSdks = new VersionRange(
+    var allowedSdks = VersionRange(
         min: firstSdkVersion,
         includeMin: true,
         max: firstSdkVersion.isPreRelease
@@ -109,22 +109,22 @@ abstract class Validator {
   static Future<Pair<List<String>, List<String>>> runAll(Entrypoint entrypoint,
       [Future<int> packageSize]) {
     var validators = [
-      new PubspecValidator(entrypoint),
-      new LicenseValidator(entrypoint),
-      new NameValidator(entrypoint),
-      new PubspecFieldValidator(entrypoint),
-      new DependencyValidator(entrypoint),
-      new DependencyOverrideValidator(entrypoint),
-      new DeprecatedFieldsValidator(entrypoint),
-      new DirectoryValidator(entrypoint),
-      new ExecutableValidator(entrypoint),
-      new CompiledDartdocValidator(entrypoint),
-      new ReadmeValidator(entrypoint),
-      new SdkConstraintValidator(entrypoint),
-      new StrictDependenciesValidator(entrypoint),
+      PubspecValidator(entrypoint),
+      LicenseValidator(entrypoint),
+      NameValidator(entrypoint),
+      PubspecFieldValidator(entrypoint),
+      DependencyValidator(entrypoint),
+      DependencyOverrideValidator(entrypoint),
+      DeprecatedFieldsValidator(entrypoint),
+      DirectoryValidator(entrypoint),
+      ExecutableValidator(entrypoint),
+      CompiledDartdocValidator(entrypoint),
+      ReadmeValidator(entrypoint),
+      SdkConstraintValidator(entrypoint),
+      StrictDependenciesValidator(entrypoint),
     ];
     if (packageSize != null) {
-      validators.add(new SizeValidator(entrypoint, packageSize));
+      validators.add(SizeValidator(entrypoint, packageSize));
     }
 
     return Future.wait(validators.map((validator) => validator.validate()))
@@ -149,7 +149,7 @@ abstract class Validator {
         log.warning("");
       }
 
-      return new Pair<List<String>, List<String>>(errors, warnings);
+      return Pair<List<String>, List<String>>(errors, warnings);
     });
   }
 }

@@ -352,6 +352,6 @@ Future _withCanonicalTempDir(Future fn(String path)) =>
 
 /// Creates a directory [dir].
 String _createDir(String dir) {
-  new Directory(dir).createSync();
+  Directory(dir).createSync();
   return dir;
 }

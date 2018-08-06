@@ -6,15 +6,15 @@
 class SolveType {
   /// As few changes to the lockfile as possible to be consistent with the
   /// pubspec.
-  static const GET = const SolveType._("get");
+  static const GET = SolveType._("get");
 
   /// Upgrade all packages or specific packages to the highest versions
   /// possible, regardless of the lockfile.
-  static const UPGRADE = const SolveType._("upgrade");
+  static const UPGRADE = SolveType._("upgrade");
 
   /// Downgrade all packages or specific packages to the lowest versions
   /// possible, regardless of the lockfile.
-  static const DOWNGRADE = const SolveType._("downgrade");
+  static const DOWNGRADE = SolveType._("downgrade");
 
   final String _name;
 

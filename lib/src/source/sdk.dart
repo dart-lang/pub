@@ -20,32 +20,32 @@ class SdkSource extends Source {
   final name = 'sdk';
 
   BoundSource bind(SystemCache systemCache) =>
-      new BoundSdkSource(this, systemCache);
+      BoundSdkSource(this, systemCache);
 
   /// Returns a reference to an SDK package named [name] from [sdk].
-  PackageRef refFor(String name, String sdk) => new PackageRef(name, this, sdk);
+  PackageRef refFor(String name, String sdk) => PackageRef(name, this, sdk);
 
   /// Returns an ID for an SDK package with the given [name] and [version] from
   /// [sdk].
   PackageId idFor(String name, Version version, String sdk) =>
-      new PackageId(name, this, version, sdk);
+      PackageId(name, this, version, sdk);
 
   /// Parses an SDK dependency.
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (description is! String) {
-      throw new FormatException("The description must be an SDK name.");
+      throw FormatException("The description must be an SDK name.");
     }
 
-    return new PackageRef(name, this, description);
+    return PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (description is! String) {
-      throw new FormatException("The description must be an SDK name.");
+      throw FormatException("The description must be an SDK name.");
     }
 
-    return new PackageId(name, this, version, description);
+    return PackageId(name, this, version, description);
   }
 
   bool descriptionsEqual(description1, description2) =>
@@ -64,7 +64,7 @@ class BoundSdkSource extends BoundSource {
 
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     var pubspec = _loadPubspec(ref);
-    var id = new PackageId(ref.name, source, pubspec.version, ref.description);
+    var id = PackageId(ref.name, source, pubspec.version, ref.description);
     memoizePubspec(id, pubspec);
     return [id];
   }
@@ -76,7 +76,7 @@ class BoundSdkSource extends BoundSource {
   /// Throws a [PackageNotFoundException] if [package]'s SDK is unavailable or
   /// doesn't contain the package.
   Pubspec _loadPubspec(PackageName package) =>
-      new Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
+      Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
           expectedName: package.name);
 
   Future get(PackageId id, String symlink) async {
@@ -91,16 +91,16 @@ class BoundSdkSource extends BoundSource {
     var identifier = package.description as String;
     var sdk = sdks[identifier];
     if (sdk == null) {
-      throw new PackageNotFoundException('unknown SDK "$identifier"');
+      throw PackageNotFoundException('unknown SDK "$identifier"');
     } else if (!sdk.isAvailable) {
-      throw new PackageNotFoundException("the ${sdk.name} SDK is not available",
+      throw PackageNotFoundException("the ${sdk.name} SDK is not available",
           missingSdk: sdk);
     }
 
     var path = sdk.packagePath(package.name);
     if (path != null) return path;
 
-    throw new PackageNotFoundException(
+    throw PackageNotFoundException(
         'could not find package ${package.name} in the ${sdk.name} SDK');
   }
 
@@ -111,7 +111,7 @@ class BoundSdkSource extends BoundSource {
       // [PackageNotFoundException]s are uncapitalized and unpunctuated because
       // they're used within other sentences by the version solver, but
       // [ApplicationException]s should be full sentences.
-      throw new ApplicationException(capitalize(error.message) + ".");
+      throw ApplicationException(capitalize(error.message) + ".");
     }
   }
 }

@@ -19,7 +19,7 @@ class SdkConstraintValidator extends Validator {
     var dartConstraint = entrypoint.root.pubspec.originalDartSdkConstraint;
     if (dartConstraint is VersionRange) {
       if (dartConstraint.toString().startsWith("^")) {
-        var dartConstraintWithoutCaret = new VersionRange(
+        var dartConstraintWithoutCaret = VersionRange(
             min: dartConstraint.min,
             max: dartConstraint.max,
             includeMin: dartConstraint.includeMin,

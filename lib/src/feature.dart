@@ -37,7 +37,7 @@ class Feature {
 
     // [enableFeature] adds a feature to [features], along with any other
     // features it requires.
-    var enabledFeatures = new Set<Feature>();
+    var enabledFeatures = Set<Feature>();
     enableFeature(Feature feature) {
       if (!enabledFeatures.add(feature)) return;
       for (var require in feature.requires) {
@@ -60,11 +60,11 @@ class Feature {
       {Iterable<String> requires,
       Map<String, VersionConstraint> sdkConstraints,
       this.onByDefault = true})
-      : dependencies = new UnmodifiableListView(dependencies.toList()),
+      : dependencies = UnmodifiableListView(dependencies.toList()),
         requires = requires == null
             ? const []
-            : new UnmodifiableListView(requires.toList()),
-        sdkConstraints = new UnmodifiableMapView(sdkConstraints == null
+            : UnmodifiableListView(requires.toList()),
+        sdkConstraints = UnmodifiableMapView(sdkConstraints == null
             ? {"dart": VersionConstraint.any}
             : sdkConstraints);
 

@@ -15,10 +15,10 @@ class SourceRegistry {
   ///
   /// This is initialized with the three built-in sources.
   final _sources = {
-    "git": new GitSource(),
-    "hosted": new HostedSource(),
-    "path": new PathSource(),
-    "sdk": new SdkSource()
+    "git": GitSource(),
+    "hosted": HostedSource(),
+    "path": PathSource(),
+    "sdk": SdkSource()
   };
 
   /// The default source, which is used when no source is specified.
@@ -55,7 +55,7 @@ class SourceRegistry {
   /// This takes a string, which must be the name of a registered source.
   void setDefault(String name) {
     if (!_sources.containsKey(name)) {
-      throw new StateError('Default source $name is not in the registry');
+      throw StateError('Default source $name is not in the registry');
     }
 
     _default = _sources[name];
@@ -67,7 +67,7 @@ class SourceRegistry {
   /// registered.
   void register(Source source) {
     if (_sources.containsKey(source.name)) {
-      throw new StateError('Source registry already has a source named '
+      throw StateError('Source registry already has a source named '
           '${source.name}');
     }
 
@@ -81,6 +81,6 @@ class SourceRegistry {
   Source operator [](String name) {
     if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
-    return new UnknownSource(name);
+    return UnknownSource(name);
   }
 }

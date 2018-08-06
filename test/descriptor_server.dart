@@ -68,13 +68,12 @@ class DescriptorServer {
   /// This server exists only for the duration of the pub run. Subsequent calls
   /// to [serve] replace the previous server.
   static Future<DescriptorServer> start([List<d.Descriptor> contents]) async =>
-      new DescriptorServer._(
+      DescriptorServer._(
           await shelf_io.IOServer.bind('localhost', 0), contents);
 
   /// Creates a server that reports an error if a request is ever received.
   static Future<DescriptorServer> errors() async =>
-      new DescriptorServer._errors(
-          await shelf_io.IOServer.bind('localhost', 0));
+      DescriptorServer._errors(await shelf_io.IOServer.bind('localhost', 0));
 
   DescriptorServer._(this._server, Iterable<d.Descriptor> contents)
       : _baseDir = d.dir("serve-dir", contents) {
@@ -84,9 +83,9 @@ class DescriptorServer {
 
       try {
         var stream = await _validateStream(_baseDir.load(path));
-        return new shelf.Response.ok(stream);
+        return shelf.Response.ok(stream);
       } catch (_) {
-        return new shelf.Response.notFound('File "$path" not found.');
+        return shelf.Response.notFound('File "$path" not found.');
       }
     });
     addTearDown(() => _server.close());
@@ -117,8 +116,8 @@ class DescriptorServer {
 /// value can be read successfully. If an error occurs before any values are
 /// emitted, the returned Future completes to that error.
 Future<Stream<T>> _validateStream<T>(Stream<T> stream) {
-  var completer = new Completer<Stream<T>>();
-  var controller = new StreamController<T>(sync: true);
+  var completer = Completer<Stream<T>>();
+  var controller = StreamController<T>(sync: true);
 
   StreamSubscription subscription;
   subscription = stream.listen((value) {

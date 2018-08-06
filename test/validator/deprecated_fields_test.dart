@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator deprecatedFields(Entrypoint entrypoint) =>
-    new DeprecatedFieldsValidator(entrypoint);
+    DeprecatedFieldsValidator(entrypoint);
 
 main() {
   setUp(d.validPackage.create);

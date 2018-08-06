@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const _catchableSignals = const [
+const _catchableSignals = [
   ProcessSignal.sighup,
   ProcessSignal.sigterm,
   ProcessSignal.sigusr1,

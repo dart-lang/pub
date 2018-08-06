@@ -72,7 +72,7 @@ main() {
       var fileName =
           "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
 
-      new File(p.join(appRoot, fileName)).writeAsStringSync("");
+      File(p.join(appRoot, fileName)).writeAsStringSync("");
     }
 
     var server = await ShelfTestServer.create();
@@ -84,7 +84,7 @@ main() {
     handleUpload(server);
 
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.ok(jsonEncode({
+      return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });

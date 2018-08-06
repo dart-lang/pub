@@ -493,11 +493,11 @@ void _runsSuccessfully({bool runDeps = true}) {
       // If pub determines that everything is up-to-date, it should set the
       // mtimes to indicate that.
       var pubspecModified =
-          new File(p.join(d.sandbox, "myapp/pubspec.yaml")).lastModifiedSync();
+          File(p.join(d.sandbox, "myapp/pubspec.yaml")).lastModifiedSync();
       var lockFileModified =
-          new File(p.join(d.sandbox, "myapp/pubspec.lock")).lastModifiedSync();
+          File(p.join(d.sandbox, "myapp/pubspec.lock")).lastModifiedSync();
       var packagesModified =
-          new File(p.join(d.sandbox, "myapp/.packages")).lastModifiedSync();
+          File(p.join(d.sandbox, "myapp/.packages")).lastModifiedSync();
 
       expect(!pubspecModified.isAfter(lockFileModified), isTrue);
       expect(!lockFileModified.isAfter(packagesModified), isTrue);
@@ -509,7 +509,7 @@ void _runsSuccessfully({bool runDeps = true}) {
 Future _touch(String path) async {
   // Delay a bit to make sure the modification times are noticeably different.
   // 1s seems to be the finest granularity that dart:io reports.
-  await new Future.delayed(new Duration(seconds: 1));
+  await Future.delayed(Duration(seconds: 1));
 
   path = p.join(d.sandbox, "myapp", path);
   touch(path);

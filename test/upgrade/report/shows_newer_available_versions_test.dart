@@ -38,7 +38,7 @@ main() {
     }).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: new RegExp(r"""
+    await pubUpgrade(output: RegExp(r"""
 Resolving dependencies\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
 . multiple_newer_stable 1\.0\.0 \(1\.0\.2\ available\)

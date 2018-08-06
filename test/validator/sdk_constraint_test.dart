@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator sdkConstraint(Entrypoint entrypoint) =>
-    new SdkConstraintValidator(entrypoint);
+    SdkConstraintValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {

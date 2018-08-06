@@ -21,7 +21,7 @@ import 'utils.dart';
 /// The singleton instance so that we can have a nice api like:
 ///
 ///     log.json.error(...);
-final json = new _JsonLogger();
+final json = _JsonLogger();
 
 /// The current logging verbosity.
 Verbosity verbosity = Verbosity.NORMAL;
@@ -72,28 +72,28 @@ class Level {
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
-  static const ERROR = const Level._("ERR ");
+  static const ERROR = Level._("ERR ");
 
   /// Something unexpected happened, but the program was able to continue,
   /// though possibly in a degraded fashion.
-  static const WARNING = const Level._("WARN");
+  static const WARNING = Level._("WARN");
 
   /// A message intended specifically to be shown to the user.
-  static const MESSAGE = const Level._("MSG ");
+  static const MESSAGE = Level._("MSG ");
 
   /// Some interaction with the external world occurred, such as a network
   /// operation, process spawning, or file IO.
-  static const IO = const Level._("IO  ");
+  static const IO = Level._("IO  ");
 
   /// Incremental output during pub's version constraint solver.
-  static const SOLVER = const Level._("SLVR");
+  static const SOLVER = Level._("SLVR");
 
   /// Fine-grained and verbose additional information.
   ///
   /// Used to provide program state context for other logs (such as what pub
   /// was doing when an IO operation occurred) or just more detail for an
   /// operation.
-  static const FINE = const Level._("FINE");
+  static const FINE = Level._("FINE");
 
   const Level._(this.name);
   final String name;
@@ -107,7 +107,7 @@ typedef _LogFn(_Entry entry);
 /// displayed.
 class Verbosity {
   /// Silence all logging.
-  static const NONE = const Verbosity._("none", const {
+  static const NONE = Verbosity._("none", {
     Level.ERROR: null,
     Level.WARNING: null,
     Level.MESSAGE: null,
@@ -117,7 +117,7 @@ class Verbosity {
   });
 
   /// Shows only errors.
-  static const ERROR = const Verbosity._("error", const {
+  static const ERROR = Verbosity._("error", {
     Level.ERROR: _logToStderr,
     Level.WARNING: null,
     Level.MESSAGE: null,
@@ -127,7 +127,7 @@ class Verbosity {
   });
 
   /// Shows only errors and warnings.
-  static const WARNING = const Verbosity._("warning", const {
+  static const WARNING = Verbosity._("warning", {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: null,
@@ -137,7 +137,7 @@ class Verbosity {
   });
 
   /// The default verbosity which shows errors, warnings, and messages.
-  static const NORMAL = const Verbosity._("normal", const {
+  static const NORMAL = Verbosity._("normal", {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
@@ -147,7 +147,7 @@ class Verbosity {
   });
 
   /// Shows errors, warnings, messages, and IO event logs.
-  static const IO = const Verbosity._("io", const {
+  static const IO = Verbosity._("io", {
     Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
@@ -157,7 +157,7 @@ class Verbosity {
   });
 
   /// Shows errors, warnings, messages, and version solver logs.
-  static const SOLVER = const Verbosity._("solver", const {
+  static const SOLVER = Verbosity._("solver", {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
@@ -167,7 +167,7 @@ class Verbosity {
   });
 
   /// Shows all logs.
-  static const ALL = const Verbosity._("all", const {
+  static const ALL = Verbosity._("all", {
     Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
@@ -205,7 +205,7 @@ void error(message, [error, StackTrace trace]) {
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.ERROR, message);
-  if (trace != null) write(Level.FINE, new Chain.forTrace(trace));
+  if (trace != null) write(Level.FINE, Chain.forTrace(trace));
 }
 
 /// Logs [message] at [Level.WARNING].
@@ -234,7 +234,7 @@ void write(Level level, message) {
     lines.removeLast();
   }
 
-  var entry = new _Entry(level, lines.map(format).toList());
+  var entry = _Entry(level, lines.map(format).toList());
 
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
@@ -242,12 +242,12 @@ void write(Level level, message) {
   if (_transcript != null) _transcript.add(entry);
 }
 
-final _capitalizedAnsiEscape = new RegExp(r'\u001b\[\d+(;\d+)?M');
+final _capitalizedAnsiEscape = RegExp(r'\u001b\[\d+(;\d+)?M');
 
 /// Returns [string] formatted as it would be if it were logged.
 String format(String string) {
   if (sparkle) {
-    string = string.replaceAllMapped(new RegExp(r'.'), (match) {
+    string = string.replaceAllMapped(RegExp(r'.'), (match) {
       var char = "${choose(_allColors)}${match[0]}$_noColor";
       return (withPrejudice || random.nextBool()) ? char : "$_bold$char$_none";
     });
@@ -277,7 +277,7 @@ void process(
 /// Logs the results of running [executable].
 void processResult(String executable, PubProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
-  var buffer = new StringBuffer();
+  var buffer = StringBuffer();
   buffer.writeln("Finished $executable. Exit code ${result.exitCode}.");
 
   dumpOutput(String name, List<String> output) {
@@ -308,7 +308,7 @@ void processResult(String executable, PubProcessResult result) {
 void exception(exception, [StackTrace trace]) {
   if (exception is SilentException) return;
 
-  var chain = trace == null ? new Chain.current() : new Chain.forTrace(trace);
+  var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
@@ -345,7 +345,7 @@ void exception(exception, [StackTrace trace]) {
 
 /// Enables recording of log entries.
 void recordTranscript() {
-  _transcript = new Transcript<_Entry>(_MAX_TRANSCRIPT);
+  _transcript = Transcript<_Entry>(_MAX_TRANSCRIPT);
 }
 
 /// If [recordTranscript()] was called, then prints the previously recorded log
@@ -373,7 +373,7 @@ Future<T> progress<T>(String message, Future<T> callback(),
     {bool fine = false}) {
   _stopProgress();
 
-  var progress = new Progress(message, fine: fine);
+  var progress = Progress(message, fine: fine);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
 }
@@ -539,7 +539,7 @@ class _JsonLogger {
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {
-      errorJson["stackTrace"] = new Chain.forTrace(stackTrace).toString();
+      errorJson["stackTrace"] = Chain.forTrace(stackTrace).toString();
     }
 
     // If the error came from a file, include the path.

@@ -47,7 +47,7 @@ class WrappedException extends ApplicationException {
   final Chain innerChain;
 
   WrappedException(String message, this.innerError, [StackTrace innerTrace])
-      : innerChain = innerTrace == null ? null : new Chain.forTrace(innerTrace),
+      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace),
         super(message);
 }
 

@@ -42,20 +42,20 @@ class PackagesFileDescriptor extends Descriptor {
         }
         mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
       });
-      var buffer = new StringBuffer();
+      var buffer = StringBuffer();
       packages_file.write(buffer, mapping);
       contents = utf8.encode(buffer.toString());
     }
-    return new File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
+    return File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
   }
 
   Future validate([String parent]) async {
     var fullPath = p.join(parent ?? sandbox, name);
-    if (!await new File(fullPath).exists()) {
+    if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");
     }
 
-    var bytes = await new File(fullPath).readAsBytes();
+    var bytes = await File(fullPath).readAsBytes();
 
     // Resolve against a dummy URL so that we can test whether the URLs in
     // the package file are themselves relative. We can't resolve against just
@@ -98,7 +98,7 @@ class PackagesFileDescriptor extends Descriptor {
   bool _isSemver(String text) {
     try {
       // See if it's a semver.
-      new Version.parse(text);
+      Version.parse(text);
       return true;
     } on FormatException catch (_) {
       // Do nothing.

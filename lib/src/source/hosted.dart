@@ -31,8 +31,8 @@ class HostedSource extends Source {
 
   BoundHostedSource bind(SystemCache systemCache, {bool isOffline = false}) =>
       isOffline
-          ? new _OfflineHostedSource(this, systemCache)
-          : new BoundHostedSource(this, systemCache);
+          ? _OfflineHostedSource(this, systemCache)
+          : BoundHostedSource(this, systemCache);
 
   /// Gets the default URL for the package server for hosted dependencies.
   String get defaultUrl {
@@ -47,14 +47,14 @@ class HostedSource extends Source {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
   PackageRef refFor(String name, {url}) =>
-      new PackageRef(name, this, _descriptionFor(name, url));
+      PackageRef(name, this, _descriptionFor(name, url));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
   PackageId idFor(String name, Version version, {url}) =>
-      new PackageId(name, this, version, _descriptionFor(name, url));
+      PackageId(name, this, version, _descriptionFor(name, url));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
@@ -62,7 +62,7 @@ class HostedSource extends Source {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
-      throw new ArgumentError.value(url, 'url', 'must be a Uri or a String.');
+      throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
 
     return {'name': name, 'url': url.toString()};
@@ -83,13 +83,13 @@ class HostedSource extends Source {
   /// refers to a package with the given name from the host at the given URL.
   PackageRef parseRef(String name, description, {String containingPath}) {
     _parseDescription(description);
-    return new PackageRef(name, this, description);
+    return PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     _parseDescription(description);
-    return new PackageId(name, this, version, description);
+    return PackageId(name, this, version, description);
   }
 
   /// Parses the description for a package.
@@ -98,25 +98,23 @@ class HostedSource extends Source {
   /// this throws a descriptive FormatException.
   Pair<String, String> _parseDescription(description) {
     if (description is String) {
-      return new Pair<String, String>(description, defaultUrl);
+      return Pair<String, String>(description, defaultUrl);
     }
 
     if (description is! Map) {
-      throw new FormatException(
-          "The description must be a package name or map.");
+      throw FormatException("The description must be a package name or map.");
     }
 
     if (!description.containsKey("name")) {
-      throw new FormatException(
-          "The description map must contain a 'name' key.");
+      throw FormatException("The description map must contain a 'name' key.");
     }
 
     var name = description["name"];
     if (name is! String) {
-      throw new FormatException("The 'name' key must have a string value.");
+      throw FormatException("The 'name' key must have a string value.");
     }
 
-    return new Pair<String, String>(name, description["url"] ?? defaultUrl);
+    return Pair<String, String>(name, description["url"] ?? defaultUrl);
   }
 }
 
@@ -146,7 +144,7 @@ class BoundHostedSource extends CachedSource {
 
     var doc = jsonDecode(body);
     return (doc['versions'] as List).map((map) {
-      var pubspec = new Pubspec.fromMap(map['pubspec'], systemCache.sources,
+      var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description));
@@ -185,7 +183,7 @@ class BoundHostedSource extends CachedSource {
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
     }
 
-    return new Pubspec.fromMap(version['pubspec'], systemCache.sources,
+    return Pubspec.fromMap(version['pubspec'], systemCache.sources,
         expectedName: id.name, location: url);
   }
 
@@ -198,7 +196,7 @@ class BoundHostedSource extends CachedSource {
       await _download(parsed.last, parsed.first, id.version, packageDir);
     }
 
-    return new Package.load(id.name, getDirectory(id), systemCache.sources);
+    return Package.load(id.name, getDirectory(id), systemCache.sources);
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -215,7 +213,7 @@ class BoundHostedSource extends CachedSource {
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return new Pair([], []);
+    if (!dirExists(systemCacheRoot)) return Pair([], []);
 
     var successes = <PackageId>[];
     var failures = <PackageId>[];
@@ -226,7 +224,7 @@ class BoundHostedSource extends CachedSource {
       var packages = <Package>[];
       for (var entry in listDir(serverDir)) {
         try {
-          packages.add(new Package.load(null, entry, systemCache.sources));
+          packages.add(Package.load(null, entry, systemCache.sources));
         } catch (error, stackTrace) {
           log.error("Failed to load package", error, stackTrace);
           failures.add(_idForBasename(p.basename(entry)));
@@ -255,7 +253,7 @@ class BoundHostedSource extends CachedSource {
       }
     }
 
-    return new Pair(successes, failures);
+    return Pair(successes, failures);
   }
 
   /// Returns the best-guess package ID for [basename], which should be a
@@ -265,12 +263,12 @@ class BoundHostedSource extends CachedSource {
     var version = Version.none;
     if (components.length > 1) {
       try {
-        version = new Version.parse(components.last);
+        version = Version.parse(components.last);
       } catch (_) {
         // Default to Version.none.
       }
     }
-    return new PackageId(components.first, source, version, components.first);
+    return PackageId(components.first, source, version, components.first);
   }
 
   /// Gets all of the packages that have been downloaded into the system cache
@@ -281,11 +279,11 @@ class BoundHostedSource extends CachedSource {
 
     return listDir(cacheDir).map((entry) {
       try {
-        return new Package.load(null, entry, systemCache.sources);
+        return Package.load(null, entry, systemCache.sources);
       } catch (error, stackTrace) {
         log.fine("Failed to load package from $entry:\n"
             "$error\n"
-            "${new Chain.forTrace(stackTrace)}");
+            "${Chain.forTrace(stackTrace)}");
       }
     }).toList();
   }
@@ -300,7 +298,7 @@ class BoundHostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
-    var response = await httpClient.send(new http.Request("GET", url));
+    var response = await httpClient.send(http.Request("GET", url));
     await extractTarGz(response.stream, tempDir);
 
     // Remove the existing directory if it exists. This will happen if
@@ -321,7 +319,7 @@ class BoundHostedSource extends CachedSource {
       error, StackTrace stackTrace, String package, String url) {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
-        throw new PackageNotFoundException(
+        throw PackageNotFoundException(
             "could not find package $package at $url",
             innerError: error,
             innerTrace: stackTrace);
@@ -360,7 +358,7 @@ class BoundHostedSource extends CachedSource {
   String _urlToDirectory(String url) {
     // Normalize all loopback URLs to "localhost".
     url = url.replaceAllMapped(
-        new RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"), (match) {
+        RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"), (match) {
       // Don't include the scheme for HTTPS URLs. This makes the directory names
       // nice for the default and most recommended scheme. We also don't include
       // it for localhost URLs, since they're always known to be HTTP.
@@ -369,8 +367,8 @@ class BoundHostedSource extends CachedSource {
           match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
       return "$scheme$localhost";
     });
-    return replace(url, new RegExp(r'[<>:"\\/|?*%]'),
-        (match) => '%${match[0].codeUnitAt(0)}');
+    return replace(
+        url, RegExp(r'[<>:"\\/|?*%]'), (match) => '%${match[0].codeUnitAt(0)}');
   }
 
   /// Given a directory name in the system cache, returns the URL of the server
@@ -393,7 +391,7 @@ class BoundHostedSource extends CachedSource {
 
     // Otherwise, default to http for localhost and https for everything else.
     var scheme =
-        isLoopback(url.replaceAll(new RegExp(":.*"), "")) ? "http" : "https";
+        isLoopback(url.replaceAll(RegExp(":.*"), "")) ? "http" : "https";
     return "$scheme://$url";
   }
 
@@ -440,7 +438,7 @@ class _OfflineHostedSource extends BoundHostedSource {
             var components = p.basename(entry).split("-");
             if (components.first != ref.name) return null;
             return source.idFor(
-                ref.name, new Version.parse(components.skip(1).join("-")),
+                ref.name, Version.parse(components.skip(1).join("-")),
                 url: _serverFor(ref.description));
           })
           .where((id) => id != null)
@@ -451,7 +449,7 @@ class _OfflineHostedSource extends BoundHostedSource {
 
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
-      throw new PackageNotFoundException(
+      throw PackageNotFoundException(
           "could not find package ${ref.name} in cache");
     }
 
@@ -462,11 +460,11 @@ class _OfflineHostedSource extends BoundHostedSource {
       String server, String package, Version version, String destPath) {
     // Since HostedSource is cached, this will only be called for uncached
     // packages.
-    throw new UnsupportedError("Cannot download packages when offline.");
+    throw UnsupportedError("Cannot download packages when offline.");
   }
 
   Future<Pubspec> describeUncached(PackageId id) {
-    throw new PackageNotFoundException(
+    throw PackageNotFoundException(
         "${id.name} ${id.version} is not available in your system cache");
   }
 }

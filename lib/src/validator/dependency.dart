@@ -18,10 +18,10 @@ import '../source/sdk.dart';
 import '../validator.dart';
 
 /// The first Dart SDK version that supported caret constraints.
-final _firstCaretVersion = new Version.parse("1.8.0-dev.3.0");
+final _firstCaretVersion = Version.parse("1.8.0-dev.3.0");
 
 /// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = new Version.parse("2.0.0-dev.1.0");
+final _firstGitPathVersion = Version.parse("2.0.0-dev.1.0");
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {

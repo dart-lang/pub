@@ -20,14 +20,14 @@ main() {
     await d.appDir({"a": "any"}).create();
 
     // One dependency changed.
-    await pubUpgrade(output: new RegExp(r"Changed 1 dependency!$"));
+    await pubUpgrade(output: RegExp(r"Changed 1 dependency!$"));
 
     // Remove one and add two.
     await d.appDir({"b": "any", "c": "any"}).create();
 
-    await pubUpgrade(output: new RegExp(r"Changed 3 dependencies!$"));
+    await pubUpgrade(output: RegExp(r"Changed 3 dependencies!$"));
 
     // Don't change anything.
-    await pubUpgrade(output: new RegExp(r"No dependencies changed.$"));
+    await pubUpgrade(output: RegExp(r"No dependencies changed.$"));
   });
 }

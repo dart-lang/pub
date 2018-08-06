@@ -25,7 +25,7 @@ class SizeValidator extends Validator {
       // Current implementation of Package.listFiles skips hidden files
       var ignoreExists = fileExists(entrypoint.root.path('.gitignore'));
 
-      var error = new StringBuffer("Your package is $sizeInMb MB. Hosted "
+      var error = StringBuffer("Your package is $sizeInMb MB. Hosted "
           "packages must be smaller than 100 MB.");
 
       if (ignoreExists && !entrypoint.root.inGitRepo) {

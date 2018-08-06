@@ -14,7 +14,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator name(Entrypoint entrypoint) => new NameValidator(entrypoint);
+Validator name(Entrypoint entrypoint) => NameValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {

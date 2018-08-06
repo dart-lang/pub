@@ -15,9 +15,9 @@ class GlobalCommand extends PubCommand {
   String get invocation => "pub global <subcommand>";
 
   GlobalCommand() {
-    addSubcommand(new GlobalActivateCommand());
-    addSubcommand(new GlobalDeactivateCommand());
-    addSubcommand(new GlobalListCommand());
-    addSubcommand(new GlobalRunCommand());
+    addSubcommand(GlobalActivateCommand());
+    addSubcommand(GlobalDeactivateCommand());
+    addSubcommand(GlobalListCommand());
+    addSubcommand(GlobalRunCommand());
   }
 }

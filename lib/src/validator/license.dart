@@ -14,9 +14,9 @@ class LicenseValidator extends Validator {
   LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
-    return new Future.sync(() {
-      var licenseLike = new RegExp(
-          r"^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$");
+    return Future.sync(() {
+      var licenseLike =
+          RegExp(r"^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$");
       if (entrypoint.root
           .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)

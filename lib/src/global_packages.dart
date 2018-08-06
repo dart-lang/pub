@@ -137,7 +137,7 @@ class GlobalPackages {
   /// Otherwise, the previous ones will be preserved.
   Future activatePath(String path, List<String> executables,
       {bool overwriteBinStubs}) async {
-    var entrypoint = new Entrypoint(path, cache);
+    var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.GET);
@@ -152,7 +152,7 @@ class GlobalPackages {
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(name, new LockFile([id]));
+    _writeLockFile(name, LockFile([id]));
 
     var binDir = p.join(_directory, name, 'bin');
     if (dirExists(binDir)) deleteEntry(binDir);
@@ -166,7 +166,7 @@ class GlobalPackages {
   Future _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = new Package.inMemory(new Pubspec("pub global activate",
+    var root = Package.inMemory(Pubspec("pub global activate",
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
@@ -204,7 +204,7 @@ class GlobalPackages {
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
-    var entrypoint = new Entrypoint.fromSolveResult(root, cache, result);
+    var entrypoint = Entrypoint.fromSolveResult(root, cache, result);
     var snapshots = await _precompileExecutables(entrypoint, dep.name);
 
     _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
@@ -265,7 +265,7 @@ class GlobalPackages {
   /// Shows the user the currently active package with [name], if any.
   void _describeActive(String name) {
     try {
-      var lockFile = new LockFile.load(_getLockFilePath(name), cache.sources);
+      var lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
       var id = lockFile.packages[name];
 
       var source = id.source;
@@ -296,7 +296,7 @@ class GlobalPackages {
 
     _deleteBinStubs(name);
 
-    var lockFile = new LockFile.load(_getLockFilePath(name), cache.sources);
+    var lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
     var id = lockFile.packages[name];
     log.message('Deactivated package ${_formatPackage(id)}.');
 
@@ -312,14 +312,14 @@ class GlobalPackages {
     var lockFilePath = _getLockFilePath(name);
     var lockFile;
     try {
-      lockFile = new LockFile.load(lockFilePath, cache.sources);
+      lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
       var oldLockFilePath = p.join(_directory, '$name.lock');
       try {
         // TODO(nweiz): This looks for Dart 1.6's old lockfile location.
         // Remove it when Dart 1.6 is old enough that we don't think anyone
         // will have these lockfiles anymore (issue 20703).
-        lockFile = new LockFile.load(oldLockFilePath, cache.sources);
+        lockFile = LockFile.load(oldLockFilePath, cache.sources);
       } on IOException {
         // If we couldn't read the lock file, it's not activated.
         dataError("No active package ${log.bold(name)}.");
@@ -327,7 +327,7 @@ class GlobalPackages {
 
       // Move the old lockfile to its new location.
       ensureDir(p.dirname(lockFilePath));
-      new File(oldLockFilePath).renameSync(lockFilePath);
+      File(oldLockFilePath).renameSync(lockFilePath);
     }
 
     // Remove the package itself from the lockfile. We put it in there so we
@@ -341,11 +341,11 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = new Entrypoint.inMemory(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.inMemory(cache.load(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
-      entrypoint = new Entrypoint(
+      entrypoint = Entrypoint(
           (id.source as PathSource).pathFromDescription(id.description), cache);
     }
 
@@ -421,11 +421,11 @@ class GlobalPackages {
     var name = p.basenameWithoutExtension(path);
     if (!fileExists(path)) path = p.join(path, 'pubspec.lock');
 
-    var id = new LockFile.load(p.join(_directory, path), cache.sources)
-        .packages[name];
+    var id =
+        LockFile.load(p.join(_directory, path), cache.sources).packages[name];
 
     if (id == null) {
-      throw new FormatException("Pubspec for activated package $name didn't "
+      throw FormatException("Pubspec for activated package $name didn't "
           "contain an entry for itself.");
     }
 
@@ -458,12 +458,12 @@ class GlobalPackages {
           var binstub = readTextFile(entry);
           var package = _binStubProperty(binstub, "Package");
           if (package == null) {
-            throw new ApplicationException("No 'Package' property.");
+            throw ApplicationException("No 'Package' property.");
           }
 
           var executable = _binStubProperty(binstub, "Executable");
           if (executable == null) {
-            throw new ApplicationException("No 'Executable' property.");
+            throw ApplicationException("No 'Executable' property.");
           }
 
           executables.putIfAbsent(package, () => []).add(executable);
@@ -514,7 +514,7 @@ class GlobalPackages {
     }
 
     if (executables.isNotEmpty) {
-      var message = new StringBuffer("Binstubs exist for non-activated "
+      var message = StringBuffer("Binstubs exist for non-activated "
           "packages:\n");
       executables.forEach((package, executableNames) {
         for (var executable in executableNames) {
@@ -527,7 +527,7 @@ class GlobalPackages {
       log.error(message);
     }
 
-    return new Pair(successes, failures);
+    return Pair(successes, failures);
   }
 
   /// Updates the binstubs for [package].
@@ -818,7 +818,7 @@ pub global run ${package.name}:$script "\$@"
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
   String _binStubProperty(String source, String name) {
-    var pattern = new RegExp(quoteRegExp(name) + r": ([a-zA-Z0-9_-]+)");
+    var pattern = RegExp(quoteRegExp(name) + r": ([a-zA-Z0-9_-]+)");
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];
   }

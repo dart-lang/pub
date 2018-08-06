@@ -19,7 +19,7 @@ main() {
     var server = await ShelfTestServer.create();
     await d
         .credentialsFile(server, 'access token',
-            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+            expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
     var pub = await startPublish(server);
@@ -35,7 +35,7 @@ main() {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
-      return new shelf.Response(200);
+      return shelf.Response(200);
     });
 
     // After we give pub an invalid response, it should crash. We wait for it to

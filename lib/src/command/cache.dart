@@ -15,8 +15,8 @@ class CacheCommand extends PubCommand {
   String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-cache.html";
 
   CacheCommand() {
-    addSubcommand(new CacheAddCommand());
-    addSubcommand(new CacheListCommand());
-    addSubcommand(new CacheRepairCommand());
+    addSubcommand(CacheAddCommand());
+    addSubcommand(CacheListCommand());
+    addSubcommand(CacheRepairCommand());
   }
 }

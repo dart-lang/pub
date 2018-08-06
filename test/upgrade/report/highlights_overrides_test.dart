@@ -19,7 +19,7 @@ main() {
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: new RegExp(r"""
+    await pubUpgrade(output: RegExp(r"""
 Resolving dependencies\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
 """, multiLine: true));

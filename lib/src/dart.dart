@@ -59,7 +59,7 @@ Future snapshot(Uri executableUrl, String snapshotPath,
     // Don't leave partial results.
     deleteEntry(snapshotPath);
 
-    throw new ApplicationException(
+    throw ApplicationException(
         log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
   }
 }
@@ -85,7 +85,7 @@ class AnalysisContextManager {
     }
 
     // Add new contexts for the given path.
-    var contextLocator = new ContextLocator();
+    var contextLocator = ContextLocator();
     var roots = contextLocator.locateRoots(includedPaths: [path]);
     for (var root in roots) {
       var contextRootPath = root.root.path;
@@ -95,7 +95,7 @@ class AnalysisContextManager {
         continue;
       }
 
-      var contextBuilder = new ContextBuilder();
+      var contextBuilder = ContextBuilder();
       var context = contextBuilder.createContext(contextRoot: root);
       _contexts[contextRootPath] = context;
     }
@@ -111,7 +111,7 @@ class AnalysisContextManager {
   CompilationUnit parse(String path) {
     var parseResult = _getExistingSession(path).getParsedAstSync(path);
     if (parseResult.errors.isNotEmpty) {
-      throw new AnalyzerErrorGroup(parseResult.errors);
+      throw AnalyzerErrorGroup(parseResult.errors);
     }
     return parseResult.unit;
   }
@@ -143,14 +143,14 @@ class AnalysisContextManager {
       }
     }
 
-    throw new StateError('Unable to find the context to $path');
+    throw StateError('Unable to find the context to $path');
   }
 
   /// The driver supports only absolute paths, this method is used to validate
   /// any input paths to prevent errors later.
   void _throwIfNotAbsolutePath(String path) {
     if (!p.isAbsolute(path)) {
-      throw new ArgumentError('Only absolute paths are supported: $path');
+      throw ArgumentError('Only absolute paths are supported: $path');
     }
   }
 }

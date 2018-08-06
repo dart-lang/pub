@@ -25,7 +25,7 @@ main() {
     handleUpload(server);
 
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.notFound(jsonEncode({
+      return shelf.Response.notFound(jsonEncode({
         'error': {'message': 'Your package was too boring.'}
       }));
     });

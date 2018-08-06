@@ -2848,7 +2848,7 @@ Future expectResolves(
       output: output ??
           (error == null
               ? anyOf(contains('Got dependencies!'),
-                  matches(new RegExp(r'Changed \d+ dependenc(ies|y)!')))
+                  matches(RegExp(r'Changed \d+ dependenc(ies|y)!')))
               : null),
       error: error,
       silent: contains('Tried ${tries ?? 1} solutions'),
@@ -2856,12 +2856,12 @@ Future expectResolves(
 
   if (result == null) return;
 
-  var registry = new SourceRegistry();
+  var registry = SourceRegistry();
   var lockFile =
-      new LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
-  var resultPubspec = new Pubspec.fromMap({"dependencies": result}, registry);
+      LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
+  var resultPubspec = Pubspec.fromMap({"dependencies": result}, registry);
 
-  var ids = new Map.from(lockFile.packages);
+  var ids = Map.from(lockFile.packages);
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);

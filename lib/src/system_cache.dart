@@ -46,7 +46,7 @@ class SystemCache {
   ///
   /// New sources registered here will be available through the [source]
   /// function.
-  final sources = new SourceRegistry();
+  final sources = SourceRegistry();
 
   /// The sources bound to this cache.
   final _boundSources = <Source, BoundSource>{};
@@ -91,11 +91,10 @@ class SystemCache {
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
     if (id.source is UnknownSource) {
-      throw new ArgumentError("Unknown source ${id.source}.");
+      throw ArgumentError("Unknown source ${id.source}.");
     }
 
-    return new Package.load(
-        id.name, source(id.source).getDirectory(id), sources);
+    return Package.load(id.name, source(id.source).getDirectory(id), sources);
   }
 
   /// Determines if the system cache contains the package identified by [id].
@@ -103,7 +102,7 @@ class SystemCache {
     var source = this.source(id.source);
 
     if (source is CachedSource) return source.isInSystemCache(id);
-    throw new ArgumentError("Package $id is not cacheable.");
+    throw ArgumentError("Package $id is not cacheable.");
   }
 
   /// Create a new temporary directory within the system cache.

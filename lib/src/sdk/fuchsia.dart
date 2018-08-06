@@ -13,7 +13,7 @@ import '../sdk.dart';
 class FuchsiaSdk extends Sdk {
   String get name => "Fuchsia";
   bool get isAvailable => _isAvailable;
-  Version get firstPubVersion => new Version.parse('2.0.0-dev.51.0');
+  Version get firstPubVersion => Version.parse('2.0.0-dev.51.0');
 
   static final bool _isAvailable =
       Platform.environment.containsKey("FUCHSIA_DART_SDK_ROOT");
@@ -27,8 +27,8 @@ class FuchsiaSdk extends Sdk {
   Version get version {
     if (!_isAvailable) return null;
 
-    _version ??= new Version.parse(
-        readTextFile(p.join(_rootDirectory, "version")).trim());
+    _version ??=
+        Version.parse(readTextFile(p.join(_rootDirectory, "version")).trim());
     return _version;
   }
 

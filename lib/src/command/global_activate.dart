@@ -98,7 +98,7 @@ class GlobalActivateCommand extends PubCommand {
         var constraint = VersionConstraint.any;
         if (args.isNotEmpty) {
           try {
-            constraint = new VersionConstraint.parse(readArg());
+            constraint = VersionConstraint.parse(readArg());
           } on FormatException catch (error) {
             usageException(error.message);
           }

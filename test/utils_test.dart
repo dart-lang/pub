@@ -87,33 +87,31 @@ b: {}"""));
 
   group('niceDuration()', () {
     test('formats duration longer than a minute correctly', () {
-      expect(
-          niceDuration(new Duration(minutes: 3, seconds: 1, milliseconds: 337)),
+      expect(niceDuration(Duration(minutes: 3, seconds: 1, milliseconds: 337)),
           equals("3:01.3s"));
     });
 
     test('does not display extra zero when duration is less than a minute', () {
-      expect(
-          niceDuration(new Duration(minutes: 0, seconds: 0, milliseconds: 400)),
+      expect(niceDuration(Duration(minutes: 0, seconds: 0, milliseconds: 400)),
           equals("0.4s"));
     });
 
     test('has reasonable output on minute boundary', () {
-      expect(niceDuration(new Duration(minutes: 1)), equals("1:00.0s"));
+      expect(niceDuration(Duration(minutes: 1)), equals("1:00.0s"));
     });
   });
 
   group('uuid', () {
-    var uuidRegexp = new RegExp("^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-"
+    var uuidRegexp = RegExp("^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-"
         r"[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$");
 
     test("min value is valid", () {
-      var uuid = createUuid(new List<int>.filled(16, 0));
+      var uuid = createUuid(List<int>.filled(16, 0));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, "00000000-0000-4000-8000-000000000000");
     });
     test("max value is valid", () {
-      var uuid = createUuid(new List<int>.filled(16, 255));
+      var uuid = createUuid(List<int>.filled(16, 255));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, "FFFFFFFF-FFFF-4FFF-BFFF-FFFFFFFFFFFF");
     });

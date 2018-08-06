@@ -15,14 +15,14 @@ class DependencyOverrideValidator extends Validator {
   DependencyOverrideValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
-    var overridden = new MapKeySet(entrypoint.root.dependencyOverrides);
-    var dev = new MapKeySet(entrypoint.root.devDependencies);
+    var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
+    var dev = MapKeySet(entrypoint.root.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
       errors.add('Your pubspec.yaml must not override non-dev dependencies.\n'
           'This ensures you test your package against the same versions of '
           'its dependencies\n'
           'that users will have when they use it.');
     }
-    return new Future.value();
+    return Future.value();
   }
 }

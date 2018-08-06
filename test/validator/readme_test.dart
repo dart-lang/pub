@@ -14,7 +14,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator readme(Entrypoint entrypoint) => new ReadmeValidator(entrypoint);
+Validator readme(Entrypoint entrypoint) => ReadmeValidator(entrypoint);
 
 main() {
   setUp(d.validPackage.create);

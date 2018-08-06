@@ -14,9 +14,8 @@ main() {
 
     await runPub(
         args: ["cache", "add", "foo"],
-        error:
-            new RegExp(r"Package doesn't exist \(could not find package foo at "
-                r"http://.*\)\."),
+        error: RegExp(r"Package doesn't exist \(could not find package foo at "
+            r"http://.*\)\."),
         exitCode: exit_codes.UNAVAILABLE);
   });
 }

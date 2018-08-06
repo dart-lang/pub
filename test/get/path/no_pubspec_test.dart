@@ -23,7 +23,7 @@ main() {
     ]).create();
 
     await pubGet(
-        error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+        error: RegExp(r'Could not find a file named "pubspec.yaml" '
             r'in "[^\n]*"\.'),
         exitCode: exit_codes.NO_INPUT);
   });

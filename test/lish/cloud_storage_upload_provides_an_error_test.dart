@@ -23,7 +23,7 @@ main() {
 
     server.handler.expect('POST', '/upload', (request) {
       return request.read().drain().then((_) {
-        return new shelf.Response.notFound(
+        return shelf.Response.notFound(
             '<Error><Message>Your request sucked.</Message></Error>',
             headers: {'content-type': 'application/xml'});
       });

@@ -15,7 +15,7 @@ class NameValidator extends Validator {
   NameValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
-    return new Future.sync(() {
+    return Future.sync(() {
       _checkName(entrypoint.root.name, 'Package name "${entrypoint.root.name}"',
           isPackage: true);
 
@@ -55,26 +55,26 @@ class NameValidator extends Validator {
 
     if (name == "") {
       errors.add("$description may not be empty.");
-    } else if (!new RegExp(r"^[a-zA-Z0-9_]*$").hasMatch(name)) {
+    } else if (!RegExp(r"^[a-zA-Z0-9_]*$").hasMatch(name)) {
       messages.add("$description may only contain letters, numbers, and "
           "underscores.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
-    } else if (!new RegExp(r"^[a-zA-Z_]").hasMatch(name)) {
+    } else if (!RegExp(r"^[a-zA-Z_]").hasMatch(name)) {
       messages.add("$description must begin with a letter or underscore.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
     } else if (reservedWords.contains(name.toLowerCase())) {
       messages.add("$description may not be a reserved word in Dart.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
-    } else if (new RegExp(r"[A-Z]").hasMatch(name)) {
+    } else if (RegExp(r"[A-Z]").hasMatch(name)) {
       warnings.add('$description should be lower-case. Maybe use '
           '"${_unCamelCase(name)}"?');
     }
   }
 
   String _unCamelCase(String source) {
-    var builder = new StringBuffer();
+    var builder = StringBuffer();
     var lastMatchEnd = 0;
-    for (var match in new RegExp(r"[a-z]([A-Z])").allMatches(source)) {
+    for (var match in RegExp(r"[a-z]([A-Z])").allMatches(source)) {
       builder
         ..write(source.substring(lastMatchEnd, match.start + 1))
         ..write("_")

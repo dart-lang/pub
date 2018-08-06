@@ -56,7 +56,7 @@ class Incompatibility {
         // two different packages (for example, a dependency).
         (terms.length == 2 &&
             terms.first.package.name != terms.last.package.name)) {
-      return new Incompatibility._(terms, cause);
+      return Incompatibility._(terms, cause);
     }
 
     // Coalesce multiple terms about the same package if possible.
@@ -78,7 +78,7 @@ class Incompatibility {
       }
     }
 
-    return new Incompatibility._(
+    return Incompatibility._(
         byName.values.expand((byRef) {
           // If there are any positive terms for a given package, we can discard
           // any negative terms.
@@ -122,7 +122,7 @@ class Incompatibility {
       assert(terms.first.isPositive);
 
       var cause = this.cause as SdkCause;
-      var buffer = new StringBuffer(
+      var buffer = StringBuffer(
           "${_terse(terms.first, details, allowEvery: true)} requires ");
       if (!cause.sdk.isAvailable) {
         buffer.write("the ${cause.sdk.name} SDK");
@@ -232,7 +232,7 @@ class Incompatibility {
         _tryRequiresForbidden(other, details, thisLine, otherLine);
     if (requiresForbidden != null) return requiresForbidden;
 
-    var buffer = new StringBuffer(toString(details));
+    var buffer = StringBuffer(toString(details));
     if (thisLine != null) buffer.write(" $thisLine");
     buffer.write(" and ${other.toString(details)}");
     if (otherLine != null) buffer.write(" $thisLine");
@@ -263,7 +263,7 @@ class Incompatibility {
         .join(' or ');
 
     var buffer =
-        new StringBuffer(_terse(thisPositive, details, allowEvery: true) + " ");
+        StringBuffer(_terse(thisPositive, details, allowEvery: true) + " ");
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
     buffer.write(isDependency ? "depends on" : "requires");
@@ -318,7 +318,7 @@ class Incompatibility {
 
     var priorPositives = prior.terms.where((term) => term.isPositive);
 
-    var buffer = new StringBuffer();
+    var buffer = StringBuffer();
     if (priorPositives.length > 1) {
       var priorString =
           priorPositives.map((term) => _terse(term, details)).join(' or ');
@@ -381,7 +381,7 @@ class Incompatibility {
 
     var positives = prior.terms.where((term) => term.isPositive);
 
-    var buffer = new StringBuffer();
+    var buffer = StringBuffer();
     if (positives.length > 1) {
       var priorString =
           positives.map((term) => _terse(term, details)).join(' or ');

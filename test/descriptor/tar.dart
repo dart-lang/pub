@@ -38,14 +38,14 @@ class TarFileDescriptor extends FileDescriptor {
   /// Validates that the `.tar.gz` file at [path] contains the expected
   /// contents.
   Future validate([String parent]) {
-    throw new UnimplementedError("TODO(nweiz): implement this");
+    throw UnimplementedError("TODO(nweiz): implement this");
   }
 
   Future<String> read() =>
-      throw new UnsupportedError("TarFileDescriptor.read() is not supported.");
+      throw UnsupportedError("TarFileDescriptor.read() is not supported.");
 
   Stream<List<int>> readAsBytes() {
-    return new Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
+    return Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
       await create(tempDir);
       return readBinaryFile(path.join(tempDir, name));
     }));
@@ -56,7 +56,7 @@ class TarFileDescriptor extends FileDescriptor {
 String _writeBinaryFile(String file, List<int> contents) {
   log.io("Writing ${contents.length} bytes to binary file $file.");
   deleteIfLink(file);
-  new File(file).openSync(mode: FileMode.write)
+  File(file).openSync(mode: FileMode.write)
     ..writeFromSync(contents)
     ..closeSync();
   log.fine("Wrote text file $file.");

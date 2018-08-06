@@ -23,7 +23,7 @@ class UnknownSource extends Source {
   UnknownSource(this.name);
 
   BoundSource bind(SystemCache systemCache) =>
-      new _BoundUnknownSource(this, systemCache);
+      _BoundUnknownSource(this, systemCache);
 
   /// Two unknown sources are the same if their names are the same.
   bool operator ==(other) => other is UnknownSource && other.name == name;
@@ -36,11 +36,11 @@ class UnknownSource extends Source {
   int hashDescription(description) => description.hashCode;
 
   PackageRef parseRef(String name, description, {String containingPath}) =>
-      new PackageRef(name, this, description);
+      PackageRef(name, this, description);
 
   PackageId parseId(String name, Version version, description,
           {String containingPath}) =>
-      new PackageId(name, this, version, description);
+      PackageId(name, this, version, description);
 }
 
 class _BoundUnknownSource extends BoundSource {
@@ -51,16 +51,16 @@ class _BoundUnknownSource extends BoundSource {
   _BoundUnknownSource(this.source, this.systemCache);
 
   Future<List<PackageId>> doGetVersions(PackageRef ref) =>
-      throw new UnsupportedError(
+      throw UnsupportedError(
           "Cannot get package versions from unknown source '${source.name}'.");
 
-  Future<Pubspec> doDescribe(PackageId id) => throw new UnsupportedError(
+  Future<Pubspec> doDescribe(PackageId id) => throw UnsupportedError(
       "Cannot describe a package from unknown source '${source.name}'.");
 
-  Future get(PackageId id, String symlink) => throw new UnsupportedError(
-      "Cannot get an unknown source '${source.name}'.");
+  Future get(PackageId id, String symlink) =>
+      throw UnsupportedError("Cannot get an unknown source '${source.name}'.");
 
   /// Returns the directory where this package can be found locally.
-  String getDirectory(PackageId id) => throw new UnsupportedError(
+  String getDirectory(PackageId id) => throw UnsupportedError(
       "Cannot find a package from an unknown source '${source.name}'.");
 }

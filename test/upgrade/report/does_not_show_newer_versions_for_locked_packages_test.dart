@@ -29,7 +29,7 @@ main() {
     await d.appDir({"not_upgraded": "any", "upgraded": "any"}).create();
 
     // Only upgrade "upgraded".
-    await pubUpgrade(args: ["upgraded"], output: new RegExp(r"""
+    await pubUpgrade(args: ["upgraded"], output: RegExp(r"""
 Resolving dependencies\.\.\..*
   not_upgraded 1\.0\.0
 . upgraded 2\.0\.0 \(was 1\.0\.0\) \(3\.0\.0-dev available\)

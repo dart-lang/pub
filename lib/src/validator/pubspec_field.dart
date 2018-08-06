@@ -29,7 +29,7 @@ class PubspecFieldValidator extends Validator {
       errors.add('In your pubspec.yaml, ${error.message}');
     }
 
-    return new Future.value();
+    return Future.value();
   }
 
   /// Adds an error if the "author" or "authors" field doesn't exist or has the
@@ -58,8 +58,8 @@ class PubspecFieldValidator extends Validator {
 
     authors ??= [author];
 
-    var hasName = new RegExp(r"^ *[^< ]");
-    var hasEmail = new RegExp(r"<[^>]+> *$");
+    var hasName = RegExp(r"^ *[^< ]");
+    var hasEmail = RegExp(r"<[^>]+> *$");
     for (var authorName in authors) {
       if (!hasName.hasMatch(authorName)) {
         warnings.add('Author "$authorName" in pubspec.yaml should have a '
@@ -94,7 +94,7 @@ class PubspecFieldValidator extends Validator {
       return;
     }
 
-    var goodScheme = new RegExp(r'^https?:');
+    var goodScheme = RegExp(r'^https?:');
     if (!goodScheme.hasMatch(url)) {
       errors.add('Your pubspec.yaml\'s "$field" field must be an "http:" or '
           '"https:" URL, but it was "$url".');

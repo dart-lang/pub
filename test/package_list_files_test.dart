@@ -188,7 +188,7 @@ main() {
 void createEntrypoint([String path]) {
   path ??= appPath;
   root = p.join(d.sandbox, path);
-  entrypoint = new Entrypoint(root, new SystemCache(rootDir: root));
+  entrypoint = Entrypoint(root, SystemCache(rootDir: root));
 
   addTearDown(() {
     entrypoint = null;

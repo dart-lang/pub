@@ -77,13 +77,13 @@ class PackageLister {
         _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
         return _cachedVersions;
       });
-  final _versionsMemo = new AsyncMemoizer<List<PackageId>>();
+  final _versionsMemo = AsyncMemoizer<List<PackageId>>();
 
   /// The most recent version of this package (or the oldest, if we're
   /// downgrading).
   Future<PackageId> get latest =>
       _latestMemo.runOnce(() => bestVersion(VersionConstraint.any));
-  final _latestMemo = new AsyncMemoizer<PackageId>();
+  final _latestMemo = AsyncMemoizer<PackageId>();
 
   /// Creates a package lister for the dependency identified by [ref].
   PackageLister(SystemCache cache, this._ref, this._locked,
@@ -94,12 +94,12 @@ class PackageLister {
 
   /// Creates a package lister for the root [package].
   PackageLister.root(Package package)
-      : _ref = new PackageRef.root(package),
-        _source = new _RootSource(package),
+      : _ref = PackageRef.root(package),
+        _source = _RootSource(package),
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
         // package.
-        _locked = new PackageId.root(package),
+        _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
         _overriddenPackages = const UnmodifiableSetView.empty(),
         _isDowngrade = false;
@@ -176,16 +176,16 @@ class PackageLister {
       log.fine("Failed to parse pubspec for $id:\n$error");
       _knownInvalidVersions = _knownInvalidVersions.union(id.version);
       return [
-        new Incompatibility(
-            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+        Incompatibility(
+            [Term(id.toRange(), true)], IncompatibilityCause.noVersions)
       ];
     } on PackageNotFoundException {
       // We can only get here if the lockfile refers to a specific package
       // version that doesn't exist (probably because it was yanked).
       _knownInvalidVersions = _knownInvalidVersions.union(id.version);
       return [
-        new Incompatibility(
-            [new Term(id.toRange(), true)], IncompatibilityCause.noVersions)
+        Incompatibility(
+            [Term(id.toRange(), true)], IncompatibilityCause.noVersions)
       ];
     }
 
@@ -199,8 +199,8 @@ class PackageLister {
       for (var sdk in sdks.values) {
         if (!_matchesSdkConstraint(pubspec, sdk)) {
           return [
-            new Incompatibility([new Term(depender, true)],
-                new SdkCause(pubspec.sdkConstraints[sdk.identifier], sdk))
+            Incompatibility([Term(depender, true)],
+                SdkCause(pubspec.sdkConstraints[sdk.identifier], sdk))
           ];
         }
       }
@@ -243,7 +243,7 @@ class PackageLister {
     }
 
     // Don't recompute dependencies that have already been emitted.
-    var dependencies = new Map<String, PackageRange>.from(pubspec.dependencies);
+    var dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
     for (var package in dependencies.keys.toList()) {
       if (_overriddenPackages.contains(package)) {
         dependencies.remove(package);
@@ -260,7 +260,7 @@ class PackageLister {
     var upper = await _dependencyBounds(dependencies, index, upper: true);
 
     return ordered(dependencies.keys).map((package) {
-      var constraint = new VersionRange(
+      var constraint = VersionRange(
           min: lower[package],
           includeMin: true,
           max: upper[package],
@@ -278,7 +278,7 @@ class PackageLister {
   /// Returns an [Incompatibility] that represents a dependency from [depender]
   /// onto [target].
   Incompatibility _dependency(PackageRange depender, PackageRange target) =>
-      new Incompatibility([new Term(depender, true), new Term(target, false)],
+      Incompatibility([Term(depender, true), Term(target, false)],
           IncompatibilityCause.dependency);
 
   /// If the version at [index] in [_versions] isn't compatible with the current
@@ -293,7 +293,7 @@ class PackageLister {
     if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
     var bounds = await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
-    var incompatibleVersions = new VersionRange(
+    var incompatibleVersions = VersionRange(
         min: bounds.first == 0 ? null : versions[bounds.first].version,
         includeMin: true,
         max: bounds.last == versions.length - 1
@@ -311,9 +311,9 @@ class PackageLister {
           pubspec.sdkConstraints[sdk.identifier] ?? VersionConstraint.any);
     });
 
-    return new Incompatibility(
-        [new Term(_ref.withConstraint(incompatibleVersions), true)],
-        new SdkCause(sdkConstraint, sdk));
+    return Incompatibility(
+        [Term(_ref.withConstraint(incompatibleVersions), true)],
+        SdkCause(sdkConstraint, sdk));
   }
 
   /// Returns the first and last indices in [_versions] of the contiguous set of
@@ -336,7 +336,7 @@ class PackageLister {
       last++;
     }
 
-    return new Pair(first + 1, last - 1);
+    return Pair(first + 1, last - 1);
   }
 
   /// Returns a map where each key is a package name and each value is the upper
@@ -398,7 +398,7 @@ class PackageLister {
       return await withDependencyType(
           _dependencyType, () => _source.describe(id));
     } catch (_) {
-      return new Pubspec(id.name, version: id.version);
+      return Pubspec(id.name, version: id.version);
     }
   }
 
@@ -421,7 +421,7 @@ class PackageLister {
 class _RootSource extends BoundSource {
   /// An error to throw for unused source methods.
   UnsupportedError get _unsupported =>
-      new UnsupportedError("_RootSource is not a full source.");
+      UnsupportedError("_RootSource is not a full source.");
 
   /// The entrypoint package.
   final Package _package;
@@ -430,12 +430,12 @@ class _RootSource extends BoundSource {
 
   Future<List<PackageId>> getVersions(PackageRef ref) {
     assert(ref.isRoot);
-    return new Future.value([new PackageId.root(_package)]);
+    return Future.value([PackageId.root(_package)]);
   }
 
   Future<Pubspec> describe(PackageId id) {
     assert(id.isRoot);
-    return new Future.value(_package.pubspec);
+    return Future.value(_package.pubspec);
   }
 
   Source get source => throw _unsupported;

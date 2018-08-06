@@ -12,22 +12,21 @@ import 'incompatibility.dart';
 abstract class IncompatibilityCause {
   /// The incompatibility represents the requirement that the root package
   /// exists.
-  static const IncompatibilityCause root = const _Cause("root");
+  static const IncompatibilityCause root = _Cause("root");
 
   /// The incompatibility represents a package's dependency.
-  static const IncompatibilityCause dependency = const _Cause("dependency");
+  static const IncompatibilityCause dependency = _Cause("dependency");
 
   /// The incompatibility represents the user's request that we use the latest
   /// version of a given package.
-  static const IncompatibilityCause useLatest = const _Cause("use latest");
+  static const IncompatibilityCause useLatest = _Cause("use latest");
 
   /// The incompatibility indicates that the package has no versions that match
   /// the given constraint.
-  static const IncompatibilityCause noVersions = const _Cause("no versions");
+  static const IncompatibilityCause noVersions = _Cause("no versions");
 
   /// The incompatibility indicates that the package has an unknown source.
-  static const IncompatibilityCause unknownSource =
-      const _Cause("unknown source");
+  static const IncompatibilityCause unknownSource = _Cause("unknown source");
 }
 
 /// The incompatibility was derived from two existing incompatibilities during

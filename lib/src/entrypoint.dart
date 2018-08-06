@@ -42,7 +42,7 @@ final _sdkConstraint = () {
   //   dart: ">=1.2.3 <2.0.0"
   // ```
   var sdkNames = sdks.keys.map((name) => "  " + name).join('|');
-  return new RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
+  return RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
 }();
 
 /// The context surrounding the root package pub is operating on.
@@ -87,9 +87,9 @@ class Entrypoint {
     if (_lockFile != null) return _lockFile;
 
     if (!fileExists(lockFilePath)) {
-      _lockFile = new LockFile.empty();
+      _lockFile = LockFile.empty();
     } else {
-      _lockFile = new LockFile.load(lockFilePath, cache.sources);
+      _lockFile = LockFile.load(lockFilePath, cache.sources);
     }
 
     return _lockFile;
@@ -106,13 +106,11 @@ class Entrypoint {
     if (_packageGraph != null) return _packageGraph;
 
     assertUpToDate();
-    var packages = new Map<String, Package>.fromIterable(
-        lockFile.packages.values,
-        key: (id) => id.name,
-        value: (id) => cache.load(id));
+    var packages = Map<String, Package>.fromIterable(lockFile.packages.values,
+        key: (id) => id.name, value: (id) => cache.load(id));
     packages[root.name] = root;
 
-    _packageGraph = new PackageGraph(this, lockFile, packages);
+    _packageGraph = PackageGraph(this, lockFile, packages);
     return _packageGraph;
   }
 
@@ -152,14 +150,13 @@ class Entrypoint {
 
   /// Loads the entrypoint for the package at the current directory.
   Entrypoint.current(this.cache)
-      : root = new Package.load(null, '.', cache.sources, isRootPackage: true),
+      : root = Package.load(null, '.', cache.sources, isRootPackage: true),
         _inMemory = false,
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
-      : root =
-            new Package.load(null, rootDir, cache.sources, isRootPackage: true),
+      : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
         _inMemory = false,
         isGlobal = true;
 
@@ -173,7 +170,7 @@ class Entrypoint {
   Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
       : _inMemory = true,
         isGlobal = true {
-    _packageGraph = new PackageGraph.fromSolveResult(this, solveResult);
+    _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     _lockFile = _packageGraph.lockFile;
   }
 
@@ -235,7 +232,7 @@ class Entrypoint {
 
     /// Build a package graph from the version solver results so we don't
     /// have to reload and reparse all the pubspecs.
-    _packageGraph = new PackageGraph.fromSolveResult(this, result);
+    _packageGraph = PackageGraph.fromSolveResult(this, result);
 
     writeTextFile(packagesFile, packagesFileContents);
 
@@ -393,8 +390,8 @@ class Entrypoint {
     var lockFileText = readTextFile(lockFilePath);
     var hasPathDependencies = lockFileText.contains("\n    source: path\n");
 
-    var pubspecModified = new File(pubspecPath).lastModifiedSync();
-    var lockFileModified = new File(lockFilePath).lastModifiedSync();
+    var pubspecModified = File(pubspecPath).lastModifiedSync();
+    var lockFileModified = File(lockFilePath).lastModifiedSync();
 
     var touchedLockFile = false;
     if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
@@ -408,7 +405,7 @@ class Entrypoint {
       }
     }
 
-    var packagesModified = new File(packagesFile).lastModifiedSync();
+    var packagesModified = File(packagesFile).lastModifiedSync();
     if (packagesModified.isBefore(lockFileModified)) {
       if (_isPackagesFileUpToDate()) {
         touch(packagesFile);
@@ -430,7 +427,7 @@ class Entrypoint {
       // able to `pub run` non-Flutter tools even in a Flutter app.
       if (!sdk.isAvailable) continue;
 
-      var parsedConstraint = new VersionConstraint.parse(match[2]);
+      var parsedConstraint = VersionConstraint.parse(match[2]);
       if (!parsedConstraint.allows(sdk.version)) {
         dataError("${sdk.name} ${sdk.version} is incompatible with your "
             "dependencies' SDK constraints. Please run \"pub get\" again.");
@@ -450,7 +447,7 @@ class Entrypoint {
           'file was generated, please run "pub get" again.');
     }
 
-    var overrides = new MapKeySet(root.dependencyOverrides);
+    var overrides = MapKeySet(root.dependencyOverrides);
 
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
@@ -507,7 +504,7 @@ class Entrypoint {
   /// not in the lockfile or that don't match what's in there.
   bool _isPackagesFileUpToDate() {
     var packages = packages_file.parse(
-        new File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
+        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
 
     return lockFile.packages.values.every((lockFileId) {
       // It's very unlikely that the lockfile is invalid here, but it's not

@@ -22,14 +22,13 @@ Future authorizePub(TestProcess pub, ShelfTestServer server,
 
   var line = await pub.stdout.next;
   var match =
-      new RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]').firstMatch(line);
+      RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]').firstMatch(line);
   expect(match, isNotNull);
 
   var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)));
   redirectUrl = _addQueryParameters(redirectUrl, {'code': 'access code'});
-  var response = await (new http.Request('GET', redirectUrl)
-        ..followRedirects = false)
-      .send();
+  var response =
+      await (http.Request('GET', redirectUrl)..followRedirects = false).send();
   expect(response.headers['location'],
       equals('https://pub.dartlang.org/authorized'));
 
@@ -39,9 +38,9 @@ Future authorizePub(TestProcess pub, ShelfTestServer server,
 void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {
   server.handler.expect('POST', '/token', (request) async {
     var body = await request.readAsString();
-    expect(body, matches(new RegExp(r'(^|&)code=access\+code(&|$)')));
+    expect(body, matches(RegExp(r'(^|&)code=access\+code(&|$)')));
 
-    return new shelf.Response.ok(
+    return shelf.Response.ok(
         jsonEncode({"access_token": accessToken, "token_type": "bearer"}),
         headers: {'content-type': 'application/json'});
   });

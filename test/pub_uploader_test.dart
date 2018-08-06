@@ -69,7 +69,7 @@ main() {
       return request.readAsString().then((body) {
         expect(body, equals('email=email'));
 
-        return new shelf.Response.ok(
+        return shelf.Response.ok(
             jsonEncode({
               'success': {'message': 'Good job!'}
             }),
@@ -89,7 +89,7 @@ main() {
 
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
         (request) {
-      return new shelf.Response.ok(
+      return shelf.Response.ok(
           jsonEncode({
             'success': {'message': 'Good job!'}
           }),
@@ -109,7 +109,7 @@ main() {
 
     server.handler.expect('POST', '/api/packages/test_pkg/uploaders',
         (request) {
-      return new shelf.Response.ok(
+      return shelf.Response.ok(
           jsonEncode({
             'success': {'message': 'Good job!'}
           }),
@@ -127,7 +127,7 @@ main() {
         await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
 
     server.handler.expect('POST', '/api/packages/pkg/uploaders', (request) {
-      return new shelf.Response(400,
+      return shelf.Response(400,
           body: jsonEncode({
             'error': {'message': 'Bad job!'}
           }),
@@ -146,7 +146,7 @@ main() {
 
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail',
         (request) {
-      return new shelf.Response(400,
+      return shelf.Response(400,
           body: jsonEncode({
             'error': {'message': 'Bad job!'}
           }),
@@ -164,7 +164,7 @@ main() {
         await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
 
     server.handler.expect('POST', '/api/packages/pkg/uploaders',
-        (request) => new shelf.Response.ok("{not json"));
+        (request) => shelf.Response.ok("{not json"));
 
     expect(
         pub.stderr,
@@ -180,7 +180,7 @@ main() {
         await startPubUploader(server, ['--package', 'pkg', 'remove', 'email']);
 
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
-        (request) => new shelf.Response.ok("{not json"));
+        (request) => shelf.Response.ok("{not json"));
 
     expect(
         pub.stderr,

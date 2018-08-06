@@ -52,7 +52,7 @@ Future<List<String>> run(List<String> args,
   try {
     var result = await runProcess(command, args,
         workingDir: workingDir, environment: environment);
-    if (!result.success) throw new GitException(args, result.stderr.join("\n"));
+    if (!result.success) throw GitException(args, result.stderr.join("\n"));
     return result.stdout;
   } finally {
     log.unmuteProgress();
@@ -69,7 +69,7 @@ List<String> runSync(List<String> args,
 
   var result = runProcessSync(command, args,
       workingDir: workingDir, environment: environment);
-  if (!result.success) throw new GitException(args, result.stderr.join("\n"));
+  if (!result.success) throw GitException(args, result.stderr.join("\n"));
   return result.stdout;
 }
 
@@ -98,10 +98,10 @@ bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     var result = runProcessSync(command, ["--version"]);
-    var regexp = new RegExp("^git version");
+    var regexp = RegExp("^git version");
     return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
   } on ProcessException catch (error, stackTrace) {
-    var chain = new Chain.forTrace(stackTrace);
+    var chain = Chain.forTrace(stackTrace);
     // If the process failed, they probably don't have it.
     log.error('Git command is not "$command": $error\n$chain');
     return false;
