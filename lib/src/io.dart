@@ -787,7 +787,7 @@ _doProcess(Function fn, String executable, List<String> args,
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
-  if (Platform.isWindows && executable.contains('\\')) {
+  if (Platform.isWindows && !executable.contains('\\')) {
     args = ["/c", executable]..addAll(args);
     executable = "cmd";
   }
@@ -962,7 +962,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
   return new ByteStream(StreamCompleter.fromFuture(new Future.sync(() async {
     var buffer = new StringBuffer();
     buffer.write('Creating .tar.gz stream containing:\n');
-    buffer.writeAll(contents, '\n');
+    contents.forEach(buffer.writeln);
     log.fine(buffer.toString());
 
     baseDir ??= path.current;
