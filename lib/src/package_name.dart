@@ -53,13 +53,12 @@ abstract class PackageName {
 
   /// Returns a [PackageRef] with this one's [name], [source], and
   /// [description].
-  PackageRef toRef() => isMagic
-      ? new PackageRef.magic(name)
-      : new PackageRef(name, source, description);
+  PackageRef toRef() =>
+      isMagic ? PackageRef.magic(name) : PackageRef(name, source, description);
 
   /// Returns a [PackageRange] for this package with the given version constraint.
   PackageRange withConstraint(VersionConstraint constraint) =>
-      new PackageRange(name, source, constraint, description);
+      PackageRange(name, source, constraint, description);
 
   /// Returns whether this refers to the same package as [other].
   ///
@@ -107,7 +106,7 @@ class PackageRef extends PackageName {
     detail ??= PackageDetail.defaults;
     if (isMagic || isRoot) return name;
 
-    var buffer = new StringBuffer(name);
+    var buffer = StringBuffer(name);
     if (detail.showSource ?? source is! HostedSource) {
       buffer.write(" from $source");
       if (detail.showDescription) {
@@ -168,7 +167,7 @@ class PackageId extends PackageName {
     detail ??= PackageDetail.defaults;
     if (isMagic) return name;
 
-    var buffer = new StringBuffer(name);
+    var buffer = StringBuffer(name);
     if (detail.showVersion ?? !isRoot) buffer.write(" $version");
 
     if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
@@ -199,7 +198,7 @@ class PackageRange extends PackageName {
       {Map<String, FeatureDependency> features})
       : features = features == null
             ? const {}
-            : new UnmodifiableMapView(new Map.from(features)),
+            : UnmodifiableMapView(Map.from(features)),
         super._(name, source, description);
 
   PackageRange.magic(String name)
@@ -244,7 +243,7 @@ class PackageRange extends PackageName {
     detail ??= PackageDetail.defaults;
     if (isMagic) return name;
 
-    var buffer = new StringBuffer(name);
+    var buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {
       buffer.write(" $constraint");
     }
@@ -275,8 +274,8 @@ class PackageRange extends PackageName {
   /// Returns a new [PackageRange] with [features] merged with [this.features].
   PackageRange withFeatures(Map<String, FeatureDependency> features) {
     if (features.isEmpty) return this;
-    return new PackageRange(name, source, constraint, description,
-        features: new Map.from(this.features)..addAll(features));
+    return PackageRange(name, source, constraint, description,
+        features: Map.from(this.features)..addAll(features));
   }
 
   /// Returns a copy of [this] with the same semantics, but with a `^`-style
@@ -291,7 +290,7 @@ class PackageRange extends PackageName {
     if (range.min == null) return this;
     if (range.max == range.min.nextBreaking.firstPreRelease ||
         (range.min.isPreRelease && range.max == range.min.nextBreaking)) {
-      return withConstraint(new VersionConstraint.compatibleWith(range.min));
+      return withConstraint(VersionConstraint.compatibleWith(range.min));
     } else {
       return this;
     }
@@ -316,15 +315,15 @@ class PackageRange extends PackageName {
 /// An enum of types of dependencies on a [Feature].
 class FeatureDependency {
   /// The feature must exist and be enabled for this dependency to be satisfied.
-  static const required = const FeatureDependency._("required");
+  static const required = FeatureDependency._("required");
 
   /// The feature must be enabled if it exists, but is not required to exist for
   /// this dependency to be satisfied.
-  static const ifAvailable = const FeatureDependency._("if available");
+  static const ifAvailable = FeatureDependency._("if available");
 
   /// The feature is neither required to exist nor to be enabled for this
   /// feature to be satisfied.
-  static const unused = const FeatureDependency._("unused");
+  static const unused = FeatureDependency._("unused");
 
   final String _name;
 
@@ -340,7 +339,7 @@ class FeatureDependency {
 /// terse package name.
 class PackageDetail {
   /// The default [PackageDetail] configuration.
-  static const defaults = const PackageDetail();
+  static const defaults = PackageDetail();
 
   /// Whether to show the package version or version range.
   ///
@@ -376,7 +375,7 @@ class PackageDetail {
 
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
-  PackageDetail max(PackageDetail other) => new PackageDetail(
+  PackageDetail max(PackageDetail other) => PackageDetail(
       showVersion: showVersion || other.showVersion,
       showSource: showSource || other.showSource,
       showDescription: showDescription || other.showDescription,

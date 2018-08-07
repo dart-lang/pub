@@ -23,7 +23,7 @@ main() {
 
     server.handler.expect('POST', '/upload', (request) async {
       await request.read().drain();
-      return new shelf.Response(200);
+      return shelf.Response(200);
     });
 
     expect(pub.stderr, emits('Failed to upload the package.'));

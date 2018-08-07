@@ -23,14 +23,14 @@ final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
 /// A regular expression matching a Dart identifier.
 ///
 /// This also matches a package name, since they must be Dart identifiers.
-final identifierRegExp = new RegExp(r"[a-zA-Z_]\w*");
+final identifierRegExp = RegExp(r"[a-zA-Z_]\w*");
 
 /// Like [identifierRegExp], but anchored so that it only matches strings that
 /// are *just* Dart identifiers.
-final onlyIdentifierRegExp = new RegExp("^${identifierRegExp.pattern}\$");
+final onlyIdentifierRegExp = RegExp("^${identifierRegExp.pattern}\$");
 
 /// Dart reserved words, from the Dart spec.
-const reservedWords = const [
+const reservedWords = [
   "assert",
   "break",
   "case",
@@ -65,7 +65,7 @@ const reservedWords = const [
 ];
 
 /// An cryptographically secure instance of [math.Random].
-final random = new math.Random.secure();
+final random = math.Random.secure();
 
 /// The maximum line length for output.
 ///
@@ -104,17 +104,15 @@ class Pair<E, F> {
 /// if [captureStackChains] is passed, it will contain the full stack chain for
 /// the error.
 Future captureErrors(Future callback(), {bool captureStackChains = false}) {
-  var completer = new Completer();
+  var completer = Completer();
   var wrappedCallback = () {
-    new Future.sync(callback)
-        .then(completer.complete)
-        .catchError((e, stackTrace) {
+    Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
       if (stackTrace != null) {
-        stackTrace = new Chain.forTrace(stackTrace);
+        stackTrace = Chain.forTrace(stackTrace);
       } else {
-        stackTrace = new Chain([]);
+        stackTrace = Chain([]);
       }
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
@@ -127,9 +125,9 @@ Future captureErrors(Future callback(), {bool captureStackChains = false}) {
   } else {
     runZoned(wrappedCallback, onError: (e, stackTrace) {
       if (stackTrace == null) {
-        stackTrace = new Chain.current();
+        stackTrace = Chain.current();
       } else {
-        stackTrace = new Chain([new Trace.from(stackTrace)]);
+        stackTrace = Chain([Trace.from(stackTrace)]);
       }
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
@@ -149,7 +147,7 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
       throw error;
     });
   })).catchError((error, stackTrace) {
-    throw new SilentException(error, stackTrace);
+    throw SilentException(error, stackTrace);
   });
 }
 
@@ -158,7 +156,7 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
 ///
 /// The stream will be passed through unchanged.
 StreamTransformer<T, T> onDoneTransformer<T>(void onDone()) {
-  return new StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
+  return StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
     onDone();
     sink.close();
   });
@@ -238,7 +236,7 @@ bool isLoopback(String host) {
   }
 
   try {
-    return new InternetAddress(host).isLoopback;
+    return InternetAddress(host).isLoopback;
   } on ArgumentError catch (_) {
     // The host isn't an IP address and isn't "localhost', so it's almost
     // certainly not a loopback host.
@@ -313,7 +311,7 @@ Future<S> minByAsync<S, T>(
 /// Like [List.sublist], but for any iterable.
 Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
   if (end <= start) {
-    throw new RangeError.range(
+    throw RangeError.range(
         end, start + 1, null, "end", "must be greater than start");
   }
   return values.skip(start).take(end - start);
@@ -323,14 +321,14 @@ Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
 Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
         Future<S> combine(S previous, T element)) =>
     values.fold(
-        new Future.value(initialValue),
+        Future.value(initialValue),
         (previousFuture, element) =>
             previousFuture.then((previous) => combine(previous, element)));
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String fn(Match match)) {
-  var buffer = new StringBuffer();
+  var buffer = StringBuffer();
   var start = 0;
   for (var match in matcher.allMatches(source)) {
     buffer.write(source.substring(start, match.start));
@@ -356,7 +354,7 @@ void chainToCompleter(Future future, Completer completer) {
 ///
 /// Unlike [Stream.first], this is safe to use with single-subscription streams.
 Future<T> streamFirst<T>(Stream<T> stream) {
-  var completer = new Completer<T>();
+  var completer = Completer<T>();
   var subscription;
   subscription = stream.listen((value) {
     subscription.cancel();
@@ -364,13 +362,13 @@ Future<T> streamFirst<T>(Stream<T> stream) {
   }, onError: (e, [StackTrace stackTrace]) {
     completer.completeError(e, stackTrace);
   }, onDone: () {
-    completer.completeError(new StateError("No elements"), new Chain.current());
+    completer.completeError(StateError("No elements"), Chain.current());
   }, cancelOnError: true);
   return completer.future;
 }
 
 /// A regular expression matching a trailing CR character.
-final _trailingCR = new RegExp(r"\r$");
+final _trailingCR = RegExp(r"\r$");
 
 // TODO(nweiz): Use `text.split(new RegExp("\r\n?|\n\r?"))` when issue 9360 is
 // fixed.
@@ -383,16 +381,16 @@ List<String> splitLines(String text) =>
 /// The lines don't include line termination characters. A single trailing
 /// newline is ignored.
 Stream<String> streamToLines(Stream<String> stream) {
-  var buffer = new StringBuffer();
+  var buffer = StringBuffer();
   return stream
-      .transform(new StreamTransformer.fromHandlers(handleData: (chunk, sink) {
+      .transform(StreamTransformer.fromHandlers(handleData: (chunk, sink) {
     var lines = splitLines(chunk);
     var leftover = lines.removeLast();
     for (var line in lines) {
       if (buffer.isNotEmpty) {
         buffer.write(line);
         line = buffer.toString();
-        buffer = new StringBuffer();
+        buffer = StringBuffer();
       }
 
       sink.add(line);
@@ -497,7 +495,7 @@ bool get isAprilFools {
   // Tests should never see April Fools' output.
   if (runningFromTest) return false;
 
-  var date = new DateTime.now();
+  var date = DateTime.now();
   return date.month == 4 && date.day == 1;
 }
 
@@ -505,12 +503,12 @@ bool get isAprilFools {
 ///
 /// This pattern does not strictly follow the plain scalar grammar of YAML,
 /// which means some strings may be unnecessarily quoted, but it's much simpler.
-final _unquotableYamlString = new RegExp(r"^[a-zA-Z_-][a-zA-Z_0-9-]*$");
+final _unquotableYamlString = RegExp(r"^[a-zA-Z_-][a-zA-Z_0-9-]*$");
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
 String yamlToString(data) {
-  var buffer = new StringBuffer();
+  var buffer = StringBuffer();
 
   _stringify(bool isMapValue, String indent, data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
@@ -568,9 +566,9 @@ String yamlToString(data) {
 @alwaysThrows
 void fail(String message, [innerError, StackTrace innerTrace]) {
   if (innerError != null) {
-    throw new WrappedException(message, innerError, innerTrace);
+    throw WrappedException(message, innerError, innerTrace);
   } else {
-    throw new ApplicationException(message);
+    throw ApplicationException(message);
   }
 }
 
@@ -578,7 +576,7 @@ void fail(String message, [innerError, StackTrace innerTrace]) {
 /// failed because of invalid input data.
 ///
 /// This will report the error and cause pub to exit with [exit_codes.DATA].
-void dataError(String message) => throw new DataException(message);
+void dataError(String message) => throw DataException(message);
 
 /// Returns a UUID in v4 format as a `String`.
 ///
@@ -587,10 +585,10 @@ void dataError(String message) => throw new DataException(message);
 ///
 /// If [bytes] is not provided, it is generated using `Random.secure`.
 String createUuid([List<int> bytes]) {
-  var rnd = new math.Random.secure();
+  var rnd = math.Random.secure();
 
   // See http://www.cryptosys.net/pki/uuid-rfc4122.html for notes
-  bytes ??= new List<int>.generate(16, (_) => rnd.nextInt(256));
+  bytes ??= List<int>.generate(16, (_) => rnd.nextInt(256));
   bytes[6] = (bytes[6] & 0x0F) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
@@ -616,7 +614,7 @@ String wordWrap(String text, {String prefix}) {
 
   prefix ??= "";
   return text.split("\n").map((originalLine) {
-    var buffer = new StringBuffer();
+    var buffer = StringBuffer();
     var lengthSoFar = 0;
     var firstLine = true;
     for (var word in originalLine.split(" ")) {
@@ -646,14 +644,14 @@ String wordWrap(String text, {String prefix}) {
 }
 
 /// A regular expression matching terminal color codes.
-final _colorCode = new RegExp('\u001b\\[[0-9;]+m');
+final _colorCode = RegExp('\u001b\\[[0-9;]+m');
 
 /// Returns [str] without any color codes.
 String _withoutColors(String str) => str.replaceAll(_colorCode, '');
 
 /// A regular expression to match the exception prefix that some exceptions'
 /// [Object.toString] values contain.
-final _exceptionPrefix = new RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
+final _exceptionPrefix = RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 
 /// Get a string description of an exception.
 ///

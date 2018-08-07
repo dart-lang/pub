@@ -18,8 +18,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator dependency(Entrypoint entrypoint) =>
-    new DependencyValidator(entrypoint);
+Validator dependency(Entrypoint entrypoint) => DependencyValidator(entrypoint);
 
 expectDependencyValidationError(String error) {
   expect(validatePackage(dependency),
@@ -34,14 +33,14 @@ expectDependencyValidationWarning(String warning) {
 /// Sets up a test package with dependency [dep] and mocks a server with
 /// [hostedVersions] of the package available.
 Future setUpDependency(Map dep, {List<String> hostedVersions}) {
-  useMockClient(new MockClient((request) {
+  useMockClient(MockClient((request) {
     expect(request.method, equals("GET"));
     expect(request.url.path, equals("/api/packages/foo"));
 
     if (hostedVersions == null) {
-      return new Future.value(new http.Response("not found", 404));
+      return Future.value(http.Response("not found", 404));
     } else {
-      return new Future.value(new http.Response(
+      return Future.value(http.Response(
           jsonEncode({
             "name": "foo",
             "uploaders": ["nweiz@google.com"],

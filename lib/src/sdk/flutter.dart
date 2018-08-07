@@ -13,7 +13,7 @@ import '../sdk.dart';
 class FlutterSdk extends Sdk {
   String get name => "Flutter";
   bool get isAvailable => _isAvailable;
-  Version get firstPubVersion => new Version.parse('1.19.0');
+  Version get firstPubVersion => Version.parse('1.19.0');
 
   static final bool _isAvailable =
       Platform.environment.containsKey("FLUTTER_ROOT");
@@ -25,8 +25,8 @@ class FlutterSdk extends Sdk {
   Version get version {
     if (!_isAvailable) return null;
 
-    _version ??= new Version.parse(
-        readTextFile(p.join(_rootDirectory, "version")).trim());
+    _version ??=
+        Version.parse(readTextFile(p.join(_rootDirectory, "version")).trim());
     return _version;
   }
 

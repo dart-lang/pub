@@ -54,11 +54,11 @@ class SolveResult {
       });
     }
 
-    return new LockFile(packages,
+    return LockFile(packages,
         sdkConstraints: sdkConstraints,
-        mainDependencies: new MapKeySet(_root.dependencies),
-        devDependencies: new MapKeySet(_root.devDependencies),
-        overriddenDependencies: new MapKeySet(_root.dependencyOverrides));
+        mainDependencies: MapKeySet(_root.dependencies),
+        devDependencies: MapKeySet(_root.devDependencies),
+        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
   }
 
   final SourceRegistry _sources;
@@ -88,7 +88,7 @@ class SolveResult {
   ///
   /// [type] is the type of version resolution that was run.
   void showReport(SolveType type) {
-    new SolveReport(type, _sources, _root, _previousLockFile, this).show();
+    SolveReport(type, _sources, _root, _previousLockFile, this).show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -96,7 +96,7 @@ class SolveResult {
   ///
   /// [type] is the type of version resolution that was run.
   void summarizeChanges(SolveType type, {bool dryRun = false}) {
-    new SolveReport(type, _sources, _root, _previousLockFile, this)
+    SolveReport(type, _sources, _root, _previousLockFile, this)
         .summarize(dryRun: dryRun);
   }
 

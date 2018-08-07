@@ -14,7 +14,7 @@ class ReadmeValidator extends Validator {
   ReadmeValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
-    return new Future.sync(() {
+    return Future.sync(() {
       var readme = entrypoint.root.readmePath;
       if (readme == null) {
         warnings

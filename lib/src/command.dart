@@ -16,11 +16,11 @@ import 'system_cache.dart';
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
 abstract class PubCommand extends Command {
-  SystemCache get cache => _cache ??= new SystemCache(isOffline: isOffline);
+  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
   SystemCache _cache;
 
-  GlobalPackages get globals => _globals ??= new GlobalPackages(cache);
+  GlobalPackages get globals => _globals ??= GlobalPackages(cache);
 
   GlobalPackages _globals;
 
@@ -28,7 +28,7 @@ abstract class PubCommand extends Command {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint => _entrypoint ??= new Entrypoint.current(cache);
+  Entrypoint get entrypoint => _entrypoint ??= Entrypoint.current(cache);
 
   Entrypoint _entrypoint;
 
@@ -42,7 +42,7 @@ abstract class PubCommand extends Command {
   // Lazily initialize the parser because the superclass constructor requires
   // it but we want to initialize it based on [allowTrailingOptions].
   ArgParser get argParser =>
-      _argParser ??= new ArgParser(allowTrailingOptions: allowTrailingOptions);
+      _argParser ??= ArgParser(allowTrailingOptions: allowTrailingOptions);
 
   ArgParser _argParser;
 

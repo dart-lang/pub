@@ -22,7 +22,7 @@ main() {
       expect(request.headers,
           containsPair('authorization', 'Bearer access token'));
 
-      return new shelf.Response(200);
+      return shelf.Response(200);
     });
 
     await pub.kill();

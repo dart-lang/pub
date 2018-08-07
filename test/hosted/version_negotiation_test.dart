@@ -25,7 +25,7 @@ main() {
       server.handler.expect('GET', '/api/packages/foo', (request) {
         expect(
             request.headers['accept'], equals('application/vnd.pub.v2+json'));
-        return new shelf.Response(200);
+        return shelf.Response(200);
       });
 
       await pub.kill();
@@ -42,8 +42,8 @@ main() {
 
       var pub = await startPub(args: [command.name]);
 
-      server.handler.expect(
-          'GET', '/api/packages/foo', (request) => new shelf.Response(406));
+      server.handler
+          .expect('GET', '/api/packages/foo', (request) => shelf.Response(406));
 
       await pub.shouldExit(1);
 

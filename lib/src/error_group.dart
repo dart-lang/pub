@@ -38,7 +38,7 @@ class ErrorGroup {
   var _isDone = false;
 
   /// The [Completer] for [done].
-  final _doneCompleter = new Completer<Null>();
+  final _doneCompleter = Completer<Null>();
 
   /// The underlying [Future] for [done].
   ///
@@ -56,7 +56,7 @@ class ErrorGroup {
 
   /// Creates a new group with no members.
   ErrorGroup() {
-    _done = new _ErrorGroupFuture(this, _doneCompleter.future);
+    _done = _ErrorGroupFuture(this, _doneCompleter.future);
   }
 
   /// Registers a [Future] as a member of [this].
@@ -67,11 +67,11 @@ class ErrorGroup {
   /// error, it's a [StateError] to try to register a new [Future].
   Future<T> registerFuture<T>(Future<T> future) {
     if (_isDone) {
-      throw new StateError("Can't register new members on a complete "
+      throw StateError("Can't register new members on a complete "
           "ErrorGroup.");
     }
 
-    var wrapped = new _ErrorGroupFuture(this, future);
+    var wrapped = _ErrorGroupFuture(this, future);
     _futures.add(wrapped);
     return wrapped;
   }
@@ -90,11 +90,11 @@ class ErrorGroup {
   /// error, it's a [StateError] to try to register a new [Stream].
   Stream<T> registerStream<T>(Stream<T> stream) {
     if (_isDone) {
-      throw new StateError("Can't register new members on a complete "
+      throw StateError("Can't register new members on a complete "
           "ErrorGroup.");
     }
 
-    var wrapped = new _ErrorGroupStream(this, stream);
+    var wrapped = _ErrorGroupStream(this, stream);
     _streams.add(wrapped);
     return wrapped;
   }
@@ -108,7 +108,7 @@ class ErrorGroup {
   /// error, it's a [StateError] to try to signal an error.
   void signalError(var error, [StackTrace stackTrace]) {
     if (_isDone) {
-      throw new StateError("Can't signal errors on a complete ErrorGroup.");
+      throw StateError("Can't signal errors on a complete ErrorGroup.");
     }
 
     _signalError(error, stackTrace);
@@ -172,7 +172,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
   var _isDone = false;
 
   /// The underlying [Completer] for [this].
-  final _completer = new Completer<T>();
+  final _completer = Completer<T>();
 
   /// Whether [this] has any listeners.
   bool _hasListeners = false;
@@ -258,7 +258,7 @@ class _ErrorGroupStream<T> extends Stream<T> {
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
   _ErrorGroupStream(this._group, Stream<T> inner)
-      : _controller = new StreamController(sync: true) {
+      : _controller = StreamController(sync: true) {
     // Use old-style asBroadcastStream behavior - cancel source _subscription
     // the first time the stream has no listeners.
     _stream = inner.isBroadcast
@@ -284,7 +284,7 @@ class _ErrorGroupStream<T> extends Stream<T> {
     if (_isDone) return;
     _subscription.cancel();
     // Call these asynchronously to work around issue 7913.
-    new Future.value().then((_) {
+    Future.value().then((_) {
       _controller.addError(e, stackTrace);
       _controller.close();
     });

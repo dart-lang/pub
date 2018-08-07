@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator dependencyOverride(Entrypoint entrypoint) =>
-    new DependencyOverrideValidator(entrypoint);
+    DependencyOverrideValidator(entrypoint);
 
 main() {
   test(

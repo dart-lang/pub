@@ -28,7 +28,7 @@ class SolveReport {
   /// The dependencies in [_result], keyed by package name.
   final _dependencies = <String, PackageId>{};
 
-  final _output = new StringBuffer();
+  final _output = StringBuffer();
 
   SolveReport(this._type, this._sources, this._root, this._previousLockFile,
       this._result) {

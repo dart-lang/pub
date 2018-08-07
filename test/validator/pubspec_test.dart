@@ -14,7 +14,7 @@ main() {
   test('should consider a package valid if it has a pubspec', () async {
     await d.validPackage.create();
 
-    expectNoValidationError((entrypoint) => new PubspecValidator(entrypoint));
+    expectNoValidationError((entrypoint) => PubspecValidator(entrypoint));
   });
 
   test(
@@ -24,6 +24,6 @@ main() {
     await d.validPackage.create();
     await repo.create();
 
-    expectValidationError((entrypoint) => new PubspecValidator(entrypoint));
+    expectValidationError((entrypoint) => PubspecValidator(entrypoint));
   });
 }

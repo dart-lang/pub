@@ -12,8 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator executable(Entrypoint entrypoint) =>
-    new ExecutableValidator(entrypoint);
+Validator executable(Entrypoint entrypoint) => ExecutableValidator(entrypoint);
 
 main() {
   setUp(d.validPackage.create);

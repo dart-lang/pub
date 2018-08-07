@@ -21,7 +21,7 @@ main() {
     await d
         .credentialsFile(server, 'access token',
             refreshToken: 'refresh token',
-            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+            expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
     var pub = await startPublish(server);
@@ -29,10 +29,10 @@ main() {
 
     server.handler.expect('POST', '/token', (request) {
       return request.readAsString().then((body) {
-        expect(body,
-            matches(new RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
+        expect(
+            body, matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
 
-        return new shelf.Response.ok(
+        return shelf.Response.ok(
             jsonEncode(
                 {"access_token": "new access token", "token_type": "bearer"}),
             headers: {'content-type': 'application/json'});
@@ -43,7 +43,7 @@ main() {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
-      return new shelf.Response(200);
+      return shelf.Response(200);
     });
 
     await pub.shouldExit();

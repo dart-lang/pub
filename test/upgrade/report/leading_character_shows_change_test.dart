@@ -71,7 +71,7 @@ main() {
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: new RegExp(r"""
+    await pubUpgrade(output: RegExp(r"""
 Resolving dependencies\.\.\..*
 \+ added .*
 \* description_changed .*

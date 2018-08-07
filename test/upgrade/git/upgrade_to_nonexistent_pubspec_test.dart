@@ -27,7 +27,7 @@ main() {
     await repo.runGit(['commit', '-m', 'delete']);
 
     await pubUpgrade(
-        error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+        error: RegExp(r'Could not find a file named "pubspec.yaml" '
             r'in [^\n]*\.'));
 
     expect(packageSpecLine('foo'), originalFooSpec);

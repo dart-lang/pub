@@ -15,16 +15,16 @@ class MockSource extends Source {
   final String name = "mock";
 
   BoundSource bind(SystemCache cache) =>
-      throw new UnsupportedError("Cannot download mock packages.");
+      throw UnsupportedError("Cannot download mock packages.");
 
   PackageRef parseRef(String name, description, {String containingPath}) {
-    if (description != 'ok') throw new FormatException('Bad');
-    return new PackageRef(name, this, description);
+    if (description != 'ok') throw FormatException('Bad');
+    return PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description,
           {String containingPath}) =>
-      new PackageId(name, this, version, description);
+      PackageId(name, this, version, description);
 
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
@@ -36,8 +36,8 @@ class MockSource extends Source {
 
 main() {
   group('parse()', () {
-    var sources = new SourceRegistry();
-    sources.register(new MockSource());
+    var sources = SourceRegistry();
+    sources.register(MockSource());
 
     var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
 
@@ -49,31 +49,31 @@ main() {
             (error) => error.message, 'message', contains(expectedContains));
       }
 
-      var pubspec = new Pubspec.parse(contents, sources);
+      var pubspec = Pubspec.parse(contents, sources);
       expect(() => fn(pubspec), throwsA(expectation));
     }
 
     test("doesn't eagerly throw an error for an invalid field", () {
       // Shouldn't throw an error.
-      new Pubspec.parse('version: not a semver', sources);
+      Pubspec.parse('version: not a semver', sources);
     });
 
     test(
         "eagerly throws an error if the pubspec name doesn't match the "
         "expected name", () {
-      expect(() => new Pubspec.parse("name: foo", sources, expectedName: 'bar'),
+      expect(() => Pubspec.parse("name: foo", sources, expectedName: 'bar'),
           throwsPubspecException);
     });
 
     test(
         "eagerly throws an error if the pubspec doesn't have a name and an "
         "expected name is passed", () {
-      expect(() => new Pubspec.parse("{}", sources, expectedName: 'bar'),
+      expect(() => Pubspec.parse("{}", sources, expectedName: 'bar'),
           throwsPubspecException);
     });
 
     test("allows a version constraint for dependencies", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependencies:
   foo:
     mock: ok
@@ -82,13 +82,13 @@ dependencies:
 
       var foo = pubspec.dependencies['foo'];
       expect(foo.name, equals('foo'));
-      expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
-      expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
-      expect(foo.constraint.allows(new Version(3, 4, 5)), isFalse);
+      expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
+      expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
+      expect(foo.constraint.allows(Version(3, 4, 5)), isFalse);
     });
 
     test("allows an empty dependencies map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependencies:
 ''', sources);
 
@@ -96,7 +96,7 @@ dependencies:
     });
 
     test("allows a version constraint for dev dependencies", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dev_dependencies:
   foo:
     mock: ok
@@ -105,13 +105,13 @@ dev_dependencies:
 
       var foo = pubspec.devDependencies['foo'];
       expect(foo.name, equals('foo'));
-      expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
-      expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
-      expect(foo.constraint.allows(new Version(3, 4, 5)), isFalse);
+      expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
+      expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
+      expect(foo.constraint.allows(Version(3, 4, 5)), isFalse);
     });
 
     test("allows an empty dev dependencies map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dev_dependencies:
 ''', sources);
 
@@ -119,7 +119,7 @@ dev_dependencies:
     });
 
     test("allows a version constraint for dependency overrides", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependency_overrides:
   foo:
     mock: ok
@@ -128,13 +128,13 @@ dependency_overrides:
 
       var foo = pubspec.dependencyOverrides['foo'];
       expect(foo.name, equals('foo'));
-      expect(foo.constraint.allows(new Version(1, 2, 3)), isTrue);
-      expect(foo.constraint.allows(new Version(1, 2, 5)), isTrue);
-      expect(foo.constraint.allows(new Version(3, 4, 5)), isFalse);
+      expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
+      expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
+      expect(foo.constraint.allows(Version(3, 4, 5)), isFalse);
     });
 
     test("allows an empty dependency overrides map", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependency_overrides:
 ''', sources);
 
@@ -142,7 +142,7 @@ dependency_overrides:
     });
 
     test("allows an unknown source", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependencies:
   foo:
     unknown: blah
@@ -154,7 +154,7 @@ dependencies:
     });
 
     test("allows a default source", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 dependencies:
   foo:
     version: 1.2.3
@@ -250,7 +250,7 @@ dependencies:
     });
 
     test("allows comment-only files", () {
-      var pubspec = new Pubspec.parse('''
+      var pubspec = Pubspec.parse('''
 # No external dependencies yet
 # Including for completeness
 # ...and hoping the spec expands to include details about author, version, etc
@@ -321,34 +321,34 @@ dependencies:
               pubspec.sdkConstraints,
               containsPair(
                   'dart',
-                  new VersionConstraint.parse(
+                  VersionConstraint.parse(
                       '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
         } else {
           expect(
               pubspec.sdkConstraints,
               containsPair(
                   'dart',
-                  new VersionConstraint.parse(
+                  VersionConstraint.parse(
                       "${pubspec.sdkConstraints["dart"]} <2.0.0")));
         }
       }
 
       test("allows an omitted environment", () {
-        var pubspec = new Pubspec.parse('name: testing', sources);
+        var pubspec = Pubspec.parse('name: testing', sources);
         expectDefaultSdkConstraint(pubspec);
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("default SDK constraint can be omitted with empty environment", () {
-        var pubspec = new Pubspec.parse('', sources);
+        var pubspec = Pubspec.parse('', sources);
         expectDefaultSdkConstraint(pubspec);
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("defaults the upper constraint for the SDK", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
   name: test
   environment:
     sdk: ">1.0.0"
@@ -361,12 +361,12 @@ dependencies:
       test(
           "default upper constraint for the SDK applies only if compatibile "
           "with the lower bound", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
   environment:
     sdk: ">3.0.0"
   ''', sources);
         expect(pubspec.sdkConstraints,
-            containsPair('dart', new VersionConstraint.parse(">3.0.0")));
+            containsPair('dart', VersionConstraint.parse(">3.0.0")));
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
@@ -377,20 +377,18 @@ dependencies:
       });
 
       test("allows a version constraint for the SDKs", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
   fuchsia: ^5.6.7
 ''', sources);
-        expect(
-            pubspec.sdkConstraints,
-            containsPair(
-                'dart', new VersionConstraint.parse(">=1.2.3 <2.3.4")));
         expect(pubspec.sdkConstraints,
-            containsPair('flutter', new VersionConstraint.parse("^0.1.2")));
+            containsPair('dart', VersionConstraint.parse(">=1.2.3 <2.3.4")));
         expect(pubspec.sdkConstraints,
-            containsPair('fuchsia', new VersionConstraint.parse("^5.6.7")));
+            containsPair('flutter', VersionConstraint.parse("^0.1.2")));
+        expect(pubspec.sdkConstraints,
+            containsPair('fuchsia', VersionConstraint.parse("^5.6.7")));
       });
 
       test("throws if the sdk isn't a string", () {
@@ -414,7 +412,7 @@ environment:
 
     group("publishTo", () {
       test("defaults to null if omitted", () {
-        var pubspec = new Pubspec.parse('', sources);
+        var pubspec = Pubspec.parse('', sources);
         expect(pubspec.publishTo, isNull);
       });
 
@@ -424,14 +422,14 @@ environment:
       });
 
       test("allows a URL", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 publish_to: http://example.com
 ''', sources);
         expect(pubspec.publishTo, equals("http://example.com"));
       });
 
       test("allows none", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 publish_to: none
 ''', sources);
         expect(pubspec.publishTo, equals("none"));
@@ -450,12 +448,12 @@ publish_to: none
 
     group("executables", () {
       test("defaults to an empty map if omitted", () {
-        var pubspec = new Pubspec.parse('', sources);
+        var pubspec = Pubspec.parse('', sources);
         expect(pubspec.executables, isEmpty);
       });
 
       test("allows simple names for keys and most characters in values", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 executables:
   abcDEF-123_: "abc DEF-123._"
 ''', sources);
@@ -493,7 +491,7 @@ executables:
       });
 
       test("uses the key if the value is null", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 executables:
   command:
 ''', sources);
@@ -503,7 +501,7 @@ executables:
 
     group("features", () {
       test("can be null", () {
-        var pubspec = new Pubspec.parse('features:', sources);
+        var pubspec = Pubspec.parse('features:', sources);
         expect(pubspec.features, isEmpty);
       });
 
@@ -522,7 +520,7 @@ executables:
       });
 
       test("allows null values", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 features:
   foobar:
 ''', sources);
@@ -554,7 +552,7 @@ features:
       });
 
       test("allows a valid environment", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 features:
   foobar:
     environment:
@@ -567,11 +565,11 @@ features:
 
         var feature = pubspec.features['foobar'];
         expect(feature.sdkConstraints,
-            containsPair('dart', new VersionConstraint.parse("^1.0.0")));
+            containsPair('dart', VersionConstraint.parse("^1.0.0")));
         expect(feature.sdkConstraints,
-            containsPair('flutter', new VersionConstraint.parse("^2.0.0")));
+            containsPair('flutter', VersionConstraint.parse("^2.0.0")));
         expect(feature.sdkConstraints,
-            containsPair('fuchsia', new VersionConstraint.parse("^3.0.0")));
+            containsPair('fuchsia', VersionConstraint.parse("^3.0.0")));
       });
 
       test("throws if the default value isn't a boolean", () {
@@ -581,14 +579,14 @@ features:
 
       test("allows a default boolean", () {
         var pubspec =
-            new Pubspec.parse('features: {foobar: {default: false}}', sources);
+            Pubspec.parse('features: {foobar: {default: false}}', sources);
 
         expect(pubspec.features, contains('foobar'));
         expect(pubspec.features['foobar'].onByDefault, isFalse);
       });
 
       test("parses valid dependency specifications", () {
-        var pubspec = new Pubspec.parse('''
+        var pubspec = Pubspec.parse('''
 features:
   foobar:
     dependencies:
@@ -604,17 +602,16 @@ features:
         expect(feature.dependencies, hasLength(2));
 
         expect(feature.dependencies.first.name, equals(equals('baz')));
-        expect(feature.dependencies.first.constraint,
-            equals(new Version(1, 0, 0)));
+        expect(feature.dependencies.first.constraint, equals(Version(1, 0, 0)));
         expect(feature.dependencies.last.name, equals('qux'));
         expect(feature.dependencies.last.constraint,
-            equals(new VersionConstraint.parse('^2.0.0')));
+            equals(VersionConstraint.parse('^2.0.0')));
       });
 
       group("requires", () {
         test("can be null", () {
-          var pubspec = new Pubspec.parse(
-              'features: {foobar: {requires: null}}', sources);
+          var pubspec =
+              Pubspec.parse('features: {foobar: {requires: null}}', sources);
           expect(pubspec.features['foobar'].requires, isEmpty);
         });
 

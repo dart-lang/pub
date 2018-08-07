@@ -52,7 +52,7 @@ class UploaderCommand extends PubCommand {
       return flushThenExit(exit_codes.USAGE);
     }
 
-    return new Future.sync(() {
+    return Future.sync(() {
       var package = argResults['package'];
       if (package != null) return package;
       return entrypoint.root.name;

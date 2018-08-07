@@ -12,8 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator directory(Entrypoint entrypoint) =>
-    new DirectoryValidator(entrypoint);
+Validator directory(Entrypoint entrypoint) => DirectoryValidator(entrypoint);
 
 main() {
   group('should consider a package valid if it', () {

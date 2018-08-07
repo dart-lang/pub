@@ -23,7 +23,7 @@ main() {
     handleUpload(server);
 
     server.handler.expect('GET', '/create', (request) {
-      return new shelf.Response.ok('{not json');
+      return shelf.Response.ok('{not json');
     });
 
     expect(

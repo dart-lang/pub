@@ -14,7 +14,7 @@ class Progress {
   Timer _timer;
 
   /// The [Stopwatch] used to track how long a progress log has been running.
-  final _stopwatch = new Stopwatch();
+  final _stopwatch = Stopwatch();
 
   /// The progress message as it's being incrementally appended.
   ///
@@ -50,7 +50,7 @@ class Progress {
       return;
     }
 
-    _timer = new Timer.periodic(new Duration(milliseconds: 100), (_) {
+    _timer = Timer.periodic(Duration(milliseconds: 100), (_) {
       _update();
     });
 

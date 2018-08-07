@@ -24,7 +24,7 @@ class DepsCommand extends PubCommand {
   bool get takesArguments => false;
 
   final AnalysisContextManager analysisContextManager =
-      new AnalysisContextManager();
+      AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
   StringBuffer _buffer;
@@ -52,7 +52,7 @@ class DepsCommand extends PubCommand {
     // Explicitly run this in case we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
 
-    _buffer = new StringBuffer();
+    _buffer = StringBuffer();
 
     if (argResults['executables']) {
       _outputExecutables();
@@ -166,8 +166,8 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = new Queue<Pair<Package, Map<String, Map>>>();
-    var visited = new Set<String>.from([entrypoint.root.name]);
+    var toWalk = Queue<Pair<Package, Map<String, Map>>>();
+    var visited = Set<String>.from([entrypoint.root.name]);
 
     // Start with the root dependencies.
     var packageTree = <String, Map>{};
@@ -177,7 +177,7 @@ class DepsCommand extends PubCommand {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
-      toWalk.add(new Pair(_getPackage(name), packageTree));
+      toWalk.add(Pair(_getPackage(name), packageTree));
     }
 
     // Do a breadth-first walk to the dependency graph.
@@ -198,7 +198,7 @@ class DepsCommand extends PubCommand {
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies.values) {
-        toWalk.add(new Pair(_getPackage(dep.name), childMap));
+        toWalk.add(Pair(_getPackage(dep.name), childMap));
       }
     }
 

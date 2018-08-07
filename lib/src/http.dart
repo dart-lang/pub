@@ -42,7 +42,7 @@ class _PubHttpClient extends http.BaseClient {
   http.Client _inner;
 
   _PubHttpClient([http.Client inner])
-      : this._inner = inner == null ? new http.Client() : inner;
+      : this._inner = inner == null ? http.Client() : inner;
 
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_shouldAddMetadata(request)) {
@@ -59,7 +59,7 @@ class _PubHttpClient extends http.BaseClient {
       if (type != null) request.headers["X-Pub-Reason"] = type.toString();
     }
 
-    _requestStopwatches[request] = new Stopwatch()..start();
+    _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = "Dart pub ${sdk.version}";
     _logRequest(request);
 
@@ -68,7 +68,7 @@ class _PubHttpClient extends http.BaseClient {
       streamedResponse = await _inner.send(request);
     } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      var stackTrace = stackTraceOrNull ?? new Chain.current();
+      var stackTrace = stackTraceOrNull ?? Chain.current();
 
       if (error.osError == null) rethrow;
 
@@ -117,7 +117,7 @@ class _PubHttpClient extends http.BaseClient {
 
   /// Logs the fact that [request] was sent, and information about it.
   void _logRequest(http.BaseRequest request) {
-    var requestLog = new StringBuffer();
+    var requestLog = StringBuffer();
     requestLog.writeln("HTTP ${request.method} ${request.url}");
     request.headers
         .forEach((name, value) => requestLog.writeln(_logField(name, value)));
@@ -153,7 +153,7 @@ class _PubHttpClient extends http.BaseClient {
     // TODO(nweiz): Fork the response stream and log the response body. Be
     // careful not to log OAuth2 private data, though.
 
-    var responseLog = new StringBuffer();
+    var responseLog = StringBuffer();
     var request = response.request;
     var stopwatch = _requestStopwatches.remove(request)..stop();
     responseLog.writeln("HTTP response ${response.statusCode} "
@@ -177,11 +177,11 @@ class _PubHttpClient extends http.BaseClient {
 }
 
 /// The [_PubHttpClient] wrapped by [httpClient].
-final _pubClient = new _PubHttpClient();
+final _pubClient = _PubHttpClient();
 
 /// A set of all hostnames for which we've printed a message indicating that
 /// we're waiting for them to come back up.
-final _retriedHosts = new Set<String>();
+final _retriedHosts = Set<String>();
 
 /// Intercepts all requests and throws exceptions if the response was not
 /// considered successful.
@@ -215,22 +215,21 @@ class _ThrowingClient extends http.BaseClient {
           "This is likely a transient error. Please try again later.");
     }
 
-    throw new PubHttpException(
-        await http.Response.fromStream(streamedResponse));
+    throw PubHttpException(await http.Response.fromStream(streamedResponse));
   }
 }
 
 /// The HTTP client to use for all HTTP requests.
-final httpClient = new ThrottleClient(
+final httpClient = ThrottleClient(
     16,
-    new _ThrowingClient(new RetryClient(_pubClient,
+    _ThrowingClient(RetryClient(_pubClient,
         retries: 5,
         when: (response) =>
             const [500, 502, 503, 504].contains(response.statusCode),
         whenError: (error, stackTrace) {
           if (error is! IOException) return false;
 
-          var chain = new Chain.forTrace(stackTrace);
+          var chain = Chain.forTrace(stackTrace);
           log.io("HTTP error:\n$error\n\n${chain.terse}");
           return true;
         },
@@ -240,13 +239,13 @@ final httpClient = new ThrottleClient(
             //
             // Add a random delay to avoid retrying a bunch of parallel requests
             // all at the same time.
-            return new Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
-                new Duration(milliseconds: random.nextInt(500));
+            return Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
+                Duration(milliseconds: random.nextInt(500));
           } else {
             // If the error persists, wait a long time. This works around issues
             // where an AppEngine instance will go down and need to be rebooted,
             // which takes about a minute.
-            return new Duration(seconds: 30);
+            return Duration(seconds: 30);
           }
         },
         onRetry: (request, response, retryCount) {

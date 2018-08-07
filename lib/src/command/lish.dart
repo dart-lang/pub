@@ -75,7 +75,7 @@ class LishCommand extends PubCommand {
           var url = _expectField(parameters, 'url', response);
           if (url is! String) invalidServerResponse(response);
           cloudStorageUrl = Uri.parse(url);
-          var request = new http.MultipartRequest('POST', cloudStorageUrl);
+          var request = http.MultipartRequest('POST', cloudStorageUrl);
 
           var fields = _expectField(parameters, 'fields', response);
           if (fields is! Map) invalidServerResponse(response);
@@ -85,14 +85,13 @@ class LishCommand extends PubCommand {
           });
 
           request.followRedirects = false;
-          request.files.add(new http.MultipartFile.fromBytes(
-              'file', packageBytes,
+          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
               filename: 'package.tar.gz'));
           var postResponse =
               await http.Response.fromStream(await client.send(request));
 
           var location = postResponse.headers['location'];
-          if (location == null) throw new PubHttpException(postResponse);
+          if (location == null) throw PubHttpException(postResponse);
           handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
         });
       });

@@ -23,7 +23,7 @@ class Term {
   final PackageRange package;
 
   /// A copy of this term with the opposite [isPositive] value.
-  Term get inverse => new Term(package, !isPositive);
+  Term get inverse => Term(package, !isPositive);
 
   Term(PackageRange package, this.isPositive)
       : package = package.withTerseConstraint();
@@ -44,7 +44,7 @@ class Term {
   /// same name as [package].
   SetRelation relation(Term other) {
     if (package.name != other.package.name) {
-      throw new ArgumentError.value(
+      throw ArgumentError.value(
           other, 'other', 'should refer to package ${package.name}');
     }
 
@@ -110,7 +110,7 @@ class Term {
   /// same name as [package].
   Term intersect(Term other) {
     if (package.name != other.package.name) {
-      throw new ArgumentError.value(
+      throw ArgumentError.value(
           other, 'other', 'should refer to package ${package.name}');
     }
 
@@ -158,7 +158,7 @@ class Term {
   Term _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>
       constraint.isEmpty
           ? null
-          : new Term(package.withConstraint(constraint), isPositive);
+          : Term(package.withConstraint(constraint), isPositive);
 
   String toString() => "${isPositive ? '' : 'not '}$package";
 }

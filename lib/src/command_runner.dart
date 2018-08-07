@@ -92,19 +92,19 @@ class PubCommandRunner extends CommandRunner {
         negatable: false,
         help: 'A more sparkly experience.');
 
-    addCommand(new BuildCommand());
-    addCommand(new CacheCommand());
-    addCommand(new DepsCommand());
-    addCommand(new DowngradeCommand());
-    addCommand(new GlobalCommand());
-    addCommand(new GetCommand());
-    addCommand(new ListPackageDirsCommand());
-    addCommand(new LishCommand());
-    addCommand(new RunCommand());
-    addCommand(new ServeCommand());
-    addCommand(new UpgradeCommand());
-    addCommand(new UploaderCommand());
-    addCommand(new VersionCommand());
+    addCommand(BuildCommand());
+    addCommand(CacheCommand());
+    addCommand(DepsCommand());
+    addCommand(DowngradeCommand());
+    addCommand(GlobalCommand());
+    addCommand(GetCommand());
+    addCommand(ListPackageDirsCommand());
+    addCommand(LishCommand());
+    addCommand(RunCommand());
+    addCommand(ServeCommand());
+    addCommand(UpgradeCommand());
+    addCommand(UploaderCommand());
+    addCommand(VersionCommand());
   }
 
   Future run(Iterable<String> arguments) async {
@@ -205,8 +205,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     if (!git.isInstalled) return;
 
     var deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
-    var pubRevRegExp =
-        new RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
+    var pubRevRegExp = RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
     var match = pubRevRegExp.firstMatch(deps);
     if (match == null) return;
     var depsRev = match[1];

@@ -30,8 +30,8 @@ Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile lockFile, Iterable<String> useLatest}) {
   return log.progress('Resolving dependencies', () {
-    return new VersionSolver(type, cache, root,
-            lockFile ?? new LockFile.empty(), useLatest ?? const [])
+    return VersionSolver(type, cache, root, lockFile ?? LockFile.empty(),
+            useLatest ?? const [])
         .solve();
   });
 }

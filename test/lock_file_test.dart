@@ -15,17 +15,17 @@ class MockSource extends Source {
   final String name = 'mock';
 
   BoundSource bind(SystemCache cache) =>
-      throw new UnsupportedError("Cannot download mock packages.");
+      throw UnsupportedError("Cannot download mock packages.");
 
   PackageRef parseRef(String name, description, {String containingPath}) {
-    if (!description.endsWith(' desc')) throw new FormatException('Bad');
-    return new PackageRef(name, this, description);
+    if (!description.endsWith(' desc')) throw FormatException('Bad');
+    return PackageRef(name, this, description);
   }
 
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
-    if (!description.endsWith(' desc')) throw new FormatException('Bad');
-    return new PackageId(name, this, version, description);
+    if (!description.endsWith(' desc')) throw FormatException('Bad');
+    return PackageId(name, this, version, description);
   }
 
   bool descriptionsEqual(description1, description2) =>
@@ -40,24 +40,24 @@ class MockSource extends Source {
 }
 
 main() {
-  var sources = new SourceRegistry();
-  var mockSource = new MockSource();
+  var sources = SourceRegistry();
+  var mockSource = MockSource();
   sources.register(mockSource);
 
   group('LockFile', () {
     group('parse()', () {
       test('returns an empty lockfile if the contents are empty', () {
-        var lockFile = new LockFile.parse('', sources);
+        var lockFile = LockFile.parse('', sources);
         expect(lockFile.packages.length, equals(0));
       });
 
       test('returns an empty lockfile if the contents are whitespace', () {
-        var lockFile = new LockFile.parse('  \t\n  ', sources);
+        var lockFile = LockFile.parse('  \t\n  ', sources);
         expect(lockFile.packages.length, equals(0));
       });
 
       test('parses a series of package descriptions', () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = LockFile.parse('''
 packages:
   bar:
     version: 1.2.3
@@ -73,19 +73,19 @@ packages:
 
         var bar = lockFile.packages['bar'];
         expect(bar.name, equals('bar'));
-        expect(bar.version, equals(new Version(1, 2, 3)));
+        expect(bar.version, equals(Version(1, 2, 3)));
         expect(bar.source, equals(mockSource));
         expect(bar.description, equals('bar desc'));
 
         var foo = lockFile.packages['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.version, equals(new Version(2, 3, 4)));
+        expect(foo.version, equals(Version(2, 3, 4)));
         expect(foo.source, equals(mockSource));
         expect(foo.description, equals('foo desc'));
       });
 
       test("allows an unknown source", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = LockFile.parse('''
 packages:
   foo:
     source: bad
@@ -97,42 +97,38 @@ packages:
       });
 
       test("allows an empty dependency map", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = LockFile.parse('''
 packages:
 ''', sources);
         expect(lockFile.packages, isEmpty);
       });
 
       test("allows an old-style SDK constraint", () {
-        var lockFile = new LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
-        expect(
-            lockFile.sdkConstraints,
-            containsPair(
-                'dart', new VersionConstraint.parse('>=1.2.3 <4.0.0')));
+        var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
+        expect(lockFile.sdkConstraints,
+            containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')));
         expect(lockFile.sdkConstraints, isNot(contains('flutter')));
         expect(lockFile.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("allows new-style SDK constraints", () {
-        var lockFile = new LockFile.parse('''
+        var lockFile = LockFile.parse('''
 sdks:
   dart: ">=1.2.3 <4.0.0"
   flutter: ^0.1.2
   fuchsia: ^5.6.7
 ''', sources);
-        expect(
-            lockFile.sdkConstraints,
-            containsPair(
-                'dart', new VersionConstraint.parse('>=1.2.3 <4.0.0')));
         expect(lockFile.sdkConstraints,
-            containsPair('flutter', new VersionConstraint.parse('^0.1.2')));
+            containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')));
         expect(lockFile.sdkConstraints,
-            containsPair('fuchsia', new VersionConstraint.parse('^5.6.7')));
+            containsPair('flutter', VersionConstraint.parse('^0.1.2')));
+        expect(lockFile.sdkConstraints,
+            containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
       });
 
       test("throws if the top level is not a map", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 not a map
 ''', sources);
         }, throwsFormatException);
@@ -140,7 +136,7 @@ not a map
 
       test("throws if the contents of 'packages' is not a map", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages: not a map
 ''', sources);
         }, throwsFormatException);
@@ -148,7 +144,7 @@ packages: not a map
 
       test("throws if the version is missing", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages:
   foo:
     source: mock
@@ -159,7 +155,7 @@ packages:
 
       test("throws if the version is invalid", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages:
   foo:
     version: vorpal
@@ -171,7 +167,7 @@ packages:
 
       test("throws if the source is missing", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
@@ -182,7 +178,7 @@ packages:
 
       test("throws if the description is missing", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
@@ -193,7 +189,7 @@ packages:
 
       test("throws if the description is invalid", () {
         expect(() {
-          new LockFile.parse('''
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
@@ -204,38 +200,38 @@ packages:
       });
 
       test("throws if the old-style SDK constraint isn't a string", () {
-        expect(() => new LockFile.parse('sdk: 1.0', sources),
-            throwsFormatException);
+        expect(
+            () => LockFile.parse('sdk: 1.0', sources), throwsFormatException);
       });
 
       test("throws if the old-style SDK constraint is invalid", () {
-        expect(() => new LockFile.parse('sdk: oops', sources),
-            throwsFormatException);
+        expect(
+            () => LockFile.parse('sdk: oops', sources), throwsFormatException);
       });
 
       test("throws if the sdks field isn't a map", () {
-        expect(() => new LockFile.parse('sdks: oops', sources),
-            throwsFormatException);
+        expect(
+            () => LockFile.parse('sdks: oops', sources), throwsFormatException);
       });
 
       test("throws if an sdk constraint isn't a string", () {
-        expect(() => new LockFile.parse('sdks: {dart: 1.0}', sources),
+        expect(() => LockFile.parse('sdks: {dart: 1.0}', sources),
             throwsFormatException);
         expect(() {
-          new LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
+          LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
         }, throwsFormatException);
       });
 
       test("throws if an sdk constraint is invalid", () {
-        expect(() => new LockFile.parse('sdks: {dart: oops}', sources),
+        expect(() => LockFile.parse('sdks: {dart: oops}', sources),
             throwsFormatException);
         expect(() {
-          new LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
+          LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
         }, throwsFormatException);
       });
 
       test("ignores extra stuff in file", () {
-        new LockFile.parse('''
+        LockFile.parse('''
 extra:
   some: stuff
 packages:
@@ -249,10 +245,9 @@ packages:
     });
 
     test('serialize() dumps the lockfile to YAML', () {
-      var lockfile = new LockFile([
-        new PackageId(
-            'foo', mockSource, new Version.parse('1.2.3'), 'foo desc'),
-        new PackageId('bar', mockSource, new Version.parse('3.2.1'), 'bar desc')
+      var lockfile = LockFile([
+        PackageId('foo', mockSource, Version.parse('1.2.3'), 'foo desc'),
+        PackageId('bar', mockSource, Version.parse('3.2.1'), 'bar desc')
       ], devDependencies: ['bar'].toSet());
 
       expect(

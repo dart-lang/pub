@@ -23,7 +23,7 @@ main() {
     await confirmPublish(pub);
 
     server.handler.expect('GET', '/api/packages/versions/new', (request) {
-      return new shelf.Response(401,
+      return shelf.Response(401,
           body: jsonEncode({
             'error': {'message': 'your token sucks'}
           }),

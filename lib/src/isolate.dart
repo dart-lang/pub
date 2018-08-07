@@ -19,8 +19,8 @@ Future runUri(Uri url, List<String> args, Object message,
     bool checked,
     bool automaticPackageResolution = false,
     Uri packageConfig}) async {
-  var errorPort = new ReceivePort();
-  var exitPort = new ReceivePort();
+  var errorPort = ReceivePort();
+  var exitPort = ReceivePort();
 
   await Isolate.spawnUri(url, args, message,
       checked: checked,

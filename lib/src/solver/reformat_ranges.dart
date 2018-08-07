@@ -30,11 +30,11 @@ Incompatibility reformatRanges(Map<PackageRef, PackageLister> packageListers,
   var cause = incompatibility.cause;
   if (cause is ConflictCause) {
     var conflict = cause as ConflictCause;
-    cause = new ConflictCause(reformatRanges(packageListers, conflict.conflict),
+    cause = ConflictCause(reformatRanges(packageListers, conflict.conflict),
         reformatRanges(packageListers, conflict.other));
   }
 
-  return new Incompatibility(
+  return Incompatibility(
       incompatibility.terms
           .map((term) => _reformatTerm(packageListers, term))
           .toList(),
@@ -56,9 +56,9 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   var includeMax = tuple?.last;
 
   if (min == null && max == null) return term;
-  return new Term(
+  return Term(
       term.package
-          .withConstraint(new VersionRange(
+          .withConstraint(VersionRange(
               min: min ?? range.min,
               max: max ?? range.max,
               includeMin: range.includeMin,
@@ -82,7 +82,7 @@ Version _reformatMin(List<PackageId> versions, VersionRange range) {
   // Otherwise, use the release version.
   return next != null && equalsIgnoringPreRelease(range.min, next)
       ? next
-      : new Version(range.min.major, range.min.minor, range.min.patch);
+      : Version(range.min.major, range.min.minor, range.min.patch);
 }
 
 /// Returns the new maximum version to use for [range] and whether that maximum
@@ -101,8 +101,8 @@ Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
   var previous = index == 0 ? null : versions[index - 1].version;
 
   return previous != null && equalsIgnoringPreRelease(previous, range.max)
-      ? new Pair(previous, true)
-      : new Pair(range.max.firstPreRelease, false);
+      ? Pair(previous, true)
+      : Pair(range.max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version
@@ -135,6 +135,6 @@ IncompatibilityCause _reformatCause(
         Map<PackageRef, PackageLister> packageListers,
         IncompatibilityCause cause) =>
     cause is ConflictCause
-        ? new ConflictCause(reformatRanges(packageListers, cause.conflict),
+        ? ConflictCause(reformatRanges(packageListers, cause.conflict),
             reformatRanges(packageListers, cause.other))
         : cause;

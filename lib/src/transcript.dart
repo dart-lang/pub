@@ -25,7 +25,7 @@ class Transcript<T> {
   final _oldest = <T>[];
 
   /// The most recent half of the entries.
-  final _newest = new Queue<T>();
+  final _newest = Queue<T>();
 
   /// Creates a new [Transcript] that can hold up to [max] entries.
   Transcript(this.max);

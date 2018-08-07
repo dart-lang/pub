@@ -32,7 +32,7 @@ abstract class CachedSource extends BoundSource {
   Future<Pubspec> doDescribe(PackageId id) async {
     var packageDir = getDirectory(id);
     if (fileExists(path.join(packageDir, "pubspec.yaml"))) {
-      return new Pubspec.load(packageDir, systemCache.sources,
+      return Pubspec.load(packageDir, systemCache.sources,
           expectedName: id.name);
     }
 

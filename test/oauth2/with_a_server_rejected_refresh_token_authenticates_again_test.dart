@@ -23,7 +23,7 @@ main() {
     await d
         .credentialsFile(server, 'access token',
             refreshToken: 'bad refresh token',
-            expiration: new DateTime.now().subtract(new Duration(hours: 1)))
+            expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
     var pub = await startPublish(server);
@@ -32,7 +32,7 @@ main() {
 
     server.handler.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
-        return new shelf.Response(400,
+        return shelf.Response(400,
             body: jsonEncode({"error": "invalid_request"}),
             headers: {'content-type': 'application/json'});
       });
@@ -45,7 +45,7 @@ main() {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
-      return new shelf.Response(200);
+      return shelf.Response(200);
     });
 
     await pub.kill();

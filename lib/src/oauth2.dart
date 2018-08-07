@@ -113,7 +113,7 @@ Future<Client> _getClient(SystemCache cache) async {
   var credentials = _loadCredentials(cache);
   if (credentials == null) return await _authorize();
 
-  var client = new Client(credentials,
+  var client = Client(credentials,
       identifier: _identifier,
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
@@ -137,7 +137,7 @@ Credentials _loadCredentials(SystemCache cache) {
     var path = _credentialsFile(cache);
     if (!fileExists(path)) return null;
 
-    var credentials = new Credentials.fromJson(readTextFile(path));
+    var credentials = Credentials.fromJson(readTextFile(path));
     if (credentials.isExpired && !credentials.canRefresh) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
@@ -170,21 +170,21 @@ String _credentialsFile(SystemCache cache) =>
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() {
-  var grant = new AuthorizationCodeGrant(
-      _identifier, _authorizationEndpoint, tokenEndpoint,
-      secret: _secret,
-      // Google's OAuth2 API doesn't support basic auth.
-      basicAuth: false,
-      httpClient: httpClient);
+  var grant =
+      AuthorizationCodeGrant(_identifier, _authorizationEndpoint, tokenEndpoint,
+          secret: _secret,
+          // Google's OAuth2 API doesn't support basic auth.
+          basicAuth: false,
+          httpClient: httpClient);
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
   // the code is received.
-  var completer = new Completer();
+  var completer = Completer();
   bindServer('localhost', 0).then((server) {
     shelf_io.serveRequests(server, (request) {
       if (request.url.path.isNotEmpty) {
-        return new shelf.Response.notFound('Invalid URI.');
+        return shelf.Response.notFound('Invalid URI.');
       }
 
       log.message('Authorization received, processing...');
@@ -197,7 +197,7 @@ Future<Client> _authorize() {
           grant.handleAuthorizationResponse(queryToMap(queryString)),
           completer);
 
-      return new shelf.Response.found('https://pub.dartlang.org/authorized');
+      return shelf.Response.found('https://pub.dartlang.org/authorized');
     });
 
     var authUrl = grant.getAuthorizationUrl(

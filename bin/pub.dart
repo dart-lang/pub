@@ -5,5 +5,5 @@
 import 'package:pub/src/command_runner.dart';
 
 void main(List<String> arguments) {
-  new PubCommandRunner().run(arguments);
+  PubCommandRunner().run(arguments);
 }

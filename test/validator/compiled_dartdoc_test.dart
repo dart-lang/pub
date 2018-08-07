@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Validator compiledDartdoc(Entrypoint entrypoint) =>
-    new CompiledDartdocValidator(entrypoint);
+    CompiledDartdocValidator(entrypoint);
 
 main() {
   setUp(d.validPackage.create);

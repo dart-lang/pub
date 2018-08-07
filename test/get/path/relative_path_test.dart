@@ -63,7 +63,7 @@ main() {
     await pubGet();
 
     var lockfilePath = path.join(d.sandbox, appPath, "pubspec.lock");
-    var lockfile = new LockFile.load(lockfilePath, new SourceRegistry());
+    var lockfile = LockFile.load(lockfilePath, SourceRegistry());
     var description = lockfile.packages["foo"].description;
 
     expect(description["relative"], isTrue);

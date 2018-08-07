@@ -16,7 +16,7 @@ main() {
         await d.dir(appPath, []).create();
 
         await pubCommand(command,
-            error: new RegExp(r'Could not find a file named "pubspec.yaml" '
+            error: RegExp(r'Could not find a file named "pubspec.yaml" '
                 r'in "[^\n]*"\.'),
             exitCode: exit_codes.NO_INPUT);
       });
@@ -81,8 +81,7 @@ main() {
       ]).create();
 
       await pubCommand(command,
-          error: new RegExp(
-              r"foo from path is incompatible with bar from\s+path"));
+          error: RegExp(r"foo from path is incompatible with bar from\s+path"));
     });
 
     test('does not allow a dependency on itself', () async {

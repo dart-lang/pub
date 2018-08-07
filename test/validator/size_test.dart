@@ -14,7 +14,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 ValidatorCreator size(int size) {
-  return (entrypoint) => new SizeValidator(entrypoint, new Future.value(size));
+  return (entrypoint) => SizeValidator(entrypoint, Future.value(size));
 }
 
 expectSizeValidationError(Matcher matcher) {

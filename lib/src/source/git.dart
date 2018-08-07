@@ -24,14 +24,14 @@ class GitSource extends Source {
   final name = "git";
 
   BoundGitSource bind(SystemCache systemCache) =>
-      new BoundGitSource(this, systemCache);
+      BoundGitSource(this, systemCache);
 
   /// Returns a reference to a git package with the given [name] and [url].
   ///
   /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
   PackageRef refFor(String name, String url, {String reference, String path}) {
     if (path != null) assert(p.url.isRelative(path));
-    return new PackageRef(name, this,
+    return PackageRef(name, this,
         {'url': url, 'ref': reference ?? 'HEAD', 'path': path ?? '.'});
   }
 
@@ -44,12 +44,12 @@ class GitSource extends Source {
     if (description is String) description = {'url': description};
 
     if (description is! Map) {
-      throw new FormatException("The description must be a Git URL or a map "
+      throw FormatException("The description must be a Git URL or a map "
           "with a 'url' key.");
     }
 
     if (description["url"] is! String) {
-      throw new FormatException("The 'url' field of the description must be a "
+      throw FormatException("The 'url' field of the description must be a "
           "string.");
     }
 
@@ -57,20 +57,20 @@ class GitSource extends Source {
 
     var ref = description["ref"];
     if (ref != null && ref is! String) {
-      throw new FormatException("The 'ref' field of the description must be a "
+      throw FormatException("The 'ref' field of the description must be a "
           "string.");
     }
 
     var path = description["path"];
     if (path != null) {
       if (path is! String) {
-        throw new FormatException(
+        throw FormatException(
             "The 'path' field of the description must be a string.");
       } else if (!p.url.isRelative(path)) {
-        throw new FormatException(
+        throw FormatException(
             "The 'path' field of the description must be relative.");
       } else if (!p.url.isWithin('.', path)) {
-        throw new FormatException(
+        throw FormatException(
             "The 'path' field of the description must not reach outside the "
             "repository.");
       }
@@ -78,19 +78,19 @@ class GitSource extends Source {
       _validateUrl(path);
     }
 
-    return new PackageRef(name, this,
+    return PackageRef(name, this,
         {"url": description["url"], "ref": ref ?? "HEAD", "path": path ?? "."});
   }
 
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (description is! Map) {
-      throw new FormatException("The description must be a map with a 'url' "
+      throw FormatException("The description must be a map with a 'url' "
           "key.");
     }
 
     if (description["url"] is! String) {
-      throw new FormatException("The 'url' field of the description must be a "
+      throw FormatException("The 'url' field of the description must be a "
           "string.");
     }
 
@@ -98,29 +98,29 @@ class GitSource extends Source {
 
     var ref = description["ref"];
     if (ref != null && ref is! String) {
-      throw new FormatException("The 'ref' field of the description must be a "
+      throw FormatException("The 'ref' field of the description must be a "
           "string.");
     }
 
     if (description["resolved-ref"] is! String) {
-      throw new FormatException("The 'resolved-ref' field of the description "
+      throw FormatException("The 'resolved-ref' field of the description "
           "must be a string.");
     }
 
     var path = description["path"];
     if (path != null) {
       if (path is! String) {
-        throw new FormatException(
+        throw FormatException(
             "The 'path' field of the description must be a string.");
       } else if (!p.url.isRelative(path)) {
-        throw new FormatException(
+        throw FormatException(
             "The 'path' field of the description must be relative.");
       }
 
       _validateUrl(path);
     }
 
-    return new PackageId(name, this, version, {
+    return PackageId(name, this, version, {
       "url": description["url"],
       "ref": ref ?? "HEAD",
       "resolved-ref": description["resolved-ref"],
@@ -195,7 +195,7 @@ class BoundGitSource extends CachedSource {
 
   /// The paths to the canonical clones of repositories for which "git fetch"
   /// has already been run during this run of pub.
-  final _updatedRepos = new Set<String>();
+  final _updatedRepos = Set<String>();
 
   BoundGitSource(this.source, this.systemCache);
 
@@ -205,7 +205,7 @@ class BoundGitSource extends CachedSource {
     // Clone the repo to a temp directory.
     return withTempDir((tempDir) async {
       await _clone(repo, tempDir, shallow: true);
-      var pubspec = new Pubspec.load(tempDir, systemCache.sources);
+      var pubspec = Pubspec.load(tempDir, systemCache.sources);
       return pubspec.name;
     });
   }
@@ -218,7 +218,7 @@ class BoundGitSource extends CachedSource {
         await _describeUncached(ref, revision, ref.description['path']);
 
     return [
-      new PackageId(ref.name, source, pubspec.version, {
+      PackageId(ref.name, source, pubspec.version, {
         'url': ref.description['url'],
         'ref': ref.description['ref'],
         'resolved-ref': revision,
@@ -255,7 +255,7 @@ class BoundGitSource extends CachedSource {
           '${ref.description['url']} $revision.');
     }
 
-    return new Pubspec.parse(lines.join("\n"), systemCache.sources,
+    return Pubspec.parse(lines.join("\n"), systemCache.sources,
         expectedName: ref.name);
   }
 
@@ -292,7 +292,7 @@ class BoundGitSource extends CachedSource {
       }
     });
 
-    return new Package.load(id.name,
+    return Package.load(id.name,
         p.join(revisionCachePath, id.description['path']), systemCache.sources);
   }
 
@@ -302,14 +302,14 @@ class BoundGitSource extends CachedSource {
 
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
-    throw new UnimplementedError(
+    throw UnimplementedError(
         "The git source doesn't support listing its cached packages yet.");
   }
 
   /// Resets all cached packages back to the pristine state of the Git
   /// repository at the revision they are pinned to.
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return new Pair([], []);
+    if (!dirExists(systemCacheRoot)) return Pair([], []);
 
     var successes = <PackageId>[];
     var failures = <PackageId>[];
@@ -324,11 +324,11 @@ class BoundGitSource extends CachedSource {
 
             var packageDir = p.join(revisionCachePath, relative);
             try {
-              return new Package.load(null, packageDir, systemCache.sources);
+              return Package.load(null, packageDir, systemCache.sources);
             } catch (error, stackTrace) {
               log.error("Failed to load package", error, stackTrace);
               var name = p.basename(revisionCachePath).split('-').first;
-              failures.add(new PackageId(name, source, Version.none, '???'));
+              failures.add(PackageId(name, source, Version.none, '???'));
               tryDeleteEntry(revisionCachePath);
               return null;
             }
@@ -346,7 +346,7 @@ class BoundGitSource extends CachedSource {
       // ignore it.
       if (!dirExists(package.dir)) continue;
 
-      var id = new PackageId(package.name, source, package.version, null);
+      var id = PackageId(package.name, source, package.version, null);
 
       log.message("Resetting Git repository for "
           "${log.bold(package.name)} ${package.version}...");
@@ -371,7 +371,7 @@ class BoundGitSource extends CachedSource {
       }
     }
 
-    return new Pair(successes, failures);
+    return Pair(successes, failures);
   }
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
@@ -421,7 +421,7 @@ class BoundGitSource extends CachedSource {
   /// This assumes that the canonical clone already exists.
   Future _updateRepoCache(PackageRef ref) async {
     var path = _repoCachePath(ref);
-    if (_updatedRepos.contains(path)) return new Future.value();
+    if (_updatedRepos.contains(path)) return Future.value();
     await git.run(["fetch"], workingDir: path);
     _updatedRepos.add(path);
   }
@@ -478,7 +478,7 @@ class BoundGitSource extends CachedSource {
   /// for the repository.
   Future _clone(String from, String to,
       {bool mirror = false, bool shallow = false}) {
-    return new Future.sync(() {
+    return Future.sync(() {
       // Git on Windows does not seem to automatically create the destination
       // directory.
       ensureDir(to);

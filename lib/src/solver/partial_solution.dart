@@ -64,13 +64,12 @@ class PartialSolution {
     if (_backtracking) _attemptedSolutions++;
     _backtracking = false;
     _decisions[package.name] = package;
-    _assign(
-        new Assignment.decision(package, decisionLevel, _assignments.length));
+    _assign(Assignment.decision(package, decisionLevel, _assignments.length));
   }
 
   /// Adds an assignment of [package] as a derivation.
   void derive(PackageName package, bool isPositive, Incompatibility cause) {
-    _assign(new Assignment.derivation(
+    _assign(Assignment.derivation(
         package, isPositive, cause, decisionLevel, _assignments.length));
   }
 
@@ -85,7 +84,7 @@ class PartialSolution {
   void backtrack(int decisionLevel) {
     _backtracking = true;
 
-    var packages = new Set<String>();
+    var packages = Set<String>();
     while (_assignments.last.decisionLevel > decisionLevel) {
       var removed = _assignments.removeLast();
       packages.add(removed.package.name);
@@ -155,7 +154,7 @@ class PartialSolution {
       if (assignedTerm.satisfies(term)) return assignment;
     }
 
-    throw new StateError("[BUG] $term is not satisfied.");
+    throw StateError("[BUG] $term is not satisfied.");
   }
 
   /// Returns whether [this] satisfies [other].

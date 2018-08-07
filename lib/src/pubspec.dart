@@ -25,14 +25,14 @@ import 'utils.dart';
 /// This allows dot-separated valid Dart identifiers. The dots are there for
 /// compatibility with Google's internal Dart packages, but they may not be used
 /// when publishing a package to pub.dartlang.org.
-final _packageName = new RegExp(
-    "^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
+final _packageName =
+    RegExp("^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
 
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
 /// This provides a sane default for packages that don't have an upper bound.
 final VersionRange _defaultUpperBoundSdkConstraint =
-    new VersionConstraint.parse("<2.0.0");
+    VersionConstraint.parse("<2.0.0");
 
 /// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
@@ -107,18 +107,15 @@ class Pubspec {
 
     var name = fields['name'];
     if (name == null) {
-      throw new PubspecException(
-          'Missing the required "name" field.', fields.span);
+      throw PubspecException('Missing the required "name" field.', fields.span);
     } else if (name is! String) {
-      throw new PubspecException(
+      throw PubspecException(
           '"name" field must be a string.', fields.nodes['name'].span);
     } else if (!_packageName.hasMatch(name)) {
-      throw new PubspecException(
-          '"name" field must be a valid Dart identifier.',
+      throw PubspecException('"name" field must be a valid Dart identifier.',
           fields.nodes['name'].span);
     } else if (reservedWords.contains(name)) {
-      throw new PubspecException(
-          '"name" field may not be a Dart reserved word.',
+      throw PubspecException('"name" field may not be a Dart reserved word.',
           fields.nodes['name'].span);
     }
 
@@ -154,7 +151,7 @@ class Pubspec {
     }
 
     _version = _wrapFormatException(
-        'version number', span, () => new Version.parse(version));
+        'version number', span, () => Version.parse(version));
     return _version;
   }
 
@@ -210,7 +207,7 @@ class Pubspec {
         key: (nameNode, _) => _validateFeatureName(nameNode),
         value: (nameNode, specNode) {
           if (specNode.value == null) {
-            return new Feature(nameNode.value, const []);
+            return Feature(nameNode.value, const []);
           }
 
           if (specNode is! Map) {
@@ -233,7 +230,7 @@ class Pubspec {
 
           var sdkConstraints = _parseEnvironment(specNode);
 
-          return new Feature(nameNode.value, dependencies.values,
+          return Feature(nameNode.value, dependencies.values,
               requires: requires,
               sdkConstraints: sdkConstraints,
               onByDefault: onByDefault);
@@ -274,14 +271,14 @@ class Pubspec {
         _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
       _originalDartSdkConstraint = parsedDartSdkConstraint;
       _dartSdkWasOverridden = true;
-      sdkConstraints["dart"] = new VersionRange(
+      sdkConstraints["dart"] = VersionRange(
           min: parsedDartSdkConstraint.min,
           includeMin: parsedDartSdkConstraint.includeMin,
           max: sdk.version,
           includeMax: true);
     }
 
-    _sdkConstraints = new UnmodifiableMapView(sdkConstraints);
+    _sdkConstraints = UnmodifiableMapView(sdkConstraints);
   }
 
   /// Whether or not we should override [sdkConstraint] to be <= the user's
@@ -371,7 +368,7 @@ class Pubspec {
         _wrapFormatException('"publish_to" field', span, () {
           var url = Uri.parse(publishTo);
           if (url.scheme.isEmpty) {
-            throw new FormatException("must be an absolute URL.");
+            throw FormatException("must be an absolute URL.");
           }
         });
       }
@@ -411,7 +408,7 @@ class Pubspec {
         _error('"executables" keys must be strings.', key.span);
       }
 
-      final keyPattern = new RegExp(r"^[a-zA-Z0-9_-]+$");
+      final keyPattern = RegExp(r"^[a-zA-Z0-9_-]+$");
       if (!keyPattern.hasMatch(key.value)) {
         _error(
             '"executables" keys may only contain letters, '
@@ -425,7 +422,7 @@ class Pubspec {
         _error('"executables" values must be strings or null.', value.span);
       }
 
-      final valuePattern = new RegExp(r"[/\\]");
+      final valuePattern = RegExp(r"[/\\]");
       if (valuePattern.hasMatch(value.value)) {
         _error('"executables" values may not contain path separators.',
             value.span);
@@ -457,7 +454,7 @@ class Pubspec {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
-      throw new FileException(
+      throw FileException(
           // Make the package dir absolute because for the entrypoint it'll just
           // be ".", which may be confusing.
           'Could not find a file named "pubspec.yaml" in '
@@ -465,7 +462,7 @@ class Pubspec {
           pubspecPath);
     }
 
-    return new Pubspec.parse(readTextFile(pubspecPath), sources,
+    return Pubspec.parse(readTextFile(pubspecPath), sources,
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
         location: pubspecUri);
@@ -481,18 +478,16 @@ class Pubspec {
       : _version = version,
         _dependencies = dependencies == null
             ? null
-            : new Map.fromIterable(dependencies, key: (range) => range.name),
+            : Map.fromIterable(dependencies, key: (range) => range.name),
         _devDependencies = devDependencies == null
             ? null
-            : new Map.fromIterable(devDependencies, key: (range) => range.name),
+            : Map.fromIterable(devDependencies, key: (range) => range.name),
         _dependencyOverrides = dependencyOverrides == null
             ? null
-            : new Map.fromIterable(dependencyOverrides,
-                key: (range) => range.name),
-        _sdkConstraints =
-            new UnmodifiableMapView({"dart": VersionConstraint.any}),
+            : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
+        _sdkConstraints = UnmodifiableMapView({"dart": VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
-        fields = fields == null ? new YamlMap() : new YamlMap.wrap(fields),
+        fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
         _sources = sources;
 
   Pubspec.empty()
@@ -503,7 +498,7 @@ class Pubspec {
         _devDependencies = {},
         _sdkConstraints = {"dart": VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        fields = new YamlMap();
+        fields = YamlMap();
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
@@ -516,14 +511,14 @@ class Pubspec {
       {String expectedName, bool includeDefaultSdkConstraint, Uri location})
       : fields = fields is YamlMap
             ? fields
-            : new YamlMap.wrap(fields, sourceUrl: location),
+            : YamlMap.wrap(fields, sourceUrl: location),
         _includeDefaultSdkConstraint = includeDefaultSdkConstraint ?? true {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
     if (name == expectedName) return;
 
-    throw new PubspecException(
+    throw PubspecException(
         '"name" field doesn\'t match expected name '
         '"$expectedName".',
         this.fields.nodes["name"].span);
@@ -539,20 +534,20 @@ class Pubspec {
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
     } on YamlException catch (error) {
-      throw new PubspecException(error.message, error.span);
+      throw PubspecException(error.message, error.span);
     }
 
     Map pubspecMap;
     if (pubspecNode is YamlScalar && pubspecNode.value == null) {
-      pubspecMap = new YamlMap(sourceUrl: location);
+      pubspecMap = YamlMap(sourceUrl: location);
     } else if (pubspecNode is YamlMap) {
       pubspecMap = pubspecNode;
     } else {
-      throw new PubspecException(
+      throw PubspecException(
           'The pubspec must be a YAML mapping.', pubspecNode.span);
     }
 
-    return new Pubspec.fromMap(pubspecMap, sources,
+    return Pubspec.fromMap(pubspecMap, sources,
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
         location: location);
@@ -610,7 +605,7 @@ class Pubspec {
       var descriptionNode;
       var sourceName;
 
-      var versionConstraint = new VersionRange();
+      var versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
         descriptionNode = nameNode;
@@ -621,7 +616,7 @@ class Pubspec {
         versionConstraint = _parseVersionConstraint(specNode);
       } else if (spec is Map) {
         // Don't write to the immutable YAML map.
-        spec = new Map.from(spec);
+        spec = Map.from(spec);
         var specMap = specNode as YamlMap;
 
         if (spec.containsKey('version')) {
@@ -688,12 +683,12 @@ class Pubspec {
     }
 
     return _wrapFormatException('version constraint', node.span, () {
-      var constraint = new VersionConstraint.parse(node.value);
+      var constraint = VersionConstraint.parse(node.value);
       if (defaultUpperBoundConstraint != null &&
           constraint is VersionRange &&
           constraint.max == null &&
           defaultUpperBoundConstraint.allowsAny(constraint)) {
-        constraint = new VersionConstraint.intersection(
+        constraint = VersionConstraint.intersection(
             [constraint, defaultUpperBoundConstraint]);
       }
       return constraint;
@@ -755,7 +750,7 @@ class Pubspec {
 
   /// Verifies that [node] is a list and returns it.
   YamlList _parseList(YamlNode node) {
-    if (node == null || node.value == null) return new YamlList();
+    if (node == null || node.value == null) return YamlList();
     if (node is YamlList) return node;
     _error('Must be a list.', node.span);
   }
@@ -777,7 +772,7 @@ class Pubspec {
   /// Throws a [PubspecException] with the given message.
   @alwaysThrows
   void _error(String message, SourceSpan span) {
-    throw new PubspecException(message, span);
+    throw PubspecException(message, span);
   }
 }
 

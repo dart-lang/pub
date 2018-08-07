@@ -20,7 +20,7 @@ main() {
     await confirmPublish(pub);
 
     server.handler.expect('GET', '/api/packages/versions/new',
-        (request) => new shelf.Response.ok('{not json'));
+        (request) => shelf.Response.ok('{not json'));
 
     expect(
         pub.stderr,

@@ -6,17 +6,17 @@
 class SetRelation {
   /// The second set contains all elements of the first, as well as possibly
   /// more.
-  static const subset = const SetRelation._("subset");
+  static const subset = SetRelation._("subset");
 
   /// Neither set contains any elements of the other.
-  static const disjoint = const SetRelation._("disjoint");
+  static const disjoint = SetRelation._("disjoint");
 
   /// The sets have elements in common, but the first is not a superset of the
   /// second.
   ///
   /// This is also used when the first set is a superset of the first, but in
   /// practice we don't need to distinguish that from overlapping sets.
-  static const overlapping = const SetRelation._("overlapping");
+  static const overlapping = SetRelation._("overlapping");
 
   final String _name;
 

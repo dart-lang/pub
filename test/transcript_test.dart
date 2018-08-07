@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 main() {
   test("discards from the middle once it reaches the maximum", () {
-    var transcript = new Transcript<String>(4);
+    var transcript = Transcript<String>(4);
     forEachToString() {
       var result = "";
       transcript.forEach((entry) => result += entry, (n) => result += "[$n]");
@@ -30,7 +30,7 @@ main() {
   });
 
   test("does not discard if it doesn't reach the maximum", () {
-    var transcript = new Transcript<String>(40);
+    var transcript = Transcript<String>(40);
     forEachToString() {
       var result = "";
       transcript.forEach((entry) => result += entry, (n) => result += "[$n]");

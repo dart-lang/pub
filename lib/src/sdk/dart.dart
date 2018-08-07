@@ -41,7 +41,7 @@ class DartSdk extends Sdk {
     var sdkVersion = Platform.environment["_PUB_TEST_SDK_VERSION"] ??
         Platform.version.split(' ').first;
 
-    return new Version.parse(sdkVersion);
+    return Version.parse(sdkVersion);
   }();
 
   String get rootDirectory => _rootDirectory;

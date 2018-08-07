@@ -20,11 +20,11 @@ export 'descriptor/tar.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
 GitRepoDescriptor git(String name, [Iterable<Descriptor> contents]) =>
-    new GitRepoDescriptor(name, contents == null ? <Descriptor>[] : contents);
+    GitRepoDescriptor(name, contents == null ? <Descriptor>[] : contents);
 
 /// Creates a new [TarFileDescriptor] with [name] and [contents].
 TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
-    new TarFileDescriptor(name, contents == null ? <Descriptor>[] : contents);
+    TarFileDescriptor(name, contents == null ? <Descriptor>[] : contents);
 
 /// Describes a package that passes all validation.
 Descriptor get validPackage => dir(appPath, [
@@ -77,7 +77,7 @@ Descriptor libDir(String name, [String code]) {
 /// Describes a directory whose name ends with a hyphen followed by an
 /// alphanumeric hash.
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
-    new RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
+    RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
 
 /// Describes a directory for a Git package. This directory is of the form
 /// found in the revision cache of the global package cache.
@@ -142,7 +142,7 @@ Descriptor credentialsFile(ShelfTestServer server, String accessToken,
   return dir(cachePath, [
     file(
         'credentials.json',
-        new oauth2.Credentials(accessToken,
+        oauth2.Credentials(accessToken,
                 refreshToken: refreshToken,
                 tokenEndpoint: server.url.resolve('/token'),
                 scopes: ['https://www.googleapis.com/auth/userinfo.email'],
@@ -168,12 +168,12 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 /// either the version string (for a reference to the pub cache) or a
 /// path to a path dependency, relative to the application directory.
 Descriptor packagesFile([Map<String, String> dependencies]) =>
-    new PackagesFileDescriptor(dependencies);
+    PackagesFileDescriptor(dependencies);
 
 /// Describes a `.packages` file in the application directory, including the
 /// implicit entry for the app itself.
 Descriptor appPackagesFile(Map<String, String> dependencies) {
-  var copied = new Map<String, String>.from(dependencies);
+  var copied = Map<String, String>.from(dependencies);
   copied["myapp"] = ".";
   return dir(appPath, [packagesFile(copied)]);
 }

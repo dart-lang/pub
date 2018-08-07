@@ -53,7 +53,7 @@ Matcher isUnminifiedDart2JSOutput =
     contains("// The code supports the following hooks");
 
 /// The entrypoint for pub itself.
-final _entrypoint = new Entrypoint(pubRoot, new SystemCache(isOffline: true));
+final _entrypoint = Entrypoint(pubRoot, SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
 String yaml(value) => jsonEncode(value);
@@ -71,23 +71,19 @@ final String appPath = "myapp";
 final String packagesFilePath = "$appPath/.packages";
 
 /// The line from the `.packages` file for [packageName].
-String packageSpecLine(String packageName) => new File(d.path(packagesFilePath))
+String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .readAsLinesSync()
     .firstWhere((l) => l.startsWith('$packageName:'));
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
-  static final get = new RunCommand(
-      'get', new RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = new RunCommand(
-      'upgrade',
-      new RegExp(
-          r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
-  static final downgrade = new RunCommand(
-      'downgrade',
-      new RegExp(
-          r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final get = RunCommand(
+      'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
+  static final upgrade = RunCommand('upgrade',
+      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final downgrade = RunCommand('downgrade',
+      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
 
   final String name;
   final RegExp success;
@@ -126,7 +122,7 @@ Future pubCommand(RunCommand command,
     int exitCode,
     Map<String, String> environment}) async {
   if (error != null && warning != null) {
-    throw new ArgumentError("Cannot pass both 'error' and 'warning'.");
+    throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
 
   var allArgs = [command.name];
@@ -268,7 +264,7 @@ Future runPub(
     _validateOutput(failures, 'stderr', error, actualError);
     _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) throw new TestFailure(failures.join('\n'));
+    if (failures.isNotEmpty) throw TestFailure(failures.join('\n'));
   }(), completes);
 }
 
@@ -377,7 +373,7 @@ Future<PubProcess> startPub(
 /// mode.
 class PubProcess extends TestProcess {
   StreamSplitter<Pair<log.Level, String>> get _logSplitter {
-    __logSplitter ??= new StreamSplitter(StreamGroup.merge([
+    __logSplitter ??= StreamSplitter(StreamGroup.merge([
       _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
       _outputToLog(super.stderrStream(), log.Level.ERROR)
     ]));
@@ -408,7 +404,7 @@ class PubProcess extends TestProcess {
     }
 
     encoding ??= utf8;
-    return new PubProcess(process, description,
+    return PubProcess(process, description,
         encoding: encoding, forwardStdio: forwardStdio);
   }
 
@@ -418,7 +414,7 @@ class PubProcess extends TestProcess {
       : super(process, description,
             encoding: encoding, forwardStdio: forwardStdio);
 
-  final _logLineRegExp = new RegExp(r"^([A-Z ]{4})[:|] (.*)$");
+  final _logLineRegExp = RegExp(r"^([A-Z ]{4})[:|] (.*)$");
   final Map<String, log.Level> _logLevels = [
     log.Level.ERROR,
     log.Level.WARNING,
@@ -436,11 +432,11 @@ class PubProcess extends TestProcess {
     log.Level lastLevel;
     return stream.map((line) {
       var match = _logLineRegExp.firstMatch(line);
-      if (match == null) return new Pair<log.Level, String>(defaultLevel, line);
+      if (match == null) return Pair<log.Level, String>(defaultLevel, line);
 
       var level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
-      return new Pair<log.Level, String>(level, match[2]);
+      return Pair<log.Level, String>(level, match[2]);
     });
   }
 
@@ -489,7 +485,7 @@ void ensureGit() {
 /// hosted packages.
 Future createLockFile(String package,
     {Iterable<String> sandbox, Map<String, String> hosted}) async {
-  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
+  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
   var lockFile =
       _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
@@ -504,7 +500,7 @@ Future createLockFile(String package,
 /// lockfile.
 Future createPackagesFile(String package,
     {Iterable<String> sandbox, Map<String, String> hosted}) async {
-  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
+  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var lockFile =
       _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
 
@@ -531,17 +527,17 @@ LockFile _createLockFile(SourceRegistry sources,
 
   var packages = dependencies.keys.map((name) {
     var dependencyPath = dependencies[name];
-    return sources.path.idFor(name, new Version(0, 0, 0), dependencyPath);
+    return sources.path.idFor(name, Version(0, 0, 0), dependencyPath);
   }).toList();
 
   if (hosted != null) {
     hosted.forEach((name, version) {
-      var id = sources.hosted.idFor(name, new Version.parse(version));
+      var id = sources.hosted.idFor(name, Version.parse(version));
       packages.add(id);
     });
   }
 
-  return new LockFile(packages);
+  return LockFile(packages);
 }
 
 /// Returns the path to the version of [package] used by pub.
@@ -554,7 +550,7 @@ String packagePath(String package) {
 
   var id = _entrypoint.lockFile.packages[package];
   if (id == null) {
-    throw new StateError(
+    throw StateError(
         'The tests rely on "$package", but it\'s not in the lockfile.');
   }
 
@@ -737,15 +733,15 @@ typedef Validator ValidatorCreator(Entrypoint entrypoint);
 /// by that validator.
 Future<Pair<List<String>, List<String>>> validatePackage(
     ValidatorCreator fn) async {
-  var cache = new SystemCache(rootDir: _pathInSandbox(cachePath));
-  var validator = fn(new Entrypoint(_pathInSandbox(appPath), cache));
+  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  var validator = fn(Entrypoint(_pathInSandbox(appPath), cache));
   await validator.validate();
-  return new Pair(validator.errors, validator.warnings);
+  return Pair(validator.errors, validator.warnings);
 }
 
 /// A matcher that matches a Pair.
 Matcher pairOf(firstMatcher, lastMatcher) =>
-    new _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
+    _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
 
 class _PairMatcher extends Matcher {
   final Matcher _firstMatcher;
@@ -767,7 +763,7 @@ class _PairMatcher extends Matcher {
 /// Returns a matcher that asserts that a string contains [times] distinct
 /// occurrences of [pattern], which must be a regular expression pattern.
 Matcher matchesMultiple(String pattern, int times) {
-  var buffer = new StringBuffer(pattern);
+  var buffer = StringBuffer(pattern);
   for (var i = 1; i < times; i++) {
     buffer.write(r"(.|\n)*");
     buffer.write(pattern);

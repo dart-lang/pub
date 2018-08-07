@@ -47,7 +47,7 @@ class VersionSolver {
 
   /// The partial solution that contains package versions we've selected and
   /// assignments we've derived from those versions and [_incompatibilities].
-  final _solution = new PartialSolution();
+  final _solution = PartialSolution();
 
   /// Package listers that lazily convert package versions' dependencies into
   /// incompatibilities.
@@ -75,21 +75,20 @@ class VersionSolver {
 
   /// The set of packages for which we've added an incompatibility that forces
   /// the latest version to be used.
-  final _haveUsedLatest = new Set<PackageRef>();
+  final _haveUsedLatest = Set<PackageRef>();
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> useLatest)
-      : _overriddenPackages = new MapKeySet(_root.pubspec.dependencyOverrides),
-        _useLatest = new Set.from(useLatest);
+      : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
+        _useLatest = Set.from(useLatest);
 
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
-    var stopwatch = new Stopwatch()..start();
+    var stopwatch = Stopwatch()..start();
 
-    _addIncompatibility(new Incompatibility(
-        [new Term(new PackageRange.root(_root), false)],
-        IncompatibilityCause.root));
+    _addIncompatibility(Incompatibility(
+        [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
 
     try {
       var next = _root.name;
@@ -111,7 +110,7 @@ class VersionSolver {
   ///
   /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
   void _propagate(String package) {
-    var changed = new Set.from([package]);
+    var changed = Set.from([package]);
 
     while (changed.isNotEmpty) {
       var package = changed.first;
@@ -294,8 +293,8 @@ class VersionSolver {
       // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
       if (difference != null) newTerms.add(difference.inverse);
 
-      incompatibility = new Incompatibility(newTerms,
-          new ConflictCause(incompatibility, mostRecentSatisfier.cause));
+      incompatibility = Incompatibility(
+          newTerms, ConflictCause(incompatibility, mostRecentSatisfier.cause));
       newIncompatibility = true;
 
       var partially = difference == null ? "" : " partially";
@@ -306,7 +305,7 @@ class VersionSolver {
       _log("$bang thus: $incompatibility");
     }
 
-    throw new SolveFailure(reformatRanges(_packageListers, incompatibility));
+    throw SolveFailure(reformatRanges(_packageListers, incompatibility));
   }
 
   /// Tries to select a version of a required package.
@@ -329,8 +328,8 @@ class VersionSolver {
 
           // All versions of [ref] other than the latest are forbidden.
           var latestVersion = (await _packageLister(ref).latest).version;
-          _addIncompatibility(new Incompatibility([
-            new Term(
+          _addIncompatibility(Incompatibility([
+            Term(
                 ref.withConstraint(
                     VersionConstraint.any.difference(latestVersion)),
                 true),
@@ -340,8 +339,8 @@ class VersionSolver {
       }
 
       if (candidate.source is! UnknownSource) continue;
-      _addIncompatibility(new Incompatibility(
-          [new Term(candidate.withConstraint(VersionConstraint.any), true)],
+      _addIncompatibility(Incompatibility(
+          [Term(candidate.withConstraint(VersionConstraint.any), true)],
           IncompatibilityCause.unknownSource));
       return candidate.name;
     }
@@ -359,9 +358,9 @@ class VersionSolver {
     try {
       version = await _packageLister(package).bestVersion(package.constraint);
     } on PackageNotFoundException catch (error) {
-      _addIncompatibility(new Incompatibility(
-          [new Term(package.withConstraint(VersionConstraint.any), true)],
-          new PackageNotFoundCause(error)));
+      _addIncompatibility(Incompatibility(
+          [Term(package.withConstraint(VersionConstraint.any), true)],
+          PackageNotFoundCause(error)));
       return package.name;
     }
 
@@ -376,8 +375,8 @@ class VersionSolver {
       } else {
         // If there are no versions that satisfy [package.constraint], add an
         // incompatibility that indicates that.
-        _addIncompatibility(new Incompatibility(
-            [new Term(package, true)], IncompatibilityCause.noVersions));
+        _addIncompatibility(Incompatibility(
+            [Term(package, true)], IncompatibilityCause.noVersions));
         return package.name;
       }
     }
@@ -438,7 +437,7 @@ class VersionSolver {
       }
     }
 
-    return new SolveResult(
+    return SolveResult(
         _systemCache.sources,
         _root,
         _lockFile,
@@ -474,7 +473,7 @@ class VersionSolver {
   PackageLister _packageLister(PackageName package) {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
-      if (ref.isRoot) return new PackageLister.root(_root);
+      if (ref.isRoot) return PackageLister.root(_root);
 
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
@@ -483,10 +482,10 @@ class VersionSolver {
       if (overridden.contains(package.name)) {
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        overridden = new Set.from(overridden)..add(_root.name);
+        overridden = Set.from(overridden)..add(_root.name);
       }
 
-      return new PackageLister(_systemCache, ref, locked,
+      return PackageLister(_systemCache, ref, locked,
           _root.dependencyType(package.name), overridden,
           downgrade: _type == SolveType.DOWNGRADE);
     });

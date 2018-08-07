@@ -19,7 +19,7 @@ import 'package:stack_trace/stack_trace.dart';
 /// Validates that Dart source files only import declared dependencies.
 class StrictDependenciesValidator extends Validator {
   final AnalysisContextManager analysisContextManager =
-      new AnalysisContextManager();
+      AnalysisContextManager();
 
   StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
     var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
@@ -41,7 +41,7 @@ class StrictDependenciesValidator extends Validator {
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));
-        log.fine(new Chain.forTrace(s).terse);
+        log.fine(Chain.forTrace(s).terse);
         continue;
       }
 
@@ -63,7 +63,7 @@ class StrictDependenciesValidator extends Validator {
           warnings.add(
               _Usage.errorMessage('Invalid URL.', file, contents, directive));
         } else if (url.scheme == 'package') {
-          yield new _Usage(file, contents, directive, url);
+          yield _Usage(file, contents, directive, url);
         }
       }
     }
@@ -72,7 +72,7 @@ class StrictDependenciesValidator extends Validator {
   Future validate() async {
     var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);
-    var devDependencies = new MapKeySet(entrypoint.root.devDependencies);
+    var devDependencies = MapKeySet(entrypoint.root.devDependencies);
     _validateLibBin(dependencies, devDependencies);
     _validateBenchmarkExampleTestTool(dependencies, devDependencies);
   }
@@ -117,7 +117,7 @@ class _Usage {
   /// Returns a formatted error message highlighting [directive] in [file].
   static String errorMessage(String message, String file, String contents,
       UriBasedDirective directive) {
-    return new SourceFile.fromString(contents, url: file)
+    return SourceFile.fromString(contents, url: file)
         .span(directive.offset, directive.offset + directive.length)
         .message(message);
   }

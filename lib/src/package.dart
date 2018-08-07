@@ -14,7 +14,7 @@ import 'pubspec.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
-final _readmeRegexp = new RegExp(r"^README($|\.)", caseSensitive: false);
+final _readmeRegexp = RegExp(r"^README($|\.)", caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -124,7 +124,7 @@ class Package {
   /// package.
   Package.load(String name, this.dir, SourceRegistry sources,
       {bool isRootPackage = false})
-      : pubspec = new Pubspec.load(dir, sources,
+      : pubspec = Pubspec.load(dir, sources,
             expectedName: name, includeDefaultSdkConstraint: !isRootPackage);
 
   /// Constructs a package with the given pubspec.
@@ -148,7 +148,7 @@ class Package {
       String part6,
       String part7]) {
     if (dir == null) {
-      throw new StateError("Package $name is in-memory and doesn't have paths "
+      throw StateError("Package $name is in-memory and doesn't have paths "
           "on disk.");
     }
     return p.join(dir, part1, part2, part3, part4, part5, part6, part7);
@@ -158,7 +158,7 @@ class Package {
   /// [path] or [listFiles]), returns it relative to the package root.
   String relative(String path) {
     if (dir == null) {
-      throw new StateError("Package $name is in-memory and doesn't have paths "
+      throw StateError("Package $name is in-memory and doesn't have paths "
           "on disk.");
     }
     return p.relative(path, from: dir);
@@ -284,7 +284,7 @@ class Package {
     assert(dirExists(subdir));
     assert(p.isWithin(dir, subdir));
 
-    var target = new Directory(subdir).resolveSymbolicLinksSync();
+    var target = Directory(subdir).resolveSymbolicLinksSync();
 
     List<String> targetFiles;
     if (p.isWithin(dir, target)) {
@@ -313,13 +313,13 @@ class Package {
 /// The type of dependency from one package to another.
 class DependencyType {
   /// A dependency declared in `dependencies`.
-  static const direct = const DependencyType._("direct");
+  static const direct = DependencyType._("direct");
 
   /// A dependency declared in `dev_dependencies`.
-  static const dev = const DependencyType._("dev");
+  static const dev = DependencyType._("dev");
 
   /// No dependency exists.
-  static const none = const DependencyType._("none");
+  static const none = DependencyType._("none");
 
   final String _name;
 
