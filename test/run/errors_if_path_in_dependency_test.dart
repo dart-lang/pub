@@ -13,22 +13,22 @@ main() {
   test(
       'Errors if the executable is in a subdirectory in a '
       'dependency.', () async {
-    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       })
     ]).create();
 
-    await runPub(args: ["run", "foo:sub/dir"], error: """
+    await runPub(args: ['run', 'foo:sub/dir'], error: '''
 Cannot run an executable in a subdirectory of a dependency.
 
 Usage: pub run <executable> [args...]
--h, --help            Print this usage information.
--c, --[no-]checked    Enable runtime type checks and assertions.
+-h, --help                  Print this usage information.
+-c, --[no-]check-asserts    Enable assertions.
 
 Run "pub help" to see global options.
-""", exitCode: exit_codes.USAGE);
+''', exitCode: exit_codes.USAGE);
   });
 }

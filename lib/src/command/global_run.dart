@@ -13,28 +13,28 @@ import '../utils.dart';
 
 /// Handles the `global run` pub command.
 class GlobalRunCommand extends PubCommand {
-  String get name => "run";
+  String get name => 'run';
   String get description =>
-      "Run an executable from a globally activated package.\n"
+      'Run an executable from a globally activated package.\n'
       "NOTE: We are currently optimizing this command's startup time.";
-  String get invocation => "pub global run <package>:<executable> [args...]";
+  String get invocation => 'pub global run <package>:<executable> [args...]';
   bool get allowTrailingOptions => false;
 
   GlobalRunCommand() {
-    argParser.addFlag("checked",
-        abbr: "c", help: "Enable runtime type checks and assertions.");
-    argParser.addOption("mode", help: "Deprecated option", hide: true);
+    argParser.addFlag('check-asserts', abbr: 'c', help: 'Enable assertions.');
+    argParser.addFlag('checked', hide: true);
+    argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
   Future run() async {
     if (argResults.rest.isEmpty) {
-      usageException("Must specify an executable to run.");
+      usageException('Must specify an executable to run.');
     }
 
     var package;
     var executable = argResults.rest[0];
-    if (executable.contains(":")) {
-      var parts = split1(executable, ":");
+    if (executable.contains(':')) {
+      var parts = split1(executable, ':');
       package = parts[0];
       executable = parts[1];
     } else {
@@ -48,12 +48,12 @@ class GlobalRunCommand extends PubCommand {
           'package.');
     }
 
-    if (argResults.wasParsed("mode")) {
-      log.warning("The --mode flag is deprecated and has no effect.");
+    if (argResults.wasParsed('mode')) {
+      log.warning('The --mode flag is deprecated and has no effect.');
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,
-        checked: argResults["checked"]);
+        checked: argResults['check-asserts'] || argResults['checked']);
     await flushThenExit(exitCode);
   }
 }

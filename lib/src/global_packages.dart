@@ -373,7 +373,7 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [checked] is true, the program is run in checked mode.
+  /// If [checked] is true, the program is run with assertions enabled.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(

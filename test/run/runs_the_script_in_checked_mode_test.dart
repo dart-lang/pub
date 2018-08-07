@@ -8,16 +8,16 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  test('runs the script in checked mode with "--checked"', () async {
+  test('runs the script with assertions with "--check-asserts"', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [d.file("script.dart", "main() { assert(false); }")])
+      d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
     ]).create();
 
     await pubGet();
     await runPub(
-        args: ["run", "--checked", "bin/script"],
-        error: contains("Failed assertion"),
+        args: ['run', '--check-asserts', 'bin/script'],
+        error: contains('Failed assertion'),
         exitCode: 255);
   });
 }

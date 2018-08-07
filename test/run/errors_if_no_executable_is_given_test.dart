@@ -13,14 +13,14 @@ main() {
   test('Errors if the executable does not exist.', () async {
     await d.dir(appPath, [d.appPubspec()]).create();
 
-    await runPub(args: ["run"], error: """
+    await runPub(args: ['run'], error: '''
 Must specify an executable to run.
 
 Usage: pub run <executable> [args...]
--h, --help            Print this usage information.
--c, --[no-]checked    Enable runtime type checks and assertions.
+-h, --help                  Print this usage information.
+-c, --[no-]check-asserts    Enable assertions.
 
 Run "pub help" to see global options.
-""", exitCode: exit_codes.USAGE);
+''', exitCode: exit_codes.USAGE);
   });
 }
