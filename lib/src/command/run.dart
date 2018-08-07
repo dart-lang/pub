@@ -20,8 +20,8 @@ class RunCommand extends PubCommand {
   bool get allowTrailingOptions => false;
 
   RunCommand() {
-    argParser.addFlag('check-asserts', abbr: 'c', help: 'Enable assertions.');
-    argParser.addFlag('checked', hide: true);
+    argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
+    argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -69,7 +69,7 @@ class RunCommand extends PubCommand {
             !entrypoint.packageGraph.isPackageMutable(package));
 
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['check-asserts'] || argResults['checked'],
+        checked: argResults['enable-asserts'] || argResults['checked'],
         snapshotPath: useSnapshot ? snapshotPath : null,
         recompile: entrypoint.precompileExecutables);
     await flushThenExit(exitCode);

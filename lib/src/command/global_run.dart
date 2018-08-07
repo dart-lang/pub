@@ -21,8 +21,8 @@ class GlobalRunCommand extends PubCommand {
   bool get allowTrailingOptions => false;
 
   GlobalRunCommand() {
-    argParser.addFlag('check-asserts', abbr: 'c', help: 'Enable assertions.');
-    argParser.addFlag('checked', hide: true);
+    argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
+    argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -53,7 +53,7 @@ class GlobalRunCommand extends PubCommand {
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,
-        checked: argResults['check-asserts'] || argResults['checked']);
+        checked: argResults['enable-asserts'] || argResults['checked']);
     await flushThenExit(exitCode);
   }
 }
