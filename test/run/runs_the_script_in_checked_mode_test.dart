@@ -8,7 +8,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 main() {
-  test('runs the script with assertions with "--check-asserts"', () async {
+  test('runs the script with assertions enabled', () async {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
@@ -16,7 +16,7 @@ main() {
 
     await pubGet();
     await runPub(
-        args: ['run', '--check-asserts', 'bin/script'],
+        args: ['run', '--enable-asserts', 'bin/script'],
         error: contains('Failed assertion'),
         exitCode: 255);
   });

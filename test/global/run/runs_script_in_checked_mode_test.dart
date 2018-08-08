@@ -8,7 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 main() {
-  test('runs a script in checked mode', () async {
+  test('runs a script with assertions enabled', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', contents: [
         d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
@@ -18,7 +18,7 @@ main() {
     await runPub(args: ['global', 'activate', 'foo']);
 
     var pub =
-        await pubRun(global: true, args: ['--check-asserts', 'foo:script']);
+        await pubRun(global: true, args: ['--enable-asserts', 'foo:script']);
     expect(pub.stderr, emitsThrough(contains('Failed assertion')));
     await pub.shouldExit(255);
   });
