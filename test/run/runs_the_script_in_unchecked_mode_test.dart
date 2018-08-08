@@ -7,21 +7,21 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = """
+const SCRIPT = '''
 main() {
   assert(false);
   print("no checks");
 }
-""";
+''';
 
 main() {
-  test('runs the script in unchecked mode by default', () async {
+  test('runs the script without assertions by default', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [d.file("script.dart", SCRIPT)])
+      d.dir('bin', [d.file('script.dart', SCRIPT)])
     ]).create();
 
     await pubGet();
-    await runPub(args: ["run", "bin/script"], output: contains("no checks"));
+    await runPub(args: ['run', 'bin/script'], output: contains('no checks'));
   });
 }

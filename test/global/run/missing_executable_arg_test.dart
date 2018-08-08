@@ -10,14 +10,14 @@ import '../../test_pub.dart';
 
 main() {
   test('fails if no executable was given', () {
-    return runPub(args: ["global", "run"], error: """
+    return runPub(args: ['global', 'run'], error: '''
             Must specify an executable to run.
 
             Usage: pub global run <package>:<executable> [args...]
-            -h, --help            Print this usage information.
-            -c, --[no-]checked    Enable runtime type checks and assertions.
+            -h, --help                   Print this usage information.
+                --[no-]enable-asserts    Enable assert statements.
 
             Run "pub help" to see global options.
-            """, exitCode: exit_codes.USAGE);
+            ''', exitCode: exit_codes.USAGE);
   });
 }
