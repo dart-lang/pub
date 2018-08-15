@@ -499,8 +499,7 @@ main() {
 
         expect(
             validatePackage(dependency),
-            completion(pairOf(
-                anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
 
@@ -520,8 +519,7 @@ main() {
 
         expect(
             validatePackage(dependency),
-            completion(pairOf(
-                anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
+            completion(pairOf(anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
     });
