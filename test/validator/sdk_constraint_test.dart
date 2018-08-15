@@ -127,7 +127,7 @@ main() {
       expect(
           validatePackage(sdkConstraint),
           completion(pairOf(
-              anyElement(contains('">=2.0.0-dev.51.0 <2.0.0"')), isEmpty)));
+              anyElement(contains('">=2.0.0 <3.0.0"')), isEmpty)));
     });
 
     test("has a Fuchsia SDK constraint with no SDK constraint", () async {
@@ -141,7 +141,7 @@ main() {
       expect(
           validatePackage(sdkConstraint),
           completion(pairOf(
-              anyElement(contains('">=2.0.0-dev.51.0 <2.0.0"')), isEmpty)));
+              anyElement(contains('">=2.0.0 <3.0.0"')), isEmpty)));
     });
   });
 }
