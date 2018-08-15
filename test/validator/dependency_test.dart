@@ -500,7 +500,7 @@ main() {
         expect(
             validatePackage(dependency),
             completion(pairOf(
-                anyElement(contains('  sdk: ">=2.0.0-dev.1.0 <2.0.0"')),
+                anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
 
@@ -521,7 +521,7 @@ main() {
         expect(
             validatePackage(dependency),
             completion(pairOf(
-                anyElement(contains('  sdk: ">=2.0.0-dev.1.0 <2.0.0"')),
+                anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
                 anyElement(contains('  foo: any')))));
       });
     });
@@ -623,7 +623,7 @@ main() {
         })
       ]).create();
 
-      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
+      expectDependencyValidationError('sdk: ">=2.0.0 <3.0.0"');
     });
 
     test("depends on a Fuchsia package with no SDK constraint", () async {
@@ -637,7 +637,7 @@ main() {
         })
       ]).create();
 
-      expectDependencyValidationError('sdk: ">=2.0.0-dev.51.0 <2.0.0"');
+      expectDependencyValidationError('sdk: ">=2.0.0 <3.0.0"');
     });
   });
 }
