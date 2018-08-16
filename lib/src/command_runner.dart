@@ -249,6 +249,8 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       return exit_codes.NO_INPUT;
     } else if (exception is FormatException || exception is DataException) {
       return exit_codes.DATA;
+    } else if (exception is ConfigException) {
+      return exit_codes.CONFIG;
     } else if (exception is UsageException) {
       return exit_codes.USAGE;
     } else {

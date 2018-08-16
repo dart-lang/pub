@@ -35,11 +35,19 @@ class HostedSource extends Source {
           : BoundHostedSource(this, systemCache);
 
   /// Gets the default URL for the package server for hosted dependencies.
-  String get defaultUrl {
-    var url = io.Platform.environment["PUB_HOSTED_URL"];
-    if (url != null) return url;
-
-    return "https://pub.dartlang.org";
+  String get defaultUrl =>
+      _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dartlang.org';
+  String _defaultUrl;
+  String _pubHostedUrlConfig() {
+    var url = io.Platform.environment['PUB_HOSTED_URL'];
+    if (url == null) return null;
+    var uri = Uri.parse(url);
+    if (uri.scheme?.isEmpty ?? true) {
+      throw ConfigException(
+          '`PUB_HOSTED_URL` must include a scheme such as "https://". '
+          '$url is invalid');
+    }
+    return url;
   }
 
   /// Returns a reference to a hosted package named [name].
