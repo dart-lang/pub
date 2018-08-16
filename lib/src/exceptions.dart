@@ -62,9 +62,16 @@ class SilentException extends WrappedException {
 
 /// A class for errors in a command's input data.
 ///
-/// This corresponds to the [exit_codes.DATA] exit code.
+/// This corresponds to the `data` exit code.
 class DataException extends ApplicationException {
   DataException(String message) : super(message);
+}
+
+/// An exception indicating that the users configuration is invalid.
+///
+/// This corresponds to the `config` exit code;
+class ConfigException extends ApplicationException {
+  ConfigException(String message) : super(message);
 }
 
 /// An class for exceptions where a package could not be found in a [Source].

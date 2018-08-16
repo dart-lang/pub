@@ -57,7 +57,6 @@ class LishCommand extends PubCommand {
         negatable: false,
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
-        defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server to which to upload this package.');
   }
 

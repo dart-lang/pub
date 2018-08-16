@@ -24,7 +24,6 @@ class UploaderCommand extends PubCommand {
 
   UploaderCommand() {
     argParser.addOption('server',
-        defaultsTo: cache.sources.hosted.defaultUrl,
         help: 'The package server on which the package is hosted.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
