@@ -32,7 +32,7 @@ final _packageName =
 ///
 /// This provides a sane default for packages that don't have an upper bound.
 final VersionRange _defaultUpperBoundSdkConstraint =
-    VersionConstraint.parse("<2.0.0");
+    VersionConstraint.parse("<3.0.0");
 
 /// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
