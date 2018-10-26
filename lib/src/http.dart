@@ -42,7 +42,7 @@ class _PubHttpClient extends http.BaseClient {
   http.Client _inner;
 
   _PubHttpClient([http.Client inner])
-      : this._inner = inner == null ? http.Client() : inner;
+      : _inner = inner == null ? http.Client() : inner;
 
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_shouldAddMetadata(request)) {

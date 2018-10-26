@@ -1070,8 +1070,8 @@ class PubProcessResult {
   final int exitCode;
 
   PubProcessResult(String stdout, String stderr, this.exitCode)
-      : this.stdout = _toLines(stdout),
-        this.stderr = _toLines(stderr);
+      : stdout = _toLines(stdout),
+        stderr = _toLines(stderr);
 
   // TODO(rnystrom): Remove this and change to returning one string.
   static List<String> _toLines(String output) {
