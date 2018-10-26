@@ -12,7 +12,7 @@ dependencies:
   async: ^2.0.0
   collection: ^1.8.0
   crypto: ">=1.0.0 <3.0.0"
-  http: ^0.11.0
+  http: ^0.12.0
   http_multi_server: ">=1.0.0 <3.0.0"
   http_retry: ^0.1.1
   http_throttle: ^1.0.0
