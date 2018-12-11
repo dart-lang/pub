@@ -799,13 +799,7 @@ _doProcess(Function fn, String executable, List<String> args,
 }
 
 /// Updates [path]'s modification time.
-void touch(String path) {
-  var file = File(path).openSync(mode: FileMode.append);
-  var originalLength = file.lengthSync();
-  file.writeByteSync(0);
-  file.truncateSync(originalLength);
-  file.closeSync();
-}
+void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 
 /// Creates a temporary directory and passes its path to [fn].
 ///
