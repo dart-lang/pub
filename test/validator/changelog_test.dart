@@ -44,7 +44,8 @@ main() {
   group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
 
-    test('has a CHANGELOG that doesn\'t include the current package version', () async {
+    test('has a CHANGELOG that doesn\'t include the current package version',
+        () async {
       await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.1"),
         d.file("CHANGELOG.md", """

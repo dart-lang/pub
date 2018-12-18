@@ -101,9 +101,8 @@ class Package {
   /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
   /// null if no CHANGELOG file is found.
   String get changelogPath {
-    return
-        listFiles(recursive: false, useGitIgnore: true)
-        .firstWhere((entry) => p.basename(entry).contains(_changelogRegexp),
+    return listFiles(recursive: false, useGitIgnore: true).firstWhere(
+        (entry) => p.basename(entry).contains(_changelogRegexp),
         orElse: () => null);
   }
 
