@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/validator/changelog.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
@@ -120,6 +121,7 @@ abstract class Validator {
       ExecutableValidator(entrypoint),
       CompiledDartdocValidator(entrypoint),
       ReadmeValidator(entrypoint),
+      ChangelogValidator(entrypoint),
       SdkConstraintValidator(entrypoint),
       StrictDependenciesValidator(entrypoint),
     ];
