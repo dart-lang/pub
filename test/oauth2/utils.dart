@@ -15,7 +15,7 @@ import 'package:pub/src/utils.dart';
 
 Future authorizePub(TestProcess pub, ShelfTestServer server,
     [String accessToken = "access token"]) async {
-  expect(
+  await expectLater(
       pub.stdout,
       emits('Pub needs your authorization to upload packages on your '
           'behalf.'));
@@ -27,12 +27,16 @@ Future authorizePub(TestProcess pub, ShelfTestServer server,
 
   var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)));
   redirectUrl = _addQueryParameters(redirectUrl, {'code': 'access code'});
+
+  // Expect the /token request
+  handleAccessTokenRequest(server, accessToken);
+
+  // Call the redirect url as the browser would otherwise do after successful
+  // sign-in with Google account.
   var response =
       await (http.Request('GET', redirectUrl)..followRedirects = false).send();
   expect(response.headers['location'],
       equals('https://pub.dartlang.org/authorized'));
-
-  handleAccessTokenRequest(server, accessToken);
 }
 
 void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {

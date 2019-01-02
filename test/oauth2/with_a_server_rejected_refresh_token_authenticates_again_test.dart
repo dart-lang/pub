@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_test_handler/shelf_test_handler.dart';
@@ -28,8 +29,6 @@ main() {
 
     var pub = await startPublish(server);
 
-    await confirmPublish(pub);
-
     server.handler.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
         return shelf.Response(400,
@@ -38,16 +37,24 @@ main() {
       });
     });
 
+    await confirmPublish(pub);
+
     await expectLater(pub.stdout, emits(startsWith('Uploading...')));
     await authorizePub(pub, server, 'new access token');
 
-    server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    var done = Completer();
+    server.handler.expect('GET', '/api/packages/versions/new', (request) async {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
+
+      // kill pub and complete test
+      await pub.kill();
+      done.complete();
 
       return shelf.Response(200);
     });
 
-    await pub.kill();
+    await done.future;
+    await server.close();
   });
 }
