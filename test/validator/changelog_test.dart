@@ -55,6 +55,7 @@ main() {
           * Passes Turing test.
         """),
       ]).create();
+      expectValidationWarning(changelog);
     });
 
     test('has a CHANGELOG with invalid utf-8', () async {
