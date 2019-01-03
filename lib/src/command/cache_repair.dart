@@ -16,7 +16,7 @@ class CacheRepairCommand extends PubCommand {
   String get name => "repair";
   String get description => "Reinstall cached packages.";
   String get invocation => "pub cache repair";
-  String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-cache.html";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-cache";
   bool get takesArguments => false;
 
   Future run() async {

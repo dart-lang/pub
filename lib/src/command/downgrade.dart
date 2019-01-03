@@ -15,6 +15,7 @@ class DowngradeCommand extends PubCommand {
       "Downgrade the current package's dependencies to oldest versions.\n\n"
       "This doesn't modify the lockfile, so it can be reset with \"pub get\".";
   String get invocation => "pub downgrade [dependencies...]";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-downgrade";
 
   bool get isOffline => argResults['offline'];
 

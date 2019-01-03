@@ -13,6 +13,7 @@ class GlobalCommand extends PubCommand {
   String get name => "global";
   String get description => "Work with global packages.";
   String get invocation => "pub global <subcommand>";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-global";
 
   GlobalCommand() {
     addSubcommand(GlobalActivateCommand());

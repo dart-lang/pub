@@ -17,6 +17,7 @@ class RunCommand extends PubCommand {
   String get name => 'run';
   String get description => 'Run an executable from a package.';
   String get invocation => 'pub run <executable> [args...]';
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-run";
   bool get allowTrailingOptions => false;
 
   RunCommand() {

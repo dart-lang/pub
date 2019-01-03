@@ -21,7 +21,7 @@ class LishCommand extends PubCommand {
   String get name => "publish";
   String get description => "Publish the current package to pub.dartlang.org.";
   String get invocation => "pub publish [options]";
-  String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-lish.html";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-lish";
   List<String> get aliases => const ["lish", "lush"];
   bool get takesArguments => false;
 

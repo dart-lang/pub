@@ -20,7 +20,7 @@ class DepsCommand extends PubCommand {
   String get description => "Print package dependencies.";
   List<String> get aliases => const ["dependencies", "tab"];
   String get invocation => "pub deps";
-  String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-deps.html";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-deps";
   bool get takesArguments => false;
 
   final AnalysisContextManager analysisContextManager =

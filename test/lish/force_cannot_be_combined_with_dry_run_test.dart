@@ -23,7 +23,7 @@ main() {
               --server     The package server to which to upload this package.
 
           Run "pub help" to see global options.
-          See http://dartlang.org/tools/pub/cmd/pub-lish.html for detailed documentation.
+          See https://www.dartlang.org/tools/pub/cmd/pub-lish for detailed documentation.
           """, exitCode: exit_codes.USAGE);
   });
 }
