@@ -23,7 +23,7 @@ class ChangelogValidator extends Validator {
       }
 
       var bytes = readBinaryFile(changelog);
-      var contents = '';
+      String contents;
 
       try {
         // utf8.decode doesn't allow invalid UTF-8.
@@ -34,11 +34,16 @@ class ChangelogValidator extends Validator {
             "pub.dartlang.org.");
       }
 
+      if (contents == null) {
+        // Failed to decode contents, so there's nothing else to check.
+        return;
+      }
+
       final version = entrypoint.root.pubspec.version.toString();
 
       if (!contents.contains(version)) {
-        warnings.add("Your package includes a changelog file that doesn\'t "
-            "mention version $version. Consider updating it prior to "
+        warnings.add("$changelog doesn't mention current version ($version).\n"
+            "Consider updating it with notes on this version prior to "
             "publication.");
       }
     });

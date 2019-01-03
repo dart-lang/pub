@@ -5,13 +5,13 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
-import 'package:pub/src/validator/changelog.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
 import 'utils.dart';
+import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
