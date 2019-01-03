@@ -58,8 +58,8 @@ class PubCommandRunner extends CommandRunner {
   /// The top-level options parsed by the command runner.
   static ArgResults _options;
 
-  String get usageFooter => "See http://dartlang.org/tools/pub for detailed "
-      "documentation.";
+  String get usageFooter =>
+      "See https://www.dartlang.org/tools/pub for detailed documentation.";
 
   PubCommandRunner() : super("pub", "Pub is a package manager for Dart.") {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');

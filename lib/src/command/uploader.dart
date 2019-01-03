@@ -17,7 +17,7 @@ class UploaderCommand extends PubCommand {
   String get description =>
       "Manage uploaders for a package on pub.dartlang.org.";
   String get invocation => "pub uploader [options] {add/remove} <email>";
-  String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-uploader.html";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-uploader";
 
   /// The URL of the package hosting server.
   Uri get server => Uri.parse(argResults['server']);

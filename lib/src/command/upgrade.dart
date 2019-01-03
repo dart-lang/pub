@@ -14,7 +14,7 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.";
   String get invocation => "pub upgrade [dependencies...]";
-  String get docUrl => "http://dartlang.org/tools/pub/cmd/pub-upgrade.html";
+  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-upgrade";
   List<String> get aliases => const ["update"];
 
   bool get isOffline => argResults['offline'];

@@ -42,7 +42,7 @@ main() {
           version     Print pub version.
 
         Run "pub help <command>" for more information about a command.
-        See http://dartlang.org/tools/pub for detailed documentation.
+        See https://www.dartlang.org/tools/pub for detailed documentation.
         """);
   });
 
