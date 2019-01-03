@@ -50,13 +50,6 @@ To run all tests at once, run:
 
     pub run test
 
-Some pub tests require specific versions of other packages. These packages are
-included in the repository as [Git submodules][]. To get them, run:
-
-[Git submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
-
-    git submodule update --init
-
 Changes to pub should be accompanied by one or more tests that exercise the new
 functionality. When adding a test, the best strategy is to find a similar test
 in `test/` and follow the same patterns.
