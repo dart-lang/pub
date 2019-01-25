@@ -11,6 +11,7 @@ import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
 import 'utils.dart';
+import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
@@ -120,6 +121,7 @@ abstract class Validator {
       ExecutableValidator(entrypoint),
       CompiledDartdocValidator(entrypoint),
       ReadmeValidator(entrypoint),
+      ChangelogValidator(entrypoint),
       SdkConstraintValidator(entrypoint),
       StrictDependenciesValidator(entrypoint),
     ];

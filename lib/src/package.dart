@@ -15,6 +15,7 @@ import 'source_registry.dart';
 import 'utils.dart';
 
 final _readmeRegexp = RegExp(r"^README($|\.)", caseSensitive: false);
+final _changelogRegexp = RegExp(r"^CHANGELOG($|\.)", caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -95,6 +96,14 @@ class Package {
       if (comparison == 0) comparison = readme1.compareTo(readme2);
       return (comparison <= 0) ? readme1 : readme2;
     }));
+  }
+
+  /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
+  /// null if no CHANGELOG file is found.
+  String get changelogPath {
+    return listFiles(recursive: false, useGitIgnore: true).firstWhere(
+        (entry) => p.basename(entry).contains(_changelogRegexp),
+        orElse: () => null);
   }
 
   /// Returns whether or not this package is in a Git repo.
