@@ -65,8 +65,8 @@ main() {
 
     for (var port in ['import', 'export']) {
       for (var isDev in [false, true]) {
-        var deps;
-        var devDeps;
+        Map<String, String> deps;
+        Map<String, String> devDeps;
 
         if (isDev) {
           devDeps = {"silly_monkey": "^1.2.3"};

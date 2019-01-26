@@ -61,7 +61,7 @@ class LishCommand extends PubCommand {
   }
 
   Future _publish(List<int> packageBytes) async {
-    var cloudStorageUrl;
+    Uri cloudStorageUrl;
     try {
       await oauth2.withClient(cache, (client) {
         return log.progress('Uploading', () async {

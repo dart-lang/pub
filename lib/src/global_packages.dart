@@ -310,7 +310,7 @@ class GlobalPackages {
   /// Returns an [Entrypoint] loaded with the active package if found.
   Entrypoint find(String name) {
     var lockFilePath = _getLockFilePath(name);
-    var lockFile;
+    LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
@@ -337,7 +337,7 @@ class GlobalPackages {
     lockFile = lockFile.removePackage(name);
 
     var source = cache.source(id.source);
-    var entrypoint;
+    Entrypoint entrypoint;
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
@@ -483,7 +483,7 @@ class GlobalPackages {
     var failures = <String>[];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
-        var id;
+        PackageId id;
         try {
           id = _loadPackageId(entry);
           log.message("Reactivating ${log.bold(id.name)} ${id.version}...");
@@ -658,7 +658,7 @@ class GlobalPackages {
 
     // See if the binstub already exists. If so, it's for another package
     // since we already deleted all of this package's binstubs.
-    var previousPackage;
+    String previousPackage;
     if (fileExists(binStubPath)) {
       var contents = readTextFile(binStubPath);
       previousPackage = _binStubProperty(contents, "Package");
@@ -671,7 +671,7 @@ class GlobalPackages {
 
     // If the script was precompiled to a snapshot, just invoke that directly
     // and skip pub global run entirely.
-    var invocation;
+    String invocation;
     if (snapshot != null) {
       // We expect absolute paths from the precompiler since relative ones
       // won't be relative to the right directory when the user runs this.

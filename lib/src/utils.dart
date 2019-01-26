@@ -355,7 +355,7 @@ void chainToCompleter(Future future, Completer completer) {
 /// Unlike [Stream.first], this is safe to use with single-subscription streams.
 Future<T> streamFirst<T>(Stream<T> stream) {
   var completer = Completer<T>();
-  var subscription;
+  StreamSubscription<T> subscription;
   subscription = stream.listen((value) {
     subscription.cancel();
     completer.complete(value);

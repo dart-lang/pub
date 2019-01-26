@@ -35,7 +35,7 @@ main() {
       'the command line', () async {
     await d.validPackage.create();
 
-    var argMax;
+    int argMax;
     if (Platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
       argMax = math.pow(8, 5);

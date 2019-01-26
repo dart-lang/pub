@@ -31,7 +31,7 @@ class GlobalRunCommand extends PubCommand {
       usageException('Must specify an executable to run.');
     }
 
-    var package;
+    String package;
     var executable = argResults.rest[0];
     if (executable.contains(':')) {
       var parts = split1(executable, ':');

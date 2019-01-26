@@ -106,8 +106,11 @@ class Entrypoint {
     if (_packageGraph != null) return _packageGraph;
 
     assertUpToDate();
-    var packages = Map<String, Package>.fromIterable(lockFile.packages.values,
-        key: (id) => id.name, value: (id) => cache.load(id));
+    var packages = Map<String, Package>.fromIterable(
+      lockFile.packages.values,
+      key: (id) => id.name,
+      value: (id) => cache.load(id as PackageId),
+    );
     packages[root.name] = root;
 
     _packageGraph = PackageGraph(this, lockFile, packages);

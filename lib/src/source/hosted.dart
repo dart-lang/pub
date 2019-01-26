@@ -142,7 +142,7 @@ class BoundHostedSource extends CachedSource {
 
     log.io("Get versions from $url.");
 
-    var body;
+    String body;
     try {
       body = await httpClient.read(url, headers: pubApiHeaders);
     } catch (error, stackTrace) {
@@ -183,7 +183,7 @@ class BoundHostedSource extends CachedSource {
             "$server/api/packages/$package/versions/$version");
 
     log.io("Describe package at $url.");
-    var version;
+    Map<String, dynamic> version;
     try {
       version = jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
     } catch (error, stackTrace) {
@@ -439,7 +439,7 @@ class _OfflineHostedSource extends BoundHostedSource {
 
     var dir = p.join(systemCacheRoot, _urlToDirectory(server));
 
-    var versions;
+    List<PackageId> versions;
     if (dirExists(dir)) {
       versions = listDir(dir)
           .map((entry) {
