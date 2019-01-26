@@ -109,7 +109,7 @@ class AnalysisContextManager {
   ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
-    var parseResult = _getExistingSession(path).getParsedAstSync(path);
+    var parseResult = _getExistingSession(path).getParsedUnit(path);
     if (parseResult.errors.isNotEmpty) {
       throw AnalyzerErrorGroup(parseResult.errors);
     }
