@@ -18,6 +18,7 @@ import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
+import 'command/logout.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';
@@ -104,6 +105,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
+    addCommand(LogoutCommand());
     addCommand(VersionCommand());
   }
 

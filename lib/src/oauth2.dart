@@ -73,6 +73,18 @@ void _clearCredentials(SystemCache cache) {
   if (entryExists(credentialsFile)) deleteEntry(credentialsFile);
 }
 
+/// Try to delete the cached credentials.
+void logout(SystemCache cache) {
+  var credentialsFile = _credentialsFile(cache);
+  if (entryExists(_credentialsFile(cache))) {
+    log.message("Logging out of pub.dartlang.org.");
+    log.message("Deleting $credentialsFile");
+    _clearCredentials(cache);
+  } else {
+    log.message("No existing credentials file $credentialsFile. Cannot log out.");
+  }
+}
+
 /// Asynchronously passes an OAuth2 [Client] to [fn], and closes the client when
 /// the [Future] returned by [fn] completes.
 ///
