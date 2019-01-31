@@ -58,12 +58,12 @@ class PackageServer {
   /// package to serve.
   ///
   /// This is preserved so that additional packages can be added.
-  final _builder = PackageServerBuilder._();
+  PackageServerBuilder _builder;
 
-  /// A future that will complete to the port used for the server.
+  /// The port used for the server.
   int get port => _inner.port;
 
-  /// A future that will complete to the URL for the server.
+  /// The URL for the server.
   String get url => 'http://localhost:$port';
 
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
@@ -81,7 +81,9 @@ class PackageServer {
     return server;
   }
 
-  PackageServer._(this._inner);
+  PackageServer._(this._inner) {
+    _builder = PackageServerBuilder._(this);
+  }
 
   /// Add to the current set of packages that are being served.
   void add(void callback(PackageServerBuilder builder)) {
@@ -135,7 +137,13 @@ class PackageServerBuilder {
   /// A map from package names to a list of concrete packages to serve.
   final _packages = <String, List<_ServedPackage>>{};
 
-  PackageServerBuilder._();
+  /// The package server that this builder is associated with.
+  final PackageServer _server;
+
+  /// The URL for the server that this builder is associated with.
+  String get serverUrl => _server.url;
+
+  PackageServerBuilder._(this._server);
 
   /// Specifies that a package named [name] with [version] should be served.
   ///
