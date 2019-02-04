@@ -81,7 +81,8 @@ void logout(SystemCache cache) {
     log.message("Deleting $credentialsFile");
     _clearCredentials(cache);
   } else {
-    log.message("No existing credentials file $credentialsFile. Cannot log out.");
+    log.message(
+        "No existing credentials file $credentialsFile. Cannot log out.");
   }
 }
 
