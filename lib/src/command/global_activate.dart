@@ -39,7 +39,7 @@ class GlobalActivateCommand extends PubCommand {
         negatable: false,
         help: "Overwrite executables from other packages with the same name.");
 
-    argParser.addOption("source-url",
+    argParser.addOption("hosted-url",
         abbr: "u",
         help:
             "A custom pub server URL for the package. Only applies when using the `hosted` source.");
@@ -72,7 +72,7 @@ class GlobalActivateCommand extends PubCommand {
     }
 
     var overwrite = argResults["overwrite"];
-    var hostedSourceUrl = argResults["source-url"];
+    var hostedUrl = argResults["hosted-url"];
     Iterable<String> args = argResults.rest;
 
     readArg([String error]) {
@@ -114,7 +114,7 @@ class GlobalActivateCommand extends PubCommand {
         return globals.activateHosted(package, constraint, executables,
             features: features,
             overwriteBinStubs: overwrite,
-            url: hostedSourceUrl);
+            url: hostedUrl);
 
       case "path":
         if (features.isNotEmpty) {
