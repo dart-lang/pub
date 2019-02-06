@@ -22,7 +22,7 @@ main() {
 
       await d.appDir({"foo": "any", "bar": "any"}).create();
 
-      var warning;
+      String warning;
       if (command == RunCommand.upgrade) {
         warning = "Warning: Upgrading when offline may not update you "
             "to the latest versions of your dependencies.";
@@ -43,7 +43,7 @@ main() {
 
       await d.appDir({"foo": "any"}).create();
 
-      var warning;
+      String warning;
       if (command == RunCommand.upgrade) {
         warning = "Warning: Upgrading when offline may not update you "
             "to the latest versions of your dependencies.";

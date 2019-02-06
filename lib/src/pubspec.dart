@@ -602,8 +602,8 @@ class Pubspec {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
-      var descriptionNode;
-      var sourceName;
+      YamlNode descriptionNode;
+      String sourceName;
 
       var versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
@@ -652,7 +652,7 @@ class Pubspec {
 
       // Let the source validate the description.
       var ref = _wrapFormatException('description', descriptionNode?.span, () {
-        var pubspecPath;
+        String pubspecPath;
         if (_location != null && _isFileUri(_location)) {
           pubspecPath = path.fromUri(_location);
         }

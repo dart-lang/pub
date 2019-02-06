@@ -41,7 +41,7 @@ class FileException implements ApplicationException {
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
   /// The underlying exception that [this] is wrapping, if any.
-  final innerError;
+  final Object innerError;
 
   /// The stack chain for [innerError] if it exists.
   final Chain innerChain;

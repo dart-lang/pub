@@ -30,7 +30,7 @@ abstract class PackageName {
   /// It contains whatever [Source]-specific data it needs to be able to get
   /// the package. For example, the description of a git sourced package might
   /// by the URL "git://github.com/dart/uilib.git".
-  final description;
+  final dynamic description;
 
   /// Whether this is a name for a magic package.
   ///

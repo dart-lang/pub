@@ -18,6 +18,7 @@ import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
+import 'command/logout.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';
@@ -104,12 +105,13 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
+    addCommand(LogoutCommand());
     addCommand(VersionCommand());
   }
 
-  Future run(Iterable<String> arguments) async {
+  Future run(Iterable<String> args) async {
     try {
-      _options = super.parse(arguments);
+      _options = super.parse(args);
     } on UsageException catch (error) {
       log.exception(error);
       await flushThenExit(exit_codes.USAGE);
@@ -117,22 +119,22 @@ class PubCommandRunner extends CommandRunner {
     await runCommand(_options);
   }
 
-  Future runCommand(ArgResults options) async {
-    log.withPrejudice = options['with-prejudice'];
-    log.sparkle = options['sparkle'];
+  Future runCommand(ArgResults topLevelResults) async {
+    log.withPrejudice = topLevelResults['with-prejudice'];
+    log.sparkle = topLevelResults['sparkle'];
 
     _checkDepsSynced();
 
-    if (options['version']) {
+    if (topLevelResults['version']) {
       log.message('Pub ${sdk.version}');
       return;
     }
 
-    if (options['trace']) {
+    if (topLevelResults['trace']) {
       log.recordTranscript();
     }
 
-    switch (options['verbosity']) {
+    switch (topLevelResults['verbosity']) {
       case 'error':
         log.verbosity = log.Verbosity.ERROR;
         break;
@@ -153,7 +155,7 @@ class PubCommandRunner extends CommandRunner {
         break;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (options['verbose']) log.verbosity = log.Verbosity.ALL;
+        if (topLevelResults['verbose']) log.verbosity = log.Verbosity.ALL;
         break;
     }
 
@@ -161,11 +163,12 @@ class PubCommandRunner extends CommandRunner {
 
     await _validatePlatform();
 
-    var captureStackChains =
-        options['trace'] || options['verbose'] || options['verbosity'] == 'all';
+    var captureStackChains = topLevelResults['trace'] ||
+        topLevelResults['verbose'] ||
+        topLevelResults['verbosity'] == 'all';
 
     try {
-      await captureErrors(() => super.runCommand(options),
+      await captureErrors(() => super.runCommand(topLevelResults),
           captureStackChains: captureStackChains);
 
       // Explicitly exit on success to ensure that any dangling dart:io handles
@@ -174,7 +177,7 @@ class PubCommandRunner extends CommandRunner {
     } catch (error, chain) {
       log.exception(error, chain);
 
-      if (options['trace']) {
+      if (topLevelResults['trace']) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
         // TODO(23505): Implement proper shell escaping, not a partial hack.
@@ -182,7 +185,7 @@ class PubCommandRunner extends CommandRunner {
         log.error("""
 This is an unexpected error. Please run
 
-    pub --trace ${options.arguments.map(protectArgument).join(' ')}
+    pub --trace ${topLevelResults.arguments.map(protectArgument).join(' ')}
 
 and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);
@@ -210,7 +213,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     if (match == null) return;
     var depsRev = match[1];
 
-    var actualRev;
+    String actualRev;
     try {
       actualRev =
           git.runSync(["rev-parse", "HEAD"], workingDir: pubRoot).single;

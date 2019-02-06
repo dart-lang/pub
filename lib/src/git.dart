@@ -78,7 +78,6 @@ List<String> runSync(List<String> args,
 String get command {
   if (_commandCache != null) return _commandCache;
 
-  var command;
   if (_tryGitCommand("git")) {
     _commandCache = "git";
   } else if (_tryGitCommand("git.cmd")) {
@@ -87,7 +86,7 @@ String get command {
     return null;
   }
 
-  log.fine('Determined git command $command.');
+  log.fine('Determined git command $_commandCache.');
   return _commandCache;
 }
 

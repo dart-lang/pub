@@ -101,7 +101,7 @@ class Level {
   String toString() => name;
 }
 
-typedef _LogFn(_Entry entry);
+typedef _LogFn = Function(_Entry entry);
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.

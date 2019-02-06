@@ -246,7 +246,7 @@ class BoundGitSource extends CachedSource {
     // Git doesn't recognize backslashes in paths, even on Windows.
     if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll("\\", "/");
 
-    var lines;
+    List<String> lines;
     try {
       lines = await git
           .run(["show", "$revision:$pubspecPath"], workingDir: repoPath);

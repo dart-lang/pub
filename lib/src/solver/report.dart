@@ -157,7 +157,7 @@ class SolveReport {
     //     > The package was upgraded from a lower version.
     //     < The package was downgraded from a higher version.
     //     * Any other change between the old and new package.
-    var icon;
+    String icon;
     if (isOverridden) {
       icon = log.magenta("! ");
     } else if (newId == null) {
@@ -220,7 +220,7 @@ class SolveReport {
       }
 
       // If there are newer stable versions, only show those.
-      var message;
+      String message;
       if (newerStable) {
         message = "(${maxAll(versions, Version.prioritize)} available)";
       } else if (newerUnstable) {

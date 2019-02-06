@@ -5,8 +5,8 @@
 import 'dart:collection';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 import 'package:package_config/packages_file.dart' as packages_file;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
@@ -91,7 +91,7 @@ class LockFile {
       String filePath, String contents, SourceRegistry sources) {
     if (contents.trim() == '') return LockFile.empty();
 
-    var sourceUrl;
+    Uri sourceUrl;
     if (filePath != null) sourceUrl = p.toUri(filePath);
     var parsed = loadYamlNode(contents, sourceUrl: sourceUrl);
 
@@ -140,7 +140,7 @@ class LockFile {
 
         // Let the source parse the description.
         var source = sources[sourceName];
-        var id;
+        PackageId id;
         try {
           id = source.parseId(name, version, description,
               containingPath: filePath);

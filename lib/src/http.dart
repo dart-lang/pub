@@ -63,7 +63,7 @@ class _PubHttpClient extends http.BaseClient {
     request.headers[HttpHeaders.userAgentHeader] = "Dart pub ${sdk.version}";
     _logRequest(request);
 
-    var streamedResponse;
+    http.StreamedResponse streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
     } on SocketException catch (error, stackTraceOrNull) {
@@ -307,7 +307,7 @@ void handleJsonError(http.Response response) {
 /// Throws a user-friendly error if the response body is invalid JSON, or if
 /// it's not a map.
 Map parseJsonResponse(http.Response response) {
-  var value;
+  Object value;
   try {
     value = jsonDecode(response.body);
   } on FormatException {

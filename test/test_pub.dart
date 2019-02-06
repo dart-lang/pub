@@ -704,7 +704,7 @@ void _validateOutputString(
 /// which may be a literal JSON object, or any other [Matcher].
 void _validateOutputJson(
     List<String> failures, String pipe, expected, String actualText) {
-  var actual;
+  Map actual;
   try {
     actual = jsonDecode(actualText);
   } on FormatException {
@@ -725,7 +725,7 @@ void _validateOutputJson(
 }
 
 /// A function that creates a [Validator] subclass.
-typedef Validator ValidatorCreator(Entrypoint entrypoint);
+typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
 
 /// Schedules a single [Validator] to run on the [appPath].
 ///

@@ -134,7 +134,7 @@ class DependencyValidator extends Validator {
       versions = [];
     }
 
-    var constraint;
+    String constraint;
     var primary = Version.primary(versions);
     if (primary != null) {
       constraint = "^$primary";
@@ -193,7 +193,7 @@ class DependencyValidator extends Validator {
     var message = 'Your dependency on "${dep.name}" should have a lower bound.';
     var locked = entrypoint.lockFile.packages[dep.name];
     if (locked != null) {
-      var constraint;
+      String constraint;
       if (locked.version == (dep.constraint as VersionRange).max) {
         constraint = "^${locked.version}";
       } else {
@@ -212,7 +212,7 @@ class DependencyValidator extends Validator {
 
   /// Warn that dependencies should have upper bounds on their constraints.
   void _warnAboutNoConstraintUpperBound(PackageRange dep) {
-    var constraint;
+    String constraint;
     if ((dep.constraint as VersionRange).includeMin) {
       constraint = "^${(dep.constraint as VersionRange).min}";
     } else {

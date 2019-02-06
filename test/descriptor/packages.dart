@@ -31,7 +31,7 @@ class PackagesFileDescriptor extends Descriptor {
     if (_dependencies != null) {
       var mapping = <String, Uri>{};
       _dependencies.forEach((package, version) {
-        var packagePath;
+        String packagePath;
         if (_isSemver(version)) {
           // It's a cache reference.
           packagePath = p.join(cachePath, "$package-$version");
