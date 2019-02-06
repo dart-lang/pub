@@ -112,9 +112,7 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(package, constraint, executables,
-            features: features,
-            overwriteBinStubs: overwrite,
-            url: hostedUrl);
+            features: features, overwriteBinStubs: overwrite, url: hostedUrl);
 
       case "path":
         if (features.isNotEmpty) {
