@@ -24,10 +24,10 @@ class GlobalActivateCommand extends PubCommand {
         defaultsTo: "hosted");
 
     argParser.addMultiOption("features",
-        abbr: "f", help: "Feature(s) to enable.");
+        abbr: "f", help: "Feature(s) to enable.", hide: true);
 
     argParser.addMultiOption("omit-features",
-        abbr: "F", help: "Feature(s) to disable.");
+        abbr: "F", help: "Feature(s) to disable.", hide: true);
 
     argParser.addFlag("no-executables",
         negatable: false, help: "Do not put executables on PATH.");
