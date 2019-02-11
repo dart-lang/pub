@@ -113,13 +113,18 @@ class GlobalPackages {
   /// if [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
+  ///
+  /// [url] is an optional custom pub server URL. If not null, the package to be
+  /// activated will be fetched from this URL instead of the default pub URL.
   Future activateHosted(
       String name, VersionConstraint constraint, List<String> executables,
-      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
+      {Map<String, FeatureDependency> features,
+      bool overwriteBinStubs,
+      String url}) async {
     _describeActive(name);
     await _installInCache(
         cache.hosted.source
-            .refFor(name)
+            .refFor(name, url: url)
             .withConstraint(constraint)
             .withFeatures(features ?? const {}),
         executables,
