@@ -14,7 +14,7 @@ import '../utils.dart';
 class GlobalActivateCommand extends PubCommand {
   String get name => "activate";
   String get description => "Make a package's executables globally available.";
-  String get invocation => "pub global activate <package...>";
+  String get invocation => "pub global activate <package> [version-constraint]";
 
   GlobalActivateCommand() {
     argParser.addOption("source",
