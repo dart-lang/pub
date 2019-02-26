@@ -268,8 +268,9 @@ dependencies:
   from_path: {path: non_local_path}
 ''',
           (pubspec) => pubspec.dependencies,
-          '"non_local_path" is a relative path, but this isn\'t a local '
-          'pubspec.');
+          'Invalid description in the "pkg" pubspec on the "from_path" '
+          'dependency: "non_local_path" is a relative path, but this isn\'t a '
+          'local pubspec.');
     });
 
     group("git dependencies", () {

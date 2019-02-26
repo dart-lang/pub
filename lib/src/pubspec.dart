@@ -659,7 +659,7 @@ class Pubspec {
 
         return _sources[sourceName].parseRef(name, descriptionNode?.value,
             containingPath: pubspecPath);
-      });
+      }, targetPackage: name);
 
       dependencies[name] =
           ref.withConstraint(versionConstraint).withFeatures(features);
@@ -761,11 +761,20 @@ class Pubspec {
   /// [description] should be a noun phrase that describes whatever's being
   /// parsed or processed by [fn]. [span] should be the location of whatever's
   /// being processed within the pubspec.
-  T _wrapFormatException<T>(String description, SourceSpan span, T fn()) {
+  ///
+  /// If [targetPackage] is provided, the value is used to describe the
+  /// dependency that caused the problem.
+  T _wrapFormatException<T>(String description, SourceSpan span, T fn(),
+      {String targetPackage}) {
     try {
       return fn();
     } on FormatException catch (e) {
-      _error('Invalid $description: ${e.message}', span);
+      var msg = 'Invalid $description';
+      if (targetPackage != null) {
+        msg = '$msg in the "$name" pubspec on the "$targetPackage" dependency';
+      }
+      msg = '$msg: ${e.message}';
+      _error(msg, span);
     }
   }
 
