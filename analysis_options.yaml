@@ -42,7 +42,8 @@ linter:
     - package_names
     - package_prefixed_library_names
     - prefer_adjacent_string_concatenation
-    - prefer_collection_literals
+    # TODO: remove this once we commit to Dart 2.2-only
+    #- prefer_collection_literals
     - prefer_conditional_assignment
     - prefer_contains
     - prefer_equal_for_default_values
@@ -54,7 +55,6 @@ linter:
     - prefer_typing_uninitialized_variables
     - recursive_getters
     - slash_for_doc_comments
-    - super_goes_last
     - test_types_in_equals
     - throw_in_finally
     - type_init_formals
