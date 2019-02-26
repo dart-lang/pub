@@ -10,21 +10,16 @@ import '../entrypoint.dart';
 import '../utils.dart';
 import '../validator.dart';
 
-/// A validator that validates the name of the package and its libraries.
+/// A validator that the name of a package is legal and matches the library name
+/// in the case of a single library.
 class NameValidator extends Validator {
   NameValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
     return Future.sync(() {
-      _checkName(entrypoint.root.name, 'Package name "${entrypoint.root.name}"',
-          isPackage: true);
+      _checkName(entrypoint.root.name);
 
       var libraries = _libraries;
-      for (var library in libraries) {
-        var libName = path.basenameWithoutExtension(library);
-        _checkName(libName, 'The name of "$library", "$libName",',
-            isPackage: false);
-      }
 
       if (libraries.length == 1) {
         var libName = path.basenameWithoutExtension(libraries[0]);
@@ -49,21 +44,19 @@ class NameValidator extends Validator {
         .toList();
   }
 
-  void _checkName(String name, String description, {bool isPackage}) {
-    // Packages names are more stringent than libraries.
-    var messages = isPackage ? errors : warnings;
-
+  void _checkName(String name) {
+    final description = 'Package name "$name"';
     if (name == "") {
       errors.add("$description may not be empty.");
     } else if (!RegExp(r"^[a-zA-Z0-9_]*$").hasMatch(name)) {
-      messages.add("$description may only contain letters, numbers, and "
+      errors.add("$description may only contain letters, numbers, and "
           "underscores.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
     } else if (!RegExp(r"^[a-zA-Z_]").hasMatch(name)) {
-      messages.add("$description must begin with a letter or underscore.\n"
+      errors.add("$description must begin with a letter or underscore.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
     } else if (reservedWords.contains(name.toLowerCase())) {
-      messages.add("$description may not be a reserved word in Dart.\n"
+      errors.add("$description may not be a reserved word in Dart.\n"
           "Using a valid Dart identifier makes the name usable in Dart code.");
     } else if (RegExp(r"[A-Z]").hasMatch(name)) {
       warnings.add('$description should be lower-case. Maybe use '
