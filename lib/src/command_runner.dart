@@ -180,8 +180,13 @@ class PubCommandRunner extends CommandRunner {
       if (topLevelResults['trace']) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
-        // TODO(23505): Implement proper shell escaping, not a partial hack.
-        protectArgument(String x) => x.contains(' ') ? '"$x"' : x;
+        // Escape the argument for users to copy-paste in bash.
+        // Wrap with single quotation, and use '\'' to insert single quote, as
+        // long as we have no spaces this doesn't create a new argument.
+        protectArgument(String x) =>
+            RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
+                ? "'${x.replaceAll("'", r"'\''")}'"
+                : x;
         log.error("""
 This is an unexpected error. Please run
 
