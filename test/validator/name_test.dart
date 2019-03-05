@@ -22,12 +22,12 @@ main() {
 
     test('looks normal', () => expectNoValidationError(name));
 
-    test('has a badly-named library in lib/src', () async {
+    test('has dots in potential library names', () async {
       await d.dir(appPath, [
         d.libPubspec("test_pkg", "1.0.0"),
         d.dir("lib", [
           d.file("test_pkg.dart", "int i = 1;"),
-          d.dir("src", [d.file("8ball.dart", "int j = 2;")])
+          d.file("test_pkg.g.dart", "int j = 2;")
         ])
       ]).create();
       expectNoValidationError(name);
@@ -47,38 +47,6 @@ main() {
 
     test('has a package name that contains upper-case letters', () async {
       await d.dir(appPath, [d.libPubspec("TestPkg", "1.0.0")]).create();
-      expectValidationWarning(name);
-    });
-
-    test('has a library name with an invalid character', () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.dir("lib", [d.file("test-pkg.dart", "int i = 0;")])
-      ]).create();
-      expectValidationWarning(name);
-    });
-
-    test('has a library name that begins with a number', () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.dir("lib", [d.file("8ball.dart", "int i = 0;")])
-      ]).create();
-      expectValidationWarning(name);
-    });
-
-    test('has a library name that contains upper-case letters', () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.dir("lib", [d.file("TestPkg.dart", "int i = 0;")])
-      ]).create();
-      expectValidationWarning(name);
-    });
-
-    test('has a library name that is a Dart reserved word', () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.dir("lib", [d.file("for.dart", "int i = 0;")])
-      ]).create();
       expectValidationWarning(name);
     });
 
