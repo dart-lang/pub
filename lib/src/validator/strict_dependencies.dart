@@ -101,7 +101,7 @@ class StrictDependenciesValidator extends Validator {
   void _validateBenchmarkExampleTestTool(
       Set<String> deps, Set<String> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
-    if (!fileExists('example/pubspec.yaml')) {
+    if (!fileExists(entrypoint.root.path('example', 'pubspec.yaml'))) {
       directories.add('example');
     }
     for (var usage in _usagesBeneath(directories)) {
