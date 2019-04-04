@@ -150,23 +150,6 @@ main() {
 
       expectNoValidationError(strictDeps);
     });
-
-    test(
-        'has undeclared import and export beneath `example/`, but has an `example/pubspec.yaml`',
-        () async {
-      await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0", sdk: ">=1.8.0 <2.0.0"),
-        d.dir('example', [
-          d.appPubspec(),
-          d.file('library.dart', '''
-        import 'package:silly_monkey/silly_monkey.dart';
-        export 'package:silly_monkey/silly_monkey.dart';
-      '''),
-        ]),
-      ]).create();
-
-      expectNoValidationError(strictDeps);
-    });
   });
 
   group('should consider a package invalid if it', () {
@@ -215,7 +198,7 @@ main() {
     }
 
     for (var port in ['import', 'export']) {
-      for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
+      for (var devDir in ['benchmark', 'test', 'tool']) {
         test('does not declare an "$port" as a dependency in $devDir/',
             () async {
           await d.dir(appPath, [

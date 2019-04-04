@@ -96,14 +96,9 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `example/, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  ///
-  /// `example/` is only validated if it does not contain its own pubspec.
   void _validateBenchmarkExampleTestTool(
       Set<String> deps, Set<String> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
-    if (!fileExists(entrypoint.root.path('example', 'pubspec.yaml'))) {
-      directories.add('example');
-    }
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependencyMissingMessage());
