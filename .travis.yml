@@ -23,6 +23,11 @@ before_script:
 branches:
   only: [master, travis, /^feature\./]
 
+os:
+  - linux
+  - osx
+  - windows
+
 cache:
   directories:
     - $HOME/.pub-cache
