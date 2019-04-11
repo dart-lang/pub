@@ -75,7 +75,7 @@ class VersionSolver {
 
   /// The set of packages for which we've added an incompatibility that forces
   /// the latest version to be used.
-  final _haveUsedLatest = Set<PackageRef>();
+  final _haveUsedLatest = <PackageRef>{};
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> useLatest)
@@ -110,7 +110,7 @@ class VersionSolver {
   ///
   /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
   void _propagate(String package) {
-    var changed = Set.from([package]);
+    var changed = {package};
 
     while (changed.isNotEmpty) {
       var package = changed.first;

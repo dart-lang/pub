@@ -94,10 +94,10 @@ class _Writer {
     var buffer = StringBuffer();
 
     // SDKs whose version constraints weren't matched.
-    var sdkConstraintCauses = Set<Sdk>();
+    var sdkConstraintCauses = <Sdk>{};
 
     // SDKs implicated in any way in the solve failure.
-    var sdkCauses = Set<Sdk>();
+    var sdkCauses = <Sdk>{};
 
     for (var incompatibility in _root.externalIncompatibilities) {
       var cause = incompatibility.cause;

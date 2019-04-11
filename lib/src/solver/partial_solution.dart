@@ -84,7 +84,7 @@ class PartialSolution {
   void backtrack(int decisionLevel) {
     _backtracking = true;
 
-    var packages = Set<String>();
+    var packages = <String>{};
     while (_assignments.last.decisionLevel > decisionLevel) {
       var removed = _assignments.removeLast();
       packages.add(removed.package.name);
