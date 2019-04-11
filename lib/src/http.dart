@@ -181,7 +181,7 @@ final _pubClient = _PubHttpClient();
 
 /// A set of all hostnames for which we've printed a message indicating that
 /// we're waiting for them to come back up.
-final _retriedHosts = Set<String>();
+final _retriedHosts = <String>{};
 
 /// Intercepts all requests and throws exceptions if the response was not
 /// considered successful.

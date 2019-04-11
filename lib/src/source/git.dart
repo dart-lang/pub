@@ -195,7 +195,7 @@ class BoundGitSource extends CachedSource {
 
   /// The paths to the canonical clones of repositories for which "git fetch"
   /// has already been run during this run of pub.
-  final _updatedRepos = Set<String>();
+  final _updatedRepos = <String>{};
 
   BoundGitSource(this.source, this.systemCache);
 

@@ -37,7 +37,7 @@ class Feature {
 
     // [enableFeature] adds a feature to [features], along with any other
     // features it requires.
-    var enabledFeatures = Set<Feature>();
+    var enabledFeatures = <Feature>{};
     enableFeature(Feature feature) {
       if (!enabledFeatures.add(feature)) return;
       for (var require in feature.requires) {

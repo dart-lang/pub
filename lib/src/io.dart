@@ -57,7 +57,7 @@ bool fileExists(String file) => File(file).existsSync();
 /// filesystem; nonexistent or unreadable path entries are treated as normal
 /// directories.
 String canonicalize(String pathString) {
-  var seen = Set<String>();
+  var seen = <String>{};
   var components =
       Queue<String>.from(path.split(path.normalize(path.absolute(pathString))));
 
@@ -139,7 +139,7 @@ String canonicalize(String pathString) {
 ///
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
-  var seen = Set<String>();
+  var seen = <String>{};
   while (linkExists(link) && !seen.contains(link)) {
     seen.add(link);
     link =

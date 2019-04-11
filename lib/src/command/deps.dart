@@ -167,7 +167,7 @@ class DepsCommand extends PubCommand {
     // being added to the tree, and the parent map that will receive that
     // package.
     var toWalk = Queue<Pair<Package, Map<String, Map>>>();
-    var visited = Set<String>.from([entrypoint.root.name]);
+    var visited = <String>{entrypoint.root.name};
 
     // Start with the root dependencies.
     var packageTree = <String, Map>{};

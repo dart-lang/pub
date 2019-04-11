@@ -248,7 +248,9 @@ packages:
       var lockfile = LockFile([
         PackageId('foo', mockSource, Version.parse('1.2.3'), 'foo desc'),
         PackageId('bar', mockSource, Version.parse('3.2.1'), 'bar desc')
-      ], devDependencies: ['bar'].toSet());
+      ], devDependencies: {
+        'bar'
+      });
 
       expect(
           loadYaml(lockfile.serialize(null)),
