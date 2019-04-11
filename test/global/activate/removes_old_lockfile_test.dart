@@ -18,7 +18,7 @@ main() {
         d.file(
             'foo.lock',
             'packages: {foo: {description: foo, source: hosted, '
-            'version: "1.0.0"}}}')
+                'version: "1.0.0"}}}')
       ])
     ]).create();
 

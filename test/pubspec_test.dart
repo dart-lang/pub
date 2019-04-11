@@ -233,7 +233,7 @@ dependencies:
           'version: 2.1',
           (pubspec) => pubspec.version,
           '"version" field must have three numeric components: major, minor, '
-          'and patch. Instead of "2.1", consider "2.1.0"');
+              'and patch. Instead of "2.1", consider "2.1.0"');
     });
 
     test("throws if version is malformed (looking like an int)", () {
@@ -241,7 +241,7 @@ dependencies:
           'version: 2',
           (pubspec) => pubspec.version,
           '"version" field must have three numeric components: major, minor, '
-          'and patch. Instead of "2", consider "2.0.0"');
+              'and patch. Instead of "2", consider "2.0.0"');
     });
 
     test("throws if version is not a version", () {
@@ -269,8 +269,8 @@ dependencies:
 ''',
           (pubspec) => pubspec.dependencies,
           'Invalid description in the "pkg" pubspec on the "from_path" '
-          'dependency: "non_local_path" is a relative path, but this isn\'t a '
-          'local pubspec.');
+              'dependency: "non_local_path" is a relative path, but this isn\'t a '
+              'local pubspec.');
     });
 
     group("git dependencies", () {
