@@ -1,6 +1,6 @@
 ---
-name: Problem with the client
-about: The client is printing a stack trace or failing unexpectedly.
+name: Problem with the pub client
+about: The pub client is printing a stack trace or failing unexpectedly.
 
 ---
 
