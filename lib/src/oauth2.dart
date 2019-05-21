@@ -58,7 +58,7 @@ final _tokenEndpoint = Uri.parse('https://accounts.google.com/o/oauth2/token');
 ///
 /// Currently the client only needs the user's email so that the server can
 /// verify their identity.
-final _scopes = ['https://www.googleapis.com/auth/userinfo.email'];
+final _scopes = ['openid', 'email'];
 
 /// An in-memory cache of the user's OAuth2 credentials.
 ///
