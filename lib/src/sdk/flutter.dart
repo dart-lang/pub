@@ -20,7 +20,7 @@ class FlutterSdk extends Sdk {
   static final String _rootDirectory = Platform.environment["FLUTTER_ROOT"];
 
   String get installMessage =>
-      "Flutter users should run `flutter packages get` instead of `pub get`.";
+      "Flutter users should run `flutter pub get` instead of `pub get`.";
 
   Version get version {
     if (!_isAvailable) return null;
