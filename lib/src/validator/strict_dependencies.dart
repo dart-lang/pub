@@ -96,8 +96,7 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkTestTool(
-      Set<String> deps, Set<String> devDeps) {
+  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
