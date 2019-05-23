@@ -145,7 +145,10 @@ Descriptor credentialsFile(ShelfTestServer server, String accessToken,
         oauth2.Credentials(accessToken,
                 refreshToken: refreshToken,
                 tokenEndpoint: server.url.resolve('/token'),
-                scopes: ['openid', 'email'],
+                scopes: [
+                  'openid',
+                  'https://www.googleapis.com/auth/userinfo.email',
+                ],
                 expiration: expiration)
             .toJson())
   ]);
