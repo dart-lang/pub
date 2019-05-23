@@ -74,7 +74,7 @@ class StrictDependenciesValidator extends Validator {
       ..add(entrypoint.root.name);
     var devDependencies = MapKeySet(entrypoint.root.devDependencies);
     _validateLibBin(dependencies, devDependencies);
-    _validateBenchmarkExampleTestTool(dependencies, devDependencies);
+    _validateBenchmarkTestTool(dependencies, devDependencies);
   }
 
   /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
@@ -94,12 +94,11 @@ class StrictDependenciesValidator extends Validator {
     }
   }
 
-  /// Validates that no Dart files in `benchmark/`, `example/, `test/` or
+  /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkExampleTestTool(
-      Set<String> deps, Set<String> devDeps) {
-    for (var usage
-        in _usagesBeneath(['benchmark', 'example', 'test', 'tool'])) {
+  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
+    var directories = ['benchmark', 'test', 'tool'];
+    for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependencyMissingMessage());
       }

@@ -198,7 +198,7 @@ main() {
     }
 
     for (var port in ['import', 'export']) {
-      for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
+      for (var devDir in ['benchmark', 'test', 'tool']) {
         test('does not declare an "$port" as a dependency in $devDir/',
             () async {
           await d.dir(appPath, [
