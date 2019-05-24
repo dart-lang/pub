@@ -4,9 +4,8 @@ Pub is the package manager for Dart.
 
 Thanks for being interested in contributing to pub! Contributing to a new
 project can be hard: there's a lot of new code and practices to learn. This
-document is intended to get you up and running as quickly as possible. If you're
-looking for documentation on using pub, try
-[pub.dev](https://dart.dev/tools/pub/cmd).
+document is intended to get you up and running as quickly as possible. More
+documentation is [here](https://dart.dev/tools/pub/cmd).
 
 The first step towards contributing is to contact the pub dev team and let us
 know what you're working on, so we can be sure not to start working on the same
