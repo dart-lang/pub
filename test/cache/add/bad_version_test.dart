@@ -19,7 +19,7 @@ main() {
             -v, --version    Version constraint.
 
             Run "pub help" to see global options.
-            See https://www.dartlang.org/tools/pub/cmd/pub-cache for detailed documentation.
+            See https://dart.dev/tools/pub/cmd/pub-cache for detailed documentation.
             """, exitCode: exit_codes.USAGE);
   });
 }

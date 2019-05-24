@@ -60,7 +60,7 @@ class PubCommandRunner extends CommandRunner {
   static ArgResults _options;
 
   String get usageFooter =>
-      "See https://www.dartlang.org/tools/pub for detailed documentation.";
+      "See https://dart.dev/tools/pub/cmd for detailed documentation.";
 
   PubCommandRunner() : super("pub", "Pub is a package manager for Dart.") {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');

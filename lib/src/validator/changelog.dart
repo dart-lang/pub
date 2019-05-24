@@ -31,7 +31,7 @@ class ChangelogValidator extends Validator {
       } on FormatException catch (_) {
         warnings.add("$changelog contains invalid UTF-8.\n"
             "This will cause it to be displayed incorrectly on "
-            "pub.dartlang.org.");
+            "pub.dev.");
       }
 
       if (contents == null) {

@@ -16,7 +16,7 @@ class CacheAddCommand extends PubCommand {
   String get description => "Install a package.";
   String get invocation =>
       "pub cache add <package> [--version <constraint>] [--all]";
-  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-cache";
+  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-cache";
 
   CacheAddCommand() {
     argParser.addFlag("all",

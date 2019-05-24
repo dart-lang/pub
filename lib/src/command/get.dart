@@ -13,7 +13,7 @@ class GetCommand extends PubCommand {
   String get name => "get";
   String get description => "Get the current package's dependencies.";
   String get invocation => "pub get";
-  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-get";
+  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-get";
   List<String> get aliases => const ["install"];
   bool get isOffline => argResults["offline"];
 

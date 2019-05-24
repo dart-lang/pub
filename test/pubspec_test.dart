@@ -254,7 +254,7 @@ dependencies:
 # No external dependencies yet
 # Including for completeness
 # ...and hoping the spec expands to include details about author, version, etc
-# See https://www.dartlang.org/tools/pub for details
+# See https://dart.dev/tools/pub/cmd for details
 ''', sources);
       expect(pubspec.version, equals(Version.none));
       expect(pubspec.dependencies, isEmpty);
