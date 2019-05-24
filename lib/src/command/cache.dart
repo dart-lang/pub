@@ -12,7 +12,7 @@ class CacheCommand extends PubCommand {
   String get name => "cache";
   String get description => "Work with the system cache.";
   String get invocation => "pub cache <subcommand>";
-  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-cache";
+  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-cache";
 
   CacheCommand() {
     addSubcommand(CacheAddCommand());

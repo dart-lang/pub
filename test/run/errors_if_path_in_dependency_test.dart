@@ -29,7 +29,7 @@ Usage: pub run <executable> [args...]
     --[no-]enable-asserts    Enable assert statements.
 
 Run "pub help" to see global options.
-See https://www.dartlang.org/tools/pub/cmd/pub-run for detailed documentation.
+See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.
 ''', exitCode: exit_codes.USAGE);
   });
 }

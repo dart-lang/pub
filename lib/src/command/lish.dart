@@ -21,7 +21,7 @@ class LishCommand extends PubCommand {
   String get name => "publish";
   String get description => "Publish the current package to pub.dartlang.org.";
   String get invocation => "pub publish [options]";
-  String get docUrl => "https://www.dartlang.org/tools/pub/cmd/pub-lish";
+  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-lish";
   List<String> get aliases => const ["lish", "lush"];
   bool get takesArguments => false;
 
@@ -161,7 +161,7 @@ class LishCommand extends PubCommand {
       log.error("Sorry, your package is missing "
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
-          "https://www.dartlang.org/tools/pub/cmd/pub-lish.\n");
+          "https://dart.dev/tools/pub/cmd/pub-lish.\n");
       return false;
     }
 

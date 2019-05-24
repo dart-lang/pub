@@ -27,7 +27,7 @@ Usage: pub uploader [options] {add/remove} <email>
                  (defaults to the current package)
 
 Run "pub help" to see global options.
-See https://www.dartlang.org/tools/pub/cmd/pub-uploader for detailed documentation.
+See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
 ''';
 
 Future<TestProcess> startPubUploader(
