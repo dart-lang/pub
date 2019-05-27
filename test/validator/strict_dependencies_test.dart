@@ -150,6 +150,36 @@ main() {
 
       expectNoValidationError(strictDeps);
     });
+
+    test('has analysis_options.yaml that excludes files', () async {
+      await d.dir(appPath, [
+        d.libPubspec("test_pkg", "1.0.0",
+            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+        d.dir('lib', [
+          d.file('library.dart', r'''
+            import 'package:silly_monkey/silly_monkey.dart';
+          '''),
+        ]),
+        d.dir('test', [
+          d.dir('data', [
+            d.dir('mypkg', [
+              d.dir('lib', [
+                d.file('dummy.dart', '\n'),
+              ]),
+            ]),
+          ]),
+        ]),
+        d.file('analysis_options.yaml', r'''analyzer:
+  exclude:
+    - test/data/**
+linter:
+  rules:
+    - avoid_catching_errors
+'''),
+      ]).create();
+
+      expectNoValidationError(strictDeps);
+    });
   });
 
   group('should consider a package invalid if it', () {

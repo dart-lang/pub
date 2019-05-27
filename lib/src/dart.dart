@@ -7,6 +7,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
+import 'package:analyzer/file_system/overlay_file_system.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/session.dart';
@@ -84,8 +86,18 @@ class AnalysisContextManager {
       return;
     }
 
+    // Overwrite the analysis_options.yaml to avoid loading the file included
+    // in the package, as this may result in some files not being analyzed.
+    final resourceProvider =
+        OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
+    resourceProvider.setOverlay(
+      p.join(path, 'analysis_options.yaml'),
+      content: '',
+      modificationStamp: 0,
+    );
+
     // Add new contexts for the given path.
-    var contextLocator = ContextLocator();
+    var contextLocator = ContextLocator(resourceProvider: resourceProvider);
     var roots = contextLocator.locateRoots(includedPaths: [path]);
     for (var root in roots) {
       var contextRootPath = root.root.path;
