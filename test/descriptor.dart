@@ -47,6 +47,8 @@ FileDescriptor outOfDateSnapshot(String name) =>
 /// which may in turn contain [Future]s recursively.
 Descriptor pubspec(Map<String, Object> contents) =>
     file("pubspec.yaml", yaml(contents));
+Descriptor pubspecOverride(Map<String, Object> contents) =>
+    file("pubspec.override.yaml", yaml(contents));
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].

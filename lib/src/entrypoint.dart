@@ -128,6 +128,9 @@ class Entrypoint {
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => root.path('pubspec.yaml');
 
+  /// The path to the entrypoint package's pubspec.
+  String get pubspecOverridePath => root.path('pubspec.override.yaml');
+
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => root.path('pubspec.lock');
 
@@ -395,9 +398,14 @@ class Entrypoint {
 
     var pubspecModified = File(pubspecPath).lastModifiedSync();
     var lockFileModified = File(lockFilePath).lastModifiedSync();
+    var pubspecOverrideModified = File(pubspecOverridePath).existsSync()
+        ? File(pubspecOverridePath).lastModifiedSync()
+        : pubspecModified;
 
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
+    if (lockFileModified.isBefore(pubspecModified) ||
+        lockFileModified.isBefore(pubspecOverrideModified) ||
+        hasPathDependencies) {
       _assertLockFileUpToDate();
       if (_arePackagesAvailable()) {
         touchedLockFile = true;

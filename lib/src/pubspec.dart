@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -452,7 +453,10 @@ class Pubspec {
   factory Pubspec.load(String packageDir, SourceRegistry sources,
       {String expectedName, bool includeDefaultSdkConstraint}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
+    var pubspecOverridePath = path.join(packageDir, 'pubspec.override.yaml');
     var pubspecUri = path.toUri(pubspecPath);
+    var pubspecOverrideUri = path.toUri(pubspecOverridePath);
+
     if (!fileExists(pubspecPath)) {
       throw FileException(
           // Make the package dir absolute because for the entrypoint it'll just
@@ -461,11 +465,41 @@ class Pubspec {
           '"${canonicalize(packageDir)}".',
           pubspecPath);
     }
+    if (fileExists(pubspecOverridePath)) {
+      YamlMap pubspecMap;
+      YamlMap pubspecOverrideMap;
+      try {
+        pubspecMap = loadYaml(readTextFile(pubspecPath), sourceUrl: pubspecUri);
+        pubspecOverrideMap = loadYaml(readTextFile(pubspecOverridePath),
+            sourceUrl: pubspecOverrideUri);
+      } on YamlException catch (error) {
+        throw PubspecException(error.message, error.span);
+      }
+      var combined = _merge(pubspecMap, pubspecOverrideMap);
+
+      return Pubspec.parse(jsonEncode(combined), sources,
+          expectedName: expectedName,
+          includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+          location: pubspecUri);
+    }
 
     return Pubspec.parse(readTextFile(pubspecPath), sources,
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
         location: pubspecUri);
+  }
+
+  static _merge(Map mainMap, Map mergeMap) {
+    final mutableMain = {}..addAll(mainMap);
+    final mutableMerge = {}..addAll(mergeMap);
+    mutableMerge.forEach((key, value) {
+      if (mutableMain[key] is Map) {
+        mutableMain[key] = _merge(mutableMain[key], value);
+      } else {
+        mutableMain[key] = mutableMerge[key];
+      }
+    });
+    return Map.unmodifiable(mutableMain);
   }
 
   Pubspec(this._name,
