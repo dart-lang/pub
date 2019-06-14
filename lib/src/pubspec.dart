@@ -450,7 +450,9 @@ class Pubspec {
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecError].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String expectedName, bool includeDefaultSdkConstraint}) {
+      {String expectedName,
+      bool includeDefaultSdkConstraint,
+      bool ignoreOverrides = false}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -465,7 +467,8 @@ class Pubspec {
     return Pubspec.parse(readTextFile(pubspecPath), sources,
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
-        location: pubspecUri);
+        location: pubspecUri,
+        ignoreOverrides: ignoreOverrides);
   }
 
   Pubspec(this._name,
@@ -529,7 +532,10 @@ class Pubspec {
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String expectedName, bool includeDefaultSdkConstraint, Uri location}) {
+      {String expectedName,
+      bool includeDefaultSdkConstraint,
+      Uri location,
+      bool ignoreOverrides = false}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -545,6 +551,12 @@ class Pubspec {
     } else {
       throw PubspecException(
           'The pubspec must be a YAML mapping.', pubspecNode.span);
+    }
+
+    if (ignoreOverrides) {
+      var mutableMap = {}..addAll(pubspecMap);
+      mutableMap.remove("dependency_overrides");
+      pubspecMap = Map.unmodifiable(mutableMap);
     }
 
     return Pubspec.fromMap(pubspecMap, sources,

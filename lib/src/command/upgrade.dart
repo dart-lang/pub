@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../log.dart' as log;
 import '../solver.dart';
 
@@ -28,6 +29,11 @@ class UpgradeCommand extends PubCommand {
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
+    argParser.addFlag('ignore-overrides',
+        defaultsTo: false,
+        negatable: false,
+        help: "Ignore 'dependency_overrides' in pubspec.yaml.");
+
     argParser.addFlag('precompile',
         defaultsTo: true,
         help: "Precompile executables and transformed dependencies.");
@@ -40,7 +46,13 @@ class UpgradeCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    await entrypoint.acquireDependencies(SolveType.UPGRADE,
+    var _entrypoint = super.entrypoint;
+    if (argResults.wasParsed("ignore-overrides")) {
+      log.message("Ignoring 'dependency_overrides'.");
+      _entrypoint = Entrypoint.current(cache,
+          ignoreOverrides: argResults['ignore-overrides']);
+    }
+    await _entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile']);

@@ -132,9 +132,11 @@ class Package {
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
   Package.load(String name, this.dir, SourceRegistry sources,
-      {bool isRootPackage = false})
+      {bool isRootPackage = false, bool ignoreOverrides = false})
       : pubspec = Pubspec.load(dir, sources,
-            expectedName: name, includeDefaultSdkConstraint: !isRootPackage);
+            expectedName: name,
+            includeDefaultSdkConstraint: !isRootPackage,
+            ignoreOverrides: ignoreOverrides);
 
   /// Constructs a package with the given pubspec.
   ///

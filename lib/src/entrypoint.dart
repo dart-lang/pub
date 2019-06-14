@@ -152,14 +152,16 @@ class Entrypoint {
   String get _snapshotPath => p.join(cachePath, 'bin');
 
   /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources, isRootPackage: true),
+  Entrypoint.current(this.cache, {bool ignoreOverrides = false})
+      : root = Package.load(null, '.', cache.sources,
+            isRootPackage: true, ignoreOverrides: ignoreOverrides),
         _inMemory = false,
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
+  Entrypoint(String rootDir, this.cache, {bool ignoreOverrides = false})
+      : root = Package.load(null, rootDir, cache.sources,
+            isRootPackage: true, ignoreOverrides: ignoreOverrides),
         _inMemory = false,
         isGlobal = true;
 
