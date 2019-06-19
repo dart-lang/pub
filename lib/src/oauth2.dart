@@ -16,8 +16,6 @@ import 'log.dart' as log;
 import 'system_cache.dart';
 import 'utils.dart';
 
-export 'package:oauth2/oauth2.dart';
-
 /// The pub client's OAuth2 identifier.
 final _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
     'googleusercontent.com';
