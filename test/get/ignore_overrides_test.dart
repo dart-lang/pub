@@ -31,4 +31,24 @@ main() {
 
     await d.appPackagesFile({"foo": "1.0.0"}).validate();
   });
+  
+  test("'dependency_overrides' works when not ignored", () async {
+    await servePackages((builder) {
+      builder.serve("foo", "1.0.0");
+      builder.serve("foo", "2.0.0");
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        "name": "myapp",
+        "version": "1.0.0",
+        "dependencies": {"foo": "1.0.0"},
+        "dependency_overrides": {"foo": "2.0.0"}
+      })
+    ]).create();
+
+    await pubGet();
+
+    await d.appPackagesFile({"foo": "2.0.0"}).validate();
+  });
 }

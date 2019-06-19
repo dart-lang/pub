@@ -46,13 +46,11 @@ class UpgradeCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    var _entrypoint = super.entrypoint;
-    if (argResults.wasParsed("ignore-overrides")) {
+    if (argResults.wasParsed('ignore-overrides')) {
       log.message("Ignoring 'dependency_overrides'.");
-      _entrypoint = Entrypoint.current(cache,
-          ignoreOverrides: argResults['ignore-overrides']);
     }
-    await _entrypoint.acquireDependencies(SolveType.UPGRADE,
+    final ep = Entrypoint.current(cache, ignoreOverrides: argResults['ignore-overrides']);
+    await ep.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile']);

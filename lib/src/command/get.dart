@@ -44,13 +44,11 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    var _entrypoint = super.entrypoint;
-    if (argResults.wasParsed("ignore-overrides")) {
+    if (argResults.wasParsed('ignore-overrides')) {
       log.message("Ignoring 'dependency_overrides'.");
-      _entrypoint = Entrypoint.current(cache,
-          ignoreOverrides: argResults['ignore-overrides']);
     }
-    return _entrypoint.acquireDependencies(SolveType.GET,
+    final ep = Entrypoint.current(cache, ignoreOverrides: argResults['ignore-overrides']);
+    return ep.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'], precompile: argResults['precompile']);
   }
 }
