@@ -47,7 +47,8 @@ class GetCommand extends PubCommand {
     if (argResults.wasParsed('ignore-overrides')) {
       log.message("Ignoring 'dependency_overrides'.");
     }
-    final ep = Entrypoint.current(cache, ignoreOverrides: argResults['ignore-overrides']);
+    final ep = Entrypoint.current(cache,
+        ignoreOverrides: argResults['ignore-overrides']);
     return ep.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'], precompile: argResults['precompile']);
   }

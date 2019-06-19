@@ -31,7 +31,7 @@ main() {
 
     await d.appPackagesFile({"foo": "1.0.0"}).validate();
   });
-  
+
   test("'dependency_overrides' works when not ignored", () async {
     await servePackages((builder) {
       builder.serve("foo", "1.0.0");

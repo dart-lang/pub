@@ -49,7 +49,8 @@ class UpgradeCommand extends PubCommand {
     if (argResults.wasParsed('ignore-overrides')) {
       log.message("Ignoring 'dependency_overrides'.");
     }
-    final ep = Entrypoint.current(cache, ignoreOverrides: argResults['ignore-overrides']);
+    final ep = Entrypoint.current(cache,
+        ignoreOverrides: argResults['ignore-overrides']);
     await ep.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
