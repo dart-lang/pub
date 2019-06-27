@@ -397,7 +397,7 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
-    _checkIfValidGitRepo(Directory(path), delIfInvalid: true);
+    _cleanInvalidGitRepoCache(path);
 
     if (!entryExists(path)) {
       await _createRepoCache(ref);
@@ -415,8 +415,8 @@ class BoundGitSource extends CachedSource {
 
     try {
       await _clone(ref.description['url'], path, mirror: true);
-    } catch (error, _) {
-      _checkIfValidGitRepo(Directory(path), delIfInvalid: true);
+    } catch (_) {
+      _cleanInvalidGitRepoCache(path);
       rethrow;
     }
     _updatedRepos.add(path);
@@ -433,20 +433,18 @@ class BoundGitSource extends CachedSource {
     _updatedRepos.add(path);
   }
 
-  /// Check if [directory] is a valid git repo. If invalid and
-  /// [delIfInvalid] is set to be true, it will be deleted.
-  ///
-  bool _checkIfValidGitRepo(Directory directory, {bool delIfInvalid = false}) {
-    if (directory.existsSync()) {
-      var result = runProcessSync(git.command, ['log', '-1'],
+  ///  Clean-up [dirPath] if it's an invalid git repository
+  void _cleanInvalidGitRepoCache(String dirPath) {
+    final Directory directory = Directory(dirPath);
+    if (dirExists(dirPath)) {
+      var processResult = runProcessSync(
+          git.command, ['rev-parse', '--is-inside-git-dir'],
           workingDir: directory.path);
-      if (result.exitCode == 0) {
-        return true;
-      } else if (delIfInvalid == true) {
-        directory.deleteSync(recursive: true);
+      var result = processResult.stdout?.join('\n');
+      if (result != 'true') {
+        deleteEntry(dirPath);
       }
     }
-    return false;
   }
 
   /// Updates the package list file in [revisionCachePath] to include [path], if
