@@ -380,6 +380,8 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
+    _cleanInvalidGitRepoCache(path);
+
     if (!entryExists(path)) await _createRepoCache(ref);
 
     // Try to list the revision. If it doesn't exist, git will fail and we'll
