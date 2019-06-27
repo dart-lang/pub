@@ -435,13 +435,12 @@ class BoundGitSource extends CachedSource {
 
   ///  Clean-up [dirPath] if it's an invalid git repository
   void _cleanInvalidGitRepoCache(String dirPath) {
-    final Directory directory = Directory(dirPath);
     if (dirExists(dirPath)) {
       var processResult = runProcessSync(
           git.command, ['rev-parse', '--is-inside-git-dir'],
-          workingDir: directory.path);
+          workingDir: dirPath);
       var result = processResult.stdout?.join('\n');
-      if (result != 'true') {
+      if (processResult.exitCode != 0 || result != 'true') {
         deleteEntry(dirPath);
       }
     }
