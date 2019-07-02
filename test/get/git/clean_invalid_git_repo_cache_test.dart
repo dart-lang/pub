@@ -9,6 +9,22 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
+/// Invalidates a git clone in the pub-cache, by recreating it as empty-directory.
+void _invalidateGitCache(String repo) {
+  final cacheDir =
+      path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
+  final Directory fooCacheDir =
+      Directory(cacheDir).listSync().firstWhere((entity) {
+    if (entity is Directory &&
+        entity.path.split(Platform.pathSeparator).last.startsWith(repo))
+      return true;
+    return false;
+  });
+
+  fooCacheDir.deleteSync(recursive: true);
+  fooCacheDir.createSync();
+}
+
 main() {
   test('Clean-up invalid git repo cache', () async {
     ensureGit();
@@ -29,17 +45,7 @@ main() {
       ])
     ]).validate();
 
-    final String cacheDir =
-        path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
-    final Directory fooCacheDir =
-        Directory(cacheDir).listSync().firstWhere((entity) {
-      if (entity is Directory &&
-          entity.path.split(Platform.pathSeparator).last.startsWith('foo'))
-        return true;
-    });
-
-    fooCacheDir.deleteSync(recursive: true);
-    fooCacheDir.createSync();
+    _invalidateGitCache('foo');
 
     await pubGet();
   });
@@ -67,16 +73,7 @@ main() {
       ])
     ]).validate();
 
-    final String cacheDir =
-        path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
-    final Directory fooCacheDir =
-        Directory(cacheDir).listSync().firstWhere((entity) {
-      if (entity is Directory &&
-          entity.path.split(Platform.pathSeparator).last.startsWith('foo'))
-        return true;
-    });
-    fooCacheDir.deleteSync(recursive: true);
-    fooCacheDir.createSync();
+    _invalidateGitCache('foo');
 
     await pubGet();
   });
@@ -104,16 +101,7 @@ main() {
       ])
     ]).validate();
 
-    final String cacheDir =
-        path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
-    final Directory fooCacheDir =
-        Directory(cacheDir).listSync().firstWhere((entity) {
-      if (entity is Directory &&
-          entity.path.split(Platform.pathSeparator).last.startsWith('foo'))
-        return true;
-    });
-    fooCacheDir.deleteSync(recursive: true);
-    fooCacheDir.createSync();
+    _invalidateGitCache('foo');
 
     await pubGet();
   });
