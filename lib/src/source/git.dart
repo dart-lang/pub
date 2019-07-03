@@ -380,6 +380,8 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
+    _cleanInvalidGitRepoCache(path);
+
     if (!entryExists(path)) await _createRepoCache(ref);
 
     // Try to list the revision. If it doesn't exist, git will fail and we'll
@@ -397,6 +399,8 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
+    _cleanInvalidGitRepoCache(path);
+
     if (!entryExists(path)) {
       await _createRepoCache(ref);
     } else {
@@ -411,7 +415,12 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     assert(!_updatedRepos.contains(path));
 
-    await _clone(ref.description['url'], path, mirror: true);
+    try {
+      await _clone(ref.description['url'], path, mirror: true);
+    } catch (_) {
+      _cleanInvalidGitRepoCache(path);
+      rethrow;
+    }
     _updatedRepos.add(path);
   }
 
@@ -424,6 +433,19 @@ class BoundGitSource extends CachedSource {
     if (_updatedRepos.contains(path)) return Future.value();
     await git.run(["fetch"], workingDir: path);
     _updatedRepos.add(path);
+  }
+
+  ///  Clean-up [dirPath] if it's an invalid git repository
+  void _cleanInvalidGitRepoCache(String dirPath) {
+    if (dirExists(dirPath)) {
+      var processResult = runProcessSync(
+          git.command, ['rev-parse', '--is-inside-git-dir'],
+          workingDir: dirPath);
+      var result = processResult.stdout?.join('\n');
+      if (processResult.exitCode != 0 || result != 'true') {
+        deleteEntry(dirPath);
+      }
+    }
   }
 
   /// Updates the package list file in [revisionCachePath] to include [path], if
