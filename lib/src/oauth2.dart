@@ -66,6 +66,12 @@ final _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 /// cache.
 Credentials _credentials;
 
+/// An in-memory cache of the user's bearer tokens.
+///
+/// This should always be the same as the tokens file stored in the system
+/// cache.
+Map<String, String> _tokens;
+
 /// Delete the cached credentials, if they exist.
 void _clearCredentials(SystemCache cache) {
   _credentials = null;
@@ -127,17 +133,24 @@ Future<T> withClient<T>(
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
 Future<http.BaseClient> _getClient(SystemCache cache) async {
-  // Pub will default to searching for an OAuth2 token in
-  // $PUB_CACHE/credentials.json.
-  //
-  // However, if $PUB_HOSTED_URL is contained within $PUB_CACHE/tokens.json,
-  // then instead opt for an HTTP client that sends the provided token
-  // in the Authorization header.
-  var tokens = _loadTokens(cache);
-  if (Platform.environment.containsKey('PUB_HOSTED_URL') &&
-      tokens.containsKey('PUB_HOSTED_URL')) {
-    return BearerTokenClient(
-        Platform.environment['PUB_HOSTED_URL'], httpClient);
+  // For any server other than pub.dartlang.org and pub.dev, we will
+  // use $PUB_CACHE/tokens.json
+  var pubHostedUrl =
+      Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev';
+  if (!['https://pub.dartlang.org', 'https://pub.dev'].contains(pubHostedUrl)) {
+    // Pub will default to searching for an OAuth2 token in
+    // $PUB_CACHE/credentials.json.
+    //
+    // However, if $PUB_HOSTED_URL is contained within $PUB_CACHE/tokens.json,
+    // then instead opt for an HTTP client that sends the provided token
+    // in the Authorization header.
+    var tokens = _loadTokens(cache);
+
+    if (tokens.containsKey(pubHostedUrl)) {
+      return BearerTokenClient(pubHostedUrl, httpClient);
+    } else {
+      // If there is no entry for the given server, prompt the user for one.
+    }
   }
 
   var credentials = _loadCredentials(cache);
@@ -225,6 +238,17 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
   var credentialsPath = _credentialsFile(cache);
   ensureDir(path.dirname(credentialsPath));
   writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+}
+
+/// Save the user's bearer tokens to the in-memory cache and the
+/// filesystem.
+void _saveTokens(SystemCache cache, Map<String, String> tokens) {
+  log.fine('Saving bearer tokens.');
+  _tokens = tokens;
+  var encoder = JsonEncoder.withIndent('  ');
+  var tokensPath = _tokensFile(cache);
+  ensureDir(path.dirname(tokensPath));
+  writeTextFile(tokensPath, encoder.convert(tokens), dontLogContents: true);
 }
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
