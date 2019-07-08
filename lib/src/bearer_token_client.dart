@@ -16,6 +16,12 @@ class BearerTokenClient extends BaseClient {
   BearerTokenClient(this.token, this.httpClient);
 
   @override
+  void close() {
+    httpClient.close();
+    super.close();
+  }
+
+  @override
   Future<StreamedResponse> send(BaseRequest request) {
     request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
     return httpClient.send(request);
