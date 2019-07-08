@@ -146,18 +146,19 @@ Future<http.BaseClient> _getClient(SystemCache cache) async {
     // in the Authorization header.
     var tokens = _loadTokens(cache);
     var tokensFile = _tokensFile(cache);
-
-    if (tokens.containsKey(pubHostedUrl)) {
-      return BearerTokenClient(tokens[pubHostedUrl], httpClient);
-    } else {
+    return BearerTokenClient(httpClient, tokens[pubHostedUrl],
+        (serverReply) async {
       // If there is no entry for the given server, prompt the user for one.
       log.message('Your \$PUB_HOSTED_URL is "$pubHostedUrl", but "$tokensFile" '
           'contains no entry for that URL.');
+      if (serverReply != null) {
+        log.warning(serverReply);
+      }
       var token = await prompt('Enter your token for "$pubHostedUrl"');
       // Save the new credentials.
       _saveTokens(cache, tokens..[pubHostedUrl] = token);
-      return BearerTokenClient(token, httpClient);
-    }
+      return token;
+    });
   }
 
   var credentials = _loadCredentials(cache);
