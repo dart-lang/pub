@@ -151,7 +151,7 @@ Future<http.BaseClient> _getClient(SystemCache cache) async {
       return BearerTokenClient(tokens[pubHostedUrl], httpClient);
     } else {
       // If there is no entry for the given server, prompt the user for one.
-      log.message('Your PUB_HOSTED_URL is "$pubHostedUrl", but "$tokensFile" '
+      log.message('Your \$PUB_HOSTED_URL is "$pubHostedUrl", but "$tokensFile" '
           'contains no entry for that URL.');
       var token = await prompt('Enter your token for "$pubHostedUrl"');
       // Save the new credentials.
