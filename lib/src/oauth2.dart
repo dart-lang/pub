@@ -181,6 +181,10 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 String _credentialsFile(SystemCache cache) =>
     path.join(cache.rootDir, 'credentials.json');
 
+/// The path to the file in which the user's third-party Bearer tokens are stored.
+String _tokensFile(SystemCache cache) =>
+    path.join(cache.rootDir, 'tokens.json');
+
 /// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
