@@ -587,6 +587,22 @@ Future<bool> confirm(String message) {
   return streamFirst(_stdinLines).then(RegExp(r"^[yY]").hasMatch);
 }
 
+/// Displays a message and reads a text response from the user.
+///
+/// Returns a [Future] that completes with the next line from stdin.
+///
+/// This will automatically append ":" to the message, so [message]
+/// should just be a fragment like, "Enter your name".
+Future<String> prompt(String message) {
+  log.fine('Showing prompt: $message');
+  if (runningFromTest) {
+    log.message("$message: ");
+  } else {
+    stdout.write(log.format("$message: "));
+  }
+  return streamFirst(_stdinLines);
+}
+
 /// Flushes the stdout and stderr streams, then exits the program with the given
 /// status code.
 ///

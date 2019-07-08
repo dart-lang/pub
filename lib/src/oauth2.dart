@@ -145,11 +145,18 @@ Future<http.BaseClient> _getClient(SystemCache cache) async {
     // then instead opt for an HTTP client that sends the provided token
     // in the Authorization header.
     var tokens = _loadTokens(cache);
+    var tokensFile = _tokensFile(cache);
 
     if (tokens.containsKey(pubHostedUrl)) {
-      return BearerTokenClient(pubHostedUrl, httpClient);
+      return BearerTokenClient(tokens[pubHostedUrl], httpClient);
     } else {
       // If there is no entry for the given server, prompt the user for one.
+      log.message('Your PUB_HOSTED_URL is "$pubHostedUrl", but "$tokensFile" '
+          'contains no entry for that URL.');
+      var token = await prompt('Enter your token for "$pubHostedUrl"');
+      // Save the new credentials.
+      _saveTokens(cache, tokens..[pubHostedUrl] = token);
+      return BearerTokenClient(token, httpClient);
     }
   }
 
@@ -204,6 +211,8 @@ Map<String, String> _loadTokens(SystemCache cache) {
   String path;
 
   try {
+    if (_tokens != null) return _tokens;
+
     path = _tokensFile(cache);
     if (!fileExists(path)) return {};
 
