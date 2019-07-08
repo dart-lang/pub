@@ -134,6 +134,11 @@ Future<http.BaseClient> _getClient(SystemCache cache) async {
   // then instead opt for an HTTP client that sends the provided token
   // in the Authorization header.
   var tokens = _loadTokens(cache);
+  if (Platform.environment.containsKey('PUB_HOSTED_URL') &&
+      tokens.containsKey('PUB_HOSTED_URL')) {
+    return BearerTokenClient(
+        Platform.environment['PUB_HOSTED_URL'], httpClient);
+  }
 
   var credentials = _loadCredentials(cache);
   if (credentials == null) return await _authorize();
