@@ -4,7 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
-
+import 'package:http/http.dart' as http;
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
@@ -90,12 +90,16 @@ void logout(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
+Future<T> withClient<T>(
+    SystemCache cache, Future<T> fn(http.BaseClient client)) {
   return _getClient(cache).then((client) {
     return fn(client).whenComplete(() {
       client.close();
-      // Be sure to save the credentials even when an error happens.
-      _saveCredentials(cache, client.credentials);
+      if (client is Client) {
+        // Be sure to save the credentials even when an error happens.
+        // Note: this is only performed for the pub.dartlang.org client.
+        _saveCredentials(cache, client.credentials);
+      }
     });
   }).catchError((error) {
     if (error is ExpirationException) {
@@ -120,7 +124,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) async {
+Future<http.BaseClient> _getClient(SystemCache cache) async {
   var credentials = _loadCredentials(cache);
   if (credentials == null) return await _authorize();
 
