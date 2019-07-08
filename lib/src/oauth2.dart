@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:oauth2/oauth2.dart';
@@ -10,6 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
+import 'bearer_token_client.dart';
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -125,6 +127,14 @@ Future<T> withClient<T>(
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
 Future<http.BaseClient> _getClient(SystemCache cache) async {
+  // Pub will default to searching for an OAuth2 token in
+  // $PUB_CACHE/credentials.json.
+  //
+  // However, if $PUB_HOSTED_URL is contained within $PUB_CACHE/tokens.json,
+  // then instead opt for an HTTP client that sends the provided token
+  // in the Authorization header.
+  var tokens = _loadTokens(cache);
+
   var credentials = _loadCredentials(cache);
   if (credentials == null) return await _authorize();
 
@@ -164,6 +174,41 @@ Credentials _loadCredentials(SystemCache cache) {
     log.error('Warning: could not load the saved OAuth2 credentials: $e\n'
         'Obtaining new credentials...');
     return null; // null means re-authorize.
+  }
+}
+
+/// Loads the user's stored bearer tokens from the in-memory cache or the
+/// filesystem if possible.
+///
+/// If the credentials can't be loaded for any reason, the returned [Future]
+/// completes to `{}`.
+Map<String, String> _loadTokens(SystemCache cache) {
+  String path;
+
+  try {
+    path = _tokensFile(cache);
+    if (!fileExists(path)) return {};
+
+    var data = json.decode(readTextFile(path));
+    if (data is Map<String, dynamic>) {
+      // So that format errors can be caught as early as possible,
+      // eagerly iterate through and cast the set of tokens, rather
+      // than using a lazy alternative.
+      return Map.fromEntries(
+          data.entries.map((e) => MapEntry(e.key, e.value as String)));
+    } else {
+      log.error(
+          'The format of "$path" is incorrect. It must be a map of string keys to string values.');
+      return {};
+    }
+  } on CastError {
+    var sourceOfError = path == null ? '' : '"$path"';
+    log.error('The format of $sourceOfError is incorrect. '
+        'It must be a map of string keys to string values, '
+        'but at least one key or value was not a string.');
+    return {};
+  } catch (e) {
+    return {};
   }
 }
 
