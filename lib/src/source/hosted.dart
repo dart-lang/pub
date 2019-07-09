@@ -15,6 +15,7 @@ import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../oauth2.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -157,7 +158,8 @@ class BoundHostedSource extends CachedSource {
 
     String body;
     try {
-      body = await httpClient.read(url, headers: pubApiHeaders);
+      body = await withClient(systemCache,
+          (httpClient) => httpClient.read(url, headers: pubApiHeaders));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
@@ -198,7 +200,8 @@ class BoundHostedSource extends CachedSource {
     log.io("Describe package at $url.");
     Map<String, dynamic> version;
     try {
-      version = jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
+      version = jsonDecode(await withClient(systemCache,
+          (httpClient) => httpClient.read(url, headers: pubApiHeaders)));
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(id.description);
       _throwFriendlyError(error, stackTrace, id.name, parsed.last);
@@ -319,7 +322,8 @@ class BoundHostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
-    var response = await httpClient.send(http.Request("GET", url));
+    var response = await withClient(
+        systemCache, (httpClient) => httpClient.send(http.Request("GET", url)));
     await extractTarGz(response.stream, tempDir);
 
     // Remove the existing directory if it exists. This will happen if
