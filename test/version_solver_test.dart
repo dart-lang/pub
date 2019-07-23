@@ -1661,6 +1661,84 @@ void prerelease() {
     await d.appDir({'a': '<=2.0.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0'});
   });
+
+  test('use pre-release when desired', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0');
+      builder.serve('a', '1.1.0-dev');
+    });
+
+    await d.appDir({'a': '^1.1.0-dev'}).create();
+    await expectResolves(result: {'a': '1.1.0-dev'});
+  });
+
+  test('can upgrade from pre-release', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0');
+      builder.serve('a', '1.1.0-dev');
+      builder.serve('a', '1.1.0');
+    });
+
+    await d.appDir({'a': '^1.1.0-dev'}).create();
+    await expectResolves(result: {'a': '1.1.0'});
+  });
+
+  test('will use pre-release if depended on in stable release', () async {
+    // This behavior is desired because a stable package has dependency on a
+    // pre-release.
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
+      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
+      builder.serve('b', '1.0.0');
+      builder.serve('b', '1.1.0-dev');
+    });
+
+    await d.appDir({'a': '^1.0.0'}).create();
+    await expectResolves(result: {
+      'a': '1.1.0',
+      'b': '1.1.0-dev',
+    });
+  });
+
+  test('backtracks pre-release choice with direct dependency', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
+      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
+      builder.serve('b', '1.0.0');
+      builder.serve('b', '1.1.0-dev');
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+      'b': '^1.0.0', // Direct dependency prevents us from using a pre-release.
+    }).create();
+    await expectResolves(result: {
+      'a': '1.0.0',
+      'b': '1.0.0',
+    });
+  });
+
+  test('backtracking pre-release fails with indirect dependency', () async {
+    // NOTE: This behavior is not necessarily desired.
+    //       If feasible it might worth changing this behavior in the future.
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
+      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
+      builder.serve('b', '1.0.0');
+      builder.serve('b', '1.1.0-dev');
+      builder.serve('c', '1.0.0', deps: {'b': '^1.0.0'});
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+      'c': '^1.0.0', // This doesn't not prevent using a pre-release.
+    }).create();
+    await expectResolves(result: {
+      'a': '1.1.0',
+      'b': '1.1.0-dev',
+      'c': '1.0.0',
+    });
+  });
 }
 
 void override() {
