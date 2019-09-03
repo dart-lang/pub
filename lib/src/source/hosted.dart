@@ -95,7 +95,7 @@ class HostedSource extends Source {
   bool descriptionsEqual(description1, description2) =>
       _parseDescription(description1) == _parseDescription(description2);
 
-  int hashDescription(description) => description.hashCode;
+  int hashDescription(description) => _parseDescription(description).hashCode;
 
   /// Ensures that [description] is a valid hosted package description.
   ///
