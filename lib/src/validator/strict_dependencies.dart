@@ -148,13 +148,15 @@ class _Usage {
 
   /// Returns an error message saying the package is not listed in dependencies.
   String dependencyMissingMessage() =>
-      _toMessage("This package doesn't depend on $package.");
+      _toMessage('This package does nt have $package in the `dependencies` '
+          'section of `pubspec.yaml`.');
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
     var shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
-        '$package is a dev dependency. Packages used in $shortFile/ must be '
-        'declared as normal dependencies.');
+        '$package is in the `dev_dependencies` section of `pubsepc.yaml`. '
+        'Packages used in $shortFile/ must be declared in the `dependencies` '
+        'section.');
   }
 }
