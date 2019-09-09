@@ -155,7 +155,7 @@ class _Usage {
   String dependencyMisplaceMessage() {
     var shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
-        '$package is in the `dev_dependencies` section of `pubsepc.yaml`. '
+        '$package is in the `dev_dependencies` section of `pubspec.yaml`. '
         'Packages used in $shortFile/ must be declared in the `dependencies` '
         'section.');
   }
