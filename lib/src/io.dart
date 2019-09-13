@@ -644,6 +644,8 @@ Future _store(Stream stream, EventSink sink,
 /// the inherited variables.
 Future<PubProcessResult> runProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell = false}) {
+  ArgumentError.checkNotNull(executable, 'executable');
+
   return _descriptorPool.withResource(() async {
     var result = await _doProcess(Process.run, executable, args,
         workingDir: workingDir,
@@ -684,6 +686,8 @@ PubProcessResult runProcessSync(String executable, List<String> args,
     {String workingDir,
     Map<String, String> environment,
     bool runInShell = false}) {
+  ArgumentError.checkNotNull(executable, 'executable');
+
   var result = _doProcess(Process.runSync, executable, args,
       workingDir: workingDir, environment: environment, runInShell: runInShell);
   var pubResult =

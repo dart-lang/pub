@@ -29,13 +29,7 @@ class GitException implements ApplicationException {
 }
 
 /// Tests whether or not the git command-line app is available for use.
-bool get isInstalled {
-  if (_isInstalledCache != null) return _isInstalledCache;
-  _isInstalledCache = command != null;
-  return _isInstalledCache;
-}
-
-bool _isInstalledCache;
+bool get isInstalled => command != null;
 
 /// Run a git process with [args] from [workingDir].
 ///
@@ -73,7 +67,7 @@ List<String> runSync(List<String> args,
   return result.stdout;
 }
 
-/// Returns the name of the git command-line app, or null if Git could not be
+/// Returns the name of the git command-line app, or `null` if Git could not be
 /// found on the user's PATH.
 String get command {
   if (_commandCache != null) return _commandCache;
