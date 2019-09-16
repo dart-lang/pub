@@ -380,7 +380,7 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
-    _cleanInvalidGitRepoCache(path);
+    await _deleteGitRepoIfInvalid(path);
 
     if (!entryExists(path)) await _createRepoCache(ref);
 
@@ -399,7 +399,7 @@ class BoundGitSource extends CachedSource {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return;
 
-    _cleanInvalidGitRepoCache(path);
+    await _deleteGitRepoIfInvalid(path);
 
     if (!entryExists(path)) {
       await _createRepoCache(ref);
@@ -418,7 +418,7 @@ class BoundGitSource extends CachedSource {
     try {
       await _clone(ref.description['url'], path, mirror: true);
     } catch (_) {
-      _cleanInvalidGitRepoCache(path);
+      await _deleteGitRepoIfInvalid(path);
       rethrow;
     }
     _updatedRepos.add(path);
@@ -435,16 +435,30 @@ class BoundGitSource extends CachedSource {
     _updatedRepos.add(path);
   }
 
-  ///  Clean-up [dirPath] if it's an invalid git repository
-  void _cleanInvalidGitRepoCache(String dirPath) {
-    if (dirExists(dirPath)) {
-      var processResult = runProcessSync(
-          git.command, ['rev-parse', '--is-inside-git-dir'],
-          workingDir: dirPath);
-      var result = processResult.stdout?.join('\n');
-      if (processResult.exitCode != 0 || result != 'true') {
-        deleteEntry(dirPath);
+  /// Clean-up [dirPath] if it's an invalid git repository.
+  ///
+  /// The git clones in the `PUB_CACHE` folder should never be invalid. But this
+  /// can happen if the clone operation failed in some way, and the program did
+  /// not exit gracefully, leaving the cache git clone in a dirty state.
+  Future<void> _deleteGitRepoIfInvalid(String dirPath) async {
+    if (!dirExists(dirPath)) {
+      return;
+    }
+    var isValid = true;
+    try {
+      final result = await git.run(
+        ['rev-parse', '--is-inside-git-dir'],
+        workingDir: dirPath,
+      );
+      if (result?.join('\n') != 'true') {
+        isValid = false;
       }
+    } on git.GitException {
+      isValid = false;
+    }
+    // If [dirPath] is not a valid git repository we remove it.
+    if (!isValid) {
+      deleteEntry(dirPath);
     }
   }
 
