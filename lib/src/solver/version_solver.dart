@@ -430,13 +430,6 @@ class VersionSolver {
       }
     }
 
-    var availableVersions = <String, List<Version>>{};
-    for (var id in decisions) {
-      if (id.isRoot) {
-        availableVersions[id.name] = [id.version];
-      }
-    }
-
     return SolveResult(
         _systemCache.sources,
         _root,
