@@ -173,6 +173,28 @@ DirectoryDescriptor appDir([Map dependencies]) =>
 Descriptor packagesFile([Map<String, String> dependencies]) =>
     PackagesFileDescriptor(dependencies);
 
+/// Describes a `.dart_tools/package_config.json` file.
+///
+/// [dependencies] is a list of packages included in the file.
+///
+/// Validation checks that the `.dart_tools/package_config.json` file exists,
+/// has the expected entries (one per key in [dependencies]), each with a path
+/// that matches the `rootUri` of that package.
+Descriptor packageConfigFile(List<Package> dependencies) =>
+    PackageConfigFileDescriptor(dependencies);
+
+/// Describes a package entry `.dart_tools/package_config.json`.
+///
+/// Create with either `rootUri` or `version`.
+/// If [version] is given the package Uri will be calculated as
+/// [cachePath]/[name]-[version].
+///
+/// `languageVersion` defaults to the sdk version.
+Package package(String name,
+        {String version, String rootUri, String languageVersion}) =>
+    Package(name,
+        version: version, rootUri: rootUri, languageVersion: languageVersion);
+
 /// Describes a `.packages` file in the application directory, including the
 /// implicit entry for the app itself.
 Descriptor appPackagesFile(Map<String, String> dependencies) {

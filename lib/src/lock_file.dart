@@ -3,8 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -13,6 +15,7 @@ import 'package:yaml/yaml.dart';
 
 import 'io.dart';
 import 'package_name.dart';
+import 'sdk.dart' show sdk;
 import 'source_registry.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -230,6 +233,71 @@ class LockFile {
     return text.toString();
   }
 
+  /// Returns the contents of the `.dart_tools/package_config` file generated
+  /// from this lockfile.
+  ///
+  /// This file is planned to eventually replace the `.packages` file.
+  ///
+  /// If [entrypoint] is passed, a relative entry is added for its "lib/"
+  /// directory.
+  Future<String> packageConfigFile(SystemCache cache,
+      [String entrypoint]) async {
+    final packagesList = <Object>[];
+
+    Future<void> addPackage(String name) async {
+      final id = packages[name];
+      final source = cache.source(id.source);
+      final pubspec = await source.describe(id);
+      final sdkConstraint = pubspec.sdkConstraints[sdk.identifier];
+      packagesList.add({
+        'name': id.name,
+        'rootUri': p.toUri(source.getDirectory(id)).toString(),
+        'packageUri': 'lib/',
+        'languageVersion': _languageVersion(sdkConstraint),
+      });
+    }
+
+    for (final name in ordered(packages.keys)) {
+      await addPackage(name);
+    }
+
+    if (entrypoint != null) {
+      packagesList.add({
+        'name': entrypoint,
+        'path': 'lib/',
+      });
+    }
+
+    final config = <String, Object>{
+      'apiVersion': 2,
+      'packages': packagesList,
+      'generated': DateTime.now().toString(),
+      'generator': 'pub',
+      'generatorVersion': sdk.version.toString(),
+    };
+    return const JsonEncoder.withIndent('  ').convert(config);
+  }
+
+  /// Extract the _language version_ from an SDK constraint from `pubspec.yaml`.
+  String _languageVersion(VersionConstraint c) {
+    Version minVersion;
+    if (c == null || c.isEmpty) {
+      // If we have no language version, we use the version of the current
+      // SDK processing the 'pubspec.yaml' file.
+      minVersion = sdk.version;
+    } else if (c is Version) {
+      minVersion = c;
+    } else if (c is VersionRange) {
+      minVersion = c.min ?? sdk.version;
+    } else if (c is VersionUnion) {
+      // `ranges` is non-empty and sorted.
+      minVersion = c.ranges.first.min ?? sdk.version;
+    } else {
+      throw ArgumentError('Unknown VersionConstraint type $c.');
+    }
+    return '${minVersion.major}.${minVersion.minor}';
+  }
+
   /// Returns the serialized YAML text of the lock file.
   ///
   /// [packageDir] is the containing directory of the root package, used to
@@ -259,6 +327,12 @@ class LockFile {
 # See https://dart.dev/tools/pub/glossary#lockfile
 ${yamlToString(data)}
 """;
+  }
+
+  /// Returns a hash of the contents of this lockfile.
+  String digest() {
+    return     crypto.sha256.convert(utf8.encode(lockFile.serialize(root.dir)));
+
   }
 
   /// Returns the dependency classification for [package].
