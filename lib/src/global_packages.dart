@@ -232,9 +232,13 @@ class GlobalPackages {
 
       var packagesFilePath = p.join(_directory, packageName, '.packages');
       if (!fileExists(packagesFilePath)) {
-        // A .packages file may not already exist if the global executable has a
-        // 1.6-style lock file instead.
+        // `.packages` and `.dart_tool/package_config.json` file may not already
+        // exist if the global executable has a 1.6-style lock file instead.
         writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
+        var packageConfigFilePath = p.join(
+            _directory, packageName, '.dart_tool', 'package_config.json');
+        ensureDir(p.dirname(packageConfigFilePath));
+        writeTextFile(packageConfigFilePath, entrypoint.packagesFileContents);
       }
 
       // Try to avoid starting up an asset server to precompile packages if

@@ -3,21 +3,26 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import "dart:async" show Future;
-import "dart:convert" show utf8;
+import "dart:convert" show JsonEncoder, json, utf8;
 import "dart:io" show File;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/sdk.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import '../test_pub.dart';
 
+// Resolve against a dummy URL so that we can test whether the URLs in
+// the package file are themselves relative. We can't resolve against just
+// "." due to sdk#23809.
+final _base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
+
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {
-  /// A map from package names to strings describing where the packages are
-  /// located on disk.
+  /// A map from package names to either version strings or path to the package.
   final Map<String, String> _dependencies;
 
   /// Describes a `.packages` file with the given dependencies.
@@ -57,11 +62,7 @@ class PackagesFileDescriptor extends Descriptor {
 
     var bytes = await File(fullPath).readAsBytes();
 
-    // Resolve against a dummy URL so that we can test whether the URLs in
-    // the package file are themselves relative. We can't resolve against just
-    // "." due to sdk#23809.
-    var base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
-    var map = packages_file.parse(bytes, Uri.parse(base));
+    var map = packages_file.parse(bytes, Uri.parse(_base));
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {
@@ -77,7 +78,7 @@ class PackagesFileDescriptor extends Descriptor {
       } else {
         var expected = p.normalize(p.join(p.fromUri(description), 'lib'));
         var actual = p.normalize(p.fromUri(
-            p.url.relative(map[package].toString(), from: p.dirname(base))));
+            p.url.relative(map[package].toString(), from: p.dirname(_base))));
 
         if (expected != actual) {
           fail("Relative path: Expected $expected, found $actual");
@@ -94,17 +95,104 @@ class PackagesFileDescriptor extends Descriptor {
     }
   }
 
-  /// Returns `true` if [text] is a valid semantic version number string.
-  bool _isSemver(String text) {
-    try {
-      // See if it's a semver.
-      Version.parse(text);
-      return true;
-    } on FormatException catch (_) {
-      // Do nothing.
+  String describe() => name;
+}
+
+class Package {
+  final String name;
+  final Uri rootUri;
+  final String languageVersion;
+
+  Package(this.name, {String version, String rootUri, String languageVersion})
+      : rootUri = p.toUri(rootUri) ??  p.toUri(p.join(cachePath, "$name-$version")),
+       languageVersion =
+            languageVersion ?? '${sdk.version.major}.${sdk.version.minor}',
+        assert(rootUri == null || version == null, 'Give either the rootUri or the version');
+}
+
+/// Describes a `.dart_tools/package_config.json` file and its contents.
+class PackageConfigFileDescriptor extends Descriptor {
+  /// A map describing the packages in this `package_config.json` file.
+  final List<Package> _dependencies;
+
+  /// Describes a `.packages` file with the given dependencies.
+  ///
+  /// [dependencies] maps package names to strings describing where the packages
+  /// are located on disk.
+  PackageConfigFileDescriptor([this._dependencies])
+      : super('.dart_tool/package_config.json');
+
+  Future<void> create([String parent]) {
+    final packagesList = _dependencies
+        .map((package) => {
+              'name': package.name,
+              'rootUri': package.rootUri.toString(),
+              'packageUri': 'lib/',
+              'languageVersion': package.languageVersion,
+            })
+        .toList();
+
+    final config = <String, Object>{
+      'apiVersion': 2,
+      'packages': packagesList,
+      'generated': DateTime.now().toString(),
+      'generator': 'pub',
+      'generatorVersion': sdk.version.toString(),
+    };
+    File(p.join(parent ?? sandbox, name))
+        .writeAsString(const JsonEncoder.withIndent('  ').convert(config));
+  }
+
+  Future<void> validate([String parent]) async {
+    var fullPath = p.join(parent ?? sandbox, name);
+    if (!await File(fullPath).exists()) {
+      fail("File not found: '$fullPath'.");
     }
-    return false;
+
+    Map<String, Object> jsonObject =
+        json.decode(await File(fullPath).readAsString());
+    final packagesList =
+        (jsonObject['packages'] as List<Object>).cast<Map<String, Object>>() ??
+            <Map<String, Object>>[];
+    for (final package in _dependencies) {
+      var matchingPackages = packagesList.where((p) => p['name'] == package.name);
+      if (matchingPackages.length != 1) {
+        fail("$fullPath does not contain a single ${matchingPackages.length} "
+            "entries matching $package");
+      }
+      var matchingPackage = matchingPackages.single;
+      var path = matchingPackage['rootUri'] as String;
+      var expected = p.normalize(p.fromUri(package.rootUri));
+      var actual = p.normalize(
+          p.fromUri(p.url.relative(path.toString(), from: p.dirname(_base))));
+
+      if (expected != actual) {
+        fail("Relative path: Expected $expected, found $actual");
+      }
+    };
+
+    if (packagesList.length != _dependencies.length) {
+      for (var packageEntry in packagesList) {
+        String name = packageEntry['name'];
+        if (!_dependencies.any((package) => package.name == name)) {
+          fail("$fullPath file contains unexpected entry: "
+              "${json.encode(packageEntry['name'])}");
+        }
+      }
+    }
   }
 
   String describe() => name;
+}
+
+/// Returns `true` if [text] is a valid semantic version number string.
+bool _isSemver(String text) {
+  try {
+    // See if it's a semver.
+    Version.parse(text);
+    return true;
+  } on FormatException catch (_) {
+    // Do nothing.
+  }
+  return false;
 }

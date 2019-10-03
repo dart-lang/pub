@@ -2,7 +2,7 @@ name: pub
 publish_to: none
 
 environment:
-  sdk: ">=2.2.0 <3.0.0"
+  sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests

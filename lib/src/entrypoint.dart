@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -125,6 +126,10 @@ class Entrypoint {
   /// The path to the entrypoint's ".packages" file.
   String get packagesFile => root.path('.packages');
 
+  /// The path to the entrypoint's ".dart_tool/package_config.json" file.
+  String get packageConfigFile =>
+      root.path('.dart_tool', 'package_config.json');
+
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => root.path('pubspec.yaml');
 
@@ -147,6 +152,14 @@ class Entrypoint {
   /// This is based on the package's lockfile, so it works whether or not a
   /// `.packages` file has been written.
   String get packagesFileContents => lockFile.packagesFile(cache, root.name);
+
+  /// Returns the contents of the `.dart_tools/package_config.json` file for
+  /// this entrypoint.
+  ///
+  /// This is based on the package's lockfile, so it works whether or not a
+  /// `.packages` file has been written.
+  Future<String> get packageConfigFileContents =>
+      lockFile.packageConfigFile(cache, root.name);
 
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
@@ -238,6 +251,8 @@ class Entrypoint {
     _packageGraph = PackageGraph.fromSolveResult(this, result);
 
     writeTextFile(packagesFile, packagesFileContents);
+    ensureDir(p.dirname(packageConfigFile));
+    writeTextFile(packageConfigFile, await packageConfigFileContents);
 
     try {
       if (precompile) {
@@ -420,6 +435,19 @@ class Entrypoint {
       touch(packagesFile);
     }
 
+    var packageConfigModified = File(packageConfigFile).lastModifiedSync();
+    if (packageConfigModified.isBefore(lockFileModified)) {
+      if (_isPackageConfigUpToDate()) {
+        touch(packageConfigFile);
+      } else {
+        dataError('The pubspec.lock file has changed since the '
+            '.dart_tools/package_config.json file '
+            'was generated, please run "pub get" again.');
+      }
+    } else if (touchedLockFile) {
+      touch(packageConfigFile);
+    }
+
     for (var match in _sdkConstraint.allMatches(lockFileText)) {
       var identifier = match[1] == 'sdk' ? 'dart' : match[1].trim();
       var sdk = sdks[identifier];
@@ -500,15 +528,9 @@ class Entrypoint {
     });
   }
 
-  /// Determines whether or not the `.packages` file is out of date with respect
-  /// to the lockfile.
-  ///
-  /// This will be `false` if the packages file contains dependencies that are
-  /// not in the lockfile or that don't match what's in there.
-  bool _isPackagesFileUpToDate() {
-    var packages = packages_file.parse(
-        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
-
+  /// Determines wheter or not [packages] matches what is described in
+  /// [lockfile].
+  bool _lockFileMatches(Map<String, Uri> packages) {
     return lockFile.packages.values.every((lockFileId) {
       // It's very unlikely that the lockfile is invalid here, but it's not
       // impossible—for example, the user may have a very old application
@@ -544,6 +566,58 @@ class Entrypoint {
       // path to the package.
       return p.normalize(packagesFilePath) == p.normalize(lockFilePath);
     });
+  }
+
+  /// Determines whether or not the `.packages` file is out of date with respect
+  /// to the lockfile.
+  ///
+  /// This will be `false` if the packages file contains dependencies that are
+  /// not in the lockfile or that don't match what's in there.
+  bool _isPackagesFileUpToDate() {
+    var packages = packages_file.parse(
+        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
+
+    return _lockFileMatches(packages);
+  }
+
+  /// Determines whether or not the `.dart_tool/package_config.json` file is
+  /// out of date with respect to the lockfile.
+  ///
+  /// This will be `false` if the packages file contains dependencies that are
+  /// not in the lockfile or that don't match what's in there.
+  // TODO(sigurdm): We should probably check that the 'languageVersion; is
+  // up-to-date for all path-dependencies, as that might have been updated since
+  // last run.
+  bool _isPackageConfigUpToDate() {
+    final packageConfig =
+        json.decode(File(packageConfigFile).readAsStringSync());
+    if (packageConfig['apiVersion'] != 2) {
+      return false;
+    }
+    if (packageConfig['generator'] != 'pub') {
+      return false;
+    }
+    if (packageConfig['generatorVersion'] != sdk.version) {
+      return false;
+    }
+    final packagesList = packageConfig['packages'];
+    if (packagesList is List<Object>) {
+      Map packages = <String, Uri>{};
+      for (final packageEntry in packagesList) {
+        if (packageEntry is Map<String, Object>) {
+          final rootUri = packageEntry['rootUri'];
+          final packageUri = packageEntry['packageUri'];
+          if (rootUri is String && packageUri is String) {
+            packages[packageEntry['name']] =
+                Uri.file(p.join(p.fromUri(rootUri), p.fromUri(packageUri)));
+          } else {
+            return false;
+          }
+        }
+      }
+    } else {
+      return false;
+    }
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
