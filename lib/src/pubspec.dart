@@ -448,7 +448,7 @@ class Pubspec {
   /// Loads the pubspec for a package located in [packageDir].
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [PubspecError].
+  /// field, this will throw a [PubspecException].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
       {String expectedName, bool includeDefaultSdkConstraint}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');

@@ -30,7 +30,7 @@ main() {
       await d.dir(appPath, [
         d.packagesFile(
             {"foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."}),
-        d.packageConfigFile([d.package("foo", version: "1.2.3")])
+        //TODO: d.packageConfigFile([d.package("foo", version: "1.2.3")])
       ]).validate();
     });
 
