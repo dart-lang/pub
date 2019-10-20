@@ -8,7 +8,7 @@ import "dart:io" show File;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
-import 'package:pub/src/sdk.dart';
+import 'package:pub/src/package_config.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
@@ -98,88 +98,47 @@ class PackagesFileDescriptor extends Descriptor {
   String describe() => name;
 }
 
-class Package {
-  final String name;
-  final Uri rootUri;
-  final String languageVersion;
-
-  Package(this.name, {String version, String rootUri, String languageVersion})
-      : rootUri = p.toUri(rootUri) ??  p.toUri(p.join(cachePath, "$name-$version")),
-       languageVersion =
-            languageVersion ?? '${sdk.version.major}.${sdk.version.minor}',
-        assert(rootUri == null || version == null, 'Give either the rootUri or the version');
-}
-
 /// Describes a `.dart_tools/package_config.json` file and its contents.
 class PackageConfigFileDescriptor extends Descriptor {
   /// A map describing the packages in this `package_config.json` file.
-  final List<Package> _dependencies;
+  final PackageConfig _config;
 
   /// Describes a `.packages` file with the given dependencies.
   ///
   /// [dependencies] maps package names to strings describing where the packages
   /// are located on disk.
-  PackageConfigFileDescriptor([this._dependencies])
+  PackageConfigFileDescriptor(this._config)
       : super('.dart_tool/package_config.json');
 
-  Future<void> create([String parent]) {
-    final packagesList = _dependencies
-        .map((package) => {
-              'name': package.name,
-              'rootUri': package.rootUri.toString(),
-              'packageUri': 'lib/',
-              'languageVersion': package.languageVersion,
-            })
-        .toList();
-
-    final config = <String, Object>{
-      'apiVersion': 2,
-      'packages': packagesList,
-      'generated': DateTime.now().toString(),
-      'generator': 'pub',
-      'generatorVersion': sdk.version.toString(),
-    };
-    File(p.join(parent ?? sandbox, name))
-        .writeAsString(const JsonEncoder.withIndent('  ').convert(config));
+  Future<void> create([String parent]) async {
+    final packageConfigFile = p.join(parent ?? sandbox, name);
+    await File(packageConfigFile).writeAsString(
+      const JsonEncoder.withIndent('  ').convert(_config.toJson()) + '\n',
+    );
   }
 
   Future<void> validate([String parent]) async {
-    var fullPath = p.join(parent ?? sandbox, name);
-    if (!await File(fullPath).exists()) {
-      fail("File not found: '$fullPath'.");
+    final packageConfigFile = p.join(parent ?? sandbox, name);
+    if (!await File(packageConfigFile).exists()) {
+      fail("File not found: '$packageConfigFile'.");
     }
 
-    Map<String, Object> jsonObject =
-        json.decode(await File(fullPath).readAsString());
-    final packagesList =
-        (jsonObject['packages'] as List<Object>).cast<Map<String, Object>>() ??
-            <Map<String, Object>>[];
-    for (final package in _dependencies) {
-      var matchingPackages = packagesList.where((p) => p['name'] == package.name);
-      if (matchingPackages.length != 1) {
-        fail("$fullPath does not contain a single ${matchingPackages.length} "
-            "entries matching $package");
-      }
-      var matchingPackage = matchingPackages.single;
-      var path = matchingPackage['rootUri'] as String;
-      var expected = p.normalize(p.fromUri(package.rootUri));
-      var actual = p.normalize(
-          p.fromUri(p.url.relative(path.toString(), from: p.dirname(_base))));
-
-      if (expected != actual) {
-        fail("Relative path: Expected $expected, found $actual");
-      }
-    };
-
-    if (packagesList.length != _dependencies.length) {
-      for (var packageEntry in packagesList) {
-        String name = packageEntry['name'];
-        if (!_dependencies.any((package) => package.name == name)) {
-          fail("$fullPath file contains unexpected entry: "
-              "${json.encode(packageEntry['name'])}");
-        }
-      }
+    Map<String, Object> rawJson = json.decode(
+      await File(packageConfigFile).readAsString(),
+    );
+    PackageConfig config;
+    try {
+      config = PackageConfig.fromJson(rawJson);
+    } on FormatException catch (e) {
+      fail('File "$packageConfigFile" is not valid: $e');
     }
+
+    final expected = PackageConfig.fromJson(_config.toJson());
+    // omit generated date-time
+    expected.generated = null;
+    config.generated = null;
+    expect(config.toJson(), equals(expected.toJson()),
+        reason: '"$packageConfigFile" does not match expected values');
   }
 
   String describe() => name;

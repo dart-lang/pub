@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/package_config.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'dart.dart' as dart;
@@ -18,6 +19,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
@@ -147,20 +149,6 @@ class Entrypoint {
     return newPath;
   }
 
-  /// Returns the contents of the `.packages` file for this entrypoint.
-  ///
-  /// This is based on the package's lockfile, so it works whether or not a
-  /// `.packages` file has been written.
-  String get packagesFileContents => lockFile.packagesFile(cache, root.name);
-
-  /// Returns the contents of the `.dart_tools/package_config.json` file for
-  /// this entrypoint.
-  ///
-  /// This is based on the package's lockfile, so it works whether or not a
-  /// `.packages` file has been written.
-  Future<String> get packageConfigFileContents =>
-      lockFile.packageConfigFile(cache, root.name);
-
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
@@ -250,9 +238,15 @@ class Entrypoint {
     /// have to reload and reparse all the pubspecs.
     _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-    writeTextFile(packagesFile, packagesFileContents);
+    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
     ensureDir(p.dirname(packageConfigFile));
-    writeTextFile(packageConfigFile, await packageConfigFileContents);
+    writeTextFile(
+        packageConfigFile,
+        await lockFile.packageConfigFile(
+          cache,
+          entrypoint: root.name,
+          entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        ));
 
     try {
       if (precompile) {
@@ -390,8 +384,9 @@ class Entrypoint {
     });
   }
 
-  /// Throws a [DataError] if the `.packages` file doesn't exist or if it's
-  /// out-of-date relative to the lockfile or the pubspec.
+  /// Throws a [DataError] if the `.packages` file or the
+  /// `.dart_tool/package_config.json` file doesn't exist or if it's out-of-date
+  /// relative to the lockfile or the pubspec.
   void assertUpToDate() {
     if (_inMemory) return;
 
@@ -436,7 +431,8 @@ class Entrypoint {
     }
 
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
-    if (packageConfigModified.isBefore(lockFileModified)) {
+    if (packageConfigModified.isBefore(lockFileModified) ||
+        hasPathDependencies) {
       if (_isPackageConfigUpToDate()) {
         touch(packageConfigFile);
       } else {
@@ -528,96 +524,131 @@ class Entrypoint {
     });
   }
 
-  /// Determines wheter or not [packages] matches what is described in
-  /// [lockfile].
-  bool _lockFileMatches(Map<String, Uri> packages) {
-    return lockFile.packages.values.every((lockFileId) {
-      // It's very unlikely that the lockfile is invalid here, but it's not
-      // impossible—for example, the user may have a very old application
-      // package with a checked-in lockfile that's newer than the pubspec, but
-      // that contains SDK dependencies.
-      if (lockFileId.source is UnknownSource) return false;
+  /// Determines [lockfile] is satisfied by the given [packagePathsMapping].
+  ///
+  /// The [packagePathsMapping] is a mapping from package names to paths where
+  /// the packages are located. This assumes the libraries are located under
+  /// `lib/` relative to the path given.
+  bool _isLockFileSatisfied(Map<String, String> packagePathsMapping) =>
+      lockFile.packages.values.every((lockFileId) {
+        // It's very unlikely that the lockfile is invalid here, but it's not
+        // impossible—for example, the user may have a very old application
+        // package with a checked-in lockfile that's newer than the pubspec, but
+        // that contains SDK dependencies.
+        if (lockFileId.source is UnknownSource) return false;
 
-      var packagesFileUri = packages[lockFileId.name];
-      if (packagesFileUri == null) return false;
+        final packagePath = packagePathsMapping[lockFileId.name];
+        if (packagePath == null) {
+          return false;
+        }
 
-      // Pub only generates "file:" and relative URIs.
-      if (packagesFileUri.scheme != 'file' &&
-          packagesFileUri.scheme.isNotEmpty) {
-        return false;
-      }
+        final source = cache.source(lockFileId.source);
+        final lockFilePackagePath =
+            p.join(root.dir, source.getDirectory(lockFileId));
 
-      var source = cache.source(lockFileId.source);
+        // Make sure that the packagePath agrees with the lock file about the
+        // path to the package.
+        if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
+          return false;
+        }
 
-      // Get the dirname of the .packages path, since it's pointing to lib/.
-      var packagesFilePath =
-          p.dirname(p.join(root.dir, p.fromUri(packagesFileUri)));
-      var lockFilePath = p.join(root.dir, source.getDirectory(lockFileId));
+        // For cached sources, make sure the directory exists and looks like a
+        // package. This is also done by [_arePackagesAvailable] but that may not
+        // be run if the lockfile is newer than the pubspec.
+        if (source is CachedSource && !dirExists(lockFilePackagePath) ||
+            !fileExists(p.join(lockFilePackagePath, "pubspec.yaml"))) {
+          return false;
+        }
 
-      // For cached sources, make sure the directory exists and looks like a
-      // package. This is also done by [_arePackagesAvailable] but that may not
-      // be run if the lockfile is newer than the pubspec.
-      if (source is CachedSource && !dirExists(packagesFilePath) ||
-          !fileExists(p.join(packagesFilePath, "pubspec.yaml"))) {
-        return false;
-      }
-
-      // Make sure that the packages file agrees with the lock file about the
-      // path to the package.
-      return p.normalize(packagesFilePath) == p.normalize(lockFilePath);
-    });
-  }
+        return true;
+      });
 
   /// Determines whether or not the `.packages` file is out of date with respect
-  /// to the lockfile.
+  /// to the [lockfile].
   ///
-  /// This will be `false` if the packages file contains dependencies that are
-  /// not in the lockfile or that don't match what's in there.
+  /// This will be `false` if [lockfile] contains dependencies that  are not in
+  /// the `.packages` or that don't match what's in there.
   bool _isPackagesFileUpToDate() {
     var packages = packages_file.parse(
         File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
 
-    return _lockFileMatches(packages);
+    final packagePathsMapping = <String, String>{};
+    for (final package in packages.keys) {
+      final packageUri = packages[package];
+
+      // Pub only generates "file:" and relative URIs.
+      if (packageUri.scheme != 'file' && packageUri.scheme.isNotEmpty) {
+        return false;
+      }
+
+      // Get the dirname of the .packages path, since it's pointing to lib/.
+      final packagePath = p.dirname(p.join(root.dir, p.fromUri(packageUri)));
+      packagePathsMapping[package] = packagePath;
+    }
+
+    return _isLockFileSatisfied(packagePathsMapping);
   }
 
   /// Determines whether or not the `.dart_tool/package_config.json` file is
   /// out of date with respect to the lockfile.
   ///
-  /// This will be `false` if the packages file contains dependencies that are
-  /// not in the lockfile or that don't match what's in there.
-  // TODO(sigurdm): We should probably check that the 'languageVersion; is
-  // up-to-date for all path-dependencies, as that might have been updated since
-  // last run.
+  /// This will be `false` if the [lockfile] contains dependencies that are not
+  /// in the `.dart_tool/package_config.json` or that don't match what's in
+  /// there.
+  ///
+  /// Throws [DataException], if `.dart_tool/package_config.json` is not
+  /// up-to-date for some other reason.
   bool _isPackageConfigUpToDate() {
-    final packageConfig =
-        json.decode(File(packageConfigFile).readAsStringSync());
-    if (packageConfig['apiVersion'] != 2) {
-      return false;
+    String packageConfigRaw;
+    try {
+      packageConfigRaw = readTextFile(packageConfigFile);
+    } on FileException {
+      dataError(
+          'The ".dart_tool/package_config.json" file does not exist, please run "pub get".');
     }
-    if (packageConfig['generator'] != 'pub') {
-      return false;
+    final cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+    if (cfg.configVersion != 2 ||
+        cfg.generator != 'pub' ||
+        cfg.generatorVersion != sdk.version) {
+      dataError(
+          'The ".dart_tool/package_config.json" file was not generated by this "pub" version, please run "pub get".');
     }
-    if (packageConfig['generatorVersion'] != sdk.version) {
-      return false;
-    }
-    final packagesList = packageConfig['packages'];
-    if (packagesList is List<Object>) {
-      Map packages = <String, Uri>{};
-      for (final packageEntry in packagesList) {
-        if (packageEntry is Map<String, Object>) {
-          final rootUri = packageEntry['rootUri'];
-          final packageUri = packageEntry['packageUri'];
-          if (rootUri is String && packageUri is String) {
-            packages[packageEntry['name']] =
-                Uri.file(p.join(p.fromUri(rootUri), p.fromUri(packageUri)));
-          } else {
-            return false;
-          }
-        }
+
+    final packagePathsMapping = <String, String>{};
+    for (final pkg in cfg.packages) {
+      // Pub always sets packageUri = lib/
+      if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
+        return false;
       }
-    } else {
+      packagePathsMapping[pkg.name] =
+          root.path('.dart_tool', p.fromUri(pkg.rootUri));
+    }
+    if (!_isLockFileSatisfied(packagePathsMapping)) {
       return false;
     }
+
+    for (final pkg in cfg.packages) {
+      final id = lockFile.packages[pkg.name];
+      if (id == null) {
+        continue; // Ignore entries that aren't in the lockFile
+      }
+
+      final source = cache.source(id.source);
+      if (source is CachedSource) {
+        continue;
+      }
+
+      // Try-catch FileException
+      final languageVersion = extractLanguageVersion(
+        cache.load(id).pubspec.sdkConstraints[sdk.identifier],
+      );
+      if (pkg.languageVersion != languageVersion) {
+        dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+            'changed since the pubspec.lock file was generated, please run "pub '
+            'get" again.');
+      }
+    }
+    return true;
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.

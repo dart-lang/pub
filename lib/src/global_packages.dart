@@ -205,7 +205,12 @@ class GlobalPackages {
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
-    writeTextFile(_getPackagesFilePath(dep.name), lockFile.packagesFile(cache));
+    final packagesFilePath = _getPackagesFilePath(dep.name);
+    final packageConfigFilePath = _getPackageConfigFilePath(dep.name);
+    writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
+    ensureDir(p.dirname(packageConfigFilePath));
+    writeTextFile(
+        packageConfigFilePath, await lockFile.packageConfigFile(cache));
 
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
@@ -230,15 +235,20 @@ class GlobalPackages {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
-      var packagesFilePath = p.join(_directory, packageName, '.packages');
-      if (!fileExists(packagesFilePath)) {
-        // `.packages` and `.dart_tool/package_config.json` file may not already
-        // exist if the global executable has a 1.6-style lock file instead.
-        writeTextFile(packagesFilePath, entrypoint.packagesFileContents);
-        var packageConfigFilePath = p.join(
-            _directory, packageName, '.dart_tool', 'package_config.json');
+      final packagesFilePath = _getPackagesFilePath(packageName);
+      final packageConfigFilePath = _getPackageConfigFilePath(packageName);
+      if (!fileExists(packagesFilePath) || !fileExists(packageConfigFilePath)) {
+        // The `.packages` file may not already exist if the global executable
+        // has a 1.6-style lock file instead.
+        // Similarly, the `.dart_tool/package_config.json` may not exist if the
+        // global executable was activated before 2.6
+        writeTextFile(
+            packagesFilePath, entrypoint.lockFile.packagesFile(cache));
         ensureDir(p.dirname(packageConfigFilePath));
-        writeTextFile(packageConfigFilePath, entrypoint.packagesFileContents);
+        writeTextFile(
+          packageConfigFilePath,
+          await entrypoint.lockFile.packageConfigFile(cache),
+        );
       }
 
       // Try to avoid starting up an asset server to precompile packages if
@@ -411,6 +421,11 @@ class GlobalPackages {
   /// [name].
   String _getPackagesFilePath(String name) =>
       p.join(_directory, name, ".packages");
+
+  /// Gets the path to the `package_config.json` file for an
+  /// activated cached package with [name].
+  String _getPackageConfigFilePath(String name) =>
+      p.join(_directory, name, ".dart_tool", "package_config.json");
 
   /// Shows the user a formatted list of globally activated packages.
   void listActivePackages() {

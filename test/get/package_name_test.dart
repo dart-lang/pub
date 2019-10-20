@@ -57,7 +57,7 @@ main() {
     await pubGet();
 
     await d.dir(appPath, [
-      ...d.packagesFiles({"foo.bar.baz": "."}),
+      d.packagesFile({"foo.bar.baz": "."}),
     ]).validate();
   });
 }
