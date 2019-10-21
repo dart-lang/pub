@@ -101,18 +101,29 @@ class PackagesFileDescriptor extends Descriptor {
 /// Describes a `.dart_tools/package_config.json` file and its contents.
 class PackageConfigFileDescriptor extends Descriptor {
   /// A map describing the packages in this `package_config.json` file.
-  final PackageConfig _config;
+  final List<PackageConfigEntry> _packages;
+
+  PackageConfig get _config {
+    return PackageConfig(
+      configVersion: 2,
+      packages: _packages,
+      generatorVersion: Version.parse('0.1.2+3'),
+      generator: 'pub',
+      generated: DateTime.now().toUtc(),
+    );
+  }
 
   /// Describes a `.packages` file with the given dependencies.
   ///
   /// [dependencies] maps package names to strings describing where the packages
   /// are located on disk.
-  PackageConfigFileDescriptor(this._config)
+  PackageConfigFileDescriptor(this._packages)
       : super('.dart_tool/package_config.json');
 
   Future<void> create([String parent]) async {
-    final packageConfigFile = p.join(parent ?? sandbox, name);
-    await File(packageConfigFile).writeAsString(
+    final packageConfigFile = File(p.join(parent ?? sandbox, name));
+    await packageConfigFile.parent.create();
+    await packageConfigFile.writeAsString(
       const JsonEncoder.withIndent('  ').convert(_config.toJson()) + '\n',
     );
   }
@@ -133,10 +144,20 @@ class PackageConfigFileDescriptor extends Descriptor {
       fail('File "$packageConfigFile" is not valid: $e');
     }
 
+    // Compare packages as sets to ignore ordering.
+    expect(
+      config.packages.map((e) => e.toJson()).toSet(),
+      equals(_packages.map((e) => e.toJson()).toSet()),
+      reason:
+          '"packages" property in "$packageConfigFile" does not expected values',
+    );
+
     final expected = PackageConfig.fromJson(_config.toJson());
-    // omit generated date-time
-    expected.generated = null;
+    // omit generated date-time and packages
+    expected.generated = null; // comparing timestamps is unnecessary.
     config.generated = null;
+    expected.packages = []; // Already compared packages (ignoring ordering)
+    config.packages = [];
     expect(config.toJson(), equals(expected.toJson()),
         reason: '"$packageConfigFile" does not match expected values');
   }

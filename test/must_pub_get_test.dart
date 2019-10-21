@@ -40,12 +40,21 @@ main() {
           'No pubspec.lock file found, please run "pub get" first.');
     });
 
-    group("there's no package spec", () {
+    group("there's no .packages", () {
       setUp(() {
         deleteEntry(p.join(d.sandbox, "myapp/.packages"));
       });
 
       _requiresPubGet('No .packages file found, please run "pub get" first.');
+    });
+
+    group("there's no package_config.json", () {
+      setUp(() {
+        deleteEntry(p.join(d.sandbox, "myapp/.dart_tool/package_config.json"));
+      });
+
+      _requiresPubGet(
+          'No .dart_tool/package_config.json file found, please run "pub get" first.');
     });
 
     group("the pubspec has a new dependency", () {
@@ -267,6 +276,40 @@ foo:http://example.com/
           'file was generated, please run "pub get" again.');
     });
 
+    group("the package_config.json file points to the wrong place", () {
+      setUp(() async {
+        await d.dir("bar", [d.libPubspec("foo", "1.0.0")]).create();
+
+        await d.dir(appPath, [
+          d.appPubspec({
+            "foo": {"path": "../bar"}
+          })
+        ]).create();
+
+        await pubGet();
+
+        await d.dir(appPath, [
+          d.packageConfigFile([
+            d.packageConfigEntry(
+              name: 'foo',
+              path: '../foo', // this is the wrong path
+            ),
+            d.packageConfigEntry(
+              name: 'myapp',
+              path: '.',
+            ),
+          ]),
+        ]).create();
+
+        // Ensure that the pubspec looks newer than the lockfile.
+        await _touch("pubspec.lock");
+      });
+
+      _requiresPubGet('The pubspec.lock file has changed since the '
+          '.dart_tools/package_config.json file was generated, '
+          'please run "pub get" again.');
+    });
+
     group("the lock file's SDK constraint doesn't match the current SDK", () {
       setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
@@ -343,6 +386,45 @@ foo:http://example.com/
           'since the pubspec.lock file was generated, please run "pub get" '
           'again.');
     });
+
+    group(
+        "a path dependency's language version doesn't match the package_config.json",
+        () {
+      setUp(() async {
+        await d.dir("bar", [
+          d.libPubspec(
+            "bar",
+            "1.0.0",
+            deps: {"foo": "1.0.0"},
+            // Creates language version requirement 0.0
+            sdk: '>= 0.0.1 <=0.9.9', // tests runs with '0.1.2+3'
+          ),
+        ]).create();
+
+        await d.dir(appPath, [
+          d.appPubspec({
+            "bar": {"path": "../bar"}
+          })
+        ]).create();
+
+        await pubGet();
+
+        // Update bar's pubspec without touching the app's.
+        await d.dir("bar", [
+          d.libPubspec(
+            "bar",
+            "1.0.0",
+            deps: {"foo": "1.0.0"},
+            // Creates language version requirement 0.1
+            sdk: '>= 0.1.0 <=0.9.9', // tests runs with '0.1.2+3'
+          ),
+        ]).create();
+      });
+
+      _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
+          'since the pubspec.lock file was generated, please run "pub get" '
+          'again.');
+    });
   });
 
   group("doesn't require the user to run pub get first if", () {
@@ -353,9 +435,12 @@ foo:http://example.com/
         await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
         ]).create();
+        // Ensure we get a new mtime (mtime is only reported with 1s precision)
+        await _touch('pubspec.yaml');
 
         await _touch("pubspec.lock");
         await _touch(".packages");
+        await _touch(".dart_tool/package_config.json");
       });
 
       _runsSuccessfully(runDeps: false);
@@ -396,7 +481,9 @@ foo:http://example.com/
       _runsSuccessfully();
     });
 
-    group("the lockfile is newer than .packages, but they're up-to-date", () {
+    group(
+        "the lockfile is newer than .packages and package_config.json, but they're up-to-date",
+        () {
       setUp(() async {
         await d.dir(appPath, [
           d.appPubspec({"foo": "1.0.0"})
@@ -498,9 +585,13 @@ void _runsSuccessfully({bool runDeps = true}) {
           File(p.join(d.sandbox, "myapp/pubspec.lock")).lastModifiedSync();
       var packagesModified =
           File(p.join(d.sandbox, "myapp/.packages")).lastModifiedSync();
+      var packageConfigModified =
+          File(p.join(d.sandbox, "myapp/.dart_tool/package_config.json"))
+              .lastModifiedSync();
 
       expect(!pubspecModified.isAfter(lockFileModified), isTrue);
       expect(!lockFileModified.isAfter(packagesModified), isTrue);
+      expect(!lockFileModified.isAfter(packageConfigModified), isTrue);
     });
   }
 }
