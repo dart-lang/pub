@@ -398,6 +398,12 @@ class Entrypoint {
       dataError('No .packages file found, please run "pub get" first.');
     }
 
+    if (!entryExists(packageConfigFile)) {
+      dataError(
+        'No .dart_tool/package_config.json file found, please run "pub get" first.',
+      );
+    }
+
     // Manually parse the lockfile because a full YAML parse is relatively slow
     // and this is on the hot path for "pub run".
     var lockFileText = readTextFile(lockFilePath);
@@ -437,7 +443,7 @@ class Entrypoint {
         touch(packageConfigFile);
       } else {
         dataError('The pubspec.lock file has changed since the '
-            '.dart_tools/package_config.json file '
+            '.dart_tool/package_config.json file '
             'was generated, please run "pub get" again.');
       }
     } else if (touchedLockFile) {
