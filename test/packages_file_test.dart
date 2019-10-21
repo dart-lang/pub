@@ -30,7 +30,6 @@ main() {
       await d.dir(appPath, [
         d.packagesFile(
             {"foo": "1.2.3", "bar": "3.2.1", "baz": "2.2.2", "myapp": "."}),
-        //TODO: d.packageConfigFile([d.package("foo", version: "1.2.3")])
       ]).validate();
     });
 
@@ -92,7 +91,9 @@ main() {
       await d.dir(appPath, [
         d.pubspec({
           "name": "myapp",
-          "dependencies": {},
+          "dependencies": {
+            "foo": "^1.2.3",
+          },
           "dependency_overrides": {
             "baz": {"path": "../local_baz"},
           }
@@ -103,7 +104,7 @@ main() {
       await pubCommand(command);
 
       await d.dir(appPath, [
-        d.packagesFile({"myapp": ".", "baz": "../local_baz"})
+        d.packagesFile({"myapp": ".", "baz": "../local_baz", "foo": "1.2.3"}),
       ]).validate();
     });
   });

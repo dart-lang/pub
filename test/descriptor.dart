@@ -8,6 +8,8 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/package_config.dart';
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test_descriptor/test_descriptor.dart';
+import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 import 'descriptor/git.dart';
 import 'descriptor/packages.dart';
@@ -181,8 +183,40 @@ Descriptor packagesFile([Map<String, String> dependencies]) =>
 /// Validation checks that the `.dart_tools/package_config.json` file exists,
 /// has the expected entries (one per key in [dependencies]), each with a path
 /// that matches the `rootUri` of that package.
-Descriptor packageConfigFile(PackageConfig config) =>
-    PackageConfigFileDescriptor(config);
+Descriptor packageConfigFile(List<PackageConfigEntry> packages) =>
+    PackageConfigFileDescriptor(packages);
+
+/// Create a [PackageConfigEntry] which assumes package with [name] is either
+/// a cached package with given [version] or a path dependency at given [path].
+///
+/// If not given [languageVersion] will be inferred from current SDK version.
+PackageConfigEntry packageConfigEntry({
+  @required String name,
+  String version,
+  String path,
+  String languageVersion,
+}) {
+  if (version != null && path != null) {
+    throw ArgumentError.value(
+        path, 'path', 'Only one of "version" and "path" can be provided');
+  }
+  if (version == null && path == null) {
+    throw ArgumentError.value(
+        version, 'version', 'Either "version" or "path" must be given');
+  }
+  Uri rootUri;
+  if (version != null) {
+    rootUri = p.toUri(globalPackageServer.pathInCache(name, version));
+  } else {
+    rootUri = p.toUri(p.join('..', path));
+  }
+  return PackageConfigEntry(
+    name: name,
+    rootUri: rootUri,
+    packageUri: Uri(path: 'lib/'),
+    languageVersion: languageVersion ?? '0.1', // from '0.1.2+3'
+  );
+}
 
 /// Describes a `.packages` file in the application directory, including the
 /// implicit entry for the app itself.
