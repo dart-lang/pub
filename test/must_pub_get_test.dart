@@ -306,7 +306,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the '
-          '.dart_tools/package_config.json file was generated, '
+          '.dart_tool/package_config.json file was generated, '
           'please run "pub get" again.');
     });
 
