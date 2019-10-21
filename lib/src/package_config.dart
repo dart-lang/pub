@@ -121,7 +121,7 @@ class PackageConfig {
         generated: generated,
         generator: generator,
         generatorVersion: generatorVersion,
-        additionalProperties: Map.fromEntries(root.entries.where((e) => {
+        additionalProperties: Map.fromEntries(root.entries.where((e) => !{
               'configVersion',
               'packages',
               'generated',
@@ -134,9 +134,9 @@ class PackageConfig {
   Map<String, Object> toJson() => {
         'configVersion': configVersion,
         'packages': packages.map((p) => p.toJson()).toList(),
-        'generated': generated.toUtc().toIso8601String(),
+        'generated': generated?.toUtc()?.toIso8601String(),
         'generator': generator,
-        'generatorVersion': generatorVersion.toString(),
+        'generatorVersion': generatorVersion?.toString(),
       }..addAll(additionalProperties ?? {});
 }
 
@@ -248,7 +248,7 @@ class PackageConfigEntry {
   Map<String, Object> toJson() => {
         'name': name,
         'rootUri': rootUri.toString(),
-        'packageUri': packageUri.toString(),
+        'packageUri': packageUri?.toString(),
         'languageVersion': languageVersion,
       }..addAll(additionalProperties ?? {});
 }
