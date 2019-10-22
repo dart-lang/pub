@@ -644,11 +644,15 @@ class Entrypoint {
         continue;
       }
 
-      // Try-catch FileException
-      final languageVersion = extractLanguageVersion(
-        cache.load(id).pubspec.sdkConstraints[sdk.identifier],
-      );
-      if (pkg.languageVersion != languageVersion) {
+      String languageVersion;
+      try {
+        languageVersion = extractLanguageVersion(
+          cache.load(id).pubspec.sdkConstraints[sdk.identifier],
+        );
+      } on FileException {
+        languageVersion = null;
+      }
+      if (languageVersion == null || pkg.languageVersion != languageVersion) {
         dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
             'changed since the pubspec.lock file was generated, please run "pub '
             'get" again.');
