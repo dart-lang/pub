@@ -5,12 +5,13 @@ dart:
   - dev
 
 dart_task:
-  - ./tool/test.sh test/deps_test.dart -n 'lists all dependencies in list form'
+  - test: test/deps_test.dart -n 'lists all dependencies in list form'
+  - test: test/deps_test.dart
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
-#before_script:
-#  - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
+before_script:
+  - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
 
 # Only building these branches means that we don't run two builds for each pull
 # request.
