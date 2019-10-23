@@ -462,10 +462,15 @@ class Pubspec {
           pubspecPath);
     }
 
-    return Pubspec.parse(readTextFile(pubspecPath), sources,
+    final p = Pubspec.parse(readTextFile(pubspecPath), sources,
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
         location: pubspecUri);
+    if (p.name == "myapp") {
+      print("Pubspec text: " + readTextFile(pubspecPath));
+      print("p.dependencies.keys: " + p.dependencies.keys.toList().join(', '));
+    }
+    return p;
   }
 
   Pubspec(this._name,
@@ -596,6 +601,9 @@ class Pubspec {
     }
 
     map.nodes.forEach((nameNode, specNode) {
+      if (this.name == "myapp") {
+        print("NODE: " + nameNode.value);
+      }
       var name = nameNode.value;
       var spec = specNode.value;
       if (fields['name'] != null && name == this.name) {

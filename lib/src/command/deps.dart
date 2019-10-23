@@ -126,6 +126,8 @@ class DepsCommand extends PubCommand {
   /// shown.
   void _outputList() {
     var root = entrypoint.root;
+    print('deps:');
+    print(root.dependencies.keys);
     _outputListSection("dependencies", root.dependencies.keys);
     if (_includeDev) {
       _outputListSection("dev dependencies", root.devDependencies.keys);

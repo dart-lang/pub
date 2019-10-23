@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
+import 'dart:io';
 
 main() {
   setUp(() async {
@@ -41,6 +42,8 @@ main() {
         "dependency_overrides": {"overridden": "2.0.0", "override_only": "any"}
       })
     ]).create();
+    print('Pubspec:');
+    print(File(d.sandbox + '/' + appPath + '/pubspec.yaml').readAsStringSync());
   });
 
   group("lists all dependencies", () {
