@@ -5,18 +5,12 @@ dart:
   - dev
 
 dart_task:
-  - test: --preset travis --total-shards 5 --shard-index 0
-  - test: --preset travis --total-shards 5 --shard-index 1
-  - test: --preset travis --total-shards 5 --shard-index 2
-  - test: --preset travis --total-shards 5 --shard-index 3
-  - test: --preset travis --total-shards 5 --shard-index 4
-  - dartfmt
-  - dartanalyzer
+  - ./tool/test.sh test/deps_test.dart -n 'lists all dependencies in list form'
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
-before_script:
-  - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
+#before_script:
+#  - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
 
 # Only building these branches means that we don't run two builds for each pull
 # request.
