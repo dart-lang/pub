@@ -81,7 +81,7 @@ main() {
       ]).create();
 
       await pubCommand(command,
-          error: RegExp(r"foo from path is incompatible with bar from\s+path"));
+          error: RegExp(r"bar from path is incompatible with foo from path"));
     });
 
     test('does not allow a dependency on itself', () async {
