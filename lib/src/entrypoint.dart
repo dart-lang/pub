@@ -178,6 +178,19 @@ class Entrypoint {
     _lockFile = _packageGraph.lockFile;
   }
 
+  /// Writes .packages and .dart_tool/package_config.json
+  void writePackagesFiles() async {
+    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    ensureDir(p.dirname(packageConfigFile));
+    writeTextFile(
+        packageConfigFile,
+        await lockFile.packageConfigFile(
+          cache,
+          entrypoint: root.name,
+          entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        ));
+  }
+
   /// Gets all dependencies of the [root] package.
   ///
   /// Performs version resolution according to [SolveType].
@@ -238,15 +251,7 @@ class Entrypoint {
     /// have to reload and reparse all the pubspecs.
     _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
-    ensureDir(p.dirname(packageConfigFile));
-    writeTextFile(
-        packageConfigFile,
-        await lockFile.packageConfigFile(
-          cache,
-          entrypoint: root.name,
-          entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
-        ));
+    writePackagesFiles();
 
     try {
       if (precompile) {
@@ -426,12 +431,8 @@ class Entrypoint {
 
     var packagesModified = File(packagesFile).lastModifiedSync();
     if (packagesModified.isBefore(lockFileModified)) {
-      if (_isPackagesFileUpToDate()) {
-        touch(packagesFile);
-      } else {
-        dataError('The pubspec.lock file has changed since the .packages file '
-            'was generated, please run "pub get" again.');
-      }
+      _checkPackagesFileUpToDate();
+      touch(packagesFile);
     } else if (touchedLockFile) {
       touch(packagesFile);
     }
@@ -439,13 +440,8 @@ class Entrypoint {
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
-      if (_isPackageConfigUpToDate()) {
-        touch(packageConfigFile);
-      } else {
-        dataError('The pubspec.lock file has changed since the '
-            '.dart_tool/package_config.json file '
-            'was generated, please run "pub get" again.');
-      }
+      _checkPackageConfigUpToDate();
+      touch(packageConfigFile);
     } else if (touchedLockFile) {
       touch(packageConfigFile);
     }
@@ -533,9 +529,10 @@ class Entrypoint {
   /// Determines [lockfile] is satisfied by the given [packagePathsMapping].
   ///
   /// The [packagePathsMapping] is a mapping from package names to paths where
-  /// the packages are located. This assumes the libraries are located under
-  /// `lib/` relative to the path given.
-  bool _isLockFileSatisfied(Map<String, String> packagePathsMapping) =>
+  /// the packages are located. (The library is located under
+  /// `lib/` relative to the path given).
+  bool _isPackagePathsMappingUptodateWithLockfile(
+          Map<String, String> packagePathsMapping) =>
       lockFile.packages.values.every((lockFileId) {
         // It's very unlikely that the lockfile is invalid here, but it's not
         // impossible—for example, the user may have a very old application
@@ -569,12 +566,17 @@ class Entrypoint {
         return true;
       });
 
-  /// Determines whether or not the `.packages` file is out of date with respect
+  /// Checks whether or not the `.packages` file is out of date with respect
   /// to the [lockfile].
   ///
-  /// This will be `false` if [lockfile] contains dependencies that  are not in
-  /// the `.packages` or that don't match what's in there.
-  bool _isPackagesFileUpToDate() {
+  /// This will throw a [DataError] if [lockfile] contains dependencies that
+  /// are not in the `.packages` or that don't match what's in there.
+  void _checkPackagesFileUpToDate() {
+    void outOfDate() {
+      dataError('The pubspec.lock file has changed since the .packages file '
+          'was generated, please run "pub get" again.');
+    }
+
     var packages = packages_file.parse(
         File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
 
@@ -584,7 +586,7 @@ class Entrypoint {
 
       // Pub only generates "file:" and relative URIs.
       if (packageUri.scheme != 'file' && packageUri.scheme.isNotEmpty) {
-        return false;
+        outOfDate();
       }
 
       // Get the dirname of the .packages path, since it's pointing to lib/.
@@ -592,19 +594,33 @@ class Entrypoint {
       packagePathsMapping[package] = packagePath;
     }
 
-    return _isLockFileSatisfied(packagePathsMapping);
+    if (!_isPackagePathsMappingUptodateWithLockfile(packagePathsMapping)) {
+      outOfDate();
+    }
   }
 
-  /// Determines whether or not the `.dart_tool/package_config.json` file is
+  /// Checks whether or not the `.dart_tool/package_config.json` file is
   /// out of date with respect to the lockfile.
   ///
-  /// This will be `false` if the [lockfile] contains dependencies that are not
-  /// in the `.dart_tool/package_config.json` or that don't match what's in
-  /// there.
+  /// This will throw a [DataError] if the [lockfile] contains dependencies that
+  /// are not in the `.dart_tool/package_config.json` or that don't match
+  /// what's in there.
   ///
   /// Throws [DataException], if `.dart_tool/package_config.json` is not
   /// up-to-date for some other reason.
-  bool _isPackageConfigUpToDate() {
+  void _checkPackageConfigUpToDate() {
+    void outOfDate() {
+      dataError('The pubspec.lock file has changed since the '
+          '.dart_tool/package_config.json file '
+          'was generated, please run "pub get" again.');
+    }
+
+    void badPackageConfig() {
+      dataError(
+          'The ".dart_tool/package_config.json" file is not recognized by '
+          '"pub" version, please run "pub get".');
+    }
+
     String packageConfigRaw;
     try {
       packageConfigRaw = readTextFile(packageConfigFile);
@@ -612,25 +628,30 @@ class Entrypoint {
       dataError(
           'The ".dart_tool/package_config.json" file does not exist, please run "pub get".');
     }
-    final cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+
+    PackageConfig cfg;
+    try {
+      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+    } on FormatException {
+      badPackageConfig();
+    }
     if (cfg.configVersion != 2 ||
         cfg.generator != 'pub' ||
         cfg.generatorVersion != sdk.version) {
-      dataError(
-          'The ".dart_tool/package_config.json" file was not generated by this "pub" version, please run "pub get".');
+      badPackageConfig();
     }
 
     final packagePathsMapping = <String, String>{};
     for (final pkg in cfg.packages) {
       // Pub always sets packageUri = lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
-        return false;
+        badPackageConfig();
       }
       packagePathsMapping[pkg.name] =
           root.path('.dart_tool', p.fromUri(pkg.rootUri));
     }
-    if (!_isLockFileSatisfied(packagePathsMapping)) {
-      return false;
+    if (!_isPackagePathsMappingUptodateWithLockfile(packagePathsMapping)) {
+      outOfDate();
     }
 
     for (final pkg in cfg.packages) {
@@ -658,7 +679,6 @@ class Entrypoint {
             'get" again.');
       }
     }
-    return true;
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.

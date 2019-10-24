@@ -205,6 +205,7 @@ class GlobalPackages {
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
+    // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
     final packagesFilePath = _getPackagesFilePath(dep.name);
     final packageConfigFilePath = _getPackageConfigFilePath(dep.name);
     writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
@@ -238,6 +239,7 @@ class GlobalPackages {
       final packagesFilePath = _getPackagesFilePath(packageName);
       final packageConfigFilePath = _getPackageConfigFilePath(packageName);
       if (!fileExists(packagesFilePath) || !fileExists(packageConfigFilePath)) {
+        // TODO(sigurdm): Use [entrypoint.writePackagesFiles] instead.
         // The `.packages` file may not already exist if the global executable
         // has a 1.6-style lock file instead.
         // Similarly, the `.dart_tool/package_config.json` may not exist if the
