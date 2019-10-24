@@ -526,7 +526,7 @@ class Entrypoint {
     });
   }
 
-  /// Determines [lockfile] is satisfied by the given [packagePathsMapping].
+  /// Determines [lockfile] agrees with the given [packagePathsMapping].
   ///
   /// The [packagePathsMapping] is a mapping from package names to paths where
   /// the packages are located. (The library is located under
