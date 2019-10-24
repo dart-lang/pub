@@ -49,8 +49,8 @@ class FlutterPluginValidator extends Validator {
     // SDKs older than 1.10.0, then this is going to be a problem.
     if (usesNewPluginFormat &&
         pubspec.sdkConstraints['flutter'] != null &&
-        pubspec.sdkConstraints['flutter'].allows(Version.parse('1.9.0'))) {
-      errors.add('pubspec.yaml allows Flutter SDK version 1.9.0, which does '
+        pubspec.sdkConstraints['flutter'].allows(Version.parse('1.9.999'))) {
+      errors.add('pubspec.yaml allows Flutter SDK version 1.9.x, which does '
           'not support the flutter.plugin.platforms key.\n'
           'Please consider increasing the Flutter SDK requirement to '
           '^1.10.0 (environment.sdk.flutter)');
