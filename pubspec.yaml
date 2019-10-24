@@ -25,7 +25,7 @@ dependencies:
   shelf: ^0.7.0
   source_span: ^1.4.0
   stack_trace: ^1.0.0
-  yaml: ^2.0.0
+  yaml: ^2.2.0
 
 dev_dependencies:
   build_runner: ^1.0.0

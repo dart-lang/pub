@@ -79,11 +79,11 @@ main() {
           myapp 0.0.0
 
           dependencies:
-          - from_path 1.2.3
           - normal 1.2.3
             - transitive any
             - circular_a any
           - overridden 2.0.0
+          - from_path 1.2.3
 
           dev dependencies:
           - unittest 1.2.3
@@ -184,11 +184,11 @@ main() {
           myapp 0.0.0
 
           dependencies:
-          - from_path 1.2.3
           - normal 1.2.3
             - transitive any
             - circular_a any
           - overridden 2.0.0
+          - from_path 1.2.3
 
           dependency overrides:
           - overridden 2.0.0
