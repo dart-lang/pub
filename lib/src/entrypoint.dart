@@ -179,7 +179,7 @@ class Entrypoint {
   }
 
   /// Writes .packages and .dart_tool/package_config.json
-  void writePackagesFiles() async {
+  Future<void> writePackagesFiles() async {
     writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
@@ -251,7 +251,7 @@ class Entrypoint {
     /// have to reload and reparse all the pubspecs.
     _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-    writePackagesFiles();
+    await writePackagesFiles();
 
     try {
       if (precompile) {
