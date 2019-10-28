@@ -18,7 +18,7 @@ import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
-import 'validator/flutter_plugin.dart';
+import 'validator/flutter_plugin_format.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
 import 'validator/pubspec.dart';
@@ -125,7 +125,7 @@ abstract class Validator {
       ChangelogValidator(entrypoint),
       SdkConstraintValidator(entrypoint),
       StrictDependenciesValidator(entrypoint),
-      FlutterPluginValidator(entrypoint),
+      FlutterPluginFormatValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
