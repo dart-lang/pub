@@ -141,5 +141,47 @@ main() {
       await d.dir(appPath, [d.pubspec(pkg)]).create();
       expectValidationError(flutterPluginFormat);
     });
+
+    test('is a flutter 1.8.0 plugin with new format', () async {
+      var pkg = packageMap("test_pkg", "1.0.0", {
+        "flutter": {"sdk": "flutter"},
+      }, {}, {
+        "sdk": ">=2.0.0 <3.0.0",
+        "flutter": ">=1.8.0 <2.0.0",
+      });
+      pkg['flutter'] = {
+        'plugin': {
+          'platforms': {
+            'ios': {
+              'classPrefix': 'FLT',
+              'pluginClass': 'SamplePlugin',
+            },
+          },
+        },
+      };
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+      expectValidationError(flutterPluginFormat);
+    });
+
+    test('is a flutter 1.9.999 plugin with new format', () async {
+      var pkg = packageMap("test_pkg", "1.0.0", {
+        "flutter": {"sdk": "flutter"},
+      }, {}, {
+        "sdk": ">=2.0.0 <3.0.0",
+        "flutter": ">=1.9.999 <2.0.0",
+      });
+      pkg['flutter'] = {
+        'plugin': {
+          'platforms': {
+            'ios': {
+              'classPrefix': 'FLT',
+              'pluginClass': 'SamplePlugin',
+            },
+          },
+        },
+      };
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+      expectValidationError(flutterPluginFormat);
+    });
   });
 }
