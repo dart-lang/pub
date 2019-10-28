@@ -30,8 +30,8 @@ main() {
 
     await d.dir(appPath, [
       d.appPubspec({
+        "bar": {"path": "../bar"},
         "foo": {"path": "../foo"},
-        "bar": {"path": "../bar"}
       })
     ]).create();
 

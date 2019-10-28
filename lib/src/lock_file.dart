@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
@@ -12,7 +13,9 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
+import 'package_config.dart';
 import 'package_name.dart';
+import 'sdk.dart' show sdk;
 import 'source_registry.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -228,6 +231,63 @@ class LockFile {
     var text = StringBuffer();
     packages_file.write(text, map, comment: header);
     return text.toString();
+  }
+
+  /// Returns the contents of the `.dart_tools/package_config` file generated
+  /// from this lockfile.
+  ///
+  /// This file is planned to eventually replace the `.packages` file.
+  ///
+  /// If [entrypoint] is passed, an accompanying [entrypointSdkConstraint]
+  /// should be given, these identifiy the current package in which this file is
+  /// written. Passing `null` as [entrypointSdkConstraint] is correct if the
+  /// current package has no SDK constraint.
+  Future<String> packageConfigFile(
+    SystemCache cache, {
+    String entrypoint,
+    VersionConstraint entrypointSdkConstraint,
+  }) async {
+    final entries = <PackageConfigEntry>[];
+    for (final name in ordered(packages.keys)) {
+      final id = packages[name];
+      final source = cache.source(id.source);
+      final rootPath = source.getDirectory(id);
+      Uri rootUri;
+      if (p.isRelative(rootPath)) {
+        // Relative paths are relative to the root project, we want them
+        // relative to the `.dart_tool/package_config.json` file.
+        rootUri = p.toUri(p.join('..', rootPath));
+      } else {
+        rootUri = p.toUri(rootPath);
+      }
+      final pubspec = await source.describe(id);
+      final sdkConstraint = pubspec.sdkConstraints[sdk.identifier];
+      entries.add(PackageConfigEntry(
+        name: name,
+        rootUri: rootUri,
+        packageUri: p.toUri('lib/'),
+        languageVersion: extractLanguageVersion(sdkConstraint),
+      ));
+    }
+
+    if (entrypoint != null) {
+      entries.add(PackageConfigEntry(
+        name: entrypoint,
+        rootUri: p.toUri('../'),
+        packageUri: p.toUri('lib/'),
+        languageVersion: extractLanguageVersion(entrypointSdkConstraint),
+      ));
+    }
+
+    final packageConfig = PackageConfig(
+      configVersion: 2,
+      packages: entries,
+      generated: DateTime.now(),
+      generator: 'pub',
+      generatorVersion: sdk.version,
+    );
+
+    return JsonEncoder.withIndent('  ').convert(packageConfig.toJson()) + '\n';
   }
 
   /// Returns the serialized YAML text of the lock file.

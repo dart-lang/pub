@@ -161,7 +161,8 @@ List<int> readBinaryFile(String file) {
 
 /// Creates [file] and writes [contents] to it.
 ///
-/// If [dontLogContents] is true, the contents of the file will never be logged.
+/// If [dontLogContents] is `true`, the contents of the file will never be
+/// logged.
 String writeTextFile(String file, String contents,
     {bool dontLogContents = false, Encoding encoding}) {
   encoding ??= utf8;
