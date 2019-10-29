@@ -20,7 +20,7 @@ main() {
   test('--force publishes if there are warnings', () async {
     var pkg =
         packageMap("test_pkg", "1.0.0", null, null, {'sdk': '>=1.8.0 <2.0.0'});
-    pkg["author"] = "Natalie Weizenbaum";
+    pkg["dependencies"] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     var server = await ShelfTestServer.create();
