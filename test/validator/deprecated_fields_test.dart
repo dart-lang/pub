@@ -41,4 +41,22 @@ main() {
 
     expectValidationWarning(deprecatedFields);
   });
+
+  test('should warn if pubspec has an author', () async {
+    await d.dir(appPath, [
+      d.pubspec({'author': 'Ronald <ronald@example.com>'})
+    ]).create();
+
+    expectValidationWarning(deprecatedFields);
+  });
+
+  test('should warn if pubspec has a list of authors', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'authors': ['Ronald <ronald@example.com>', 'Joe <joe@example.com>']
+      })
+    ]).create();
+
+    expectValidationWarning(deprecatedFields);
+  });
 }

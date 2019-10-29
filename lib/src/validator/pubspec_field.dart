@@ -13,7 +13,6 @@ class PubspecFieldValidator extends Validator {
   PubspecFieldValidator(Entrypoint entrypoint) : super(entrypoint);
 
   Future validate() {
-    _validateAuthors();
     _validateFieldIsString('description');
     _validateFieldIsString('homepage');
     _validateFieldUrl('homepage');
@@ -30,46 +29,6 @@ class PubspecFieldValidator extends Validator {
     }
 
     return Future.value();
-  }
-
-  /// Adds an error if the "author" or "authors" field doesn't exist or has the
-  /// wrong type.
-  void _validateAuthors() {
-    var pubspec = entrypoint.root.pubspec;
-    var author = pubspec.fields['author'];
-    var authors = pubspec.fields['authors'];
-    if (author == null && authors == null) {
-      errors.add('Your pubspec.yaml must have an "author" or "authors" field.');
-      return;
-    }
-
-    if (author != null && author is! String) {
-      errors.add('Your pubspec.yaml\'s "author" field must be a string, but it '
-          'was "$author".');
-      return;
-    }
-
-    if (authors != null &&
-        (authors is! List || authors.any((author) => author is! String))) {
-      errors.add('Your pubspec.yaml\'s "authors" field must be a list, but '
-          'it was "$authors".');
-      return;
-    }
-
-    authors ??= [author];
-
-    var hasName = RegExp(r"^ *[^< ]");
-    var hasEmail = RegExp(r"<[^>]+> *$");
-    for (var authorName in authors) {
-      if (!hasName.hasMatch(authorName)) {
-        warnings.add('Author "$authorName" in pubspec.yaml should have a '
-            'name.');
-      }
-      if (!hasEmail.hasMatch(authorName)) {
-        warnings.add('Author "$authorName" in pubspec.yaml should have an '
-            'email address\n(e.g. "name <email>").');
-      }
-    }
   }
 
   /// Adds an error if [field] doesn't exist or isn't a string.

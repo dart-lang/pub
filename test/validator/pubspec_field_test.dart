@@ -21,13 +21,6 @@ main() {
 
     test('looks normal', () => expectNoValidationError(pubspecField));
 
-    test('has "authors" instead of "author"', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["authors"] = [pkg.remove("author")];
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectNoValidationError(pubspecField);
-    });
-
     test('has an HTTPS homepage URL', () async {
       var pkg = packageMap("test_pkg", "1.0.0");
       pkg["homepage"] = "https://pub.dartlang.org";
@@ -64,14 +57,6 @@ main() {
       expectValidationError(pubspecField);
     });
 
-    test('is missing the "author" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg.remove("author");
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationError(pubspecField);
-    });
-
     test('has a non-string "homepage" field', () async {
       var pkg = packageMap("test_pkg", "1.0.0");
       pkg["homepage"] = 12;
@@ -86,72 +71,6 @@ main() {
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
-    });
-
-    test('has a non-string "author" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["author"] = 12;
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationError(pubspecField);
-    });
-
-    test('has a non-list "authors" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["authors"] = 12;
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationError(pubspecField);
-    });
-
-    test('has a non-string member of the "authors" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["authors"] = [12];
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationError(pubspecField);
-    });
-
-    test('has a single author without an email', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["author"] = "Natalie Weizenbaum";
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationWarning(pubspecField);
-    });
-
-    test('has one of several authors without an email', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg.remove("author");
-      pkg["authors"] = [
-        "Bob Nystrom <rnystrom@google.com>",
-        "Natalie Weizenbaum",
-        "Jenny Messerly <jmesserly@google.com>"
-      ];
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationWarning(pubspecField);
-    });
-
-    test('has a single author without a name', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["author"] = "<nweiz@google.com>";
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationWarning(pubspecField);
-    });
-
-    test('has one of several authors without a name', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg.remove("author");
-      pkg["authors"] = [
-        "Bob Nystrom <rnystrom@google.com>",
-        "<nweiz@google.com>",
-        "Jenny Messerly <jmesserly@google.com>"
-      ];
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
-
-      expectValidationWarning(pubspecField);
     });
 
     test('has a non-HTTP homepage URL', () async {

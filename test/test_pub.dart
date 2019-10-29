@@ -582,7 +582,6 @@ Map packageMap(
   var package = <String, dynamic>{
     "name": name,
     "version": version,
-    "author": "Natalie Weizenbaum <nweiz@google.com>",
     "homepage": "http://pub.dartlang.org",
     "description": "A package, I guess."
   };

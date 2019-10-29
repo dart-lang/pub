@@ -21,5 +21,13 @@ class DeprecatedFieldsValidator extends Validator {
       warnings.add('Your pubspec.yaml includes a "web" section which'
           ' is no longer used and may be removed.');
     }
+    if (entrypoint.root.pubspec.fields.containsKey('author')) {
+      warnings.add('Your pubspec.yaml includes an "author" section which'
+          ' is no longer used and may be removed.');
+    }
+    if (entrypoint.root.pubspec.fields.containsKey('authors')) {
+      warnings.add('Your pubspec.yaml includes an "authors" section which'
+          ' is no longer used and may be removed.');
+    }
   }
 }

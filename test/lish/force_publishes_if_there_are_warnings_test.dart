@@ -20,7 +20,7 @@ main() {
   test('--force publishes if there are warnings', () async {
     var pkg =
         packageMap("test_pkg", "1.0.0", null, null, {'sdk': '>=1.8.0 <2.0.0'});
-    pkg["author"] = "Natalie Weizenbaum";
+    pkg["dependencies"] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     var server = await ShelfTestServer.create();
@@ -41,9 +41,8 @@ main() {
     expect(
         pub.stderr,
         emitsLines(
-            '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
-            'address\n'
-            '  (e.g. "name <email>").'));
+            '* Your dependency on "foo" should have a version constraint.\n'
+            '  Without a constraint, you\'re promising to support all future versions of "foo".'));
     expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }
