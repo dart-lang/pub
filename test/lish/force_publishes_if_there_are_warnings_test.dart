@@ -41,9 +41,8 @@ main() {
     expect(
         pub.stderr,
         emitsLines(
-            '* Author "Natalie Weizenbaum" in pubspec.yaml should have an email '
-            'address\n'
-            '  (e.g. "name <email>").'));
+            '* Your dependency on "foo" should have a version constraint.\n'
+            '  Without a constraint, you\'re promising to support all future versions of "foo".'));
     expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }
