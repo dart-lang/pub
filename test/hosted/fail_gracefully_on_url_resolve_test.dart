@@ -22,7 +22,10 @@ void main() {
 
       await pubCommand(command,
           error: 'Could not resolve URL "http://pub.invalid".',
-          exitCode: exit_codes.UNAVAILABLE);
+          exitCode: exit_codes.UNAVAILABLE,
+          environment: {
+            'PUB_MAX_HTTP_RETRIES': '2',
+          });
     });
   });
 }

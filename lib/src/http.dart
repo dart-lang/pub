@@ -63,32 +63,7 @@ class _PubHttpClient extends http.BaseClient {
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
 
-    http.StreamedResponse streamedResponse;
-    try {
-      streamedResponse = await _inner.send(request);
-    } on SocketException catch (error, stackTraceOrNull) {
-      // Work around issue 23008.
-      var stackTrace = stackTraceOrNull ?? Chain.current();
-
-      if (error.osError == null) rethrow;
-
-      if (error.osError.errorCode == 8 ||
-          error.osError.errorCode == -2 ||
-          error.osError.errorCode == -5 ||
-          error.osError.errorCode == 11001 ||
-          error.osError.errorCode == 11004) {
-        fail('Could not resolve URL "${request.url.origin}".', error,
-            stackTrace);
-      } else if (error.osError.errorCode == -12276) {
-        fail(
-            'Unable to validate SSL certificate for '
-            '"${request.url.origin}".',
-            error,
-            stackTrace);
-      } else {
-        rethrow;
-      }
-    }
+    final streamedResponse = await _inner.send(request);
 
     _logResponse(streamedResponse);
 
@@ -192,7 +167,41 @@ class _ThrowingClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final streamedResponse = await _inner.send(request);
+    http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await _inner.send(request);
+    } on SocketException catch (error, stackTraceOrNull) {
+      // Work around issue 23008.
+      var stackTrace = stackTraceOrNull ?? Chain.current();
+
+      if (error.osError == null) rethrow;
+
+      // Handle error codes known to be related to DNS or SSL issues. While it
+      // is tempting to handle these error codes before retrying, saving time
+      // for the end-user, it is known that DNS lookups can fail intermittently
+      // in some cloud environments. Furthermore, since these error codes are
+      // platform-specific (undocumented) and essentially cargo-culted along
+      // skipping retries may lead to intermittent issues that could be fixed
+      // with a retry. Failing to retry intermittent issues is likely to cause
+      // customers to wrap pub in a retry loop which will not improve the
+      // end-user experience.
+      if (error.osError.errorCode == 8 ||
+          error.osError.errorCode == -2 ||
+          error.osError.errorCode == -5 ||
+          error.osError.errorCode == 11001 ||
+          error.osError.errorCode == 11004) {
+        fail('Could not resolve URL "${request.url.origin}".', error,
+            stackTrace);
+      } else if (error.osError.errorCode == -12276) {
+        fail(
+            'Unable to validate SSL certificate for '
+            '"${request.url.origin}".',
+            error,
+            stackTrace);
+      } else {
+        rethrow;
+      }
+    }
 
     var status = streamedResponse.statusCode;
     // 401 responses should be handled by the OAuth2 client. It's very
@@ -224,7 +233,10 @@ class _ThrowingClient extends http.BaseClient {
 final httpClient = ThrottleClient(
     16,
     _ThrowingClient(RetryClient(_pubClient,
-        retries: 5,
+        retries: math.max(
+          1, // Having less than 1 retry is **always** wrong.
+          int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+        ),
         when: (response) =>
             const [500, 502, 503, 504].contains(response.statusCode),
         whenError: (error, stackTrace) {
