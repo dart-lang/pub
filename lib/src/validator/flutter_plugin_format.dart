@@ -9,6 +9,9 @@ import 'package:pub_semver/pub_semver.dart';
 import '../entrypoint.dart';
 import '../validator.dart';
 
+const _pluginDocsUrl =
+    'https://flutter.dev/docs/development/packages-and-plugins/developing-packages#plugin';
+
 /// Validates that Flutter plugins doesn't use both new and old plugin format.
 ///
 /// Warns if using the old plugin registration format.
@@ -45,7 +48,8 @@ class FlutterPluginFormatValidator extends Validator {
     if (usesOldPluginFormat && usesNewPluginFormat) {
       errors.add('In pubspec.yaml the flutter.plugin.platforms key cannot be '
           'used in combination with the old '
-          'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys.');
+          'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys.\n\n'
+          'See $_pluginDocsUrl');
       return;
     }
 
@@ -62,7 +66,7 @@ class FlutterPluginFormatValidator extends Validator {
       errors.add('pubspec.yaml allows Flutter SDK version 1.9.x, which does '
           'not support the flutter.plugin.platforms key.\n'
           'Please consider increasing the Flutter SDK requirement to '
-          '^1.10.0 (environment.sdk.flutter)');
+          '^1.10.0 (environment.sdk.flutter)\n\nSee $_pluginDocsUrl');
       return;
     }
 
@@ -70,7 +74,7 @@ class FlutterPluginFormatValidator extends Validator {
       warnings.add('In pubspec.yaml the '
           'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys are '
           'deprecated. Consider using the flutter.plugin.platforms key '
-          'introduced in Flutter 1.10.0');
+          'introduced in Flutter 1.10.0\n\nSee $_pluginDocsUrl');
     }
   }
 }
