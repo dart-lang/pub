@@ -398,15 +398,16 @@ class Entrypoint {
     if (!entryExists(lockFilePath)) {
       dataError('No pubspec.lock file found, please run "pub get" first.');
     }
-
-    if (!entryExists(packagesFile)) {
-      dataError('No .packages file found, please run "pub get" first.');
-    }
-
     if (!entryExists(packageConfigFile)) {
       dataError(
-        'No .dart_tool/package_config.json file found, please run "pub get" first.',
+        'No .dart_tool/package_config.json file found, please run "pub get" '
+        'first.\n\n'
+        'Starting with Dart 2.7 this file configures the resolution of '
+        'package import URIs. Running "pub get" will generate this file.',
       );
+    }
+    if (!entryExists(packagesFile)) {
+      dataError('No .packages file found, please run "pub get" first.');
     }
 
     // Manually parse the lockfile because a full YAML parse is relatively slow
