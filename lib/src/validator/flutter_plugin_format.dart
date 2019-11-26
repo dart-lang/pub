@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/source/sdk.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
@@ -26,23 +27,10 @@ class FlutterPluginFormatValidator extends Validator {
 
   Future validate() async {
     final pubspec = entrypoint.root.pubspec;
-    // Compute the Flutter sdk constraint as either the explicit one, or an
-    // implicit `any` if we have a dependency from a `flutter` sdk source.
-    isFlutterSdkDependency(PackageRange packageRange) {
-      return sdks[packageRange.description] is FlutterSdk;
-    }
 
-    final flutterConstraint = pubspec.sdkConstraints['flutter'] ??
-        (pubspec.dependencies.values.any(isFlutterSdkDependency) ||
-                pubspec.devDependencies.values.any(isFlutterSdkDependency)
-            ? VersionConstraint.any
-            : null);
-
-    // Ignore all packages that do not have the `flutter.plugin` property, or
-    // which do not have an SDK constraint on Flutter.
+    // Ignore all packages that do not have the `flutter.plugin` property.
     if (pubspec.fields['flutter'] is! Map ||
-        pubspec.fields['flutter']['plugin'] is! Map ||
-        flutterConstraint == null) {
+        pubspec.fields['flutter']['plugin'] is! Map) {
       return;
     }
     final plugin = pubspec.fields['flutter']['plugin'] as Map;
@@ -70,14 +58,15 @@ class FlutterPluginFormatValidator extends Validator {
 
     // If the new plugin format is used, and the flutter SDK dependency allows
     // SDKs older than 1.10.0, then this is going to be a problem.
+    final flutterConstraint = pubspec.sdkConstraints['flutter'];
     if (usesNewPluginFormat &&
-        flutterConstraint != null &&
-        flutterConstraint.allowsAny(VersionRange(
-          min: Version.parse('0.0.0'),
-          max: Version.parse('1.10.0'),
-          includeMin: true,
-          includeMax: false,
-        ))) {
+        (flutterConstraint == null ||
+            flutterConstraint.allowsAny(VersionRange(
+              min: Version.parse('0.0.0'),
+              max: Version.parse('1.10.0'),
+              includeMin: true,
+              includeMax: false,
+            )))) {
       errors.add('pubspec.yaml allows Flutter SDK version 1.9.x, which does '
           'not support the flutter.plugin.platforms key.\n'
           'Please consider increasing the Flutter SDK requirement to '
