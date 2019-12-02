@@ -38,7 +38,7 @@ Future serveNoPackages() => servePackages((_) {});
 
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
-  DescriptorServer _inner;
+  final DescriptorServer _inner;
 
   /// The [d.DirectoryDescriptor] describing the server layout of
   /// `/api/packages` on the test server.
