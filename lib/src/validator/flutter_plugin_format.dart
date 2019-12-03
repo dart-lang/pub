@@ -4,13 +4,9 @@
 
 import 'dart:async';
 
-import 'package:pub/src/package_name.dart';
-import 'package:pub/src/source/sdk.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
-import '../sdk.dart';
-import '../sdk/flutter.dart';
 import '../validator.dart';
 
 const _pluginDocsUrl =
