@@ -188,4 +188,56 @@ main() {
             '{not json'));
     await pub.shouldExit(1);
   });
+
+  group('resolves urls relative to base URL', () {
+    test('adds an uploader', () async {
+      var server = await ShelfTestServer.create();
+      var baseUri = server.url.resolve('/sub/dir');
+
+      await d.credentialsFile(server, 'access token').create();
+
+      var pub = await startPub(
+          args: ['uploader', '--package', 'pkg', 'add', 'email'],
+          environment: {'PUB_HOSTED_URL': baseUri.toString()});
+
+      server.handler.expect('POST', '/sub/dir/api/packages/pkg/uploaders',
+          (request) {
+        return request.readAsString().then((body) {
+          expect(body, equals('email=email'));
+
+          return shelf.Response.ok(
+              jsonEncode({
+                'success': {'message': 'Good job!'}
+              }),
+              headers: {'content-type': 'application/json'});
+        });
+      });
+
+      expect(pub.stdout, emits('Good job!'));
+      await pub.shouldExit(exit_codes.SUCCESS);
+    });
+
+    test('removes an uploader', () async {
+      var server = await ShelfTestServer.create();
+      var baseUri = server.url.resolve('/sub/dir');
+
+      await d.credentialsFile(server, 'access token').create();
+
+      var pub = await startPub(
+          args: ['uploader', '--package', 'pkg', 'remove', 'email'],
+          environment: {'PUB_HOSTED_URL': baseUri.toString()});
+
+      server.handler.expect(
+          'DELETE', '/sub/dir/api/packages/pkg/uploaders/email', (request) {
+        return shelf.Response.ok(
+            jsonEncode({
+              'success': {'message': 'Good job!'}
+            }),
+            headers: {'content-type': 'application/json'});
+      });
+
+      expect(pub.stdout, emits('Good job!'));
+      await pub.shouldExit(exit_codes.SUCCESS);
+    });
+  });
 }
