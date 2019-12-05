@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
@@ -67,7 +68,8 @@ class LishCommand extends PubCommand {
         return log.progress('Uploading', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
-          var newUri = server.resolve("api/packages/versions/new");
+          var newUri = server.replace(
+              path: p.join(server.path, 'api/packages/versions/new'));
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
 

@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
@@ -12,7 +13,6 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import 'utils.dart';
 
 main() {
   setUp(d.validPackage.create);
@@ -21,11 +21,19 @@ main() {
     var server = await ShelfTestServer.create();
     var baseUri = server.url.resolve('/sub/dir');
     await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server);
+
+    Uri resolveUrl(String path) =>
+        baseUri.replace(path: p.join(baseUri.path, path));
+
+    // This code is from `startPublish`, but had to be adapted, as the
+    // original resolves the absolute path /token, whereas we are testing
+    // relative resolution.
+    // var tokenEndpoint = server.url.resolve('token').toString();
+    var args = ['lish'];
+    var pub = await startPub(
+        args: args, environment: {'PUB_HOSTED_URL': baseUri.toString()});
 
     await confirmPublish(pub);
-    handleUploadForm(server);
-    handleUpload(server);
 
     // Because we are testing that the URL for publishing is resolved relative to the
     // base URL, instead of using handleUploadForm(...), we expect that Pub sends
@@ -35,7 +43,7 @@ main() {
       expect(request.headers,
           containsPair('authorization', 'Bearer access token'));
       var body = {
-        'url': baseUri.resolve('upload').toString(),
+        'url': resolveUrl('upload').toString(),
         'fields': {'field1': 'value1', 'field2': 'value2'}
       };
       return shelf.Response.ok(jsonEncode(body),
@@ -55,7 +63,7 @@ main() {
           .read()
           .drain()
           .then((_) => server.url)
-          .then((url) => shelf.Response.found(baseUri.resolve('create')));
+          .then((url) => shelf.Response.found(resolveUrl('create')));
     });
 
     server.handler.expect('GET', '/sub/dir/create', (request) {
@@ -65,7 +73,6 @@ main() {
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Publishing test_pkg 1.0.0 to $baseUri'));
     expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
     await pub.shouldExit(exit_codes.SUCCESS);
   });
