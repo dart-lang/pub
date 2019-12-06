@@ -25,7 +25,7 @@ class LishCommand extends PubCommand {
   List<String> get aliases => const ["lish", "lush"];
   bool get takesArguments => false;
 
-  /// The URL of the server to which to upload the package.
+  /// The URL of the server to interact with.
   Uri get server {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
@@ -63,7 +63,7 @@ class LishCommand extends PubCommand {
   Future _publish(List<int> packageBytes) async {
     Uri cloudStorageUrl;
     try {
-      await oauth2.withClient(cache, (client) {
+      await oauth2.withClient(server, cache, (client) {
         return log.progress('Uploading', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.

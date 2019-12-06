@@ -15,6 +15,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
 import 'utils.dart';
+import 'source/hosted.dart';
 
 /// The pub client's OAuth2 identifier.
 final _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
@@ -65,19 +66,19 @@ final _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 Credentials _credentials;
 
 /// Delete the cached credentials, if they exist.
-void _clearCredentials(SystemCache cache) {
+void _clearCredentials(Uri server, SystemCache cache) {
   _credentials = null;
-  var credentialsFile = _credentialsFile(cache);
+  var credentialsFile = _credentialsFile(server, cache);
   if (entryExists(credentialsFile)) deleteEntry(credentialsFile);
 }
 
 /// Try to delete the cached credentials.
-void logout(SystemCache cache) {
-  var credentialsFile = _credentialsFile(cache);
-  if (entryExists(_credentialsFile(cache))) {
+void logout(Uri server, SystemCache cache) {
+  var credentialsFile = _credentialsFile(server, cache);
+  if (entryExists(_credentialsFile(server, cache))) {
     log.message("Logging out of pub.dartlang.org.");
     log.message("Deleting $credentialsFile");
-    _clearCredentials(cache);
+    _clearCredentials(server, cache);
   } else {
     log.message(
         "No existing credentials file $credentialsFile. Cannot log out.");
@@ -90,26 +91,27 @@ void logout(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
-  return _getClient(cache).then((client) {
+Future<T> withClient<T>(
+    Uri server, SystemCache cache, Future<T> fn(Client client)) {
+  return _getClient(server, cache).then((client) {
     return fn(client).whenComplete(() {
       client.close();
       // Be sure to save the credentials even when an error happens.
-      _saveCredentials(cache, client.credentials);
+      _saveCredentials(server, cache, client.credentials);
     });
   }).catchError((error) {
     if (error is ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
-      return withClient(cache, fn);
+      return withClient(server, cache, fn);
     } else if (error is AuthorizationException) {
       var message = "OAuth2 authorization failed";
       if (error.description != null) {
         message = "$message (${error.description})";
       }
       log.error("$message.");
-      _clearCredentials(cache);
-      return withClient(cache, fn);
+      _clearCredentials(server, cache);
+      return withClient(server, cache, fn);
     } else {
       throw error;
     }
@@ -120,8 +122,8 @@ Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) async {
-  var credentials = _loadCredentials(cache);
+Future<Client> _getClient(Uri server, SystemCache cache) async {
+  var credentials = _loadCredentials(server, cache);
   if (credentials == null) return await _authorize();
 
   var client = Client(credentials,
@@ -130,7 +132,7 @@ Future<Client> _getClient(SystemCache cache) async {
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
       httpClient: httpClient);
-  _saveCredentials(cache, client.credentials);
+  _saveCredentials(server, cache, client.credentials);
   return client;
 }
 
@@ -139,13 +141,13 @@ Future<Client> _getClient(SystemCache cache) async {
 ///
 /// If the credentials can't be loaded for any reason, the returned [Future]
 /// completes to `null`.
-Credentials _loadCredentials(SystemCache cache) {
+Credentials _loadCredentials(Uri server, SystemCache cache) {
   log.fine('Loading OAuth2 credentials.');
 
   try {
     if (_credentials != null) return _credentials;
 
-    var path = _credentialsFile(cache);
+    var path = _credentialsFile(server, cache);
     if (!fileExists(path)) return null;
 
     var credentials = Credentials.fromJson(readTextFile(path));
@@ -165,17 +167,22 @@ Credentials _loadCredentials(SystemCache cache) {
 
 /// Save the user's OAuth2 credentials to the in-memory cache and the
 /// filesystem.
-void _saveCredentials(SystemCache cache, Credentials credentials) {
+void _saveCredentials(Uri server, SystemCache cache, Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
-  var credentialsPath = _credentialsFile(cache);
+  var credentialsPath = _credentialsFile(server, cache);
   ensureDir(path.dirname(credentialsPath));
   writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
 }
 
-/// The path to the file in which the user's OAuth2 credentials are stored.
-String _credentialsFile(SystemCache cache) =>
-    path.join(cache.rootDir, 'credentials.json');
+/// The path to the file in which the user's OAuth2 credentials for connecting
+/// to [server] are stored.
+String _credentialsFile(Uri server, SystemCache cache) {
+  final serverFilePrefix = server.toString() == cache.sources.hosted.defaultUrl
+      ? ''
+      : '${urlToDirectory(server.toString())}_';
+  return path.join(cache.rootDir, '$serverFilePrefix.json');
+}
 
 /// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
 ///

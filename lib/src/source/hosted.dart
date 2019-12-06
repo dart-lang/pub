@@ -227,7 +227,7 @@ class BoundHostedSource extends CachedSource {
   /// package downloaded from that site.
   String getDirectory(PackageId id) {
     var parsed = source._parseDescription(id.description);
-    var dir = _urlToDirectory(parsed.last);
+    var dir = urlToDirectory(parsed.last);
     return p.join(systemCacheRoot, dir, "${parsed.first}-${id.version}");
   }
 
@@ -295,7 +295,7 @@ class BoundHostedSource extends CachedSource {
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
   List<Package> getCachedPackages() {
-    var cacheDir = p.join(systemCacheRoot, _urlToDirectory(source.defaultUrl));
+    var cacheDir = p.join(systemCacheRoot, urlToDirectory(source.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
     return listDir(cacheDir).map((entry) {
@@ -363,35 +363,6 @@ class BoundHostedSource extends CachedSource {
     }
   }
 
-  /// Given a URL, returns a "normalized" string to be used as a directory name
-  /// for packages downloaded from the server at that URL.
-  ///
-  /// This normalization strips off the scheme (which is presumed to be HTTP or
-  /// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
-  /// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
-  ///
-  /// This could cause an ambiguity since some characters get encoded as three
-  /// digits and others two. It's possible for one to be a prefix of the other.
-  /// In practice, the set of characters that are encoded don't happen to have
-  /// any collisions, so the encoding is reversible.
-  ///
-  /// This behavior is a bug, but is being preserved for compatibility.
-  String _urlToDirectory(String url) {
-    // Normalize all loopback URLs to "localhost".
-    url = url.replaceAllMapped(
-        RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"), (match) {
-      // Don't include the scheme for HTTPS URLs. This makes the directory names
-      // nice for the default and most recommended scheme. We also don't include
-      // it for localhost URLs, since they're always known to be HTTP.
-      var localhost = match[2] == null ? '' : 'localhost';
-      var scheme =
-          match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
-      return "$scheme$localhost";
-    });
-    return replace(
-        url, RegExp(r'[<>:"\\/|?*%]'), (match) => '%${match[0].codeUnitAt(0)}');
-  }
-
   /// Given a directory name in the system cache, returns the URL of the server
   /// whose packages it contains.
   ///
@@ -448,9 +419,9 @@ class _OfflineHostedSource extends BoundHostedSource {
     var parsed = source._parseDescription(ref.description);
     var server = parsed.last;
     log.io("Finding versions of ${ref.name} in "
-        "$systemCacheRoot/${_urlToDirectory(server)}");
+        "$systemCacheRoot/${urlToDirectory(server)}");
 
-    var dir = p.join(systemCacheRoot, _urlToDirectory(server));
+    var dir = p.join(systemCacheRoot, urlToDirectory(server));
 
     List<PackageId> versions;
     if (dirExists(dir)) {
@@ -488,4 +459,32 @@ class _OfflineHostedSource extends BoundHostedSource {
     throw PackageNotFoundException(
         "${id.name} ${id.version} is not available in your system cache");
   }
+}
+
+/// Given a URL, returns a "normalized" string to be used as a directory name
+/// for packages downloaded from the server at that URL.
+///
+/// This normalization strips off the scheme (which is presumed to be HTTP or
+/// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
+/// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
+///
+/// This could cause an ambiguity since some characters get encoded as three
+/// digits and others two. It's possible for one to be a prefix of the other.
+/// In practice, the set of characters that are encoded don't happen to have
+/// any collisions, so the encoding is reversible.
+///
+/// This behavior is a bug, but is being preserved for compatibility.
+String urlToDirectory(String url) {
+  // Normalize all loopback URLs to "localhost".
+  url = url.replaceAllMapped(
+      RegExp(r"^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?"), (match) {
+    // Don't include the scheme for HTTPS URLs. This makes the directory names
+    // nice for the default and most recommended scheme. We also don't include
+    // it for localhost URLs, since they're always known to be HTTP.
+    var localhost = match[2] == null ? '' : 'localhost';
+    var scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+    return "$scheme$localhost";
+  });
+  return replace(
+      url, RegExp(r'[<>:"\\/|?*%]'), (match) => '%${match[0].codeUnitAt(0)}');
 }

@@ -15,7 +15,23 @@ class LogoutCommand extends PubCommand {
 
   LogoutCommand();
 
+  /// The URL of the server to interact with.
+  Uri get server {
+    // An explicit argument takes precedence.
+    if (argResults.wasParsed('server')) {
+      return Uri.parse(argResults['server']);
+    }
+
+    // Otherwise, use the one specified in the pubspec (if any).
+    if (entrypoint?.root?.pubspec?.publishTo != null) {
+      return Uri.parse(entrypoint.root.pubspec.publishTo);
+    }
+
+    // Otherwise, use the default.
+    return Uri.parse(cache.sources.hosted.defaultUrl);
+  }
+
   Future run() async {
-    oauth2.logout(cache);
+    oauth2.logout(server, cache);
   }
 }
