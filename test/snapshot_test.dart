@@ -118,7 +118,8 @@ main() {
           ]);
         });
 
-        await pubUpgrade(output: contains("Precompiled foo:hello."));
+        await pubUpgrade(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('hello 2!'))
@@ -162,7 +163,8 @@ main() {
           ]);
         });
 
-        await pubUpgrade(output: contains("Precompiled foo:hello."));
+        await pubUpgrade(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('hello 2!'))
@@ -198,7 +200,8 @@ main() {
               [d.file("hello.dart", "void main() => print('Goodbye!');")])
         ]).commit();
 
-        await pubUpgrade(output: contains("Precompiled foo:hello."));
+        await pubUpgrade(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('Goodbye!'))

@@ -69,14 +69,13 @@ class RunCommand extends PubCommand {
         (package != entrypoint.root.name &&
             !entrypoint.packageGraph.isPackageMutable(package));
 
-    final executablePath = entrypoint.packageGraph.packages[package]
-        ?.path(p.join("bin", executable));
-
     var exitCode = await runExecutable(entrypoint, package, executable, args,
         checked: argResults['enable-asserts'] || argResults['checked'],
-        snapshotPath: useSnapshot ? snapshotPath : null,
-        recompile: () =>
-            entrypoint.precompileExecutable(package, executablePath));
+        snapshotPath: useSnapshot ? snapshotPath : null, recompile: () {
+      final executablePath = entrypoint.packageGraph.packages[package]
+          ?.path(p.join("bin", executable));
+      return entrypoint.precompileExecutable(package, executablePath);
+    });
     await flushThenExit(exitCode);
   }
 }
