@@ -26,10 +26,11 @@ main() {
       await d.appDir({"foo": "1.2.3"}).create();
 
       await pubGet(
+          args: ['--precompile'],
           output: allOf([
-        contains("Precompiled foo:hello."),
-        contains("Precompiled foo:goodbye.")
-      ]));
+            contains("Precompiled foo:hello."),
+            contains("Precompiled foo:goodbye.")
+          ]));
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
@@ -67,10 +68,11 @@ main() {
       await d.appDir({"foo": "1.2.3"}).create();
 
       await pubGet(
+          args: ['--precompile'],
           output: allOf([
-        contains("Precompiled foo:hello."),
-        contains("Precompiled foo:goodbye.")
-      ]));
+            contains("Precompiled foo:hello."),
+            contains("Precompiled foo:goodbye.")
+          ]));
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.file('sdk-version', '0.1.2+3\n'),
@@ -102,7 +104,8 @@ main() {
 
         await d.appDir({"foo": "any"}).create();
 
-        await pubGet(output: contains("Precompiled foo:hello."));
+        await pubGet(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('hello!'))
@@ -146,7 +149,8 @@ main() {
 
         await d.appDir({"foo": "any"}).create();
 
-        await pubGet(output: contains("Precompiled foo:hello."));
+        await pubGet(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('hello!'))
@@ -182,7 +186,8 @@ main() {
           "foo": {"git": "../foo.git"}
         }).create();
 
-        await pubGet(output: contains("Precompiled foo:hello."));
+        await pubGet(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
           d.file('hello.dart.snapshot.dart2', contains('Hello!'))
@@ -214,7 +219,8 @@ main() {
 
         await d.appDir({"foo": "5.6.7"}).create();
 
-        await pubGet(output: contains("Precompiled foo:hello."));
+        await pubGet(
+            args: ['--precompile'], output: contains("Precompiled foo:hello."));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo', [d.outOfDateSnapshot('hello.dart.snapshot.dart2')])
@@ -224,7 +230,7 @@ main() {
 
         // In the real world this would just print "hello!", but since we collect
         // all output we see the precompilation messages as well.
-        expect(process.stdout, emits("Precompiling executables..."));
+        expect(process.stdout, emits("Precompiling executable..."));
         expect(process.stdout, emitsThrough("hello!"));
         await process.shouldExit();
 

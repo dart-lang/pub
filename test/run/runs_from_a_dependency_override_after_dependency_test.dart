@@ -23,7 +23,7 @@ main() {
       d.appPubspec({"foo": null})
     ]).create();
 
-    await pubGet();
+    await pubGet(args: ['--precompile']);
 
     var pub = await pubRun(args: ["foo:bar"]);
     expect(pub.stdout, emits("foobar"));

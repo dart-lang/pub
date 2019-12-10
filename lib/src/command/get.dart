@@ -27,8 +27,9 @@ class GetCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        defaultsTo: true,
-        help: "Precompile executables in immediate dependencies.");
+        defaultsTo: false,
+        help: "Precompile executables in immediate dependencies.\n"
+            "If false executables will be precompiled on first run.");
 
     argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
