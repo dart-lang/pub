@@ -31,4 +31,4 @@ echo 'Building snapshot'
 
 # Run tests
 echo 'Running tests'
-pub run test -r expanded "$@"
+pub run test "$@"
