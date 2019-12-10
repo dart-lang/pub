@@ -72,8 +72,10 @@ class RunCommand extends PubCommand {
     var exitCode = await runExecutable(entrypoint, package, executable, args,
         checked: argResults['enable-asserts'] || argResults['checked'],
         snapshotPath: useSnapshot ? snapshotPath : null, recompile: () {
-      final executablePath = entrypoint.packageGraph.packages[package]
-          ?.path(p.join("bin", executable));
+      final pkg = entrypoint.packageGraph.packages[package];
+      // The recompile function will only be called when [package] exists.
+      assert(pkg != null);
+      final executablePath = pkg.path(p.join("bin", executable));
       return entrypoint.precompileExecutable(package, executablePath);
     });
     await flushThenExit(exitCode);
