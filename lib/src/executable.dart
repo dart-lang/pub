@@ -58,8 +58,10 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   entrypoint.migrateCache();
 
   // Unless the user overrides the verbosity, we want to filter out the
-  // normal pub output that may be shown when recompiling snapshots.
-  if (log.verbosity == log.Verbosity.NORMAL) {
+  // normal pub output that may be shown when recompiling snapshots if we are
+  // not attached to a terminal. This is to not pollute stdout when the output
+  // of `pub run` is piped somewhere.
+  if (log.verbosity == log.Verbosity.NORMAL && !stdout.hasTerminal) {
     log.verbosity = log.Verbosity.WARNING;
   }
 

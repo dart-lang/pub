@@ -213,7 +213,7 @@ class Entrypoint {
   Future acquireDependencies(SolveType type,
       {List<String> useLatest,
       bool dryRun = false,
-      bool precompile = true}) async {
+      bool precompile = false}) async {
     var result = await resolveVersions(type, cache, root,
         lockFile: lockFile, useLatest: useLatest);
 
@@ -294,18 +294,30 @@ class Entrypoint {
   }
 
   //// Precompiles [executables] to snapshots from the filesystem.
-  Future _precompileExecutables(Map<String, List<String>> executables) {
+  Future<void> _precompileExecutables(Map<String, List<String>> executables) {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
-      return waitAndPrintErrors(executables[package].map((path) {
-        var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
-        return dart.snapshot(
-            url, p.join(dir, p.basename(path) + '.snapshot.dart2'),
-            packagesFile: p.toUri(packagesFile),
-            name: '$package:${p.basenameWithoutExtension(path)}');
-      }));
+      return waitAndPrintErrors(executables[package]
+          .map((path) => _precompileExecutable(package, path)));
     }));
+  }
+
+  /// Precompiles executable .dart file at [path] to a snapshot.
+  Future<void> precompileExecutable(String package, String path) async {
+    return await log.progress("Precompiling executable", () async {
+      var dir = p.join(_snapshotPath, package);
+      ensureDir(dir);
+      return waitAndPrintErrors([_precompileExecutable(package, path)]);
+    });
+  }
+
+  Future<void> _precompileExecutable(String package, String path) async {
+    var dir = p.join(_snapshotPath, package);
+    var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
+    await dart.snapshot(url, p.join(dir, p.basename(path) + '.snapshot.dart2'),
+        packagesFile: p.toUri(packagesFile),
+        name: '$package:${p.basenameWithoutExtension(path)}');
   }
 
   /// Deletes outdated cached executable snapshots.

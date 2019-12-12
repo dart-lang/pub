@@ -56,10 +56,12 @@ main() {
       d.appPubspec({"foo": "any"})
     ]).create();
 
-    await pubGet(output: contains("Precompiled foo:script."));
+    await pubGet();
 
     var pub = await pubRun(args: ["foo:script"]);
 
+    expect(pub.stdout, emits('Precompiling executable...'));
+    expect(pub.stdout, emits('Precompiled foo:script.'));
     expect(pub.stdout, emits("null"));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, "myapp/.packages")).toString()));
