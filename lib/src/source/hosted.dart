@@ -177,12 +177,22 @@ class BoundHostedSource extends CachedSource {
 
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
-    final latestVersion = PackageId(ref.name, source,
-        Version.parse(doc['latest']['version'] as String), ref.description);
-    for (final packageRange
-        in result[latestVersion]?.dependencies?.values ?? []) {
-      retriever.prefetch(packageRange.toRef());
+    void prefetch() {
+      final latest = doc['latest'];
+      if (latest is! Map) return;
+      final latestVersionString = latest['version'];
+      if (latestVersionString is! String) return;
+
+      final latestVersionId = PackageId(ref.name, source,
+          Version.parse(latestVersionString as String), ref.description);
+
+      for (final packageRange
+          in result[latestVersionId]?.dependencies?.values ?? []) {
+        retriever.prefetch(packageRange.toRef());
+      }
     }
+
+    prefetch();
     return result;
   }
 
