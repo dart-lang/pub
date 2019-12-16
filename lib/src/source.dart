@@ -163,6 +163,7 @@ abstract class BoundSource {
     if (ref.source != source) {
       throw ArgumentError("Package $ref does not use source ${source.name}.");
     }
+
     return doGetVersions(ref);
   }
 
