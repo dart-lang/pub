@@ -149,10 +149,8 @@ class BoundHostedSource extends CachedSource {
   Retriever<PackageRef, Map<PackageId, Pubspec>> retriever;
 
   BoundHostedSource(this.source, this.systemCache) {
-    retriever = Retriever(
-        (url, retriever) =>
-            CancelableOperation.fromFuture(_getVersions(url, retriever)),
-        maxConcurrentOperations: 10);
+    retriever =
+        Retriever.nonCancelable(_getVersions, maxConcurrentOperations: 10);
   }
 
   Future<Map<PackageId, Pubspec>> _getVersions(

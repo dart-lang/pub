@@ -10,7 +10,10 @@ import "package:async/async.dart";
 
 /// Handles rate-limited scheduling of tasks.
 ///
-/// Designed to allow prefetching tasks that will likely be needed
+/// Tasks are named with a key of type [K] (should be useful as a Hash-key) and
+/// run with a supplied function producing a CancelableOperation.
+///
+/// Designed to allow prefetching of tasks that will likely be needed
 /// later with [prefetch].
 ///
 /// All current operations can be cancelled and future operations removed from
@@ -33,29 +36,43 @@ import "package:async/async.dart";
 /// final pubDevBody = await retriever.fetch(Uri.parse('https://pub.dev/'));
 /// ```
 class Retriever<K, V> {
-  final CancelableOperation<V> Function(K, Retriever) _get;
+  final CancelableOperation<V> Function(K, Retriever) _run;
+
+  /// The results of ongoing and finished computations.
   final Map<K, Completer<V>> _cache = <K, Completer<V>>{};
 
   /// Operations that are waiting to run.
   final Queue<K> _queue = Queue<K>();
 
+  /// Rate limits the downloads.
   final Pool _pool;
 
-  /// The active operations
+  /// The currently active operations.
   final Map<K, CancelableOperation<V>> _active = <K, CancelableOperation<V>>{};
-  bool started = false;
 
-  Retriever(this._get, {maxConcurrentOperations = 10})
-      : _pool = Pool(maxConcurrentOperations);
+  /// True when the processing loop is running.
+  bool _started = false;
+
+  Retriever(CancelableOperation<V> Function(K, Retriever) run,
+      {maxConcurrentOperations = 10})
+      : _run = run,
+        _pool = Pool(maxConcurrentOperations);
+
+  Retriever.nonCancelable(Future<V> Function(K, Retriever) run,
+      {maxConcurrentOperations = 10})
+      : this(
+            (key, retriever) =>
+                CancelableOperation.fromFuture(run(key, retriever)),
+            maxConcurrentOperations: maxConcurrentOperations);
 
   /// Starts running operations from the queue. Taking the first items first.
   void _process() async {
-    assert(!started);
-    started = true;
+    assert(!_started);
+    _started = true;
     while (_queue.isNotEmpty) {
       final resource = await _pool.request();
       // This checks if [stop] has been called while waiting for a resource.
-      if (!started) {
+      if (!_started) {
         resource.release();
         break;
       }
@@ -75,8 +92,8 @@ class Retriever<K, V> {
         continue;
       }
 
-      // Run operation task.
-      final operation = _get(task, this);
+      // Start running the operation for [task].
+      final operation = _run(task, this);
       _active[task] = operation;
       operation
           .then(completer.complete, onError: completer.completeError)
@@ -86,42 +103,42 @@ class Retriever<K, V> {
         _active.remove(task);
       });
     }
-    started = false;
+    _started = false;
   }
 
   /// Cancels all active computations, and clears the queue.
   void stop() {
-    // Stop the processing loop
-    started = false;
-    // Cancel all active operatios
+    // Stop the processing loop.
+    _started = false;
+    // Cancel all active operations.
     for (final operation in _active.values) {
       operation.cancel();
     }
-    // Do not process anymore.
+    // Do not process the rest of the queue.
     _queue.clear();
   }
 
   /// Puts [task] in the back of the work queue.
   ///
-  /// Tasl will be processed when there are free resources, and other already
+  /// Task will be processed when there are free resources, and other already
   /// queued tasks are done.
   void prefetch(K task) {
     _queue.addLast(task);
-    if (!started) _process();
+    if (!_started) _process();
   }
 
   /// Returns the result of running [task].
   ///
   /// If [task] is already done, the cached result will be returned.
   /// If [task] is not yet active, it will go to the front of the work queue
-  /// to be scheduled when there are free resources.
+  /// to be scheduled next when there are free resources.
   Future<V> fetch(K task) {
     final completer = _cache.putIfAbsent(task, () => Completer());
     if (!completer.isCompleted) {
-      // We don't worry about adding the same task twice.
+      // We allow adding the same task twice to the queue.
       // It will get dedupped by the [_process] loop.
       _queue.addFirst(task);
-      if (!started) _process();
+      if (!_started) _process();
     }
     return completer.future;
   }
