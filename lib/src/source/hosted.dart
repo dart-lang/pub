@@ -145,10 +145,10 @@ class BoundHostedSource extends CachedSource {
   final HostedSource source;
 
   final SystemCache systemCache;
-  Retriever<PackageRef, Map<PackageId, Pubspec>> retriever;
+  Retriever<PackageRef, Map<PackageId, Pubspec>> _retriever;
 
   BoundHostedSource(this.source, this.systemCache) {
-    retriever =
+    _retriever =
         Retriever.nonCancelable(_getVersions, maxConcurrentOperations: 10);
   }
 
@@ -199,7 +199,7 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    final versions = await retriever.fetch(ref);
+    final versions = await _retriever.fetch(ref);
     return versions.keys.toList();
   }
 
@@ -217,7 +217,7 @@ class BoundHostedSource extends CachedSource {
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
-    final versions = await retriever.fetch(id.toRef());
+    final versions = await _retriever.fetch(id.toRef());
     return versions[id];
   }
 
@@ -435,7 +435,7 @@ class BoundHostedSource extends CachedSource {
 
   // Stops the speculative prefetching of package versions.
   void stopPrefetching() {
-    retriever.stop();
+    _retriever.stop();
   }
 }
 
