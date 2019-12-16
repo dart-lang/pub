@@ -6,7 +6,6 @@ import 'dart:async';
 import "dart:convert";
 import 'dart:io' as io;
 
-import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/retriever.dart';
@@ -180,7 +179,8 @@ class BoundHostedSource extends CachedSource {
     // them later.
     final latestVersion = PackageId(ref.name, source,
         Version.parse(doc['latest']['version'] as String), ref.description);
-    for (final packageRange in result[latestVersion].dependencies.values) {
+    for (final packageRange
+        in result[latestVersion]?.dependencies?.values ?? []) {
       retriever.prefetch(packageRange.toRef());
     }
     return result;
