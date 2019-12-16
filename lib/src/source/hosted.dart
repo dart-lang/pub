@@ -6,8 +6,10 @@ import 'dart:async';
 import "dart:convert";
 import 'dart:io' as io;
 
+import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/retriever.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -144,35 +146,53 @@ class BoundHostedSource extends CachedSource {
   final HostedSource source;
 
   final SystemCache systemCache;
+  Retriever<PackageRef, Map<PackageId, Pubspec>> retriever;
 
-  BoundHostedSource(this.source, this.systemCache);
+  BoundHostedSource(this.source, this.systemCache) {
+    retriever = Retriever(
+        (url, retriever) =>
+            CancelableOperation.fromFuture(_getVersions(url, retriever)),
+        maxConcurrentOperations: 10);
+  }
 
-  /// Downloads a list of all versions of a package that are available from the
-  /// site.
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<Map<PackageId, Pubspec>> _getVersions(
+      PackageRef ref, Retriever retriever) async {
     var url = _makeUrl(
         ref.description, (server, package) => "$server/api/packages/$package");
-
     log.io("Get versions from $url.");
-
     String body;
     try {
+      // TODO(sigurdm): Implement cancellation of requests. This probably
+      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       body = await httpClient.read(url, headers: pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
-
-    var doc = jsonDecode(body);
-    return (doc['versions'] as List).map((map) {
+    final doc = jsonDecode(body);
+    final result = Map.fromEntries((doc['versions'] as List).map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description));
-      memoizePubspec(id, pubspec);
+      return MapEntry(id, pubspec);
+    }));
 
-      return id;
-    }).toList();
+    // Prefetch the dependencies of the latest version, we are likely to need
+    // them later.
+    final latestVersion = PackageId(ref.name, source,
+        Version.parse(doc['latest']['version'] as String), ref.description);
+    for (final packageRange in result[latestVersion].dependencies.values) {
+      retriever.prefetch(packageRange.toRef());
+    }
+    return result;
+  }
+
+  /// Downloads a list of all versions of a package that are available from the
+  /// site.
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    final versions = await retriever.fetch(ref);
+    return versions.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -186,26 +206,11 @@ class BoundHostedSource extends CachedSource {
     return Uri.parse(pattern(server, package));
   }
 
-  /// Downloads and parses the pubspec for a specific version of a package that
-  /// is available from the site.
+  /// Retrieves the pubspec for a specific version of a package that is
+  /// available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
-    // Request it from the server.
-    var url = _makeVersionUrl(
-        id,
-        (server, package, version) =>
-            "$server/api/packages/$package/versions/$version");
-
-    log.io("Describe package at $url.");
-    Map<String, dynamic> version;
-    try {
-      version = jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
-    } catch (error, stackTrace) {
-      var parsed = source._parseDescription(id.description);
-      _throwFriendlyError(error, stackTrace, id.name, parsed.last);
-    }
-
-    return Pubspec.fromMap(version['pubspec'], systemCache.sources,
-        expectedName: id.name, location: url);
+    final versions = await retriever.fetch(id.toRef());
+    return versions[id];
   }
 
   /// Downloads the package identified by [id] to the system cache.
@@ -420,17 +425,9 @@ class BoundHostedSource extends CachedSource {
   Uri _serverFor(description) =>
       Uri.parse(source._parseDescription(description).last);
 
-  /// Parses [id] into its server, package name, and version components, then
-  /// converts that to a Uri given [pattern].
-  ///
-  /// Ensures the package name is properly URL encoded.
-  Uri _makeVersionUrl(PackageId id,
-      String pattern(String server, String package, String version)) {
-    var parsed = source._parseDescription(id.description);
-    var server = parsed.last;
-    var package = Uri.encodeComponent(parsed.first);
-    var version = Uri.encodeComponent(id.version.toString());
-    return Uri.parse(pattern(server, package, version));
+  // Stops the speculative prefetching of package versions.
+  void stopPrefetching() {
+    retriever.stop();
   }
 }
 

@@ -64,6 +64,9 @@ repository.
 
 ### Inspect a specific version of a package
 
+**Deprecated** Use `<PUB_HOSTED_URL>/api/packages/<PACKAGE>` instead and find
+the relevant information in `response['versions']['<VERSION>']`.
+
 **GET** `<PUB_HOSTED_URL>/api/packages/<PACKAGE>/versions/<VERSION>`
 
 **Headers:**
@@ -99,4 +102,3 @@ MUST support redirects.
 
 The API for authenticating and publishing packages is not formalized yet, see
 [#1381](https://github.com/dart-lang/pub/issues/1381).
-

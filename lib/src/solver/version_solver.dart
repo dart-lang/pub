@@ -99,6 +99,7 @@ class VersionSolver {
 
       return await _result();
     } finally {
+      _systemCache.hosted.stopPrefetching();
       // Gather some solving metrics.
       log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
           'Tried ${_solution.attemptedSolutions} solutions.');
