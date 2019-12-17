@@ -138,4 +138,43 @@ main() {
     expect(() async => await retriever.fetch('b'), throwsA('errorB'));
     expect(() async => await retriever.fetch('c'), throwsA('errorC'));
   });
+
+  test('tasks run in the zone they where enqueued in', () async {
+    final completers = threeCompleters();
+    final isBeingProcessed = threeCompleters();
+
+    Future<String> f(String i) async {
+      isBeingProcessed[i].complete();
+      await completers[i].future;
+      return Zone.current['zoneValue'];
+    }
+
+    final retriever = Retriever(
+        (input, _) => CancelableOperation.fromFuture(f(input)),
+        maxConcurrentOperations: 2);
+
+    runZoned(() {
+      retriever.prefetch('a');
+    }, zoneValues: {'zoneValue': 'A'});
+    runZoned(() {
+      retriever.prefetch('b');
+    }, zoneValues: {'zoneValue': 'B'});
+    runZoned(() {
+      retriever.prefetch('c');
+    }, zoneValues: {'zoneValue': 'C'});
+
+    await runZoned(() async {
+      await isBeingProcessed['a'].future;
+      await isBeingProcessed['b'].future;
+      // This will put 'c' in front of the queue, but in a zone with zoneValue
+      // bound to S.
+      final f = expectLater(retriever.fetch('c'), completion('S'));
+      completers['a'].complete();
+      completers['b'].complete();
+      expect(await retriever.fetch('a'), 'A');
+      expect(await retriever.fetch('b'), 'B');
+      completers['c'].complete();
+      await f;
+    }, zoneValues: {'zoneValue': 'S'});
+  });
 }

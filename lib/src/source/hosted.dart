@@ -186,9 +186,13 @@ class BoundHostedSource extends CachedSource {
       final latestVersionId = PackageId(ref.name, source,
           Version.parse(latestVersionString as String), ref.description);
 
-      for (final packageRange
-          in result[latestVersionId]?.dependencies?.values ?? []) {
-        retriever.prefetch(packageRange.toRef());
+      final dependencies = result[latestVersionId]?.dependencies?.values ?? [];
+      if (dependencies.isNotEmpty) {
+        withDependencyType(DependencyType.none, () async {
+          for (final packageRange in dependencies) {
+            retriever.prefetch(packageRange.toRef());
+          }
+        });
       }
     }
 

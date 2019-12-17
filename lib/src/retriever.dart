@@ -20,7 +20,12 @@ import "package:async/async.dart";
 /// the queue with [stop].
 ///
 /// Errors thrown by tasks scheduled with [prefetch] will only be triggered when
-/// you await to the Future returned by [fetch].
+/// you await the Future returned by [fetch].
+///
+/// The operation will run in the [Zone] that the task was in when enqueued.
+/// If a task if [prefetch]ed and later [fetch]ed before the operation is
+/// started, the task will go in front of the queue with the zone of the [fetch]
+/// operation.
 ///
 /// Example:
 ///
@@ -42,7 +47,7 @@ class Retriever<K, V> {
   final Map<K, Completer<V>> _cache = <K, Completer<V>>{};
 
   /// Operations that are waiting to run.
-  final Queue<K> _queue = Queue<K>();
+  final Queue<_TaskWithZone<K>> _queue = Queue<_TaskWithZone<K>>();
 
   /// Rate limits the downloads.
   final Pool _pool;
@@ -77,7 +82,8 @@ class Retriever<K, V> {
         break;
       }
       // Take the highest priority task from the queue.
-      final task = _queue.removeFirst();
+      final taskWithZone = _queue.removeFirst();
+      final task = taskWithZone.task;
       // Create or get the completer to deliver the result to.
       final completer = _cache.putIfAbsent(
           task,
@@ -92,8 +98,9 @@ class Retriever<K, V> {
         continue;
       }
 
-      // Start running the operation for [task].
-      final operation = _run(task, this);
+      // Start running the operation for [task] in the original [Zone].
+      final zone = taskWithZone.zone;
+      final operation = zone.runBinary(_run, task, this);
       _active[task] = operation;
       operation
           .then(completer.complete, onError: completer.completeError)
@@ -123,7 +130,7 @@ class Retriever<K, V> {
   /// Task will be processed when there are free resources, and other already
   /// queued tasks are done.
   void prefetch(K task) {
-    _queue.addLast(task);
+    _queue.addLast(_TaskWithZone.current(task));
     if (!_started) _process();
   }
 
@@ -137,9 +144,16 @@ class Retriever<K, V> {
     if (!completer.isCompleted) {
       // We allow adding the same task twice to the queue.
       // It will get dedupped by the [_process] loop.
-      _queue.addFirst(task);
+      _queue.addFirst(_TaskWithZone.current(task));
       if (!_started) _process();
     }
     return completer.future;
   }
+}
+
+class _TaskWithZone<K> {
+  final K task;
+  final Zone zone;
+  _TaskWithZone(this.task, this.zone);
+  _TaskWithZone.current(K task) : this(task, Zone.current);
 }
