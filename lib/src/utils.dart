@@ -295,7 +295,7 @@ T maxAll<T extends Comparable>(Iterable<T> iter,
 /// Returns the element of [values] for which [orderBy] returns the smallest
 /// value.
 ///
-/// In case of ties we return the first such value.
+/// Returns the first such value in case of ties.
 ///
 /// Starts all the [orderBy] invocations in parallel.
 Future<S> minByAsync<S, T>(
