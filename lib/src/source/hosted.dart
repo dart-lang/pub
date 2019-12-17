@@ -218,7 +218,10 @@ class BoundHostedSource extends CachedSource {
   /// available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
     final versions = await _retriever.fetch(id.toRef());
-    return versions[id];
+    final url = _makeUrl(
+        id.description, (server, package) => "$server/api/packages/$package");
+    return versions[id] ??
+        (throw PackageNotFoundException("Could not find package $id at $url"));
   }
 
   /// Downloads the package identified by [id] to the system cache.
