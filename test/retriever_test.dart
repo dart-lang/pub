@@ -108,4 +108,34 @@ main() {
     // 'c' is done before we allow 'b' to finish processing
     expect(await cResult, 'C');
   });
+
+  test('Errors trigger when the fetched future is listened to', () async {
+    final completers = threeCompleters();
+    final isBeingProcessed = threeCompleters();
+
+    Future<String> f(String i) async {
+      isBeingProcessed[i].complete();
+      await completers[i].future;
+      return i.toUpperCase();
+    }
+
+    final retriever = Retriever(
+        (input, _) => CancelableOperation.fromFuture(f(input)),
+        maxConcurrentOperations: 2);
+
+    retriever.prefetch('a');
+    retriever.prefetch('b');
+    retriever.prefetch('c');
+    await isBeingProcessed['a'].future;
+    await isBeingProcessed['b'].future;
+    expect(isBeingProcessed['c'].isCompleted, isFalse);
+    completers['c'].future.catchError((_) {});
+    completers['c'].completeError('errorC');
+    completers['a'].completeError('errorA');
+    await isBeingProcessed['c'].future;
+    completers['b'].completeError('errorB');
+    expect(() async => await retriever.fetch('a'), throwsA('errorA'));
+    expect(() async => await retriever.fetch('b'), throwsA('errorB'));
+    expect(() async => await retriever.fetch('c'), throwsA('errorC'));
+  });
 }
