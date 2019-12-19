@@ -99,6 +99,8 @@ class VersionSolver {
 
       return await _result();
     } finally {
+      // Stop pre-fetching package/version listings from hosted repository, as
+      // resolution is done.
       _systemCache.hosted.stopPrefetching();
       // Gather some solving metrics.
       log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'

@@ -62,10 +62,9 @@ repository.
 }
 ```
 
-### Inspect a specific version of a package
+### (Deprecated) Inspect a specific version of a package
 
-**Deprecated** Use `<PUB_HOSTED_URL>/api/packages/<PACKAGE>` instead and find
-the relevant information in `response['versions']['<VERSION>']`.
+**Deprecated** as of Dart 2.8, use "List all versions of a package" instead.
 
 **GET** `<PUB_HOSTED_URL>/api/packages/<PACKAGE>/versions/<VERSION>`
 
