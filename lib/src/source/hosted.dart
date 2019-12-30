@@ -6,6 +6,7 @@ import 'dart:async';
 import "dart:convert";
 import 'dart:io' as io;
 
+import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/retriever.dart';
@@ -167,7 +168,8 @@ class BoundHostedSource extends CachedSource {
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
     final doc = jsonDecode(body);
-    final result = Map.fromEntries((doc['versions'] as List).map((map) {
+    final versions = doc['versions'] as List;
+    final result = Map.fromEntries(versions.map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
@@ -178,22 +180,21 @@ class BoundHostedSource extends CachedSource {
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
     void prefetch() {
-      final latest = doc['latest'];
-      if (latest is! Map) return;
-      final latestVersionString = latest['version'];
-      if (latestVersionString is! String) return;
+      final latestVersion = maxBy(
+          versions.map((entry) => Version.parse(entry['version'] as String)),
+          (e) => e);
 
-      final latestVersionId = PackageId(ref.name, source,
-          Version.parse(latestVersionString as String), ref.description);
+      final latestVersionId =
+          PackageId(ref.name, source, latestVersion, ref.description);
 
       final dependencies = result[latestVersionId]?.dependencies?.values ?? [];
-      if (dependencies.isNotEmpty) {
-        withDependencyType(DependencyType.none, () async {
-          for (final packageRange in dependencies) {
+      withDependencyType(DependencyType.none, () async {
+        for (final packageRange in dependencies) {
+          if (packageRange.source is BoundHostedSource) {
             retriever.prefetch(packageRange.toRef());
           }
-        });
-      }
+        }
+      });
     }
 
     if (Zone.current[#_prefetching] == true) {

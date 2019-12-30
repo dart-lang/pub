@@ -98,7 +98,7 @@ class VersionSolver {
           next = await _choosePackageVersion();
         }
 
-        return _result();
+        return await _result();
       });
     } finally {
       // Gather some solving metrics.
