@@ -196,7 +196,9 @@ class BoundHostedSource extends CachedSource {
       }
     }
 
-    prefetch();
+    if (Zone.current[#_prefetching] == true) {
+      prefetch();
+    }
     return result;
   }
 
@@ -440,9 +442,18 @@ class BoundHostedSource extends CachedSource {
   Uri _serverFor(description) =>
       Uri.parse(source._parseDescription(description).last);
 
-  // Stops the speculative prefetching of package versions.
-  void stopPrefetching() {
-    _retriever.stop();
+  /// Enables speculative prefetching of dependencies of packages queried with
+  /// [getVersions].
+  Future<T> withPrefetching<T>(Future<T> Function() callback) async {
+    T result;
+    try {
+      result = await runZoned(callback, zoneValues: {#_prefetching: true});
+    } finally {
+      // Stop pre-fetching package/version listings from hosted repository, as
+      // `callback` is done.
+      _retriever.stop();
+    }
+    return result;
   }
 }
 
