@@ -190,7 +190,7 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -198,7 +198,7 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     test('has an invalid URI', () async {
@@ -206,7 +206,7 @@ linter:
         import 'package:/';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     for (var port in ['import', 'export']) {
@@ -222,7 +222,7 @@ linter:
             ]),
           ]).create();
 
-          expectValidationWarning(strictDeps);
+          expectValidationError(strictDeps);
         });
       }
     }
@@ -255,7 +255,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:silly_monkey"', () async {
@@ -269,7 +269,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:/"', () async {
@@ -281,7 +281,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:/]"', () async {
@@ -293,7 +293,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
     });
   });

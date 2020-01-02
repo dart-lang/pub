@@ -60,7 +60,7 @@ class StrictDependenciesValidator extends Validator {
             (url.scheme == 'package' &&
                 (url.pathSegments.length < 2 ||
                     url.pathSegments.any((s) => s.isEmpty)))) {
-          warnings.add(
+          errors.add(
               _Usage.errorMessage('Invalid URL.', file, contents, directive));
         } else if (url.scheme == 'package') {
           yield _Usage(file, contents, directive, url);
@@ -86,9 +86,9 @@ class StrictDependenciesValidator extends Validator {
     for (var usage in _usagesBeneath(['lib', 'bin'])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
-          warnings.add(usage.dependencyMisplaceMessage());
+          errors.add(usage.dependencyMisplaceMessage());
         } else {
-          warnings.add(usage.dependencyMissingMessage());
+          errors.add(usage.dependencyMissingMessage());
         }
       }
     }
