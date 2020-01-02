@@ -180,9 +180,8 @@ class BoundHostedSource extends CachedSource {
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
     void prefetch() {
-      final latestVersion = maxBy(
-          versions.map((entry) => Version.parse(entry['version'] as String)),
-          (e) => e);
+      final latestVersion =
+          maxBy(result.keys.map((id) => id.version), (e) => e);
 
       final latestVersionId =
           PackageId(ref.name, source, latestVersion, ref.description);
