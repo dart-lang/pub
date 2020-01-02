@@ -7,19 +7,19 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("warns if the binstub directory is not on the path", () async {
+void main() {
+  test('warns if the binstub directory is not on the path', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {"some-dart-script": "script"}
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'some-dart-script': 'script'}
       }, contents: [
         d.dir(
-            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
       ]);
     });
 
     await runPub(
-        args: ["global", "activate", "foo"],
-        error: contains("is not on your path"));
+        args: ['global', 'activate', 'foo'],
+        error: contains('is not on your path'));
   });
 }

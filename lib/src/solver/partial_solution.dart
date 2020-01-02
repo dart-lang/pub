@@ -154,7 +154,7 @@ class PartialSolution {
       if (assignedTerm.satisfies(term)) return assignment;
     }
 
-    throw StateError("[BUG] $term is not satisfied.");
+    throw StateError('[BUG] $term is not satisfied.');
   }
 
   /// Returns whether [this] satisfies [other].

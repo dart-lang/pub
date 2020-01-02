@@ -23,10 +23,10 @@ Map getEnvironment() {
   // scripts in pub's repo that can act like those scripts but invoke pub from
   // source from the pub repo.
   var binDir = p.dirname(Platform.executable);
-  var separator = Platform.isWindows ? ";" : ":";
+  var separator = Platform.isWindows ? ';' : ':';
   var path = "${Platform.environment["PATH"]}$separator$binDir";
 
   var environment = getPubTestEnvironment();
-  environment["PATH"] = path;
+  environment['PATH'] = path;
   return environment;
 }

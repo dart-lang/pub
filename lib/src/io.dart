@@ -9,10 +9,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
-import 'package:path/path.dart' as path;
-import 'package:pool/pool.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
+import 'package:path/path.dart' as path;
+import 'package:pedantic/pedantic.dart';
+import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'error_group.dart';
@@ -153,9 +154,9 @@ String readTextFile(String file) => File(file).readAsStringSync(encoding: utf8);
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
-  log.io("Reading binary file $file.");
+  log.io('Reading binary file $file.');
   var contents = File(file).readAsBytesSync();
-  log.io("Read ${contents.length} bytes from $file.");
+  log.io('Read ${contents.length} bytes from $file.');
   return contents;
 }
 
@@ -168,9 +169,9 @@ String writeTextFile(String file, String contents,
   encoding ??= utf8;
 
   // Sanity check: don't spew a huge file.
-  log.io("Writing ${contents.length} characters to text file $file.");
+  log.io('Writing ${contents.length} characters to text file $file.');
   if (!dontLogContents && contents.length < 1024 * 1024) {
-    log.fine("Contents:\n$contents");
+    log.fine('Contents:\n$contents');
   }
 
   deleteIfLink(file);
@@ -184,12 +185,12 @@ String writeTextFile(String file, String contents,
 /// being written.
 Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
-  log.io("Creating $file from stream.");
+  log.io('Creating $file from stream.');
 
   return _descriptorPool.withResource(() async {
     deleteIfLink(file);
     await stream.pipe(File(file).openWrite());
-    log.fine("Created $file from stream.");
+    log.fine('Created $file from stream.');
     return file;
   });
 }
@@ -200,7 +201,7 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
 /// which is never what we want, so this delete the symlink first if necessary.
 void deleteIfLink(String file) {
   if (!linkExists(file)) return;
-  log.io("Deleting symlink at $file.");
+  log.io('Deleting symlink at $file.');
   Link(file).deleteSync();
 }
 
@@ -218,7 +219,7 @@ String ensureDir(String dir) {
 /// Returns the path of the created directory.
 String createTempDir(String base, String prefix) {
   var tempDir = Directory(base).createTempSync(prefix);
-  log.io("Created temp directory ${tempDir.path}");
+  log.io('Created temp directory ${tempDir.path}');
   return tempDir.path;
 }
 
@@ -228,7 +229,7 @@ String createTempDir(String base, String prefix) {
 /// Returns the path of the created directory.
 String _createSystemTempDir() {
   var tempDir = Directory.systemTemp.createTempSync('pub_');
-  log.io("Created temp directory ${tempDir.path}");
+  log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
 }
 
@@ -292,9 +293,9 @@ List<String> listDir(String dir,
               0, pathInDir.length - whitelistedBasename.length);
         }
 
-        if (pathInDir.contains("/.")) return false;
+        if (pathInDir.contains('/.')) return false;
         if (!Platform.isWindows) return true;
-        return !pathInDir.contains("\\.");
+        return !pathInDir.contains('\\.');
       })
       .map((entity) => entity.path)
       .toList();
@@ -313,7 +314,7 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 /// when we try to delete or move something while it's being scanned. To
 /// mitigate that, on Windows, this will retry the operation a few times if it
 /// fails.
-void _attempt(String description, void operation()) {
+void _attempt(String description, void Function() operation) {
   if (!Platform.isWindows) {
     operation();
     return;
@@ -321,15 +322,15 @@ void _attempt(String description, void operation()) {
 
   String getErrorReason(FileSystemException error) {
     if (error.osError.errorCode == 5) {
-      return "access was denied";
+      return 'access was denied';
     }
 
     if (error.osError.errorCode == 32) {
-      return "it was in use by another process";
+      return 'it was in use by another process';
     }
 
     if (error.osError.errorCode == 145) {
-      return "of dart-lang/sdk#25353";
+      return 'of dart-lang/sdk#25353';
     }
 
     return null;
@@ -343,8 +344,8 @@ void _attempt(String description, void operation()) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io("Failed to $description because $reason. "
-          "Retrying in 50ms.");
+      log.io('Failed to $description because $reason. '
+          'Retrying in 50ms.');
       sleep(Duration(milliseconds: 50));
     }
   }
@@ -355,9 +356,9 @@ void _attempt(String description, void operation()) {
     var reason = getErrorReason(error);
     if (reason == null) rethrow;
 
-    fail("Failed to $description because $reason.\n"
-        "This may be caused by a virus scanner or having a file\n"
-        "in the directory open in another application.");
+    fail('Failed to $description because $reason.\n'
+        'This may be caused by a virus scanner or having a file\n'
+        'in the directory open in another application.');
   }
 }
 
@@ -365,15 +366,15 @@ void _attempt(String description, void operation()) {
 ///
 /// If it's a directory, it will be deleted recursively.
 void deleteEntry(String path) {
-  _attempt("delete entry", () {
+  _attempt('delete entry', () {
     if (linkExists(path)) {
-      log.io("Deleting link $path.");
+      log.io('Deleting link $path.');
       Link(path).deleteSync();
     } else if (dirExists(path)) {
-      log.io("Deleting directory $path.");
+      log.io('Deleting directory $path.');
       Directory(path).deleteSync(recursive: true);
     } else if (fileExists(path)) {
-      log.io("Deleting file $path.");
+      log.io('Deleting file $path.');
       File(path).deleteSync();
     }
   });
@@ -385,8 +386,8 @@ void tryDeleteEntry(String path) {
   try {
     deleteEntry(path);
   } catch (error, stackTrace) {
-    log.fine("Failed to delete $path: $error\n"
-        "${Chain.forTrace(stackTrace)}");
+    log.fine('Failed to delete $path: $error\n'
+        '${Chain.forTrace(stackTrace)}');
   }
 }
 
@@ -401,8 +402,8 @@ void cleanDir(String dir) {
 
 /// Renames (i.e. moves) the directory [from] to [to].
 void renameDir(String from, String to) {
-  _attempt("rename directory", () {
-    log.io("Renaming directory $from to $to.");
+  _attempt('rename directory', () {
+    log.io('Renaming directory $from to $to.');
     try {
       Directory(from).renameSync(to);
     } on IOException {
@@ -438,7 +439,7 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
     }
   }
 
-  log.fine("Creating $symlink pointing to $target");
+  log.fine('Creating $symlink pointing to $target');
   Link(symlink).createSync(target);
 }
 
@@ -488,11 +489,11 @@ final bool _runningFromSdk =
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
-final _dartRepoRegExp = RegExp(r"/third_party/pkg/pub/("
-    r"bin/pub\.dart"
-    r"|"
-    r"test/.*_test\.dart"
-    r")$");
+final _dartRepoRegExp = RegExp(r'/third_party/pkg/pub/('
+    r'bin/pub\.dart'
+    r'|'
+    r'test/.*_test\.dart'
+    r')$');
 
 /// Whether pub is running from source in the Dart repo.
 ///
@@ -503,7 +504,7 @@ final bool runningFromDartRepo = (() {
     // When running from the test runner, we can't find our location via
     // Platform.script since the runner munges that. However, it guarantees that
     // the working directory is <repo>/third_party/pkg/pub.
-    return path.current.contains(RegExp(r"[/\\]third_party[/\\]pkg[/\\]pub$"));
+    return path.current.contains(RegExp(r'[/\\]third_party[/\\]pkg[/\\]pub$'));
   } else {
     return Platform.script.path.contains(_dartRepoRegExp);
   }
@@ -536,7 +537,7 @@ final String pubRoot = (() {
   if (runningAsTest) {
     // Running from "test/../some_test.dart".
     var components = path.split(script);
-    var testIndex = components.indexOf("test");
+    var testIndex = components.indexOf('test');
     if (testIndex == -1) throw StateError("Can't find pub's root.");
     return path.joinAll(components.take(testIndex));
   }
@@ -551,7 +552,7 @@ final String pubRoot = (() {
 /// in the Dart repo.
 final String dartRepoRoot = (() {
   if (!runningFromDartRepo) {
-    throw StateError("Not running from source in the Dart repo.");
+    throw StateError('Not running from source in the Dart repo.');
   }
 
   if (_runningAsTestRunner) {
@@ -581,11 +582,11 @@ final Stream<String> _stdinLines =
 Future<bool> confirm(String message) {
   log.fine('Showing confirm message: $message');
   if (runningFromTest) {
-    log.message("$message (y/n)?");
+    log.message('$message (y/n)?');
   } else {
-    stdout.write(log.format("$message (y/n)? "));
+    stdout.write(log.format('$message (y/n)? '));
   }
-  return streamFirst(_stdinLines).then(RegExp(r"^[yY]").hasMatch);
+  return streamFirst(_stdinLines).then(RegExp(r'^[yY]').hasMatch);
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
@@ -677,7 +678,7 @@ Future<_PubProcess> _startProcess(String executable, List<String> args,
         runInShell: runInShell);
 
     var process = _PubProcess(ioProcess);
-    process.exitCode.whenComplete(resource.release);
+    unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
 }
@@ -782,7 +783,14 @@ class _PubProcess {
 ///
 /// [fn] should have the same signature as [Process.start], except that the
 /// returned value may have any return type.
-_doProcess(Function fn, String executable, List<String> args,
+T _doProcess<T>(
+    T Function(String, List<String>,
+            {String workingDirectory,
+            Map<String, String> environment,
+            bool runInShell})
+        fn,
+    String executable,
+    List<String> args,
     {String workingDir,
     Map<String, String> environment,
     bool runInShell = false}) {
@@ -791,11 +799,11 @@ _doProcess(Function fn, String executable, List<String> args,
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
   if (Platform.isWindows && !executable.contains('\\')) {
-    args = ["/c", executable]..addAll(args);
-    executable = "cmd";
+    args = ['/c', executable, ...args];
+    executable = 'cmd';
   }
 
-  log.process(executable, args, workingDir == null ? '.' : workingDir);
+  log.process(executable, args, workingDir ?? '.');
 
   return fn(executable, args,
       workingDirectory: workingDir,
@@ -814,7 +822,7 @@ void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 ///
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
-Future<T> withTempDir<T>(Future<T> fn(String path)) async {
+Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
   var tempDir = _createSystemTempDir();
   try {
     return await fn(tempDir);
@@ -837,17 +845,17 @@ Future<HttpServer> bindServer(String host, int port) async {
 
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
-  log.fine("Extracting .tar.gz stream to $destination.");
+  log.fine('Extracting .tar.gz stream to $destination.');
   if (Platform.isWindows) {
     return await _extractTarGzWindows(stream, destination);
   }
 
   var args = [
-    "--extract",
-    "--gunzip",
-    "--no-same-owner",
-    "--no-same-permissions",
-    "--directory",
+    '--extract',
+    '--gunzip',
+    '--no-same-owner',
+    '--no-same-permissions',
+    '--directory',
     destination
   ];
   if (_noUnknownKeyword) {
@@ -855,25 +863,27 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     // that GNU tar (the default on Linux) is unable to understand. This will
     // cause GNU tar to emit a number of harmless but scary-looking warnings
     // which are silenced by this flag.
-    args.insert(0, "--warning=no-unknown-keyword");
+    args.insert(0, '--warning=no-unknown-keyword');
   }
 
-  var process = await _startProcess("tar", args);
+  var process = await _startProcess('tar', args);
 
   // Ignore errors on process.std{out,err}. They'll be passed to
   // process.exitCode, and we don't want them being top-levelled by
   // std{out,err}Sink.
-  _store(process.stdout.handleError((_) {}), stdout, closeSink: false);
-  _store(process.stderr.handleError((_) {}), stderr, closeSink: false);
+  unawaited(
+      _store(process.stdout.handleError((_) {}), stdout, closeSink: false));
+  unawaited(
+      _store(process.stderr.handleError((_) {}), stderr, closeSink: false));
   var results =
       await Future.wait([_store(stream, process.stdin), process.exitCode]);
 
   var exitCode = results[1];
   if (exitCode != exit_codes.SUCCESS) {
-    throw Exception("Failed to extract .tar.gz stream to $destination "
-        "(exit code $exitCode).");
+    throw Exception('Failed to extract .tar.gz stream to $destination '
+        '(exit code $exitCode).');
   }
-  log.fine("Extracted .tar.gz stream to $destination. Exit code $exitCode.");
+  log.fine('Extracted .tar.gz stream to $destination. Exit code $exitCode.');
 }
 
 /// Whether to include "--warning=no-unknown-keyword" when invoking tar.
@@ -883,14 +893,14 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
   if (!Platform.isLinux) return false;
-  var result = Process.runSync("tar", ["--version"]);
+  var result = Process.runSync('tar', ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
-        "Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}");
+        'Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
   }
 
   var match =
-      RegExp(r"^tar \(GNU tar\) (\d+).(\d+)\n").firstMatch(result.stdout);
+      RegExp(r'^tar \(GNU tar\) (\d+).(\d+)\n').firstMatch(result.stdout);
   if (match == null) return false;
 
   var major = int.parse(match[1]);
@@ -976,10 +986,10 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
       var args = [
         // ustar is the most recent tar format that's compatible across all
         // OSes.
-        "--format=ustar",
-        "--create",
-        "--gzip",
-        "--directory",
+        '--format=ustar',
+        '--create',
+        '--gzip',
+        '--directory',
         baseDir
       ];
 
@@ -988,15 +998,15 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
         // GNU tar flags.
         // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
 
-        args.addAll(["--files-from", "/dev/stdin"]);
-        stdin = contents.join("\n");
+        args.addAll(['--files-from', '/dev/stdin']);
+        stdin = contents.join('\n');
 
         /// Travis's version of tar apparently doesn't support passing unknown
         /// values to the --owner and --group flags for some reason.
         if (!isTravis) {
           // The ustar format doesn't support large UIDs. We don't care about
           // preserving ownership anyway, so we just set them to "pub".
-          args.addAll(["--owner=pub", "--group=pub"]);
+          args.addAll(['--owner=pub', '--group=pub']);
         }
       } else {
         // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
@@ -1004,18 +1014,18 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
         // flags for those.
         //
         // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
-        args.add("@/dev/stdin");
+        args.add('@/dev/stdin');
 
         // The ustar format doesn't support large UIDs. We don't care about
         // preserving ownership anyway, so we just set them to "pub".
         // TODO(rnystrom): This assumes contents does not contain any
         // directories.
-        var mtreeHeader = "#mtree\n/set uname=pub gname=pub type=file\n";
+        var mtreeHeader = '#mtree\n/set uname=pub gname=pub type=file\n';
 
         // We need a newline at the end, otherwise the last file would get
         // ignored.
         stdin =
-            mtreeHeader + contents.join("\n").replaceAll(' ', r'\040') + "\n";
+            mtreeHeader + contents.join('\n').replaceAll(' ', r'\040') + '\n';
       }
 
       // Setting the working directory should be unnecessary since we pass an
@@ -1023,7 +1033,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
       // input file, relative paths in the mtree file are interpreted as
       // relative to the current working directory, not the "--directory"
       // argument.
-      var process = await _startProcess("tar", args, workingDir: baseDir);
+      var process = await _startProcess('tar', args, workingDir: baseDir);
       process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
@@ -1035,12 +1045,12 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
 
     try {
       // Create the file containing the list of files to compress.
-      var contentsPath = path.join(tempDir, "files.txt");
-      writeTextFile(contentsPath, contents.join("\n"));
+      var contentsPath = path.join(tempDir, 'files.txt');
+      writeTextFile(contentsPath, contents.join('\n'));
 
       // Create the tar file.
-      var tarFile = path.join(tempDir, "intermediate.tar");
-      var args = ["a", "-w$baseDir", tarFile, "@$contentsPath"];
+      var tarFile = path.join(tempDir, 'intermediate.tar');
+      var args = ['a', '-w$baseDir', tarFile, '@$contentsPath'];
 
       // We're passing 'baseDir' both as '-w' and setting it as the working
       // directory explicitly here intentionally. The former ensures that the
@@ -1051,7 +1061,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
 
       // GZIP it. 7zip doesn't support doing both as a single operation.
       // Send the output to stdout.
-      args = ["a", "unused", "-tgzip", "-so", tarFile];
+      args = ['a', 'unused', '-tgzip', '-so', tarFile];
       return (await _startProcess(_pathTo7zip, args))
           .stdout
           .transform(onDoneTransformer(() => deleteEntry(tempDir)));
@@ -1075,7 +1085,7 @@ class PubProcessResult {
   // TODO(rnystrom): Remove this and change to returning one string.
   static List<String> _toLines(String output) {
     var lines = splitLines(output);
-    if (lines.isNotEmpty && lines.last == "") lines.removeLast();
+    if (lines.isNotEmpty && lines.last == '') lines.removeLast();
     return lines;
   }
 

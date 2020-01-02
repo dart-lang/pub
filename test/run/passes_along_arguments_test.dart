@@ -7,26 +7,26 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = """
+const SCRIPT = '''
 main(List<String> args) {
   print(args.join(" "));
 }
-""";
+''';
 
-main() {
+void main() {
   test('passes arguments to the spawned script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [d.file("args.dart", SCRIPT)])
+      d.dir('bin', [d.file('args.dart', SCRIPT)])
     ]).create();
 
     await pubGet();
 
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub = await pubRun(args: ["bin/args", "--verbose", "-m", "--", "help"]);
+    var pub = await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
 
-    expect(pub.stdout, emits("--verbose -m -- help"));
+    expect(pub.stdout, emits('--verbose -m -- help'));
     await pub.shouldExit();
   });
 }

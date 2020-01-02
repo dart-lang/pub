@@ -6,13 +6,16 @@ import 'barback.dart';
 
 /// Handles the `build` pub command.
 class BuildCommand extends BarbackCommand {
-  String get name => "build";
-  String get description => "Deprecated command";
+  @override
+  String get name => 'build';
+  @override
+  String get description => 'Deprecated command';
+  @override
   bool get hidden => true;
 
   BuildCommand() {
-    argParser.addOption("define", hide: true);
-    argParser.addOption("format", hide: true);
-    argParser.addOption("output", hide: true);
+    argParser.addOption('define', hide: true);
+    argParser.addOption('format', hide: true);
+    argParser.addOption('output', hide: true);
   }
 }

@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('with an existing credentials.json, deletes it.', () async {
     var server = await ShelfTestServer.create();
     await d

@@ -15,26 +15,27 @@ import '../validator.dart';
 class CompiledDartdocValidator extends Validator {
   CompiledDartdocValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     return Future.sync(() {
       for (var entry in entrypoint.root.listFiles(useGitIgnore: true)) {
-        if (path.basename(entry) != "nav.json") continue;
+        if (path.basename(entry) != 'nav.json') continue;
         var dir = path.dirname(entry);
 
         // Look for tell-tale Dartdoc output files all in the same directory.
         var files = [
           entry,
-          path.join(dir, "index.html"),
-          path.join(dir, "styles.css"),
-          path.join(dir, "dart-logo-small.png"),
-          path.join(dir, "client-live-nav.js")
+          path.join(dir, 'index.html'),
+          path.join(dir, 'styles.css'),
+          path.join(dir, 'dart-logo-small.png'),
+          path.join(dir, 'client-live-nav.js')
         ];
 
         if (files.every(fileExists)) {
-          warnings.add("Avoid putting generated documentation in "
-              "${path.relative(dir)}.\n"
-              "Generated documentation bloats the package with redundant "
-              "data.");
+          warnings.add('Avoid putting generated documentation in '
+              '${path.relative(dir)}.\n'
+              'Generated documentation bloats the package with redundant '
+              'data.');
         }
       }
     });

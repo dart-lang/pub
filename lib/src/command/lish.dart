@@ -18,11 +18,17 @@ import '../validator.dart';
 
 /// Handles the `lish` and `publish` pub commands.
 class LishCommand extends PubCommand {
-  String get name => "publish";
-  String get description => "Publish the current package to pub.dartlang.org.";
-  String get invocation => "pub publish [options]";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-lish";
-  List<String> get aliases => const ["lish", "lush"];
+  @override
+  String get name => 'publish';
+  @override
+  String get description => 'Publish the current package to pub.dartlang.org.';
+  @override
+  String get invocation => 'pub publish [options]';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
+  @override
+  List<String> get aliases => const ['lish', 'lush'];
+  @override
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
@@ -67,7 +73,7 @@ class LishCommand extends PubCommand {
         return log.progress('Uploading', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
-          var newUri = server.resolve("/api/packages/versions/new");
+          var newUri = server.resolve('/api/packages/versions/new');
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
 
@@ -109,6 +115,7 @@ class LishCommand extends PubCommand {
     }
   }
 
+  @override
   Future run() async {
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
@@ -145,7 +152,7 @@ class LishCommand extends PubCommand {
 
   /// Returns the value associated with [key] in [map]. Throws a user-friendly
   /// error if [map] doens't contain [key].
-  _expectField(Map map, String key, http.Response response) {
+  dynamic _expectField(Map map, String key, http.Response response) {
     if (map.containsKey(key)) return map[key];
     invalidServerResponse(response);
   }
@@ -158,10 +165,10 @@ class LishCommand extends PubCommand {
     var warnings = pair.last;
 
     if (errors.isNotEmpty) {
-      log.error("Sorry, your package is missing "
+      log.error('Sorry, your package is missing '
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
-          "https://dart.dev/tools/pub/cmd/pub-lish.\n");
+          'https://dart.dev/tools/pub/cmd/pub-lish.\n');
       return false;
     }
 
@@ -169,7 +176,7 @@ class LishCommand extends PubCommand {
 
     if (dryRun) {
       var s = warnings.length == 1 ? '' : 's';
-      log.warning("\nPackage has ${warnings.length} warning$s.");
+      log.warning('\nPackage has ${warnings.length} warning$s.');
       return warnings.isEmpty;
     }
 
@@ -177,12 +184,12 @@ class LishCommand extends PubCommand {
 
     if (warnings.isNotEmpty) {
       var s = warnings.length == 1 ? '' : 's';
-      message = "\nPackage has ${warnings.length} warning$s. Upload anyway";
+      message = '\nPackage has ${warnings.length} warning$s. Upload anyway';
     }
 
     var confirmed = await confirm(message);
     if (!confirmed) {
-      log.error("Package upload canceled.");
+      log.error('Package upload canceled.');
       return false;
     }
     return true;

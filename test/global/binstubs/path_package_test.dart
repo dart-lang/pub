@@ -7,23 +7,23 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("creates binstubs when activating a path package", () async {
-    await d.dir("foo", [
+void main() {
+  test('creates binstubs when activating a path package', () async {
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {"foo": null}
+        'name': 'foo',
+        'executables': {'foo': null}
       }),
-      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
     ]).create();
 
     await runPub(
-        args: ["global", "activate", "--source", "path", "../foo"],
-        output: contains("Installed executable foo."));
+        args: ['global', 'activate', '--source', 'path', '../foo'],
+        output: contains('Installed executable foo.'));
 
     await d.dir(cachePath, [
-      d.dir("bin",
-          [d.file(binStubName("foo"), contains("pub global run foo:foo"))])
+      d.dir('bin',
+          [d.file(binStubName('foo'), contains('pub global run foo:foo'))])
     ]).validate();
   });
 }

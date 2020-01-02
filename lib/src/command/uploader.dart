@@ -13,11 +13,15 @@ import '../oauth2.dart' as oauth2;
 
 /// Handles the `uploader` pub command.
 class UploaderCommand extends PubCommand {
-  String get name => "uploader";
+  @override
+  String get name => 'uploader';
+  @override
   String get description =>
-      "Manage uploaders for a package on pub.dartlang.org.";
-  String get invocation => "pub uploader [options] {add/remove} <email>";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-uploader";
+      'Manage uploaders for a package on pub.dartlang.org.';
+  @override
+  String get invocation => 'pub uploader [options] {add/remove} <email>';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-uploader';
 
   /// The URL of the package hosting server.
   Uri get server => Uri.parse(argResults['server']);
@@ -31,6 +35,7 @@ class UploaderCommand extends PubCommand {
             '(defaults to the current package)');
   }
 
+  @override
   Future run() {
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
@@ -61,15 +66,15 @@ class UploaderCommand extends PubCommand {
           var uploader = rest[0];
           return oauth2.withClient(cache, (client) {
             if (command == 'add') {
-              var url = server.resolve("/api/packages/"
-                  "${Uri.encodeComponent(package)}/uploaders");
+              var url = server.resolve('/api/packages/'
+                  '${Uri.encodeComponent(package)}/uploaders');
               return client
-                  .post(url, headers: pubApiHeaders, body: {"email": uploader});
+                  .post(url, headers: pubApiHeaders, body: {'email': uploader});
             } else {
               // command == 'remove'
-              var url = server.resolve("/api/packages/"
-                  "${Uri.encodeComponent(package)}/uploaders/"
-                  "${Uri.encodeComponent(uploader)}");
+              var url = server.resolve('/api/packages/'
+                  '${Uri.encodeComponent(package)}/uploaders/'
+                  '${Uri.encodeComponent(uploader)}');
               return client.delete(url, headers: pubApiHeaders);
             }
           });

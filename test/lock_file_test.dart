@@ -12,25 +12,31 @@ import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 class MockSource extends Source {
+  @override
   final String name = 'mock';
 
+  @override
   BoundSource bind(SystemCache cache) =>
-      throw UnsupportedError("Cannot download mock packages.");
+      throw UnsupportedError('Cannot download mock packages.');
 
+  @override
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
 
+  @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageId(name, this, version, description);
   }
 
+  @override
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
+  @override
   int hashDescription(description) => description.hashCode;
 
   String packageName(String description) {
@@ -39,7 +45,7 @@ class MockSource extends Source {
   }
 }
 
-main() {
+void main() {
   var sources = SourceRegistry();
   var mockSource = MockSource();
   sources.register(mockSource);
@@ -84,7 +90,7 @@ packages:
         expect(foo.description, equals('foo desc'));
       });
 
-      test("allows an unknown source", () {
+      test('allows an unknown source', () {
         var lockFile = LockFile.parse('''
 packages:
   foo:
@@ -96,14 +102,14 @@ packages:
         expect(foo.source, equals(sources['bad']));
       });
 
-      test("allows an empty dependency map", () {
+      test('allows an empty dependency map', () {
         var lockFile = LockFile.parse('''
 packages:
 ''', sources);
         expect(lockFile.packages, isEmpty);
       });
 
-      test("allows an old-style SDK constraint", () {
+      test('allows an old-style SDK constraint', () {
         var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
         expect(lockFile.sdkConstraints,
             containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')));
@@ -111,7 +117,7 @@ packages:
         expect(lockFile.sdkConstraints, isNot(contains('fuchsia')));
       });
 
-      test("allows new-style SDK constraints", () {
+      test('allows new-style SDK constraints', () {
         var lockFile = LockFile.parse('''
 sdks:
   dart: ">=1.2.3 <4.0.0"
@@ -126,7 +132,7 @@ sdks:
             containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
       });
 
-      test("throws if the top level is not a map", () {
+      test('throws if the top level is not a map', () {
         expect(() {
           LockFile.parse('''
 not a map
@@ -142,7 +148,7 @@ packages: not a map
         }, throwsFormatException);
       });
 
-      test("throws if the version is missing", () {
+      test('throws if the version is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -153,7 +159,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if the version is invalid", () {
+      test('throws if the version is invalid', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -165,7 +171,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if the source is missing", () {
+      test('throws if the source is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -176,7 +182,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if the description is missing", () {
+      test('throws if the description is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -187,7 +193,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if the description is invalid", () {
+      test('throws if the description is invalid', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -204,7 +210,7 @@ packages:
             () => LockFile.parse('sdk: 1.0', sources), throwsFormatException);
       });
 
-      test("throws if the old-style SDK constraint is invalid", () {
+      test('throws if the old-style SDK constraint is invalid', () {
         expect(
             () => LockFile.parse('sdk: oops', sources), throwsFormatException);
       });
@@ -222,7 +228,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if an sdk constraint is invalid", () {
+      test('throws if an sdk constraint is invalid', () {
         expect(() => LockFile.parse('sdks: {dart: oops}', sources),
             throwsFormatException);
         expect(() {
@@ -230,7 +236,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("ignores extra stuff in file", () {
+      test('ignores extra stuff in file', () {
         LockFile.parse('''
 extra:
   some: stuff

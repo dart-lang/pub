@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'test_pub.dart';
 
-main() {
+void main() {
   test('running pub with no command displays usage', () {
     return runPub(args: [], output: """
         Pub is a package manager for Dart.

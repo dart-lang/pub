@@ -7,17 +7,17 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('adds the latest stable version of the package', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.2.2");
-      builder.serve("foo", "1.2.3");
-      builder.serve("foo", "1.2.4-dev");
+      builder.serve('foo', '1.2.2');
+      builder.serve('foo', '1.2.3');
+      builder.serve('foo', '1.2.4-dev');
     });
 
     await runPub(
-        args: ["cache", "add", "foo"], output: 'Downloading foo 1.2.3...');
+        args: ['cache', 'add', 'foo'], output: 'Downloading foo 1.2.3...');
 
-    await d.cacheDir({"foo": "1.2.3"}).validate();
+    await d.cacheDir({'foo': '1.2.3'}).validate();
   });
 }

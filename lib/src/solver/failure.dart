@@ -20,6 +20,7 @@ class SolveFailure implements ApplicationException {
   /// it will have one term, which will be the root package.
   final Incompatibility incompatibility;
 
+  @override
   String get message => toString();
 
   /// Returns a [PackageNotFoundException] that (transitively) caused this
@@ -41,6 +42,7 @@ class SolveFailure implements ApplicationException {
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.
+  @override
   String toString() => _Writer(incompatibility).write();
 }
 
@@ -120,20 +122,20 @@ class _Writer {
       if (!sdkConstraintCauses.contains(sdk)) continue;
       if (!sdk.isAvailable) continue;
       wroteLine = true;
-      buffer.writeln("The current ${sdk.name} SDK version is ${sdk.version}.");
+      buffer.writeln('The current ${sdk.name} SDK version is ${sdk.version}.');
     }
     if (wroteLine) buffer.writeln();
 
     if (_root.cause is ConflictCause) {
       _visit(_root, const {});
     } else {
-      _write(_root, "Because $_root, version solving failed.");
+      _write(_root, 'Because $_root, version solving failed.');
     }
 
     // Only add line numbers if the derivation actually needs to refer to a line
     // by number.
     var padding =
-        _lineNumbers.isEmpty ? 0 : "(${_lineNumbers.values.last}) ".length;
+        _lineNumbers.isEmpty ? 0 : '(${_lineNumbers.values.last}) '.length;
 
     var lastWasEmpty = false;
     for (var line in _lines) {
@@ -148,12 +150,12 @@ class _Writer {
 
       var number = line.last;
       if (number != null) {
-        message = "($number)".padRight(padding) + message;
+        message = '($number)'.padRight(padding) + message;
       } else {
-        message = " " * padding + message;
+        message = ' ' * padding + message;
       }
 
-      buffer.writeln(wordWrap(message, prefix: " " * (padding + 2)));
+      buffer.writeln(wordWrap(message, prefix: ' ' * (padding + 2)));
     }
 
     // Iterate through [sdks] to ensure that SDKs versions are printed in a
@@ -213,10 +215,10 @@ class _Writer {
       if (conflictLine != null && otherLine != null) {
         _write(
             incompatibility,
-            "Because " +
+            'Because ' +
                 cause.conflict.andToString(
                     cause.other, detailsForCause, conflictLine, otherLine) +
-                ", $incompatibilityString.",
+                ', $incompatibilityString.',
             numbered: numbered);
       } else if (conflictLine != null || otherLine != null) {
         Incompatibility withLine;
@@ -235,8 +237,8 @@ class _Writer {
         _visit(withoutLine, detailsForCause);
         _write(
             incompatibility,
-            "$conjunction because ${withLine.toString(detailsForCause)} "
-            "($line), $incompatibilityString.",
+            '$conjunction because ${withLine.toString(detailsForCause)} '
+            '($line), $incompatibilityString.',
             numbered: numbered);
       } else {
         var singleLineConflict = _isSingleLine(cause.conflict.cause);
@@ -246,19 +248,19 @@ class _Writer {
           var second = singleLineOther ? cause.other : cause.conflict;
           _visit(first, detailsForCause);
           _visit(second, detailsForCause);
-          _write(incompatibility, "Thus, $incompatibilityString.",
+          _write(incompatibility, 'Thus, $incompatibilityString.',
               numbered: numbered);
         } else {
           _visit(cause.conflict, {}, conclusion: true);
-          _lines.add(Pair("", null));
+          _lines.add(Pair('', null));
 
           _visit(cause.other, detailsForCause);
           _write(
               incompatibility,
-              "$conjunction because "
-              "${cause.conflict.toString(detailsForCause)} "
-              "(${_lineNumbers[cause.conflict]}), "
-              "$incompatibilityString.",
+              '$conjunction because '
+              '${cause.conflict.toString(detailsForCause)} '
+              '(${_lineNumbers[cause.conflict]}), '
+              '$incompatibilityString.',
               numbered: numbered);
         }
       }
@@ -273,9 +275,9 @@ class _Writer {
       if (derivedLine != null) {
         _write(
             incompatibility,
-            "Because " +
+            'Because ' +
                 ext.andToString(derived, detailsForCause, null, derivedLine) +
-                ", $incompatibilityString.",
+                ', $incompatibilityString.',
             numbered: numbered);
       } else if (_isCollapsible(derived)) {
         var derivedCause = derived.cause as ConflictCause;
@@ -293,24 +295,24 @@ class _Writer {
         _visit(collapsedDerived, detailsForCause);
         _write(
             incompatibility,
-            "$conjunction because "
-            "${collapsedExt.andToString(ext, detailsForCause)}, "
-            "$incompatibilityString.",
+            '$conjunction because '
+            '${collapsedExt.andToString(ext, detailsForCause)}, '
+            '$incompatibilityString.',
             numbered: numbered);
       } else {
         _visit(derived, detailsForCause);
         _write(
             incompatibility,
-            "$conjunction because ${ext.toString(detailsForCause)}, "
-            "$incompatibilityString.",
+            '$conjunction because ${ext.toString(detailsForCause)}, '
+            '$incompatibilityString.',
             numbered: numbered);
       }
     } else {
       _write(
           incompatibility,
-          "Because "
-          "${cause.conflict.andToString(cause.other, detailsForCause)}, "
-          "$incompatibilityString.",
+          'Because '
+          '${cause.conflict.andToString(cause.other, detailsForCause)}, '
+          '$incompatibilityString.',
           numbered: numbered);
     }
   }

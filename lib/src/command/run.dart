@@ -14,10 +14,15 @@ import '../utils.dart';
 
 /// Handles the `run` pub command.
 class RunCommand extends PubCommand {
+  @override
   String get name => 'run';
+  @override
   String get description => 'Run an executable from a package.';
+  @override
   String get invocation => 'pub run <executable> [args...]';
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-run";
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-run';
+  @override
   bool get allowTrailingOptions => false;
 
   RunCommand() {
@@ -26,6 +31,7 @@ class RunCommand extends PubCommand {
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
+  @override
   Future run() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
@@ -75,7 +81,7 @@ class RunCommand extends PubCommand {
       final pkg = entrypoint.packageGraph.packages[package];
       // The recompile function will only be called when [package] exists.
       assert(pkg != null);
-      final executablePath = pkg.path(p.join("bin", executable));
+      final executablePath = pkg.path(p.join('bin', executable));
       return entrypoint.precompileExecutable(package, executablePath);
     });
     await flushThenExit(exitCode);

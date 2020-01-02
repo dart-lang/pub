@@ -21,10 +21,12 @@ class GitException implements ApplicationException {
   /// The standard error emitted by git.
   final String stderr;
 
+  @override
   String get message => 'Git error. Command: git ${args.join(" ")}\n$stderr';
 
   GitException(Iterable<String> args, this.stderr) : args = args.toList();
 
+  @override
   String toString() => message;
 }
 
@@ -38,15 +40,15 @@ bool get isInstalled => command != null;
 Future<List<String>> run(List<String> args,
     {String workingDir, Map<String, String> environment}) async {
   if (!isInstalled) {
-    fail("Cannot find a Git executable.\n"
-        "Please ensure Git is correctly installed.");
+    fail('Cannot find a Git executable.\n'
+        'Please ensure Git is correctly installed.');
   }
 
   log.muteProgress();
   try {
     var result = await runProcess(command, args,
         workingDir: workingDir, environment: environment);
-    if (!result.success) throw GitException(args, result.stderr.join("\n"));
+    if (!result.success) throw GitException(args, result.stderr.join('\n'));
     return result.stdout;
   } finally {
     log.unmuteProgress();
@@ -57,13 +59,13 @@ Future<List<String>> run(List<String> args,
 List<String> runSync(List<String> args,
     {String workingDir, Map<String, String> environment}) {
   if (!isInstalled) {
-    fail("Cannot find a Git executable.\n"
-        "Please ensure Git is correctly installed.");
+    fail('Cannot find a Git executable.\n'
+        'Please ensure Git is correctly installed.');
   }
 
   var result = runProcessSync(command, args,
       workingDir: workingDir, environment: environment);
-  if (!result.success) throw GitException(args, result.stderr.join("\n"));
+  if (!result.success) throw GitException(args, result.stderr.join('\n'));
   return result.stdout;
 }
 
@@ -72,10 +74,10 @@ List<String> runSync(List<String> args,
 String get command {
   if (_commandCache != null) return _commandCache;
 
-  if (_tryGitCommand("git")) {
-    _commandCache = "git";
-  } else if (_tryGitCommand("git.cmd")) {
-    _commandCache = "git.cmd";
+  if (_tryGitCommand('git')) {
+    _commandCache = 'git';
+  } else if (_tryGitCommand('git.cmd')) {
+    _commandCache = 'git.cmd';
   } else {
     return null;
   }
@@ -90,8 +92,8 @@ String _commandCache;
 bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
-    var result = runProcessSync(command, ["--version"]);
-    var regexp = RegExp("^git version");
+    var result = runProcessSync(command, ['--version']);
+    var regexp = RegExp('^git version');
     return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
   } on ProcessException catch (error, stackTrace) {
     var chain = Chain.forTrace(stackTrace);

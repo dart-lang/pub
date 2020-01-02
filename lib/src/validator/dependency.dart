@@ -18,10 +18,10 @@ import '../source/sdk.dart';
 import '../validator.dart';
 
 /// The first Dart SDK version that supported caret constraints.
-final _firstCaretVersion = Version.parse("1.8.0-dev.3.0");
+final _firstCaretVersion = Version.parse('1.8.0-dev.3.0');
 
 /// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = Version.parse("2.0.0-dev.1.0");
+final _firstGitPathVersion = Version.parse('2.0.0-dev.1.0');
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
@@ -33,6 +33,7 @@ class DependencyValidator extends Validator {
 
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() async {
     await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
@@ -54,7 +55,7 @@ class DependencyValidator extends Validator {
       // analyzer support for telling the user that a given import requires a
       // given feature. When we do this, verify that packages with features have
       // an SDK constraint that's at least >=2.0.0-dev.11.0.
-      errors.add("Packages with package features may not be published yet.");
+      errors.add('Packages with package features may not be published yet.');
     }
   }
 
@@ -62,7 +63,7 @@ class DependencyValidator extends Validator {
   Future _validateDependencies(Iterable<PackageRange> dependencies) async {
     for (var dependency in dependencies) {
       var constraint = dependency.constraint;
-      if (dependency.name == "flutter") {
+      if (dependency.name == 'flutter') {
         _warnAboutFlutterSdk(dependency);
       } else if (dependency.source is SdkSource) {
         _warnAboutSdkSource(dependency);
@@ -85,7 +86,7 @@ class DependencyValidator extends Validator {
           _warnAboutNoConstraintUpperBound(dependency);
         }
 
-        _hasCaretDep = _hasCaretDep || constraint.toString().startsWith("^");
+        _hasCaretDep = _hasCaretDep || constraint.toString().startsWith('^');
       }
 
       _hasFeatures = _hasFeatures || dependency.features.isNotEmpty;
@@ -137,7 +138,7 @@ class DependencyValidator extends Validator {
     String constraint;
     var primary = Version.primary(versions);
     if (primary != null) {
-      constraint = "^$primary";
+      constraint = '^$primary';
     } else {
       constraint = dep.constraint.toString();
       if (!dep.constraint.isAny && dep.constraint is! Version) {
@@ -169,7 +170,7 @@ class DependencyValidator extends Validator {
           'dependencies:\n'
           '  ${dep.name}: ^${locked.version}\n';
     }
-    warnings.add("$message\n"
+    warnings.add('$message\n'
         'Without a constraint, you\'re promising to support ${log.bold("all")} '
         'future versions of "${dep.name}".');
   }
@@ -195,7 +196,7 @@ class DependencyValidator extends Validator {
     if (locked != null) {
       String constraint;
       if (locked.version == (dep.constraint as VersionRange).max) {
-        constraint = "^${locked.version}";
+        constraint = '^${locked.version}';
       } else {
         constraint = '">=${locked.version} ${dep.constraint}"';
       }
@@ -205,7 +206,7 @@ class DependencyValidator extends Validator {
           'dependencies:\n'
           '  ${dep.name}: $constraint\n';
     }
-    warnings.add("$message\n"
+    warnings.add('$message\n'
         'Without a constraint, you\'re promising to support ${log.bold("all")} '
         'previous versions of "${dep.name}".');
   }
@@ -214,7 +215,7 @@ class DependencyValidator extends Validator {
   void _warnAboutNoConstraintUpperBound(PackageRange dep) {
     String constraint;
     if ((dep.constraint as VersionRange).includeMin) {
-      constraint = "^${(dep.constraint as VersionRange).min}";
+      constraint = '^${(dep.constraint as VersionRange).min}';
     } else {
       constraint = '"${dep.constraint} '
           '<${(dep.constraint as VersionRange).min.nextBreaking}"';

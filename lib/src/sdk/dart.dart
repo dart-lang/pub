@@ -14,9 +14,13 @@ import '../sdk.dart';
 ///
 /// Unlike other SDKs, this is always available.
 class DartSdk extends Sdk {
-  String get name => "Dart";
+  @override
+  String get name => 'Dart';
+  @override
   bool get isAvailable => true;
+  @override
   String get installMessage => null;
+  @override
   Version get firstPubVersion => Version.none;
 
   /// The path to the root directory of the SDK.
@@ -34,11 +38,12 @@ class DartSdk extends Sdk {
     return aboveExecutable;
   }();
 
+  @override
   final Version version = () {
     // Some of the pub integration tests require an SDK version number, but the
     // tests on the bots are not run from a built SDK so this lets us avoid
     // parsing the missing version file.
-    var sdkVersion = Platform.environment["_PUB_TEST_SDK_VERSION"] ??
+    var sdkVersion = Platform.environment['_PUB_TEST_SDK_VERSION'] ??
         Platform.version.split(' ').first;
 
     return Version.parse(sdkVersion);
@@ -46,5 +51,6 @@ class DartSdk extends Sdk {
 
   String get rootDirectory => _rootDirectory;
 
+  @override
   String packagePath(String name) => null;
 }

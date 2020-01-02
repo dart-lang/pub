@@ -86,11 +86,11 @@ abstract class Validator {
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
-    errors.add("$message\n"
-        "Make sure your SDK constraint excludes old versions:\n"
-        "\n"
-        "environment:\n"
-        "  sdk: \"$newSdkConstraint\"");
+    errors.add('$message\n'
+        'Make sure your SDK constraint excludes old versions:\n'
+        '\n'
+        'environment:\n'
+        '  sdk: \"$newSdkConstraint\"');
   }
 
   /// Returns whether [version1] and [version2] are pre-releases of the same version.
@@ -138,19 +138,19 @@ abstract class Validator {
           validators.expand((validator) => validator.warnings).toList();
 
       if (errors.isNotEmpty) {
-        log.error("Missing requirements:");
+        log.error('Missing requirements:');
         for (var error in errors) {
           log.error("* ${error.split('\n').join('\n  ')}");
         }
-        log.error("");
+        log.error('');
       }
 
       if (warnings.isNotEmpty) {
-        log.warning("Suggestions:");
+        log.warning('Suggestions:');
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");
         }
-        log.warning("");
+        log.warning('');
       }
 
       return Pair<List<String>, List<String>>(errors, warnings);

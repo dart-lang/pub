@@ -7,19 +7,19 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('changes in a path package are immediately reflected', () async {
-    await d.dir("foo", [
-      d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    await d.file("foo/bin/foo.dart", "main() => print('changed');").create();
+    await d.file('foo/bin/foo.dart', "main() => print('changed');").create();
 
-    var pub = await pubRun(global: true, args: ["foo"]);
-    expect(pub.stdout, emits("changed"));
+    var pub = await pubRun(global: true, args: ['foo']);
+    expect(pub.stdout, emits('changed'));
     await pub.shouldExit();
   });
 }

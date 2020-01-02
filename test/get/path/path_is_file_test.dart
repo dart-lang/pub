@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('path dependency when path is a file', () async {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
@@ -19,7 +19,7 @@ main() {
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": dummyPath}
+        'foo': {'path': dummyPath}
       })
     ]).create();
 

@@ -8,11 +8,15 @@ import '../sdk.dart';
 
 /// Handles the `version` pub command.
 class VersionCommand extends PubCommand {
-  String get name => "version";
-  String get description => "Print pub version.";
-  String get invocation => "pub version";
+  @override
+  String get name => 'version';
+  @override
+  String get description => 'Print pub version.';
+  @override
+  String get invocation => 'pub version';
 
+  @override
   void run() {
-    log.message("Pub ${sdk.version}");
+    log.message('Pub ${sdk.version}');
   }
 }

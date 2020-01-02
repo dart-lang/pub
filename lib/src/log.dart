@@ -72,32 +72,33 @@ class Level {
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
-  static const ERROR = Level._("ERR ");
+  static const ERROR = Level._('ERR ');
 
   /// Something unexpected happened, but the program was able to continue,
   /// though possibly in a degraded fashion.
-  static const WARNING = Level._("WARN");
+  static const WARNING = Level._('WARN');
 
   /// A message intended specifically to be shown to the user.
-  static const MESSAGE = Level._("MSG ");
+  static const MESSAGE = Level._('MSG ');
 
   /// Some interaction with the external world occurred, such as a network
   /// operation, process spawning, or file IO.
-  static const IO = Level._("IO  ");
+  static const IO = Level._('IO  ');
 
   /// Incremental output during pub's version constraint solver.
-  static const SOLVER = Level._("SLVR");
+  static const SOLVER = Level._('SLVR');
 
   /// Fine-grained and verbose additional information.
   ///
   /// Used to provide program state context for other logs (such as what pub
   /// was doing when an IO operation occurred) or just more detail for an
   /// operation.
-  static const FINE = Level._("FINE");
+  static const FINE = Level._('FINE');
 
   const Level._(this.name);
   final String name;
 
+  @override
   String toString() => name;
 }
 
@@ -107,7 +108,7 @@ typedef _LogFn = Function(_Entry entry);
 /// displayed.
 class Verbosity {
   /// Silence all logging.
-  static const NONE = Verbosity._("none", {
+  static const NONE = Verbosity._('none', {
     Level.ERROR: null,
     Level.WARNING: null,
     Level.MESSAGE: null,
@@ -117,7 +118,7 @@ class Verbosity {
   });
 
   /// Shows only errors.
-  static const ERROR = Verbosity._("error", {
+  static const ERROR = Verbosity._('error', {
     Level.ERROR: _logToStderr,
     Level.WARNING: null,
     Level.MESSAGE: null,
@@ -127,7 +128,7 @@ class Verbosity {
   });
 
   /// Shows only errors and warnings.
-  static const WARNING = Verbosity._("warning", {
+  static const WARNING = Verbosity._('warning', {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: null,
@@ -137,7 +138,7 @@ class Verbosity {
   });
 
   /// The default verbosity which shows errors, warnings, and messages.
-  static const NORMAL = Verbosity._("normal", {
+  static const NORMAL = Verbosity._('normal', {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
@@ -147,7 +148,7 @@ class Verbosity {
   });
 
   /// Shows errors, warnings, messages, and IO event logs.
-  static const IO = Verbosity._("io", {
+  static const IO = Verbosity._('io', {
     Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
@@ -157,7 +158,7 @@ class Verbosity {
   });
 
   /// Shows errors, warnings, messages, and version solver logs.
-  static const SOLVER = Verbosity._("solver", {
+  static const SOLVER = Verbosity._('solver', {
     Level.ERROR: _logToStderr,
     Level.WARNING: _logToStderr,
     Level.MESSAGE: _logToStdout,
@@ -167,7 +168,7 @@ class Verbosity {
   });
 
   /// Shows all logs.
-  static const ALL = Verbosity._("all", {
+  static const ALL = Verbosity._('all', {
     Level.ERROR: _logToStderrWithLabel,
     Level.WARNING: _logToStderrWithLabel,
     Level.MESSAGE: _logToStdoutWithLabel,
@@ -183,6 +184,7 @@ class Verbosity {
   /// Returns whether or not logs at [level] will be printed.
   bool isLevelVisible(Level level) => _loggers[level] != null;
 
+  @override
   String toString() => name;
 }
 
@@ -201,7 +203,7 @@ class _Entry {
 void error(message, [error, StackTrace trace]) {
   message ??= '';
   if (error != null) {
-    message = message.isEmpty ? "$error" : "$message: $error";
+    message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.ERROR, message);
@@ -230,7 +232,7 @@ void write(Level level, message) {
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
-  if (lines.isNotEmpty && lines.last == "") {
+  if (lines.isNotEmpty && lines.last == '') {
     lines.removeLast();
   }
 
@@ -248,8 +250,8 @@ final _capitalizedAnsiEscape = RegExp(r'\u001b\[\d+(;\d+)?M');
 String format(String string) {
   if (sparkle) {
     string = string.replaceAllMapped(RegExp(r'.'), (match) {
-      var char = "${choose(_allColors)}${match[0]}$_noColor";
-      return (withPrejudice || random.nextBool()) ? char : "$_bold$char$_none";
+      var char = '${choose(_allColors)}${match[0]}$_noColor';
+      return (withPrejudice || random.nextBool()) ? char : '$_bold$char$_none';
     });
   }
 
@@ -260,7 +262,7 @@ String format(String string) {
         _capitalizedAnsiEscape, (match) => match[0].toLowerCase());
 
     // Don't use [bold] because it's disabled under [withPrejudice].
-    string = "$_bold$string$_none";
+    string = '$_bold$string$_none';
   }
 
   return string;
@@ -271,20 +273,20 @@ String format(String string) {
 void process(
     String executable, List<String> arguments, String workingDirectory) {
   io("Spawning \"$executable ${arguments.join(' ')}\" in "
-      "${p.absolute(workingDirectory)}");
+      '${p.absolute(workingDirectory)}');
 }
 
 /// Logs the results of running [executable].
 void processResult(String executable, PubProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
   var buffer = StringBuffer();
-  buffer.writeln("Finished $executable. Exit code ${result.exitCode}.");
+  buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
-  dumpOutput(String name, List<String> output) {
+  void dumpOutput(String name, List<String> output) {
     if (output.isEmpty) {
-      buffer.writeln("Nothing output on $name.");
+      buffer.writeln('Nothing output on $name.');
     } else {
-      buffer.writeln("$name:");
+      buffer.writeln('$name:');
       var numLines = 0;
       for (var line in output) {
         if (++numLines > 1000) {
@@ -293,13 +295,13 @@ void processResult(String executable, PubProcessResult result) {
           break;
         }
 
-        buffer.writeln("| $line");
+        buffer.writeln('| $line');
       }
     }
   }
 
-  dumpOutput("stdout", result.stdout);
-  dumpOutput("stderr", result.stderr);
+  dumpOutput('stdout', result.stdout);
+  dumpOutput('stderr', result.stderr);
 
   io(buffer.toString().trim());
 }
@@ -317,7 +319,7 @@ void exception(exception, [StackTrace trace]) {
   } else {
     error(getErrorMessage(exception));
   }
-  fine("Exception type: ${exception.runtimeType}");
+  fine('Exception type: ${exception.runtimeType}');
 
   if (json.enabled) {
     if (exception is UsageException) {
@@ -335,9 +337,9 @@ void exception(exception, [StackTrace trace]) {
   }
 
   if (exception is WrappedException && exception.innerError != null) {
-    var message = "Wrapped exception: ${exception.innerError}";
+    var message = 'Wrapped exception: ${exception.innerError}';
     if (exception.innerChain != null) {
-      message = "$message\n${exception.innerChain}";
+      message = '$message\n${exception.innerChain}';
     }
     fine(message);
   }
@@ -369,7 +371,7 @@ void dumpTranscript() {
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.FINE].
-Future<T> progress<T>(String message, Future<T> callback(),
+Future<T> progress<T>(String message, Future<T> Function() callback,
     {bool fine = false}) {
   _stopProgress();
 
@@ -416,7 +418,7 @@ void unmuteProgress() {
 ///
 /// This is disabled under [withPrejudice] since all text is bold with
 /// prejudice.
-String bold(text) => (withPrejudice || sparkle) ? "$text" : "$_bold$text$_none";
+String bold(text) => (withPrejudice || sparkle) ? '$text' : '$_bold$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to make it gray when on a platform
 /// that supports that.
@@ -426,9 +428,9 @@ String bold(text) => (withPrejudice || sparkle) ? "$text" : "$_bold$text$_none";
 /// The gray marker also enables bold, so it needs to be handled specially with
 /// [withPrejudice] to avoid disabling bolding entirely.
 String gray(text) {
-  if (sparkle) return "$text";
-  if (withPrejudice) return "$_gray$text$_noColor";
-  return "$_gray$text$_none";
+  if (sparkle) return '$text';
+  if (withPrejudice) return '$_gray$text$_noColor';
+  return '$_gray$text$_none';
 }
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
@@ -535,23 +537,23 @@ class _JsonLogger {
   ///
   /// Always prints to stdout.
   void error(error, [stackTrace]) {
-    var errorJson = {"error": error.toString()};
+    var errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {
-      errorJson["stackTrace"] = Chain.forTrace(stackTrace).toString();
+      errorJson['stackTrace'] = Chain.forTrace(stackTrace).toString();
     }
 
     // If the error came from a file, include the path.
     if (error is SourceSpanException && error.span.sourceUrl != null) {
       // Normalize paths and make them absolute for backwards compatibility with
       // the protocol used by the analyzer.
-      errorJson["path"] =
+      errorJson['path'] =
           p.normalize(p.absolute(p.fromUri(error.span.sourceUrl)));
     }
 
     if (error is FileException) {
-      errorJson["path"] = p.normalize(p.absolute(error.path));
+      errorJson['path'] = p.normalize(p.absolute(error.path));
     }
 
     message(errorJson);

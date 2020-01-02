@@ -45,7 +45,7 @@ class PubCommandRunner extends CommandRunner {
   /// expected to happen when unit tests invoke code inside pub without going
   /// through a command.)
   static String get command {
-    if (_options == null) return "";
+    if (_options == null) return '';
 
     var list = <String>[];
     for (var command = _options.command;
@@ -53,16 +53,17 @@ class PubCommandRunner extends CommandRunner {
         command = command.command) {
       list.add(command.name);
     }
-    return list.join(" ");
+    return list.join(' ');
   }
 
   /// The top-level options parsed by the command runner.
   static ArgResults _options;
 
+  @override
   String get usageFooter =>
-      "See https://dart.dev/tools/pub/cmd for detailed documentation.";
+      'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
-  PubCommandRunner() : super("pub", "Pub is a package manager for Dart.") {
+  PubCommandRunner() : super('pub', 'Pub is a package manager for Dart.') {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
@@ -109,6 +110,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(VersionCommand());
   }
 
+  @override
   Future run(Iterable<String> args) async {
     try {
       _options = super.parse(args);
@@ -119,6 +121,7 @@ class PubCommandRunner extends CommandRunner {
     await runCommand(_options);
   }
 
+  @override
   Future runCommand(ArgResults topLevelResults) async {
     log.withPrejudice = topLevelResults['with-prejudice'];
     log.sparkle = topLevelResults['sparkle'];
@@ -183,7 +186,7 @@ class PubCommandRunner extends CommandRunner {
         // Escape the argument for users to copy-paste in bash.
         // Wrap with single quotation, and use '\'' to insert single quote, as
         // long as we have no spaces this doesn't create a new argument.
-        protectArgument(String x) =>
+        String protectArgument(String x) =>
             RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
                 ? "'${x.replaceAll("'", r"'\''")}'"
                 : x;
@@ -200,6 +203,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     }
   }
 
+  @override
   void printUsage() {
     log.message(usage);
   }
@@ -221,7 +225,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     String actualRev;
     try {
       actualRev =
-          git.runSync(["rev-parse", "HEAD"], workingDir: pubRoot).single;
+          git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;
     } on git.GitException catch (_) {
       // When building for Debian, pub isn't checked out via git.
       return;
@@ -229,9 +233,9 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 
     if (depsRev == actualRev) return;
     log.warning("${log.yellow('Warning:')} the revision of pub in DEPS is "
-        "${log.bold(depsRev)},\n"
-        "but ${log.bold(actualRev)} is checked out in "
-        "${p.relative(pubRoot)}.\n\n");
+        '${log.bold(depsRev)},\n'
+        'but ${log.bold(actualRev)} is checked out in '
+        '${p.relative(pubRoot)}.\n\n');
   }
 
   /// Returns the appropriate exit code for [exception], falling back on 1 if no

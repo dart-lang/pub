@@ -10,35 +10,35 @@ import 'package:pub/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
-  test("--dry-run shows report but does not apply changes", () async {
+void main() {
+  test('--dry-run shows report but does not apply changes', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0");
-      builder.serve("foo", "2.0.0");
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
     });
 
     // Create the first lockfile.
-    await d.appDir({"foo": "2.0.0"}).create();
+    await d.appDir({'foo': '2.0.0'}).create();
 
     await pubGet();
 
     // Change the pubspec.
-    await d.appDir({"foo": "any"}).create();
+    await d.appDir({'foo': 'any'}).create();
 
     // Also delete the "packages" directory.
-    deleteEntry(path.join(d.sandbox, appPath, "packages"));
+    deleteEntry(path.join(d.sandbox, appPath, 'packages'));
 
     // Do the dry run.
     await pubDowngrade(
-        args: ["--dry-run"],
+        args: ['--dry-run'],
         output: allOf(
-            [contains("< foo 1.0.0"), contains("Would change 1 dependency.")]));
+            [contains('< foo 1.0.0'), contains('Would change 1 dependency.')]));
 
     await d.dir(appPath, [
       // The lockfile should be unmodified.
-      d.file("pubspec.lock", contains("2.0.0")),
+      d.file('pubspec.lock', contains('2.0.0')),
       // The "packages" directory should not have been regenerated.
-      d.nothing("packages")
+      d.nothing('packages')
     ]).validate();
   });
 }

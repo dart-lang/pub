@@ -9,12 +9,16 @@ import '../oauth2.dart' as oauth2;
 
 /// Handles the `logout` pub command.
 class LogoutCommand extends PubCommand {
-  String get name => "logout";
+  @override
+  String get name => 'logout';
+  @override
   String get description => 'Log out of pub.dartlang.org.';
+  @override
   String get invocation => 'pub logout';
 
   LogoutCommand();
 
+  @override
   Future run() async {
     oauth2.logout(cache);
   }

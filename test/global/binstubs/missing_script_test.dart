@@ -9,16 +9,16 @@ import 'package:path/path.dart' as p;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test("errors if an executable's script can't be found", () async {
-    await d.dir("foo", [
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {"missing": "not_here", "nope": null}
+        'name': 'foo',
+        'executables': {'missing': 'not_here', 'nope': null}
       })
     ]).create();
 
-    var pub = await startPub(args: ["global", "activate", "-spath", "../foo"]);
+    var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
 
     expect(
         pub.stderr,

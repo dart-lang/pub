@@ -10,10 +10,14 @@ import 'global_run.dart';
 
 /// Handles the `global` pub command.
 class GlobalCommand extends PubCommand {
-  String get name => "global";
-  String get description => "Work with global packages.";
-  String get invocation => "pub global <subcommand>";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-global";
+  @override
+  String get name => 'global';
+  @override
+  String get description => 'Work with global packages.';
+  @override
+  String get invocation => 'pub global <subcommand>';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   GlobalCommand() {
     addSubcommand(GlobalActivateCommand());

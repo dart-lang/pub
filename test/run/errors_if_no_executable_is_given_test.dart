@@ -9,7 +9,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('Errors if the executable does not exist.', () async {
     await d.dir(appPath, [d.appPubspec()]).create();
 

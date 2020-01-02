@@ -9,7 +9,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     group('requires', () {
       test('a pubspec', () async {
@@ -24,7 +24,7 @@ main() {
       test('a pubspec with a "name" key', () async {
         await d.dir(appPath, [
           d.pubspec({
-            "dependencies": {"foo": null}
+            'dependencies': {'foo': null}
           })
         ]).create();
 
@@ -38,14 +38,14 @@ main() {
       // The package should use the name in the pubspec, not the name of the
       // directory.
       await d.dir(appPath, [
-        d.pubspec({"name": "myapp_name"}),
+        d.pubspec({'name': 'myapp_name'}),
         d.libDir('myapp_name')
       ]).create();
 
       await pubCommand(command);
 
-      await d.dir("myapp", [
-        d.packagesFile({"myapp_name": "."})
+      await d.dir('myapp', [
+        d.packagesFile({'myapp_name': '.'})
       ]).validate();
     });
 
@@ -55,17 +55,17 @@ main() {
       await d.dir('deps', [
         d.dir('foo', [
           d.pubspec({
-            "name": "foo",
-            "dependencies": {
-              "baz": {"path": "../baz1"}
+            'name': 'foo',
+            'dependencies': {
+              'baz': {'path': '../baz1'}
             }
           })
         ]),
         d.dir('bar', [
           d.pubspec({
-            "name": "bar",
-            "dependencies": {
-              "baz": {"path": "../baz2"}
+            'name': 'bar',
+            'dependencies': {
+              'baz': {'path': '../baz2'}
             }
           })
         ]),
@@ -75,19 +75,19 @@ main() {
 
       await d.dir(appPath, [
         d.appPubspec({
-          "foo": {"path": "../deps/foo"},
-          "bar": {"path": "../deps/bar"}
+          'foo': {'path': '../deps/foo'},
+          'bar': {'path': '../deps/bar'}
         })
       ]).create();
 
       await pubCommand(command,
-          error: RegExp(r"bar from path is incompatible with foo from path"));
+          error: RegExp(r'bar from path is incompatible with foo from path'));
     });
 
     test('does not allow a dependency on itself', () async {
       await d.dir(appPath, [
         d.appPubspec({
-          "myapp": {"path": "."}
+          'myapp': {'path': '.'}
         })
       ]).create();
 
@@ -99,9 +99,9 @@ main() {
     test('does not allow a dev dependency on itself', () async {
       await d.dir(appPath, [
         d.pubspec({
-          "name": "myapp",
-          "dev_dependencies": {
-            "myapp": {"path": "."}
+          'name': 'myapp',
+          'dev_dependencies': {
+            'myapp': {'path': '.'}
           }
         })
       ]).create();

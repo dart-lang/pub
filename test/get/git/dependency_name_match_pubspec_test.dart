@@ -9,7 +9,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test(
       'requires the dependency name to match the remote pubspec '
       'name', () async {
@@ -20,7 +20,7 @@ main() {
 
     await d.dir(appPath, [
       d.appPubspec({
-        "weirdname": {"git": "../foo.git"}
+        'weirdname': {'git': '../foo.git'}
       })
     ]).create();
 

@@ -12,7 +12,7 @@ import '../../test_pub.dart';
 
 // Regression test for issue 16470.
 
-main() {
+void main() {
   test('checks out the repository for a locked revision', () async {
     ensureGit();
 
@@ -20,7 +20,7 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     // This get should lock the foo.git dependency to the current revision.

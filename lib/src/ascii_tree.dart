@@ -100,7 +100,7 @@ String fromFiles(List<String> files, {String baseDir, bool showAllChildren}) {
 /// will have their contents truncated. Defaults to `false`.
 String fromMap(Map<String, Map> map, {bool showAllChildren}) {
   var buffer = StringBuffer();
-  _draw(buffer, "", null, map, showAllChildren: showAllChildren);
+  _draw(buffer, '', null, map, showAllChildren: showAllChildren);
   return buffer.toString();
 }
 
@@ -112,7 +112,7 @@ void _drawLine(
     if (isLastChild) {
       buffer.write(log.gray("'-- "));
     } else {
-      buffer.write(log.gray("|-- "));
+      buffer.write(log.gray('|-- '));
     }
   }
 
@@ -121,9 +121,9 @@ void _drawLine(
 }
 
 String _getPrefix(bool isRoot, bool isLast) {
-  if (isRoot) return "";
-  if (isLast) return "    ";
-  return log.gray("|   ");
+  if (isRoot) return '';
+  if (isLast) return '    ';
+  return log.gray('|   ');
 }
 
 void _draw(
@@ -137,7 +137,7 @@ void _draw(
   // Recurse to the children.
   var childNames = ordered(children.keys);
 
-  drawChild(bool isLastChild, String child) {
+  void drawChild(bool isLastChild, String child) {
     var childPrefix = _getPrefix(name == null, isLast);
     _draw(buffer, '$prefix$childPrefix', child,
         children[child] as Map<String, Map>,

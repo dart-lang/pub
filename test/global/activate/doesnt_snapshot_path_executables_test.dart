@@ -7,15 +7,15 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test("doesn't snapshots the executables for a path package", () async {
     await d.dir('foo', [
-      d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [d.file("hello.dart", "void main() => print('hello!');")])
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('hello.dart', "void main() => print('hello!');")])
     ]).create();
 
     await runPub(
-        args: ["global", "activate", "-spath", "../foo"],
+        args: ['global', 'activate', '-spath', '../foo'],
         output: isNot(contains('Precompiled foo:hello.')));
 
     await d.dir(cachePath, [

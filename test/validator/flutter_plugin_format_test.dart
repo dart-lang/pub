@@ -15,51 +15,51 @@ import 'utils.dart';
 Validator flutterPluginFormat(Entrypoint entrypoint) =>
     FlutterPluginFormatValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
     test('looks normal', () => expectNoValidationError(flutterPluginFormat));
 
     test('is a Flutter 1.9.0 package', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.9.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.9.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
       expectNoValidationError(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0 package', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.10.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.10.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
       expectNoValidationError(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0-0 package', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.10.0-0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.10.0-0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
       expectNoValidationError(flutterPluginFormat);
     });
 
     test('is a flutter 1.10.0 plugin with the new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.10.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.10.0 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -80,11 +80,11 @@ main() {
     setUp(d.validPackage.create);
 
     test('is a flutter plugin with old and new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.9.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.9.0 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -104,11 +104,11 @@ main() {
     });
 
     test('is a flutter 1.9.0 plugin with old format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.9.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.9.0 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -122,11 +122,11 @@ main() {
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.9.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.9.0 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -145,10 +145,10 @@ main() {
     test(
         'is a flutter plugin with only implicit flutter sdk version constraint and the new format',
         () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -165,8 +165,8 @@ main() {
     });
 
     test('is a non-flutter package with using the new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {}, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
+      var pkg = packageMap('test_pkg', '1.0.0', {}, {}, {
+        'sdk': '>=2.0.0 <3.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -183,11 +183,11 @@ main() {
     });
 
     test('is a flutter 1.8.0 plugin with new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.8.0 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.8.0 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {
@@ -204,11 +204,11 @@ main() {
     });
 
     test('is a flutter 1.9.999 plugin with new format', () async {
-      var pkg = packageMap("test_pkg", "1.0.0", {
-        "flutter": {"sdk": "flutter"},
+      var pkg = packageMap('test_pkg', '1.0.0', {
+        'flutter': {'sdk': 'flutter'},
       }, {}, {
-        "sdk": ">=2.0.0 <3.0.0",
-        "flutter": ">=1.9.999 <2.0.0",
+        'sdk': '>=2.0.0 <3.0.0',
+        'flutter': '>=1.9.999 <2.0.0',
       });
       pkg['flutter'] = {
         'plugin': {

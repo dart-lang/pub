@@ -12,6 +12,7 @@ import '../validator.dart';
 class PubspecFieldValidator extends Validator {
   PubspecFieldValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     _validateFieldIsString('description');
     _validateFieldIsString('homepage');

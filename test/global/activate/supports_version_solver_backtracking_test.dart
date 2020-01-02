@@ -7,18 +7,18 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('performs verison solver backtracking if necessary', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.1.0", pubspec: {
-        "environment": {"sdk": ">=0.1.2 <0.2.0"}
+      builder.serve('foo', '1.1.0', pubspec: {
+        'environment': {'sdk': '>=0.1.2 <0.2.0'}
       });
-      builder.serve("foo", "1.2.0", pubspec: {
-        "environment": {"sdk": ">=0.1.3 <0.2.0"}
+      builder.serve('foo', '1.2.0', pubspec: {
+        'environment': {'sdk': '>=0.1.3 <0.2.0'}
       });
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
     // foo 1.2.0 won't be picked because its SDK constraint conflicts with the
     // dummy SDK version 0.1.2+3.

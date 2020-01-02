@@ -21,54 +21,54 @@ final _script = """
   }
 """;
 
-main() {
+void main() {
   test('an untransformed application sees a file: package config', () async {
-    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       }),
-      d.dir("bin", [d.file("script.dart", _script)])
+      d.dir('bin', [d.file('script.dart', _script)])
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["bin/script"]);
+    var pub = await pubRun(args: ['bin/script']);
 
-    expect(pub.stdout, emits("null"));
+    expect(pub.stdout, emits('null'));
     expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, "myapp/.packages")).toString()));
+        emits(p.toUri(p.join(d.sandbox, 'myapp/.packages')).toString()));
     expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, "myapp/lib/resource.txt")).toString()));
+        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
     expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, "foo/lib/resource.txt")).toString()));
+        emits(p.toUri(p.join(d.sandbox, 'foo/lib/resource.txt')).toString()));
     await pub.shouldExit(0);
   });
 
   test('a snapshotted application sees a file: package root', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [d.file("script.dart", _script)])
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', _script)])
       ]);
     });
 
     await d.dir(appPath, [
-      d.appPubspec({"foo": "any"})
+      d.appPubspec({'foo': 'any'})
     ]).create();
 
     await pubGet();
 
-    var pub = await pubRun(args: ["foo:script"]);
+    var pub = await pubRun(args: ['foo:script']);
 
     expect(pub.stdout, emits('Precompiling executable...'));
     expect(pub.stdout, emits('Precompiled foo:script.'));
-    expect(pub.stdout, emits("null"));
+    expect(pub.stdout, emits('null'));
     expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, "myapp/.packages")).toString()));
+        emits(p.toUri(p.join(d.sandbox, 'myapp/.packages')).toString()));
     expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, "myapp/lib/resource.txt")).toString()));
+        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
     var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), "lib/resource.txt");
+        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

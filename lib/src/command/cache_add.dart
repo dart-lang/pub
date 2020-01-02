@@ -12,39 +12,44 @@ import '../utils.dart';
 
 /// Handles the `cache add` pub command.
 class CacheAddCommand extends PubCommand {
-  String get name => "add";
-  String get description => "Install a package.";
+  @override
+  String get name => 'add';
+  @override
+  String get description => 'Install a package.';
+  @override
   String get invocation =>
-      "pub cache add <package> [--version <constraint>] [--all]";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-cache";
+      'pub cache add <package> [--version <constraint>] [--all]';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
   CacheAddCommand() {
-    argParser.addFlag("all",
-        help: "Install all matching versions.", negatable: false);
+    argParser.addFlag('all',
+        help: 'Install all matching versions.', negatable: false);
 
-    argParser.addOption("version", abbr: "v", help: "Version constraint.");
+    argParser.addOption('version', abbr: 'v', help: 'Version constraint.');
   }
 
+  @override
   Future run() async {
     // Make sure there is a package.
     if (argResults.rest.isEmpty) {
-      usageException("No package to add given.");
+      usageException('No package to add given.');
     }
 
     // Don't allow extra arguments.
     if (argResults.rest.length > 1) {
       var unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
-      var arguments = pluralize("argument", unexpected.length);
-      usageException("Unexpected $arguments ${toSentence(unexpected)}.");
+      var arguments = pluralize('argument', unexpected.length);
+      usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
     var package = argResults.rest.single;
 
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
-    if (argResults["version"] != null) {
+    if (argResults['version'] != null) {
       try {
-        constraint = VersionConstraint.parse(argResults["version"]);
+        constraint = VersionConstraint.parse(argResults['version']);
       } on FormatException catch (error) {
         usageException(error.message);
       }
@@ -60,14 +65,14 @@ class CacheAddCommand extends PubCommand {
 
     if (ids.isEmpty) {
       // TODO(rnystrom): Show most recent unmatching version?
-      fail("Package $package has no versions that match $constraint.");
+      fail('Package $package has no versions that match $constraint.');
     }
 
-    downloadVersion(id) async {
+    Future<void> downloadVersion(id) async {
       if (cache.contains(id)) {
         // TODO(rnystrom): Include source and description if not hosted.
         // See solve_report.dart for code to harvest.
-        log.message("Already cached ${id.name} ${id.version}.");
+        log.message('Already cached ${id.name} ${id.version}.');
         return null;
       }
 
@@ -75,7 +80,7 @@ class CacheAddCommand extends PubCommand {
       await source.downloadToSystemCache(id);
     }
 
-    if (argResults["all"]) {
+    if (argResults['all']) {
       // Install them in ascending order.
       ids.sort((id1, id2) => id1.version.compareTo(id2.version));
       await Future.forEach(ids, downloadVersion);

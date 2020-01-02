@@ -15,7 +15,7 @@ import 'test_pub.dart';
 String root;
 Entrypoint entrypoint;
 
-main() {
+void main() {
   group('not in a git repo', () {
     setUp(() async {
       await d.appDir().create();
@@ -76,7 +76,7 @@ main() {
           ]));
     });
 
-    test("ignores files that are gitignored if desired", () async {
+    test('ignores files that are gitignored if desired', () async {
       await d.dir(appPath, [
         d.file('.gitignore', '*.txt'),
         d.file('file1.txt', 'contents'),
@@ -109,7 +109,7 @@ main() {
 
     test(
         "ignores files that are gitignored even if the package isn't "
-        "the repo root", () async {
+        'the repo root', () async {
       await d.dir(appPath, [
         d.dir('sub', [
           d.appPubspec(),
@@ -145,21 +145,21 @@ main() {
           ]));
     });
 
-    group("with a submodule", () {
+    group('with a submodule', () {
       setUp(() async {
-        await d.git("submodule", [
-          d.file(".gitignore", "*.txt"),
+        await d.git('submodule', [
+          d.file('.gitignore', '*.txt'),
           d.file('file2.text', 'contents')
         ]).create();
 
-        await repo.runGit(["submodule", "add", "../submodule"]);
+        await repo.runGit(['submodule', 'add', '../submodule']);
 
         await d.file('$appPath/submodule/file1.txt', 'contents').create();
 
         createEntrypoint();
       });
 
-      test("ignores its .gitignore without useGitIgnore", () {
+      test('ignores its .gitignore without useGitIgnore', () {
         expect(
             entrypoint.root.listFiles(),
             unorderedEquals([
@@ -169,7 +169,7 @@ main() {
             ]));
       });
 
-      test("respects its .gitignore with useGitIgnore", () {
+      test('respects its .gitignore with useGitIgnore', () {
         expect(
             entrypoint.root.listFiles(useGitIgnore: true),
             unorderedEquals([

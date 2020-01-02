@@ -68,7 +68,7 @@ class ErrorGroup {
   Future<T> registerFuture<T>(Future<T> future) {
     if (_isDone) {
       throw StateError("Can't register new members on a complete "
-          "ErrorGroup.");
+          'ErrorGroup.');
     }
 
     var wrapped = _ErrorGroupFuture(this, future);
@@ -91,7 +91,7 @@ class ErrorGroup {
   Stream<T> registerStream<T>(Stream<T> stream) {
     if (_isDone) {
       throw StateError("Can't register new members on a complete "
-          "ErrorGroup.");
+          'ErrorGroup.');
     }
 
     var wrapped = _ErrorGroupStream(this, stream);
@@ -134,10 +134,11 @@ class ErrorGroup {
 
     _isDone = true;
     _done._signalError(error, stackTrace);
-    if (!caught && !_done._hasListeners)
+    if (!caught && !_done._hasListeners) {
       scheduleMicrotask(() {
         throw error;
       });
+    }
   }
 
   /// Notifies [this] that one of its member [Future]s is complete.
@@ -191,26 +192,31 @@ class _ErrorGroupFuture<T> implements Future<T> {
     _completer.future.catchError((_) {});
   }
 
-  Future<S> then<S>(FutureOr<S> onValue(T value), {Function onError}) {
+  @override
+  Future<S> then<S>(FutureOr<S> Function(T) onValue, {Function onError}) {
     _hasListeners = true;
     return _completer.future.then(onValue, onError: onError);
   }
 
-  Future<T> catchError(Function onError, {bool test(Object error)}) {
+  @override
+  Future<T> catchError(Function onError, {bool Function(Object error) test}) {
     _hasListeners = true;
     return _completer.future.catchError(onError, test: test);
   }
 
-  Future<T> whenComplete(void action()) {
+  @override
+  Future<T> whenComplete(void Function() action) {
     _hasListeners = true;
     return _completer.future.whenComplete(action);
   }
 
-  Future<T> timeout(Duration timeLimit, {onTimeout()}) {
+  @override
+  Future<T> timeout(Duration timeLimit, {void Function() onTimeout}) {
     _hasListeners = true;
     return _completer.future.timeout(timeLimit, onTimeout: onTimeout);
   }
 
+  @override
   Stream<T> asStream() {
     _hasListeners = true;
     return _completer.future.asStream();
@@ -272,8 +278,9 @@ class _ErrorGroupStream<T> extends Stream<T> {
     });
   }
 
-  StreamSubscription<T> listen(void onData(T value),
-      {Function onError, void onDone(), bool cancelOnError}) {
+  @override
+  StreamSubscription<T> listen(void Function(T) onData,
+      {Function onError, void Function() onDone, bool cancelOnError}) {
     return _stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: true);
   }

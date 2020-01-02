@@ -9,14 +9,14 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test('sends the correct Accept header', () async {
       var server = await ShelfTestServer.create();
 
       await d.appDir({
-        "foo": {
-          "hosted": {"name": "foo", "url": server.url.toString()}
+        'foo': {
+          'hosted': {'name': 'foo', 'url': server.url.toString()}
         }
       }).create();
 
@@ -35,8 +35,8 @@ main() {
       var server = await ShelfTestServer.create();
 
       await d.appDir({
-        "foo": {
-          "hosted": {"name": "foo", "url": server.url.toString()}
+        'foo': {
+          'hosted': {'name': 'foo', 'url': server.url.toString()}
         }
       }).create();
 
@@ -50,8 +50,8 @@ main() {
       expect(
           pub.stderr,
           emitsLines(
-              "Pub 0.1.2+3 is incompatible with the current version of localhost.\n"
-              "Upgrade pub to the latest version and try again."));
+              'Pub 0.1.2+3 is incompatible with the current version of localhost.\n'
+              'Upgrade pub to the latest version and try again.'));
     });
   });
 }

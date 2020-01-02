@@ -29,7 +29,7 @@ import 'utils.dart';
 /// [MAX_PATH]: https://msdn.microsoft.com/en-us/library/windows/desktop/aa383130(v=vs.85).aspx
 const _pathMax = 260 - 1;
 
-main() {
+void main() {
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
@@ -42,10 +42,10 @@ main() {
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
-      var result = Process.runSync("getconf", ["ARG_MAX"]);
+      var result = Process.runSync('getconf', ['ARG_MAX']);
       if (result.exitCode != 0) {
-        fail("getconf failed with exit code ${result.exitCode}:\n"
-            "${result.stderr}");
+        fail('getconf failed with exit code ${result.exitCode}:\n'
+            '${result.stderr}');
       }
 
       argMax = int.parse(result.stdout);
@@ -70,9 +70,9 @@ main() {
       // The file name contains "x"s to make the path hit [_pathMax],
       // followed by a number to distinguish different files.
       var fileName =
-          "x" * (_pathMax - appRoot.length - iString.length - 1) + iString;
+          'x' * (_pathMax - appRoot.length - iString.length - 1) + iString;
 
-      File(p.join(appRoot, fileName)).writeAsStringSync("");
+      File(p.join(appRoot, fileName)).writeAsStringSync('');
     }
 
     var server = await ShelfTestServer.create();

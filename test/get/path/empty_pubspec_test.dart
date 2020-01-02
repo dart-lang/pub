@@ -10,14 +10,14 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   // Regression test for issue 20103.
   test('path dependency to an empty pubspec', () async {
     await d.dir('foo', [d.libDir('foo'), d.file('pubspec.yaml', '')]).create();
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       })
     ]).create();
 

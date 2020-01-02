@@ -15,23 +15,23 @@ import 'utils.dart';
 Validator pubspecField(Entrypoint entrypoint) =>
     PubspecFieldValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
     test('looks normal', () => expectNoValidationError(pubspecField));
 
     test('has an HTTPS homepage URL', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["homepage"] = "https://pub.dartlang.org";
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['homepage'] = 'https://pub.dartlang.org';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectNoValidationError(pubspecField);
     });
 
     test('has an HTTPS documentation URL', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["documentation"] = "https://pub.dartlang.org";
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['documentation'] = 'https://pub.dartlang.org';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectNoValidationError(pubspecField);
@@ -42,48 +42,48 @@ main() {
     setUp(d.validPackage.create);
 
     test('is missing the "homepage" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg.remove("homepage");
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg.remove('homepage');
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
     });
 
     test('is missing the "description" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg.remove("description");
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg.remove('description');
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
     });
 
     test('has a non-string "homepage" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["homepage"] = 12;
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['homepage'] = 12;
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
     });
 
     test('has a non-string "description" field', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["description"] = 12;
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['description'] = 12;
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
     });
 
     test('has a non-HTTP homepage URL', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["homepage"] = "file:///foo/bar";
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['homepage'] = 'file:///foo/bar';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
     });
 
     test('has a non-HTTP documentation URL', () async {
-      var pkg = packageMap("test_pkg", "1.0.0");
-      pkg["documentation"] = "file:///foo/bar";
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['documentation'] = 'file:///foo/bar';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       expectValidationError(pubspecField);
