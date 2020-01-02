@@ -47,7 +47,7 @@ Future serveErrors() async {
 
 class DescriptorServer {
   /// The underlying server.
-  shelf.Server _server;
+  final shelf.Server _server;
 
   /// A future that will complete to the port used for the server.
   int get port => _server.url.port;
@@ -88,7 +88,7 @@ class DescriptorServer {
         return shelf.Response.notFound('File "$path" not found.');
       }
     });
-    addTearDown(() => _server.close());
+    addTearDown(_server.close);
   }
 
   DescriptorServer._errors(this._server) : _baseDir = d.dir("serve-dir", []) {
@@ -96,7 +96,7 @@ class DescriptorServer {
       fail("The HTTP server received an unexpected request:\n"
           "${request.method} ${request.requestedUri}");
     });
-    addTearDown(() => _server.close());
+    addTearDown(_server.close);
   }
 
   /// Closes this server.
