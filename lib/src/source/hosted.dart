@@ -190,7 +190,7 @@ class BoundHostedSource extends CachedSource {
       final dependencies = result[latestVersionId]?.dependencies?.values ?? [];
       withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
-          if (packageRange.source is BoundHostedSource) {
+          if (packageRange.source is HostedSource) {
             retriever.prefetch(packageRange.toRef());
           }
         }
