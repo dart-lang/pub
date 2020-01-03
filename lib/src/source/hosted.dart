@@ -149,12 +149,11 @@ class BoundHostedSource extends CachedSource {
   RateLimitedScheduler<PackageRef, Map<PackageId, Pubspec>> _scheduler;
 
   BoundHostedSource(this.source, this.systemCache) {
-    _scheduler = RateLimitedScheduler.nonCancelable(_fetchVersions,
-        maxConcurrentOperations: 10);
+    _scheduler =
+        RateLimitedScheduler(_fetchVersions, maxConcurrentOperations: 10);
   }
 
-  Future<Map<PackageId, Pubspec>> _fetchVersions(
-      PackageRef ref, RateLimitedScheduler retriever) async {
+  Future<Map<PackageId, Pubspec>> _fetchVersions(PackageRef ref) async {
     var url = _makeUrl(
         ref.description, (server, package) => "$server/api/packages/$package");
     log.io("Get versions from $url.");
@@ -179,7 +178,9 @@ class BoundHostedSource extends CachedSource {
 
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
-    void prefetch() {
+    final preschedule =
+        Zone.current[#_prefetching] as void Function(PackageRef);
+    if (preschedule != null) {
       final latestVersion =
           maxBy(result.keys.map((id) => id.version), (e) => e);
 
@@ -190,14 +191,10 @@ class BoundHostedSource extends CachedSource {
       withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
-            retriever.prefetch(packageRange.toRef());
+            preschedule(packageRange.toRef());
           }
         }
       });
-    }
-
-    if (Zone.current[#_prefetching] == true) {
-      prefetch();
     }
     return result;
   }
@@ -205,7 +202,7 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    final versions = await _scheduler.fetch(ref);
+    final versions = await _scheduler.schedule(ref);
     return versions.keys.toList();
   }
 
@@ -223,7 +220,7 @@ class BoundHostedSource extends CachedSource {
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
-    final versions = await _scheduler.fetch(id.toRef());
+    final versions = await _scheduler.schedule(id.toRef());
     final url = _makeUrl(
         id.description, (server, package) => "$server/api/packages/$package");
     return versions[id] ??
@@ -445,15 +442,9 @@ class BoundHostedSource extends CachedSource {
   /// Enables speculative prefetching of dependencies of packages queried with
   /// [getVersions].
   Future<T> withPrefetching<T>(Future<T> Function() callback) async {
-    T result;
-    try {
-      result = await runZoned(callback, zoneValues: {#_prefetching: true});
-    } finally {
-      // Stop pre-fetching package/version listings from hosted repository, as
-      // `callback` is done.
-      _scheduler.stop();
-    }
-    return result;
+    return await _scheduler.withPrescheduling((preschedule) async {
+      return await runZoned(callback, zoneValues: {#_pre: preschedule});
+    });
   }
 }
 
