@@ -9,7 +9,7 @@ import 'dart:io' as io;
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:pub/src/retriever.dart';
+import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -146,15 +146,15 @@ class BoundHostedSource extends CachedSource {
   final HostedSource source;
 
   final SystemCache systemCache;
-  Retriever<PackageRef, Map<PackageId, Pubspec>> _retriever;
+  RateLimitedScheduler<PackageRef, Map<PackageId, Pubspec>> _scheduler;
 
   BoundHostedSource(this.source, this.systemCache) {
-    _retriever =
-        Retriever.nonCancelable(_getVersions, maxConcurrentOperations: 10);
+    _scheduler = RateLimitedScheduler.nonCancelable(_fetchVersions,
+        maxConcurrentOperations: 10);
   }
 
-  Future<Map<PackageId, Pubspec>> _getVersions(
-      PackageRef ref, Retriever retriever) async {
+  Future<Map<PackageId, Pubspec>> _fetchVersions(
+      PackageRef ref, RateLimitedScheduler retriever) async {
     var url = _makeUrl(
         ref.description, (server, package) => "$server/api/packages/$package");
     log.io("Get versions from $url.");
@@ -205,7 +205,7 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    final versions = await _retriever.fetch(ref);
+    final versions = await _scheduler.fetch(ref);
     return versions.keys.toList();
   }
 
@@ -223,7 +223,7 @@ class BoundHostedSource extends CachedSource {
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   Future<Pubspec> describeUncached(PackageId id) async {
-    final versions = await _retriever.fetch(id.toRef());
+    final versions = await _scheduler.fetch(id.toRef());
     final url = _makeUrl(
         id.description, (server, package) => "$server/api/packages/$package");
     return versions[id] ??
@@ -451,7 +451,7 @@ class BoundHostedSource extends CachedSource {
     } finally {
       // Stop pre-fetching package/version listings from hosted repository, as
       // `callback` is done.
-      _retriever.stop();
+      _scheduler.stop();
     }
     return result;
   }

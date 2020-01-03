@@ -129,36 +129,36 @@ b: {}"""));
     test('is stable', () async {
       {
         final completers = <String, Completer>{};
-        getCompleter(k) => completers.putIfAbsent(k, () => Completer());
+        completer(k) => completers.putIfAbsent(k, () => Completer());
         Future<int> lengthWhenComplete(String s) async {
-          await getCompleter(s).future;
+          await completer(s).future;
           return s.length;
         }
 
         final w = expectLater(
             minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
             completion('a'));
-        getCompleter('aa').complete();
-        getCompleter('b').complete();
-        getCompleter('a').complete();
-        getCompleter('ccc').complete();
+        completer('aa').complete();
+        completer('b').complete();
+        completer('a').complete();
+        completer('ccc').complete();
         await w;
       }
       {
         final completers = <String, Completer>{};
-        getCompleter(k) => completers.putIfAbsent(k, () => Completer());
+        completer(k) => completers.putIfAbsent(k, () => Completer());
         Future<int> lengthWhenComplete(String s) async {
-          await getCompleter(s).future;
+          await completer(s).future;
           return s.length;
         }
 
         final w = expectLater(
             minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
             completion('a'));
-        getCompleter('ccc').complete();
-        getCompleter('a').complete();
-        getCompleter('b').complete();
-        getCompleter('aa').complete();
+        completer('ccc').complete();
+        completer('a').complete();
+        completer('b').complete();
+        completer('aa').complete();
         await w;
       }
     });

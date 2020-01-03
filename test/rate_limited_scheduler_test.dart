@@ -3,9 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:test/test.dart';
-import 'package:pub/src/retriever.dart';
+import 'package:pub/src/rate_limited_scheduler.dart';
 
 main() {
   threeCompleters() => {'a': Completer(), 'b': Completer(), 'c': Completer()};
@@ -20,7 +21,7 @@ main() {
       return i.toUpperCase();
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input)),
         maxConcurrentOperations: 2);
 
@@ -47,7 +48,7 @@ main() {
       return i.toUpperCase();
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input),
             onCancel: () => canceled[input].complete()),
         maxConcurrentOperations: 2);
@@ -73,7 +74,7 @@ main() {
       return i.toUpperCase();
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input)),
         maxConcurrentOperations: 2);
 
@@ -93,7 +94,7 @@ main() {
       return i.toUpperCase();
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input)),
         maxConcurrentOperations: 1);
 
@@ -119,7 +120,7 @@ main() {
       return i.toUpperCase();
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input)),
         maxConcurrentOperations: 2);
 
@@ -149,7 +150,7 @@ main() {
       return Zone.current['zoneValue'];
     }
 
-    final retriever = Retriever(
+    final retriever = RateLimitedScheduler(
         (input, _) => CancelableOperation.fromFuture(f(input)),
         maxConcurrentOperations: 2);
 
