@@ -791,7 +791,7 @@ _doProcess(Function fn, String executable, List<String> args,
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
   if (Platform.isWindows && !executable.contains('\\')) {
-    args = ["/c", executable]..addAll(args);
+    args = ["/c", executable, ...args];
     executable = "cmd";
   }
 
@@ -843,6 +843,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
   }
 
   var args = [
+    if (_noUnknownKeyword) "--warning=no-unknown-keyword",
     "--extract",
     "--gunzip",
     "--no-same-owner",
@@ -850,13 +851,6 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     "--directory",
     destination
   ];
-  if (_noUnknownKeyword) {
-    // BSD tar (the default on OS X) can insert strange headers to a tarfile
-    // that GNU tar (the default on Linux) is unable to understand. This will
-    // cause GNU tar to emit a number of harmless but scary-looking warnings
-    // which are silenced by this flag.
-    args.insert(0, "--warning=no-unknown-keyword");
-  }
 
   var process = await _startProcess("tar", args);
 
@@ -878,8 +872,10 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
 /// Whether to include "--warning=no-unknown-keyword" when invoking tar.
 ///
-/// This flag quiets warnings that come from opening OS X-generated tarballs on
-/// Linux, but only GNU tar >= 1.26 supports it.
+/// BSD tar (the default on OS X) can insert strange headers to a tarfile that
+/// GNU tar (the default on Linux) is unable to understand. This will cause GNU
+/// tar to emit a number of harmless but scary-looking warnings which are
+/// silenced by this flag.
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
   if (!Platform.isLinux) return false;
