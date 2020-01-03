@@ -305,6 +305,7 @@ class BoundHostedSource extends CachedSource {
         log.fine("Failed to load package from $entry:\n"
             "$error\n"
             "${Chain.forTrace(stackTrace)}");
+        return null;
       }
     }).toList();
   }

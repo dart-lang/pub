@@ -814,7 +814,7 @@ void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 ///
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
-Future<T> withTempDir<T>(Future<T> fn(String path)) async {
+Future<T> withTempDir<T>(FutureOr<T> fn(String path)) async {
   var tempDir = _createSystemTempDir();
   try {
     return await fn(tempDir);
