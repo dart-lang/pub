@@ -298,16 +298,19 @@ class BoundHostedSource extends CachedSource {
     var cacheDir = p.join(systemCacheRoot, _urlToDirectory(source.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
-    return listDir(cacheDir).map((entry) {
-      try {
-        return Package.load(null, entry, systemCache.sources);
-      } catch (error, stackTrace) {
-        log.fine("Failed to load package from $entry:\n"
-            "$error\n"
-            "${Chain.forTrace(stackTrace)}");
-        return null;
-      }
-    }).toList();
+    return listDir(cacheDir)
+        .map((entry) {
+          try {
+            return Package.load(null, entry, systemCache.sources);
+          } catch (error, stackTrace) {
+            log.fine("Failed to load package from $entry:\n"
+                "$error\n"
+                "${Chain.forTrace(stackTrace)}");
+            return null;
+          }
+        })
+        .where((e) => e != null)
+        .toList();
   }
 
   /// Downloads package [package] at [version] from [server], and unpacks it
