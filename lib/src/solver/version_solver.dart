@@ -324,7 +324,6 @@ class VersionSolver {
           candidate.source.hasMultipleVersions) {
         var ref = candidate.toRef();
         if (_haveUsedLatest.add(ref)) {
-
           // All versions of [ref] other than the latest are forbidden.
           var latestVersion = (await _packageLister(ref).latest).version;
           _addIncompatibility(Incompatibility([
