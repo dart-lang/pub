@@ -347,11 +347,7 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
 }
 
 /// Like [withTempDir], but canonicalizes the path before passing it to [fn].
-<<<<<<< HEAD
-Future _withCanonicalTempDir(Future fn(String path)) =>
-=======
 Future<T> _withCanonicalTempDir<T>(FutureOr<T> Function(String path) fn) =>
->>>>>>> 858e754f... Enforce and fix lints from package:pedantic
     withTempDir((temp) => fn(canonicalize(temp)));
 
 /// Creates a directory [dir].

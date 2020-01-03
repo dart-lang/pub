@@ -319,16 +319,10 @@ class BoundHostedSource extends CachedSource {
       try {
         return Package.load(null, entry, systemCache.sources);
       } catch (error, stackTrace) {
-<<<<<<< HEAD
-        log.fine("Failed to load package from $entry:\n"
-            "$error\n"
-            "${Chain.forTrace(stackTrace)}");
-=======
         log.fine('Failed to load package from $entry:\n'
             '$error\n'
             '${Chain.forTrace(stackTrace)}');
         return null;
->>>>>>> 858e754f... Enforce and fix lints from package:pedantic
       }
     }).toList();
   }
