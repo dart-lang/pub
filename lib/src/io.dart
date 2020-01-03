@@ -140,8 +140,7 @@ String canonicalize(String pathString) {
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
   var seen = <String>{};
-  while (linkExists(link) && !seen.contains(link)) {
-    seen.add(link);
+  while (linkExists(link) && seen.add(link)) {
     link =
         path.normalize(path.join(path.dirname(link), Link(link).targetSync()));
   }
