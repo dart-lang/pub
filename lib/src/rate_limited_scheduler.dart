@@ -65,35 +65,29 @@ class RateLimitedScheduler<J, V> {
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
-  /// Starts running operations from the queue. Taking the first items first.
-  void _process() async {
-    if (_isRunning) return;
-    _isRunning = true;
-    while (_queue.isNotEmpty) {
-      final resource = await _pool.request();
-      if (_queue.isEmpty) {
-        resource.release();
-        break;
-      }
-      final task = _queue.removeFirst();
-      final completer = _cache[task.jobId];
-      if (completer.isCompleted || _started.contains(task)) {
-        resource.release();
-        continue;
-      }
-
-      _started.add(task.jobId);
-      Future<V> runJob() async {
-        try {
-          return await task.zone.runUnary(_runJob, task.jobId);
-        } finally {
-          resource.release();
-        }
-      }
-
-      completer.complete(runJob());
+  /// Runs the next task in [_queue].
+  Future<void> _processNextTask() async {
+    if (_queue.isEmpty) {
+      return;
     }
-    _isRunning = false;
+    final task = _queue.removeFirst();
+    final completer = _cache[task.jobId];
+    if (_started.contains(task.jobId)) {
+      return;
+    }
+    _started.add(task.jobId);
+
+    Future<V> runJob() async {
+      return await task.zone.runUnary(_runJob, task.jobId);
+    }
+
+    completer.complete(runJob());
+    // Listen to errors on the completer:
+    // this will make errors thrown by [_run] not
+    // become uncaught.
+    //
+    // They will still show up for other listeners of the future.
+    await completer.future.catchError((_) {});
   }
 
   /// Calls [callback] with a function that can pre-schedule jobs.
@@ -108,17 +102,12 @@ class RateLimitedScheduler<J, V> {
     final prescheduled = <_Task>{};
     try {
       return await callback((jobId) {
+        if (_started.contains(jobId)) return;
         final task = _Task(jobId, Zone.current);
-        prescheduled.add(task);
+        _cache.putIfAbsent(jobId, () => Completer());
         _queue.addLast(task);
-        _cache.putIfAbsent(
-            jobId,
-            () => Completer()
-              // Listen to errors: this will make errors thrown by [_run] not
-              // become uncaught.
-              // They will still show up for other listeners of the future.
-              ..future.catchError((error) {}));
-        _process();
+        prescheduled.add(task);
+        scheduleMicrotask(() => _pool.withResource(_processNextTask));
       });
     } finally {
       _queue.removeWhere(prescheduled.contains);
@@ -132,11 +121,10 @@ class RateLimitedScheduler<J, V> {
   /// to be scheduled next when there are free resources.
   Future<V> schedule(J jobId) {
     final completer = _cache.putIfAbsent(jobId, () => Completer());
-    if (!completer.isCompleted) {
-      // We allow adding the same jobId twice to the queue.
-      // It will get dedupped by the [_process] loop.
-      _queue.addFirst(_Task(jobId, Zone.current));
-      _process();
+    if (!_started.contains(jobId)) {
+      final task = _Task(jobId, Zone.current);
+      _queue.addFirst(task);
+      scheduleMicrotask(() => _pool.withResource(_processNextTask));
     }
     return completer.future;
   }
