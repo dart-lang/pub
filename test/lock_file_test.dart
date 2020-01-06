@@ -11,13 +11,13 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
-class MockSource extends Source {
+class FakeSource extends Source {
   @override
-  final String name = 'mock';
+  final String name = 'fake';
 
   @override
   BoundSource bind(SystemCache cache) =>
-      throw UnsupportedError('Cannot download mock packages.');
+      throw UnsupportedError('Cannot download fake packages.');
 
   @override
   PackageRef parseRef(String name, description, {String containingPath}) {
@@ -47,8 +47,8 @@ class MockSource extends Source {
 
 void main() {
   var sources = SourceRegistry();
-  var mockSource = MockSource();
-  sources.register(mockSource);
+  var fakeSource = FakeSource();
+  sources.register(fakeSource);
 
   group('LockFile', () {
     group('parse()', () {
@@ -67,11 +67,11 @@ void main() {
 packages:
   bar:
     version: 1.2.3
-    source: mock
+    source: fake
     description: bar desc
   foo:
     version: 2.3.4
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
 
@@ -80,13 +80,13 @@ packages:
         var bar = lockFile.packages['bar'];
         expect(bar.name, equals('bar'));
         expect(bar.version, equals(Version(1, 2, 3)));
-        expect(bar.source, equals(mockSource));
+        expect(bar.source, equals(fakeSource));
         expect(bar.description, equals('bar desc'));
 
         var foo = lockFile.packages['foo'];
         expect(foo.name, equals('foo'));
         expect(foo.version, equals(Version(2, 3, 4)));
-        expect(foo.source, equals(mockSource));
+        expect(foo.source, equals(fakeSource));
         expect(foo.description, equals('foo desc'));
       });
 
@@ -153,7 +153,7 @@ packages: not a map
           LockFile.parse('''
 packages:
   foo:
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
         }, throwsFormatException);
@@ -165,7 +165,7 @@ packages:
 packages:
   foo:
     version: vorpal
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
         }, throwsFormatException);
@@ -188,7 +188,7 @@ packages:
 packages:
   foo:
     version: 1.2.3
-    source: mock
+    source: fake
 ''', sources);
         }, throwsFormatException);
       });
@@ -199,7 +199,7 @@ packages:
 packages:
   foo:
     version: 1.2.3
-    source: mock
+    source: fake
     description: foo desc is bad
 ''', sources);
         }, throwsFormatException);
@@ -244,7 +244,7 @@ packages:
   foo:
     bonus: not used
     version: 1.2.3
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
       });
@@ -252,8 +252,8 @@ packages:
 
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = LockFile([
-        PackageId('foo', mockSource, Version.parse('1.2.3'), 'foo desc'),
-        PackageId('bar', mockSource, Version.parse('3.2.1'), 'bar desc')
+        PackageId('foo', fakeSource, Version.parse('1.2.3'), 'foo desc'),
+        PackageId('bar', fakeSource, Version.parse('3.2.1'), 'bar desc')
       ], devDependencies: {
         'bar'
       });
@@ -265,13 +265,13 @@ packages:
             'packages': {
               'foo': {
                 'version': '1.2.3',
-                'source': 'mock',
+                'source': 'fake',
                 'description': 'foo desc',
                 'dependency': 'transitive'
               },
               'bar': {
                 'version': '3.2.1',
-                'source': 'mock',
+                'source': 'fake',
                 'description': 'bar desc',
                 'dependency': 'direct dev'
               }

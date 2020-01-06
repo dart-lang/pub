@@ -141,8 +141,7 @@ String canonicalize(String pathString) {
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
   var seen = <String>{};
-  while (linkExists(link) && !seen.contains(link)) {
-    seen.add(link);
+  while (linkExists(link) && seen.add(link)) {
     link =
         path.normalize(path.join(path.dirname(link), Link(link).targetSync()));
   }
@@ -851,6 +850,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
   }
 
   var args = [
+    if (_noUnknownKeyword) '--warning=no-unknown-keyword',
     '--extract',
     '--gunzip',
     '--no-same-owner',
@@ -858,13 +858,6 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     '--directory',
     destination
   ];
-  if (_noUnknownKeyword) {
-    // BSD tar (the default on OS X) can insert strange headers to a tarfile
-    // that GNU tar (the default on Linux) is unable to understand. This will
-    // cause GNU tar to emit a number of harmless but scary-looking warnings
-    // which are silenced by this flag.
-    args.insert(0, '--warning=no-unknown-keyword');
-  }
 
   var process = await _startProcess('tar', args);
 
@@ -888,8 +881,10 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
 /// Whether to include "--warning=no-unknown-keyword" when invoking tar.
 ///
-/// This flag quiets warnings that come from opening OS X-generated tarballs on
-/// Linux, but only GNU tar >= 1.26 supports it.
+/// BSD tar (the default on OS X) can insert strange headers to a tarfile that
+/// GNU tar (the default on Linux) is unable to understand. This will cause GNU
+/// tar to emit a number of harmless but scary-looking warnings which are
+/// silenced by this flag.
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
   if (!Platform.isLinux) return false;

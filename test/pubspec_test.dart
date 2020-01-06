@@ -11,13 +11,13 @@ import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
-class MockSource extends Source {
+class FakeSource extends Source {
   @override
-  final String name = 'mock';
+  final String name = 'fake';
 
   @override
   BoundSource bind(SystemCache cache) =>
-      throw UnsupportedError('Cannot download mock packages.');
+      throw UnsupportedError('Cannot download fake packages.');
 
   @override
   PackageRef parseRef(String name, description, {String containingPath}) {
@@ -43,7 +43,7 @@ class MockSource extends Source {
 void main() {
   group('parse()', () {
     var sources = SourceRegistry();
-    sources.register(MockSource());
+    sources.register(FakeSource());
 
     var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
 
@@ -82,7 +82,7 @@ void main() {
       var pubspec = Pubspec.parse('''
 dependencies:
   foo:
-    mock: ok
+    fake: ok
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
@@ -105,7 +105,7 @@ dependencies:
       var pubspec = Pubspec.parse('''
 dev_dependencies:
   foo:
-    mock: ok
+    fake: ok
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
@@ -128,7 +128,7 @@ dev_dependencies:
       var pubspec = Pubspec.parse('''
 dependency_overrides:
   foo:
-    mock: ok
+    fake: ok
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
@@ -176,7 +176,7 @@ dependencies:
 name: myapp
 dependencies:
   myapp:
-    mock: ok
+    fake: ok
 ''', (pubspec) => pubspec.dependencies);
     });
 
@@ -185,7 +185,7 @@ dependencies:
 name: myapp
 dev_dependencies:
   myapp:
-    mock: ok
+    fake: ok
 ''', (pubspec) => pubspec.devDependencies);
     });
 
@@ -194,7 +194,7 @@ dev_dependencies:
 name: myapp
 dependency_overrides:
   myapp:
-    mock: ok
+    fake: ok
 ''', (pubspec) => pubspec.dependencyOverrides);
     });
 
@@ -202,7 +202,7 @@ dependency_overrides:
       expectPubspecException('''
 dependencies:
   foo:
-    mock: bad
+    fake: bad
 ''', (pubspec) => pubspec.dependencies);
     });
 
@@ -210,7 +210,7 @@ dependencies:
       expectPubspecException('''
 dependencies:
   foo:
-    mock: ok
+    fake: ok
     version: 1.2
 ''', (pubspec) => pubspec.dependencies);
     });
@@ -219,7 +219,7 @@ dependencies:
       expectPubspecException('''
 dependencies:
   foo:
-    mock: ok
+    fake: ok
     version: not constraint
 ''', (pubspec) => pubspec.dependencies);
     });
