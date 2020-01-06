@@ -449,7 +449,7 @@ class BoundHostedSource extends CachedSource {
   }
 
   /// Key for storing the current prefetch function in the current [Zone].
-  static const _prefetchingKey = #prefetch;
+  static const _prefetchingKey = #_prefetch;
 }
 
 /// This is the modified hosted source used when pub get or upgrade are run

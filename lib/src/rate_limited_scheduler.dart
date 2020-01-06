@@ -57,9 +57,6 @@ class RateLimitedScheduler<J, V> {
   /// Jobs that have started running.
   final Set<J> _started = {};
 
-  /// True when the processing loop is running.
-  bool _isRunning = false;
-
   RateLimitedScheduler(Future<V> Function(J) runJob,
       {maxConcurrentOperations = 10})
       : _runJob = runJob,
