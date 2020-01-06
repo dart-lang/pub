@@ -10,12 +10,18 @@ import '../source/cached.dart';
 
 /// Handles the `cache list` pub command.
 class CacheListCommand extends PubCommand {
-  String get name => "list";
-  String get description => "List packages in the system cache.";
-  String get invocation => "pub cache list";
+  @override
+  String get name => 'list';
+  @override
+  String get description => 'List packages in the system cache.';
+  @override
+  String get invocation => 'pub cache list';
+  @override
   bool get hidden => true;
+  @override
   bool get takesArguments => false;
 
+  @override
   void run() {
     // TODO(keertip): Add flag to list packages from non default sources.
     var packagesObj = <String, Map>{};

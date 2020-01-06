@@ -160,5 +160,6 @@ class Term {
           ? null
           : Term(package.withConstraint(constraint), isPositive);
 
+  @override
   String toString() => "${isPositive ? '' : 'not '}$package";
 }

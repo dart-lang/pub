@@ -9,17 +9,17 @@ import 'package:path/path.dart' as path;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test(
-      "generates a symlink with an absolute path if the dependency "
-      "path was absolute", () async {
+      'generates a symlink with an absolute path if the dependency '
+      'path was absolute', () async {
     await d
-        .dir("foo", [d.libDir("foo"), d.libPubspec("foo", "0.0.1")]).create();
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    var fooPath = d.path("foo");
+    var fooPath = d.path('foo');
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": fooPath}
+        'foo': {'path': fooPath}
       })
     ]).create();
 
@@ -29,13 +29,13 @@ main() {
       d.packagesFile({'myapp': '.', 'foo': fooPath})
     ]).validate();
 
-    await d.dir("moved").create();
+    await d.dir('moved').create();
 
     // Move the app but not the package. Since the symlink is absolute, it
     // should still be able to find it.
-    renameInSandbox(appPath, path.join("moved", appPath));
+    renameInSandbox(appPath, path.join('moved', appPath));
 
-    await d.dir("moved", [
+    await d.dir('moved', [
       d.dir(appPath, [
         d.packagesFile({'myapp': '.', 'foo': fooPath})
       ])

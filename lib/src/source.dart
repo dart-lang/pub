@@ -134,6 +134,7 @@ abstract class Source {
   int hashDescription(description);
 
   /// Returns the source's name.
+  @override
   String toString() => name;
 }
 
@@ -158,10 +159,10 @@ abstract class BoundSource {
   /// Sources should not override this. Instead, they implement [doGetVersions].
   Future<List<PackageId>> getVersions(PackageRef ref) {
     if (ref.isRoot) {
-      throw ArgumentError("Cannot get versions for the root package.");
+      throw ArgumentError('Cannot get versions for the root package.');
     }
     if (ref.source != source) {
-      throw ArgumentError("Package $ref does not use source ${source.name}.");
+      throw ArgumentError('Package $ref does not use source ${source.name}.');
     }
 
     return doGetVersions(ref);
@@ -195,9 +196,9 @@ abstract class BoundSource {
   ///
   /// Sources should not override this. Instead, they implement [doDescribe].
   Future<Pubspec> describe(PackageId id) async {
-    if (id.isRoot) throw ArgumentError("Cannot describe the root package.");
+    if (id.isRoot) throw ArgumentError('Cannot describe the root package.');
     if (id.source != source) {
-      throw ArgumentError("Package $id does not use source ${source.name}.");
+      throw ArgumentError('Package $id does not use source ${source.name}.');
     }
 
     var pubspec = _pubspecs[id];
@@ -207,7 +208,7 @@ abstract class BoundSource {
     pubspec = await doDescribe(id);
     if (pubspec.version != id.version) {
       throw PackageNotFoundException(
-          "the pubspec for $id has version ${pubspec.version}");
+          'the pubspec for $id has version ${pubspec.version}');
     }
 
     _pubspecs[id] = pubspec;

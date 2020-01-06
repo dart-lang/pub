@@ -6,23 +6,23 @@ import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('ignores previously activated version', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.2.3");
-      builder.serve("foo", "1.3.0");
+      builder.serve('foo', '1.2.3');
+      builder.serve('foo', '1.3.0');
     });
 
     // Activate 1.2.3.
-    await runPub(args: ["global", "activate", "foo", "1.2.3"]);
+    await runPub(args: ['global', 'activate', 'foo', '1.2.3']);
 
     // Activating it again resolves to the new best version.
-    await runPub(args: ["global", "activate", "foo", ">1.0.0"], output: """
+    await runPub(args: ['global', 'activate', 'foo', '>1.0.0'], output: '''
         Package foo is currently active at version 1.2.3.
         Resolving dependencies...
         + foo 1.3.0
         Downloading foo 1.3.0...
         Precompiling executables...
-        Activated foo 1.3.0.""");
+        Activated foo 1.3.0.''');
   });
 }

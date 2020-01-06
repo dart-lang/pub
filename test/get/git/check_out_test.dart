@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('checks out a package from Git', () async {
     ensureGit();
 
@@ -15,7 +15,7 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();

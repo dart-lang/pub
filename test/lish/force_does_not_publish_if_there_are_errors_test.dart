@@ -10,12 +10,12 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('--force does not publish if there are errors', () async {
-    var pkg = packageMap("test_pkg", "1.0.0");
-    pkg.remove("homepage");
+    var pkg = packageMap('test_pkg', '1.0.0');
+    pkg.remove('homepage');
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     var server = await ShelfTestServer.create();
@@ -24,7 +24,7 @@ main() {
     await pub.shouldExit(exit_codes.DATA);
     expect(
         pub.stderr,
-        emitsThrough("Sorry, your package is missing some "
+        emitsThrough('Sorry, your package is missing some '
             "requirements and can't be published yet."));
   });
 }

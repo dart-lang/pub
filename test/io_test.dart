@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
-main() {
+void main() {
   group('listDir', () {
     test('ignores hidden files by default', () {
       expect(withTempDir((temp) {
@@ -201,7 +201,7 @@ main() {
     });
   });
 
-  testExistencePredicate("entryExists", entryExists,
+  testExistencePredicate('entryExists', entryExists,
       forFile: true,
       forFileSymlink: true,
       forMultiLevelFileSymlink: true,
@@ -211,7 +211,7 @@ main() {
       forBrokenSymlink: true,
       forMultiLevelBrokenSymlink: true);
 
-  testExistencePredicate("linkExists", linkExists,
+  testExistencePredicate('linkExists', linkExists,
       forFile: false,
       forFileSymlink: true,
       forMultiLevelFileSymlink: true,
@@ -221,7 +221,7 @@ main() {
       forBrokenSymlink: true,
       forMultiLevelBrokenSymlink: true);
 
-  testExistencePredicate("fileExists", fileExists,
+  testExistencePredicate('fileExists', fileExists,
       forFile: true,
       forFileSymlink: true,
       forMultiLevelFileSymlink: true,
@@ -231,7 +231,7 @@ main() {
       forBrokenSymlink: false,
       forMultiLevelBrokenSymlink: false);
 
-  testExistencePredicate("dirExists", dirExists,
+  testExistencePredicate('dirExists', dirExists,
       forFile: false,
       forFileSymlink: false,
       forMultiLevelFileSymlink: false,
@@ -242,7 +242,7 @@ main() {
       forMultiLevelBrokenSymlink: false);
 }
 
-void testExistencePredicate(String name, bool predicate(String path),
+void testExistencePredicate(String name, bool Function(String path) predicate,
     {bool forFile,
     bool forFileSymlink,
     bool forMultiLevelFileSymlink,
@@ -254,15 +254,15 @@ void testExistencePredicate(String name, bool predicate(String path),
   group(name, () {
     test('returns $forFile for a file', () {
       expect(withTempDir((temp) {
-        var file = path.join(temp, "test.txt");
-        writeTextFile(file, "contents");
+        var file = path.join(temp, 'test.txt');
+        writeTextFile(file, 'contents');
         expect(predicate(file), equals(forFile));
       }), completes);
     });
 
     test('returns $forDirectory for a directory', () {
       expect(withTempDir((temp) {
-        var file = path.join(temp, "dir");
+        var file = path.join(temp, 'dir');
         _createDir(file);
         expect(predicate(file), equals(forDirectory));
       }), completes);
@@ -270,8 +270,8 @@ void testExistencePredicate(String name, bool predicate(String path),
 
     test('returns $forDirectorySymlink for a symlink to a directory', () {
       expect(withTempDir((temp) {
-        var targetPath = path.join(temp, "dir");
-        var symlinkPath = path.join(temp, "linkdir");
+        var targetPath = path.join(temp, 'dir');
+        var symlinkPath = path.join(temp, 'linkdir');
         _createDir(targetPath);
         createSymlink(targetPath, symlinkPath);
         expect(predicate(symlinkPath), equals(forDirectorySymlink));
@@ -282,9 +282,9 @@ void testExistencePredicate(String name, bool predicate(String path),
         'returns $forMultiLevelDirectorySymlink for a multi-level symlink to '
         'a directory', () {
       expect(withTempDir((temp) {
-        var targetPath = path.join(temp, "dir");
-        var symlink1Path = path.join(temp, "link1dir");
-        var symlink2Path = path.join(temp, "link2dir");
+        var targetPath = path.join(temp, 'dir');
+        var symlink1Path = path.join(temp, 'link1dir');
+        var symlink2Path = path.join(temp, 'link2dir');
         _createDir(targetPath);
         createSymlink(targetPath, symlink1Path);
         createSymlink(symlink1Path, symlink2Path);
@@ -294,8 +294,8 @@ void testExistencePredicate(String name, bool predicate(String path),
 
     test('returns $forBrokenSymlink for a broken symlink', () {
       expect(withTempDir((temp) {
-        var targetPath = path.join(temp, "dir");
-        var symlinkPath = path.join(temp, "linkdir");
+        var targetPath = path.join(temp, 'dir');
+        var symlinkPath = path.join(temp, 'linkdir');
         _createDir(targetPath);
         createSymlink(targetPath, symlinkPath);
         deleteEntry(targetPath);
@@ -306,9 +306,9 @@ void testExistencePredicate(String name, bool predicate(String path),
     test('returns $forMultiLevelBrokenSymlink for a multi-level broken symlink',
         () {
       expect(withTempDir((temp) {
-        var targetPath = path.join(temp, "dir");
-        var symlink1Path = path.join(temp, "link1dir");
-        var symlink2Path = path.join(temp, "link2dir");
+        var targetPath = path.join(temp, 'dir');
+        var symlink1Path = path.join(temp, 'link1dir');
+        var symlink2Path = path.join(temp, 'link2dir');
         _createDir(targetPath);
         createSymlink(targetPath, symlink1Path);
         createSymlink(symlink1Path, symlink2Path);
@@ -321,9 +321,9 @@ void testExistencePredicate(String name, bool predicate(String path),
     if (!Platform.isWindows) {
       test('returns $forFileSymlink for a symlink to a file', () {
         expect(withTempDir((temp) {
-          var targetPath = path.join(temp, "test.txt");
-          var symlinkPath = path.join(temp, "link.txt");
-          writeTextFile(targetPath, "contents");
+          var targetPath = path.join(temp, 'test.txt');
+          var symlinkPath = path.join(temp, 'link.txt');
+          writeTextFile(targetPath, 'contents');
           createSymlink(targetPath, symlinkPath);
           expect(predicate(symlinkPath), equals(forFileSymlink));
         }), completes);
@@ -333,10 +333,10 @@ void testExistencePredicate(String name, bool predicate(String path),
           'returns $forMultiLevelFileSymlink for a multi-level symlink to a '
           'file', () {
         expect(withTempDir((temp) {
-          var targetPath = path.join(temp, "test.txt");
-          var symlink1Path = path.join(temp, "link1.txt");
-          var symlink2Path = path.join(temp, "link2.txt");
-          writeTextFile(targetPath, "contents");
+          var targetPath = path.join(temp, 'test.txt');
+          var symlink1Path = path.join(temp, 'link1.txt');
+          var symlink2Path = path.join(temp, 'link2.txt');
+          writeTextFile(targetPath, 'contents');
           createSymlink(targetPath, symlink1Path);
           createSymlink(symlink1Path, symlink2Path);
           expect(predicate(symlink2Path), equals(forMultiLevelFileSymlink));
@@ -347,7 +347,7 @@ void testExistencePredicate(String name, bool predicate(String path),
 }
 
 /// Like [withTempDir], but canonicalizes the path before passing it to [fn].
-Future<T> _withCanonicalTempDir<T>(FutureOr<T> fn(String path)) =>
+Future<T> _withCanonicalTempDir<T>(FutureOr<T> Function(String path) fn) =>
     withTempDir((temp) => fn(canonicalize(temp)));
 
 /// Creates a directory [dir].

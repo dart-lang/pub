@@ -15,13 +15,14 @@ class DirectoryValidator extends Validator {
   DirectoryValidator(Entrypoint entrypoint) : super(entrypoint);
 
   static final _pluralNames = [
-    "benchmarks",
-    "docs",
-    "examples",
-    "tests",
-    "tools"
+    'benchmarks',
+    'docs',
+    'examples',
+    'tests',
+    'tools'
   ];
 
+  @override
   Future validate() {
     return Future.sync(() {
       for (var dir in listDir(entrypoint.root.dir)) {
@@ -39,7 +40,7 @@ class DirectoryValidator extends Validator {
               'tools.');
         }
 
-        if (dir.contains(RegExp(r"^samples?$"))) {
+        if (dir.contains(RegExp(r'^samples?$'))) {
           warnings.add('Rename the top-level "$dir" directory to "example".\n'
               'This allows Pub to find your examples and create "packages" '
               'directories for them.\n');

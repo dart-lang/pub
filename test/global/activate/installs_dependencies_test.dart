@@ -6,19 +6,19 @@ import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('activating a package installs its dependencies', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", deps: {"bar": "any"});
-      builder.serve("bar", "1.0.0", deps: {"baz": "any"});
-      builder.serve("baz", "1.0.0");
+      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
+      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
+      builder.serve('baz', '1.0.0');
     });
 
     await runPub(
-        args: ["global", "activate", "foo"],
+        args: ['global', 'activate', 'foo'],
         output: allOf([
-          contains("Downloading bar 1.0.0..."),
-          contains("Downloading baz 1.0.0...")
+          contains('Downloading bar 1.0.0...'),
+          contains('Downloading baz 1.0.0...')
         ]));
   });
 }

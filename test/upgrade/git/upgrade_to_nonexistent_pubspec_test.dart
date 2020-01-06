@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("upgrades Git packages to a nonexistent pubspec", () async {
+void main() {
+  test('upgrades Git packages to a nonexistent pubspec', () async {
     ensureGit();
 
     var repo =
@@ -16,7 +16,7 @@ main() {
     await repo.create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();

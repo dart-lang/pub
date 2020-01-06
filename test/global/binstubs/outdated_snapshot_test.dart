@@ -12,18 +12,18 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test("a binstub runs 'pub global run' for an outdated snapshot", () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {"foo-script": "script"}
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'foo-script': 'script'}
       }, contents: [
         d.dir(
-            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
       ]);
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
@@ -34,13 +34,13 @@ main() {
     ]).create();
 
     var process = await TestProcess.start(
-        p.join(d.sandbox, cachePath, "bin", binStubName("foo-script")),
-        ["arg1", "arg2"],
+        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+        ['arg1', 'arg2'],
         environment: getEnvironment());
 
     expect(process.stderr,
-        emits(contains("Invalid kernel binary format version.")));
-    expect(process.stdout, emitsThrough("ok [arg1, arg2]"));
+        emits(contains('Invalid kernel binary format version.')));
+    expect(process.stdout, emitsThrough('ok [arg1, arg2]'));
     await process.shouldExit();
 
     await d.dir(cachePath, [

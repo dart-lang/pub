@@ -10,15 +10,15 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('path dependency to non-package directory', () async {
     // Make an empty directory.
     await d.dir('foo').create();
-    var fooPath = path.join(d.sandbox, "foo");
+    var fooPath = path.join(d.sandbox, 'foo');
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": fooPath}
+        'foo': {'path': fooPath}
       })
     ]).create();
 

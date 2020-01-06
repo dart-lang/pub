@@ -7,15 +7,15 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('uses the 1.6-style lockfile if necessary', () async {
     await servePackages((builder) {
-      builder.serve("bar", "1.0.0");
-      builder.serve("foo", "1.0.0", deps: {
-        "bar": "any"
+      builder.serve('bar', '1.0.0');
+      builder.serve('foo', '1.0.0', deps: {
+        'bar': 'any'
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", """
+        d.dir('bin', [
+          d.file('script.dart', """
               import 'package:bar/bar.dart' as bar;
 
               main(args) => print(bar.main());""")
@@ -23,8 +23,8 @@ main() {
       ]);
     });
 
-    await runPub(args: ["cache", "add", "foo"]);
-    await runPub(args: ["cache", "add", "bar"]);
+    await runPub(args: ['cache', 'add', 'foo']);
+    await runPub(args: ['cache', 'add', 'bar']);
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
@@ -41,8 +41,8 @@ packages:
       ])
     ]).create();
 
-    var pub = await pubRun(global: true, args: ["foo:script"]);
-    expect(pub.stdout, emitsThrough("bar 1.0.0"));
+    var pub = await pubRun(global: true, args: ['foo:script']);
+    expect(pub.stdout, emitsThrough('bar 1.0.0'));
     await pub.shouldExit();
 
     await d.dir(cachePath, [

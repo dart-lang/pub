@@ -58,10 +58,10 @@ class GlobalPackages {
   final SystemCache cache;
 
   /// The directory where the lockfiles for activated packages are stored.
-  String get _directory => p.join(cache.rootDir, "global_packages");
+  String get _directory => p.join(cache.rootDir, 'global_packages');
 
   /// The directory where binstubs for global package executables are stored.
-  String get _binStubDir => p.join(cache.rootDir, "bin");
+  String get _binStubDir => p.join(cache.rootDir, 'bin');
 
   /// Creates a new global package registry backed by the given directory on
   /// the user's file system.
@@ -171,7 +171,7 @@ class GlobalPackages {
   Future _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = Package.inMemory(Pubspec("pub global activate",
+    var root = Package.inMemory(Pubspec('pub global activate',
         dependencies: [dep], sources: cache.sources));
 
     // Resolve it and download its dependencies.
@@ -232,7 +232,7 @@ class GlobalPackages {
   /// successfully precompiled.
   Future<Map<String, String>> _precompileExecutables(
       Entrypoint entrypoint, String packageName) {
-    return log.progress("Precompiling executables", () async {
+    return log.progress('Precompiling executables', () async {
       var binDir = p.join(_directory, packageName, 'bin');
       cleanDir(binDir);
 
@@ -277,7 +277,7 @@ class GlobalPackages {
     // TODO(nweiz): This cleans up Dart 1.6's old lockfile location. Remove it
     // when Dart 1.6 is old enough that we don't think anyone will have these
     // lockfiles anymore (issue 20703).
-    var oldPath = p.join(_directory, "$package.lock");
+    var oldPath = p.join(_directory, '$package.lock');
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
     writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
@@ -343,7 +343,7 @@ class GlobalPackages {
         lockFile = LockFile.load(oldLockFilePath, cache.sources);
       } on IOException {
         // If we couldn't read the lock file, it's not activated.
-        dataError("No active package ${log.bold(name)}.");
+        dataError('No active package ${log.bold(name)}.');
       }
 
       // Move the old lockfile to its new location.
@@ -375,13 +375,13 @@ class GlobalPackages {
       if (sdk == null) {
         dataError('${log.bold(name)} ${entrypoint.root.version} requires '
             'unknown SDK "$name".');
-      } else if (sdkName == "dart") {
+      } else if (sdkName == 'dart') {
         if (constraint.allows(sdk.version)) return;
         dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
-            "support Dart ${sdk.version}.");
+            'support Dart ${sdk.version}.');
       } else {
-        dataError("${log.bold(name)} ${entrypoint.root.version} requires the "
-            "${sdk.name} SDK, which is unsupported for global executables.");
+        dataError('${log.bold(name)} ${entrypoint.root.version} requires the '
+            '${sdk.name} SDK, which is unsupported for global executables.');
       }
     });
 
@@ -417,17 +417,17 @@ class GlobalPackages {
   /// Gets the path to the lock file for an activated cached package with
   /// [name].
   String _getLockFilePath(String name) =>
-      p.join(_directory, name, "pubspec.lock");
+      p.join(_directory, name, 'pubspec.lock');
 
   /// Gets the path to the .packages file for an activated cached package with
   /// [name].
   String _getPackagesFilePath(String name) =>
-      p.join(_directory, name, ".packages");
+      p.join(_directory, name, '.packages');
 
   /// Gets the path to the `package_config.json` file for an
   /// activated cached package with [name].
   String _getPackageConfigFilePath(String name) =>
-      p.join(_directory, name, ".dart_tool", "package_config.json");
+      p.join(_directory, name, '.dart_tool', 'package_config.json');
 
   /// Shows the user a formatted list of globally activated packages.
   void listActivePackages() {
@@ -452,7 +452,7 @@ class GlobalPackages {
 
     if (id == null) {
       throw FormatException("Pubspec for activated package $name didn't "
-          "contain an entry for itself.");
+          'contain an entry for itself.');
     }
 
     return id;
@@ -482,12 +482,12 @@ class GlobalPackages {
       for (var entry in listDir(_binStubDir)) {
         try {
           var binstub = readTextFile(entry);
-          var package = _binStubProperty(binstub, "Package");
+          var package = _binStubProperty(binstub, 'Package');
           if (package == null) {
             throw ApplicationException("No 'Package' property.");
           }
 
-          var executable = _binStubProperty(binstub, "Executable");
+          var executable = _binStubProperty(binstub, 'Executable');
           if (executable == null) {
             throw ApplicationException("No 'Executable' property.");
           }
@@ -495,8 +495,8 @@ class GlobalPackages {
           executables.putIfAbsent(package, () => []).add(executable);
         } catch (error, stackTrace) {
           log.error(
-              "Error reading binstub for "
-              "\"${p.basenameWithoutExtension(entry)}\"",
+              'Error reading binstub for '
+              '"${p.basenameWithoutExtension(entry)}"',
               error,
               stackTrace);
 
@@ -512,7 +512,7 @@ class GlobalPackages {
         PackageId id;
         try {
           id = _loadPackageId(entry);
-          log.message("Reactivating ${log.bold(id.name)} ${id.version}...");
+          log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
 
           var entrypoint = find(id.name);
           var snapshots = await _precompileExecutables(entrypoint, id.name);
@@ -524,11 +524,11 @@ class GlobalPackages {
               suggestIfNotOnPath: false);
           successes.add(id.name);
         } catch (error, stackTrace) {
-          var message = "Failed to reactivate "
-              "${log.bold(p.basenameWithoutExtension(entry))}";
+          var message = 'Failed to reactivate '
+              '${log.bold(p.basenameWithoutExtension(entry))}';
           if (id != null) {
-            message += " ${id.version}";
-            if (id.source is! HostedSource) message += " from ${id.source}";
+            message += ' ${id.version}';
+            if (id.source is! HostedSource) message += ' from ${id.source}';
           }
 
           log.error(message, error, stackTrace);
@@ -540,15 +540,15 @@ class GlobalPackages {
     }
 
     if (executables.isNotEmpty) {
-      var message = StringBuffer("Binstubs exist for non-activated "
-          "packages:\n");
+      var message = StringBuffer('Binstubs exist for non-activated '
+          'packages:\n');
       executables.forEach((package, executableNames) {
         for (var executable in executableNames) {
           deleteEntry(p.join(_binStubDir, executable));
         }
 
-        message.writeln("  From ${log.bold(package)}: "
-            "${toSentence(executableNames)}");
+        message.writeln('  From ${log.bold(package)}: '
+            '${toSentence(executableNames)}');
       });
       log.error(message);
     }
@@ -615,25 +615,25 @@ class GlobalPackages {
     }
 
     if (installed.isNotEmpty) {
-      var names = namedSequence("executable", installed.map(log.bold));
-      log.message("Installed $names.");
+      var names = namedSequence('executable', installed.map(log.bold));
+      log.message('Installed $names.');
     }
 
     // Show errors for any collisions.
     if (collided.isNotEmpty) {
       for (var command in ordered(collided.keys)) {
         if (overwriteBinStubs) {
-          log.warning("Replaced ${log.bold(command)} previously installed from "
-              "${log.bold(collided[command])}.");
+          log.warning('Replaced ${log.bold(command)} previously installed from '
+              '${log.bold(collided[command])}.');
         } else {
-          log.warning("Executable ${log.bold(command)} was already installed "
-              "from ${log.bold(collided[command])}.");
+          log.warning('Executable ${log.bold(command)} was already installed '
+              'from ${log.bold(collided[command])}.');
         }
       }
 
       if (!overwriteBinStubs) {
-        log.warning("Deactivate the other package(s) or activate "
-            "${log.bold(package.name)} using --overwrite.");
+        log.warning('Deactivate the other package(s) or activate '
+            '${log.bold(package.name)} using --overwrite.');
       }
     }
 
@@ -650,12 +650,12 @@ class GlobalPackages {
     // TODO(rnystrom): This can print false positives since a script may be
     // produced by a transformer. Do something better.
     var binFiles = package
-        .listFiles(beneath: "bin", recursive: false)
+        .listFiles(beneath: 'bin', recursive: false)
         .map((path) => package.relative(path))
         .toList();
     for (var executable in installed) {
       var script = package.pubspec.executables[executable];
-      var scriptPath = p.join("bin", "$script.dart");
+      var scriptPath = p.join('bin', '$script.dart');
       if (!binFiles.contains(scriptPath)) {
         log.warning('Warning: Executable "$executable" runs "$scriptPath", '
             'which was not found in ${log.bold(package.name)}.');
@@ -680,16 +680,16 @@ class GlobalPackages {
   String _createBinStub(Package package, String executable, String script,
       {bool overwrite, String snapshot}) {
     var binStubPath = p.join(_binStubDir, executable);
-    if (Platform.isWindows) binStubPath += ".bat";
+    if (Platform.isWindows) binStubPath += '.bat';
 
     // See if the binstub already exists. If so, it's for another package
     // since we already deleted all of this package's binstubs.
     String previousPackage;
     if (fileExists(binStubPath)) {
       var contents = readTextFile(binStubPath);
-      previousPackage = _binStubProperty(contents, "Package");
+      previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
-        log.fine("Could not parse binstub $binStubPath:\n$contents");
+        log.fine('Could not parse binstub $binStubPath:\n$contents');
       } else if (!overwrite) {
         return previousPackage;
       }
@@ -704,11 +704,11 @@ class GlobalPackages {
       assert(p.isAbsolute(snapshot));
       invocation = 'dart "$snapshot"';
     } else {
-      invocation = "pub global run ${package.name}:$script";
+      invocation = 'pub global run ${package.name}:$script';
     }
 
     if (Platform.isWindows) {
-      var batch = """
+      var batch = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
 rem Package: ${package.name}
@@ -716,10 +716,10 @@ rem Version: ${package.version}
 rem Executable: $executable
 rem Script: $script
 $invocation %*
-""";
+''';
 
       if (snapshot != null) {
-        batch += """
+        batch += '''
 
 rem The VM exits with code 253 if the snapshot version is out-of-date.
 rem If it is, we need to delete it and run "pub global" manually.
@@ -728,12 +728,12 @@ if not errorlevel 253 (
 )
 
 pub global run ${package.name}:$script %*
-""";
+''';
       }
 
       writeTextFile(binStubPath, batch);
     } else {
-      var bash = """
+      var bash = '''
 #!/usr/bin/env sh
 # This file was created by pub v${sdk.version}.
 # Package: ${package.name}
@@ -741,10 +741,10 @@ pub global run ${package.name}:$script %*
 # Executable: $executable
 # Script: $script
 $invocation "\$@"
-""";
+''';
 
       if (snapshot != null) {
-        bash += """
+        bash += '''
 
 # The VM exits with code 253 if the snapshot version is out-of-date.
 # If it is, we need to delete it and run "pub global" manually.
@@ -754,7 +754,7 @@ if [ \$exit_code != 253 ]; then
 fi
 
 pub global run ${package.name}:$script "\$@"
-""";
+''';
       }
 
       // Write this as the system encoding since the system is going to execute
@@ -769,7 +769,7 @@ pub global run ${package.name}:$script "\$@"
           deleteEntry(binStubPath);
         } on IOException catch (err) {
           // Do nothing. We're going to fail below anyway.
-          log.fine("Could not delete binstub:\n$err");
+          log.fine('Could not delete binstub:\n$err');
         }
 
         fail('Could not make "$binStubPath" executable (exit code '
@@ -786,14 +786,14 @@ pub global run ${package.name}:$script "\$@"
 
     for (var file in listDir(_binStubDir, includeDirs: false)) {
       var contents = readTextFile(file);
-      var binStubPackage = _binStubProperty(contents, "Package");
+      var binStubPackage = _binStubProperty(contents, 'Package');
       if (binStubPackage == null) {
-        log.fine("Could not parse binstub $file:\n$contents");
+        log.fine('Could not parse binstub $file:\n$contents');
         continue;
       }
 
       if (binStubPackage == package) {
-        log.fine("Deleting old binstub $file");
+        log.fine('Deleting old binstub $file');
         deleteEntry(file);
       }
     }
@@ -808,11 +808,11 @@ pub global run ${package.name}:$script "\$@"
     if (Platform.isWindows) {
       // See if the shell can find one of the binstubs.
       // "\q" means return exit code 0 if found or 1 if not.
-      var result = runProcessSync("where", [r"\q", installed + ".bat"]);
+      var result = runProcessSync('where', [r'\q', installed + '.bat']);
       if (result.exitCode == 0) return;
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "
-          "${log.bold(_binStubDir)}, which is not on your path.\n"
+          '${log.bold(_binStubDir)}, which is not on your path.\n'
           "You can fix that by adding that directory to your system's "
           '"Path" environment variable.\n'
           'A web search for "configure windows path" will show you how.');
@@ -822,7 +822,7 @@ pub global run ${package.name}:$script "\$@"
       // The "command" builtin is more reliable than the "which" executable. See
       // http://unix.stackexchange.com/questions/85249/why-not-use-which-what-to-use-then
       var result =
-          runProcessSync("command", ["-v", installed], runInShell: true);
+          runProcessSync('command', ['-v', installed], runInShell: true);
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
@@ -832,19 +832,19 @@ pub global run ${package.name}:$script "\$@"
       }
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "
-          "${log.bold(binDir)}, which is not on your path.\n"
+          '${log.bold(binDir)}, which is not on your path.\n'
           "You can fix that by adding this to your shell's config file "
-          "(.bashrc, .bash_profile, etc.):\n"
-          "\n"
+          '(.bashrc, .bash_profile, etc.):\n'
+          '\n'
           "  ${log.bold('export PATH="\$PATH":"$binDir"')}\n"
-          "\n");
+          '\n');
     }
   }
 
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
   String _binStubProperty(String source, String name) {
-    var pattern = RegExp(quoteRegExp(name) + r": ([a-zA-Z0-9_-]+)");
+    var pattern = RegExp(quoteRegExp(name) + r': ([a-zA-Z0-9_-]+)');
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];
   }

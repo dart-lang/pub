@@ -7,12 +7,12 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('the spawned application can read line-by-line from stdin', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", """
+      d.dir('bin', [
+        d.file('script.dart', """
           import 'dart:io';
 
           main() {
@@ -28,22 +28,22 @@ main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["bin/script"]);
+    var pub = await pubRun(args: ['bin/script']);
 
-    await expectLater(pub.stdout, emits("started"));
-    pub.stdin.writeln("first");
-    await expectLater(pub.stdout, emits("between"));
-    pub.stdin.writeln("second");
-    expect(pub.stdout, emits("first"));
-    expect(pub.stdout, emits("second"));
+    await expectLater(pub.stdout, emits('started'));
+    pub.stdin.writeln('first');
+    await expectLater(pub.stdout, emits('between'));
+    pub.stdin.writeln('second');
+    expect(pub.stdout, emits('first'));
+    expect(pub.stdout, emits('second'));
     await pub.shouldExit(0);
   });
 
   test('the spawned application can read streamed from stdin', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [
-        d.file("script.dart", """
+      d.dir('bin', [
+        d.file('script.dart', """
           import 'dart:io';
 
           main() {
@@ -55,15 +55,15 @@ main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["bin/script"]);
+    var pub = await pubRun(args: ['bin/script']);
 
-    await expectLater(pub.stdout, emits("started"));
-    pub.stdin.writeln("first");
-    await expectLater(pub.stdout, emits("first"));
-    pub.stdin.writeln("second");
-    await expectLater(pub.stdout, emits("second"));
-    pub.stdin.writeln("third");
-    await expectLater(pub.stdout, emits("third"));
+    await expectLater(pub.stdout, emits('started'));
+    pub.stdin.writeln('first');
+    await expectLater(pub.stdout, emits('first'));
+    pub.stdin.writeln('second');
+    await expectLater(pub.stdout, emits('second'));
+    pub.stdin.writeln('third');
+    await expectLater(pub.stdout, emits('third'));
     await pub.stdin.close();
     await pub.shouldExit(0);
   });

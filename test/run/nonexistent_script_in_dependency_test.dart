@@ -10,19 +10,19 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('Errors if the script in a dependency does not exist.', () async {
-    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       })
     ]).create();
 
     await pubGet();
 
-    var pub = await pubRun(args: ["foo:script"]);
+    var pub = await pubRun(args: ['foo:script']);
     expect(
         pub.stderr,
         emits(

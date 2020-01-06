@@ -16,11 +16,17 @@ import '../utils.dart';
 
 /// Handles the `deps` pub command.
 class DepsCommand extends PubCommand {
-  String get name => "deps";
-  String get description => "Print package dependencies.";
-  List<String> get aliases => const ["dependencies", "tab"];
-  String get invocation => "pub deps";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-deps";
+  @override
+  String get name => 'deps';
+  @override
+  String get description => 'Print package dependencies.';
+  @override
+  List<String> get aliases => const ['dependencies', 'tab'];
+  @override
+  String get invocation => 'pub deps';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-deps';
+  @override
   bool get takesArguments => false;
 
   final AnalysisContextManager analysisContextManager =
@@ -33,21 +39,22 @@ class DepsCommand extends PubCommand {
   bool get _includeDev => argResults['dev'];
 
   DepsCommand() {
-    argParser.addOption("style",
-        abbr: "s",
-        help: "How output should be displayed.",
-        allowed: ["compact", "tree", "list"],
-        defaultsTo: "tree");
+    argParser.addOption('style',
+        abbr: 's',
+        help: 'How output should be displayed.',
+        allowed: ['compact', 'tree', 'list'],
+        defaultsTo: 'tree');
 
-    argParser.addFlag("dev",
+    argParser.addFlag('dev',
         negatable: true,
-        help: "Whether to include dev dependencies.",
+        help: 'Whether to include dev dependencies.',
         defaultsTo: true);
 
-    argParser.addFlag("executables",
-        negatable: false, help: "List all available executables.");
+    argParser.addFlag('executables',
+        negatable: false, help: 'List all available executables.');
   }
 
+  @override
   void run() {
     // Explicitly run this in case we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
@@ -64,14 +71,14 @@ class DepsCommand extends PubCommand {
 
       _buffer.writeln(_labelPackage(entrypoint.root));
 
-      switch (argResults["style"]) {
-        case "compact":
+      switch (argResults['style']) {
+        case 'compact':
           _outputCompact();
           break;
-        case "list":
+        case 'list':
           _outputList();
           break;
-        case "tree":
+        case 'tree':
           _outputTree();
           break;
       }
@@ -88,33 +95,33 @@ class DepsCommand extends PubCommand {
   /// line.
   void _outputCompact() {
     var root = entrypoint.root;
-    _outputCompactPackages("dependencies", root.dependencies.keys);
+    _outputCompactPackages('dependencies', root.dependencies.keys);
     if (_includeDev) {
-      _outputCompactPackages("dev dependencies", root.devDependencies.keys);
+      _outputCompactPackages('dev dependencies', root.devDependencies.keys);
     }
     _outputCompactPackages(
-        "dependency overrides", root.dependencyOverrides.keys);
+        'dependency overrides', root.dependencyOverrides.keys);
 
     var transitive = _getTransitiveDependencies();
-    _outputCompactPackages("transitive dependencies", transitive);
+    _outputCompactPackages('transitive dependencies', transitive);
   }
 
   /// Outputs one section of packages in the compact output.
-  _outputCompactPackages(String section, Iterable<String> names) {
+  void _outputCompactPackages(String section, Iterable<String> names) {
     if (names.isEmpty) return;
 
     _buffer.writeln();
-    _buffer.writeln("$section:");
+    _buffer.writeln('$section:');
     for (var name in ordered(names)) {
       var package = _getPackage(name);
 
-      _buffer.write("- ${_labelPackage(package)}");
+      _buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
         _buffer.writeln();
       } else {
         var depNames = package.dependencies.keys;
         var depsList = "[${depNames.join(' ')}]";
-        _buffer.writeln(" ${log.gray(depsList)}");
+        _buffer.writeln(' ${log.gray(depsList)}');
       }
     }
   }
@@ -126,32 +133,32 @@ class DepsCommand extends PubCommand {
   /// shown.
   void _outputList() {
     var root = entrypoint.root;
-    _outputListSection("dependencies", root.dependencies.keys);
+    _outputListSection('dependencies', root.dependencies.keys);
     if (_includeDev) {
-      _outputListSection("dev dependencies", root.devDependencies.keys);
+      _outputListSection('dev dependencies', root.devDependencies.keys);
     }
-    _outputListSection("dependency overrides", root.dependencyOverrides.keys);
+    _outputListSection('dependency overrides', root.dependencyOverrides.keys);
 
     var transitive = _getTransitiveDependencies();
     if (transitive.isEmpty) return;
 
-    _outputListSection("transitive dependencies", ordered(transitive));
+    _outputListSection('transitive dependencies', ordered(transitive));
   }
 
   /// Outputs one section of packages in the list output.
-  _outputListSection(String name, Iterable<String> deps) {
+  void _outputListSection(String name, Iterable<String> deps) {
     if (deps.isEmpty) return;
 
     _buffer.writeln();
-    _buffer.writeln("$name:");
+    _buffer.writeln('$name:');
 
     for (var name in deps) {
       var package = _getPackage(name);
-      _buffer.writeln("- ${_labelPackage(package)}");
+      _buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
         _buffer
-            .writeln("  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}");
+            .writeln('  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}');
       }
     }
   }
@@ -206,7 +213,7 @@ class DepsCommand extends PubCommand {
   }
 
   String _labelPackage(Package package) =>
-      "${log.bold(package.name)} ${package.version}";
+      '${log.bold(package.name)} ${package.version}';
 
   /// Gets the names of the non-immediate dependencies of the root package.
   Set<String> _getTransitiveDependencies() {
@@ -307,12 +314,13 @@ class DepsCommand extends PubCommand {
     // Sort executables to make executable that matches the package name to be
     // the first in the list.
     executables.sort((e1, e2) {
-      if (e1 == packageName)
+      if (e1 == packageName) {
         return -1;
-      else if (e2 == packageName)
+      } else if (e2 == packageName) {
         return 1;
-      else
+      } else {
         return e1.compareTo(e2);
+      }
     });
 
     return '$packageName: ${executables.map(log.bold).join(', ')}';

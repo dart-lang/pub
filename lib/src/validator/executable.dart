@@ -14,14 +14,15 @@ import '../validator.dart';
 class ExecutableValidator extends Validator {
   ExecutableValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() async {
     var binFiles = entrypoint.root
-        .listFiles(beneath: "bin", recursive: false, useGitIgnore: true)
+        .listFiles(beneath: 'bin', recursive: false, useGitIgnore: true)
         .map(entrypoint.root.relative)
         .toList();
 
     entrypoint.root.pubspec.executables.forEach((executable, script) {
-      var scriptPath = p.join("bin", "$script.dart");
+      var scriptPath = p.join('bin', '$script.dart');
       if (binFiles.contains(scriptPath)) return;
 
       warnings.add('Your pubspec.yaml lists an executable "$executable" that '

@@ -9,19 +9,19 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test('package_config.json file is created', () async {
       await servePackages((builder) {
-        builder.serve("foo", "1.2.3",
-            deps: {'baz': '2.2.2'}, contents: [d.dir("lib", [])]);
-        builder.serve("bar", "3.2.1", contents: [d.dir("lib", [])]);
-        builder.serve("baz", "2.2.2",
-            deps: {"bar": "3.2.1"}, contents: [d.dir("lib", [])]);
+        builder.serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
+        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
+        builder.serve('baz', '2.2.2',
+            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
       });
 
       await d.dir(appPath, [
-        d.appPubspec({"foo": "1.2.3"}),
+        d.appPubspec({'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -51,15 +51,15 @@ main() {
 
     test('package_config.json file is overwritten', () async {
       await servePackages((builder) {
-        builder.serve("foo", "1.2.3",
-            deps: {'baz': '2.2.2'}, contents: [d.dir("lib", [])]);
-        builder.serve("bar", "3.2.1", contents: [d.dir("lib", [])]);
-        builder.serve("baz", "2.2.2",
-            deps: {"bar": "3.2.1"}, contents: [d.dir("lib", [])]);
+        builder.serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
+        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
+        builder.serve('baz', '2.2.2',
+            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
       });
 
       await d.dir(appPath, [
-        d.appPubspec({"foo": "1.2.3"}),
+        d.appPubspec({'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -100,7 +100,7 @@ main() {
 
     test('package_config.json file is not created if pub fails', () async {
       await d.dir(appPath, [
-        d.appPubspec({"foo": "1.2.3"}),
+        d.appPubspec({'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -119,24 +119,24 @@ main() {
         '.dart_tool/package_config.json file has relative path to path dependency',
         () async {
       await servePackages((builder) {
-        builder.serve("foo", "1.2.3",
-            deps: {'baz': 'any'}, contents: [d.dir("lib", [])]);
-        builder.serve("baz", "9.9.9", deps: {}, contents: [d.dir("lib", [])]);
+        builder.serve('foo', '1.2.3',
+            deps: {'baz': 'any'}, contents: [d.dir('lib', [])]);
+        builder.serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
       });
 
-      await d.dir("local_baz", [
-        d.libDir("baz", 'baz 3.2.1'),
-        d.libPubspec("baz", "3.2.1")
+      await d.dir('local_baz', [
+        d.libDir('baz', 'baz 3.2.1'),
+        d.libPubspec('baz', '3.2.1')
       ]).create();
 
       await d.dir(appPath, [
         d.pubspec({
-          "name": "myapp",
-          "dependencies": {
-            "foo": "^1.2.3",
+          'name': 'myapp',
+          'dependencies': {
+            'foo': '^1.2.3',
           },
-          "dependency_overrides": {
-            "baz": {"path": "../local_baz"},
+          'dependency_overrides': {
+            'baz': {'path': '../local_baz'},
           }
         }),
         d.dir('lib')
@@ -165,14 +165,14 @@ main() {
     test('package_config.json has language version', () async {
       await servePackages((builder) {
         builder.serve(
-          "foo",
-          "1.2.3",
+          'foo',
+          '1.2.3',
           pubspec: {
             'environment': {
               'sdk': '>=0.0.1 <=0.2.2+2', // tests runs with '0.1.2+3'
             },
           },
-          contents: [d.dir("lib", [])],
+          contents: [d.dir('lib', [])],
         );
       });
 

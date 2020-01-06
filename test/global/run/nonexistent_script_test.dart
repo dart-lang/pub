@@ -9,15 +9,15 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('errors if the script does not exist.', () async {
-    await servePackages((builder) => builder.serve("foo", "1.0.0", pubspec: {
-          "dev_dependencies": {"bar": "1.0.0"}
+    await servePackages((builder) => builder.serve('foo', '1.0.0', pubspec: {
+          'dev_dependencies': {'bar': '1.0.0'}
         }));
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ["foo:script"]);
+    var pub = await pubRun(global: true, args: ['foo:script']);
     expect(
         pub.stderr,
         emits(

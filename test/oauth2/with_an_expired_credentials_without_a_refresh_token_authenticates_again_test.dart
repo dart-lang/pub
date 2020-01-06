@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test(
       'with an expired credentials.json without a refresh token, '
       'authenticates again and saves credentials.json', () async {
@@ -29,7 +29,7 @@ main() {
         pub.stderr,
         emits("Pub's authorization to upload packages has expired and "
             "can't be automatically refreshed."));
-    await authorizePub(pub, server, "new access token");
+    await authorizePub(pub, server, 'new access token');
 
     server.handler.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,

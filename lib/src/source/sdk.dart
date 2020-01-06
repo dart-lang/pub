@@ -17,8 +17,10 @@ import '../utils.dart';
 
 /// A package [Source] that gets packages from a hard-coded SDK.
 class SdkSource extends Source {
+  @override
   final name = 'sdk';
 
+  @override
   BoundSource bind(SystemCache systemCache) =>
       BoundSdkSource(this, systemCache);
 
@@ -31,37 +33,44 @@ class SdkSource extends Source {
       PackageId(name, this, version, sdk);
 
   /// Parses an SDK dependency.
+  @override
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (description is! String) {
-      throw FormatException("The description must be an SDK name.");
+      throw FormatException('The description must be an SDK name.');
     }
 
     return PackageRef(name, this, description);
   }
 
+  @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (description is! String) {
-      throw FormatException("The description must be an SDK name.");
+      throw FormatException('The description must be an SDK name.');
     }
 
     return PackageId(name, this, version, description);
   }
 
+  @override
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
+  @override
   int hashDescription(description) => description.hashCode;
 }
 
 /// The [BoundSource] for [SdkSource].
 class BoundSdkSource extends BoundSource {
+  @override
   final SdkSource source;
 
+  @override
   final SystemCache systemCache;
 
   BoundSdkSource(this.source, this.systemCache);
 
+  @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     var pubspec = _loadPubspec(ref);
     var id = PackageId(ref.name, source, pubspec.version, ref.description);
@@ -69,6 +78,7 @@ class BoundSdkSource extends BoundSource {
     return [id];
   }
 
+  @override
   Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id);
 
   /// Loads the pubspec for the Flutter package named [name].
@@ -79,6 +89,7 @@ class BoundSdkSource extends BoundSource {
       Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
           expectedName: package.name);
 
+  @override
   Future get(PackageId id, String symlink) async {
     createPackageSymlink(id.name, _verifiedPackagePath(id), symlink);
   }
@@ -93,7 +104,7 @@ class BoundSdkSource extends BoundSource {
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$identifier"');
     } else if (!sdk.isAvailable) {
-      throw PackageNotFoundException("the ${sdk.name} SDK is not available",
+      throw PackageNotFoundException('the ${sdk.name} SDK is not available',
           missingSdk: sdk);
     }
 
@@ -104,6 +115,7 @@ class BoundSdkSource extends BoundSource {
         'could not find package ${package.name} in the ${sdk.name} SDK');
   }
 
+  @override
   String getDirectory(PackageId id) {
     try {
       return _verifiedPackagePath(id);
@@ -111,7 +123,7 @@ class BoundSdkSource extends BoundSource {
       // [PackageNotFoundException]s are uncapitalized and unpunctuated because
       // they're used within other sentences by the version solver, but
       // [ApplicationException]s should be full sentences.
-      throw ApplicationException(capitalize(error.message) + ".");
+      throw ApplicationException(capitalize(error.message) + '.');
     }
   }
 }

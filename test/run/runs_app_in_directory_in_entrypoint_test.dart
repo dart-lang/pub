@@ -9,23 +9,23 @@ import 'package:path/path.dart' as path;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('runs a Dart application in the entrypoint package', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("tool", [
-        d.file("app.dart", "main() => print('tool');"),
-        d.dir("sub", [d.file("app.dart", "main() => print('sub');")])
+      d.dir('tool', [
+        d.file('app.dart', "main() => print('tool');"),
+        d.dir('sub', [d.file('app.dart', "main() => print('sub');")])
       ])
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [path.join("tool", "app")]);
-    expect(pub.stdout, emits("tool"));
+    var pub = await pubRun(args: [path.join('tool', 'app')]);
+    expect(pub.stdout, emits('tool'));
     await pub.shouldExit();
 
-    pub = await pubRun(args: [path.join("tool", "sub", "app")]);
-    expect(pub.stdout, emits("sub"));
+    pub = await pubRun(args: [path.join('tool', 'sub', 'app')]);
+    expect(pub.stdout, emits('sub'));
     await pub.shouldExit();
   });
 }

@@ -21,7 +21,7 @@ PackageServer _globalPackageServer;
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future servePackages(void callback(PackageServerBuilder builder)) async {
+Future servePackages(void Function(PackageServerBuilder) callback) async {
   _globalPackageServer = await PackageServer.start(callback);
   globalServer = _globalPackageServer._inner;
 
@@ -71,7 +71,7 @@ class PackageServer {
   /// Calls [callback] with a [PackageServerBuilder] that's used to specify
   /// which packages to serve.
   static Future<PackageServer> start(
-      void callback(PackageServerBuilder builder)) async {
+      void Function(PackageServerBuilder) callback) async {
     var descriptorServer = await DescriptorServer.start();
     var server = PackageServer._(descriptorServer);
     descriptorServer.contents
@@ -86,7 +86,7 @@ class PackageServer {
   }
 
   /// Add to the current set of packages that are being served.
-  void add(void callback(PackageServerBuilder builder)) {
+  void add(void Function(PackageServerBuilder) callback) {
     callback(_builder);
 
     _servedApiPackageDir.contents.clear();
@@ -123,10 +123,10 @@ class PackageServer {
   /// Returns the path of [package] at [version], installed from this server, in
   /// the pub cache.
   String pathInCache(String package, String version) => p.join(
-      d.sandbox, cachePath, "hosted/localhost%58$port/$package-$version");
+      d.sandbox, cachePath, 'hosted/localhost%58$port/$package-$version');
 
   /// Replace the current set of packages that are being served.
-  void replace(void callback(PackageServerBuilder builder)) {
+  void replace(void Function(PackageServerBuilder) callback) {
     _builder._clear();
     add(callback);
   }
@@ -156,12 +156,12 @@ class PackageServerBuilder {
       {Map<String, dynamic> deps,
       Map<String, dynamic> pubspec,
       Iterable<d.Descriptor> contents}) {
-    var pubspecFields = <String, dynamic>{"name": name, "version": version};
+    var pubspecFields = <String, dynamic>{'name': name, 'version': version};
     if (pubspec != null) pubspecFields.addAll(pubspec);
-    if (deps != null) pubspecFields["dependencies"] = deps;
+    if (deps != null) pubspecFields['dependencies'] = deps;
 
-    contents ??= [d.libDir(name, "$name $version")];
-    contents = [d.file("pubspec.yaml", yaml(pubspecFields))]..addAll(contents);
+    contents ??= [d.libDir(name, '$name $version')];
+    contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
     var packages = _packages.putIfAbsent(name, () => []);
     packages.add(_ServedPackage(pubspecFields, contents));

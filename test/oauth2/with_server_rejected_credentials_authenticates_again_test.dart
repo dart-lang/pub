@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test(
       'with server-rejected credentials, authenticates again and saves '
       'credentials.json', () async {

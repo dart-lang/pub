@@ -6,19 +6,20 @@
 class SolveType {
   /// As few changes to the lockfile as possible to be consistent with the
   /// pubspec.
-  static const GET = SolveType._("get");
+  static const GET = SolveType._('get');
 
   /// Upgrade all packages or specific packages to the highest versions
   /// possible, regardless of the lockfile.
-  static const UPGRADE = SolveType._("upgrade");
+  static const UPGRADE = SolveType._('upgrade');
 
   /// Downgrade all packages or specific packages to the lowest versions
   /// possible, regardless of the lockfile.
-  static const DOWNGRADE = SolveType._("downgrade");
+  static const DOWNGRADE = SolveType._('downgrade');
 
   final String _name;
 
   const SolveType._(this._name);
 
+  @override
   String toString() => _name;
 }

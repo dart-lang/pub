@@ -69,6 +69,7 @@ class StrictDependenciesValidator extends Validator {
     }
   }
 
+  @override
   Future validate() async {
     var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);

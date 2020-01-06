@@ -16,7 +16,7 @@ ErrorGroup errorGroup;
 // that has a subscription added and subsequently canceled counts as having no
 // listeners.
 
-main() {
+void main() {
   group('with no futures or streams', () {
     setUp(() {
       errorGroup = ErrorGroup();
@@ -29,7 +29,7 @@ main() {
 
     test(
         "shouldn't allow additional futures or streams once an error has been "
-        "signaled", () {
+        'signaled', () {
       expect(errorGroup.done, throwsFormatException);
       errorGroup.signalError(FormatException());
 
@@ -58,7 +58,7 @@ main() {
 
     test(
         "shouldn't allow additional futures or streams once .done has "
-        "been called", () {
+        'been called', () {
       completer.complete('value');
 
       expect(
@@ -114,7 +114,7 @@ main() {
     });
 
     test(
-        "should complete .done if the future receives a value even if the "
+        'should complete .done if the future receives a value even if the '
         "future doesn't have a listener", () {
       expect(errorGroup.done, completes);
       completer.complete('value');
@@ -124,7 +124,7 @@ main() {
     });
 
     test(
-        "should pipe an exception from the future to .done if the future "
+        'should pipe an exception from the future to .done if the future '
         "doesn't have a listener", () {
       expect(errorGroup.done, throwsFormatException);
       completer.completeError(FormatException());
@@ -137,7 +137,7 @@ main() {
 
     test(
         "should pass a signaled exception to .done if the future doesn't have "
-        "a listener", () {
+        'a listener', () {
       expect(errorGroup.done, throwsFormatException);
       errorGroup.signalError(FormatException());
 
@@ -164,8 +164,8 @@ main() {
     });
 
     test(
-        "should pipe exceptions from one future to the other and to "
-        ".complete", () {
+        'should pipe exceptions from one future to the other and to '
+        '.complete', () {
       expect(future1, throwsFormatException);
       expect(future2, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
@@ -174,8 +174,8 @@ main() {
     });
 
     test(
-        "each future should be able to complete with a value "
-        "independently", () {
+        'each future should be able to complete with a value '
+        'independently', () {
       expect(future1, completion(equals('value1')));
       expect(future2, completion(equals('value2')));
       expect(errorGroup.done, completes);
@@ -186,7 +186,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if a future receives an error "
-        "after the other listened future completes", () {
+        'after the other listened future completes', () {
       expect(future1, completion(equals('value')));
       completer1.complete('value');
 
@@ -198,7 +198,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if an error is signaled after "
-        "one listened future completes", () {
+        'one listened future completes', () {
       expect(future1, completion(equals('value')));
       completer1.complete('value');
 
@@ -273,7 +273,7 @@ main() {
     });
 
     test(
-        "should see one value and complete .done when the stream is done even "
+        'should see one value and complete .done when the stream is done even '
         "if the stream doesn't have a listener", () {
       expect(errorGroup.done, completes);
       controller.add('value');
@@ -297,7 +297,7 @@ main() {
     });
 
     test(
-        "should complete .done when the stream is done even if the stream "
+        'should complete .done when the stream is done even if the stream '
         "doesn't have a listener", () {
       expect(errorGroup.done, completes);
       controller.add('value');
@@ -309,7 +309,7 @@ main() {
     });
 
     test(
-        "should pipe an exception from the stream to .done if the stream "
+        'should pipe an exception from the stream to .done if the stream '
         "doesn't have a listener", () {
       expect(errorGroup.done, throwsFormatException);
       controller.addError(FormatException());
@@ -323,7 +323,7 @@ main() {
 
     test(
         "should pass a signaled exception to .done if the stream doesn't "
-        "have a listener", () {
+        'have a listener', () {
       expect(errorGroup.done, throwsFormatException);
       errorGroup.signalError(FormatException());
 
@@ -349,7 +349,7 @@ main() {
       stream2 = errorGroup.registerStream(controller2.stream);
     });
 
-    test("should pipe exceptions from one stream to the other and to .done",
+    test('should pipe exceptions from one stream to the other and to .done',
         () {
       expect(stream1.first, throwsFormatException);
       expect(stream2.first, throwsFormatException);
@@ -358,7 +358,7 @@ main() {
       controller1.addError(FormatException());
     });
 
-    test("each future should be able to emit values independently", () {
+    test('each future should be able to emit values independently', () {
       expect(stream1.toList(), completion(equals(['value1.1', 'value1.2'])));
       expect(stream2.toList(), completion(equals(['value2.1', 'value2.2'])));
       expect(errorGroup.done, completes);
@@ -375,7 +375,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if a stream receives an error "
-        "after the other listened stream completes", () {
+        'after the other listened stream completes', () {
       var signal = Completer();
       expect(stream1.toList().whenComplete(signal.complete),
           completion(equals(['value1', 'value2'])));
@@ -392,7 +392,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if an error is signaled after "
-        "one listened stream completes", () {
+        'one listened stream completes', () {
       var signal = Completer();
       expect(stream1.toList().whenComplete(signal.complete),
           completion(equals(['value1', 'value2'])));
@@ -422,7 +422,7 @@ main() {
       future = errorGroup.registerFuture(completer.future);
     });
 
-    test("should pipe exceptions from the stream to the future", () {
+    test('should pipe exceptions from the stream to the future', () {
       expect(stream.first, throwsFormatException);
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
@@ -430,7 +430,7 @@ main() {
       controller.addError(FormatException());
     });
 
-    test("should pipe exceptions from the future to the stream", () {
+    test('should pipe exceptions from the future to the stream', () {
       expect(stream.first, throwsFormatException);
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
@@ -439,8 +439,8 @@ main() {
     });
 
     test(
-        "the stream and the future should be able to complete/emit values "
-        "independently", () {
+        'the stream and the future should be able to complete/emit values '
+        'independently', () {
       expect(stream.toList(), completion(equals(['value1.1', 'value1.2'])));
       expect(future, completion(equals('value2.0')));
       expect(errorGroup.done, completes);
@@ -454,7 +454,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if the stream receives an error "
-        "after the listened future completes", () {
+        'after the listened future completes', () {
       expect(future, completion(equals('value')));
       completer.complete('value');
 
@@ -466,7 +466,7 @@ main() {
 
     test(
         "shouldn't throw a top-level exception if the future receives an "
-        "error after the listened stream completes", () {
+        'error after the listened stream completes', () {
       var signal = Completer();
       expect(stream.toList().whenComplete(signal.complete),
           completion(equals(['value1', 'value2'])));

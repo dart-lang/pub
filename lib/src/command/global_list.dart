@@ -6,12 +6,18 @@ import '../command.dart';
 
 /// Handles the `global list` pub command.
 class GlobalListCommand extends PubCommand {
-  String get name => "list";
+  @override
+  String get name => 'list';
+  @override
   String get description => 'List globally activated packages.';
+  @override
   String get invocation => 'pub global list';
+  @override
   bool get allowTrailingOptions => false;
+  @override
   bool get takesArguments => false;
 
+  @override
   void run() {
     globals.listActivePackages();
   }

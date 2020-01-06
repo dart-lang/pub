@@ -14,7 +14,7 @@ import 'utils.dart';
 
 Validator directory(Entrypoint entrypoint) => DirectoryValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
@@ -22,7 +22,7 @@ main() {
 
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
-        d.dir("foo", [d.dir("tools")])
+        d.dir('foo', [d.dir('tools')])
       ]).create();
       expectNoValidationError(directory);
     });
@@ -34,13 +34,13 @@ main() {
     setUp(d.validPackage.create);
 
     var names = [
-      "benchmarks",
-      "docs",
-      "examples",
-      "sample",
-      "samples",
-      "tests",
-      "tools"
+      'benchmarks',
+      'docs',
+      'examples',
+      'sample',
+      'samples',
+      'tests',
+      'tools'
     ];
 
     for (var name in names) {

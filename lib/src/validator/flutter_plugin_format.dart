@@ -21,6 +21,7 @@ const _pluginDocsUrl =
 class FlutterPluginFormatValidator extends Validator {
   FlutterPluginFormatValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() async {
     final pubspec = entrypoint.root.pubspec;
 

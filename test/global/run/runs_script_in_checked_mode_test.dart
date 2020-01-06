@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('runs a script with assertions enabled', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', contents: [

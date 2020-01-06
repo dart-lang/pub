@@ -7,21 +7,21 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("highlights overridden packages", () async {
-    await servePackages((builder) => builder.serve("overridden", "1.0.0"));
+void main() {
+  test('highlights overridden packages', () async {
+    await servePackages((builder) => builder.serve('overridden', '1.0.0'));
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dependency_overrides": {"overridden": "any"}
+        'name': 'myapp',
+        'dependency_overrides': {'overridden': 'any'}
       })
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r"""
+    await pubUpgrade(output: RegExp(r'''
 Resolving dependencies\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
-""", multiLine: true));
+''', multiLine: true));
   });
 }

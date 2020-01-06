@@ -15,15 +15,15 @@ import 'utils.dart';
 Validator dependencyOverride(Entrypoint entrypoint) =>
     DependencyOverrideValidator(entrypoint);
 
-main() {
+void main() {
   test(
       'should consider a package valid if it has dev dependency '
       'overrides', () async {
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dev_dependencies": {"foo": "1.0.0"},
-        "dependency_overrides": {"foo": "<3.0.0"}
+        'name': 'myapp',
+        'dev_dependencies': {'foo': '1.0.0'},
+        'dependency_overrides': {'foo': '<3.0.0'}
       })
     ]).create();
 
@@ -34,8 +34,8 @@ main() {
     test('it has only non-dev dependency overrides', () async {
       await d.dir(appPath, [
         d.pubspec({
-          "name": "myapp",
-          "dependency_overrides": {"foo": "<3.0.0"}
+          'name': 'myapp',
+          'dependency_overrides': {'foo': '<3.0.0'}
         })
       ]).create();
 
@@ -45,11 +45,11 @@ main() {
     test('it has any non-dev dependency overrides', () async {
       await d.dir(appPath, [
         d.pubspec({
-          "name": "myapp",
-          "dev_dependencies": {"foo": "1.0.0"},
-          "dependency_overrides": {
-            "foo": "<3.0.0",
-            "bar": ">3.0.0",
+          'name': 'myapp',
+          'dev_dependencies': {'foo': '1.0.0'},
+          'dependency_overrides': {
+            'foo': '<3.0.0',
+            'bar': '>3.0.0',
           }
         })
       ]).create();

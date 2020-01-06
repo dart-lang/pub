@@ -16,7 +16,7 @@ import 'utils.dart';
 
 Validator license(Entrypoint entrypoint) => LicenseValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
@@ -62,7 +62,7 @@ main() {
     });
 
     test('has a .gitignored LICENSE file', () async {
-      var repo = d.git(appPath, [d.file(".gitignore", "LICENSE")]);
+      var repo = d.git(appPath, [d.file('.gitignore', 'LICENSE')]);
       await d.validPackage.create();
       await repo.create();
       expectValidationError(license);

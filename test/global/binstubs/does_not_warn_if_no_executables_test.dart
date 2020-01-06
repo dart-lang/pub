@@ -7,17 +7,17 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("does not warn if the package has no executables", () async {
+void main() {
+  test('does not warn if the package has no executables', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", contents: [
+      builder.serve('foo', '1.0.0', contents: [
         d.dir(
-            "bin", [d.file("script.dart", "main(args) => print('ok \$args');")])
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
       ]);
     });
 
     await runPub(
-        args: ["global", "activate", "foo"],
-        output: isNot(contains("is not on your path")));
+        args: ['global', 'activate', 'foo'],
+        output: isNot(contains('is not on your path')));
   });
 }

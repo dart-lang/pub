@@ -29,7 +29,7 @@ bool isEntrypoint(CompilationUnit dart) {
   // but it parts in another file that does.
   return dart.declarations.any((node) {
     return node is FunctionDeclaration &&
-        node.name.name == "main" &&
+        node.name.name == 'main' &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
 }
@@ -51,18 +51,18 @@ Future snapshot(Uri executableUrl, String snapshotPath,
 
   if (packagesFile != null) {
     // Resolve [packagesFile] in case it's relative to work around sdk#33177.
-    args.insert(0, "--packages=${Uri.base.resolveUri(packagesFile)}");
+    args.insert(0, '--packages=${Uri.base.resolveUri(packagesFile)}');
   }
 
   var result = await runProcess(Platform.executable, args);
   if (result.success) {
-    log.message("Precompiled $name.");
+    log.message('Precompiled $name.');
   } else {
     // Don't leave partial results.
     deleteEntry(snapshotPath);
 
     throw ApplicationException(
-        log.yellow("Failed to precompile $name:\n") + result.stderr.join('\n'));
+        log.yellow('Failed to precompile $name:\n') + result.stderr.join('\n'));
   }
 }
 
@@ -176,5 +176,5 @@ class AnalyzerErrorGroup implements Exception {
   String get message => toString();
 
   @override
-  String toString() => errors.join("\n");
+  String toString() => errors.join('\n');
 }

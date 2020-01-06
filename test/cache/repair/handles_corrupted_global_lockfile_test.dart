@@ -9,14 +9,14 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('handles a corrupted global lockfile', () async {
     await d.dir(cachePath, [
       d.dir('global_packages/foo', [d.file('pubspec.lock', 'junk')])
     ]).create();
 
     await runPub(
-        args: ["cache", "repair"],
+        args: ['cache', 'repair'],
         error: contains('Failed to reactivate foo:'),
         output: contains('Failed to reactivate 1 package:\n'
             '- foo'),

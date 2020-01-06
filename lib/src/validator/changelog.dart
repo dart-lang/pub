@@ -13,6 +13,7 @@ import '../validator.dart';
 class ChangelogValidator extends Validator {
   ChangelogValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     return Future.sync(() {
       final changelog = entrypoint.root.changelogPath;
@@ -29,9 +30,9 @@ class ChangelogValidator extends Validator {
         // utf8.decode doesn't allow invalid UTF-8.
         contents = utf8.decode(bytes);
       } on FormatException catch (_) {
-        warnings.add("$changelog contains invalid UTF-8.\n"
-            "This will cause it to be displayed incorrectly on "
-            "the Pub site (https://pub.dev).");
+        warnings.add('$changelog contains invalid UTF-8.\n'
+            'This will cause it to be displayed incorrectly on '
+            'the Pub site (https://pub.dev).');
       }
 
       if (contents == null) {
@@ -43,8 +44,8 @@ class ChangelogValidator extends Validator {
 
       if (!contents.contains(version)) {
         warnings.add("$changelog doesn't mention current version ($version).\n"
-            "Consider updating it with notes on this version prior to "
-            "publication.");
+            'Consider updating it with notes on this version prior to '
+            'publication.');
       }
     });
   }

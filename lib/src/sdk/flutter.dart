@@ -11,27 +11,33 @@ import '../io.dart';
 import '../sdk.dart';
 
 class FlutterSdk extends Sdk {
-  String get name => "Flutter";
+  @override
+  String get name => 'Flutter';
+  @override
   bool get isAvailable => _isAvailable;
+  @override
   Version get firstPubVersion => Version.parse('1.19.0');
 
   static final bool _isAvailable =
-      Platform.environment.containsKey("FLUTTER_ROOT");
-  static final String _rootDirectory = Platform.environment["FLUTTER_ROOT"];
+      Platform.environment.containsKey('FLUTTER_ROOT');
+  static final String _rootDirectory = Platform.environment['FLUTTER_ROOT'];
 
+  @override
   String get installMessage =>
-      "Flutter users should run `flutter pub get` instead of `pub get`.";
+      'Flutter users should run `flutter pub get` instead of `pub get`.';
 
+  @override
   Version get version {
     if (!_isAvailable) return null;
 
     _version ??=
-        Version.parse(readTextFile(p.join(_rootDirectory, "version")).trim());
+        Version.parse(readTextFile(p.join(_rootDirectory, 'version')).trim());
     return _version;
   }
 
   Version _version;
 
+  @override
   String packagePath(String name) {
     if (!isAvailable) return null;
 
