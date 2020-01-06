@@ -179,7 +179,7 @@ class BoundHostedSource extends CachedSource {
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
     final preschedule =
-        Zone.current[#_prefetching] as void Function(PackageRef);
+        Zone.current[_prefetchingKey] as void Function(PackageRef);
     if (preschedule != null) {
       final latestVersion =
           maxBy(result.keys.map((id) => id.version), (e) => e);
@@ -443,9 +443,13 @@ class BoundHostedSource extends CachedSource {
   /// [getVersions].
   Future<T> withPrefetching<T>(Future<T> Function() callback) async {
     return await _scheduler.withPrescheduling((preschedule) async {
-      return await runZoned(callback, zoneValues: {#_pre: preschedule});
+      return await runZoned(callback,
+          zoneValues: {_prefetchingKey: preschedule});
     });
   }
+
+  /// Key for storing the current prefetch function in the current [Zone].
+  static const _prefetchingKey = #prefetch;
 }
 
 /// This is the modified hosted source used when pub get or upgrade are run
