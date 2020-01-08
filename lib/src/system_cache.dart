@@ -38,7 +38,7 @@ class SystemCache {
       // If a cache dir already exists in %APPDATA%, use it, else default to %LOCALAPPDATA%
       var appData = Platform.environment['APPDATA'];
       var appDataCacheDir = p.join(appData, 'Pub', 'Cache');
-      if (Directory(appDataCacheDir).existsSync()) {
+      if (dirExists(appDataCacheDir)) {
         return appDataCacheDir;
       }
       var localAppData = Platform.environment['LOCALAPPDATA'];
