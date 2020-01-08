@@ -35,7 +35,11 @@ class SystemCache {
     if (Platform.environment.containsKey('PUB_CACHE')) {
       return Platform.environment['PUB_CACHE'];
     } else if (Platform.isWindows) {
-      // If a cache dir already exists in %APPDATA%, use it, else default to %LOCALAPPDATA%
+      // %LOCALAPPDATA% is preferred as the cache location over %APPDATA%, because the latter is synchronised between
+      // devices when the user roams between them, whereas the former is not.
+      // The default cache dir used to be in %APPDATA%, so to avoid breaking old installs,
+      // we use the old dir in %APPDATA% if it exists. Else, we use the new default location
+      // in %LOCALAPPDATA%.
       var appData = Platform.environment['APPDATA'];
       var appDataCacheDir = p.join(appData, 'Pub', 'Cache');
       if (dirExists(appDataCacheDir)) {
