@@ -21,9 +21,15 @@ class GitException implements ApplicationException {
   /// The standard error emitted by git.
   final String stderr;
 
-  String get message => 'Git error. Command: git ${args.join(" ")}\n$stderr';
+  /// The standard out emitted by git.
+  final String stdout;
 
-  GitException(Iterable<String> args, this.stderr) : args = args.toList();
+  String get message => 'Git error. Command: `git ${args.join(" ")}`\n'
+      'stdout: $stdout\n'
+      'stderr: $stderr';
+
+  GitException(Iterable<String> args, this.stdout, this.stderr)
+      : args = args.toList();
 
   String toString() => message;
 }
@@ -46,7 +52,9 @@ Future<List<String>> run(List<String> args,
   try {
     var result = await runProcess(command, args,
         workingDir: workingDir, environment: environment);
-    if (!result.success) throw GitException(args, result.stderr.join("\n"));
+    if (!result.success)
+      throw GitException(
+          args, result.stdout.join('\n'), result.stderr.join("\n"));
     return result.stdout;
   } finally {
     log.unmuteProgress();
@@ -63,7 +71,10 @@ List<String> runSync(List<String> args,
 
   var result = runProcessSync(command, args,
       workingDir: workingDir, environment: environment);
-  if (!result.success) throw GitException(args, result.stderr.join("\n"));
+  if (!result.success)
+    throw GitException(
+        args, result.stdout.join('\n'), result.stderr.join("\n"));
+
   return result.stdout;
 }
 
