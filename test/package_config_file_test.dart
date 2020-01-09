@@ -206,5 +206,47 @@ void main() {
         ]),
       ]).validate();
     });
+
+    test('package_config.json has no default language version', () async {
+      await servePackages((builder) {
+        builder.serve(
+          'foo',
+          '1.2.3',
+          pubspec: {
+            'environment': {
+              'sdk': '>=0.0.1 <=0.2.2+2', // tests runs with '0.1.2+3'
+            },
+          },
+          contents: [d.dir('lib', [])],
+        );
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {
+            'foo': '^1.2.3',
+          },
+        }),
+        d.dir('lib')
+      ]).create();
+
+      await pubCommand(command);
+
+      await d.dir(appPath, [
+        d.packageConfigFile([
+          d.packageConfigEntry(
+            name: 'foo',
+            version: '1.2.3',
+            languageVersion: '0.0',
+          ),
+          d.packageConfigEntry(
+            name: 'myapp',
+            path: '.',
+            languageVersion: null,
+          ),
+        ]),
+      ]).validate();
+    });
   });
 }

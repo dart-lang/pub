@@ -188,8 +188,6 @@ Descriptor packageConfigFile(List<PackageConfigEntry> packages) =>
 
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].
-///
-/// If not given [languageVersion] will be inferred from current SDK version.
 PackageConfigEntry packageConfigEntry({
   @required String name,
   String version,
@@ -214,7 +212,7 @@ PackageConfigEntry packageConfigEntry({
     name: name,
     rootUri: rootUri,
     packageUri: Uri(path: 'lib/'),
-    languageVersion: languageVersion ?? '0.1', // from '0.1.2+3'
+    languageVersion: languageVersion,
   );
 }
 

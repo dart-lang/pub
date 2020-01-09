@@ -676,18 +676,18 @@ class Entrypoint {
         continue;
       }
 
-      String languageVersion;
       try {
-        languageVersion = extractLanguageVersion(
+        final languageVersion = extractLanguageVersion(
           cache.load(id).pubspec.sdkConstraints[sdk.identifier],
         );
+        if (pkg.languageVersion != languageVersion) {
+          dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+              'changed since the pubspec.lock file was generated, please run '
+              '"pub get" again.');
+        }
       } on FileException {
-        languageVersion = null;
-      }
-      if (languageVersion == null || pkg.languageVersion != languageVersion) {
-        dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
-            'changed since the pubspec.lock file was generated, please run "pub '
-            'get" again.');
+        dataError('Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
+            'entry is missing, please run "pub get".');
       }
     }
   }
