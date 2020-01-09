@@ -421,10 +421,13 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace("""
+      await expectResolves(error: anyOf(equalsIgnoringWhitespace("""
         Because myapp depends on both foo from path foo and foo from path
           ../foo, version solving failed.
-      """));
+      """), equalsIgnoringWhitespace("""
+        Because myapp depends on both foo from path foo and foo from path
+          ..\\foo, version solving failed.
+      """)));
     });
   });
 }

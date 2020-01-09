@@ -121,7 +121,7 @@ class PathSource extends Source {
   dynamic serializeDescription(String containingPath, description) {
     if (description["relative"]) {
       return {
-        "path": p.relative(description['path'], from: containingPath),
+        "path": p.posix.joinAll(p.split(p.relative(description['path'], from: containingPath))),
         "relative": true
       };
     }
