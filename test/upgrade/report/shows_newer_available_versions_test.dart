@@ -7,38 +7,38 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("shows how many newer versions are available", () async {
+void main() {
+  test('shows how many newer versions are available', () async {
     await servePackages((builder) {
-      builder.serve("multiple_newer", "1.0.0");
-      builder.serve("multiple_newer", "1.0.1-unstable.1");
-      builder.serve("multiple_newer", "1.0.1");
-      builder.serve("multiple_newer", "1.0.2-unstable.1");
-      builder.serve("multiple_newer_stable", "1.0.0");
-      builder.serve("multiple_newer_stable", "1.0.1");
-      builder.serve("multiple_newer_stable", "1.0.2");
-      builder.serve("multiple_newer_unstable", "1.0.0");
-      builder.serve("multiple_newer_unstable", "1.0.1-unstable.1");
-      builder.serve("multiple_newer_unstable", "1.0.1-unstable.2");
-      builder.serve("no_newer", "1.0.0");
-      builder.serve("one_newer_unstable", "1.0.0");
-      builder.serve("one_newer_unstable", "1.0.1-unstable.1");
-      builder.serve("one_newer_stable", "1.0.0");
-      builder.serve("one_newer_stable", "1.0.1");
+      builder.serve('multiple_newer', '1.0.0');
+      builder.serve('multiple_newer', '1.0.1-unstable.1');
+      builder.serve('multiple_newer', '1.0.1');
+      builder.serve('multiple_newer', '1.0.2-unstable.1');
+      builder.serve('multiple_newer_stable', '1.0.0');
+      builder.serve('multiple_newer_stable', '1.0.1');
+      builder.serve('multiple_newer_stable', '1.0.2');
+      builder.serve('multiple_newer_unstable', '1.0.0');
+      builder.serve('multiple_newer_unstable', '1.0.1-unstable.1');
+      builder.serve('multiple_newer_unstable', '1.0.1-unstable.2');
+      builder.serve('no_newer', '1.0.0');
+      builder.serve('one_newer_unstable', '1.0.0');
+      builder.serve('one_newer_unstable', '1.0.1-unstable.1');
+      builder.serve('one_newer_stable', '1.0.0');
+      builder.serve('one_newer_stable', '1.0.1');
     });
 
     // Constraint everything to the first version.
     await d.appDir({
-      "multiple_newer": "1.0.0",
-      "multiple_newer_stable": "1.0.0",
-      "multiple_newer_unstable": "1.0.0",
-      "no_newer": "1.0.0",
-      "one_newer_unstable": "1.0.0",
-      "one_newer_stable": "1.0.0"
+      'multiple_newer': '1.0.0',
+      'multiple_newer_stable': '1.0.0',
+      'multiple_newer_unstable': '1.0.0',
+      'no_newer': '1.0.0',
+      'one_newer_unstable': '1.0.0',
+      'one_newer_stable': '1.0.0'
     }).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r"""
+    await pubUpgrade(output: RegExp(r'''
 Resolving dependencies\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
 . multiple_newer_stable 1\.0\.0 \(1\.0\.2\ available\)
@@ -46,6 +46,6 @@ Resolving dependencies\.\.\..*
 . no_newer 1\.0\.0
 . one_newer_stable 1\.0\.0 \(1\.0\.1 available\)
 . one_newer_unstable 1\.0\.0 \(1\.0\.1-unstable\.1 available\)
-""", multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
+''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });
 }

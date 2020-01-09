@@ -13,11 +13,15 @@ import '../utils.dart';
 
 /// Handles the `global run` pub command.
 class GlobalRunCommand extends PubCommand {
+  @override
   String get name => 'run';
+  @override
   String get description =>
       'Run an executable from a globally activated package.\n'
       "NOTE: We are currently optimizing this command's startup time.";
+  @override
   String get invocation => 'pub global run <package>:<executable> [args...]';
+  @override
   bool get allowTrailingOptions => false;
 
   GlobalRunCommand() {
@@ -26,6 +30,7 @@ class GlobalRunCommand extends PubCommand {
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
+  @override
   Future run() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');

@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test('should consider a package valid if it has a pubspec', () async {
     await d.validPackage.create();
 
@@ -20,7 +20,7 @@ main() {
   test(
       'should consider a package invalid if it has a .gitignored '
       'pubspec', () async {
-    var repo = d.git(appPath, [d.file(".gitignore", "pubspec.yaml")]);
+    var repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
     await d.validPackage.create();
     await repo.create();
 

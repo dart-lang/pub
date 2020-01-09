@@ -14,7 +14,7 @@ import 'utils.dart';
 
 Validator changelog(Entrypoint entrypoint) => ChangelogValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
@@ -22,20 +22,20 @@ main() {
 
     test('has no CHANGELOG', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
+        d.libPubspec('test_pkg', '1.0.0'),
       ]).create();
       expectNoValidationError(changelog);
     });
 
     test('has a CHANGELOG that includes the current package version', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.file("CHANGELOG.md", """
+        d.libPubspec('test_pkg', '1.0.0'),
+        d.file('CHANGELOG.md', '''
           # 1.0.0
           
           * Solves traveling salesman problem in polynomial time.
           * Passes Turing test.
-        """),
+        '''),
       ]).create();
       expectNoValidationError(changelog);
     });
@@ -47,21 +47,21 @@ main() {
     test('has a CHANGELOG that doesn\'t include the current package version',
         () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.1"),
-        d.file("CHANGELOG.md", """
+        d.libPubspec('test_pkg', '1.0.1'),
+        d.file('CHANGELOG.md', '''
           # 1.0.0
           
           * Solves traveling salesman problem in polynomial time.
           * Passes Turing test.
-        """),
+        '''),
       ]).create();
       expectValidationWarning(changelog);
     });
 
     test('has a CHANGELOG with invalid utf-8', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0"),
-        d.file("CHANGELOG.md", [192]),
+        d.libPubspec('test_pkg', '1.0.0'),
+        d.file('CHANGELOG.md', [192]),
       ]).create();
       expectValidationWarning(changelog);
     });

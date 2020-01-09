@@ -10,13 +10,19 @@ import '../solver.dart';
 
 /// Handles the `upgrade` pub command.
 class UpgradeCommand extends PubCommand {
-  String get name => "upgrade";
+  @override
+  String get name => 'upgrade';
+  @override
   String get description =>
       "Upgrade the current package's dependencies to latest versions.";
-  String get invocation => "pub upgrade [dependencies...]";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-upgrade";
-  List<String> get aliases => const ["update"];
+  @override
+  String get invocation => 'pub upgrade [dependencies...]';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
+  @override
+  List<String> get aliases => const ['update'];
 
+  @override
   bool get isOffline => argResults['offline'];
 
   UpgradeCommand() {
@@ -30,11 +36,12 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         defaultsTo: false,
-        help: "Precompile executables in immediate dependencies.");
+        help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
 
+  @override
   Future run() async {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(
@@ -46,8 +53,8 @@ class UpgradeCommand extends PubCommand {
         precompile: argResults['precompile']);
 
     if (isOffline) {
-      log.warning("Warning: Upgrading when offline may not update you to the "
-          "latest versions of your dependencies.");
+      log.warning('Warning: Upgrading when offline may not update you to the '
+          'latest versions of your dependencies.');
     }
   }
 }

@@ -29,9 +29,10 @@ abstract class CachedSource extends BoundSource {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
+  @override
   Future<Pubspec> doDescribe(PackageId id) async {
     var packageDir = getDirectory(id);
-    if (fileExists(path.join(packageDir, "pubspec.yaml"))) {
+    if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(packageDir, systemCache.sources,
           expectedName: id.name);
     }
@@ -46,6 +47,7 @@ abstract class CachedSource extends BoundSource {
   /// the system cache.
   Future<Pubspec> describeUncached(PackageId id);
 
+  @override
   Future get(PackageId id, String symlink) {
     return downloadToSystemCache(id).then((pkg) {
       createPackageSymlink(id.name, pkg.dir, symlink);

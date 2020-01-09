@@ -7,25 +7,25 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test("removes a dependency that's removed from the pubspec", () async {
       await servePackages((builder) {
-        builder.serve("foo", "1.0.0");
-        builder.serve("bar", "1.0.0");
+        builder.serve('foo', '1.0.0');
+        builder.serve('bar', '1.0.0');
       });
 
-      await d.appDir({"foo": "any", "bar": "any"}).create();
+      await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
       await pubCommand(command);
 
-      await d.appPackagesFile({"foo": "1.0.0", "bar": "1.0.0"}).validate();
+      await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await pubCommand(command);
 
-      await d.appPackagesFile({"foo": "1.0.0"}).validate();
+      await d.appPackagesFile({'foo': '1.0.0'}).validate();
     });
   });
 }

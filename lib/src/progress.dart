@@ -22,7 +22,7 @@ class Progress {
   final String _message;
 
   /// Gets the current progress time as a parenthesized, formatted string.
-  String get _time => "(${niceDuration(_stopwatch.elapsed)})";
+  String get _time => '(${niceDuration(_stopwatch.elapsed)})';
 
   /// The length of the most recently-printed [_time] string.
   var _timeLength = 0;
@@ -46,7 +46,7 @@ class Progress {
         log.verbosity.isLevelVisible(log.Level.FINE)) {
       // Not animating, so just log the start and wait until the task is
       // completed.
-      log.write(level, "$_message...");
+      log.write(level, '$_message...');
       return;
     }
 
@@ -54,7 +54,7 @@ class Progress {
       _update();
     });
 
-    stdout.write(log.format("$_message... "));
+    stdout.write(log.format('$_message... '));
   }
 
   /// Stops the progress indicator.
@@ -64,7 +64,7 @@ class Progress {
     // Always log the final time as [log.fine] because for the most part normal
     // users don't care about the precise time information beyond what's shown
     // in the animation.
-    log.fine("$_message finished $_time.");
+    log.fine('$_message finished $_time.');
 
     // If we were animating, print one final update to show the user the final
     // time.
@@ -84,7 +84,7 @@ class Progress {
 
     // Erase the time indicator so that we don't leave a misleading
     // half-complete time indicator on the console.
-    stdout.writeln("\b" * _timeLength);
+    stdout.writeln('\b' * _timeLength);
     _timeLength = 0;
     _timer.cancel();
     _timer = null;
@@ -100,7 +100,7 @@ class Progress {
     // Erase the last time that was printed. Erasing just the time using `\b`
     // rather than using `\r` to erase the entire line ensures that we don't
     // spam progress lines if they're wider than the terminal width.
-    stdout.write("\b" * _timeLength);
+    stdout.write('\b' * _timeLength);
     var time = _time;
     _timeLength = time.length;
     stdout.write(log.gray(time));

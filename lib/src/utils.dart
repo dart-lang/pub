@@ -4,64 +4,64 @@
 
 /// Generic utility functions. Stuff that should possibly be in core.
 import 'dart:async';
-import "dart:convert";
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
-import "package:crypto/crypto.dart" as crypto;
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
-import "package:stack_trace/stack_trace.dart";
+import 'package:stack_trace/stack_trace.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
 /// Whether Pub is running its own tests under Travis.CI.
-final isTravis = Platform.environment["TRAVIS_REPO_SLUG"] == "dart-lang/pub";
+final isTravis = Platform.environment['TRAVIS_REPO_SLUG'] == 'dart-lang/pub';
 
 /// A regular expression matching a Dart identifier.
 ///
 /// This also matches a package name, since they must be Dart identifiers.
-final identifierRegExp = RegExp(r"[a-zA-Z_]\w*");
+final identifierRegExp = RegExp(r'[a-zA-Z_]\w*');
 
 /// Like [identifierRegExp], but anchored so that it only matches strings that
 /// are *just* Dart identifiers.
-final onlyIdentifierRegExp = RegExp("^${identifierRegExp.pattern}\$");
+final onlyIdentifierRegExp = RegExp('^${identifierRegExp.pattern}\$');
 
 /// Dart reserved words, from the Dart spec.
 const reservedWords = [
-  "assert",
-  "break",
-  "case",
-  "catch",
-  "class",
-  "const",
-  "continue",
-  "default",
-  "do",
-  "else",
-  "extends",
-  "false",
-  "final",
-  "finally",
-  "for",
-  "if",
-  "in",
-  "is",
-  "new",
-  "null",
-  "return",
-  "super",
-  "switch",
-  "this",
-  "throw",
-  "true",
-  "try",
-  "var",
-  "void",
-  "while",
-  "with"
+  'assert',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'default',
+  'do',
+  'else',
+  'extends',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'if',
+  'in',
+  'is',
+  'new',
+  'null',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'var',
+  'void',
+  'while',
+  'with'
 ];
 
 /// An cryptographically secure instance of [math.Random].
@@ -86,13 +86,16 @@ class Pair<E, F> {
 
   Pair(this.first, this.last);
 
+  @override
   String toString() => '($first, $last)';
 
+  @override
   bool operator ==(other) {
     if (other is! Pair) return false;
     return other.first == first && other.last == last;
   }
 
+  @override
   int get hashCode => first.hashCode ^ last.hashCode;
 }
 
@@ -103,8 +106,9 @@ class Pair<E, F> {
 /// [Chain]. By default, this chain will contain only the local stack trace, but
 /// if [captureStackChains] is passed, it will contain the full stack chain for
 /// the error.
-Future captureErrors(Future callback(), {bool captureStackChains = false}) {
-  var completer = Completer();
+Future<T> captureErrors<T>(Future<T> Function() callback,
+    {bool captureStackChains = false}) {
+  var completer = Completer<T>();
   var wrappedCallback = () {
     Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
@@ -155,7 +159,7 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
 /// completes.
 ///
 /// The stream will be passed through unchanged.
-StreamTransformer<T, T> onDoneTransformer<T>(void onDone()) {
+StreamTransformer<T, T> onDoneTransformer<T>(void Function() onDone) {
   return StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
     onDone();
     sink.close();
@@ -178,10 +182,10 @@ String _padLeft(String source, int length, [String char]) {
 /// If [iter] does not have one item, name will be pluralized by adding "s" or
 /// using [plural], if given.
 String namedSequence(String name, Iterable iter, [String plural]) {
-  if (iter.length == 1) return "$name ${iter.single}";
+  if (iter.length == 1) return '$name ${iter.single}';
 
-  plural ??= "${name}s";
-  return "$plural ${toSentence(iter)}";
+  plural ??= '${name}s';
+  return '$plural ${toSentence(iter)}';
 }
 
 /// Returns a sentence fragment listing the elements of [iter].
@@ -191,7 +195,7 @@ String namedSequence(String name, Iterable iter, [String plural]) {
 String toSentence(Iterable iter, {String conjunction}) {
   if (iter.length == 1) return iter.first.toString();
   conjunction ??= 'and';
-  return iter.take(iter.length - 1).join(", ") + " $conjunction ${iter.last}";
+  return iter.take(iter.length - 1).join(', ') + ' $conjunction ${iter.last}';
 }
 
 /// Returns [name] if [number] is 1, or the plural of [name] otherwise.
@@ -216,8 +220,8 @@ String quoteRegExp(String string) {
   // escaped characters. We could do all of the replaces at once with a regexp
   // but string literal for regex that matches all regex metacharacters would
   // be a bit hard to read.
-  for (var metacharacter in r"\^$.*+?()[]{}|".split("")) {
-    string = string.replaceAll(metacharacter, "\\$metacharacter");
+  for (var metacharacter in r'\^$.*+?()[]{}|'.split('')) {
+    string = string.replaceAll(metacharacter, '\\$metacharacter');
   }
 
   return string;
@@ -231,7 +235,7 @@ bool isLoopback(String host) {
   if (host == 'localhost') return true;
 
   // IPv6 hosts in URLs are surrounded by square brackets.
-  if (host.startsWith("[") && host.endsWith("]")) {
+  if (host.startsWith('[') && host.endsWith(']')) {
     host = host.substring(1, host.length - 1);
   }
 
@@ -261,8 +265,8 @@ List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
 /// and only if that path's basename is in [files].
 Set<String> createFileFilter(Iterable<String> files) {
   return files.expand<String>((file) {
-    var result = ["/$file"];
-    if (Platform.isWindows) result.add("\\$file");
+    var result = ['/$file'];
+    if (Platform.isWindows) result.add('\\$file');
     return result;
   }).toSet();
 }
@@ -274,9 +278,9 @@ Set<String> createFileFilter(Iterable<String> files) {
 /// and only if one of that path's components is in [dirs].
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
-    var result = ["/$dir/"];
+    var result = ['/$dir/'];
     if (Platform.isWindows) {
-      result..add("/$dir\\")..add("\\$dir/")..add("\\$dir\\");
+      result..add('/$dir\\')..add('\\$dir/')..add('\\$dir\\');
     }
     return result;
   }).toSet();
@@ -285,8 +289,7 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// Returns the maximum value in [iter] by [compare].
 ///
 /// [compare] defaults to [Comparable.compare].
-T maxAll<T extends Comparable>(Iterable<T> iter,
-    [int compare(T element1, T element2)]) {
+T maxAll<T extends Comparable>(Iterable<T> iter, [int Function(T, T) compare]) {
   compare ??= Comparable.compare;
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
@@ -294,7 +297,7 @@ T maxAll<T extends Comparable>(Iterable<T> iter,
 
 /// Like [minBy], but with an asynchronous [orderBy] callback.
 Future<S> minByAsync<S, T>(
-    Iterable<S> values, Future<T> orderBy(S element)) async {
+    Iterable<S> values, Future<T> Function(S) orderBy) async {
   S minValue;
   T minOrderBy;
   for (var element in values) {
@@ -312,14 +315,14 @@ Future<S> minByAsync<S, T>(
 Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
   if (end <= start) {
     throw RangeError.range(
-        end, start + 1, null, "end", "must be greater than start");
+        end, start + 1, null, 'end', 'must be greater than start');
   }
   return values.skip(start).take(end - start);
 }
 
 /// Like [Iterable.fold], but for an asynchronous [combine] function.
 Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
-        Future<S> combine(S previous, T element)) =>
+        Future<S> Function(S previous, T element) combine) =>
     values.fold(
         Future.value(initialValue),
         (previousFuture, element) =>
@@ -327,7 +330,7 @@ Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
-String replace(String source, Pattern matcher, String fn(Match match)) {
+String replace(String source, Pattern matcher, String Function(Match) fn) {
   var buffer = StringBuffer();
   var start = 0;
   for (var match in matcher.allMatches(source)) {
@@ -362,19 +365,19 @@ Future<T> streamFirst<T>(Stream<T> stream) {
   }, onError: (e, [StackTrace stackTrace]) {
     completer.completeError(e, stackTrace);
   }, onDone: () {
-    completer.completeError(StateError("No elements"), Chain.current());
+    completer.completeError(StateError('No elements'), Chain.current());
   }, cancelOnError: true);
   return completer.future;
 }
 
 /// A regular expression matching a trailing CR character.
-final _trailingCR = RegExp(r"\r$");
+final _trailingCR = RegExp(r'\r$');
 
 // TODO(nweiz): Use `text.split(new RegExp("\r\n?|\n\r?"))` when issue 9360 is
 // fixed.
 /// Splits [text] on its line breaks in a Windows-line-break-friendly way.
 List<String> splitLines(String text) =>
-    text.split("\n").map((line) => line.replaceFirst(_trailingCR, "")).toList();
+    text.split('\n').map((line) => line.replaceFirst(_trailingCR, '')).toList();
 
 /// Converts a stream of arbitrarily chunked strings into a line-by-line stream.
 ///
@@ -423,11 +426,11 @@ List<String> split1(String toSplit, String pattern) {
 /// into a [Map] from parameter names to values.
 Map<String, String> queryToMap(String queryList) {
   var map = <String, String>{};
-  for (var pair in queryList.split("&")) {
-    var split = split1(pair, "=");
+  for (var pair in queryList.split('&')) {
+    var split = split1(pair, '=');
     if (split.isEmpty) continue;
     var key = _urlDecode(split[0]);
-    var value = split.length > 1 ? _urlDecode(split[1]) : "";
+    var value = split.length > 1 ? _urlDecode(split[1]) : '';
     map[key] = value;
   }
   return map;
@@ -436,7 +439,7 @@ Map<String, String> queryToMap(String queryList) {
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
   var hasMinutes = duration.inMinutes > 0;
-  var result = hasMinutes ? "${duration.inMinutes}:" : "";
+  var result = hasMinutes ? '${duration.inMinutes}:' : '';
 
   var s = duration.inSeconds % 60;
   var ms = duration.inMilliseconds % 1000;
@@ -448,14 +451,14 @@ String niceDuration(Duration duration) {
       : (ms ~/ 100).toString();
 
   return "$result${hasMinutes ? _padLeft(s.toString(), 2, '0') : s}"
-      ".${msString}s";
+      '.${msString}s';
 }
 
 /// Decodes a URL-encoded string.
 ///
 /// Unlike [Uri.decodeComponent], this includes replacing `+` with ` `.
 String _urlDecode(String encoded) =>
-    Uri.decodeComponent(encoded.replaceAll("+", " "));
+    Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
 /// Whether "special" strings such as Unicode characters or color escapes are
 /// safe to use.
@@ -484,7 +487,7 @@ String prefixLines(String text, {String prefix = '| ', String firstPrefix}) {
     return lines.map((line) => '$prefix$line').join('\n');
   }
 
-  var firstLine = "$firstPrefix${lines.first}";
+  var firstLine = '$firstPrefix${lines.first}';
   lines = lines.skip(1).map((line) => '$prefix$line').toList();
   lines.insert(0, firstLine);
   return lines.join('\n');
@@ -503,14 +506,14 @@ bool get isAprilFools {
 ///
 /// This pattern does not strictly follow the plain scalar grammar of YAML,
 /// which means some strings may be unnecessarily quoted, but it's much simpler.
-final _unquotableYamlString = RegExp(r"^[a-zA-Z_-][a-zA-Z_0-9-]*$");
+final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
 String yamlToString(data) {
   var buffer = StringBuffer();
 
-  _stringify(bool isMapValue, String indent, data) {
+  void _stringify(bool isMapValue, String indent, data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
     // serialization.
 
@@ -612,12 +615,12 @@ String wordWrap(String text, {String prefix}) {
   // If there is no limit, don't wrap.
   if (_lineLength == null) return text;
 
-  prefix ??= "";
-  return text.split("\n").map((originalLine) {
+  prefix ??= '';
+  return text.split('\n').map((originalLine) {
     var buffer = StringBuffer();
     var lengthSoFar = 0;
     var firstLine = true;
-    for (var word in originalLine.split(" ")) {
+    for (var word in originalLine.split(' ')) {
       var wordLength = _withoutColors(word).length;
       if (wordLength > _lineLength) {
         if (lengthSoFar != 0) buffer.writeln();
@@ -635,12 +638,12 @@ String wordWrap(String text, {String prefix}) {
         lengthSoFar = wordLength + prefix.length;
         firstLine = false;
       } else {
-        buffer.write(" $word");
+        buffer.write(' $word');
         lengthSoFar += 1 + wordLength;
       }
     }
     return buffer.toString();
-  }).join("\n");
+  }).join('\n');
 }
 
 /// A regular expression matching terminal color codes.

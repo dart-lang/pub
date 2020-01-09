@@ -9,16 +9,16 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('errors if the script is in a subdirectory.', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", contents: [
-        d.dir("example", [d.file("script.dart", "main(args) => print('ok');")])
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('example', [d.file('script.dart', "main(args) => print('ok');")])
       ]);
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
-    await runPub(args: ["global", "run", "foo:example/script"], error: """
+    await runPub(args: ['global', 'activate', 'foo']);
+    await runPub(args: ['global', 'run', 'foo:example/script'], error: '''
 Cannot run an executable in a subdirectory of a global package.
 
 Usage: pub global run <package>:<executable> [args...]
@@ -26,6 +26,6 @@ Usage: pub global run <package>:<executable> [args...]
     --[no-]enable-asserts    Enable assert statements.
 
 Run "pub help" to see global options.
-""", exitCode: exit_codes.USAGE);
+''', exitCode: exit_codes.USAGE);
   });
 }

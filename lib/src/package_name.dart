@@ -72,6 +72,7 @@ abstract class PackageName {
         source.descriptionsEqual(description, other.description);
   }
 
+  @override
   int get hashCode {
     if (source == null) return name.hashCode;
     return name.hashCode ^
@@ -82,6 +83,7 @@ abstract class PackageName {
   /// Returns a string representation of this package name.
   ///
   /// If [detail] is passed, it controls exactly which details are included.
+  @override
   String toString([PackageDetail detail]);
 }
 
@@ -102,21 +104,23 @@ class PackageRef extends PackageName {
   /// Creates a reference to a magic package (see [isMagic]).
   PackageRef.magic(String name) : super._magic(name);
 
+  @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
     if (isMagic || isRoot) return name;
 
     var buffer = StringBuffer(name);
     if (detail.showSource ?? source is! HostedSource) {
-      buffer.write(" from $source");
+      buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(" ${source.formatDescription(description)}");
+        buffer.write(' ${source.formatDescription(description)}');
       }
     }
 
     return buffer.toString();
   }
 
+  @override
   bool operator ==(other) => other is PackageRef && samePackage(other);
 }
 
@@ -155,25 +159,28 @@ class PackageId extends PackageName {
       : version = package.version,
         super._(package.name, null, package.name);
 
+  @override
   int get hashCode => super.hashCode ^ version.hashCode;
 
+  @override
   bool operator ==(other) =>
       other is PackageId && samePackage(other) && other.version == version;
 
   /// Returns a [PackageRange] that allows only [version] of this package.
   PackageRange toRange() => withConstraint(version);
 
+  @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
     if (isMagic) return name;
 
     var buffer = StringBuffer(name);
-    if (detail.showVersion ?? !isRoot) buffer.write(" $version");
+    if (detail.showVersion ?? !isRoot) buffer.write(' $version');
 
     if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
-      buffer.write(" from $source");
+      buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(" ${source.formatDescription(description)}");
+        buffer.write(' ${source.formatDescription(description)}');
       }
     }
 
@@ -215,7 +222,7 @@ class PackageRange extends PackageName {
   /// Returns a description of [features], or the empty string if [features] is
   /// empty.
   String get featureDescription {
-    if (features.isEmpty) return "";
+    if (features.isEmpty) return '';
 
     var enabledFeatures = <String>[];
     var disabledFeatures = <String>[];
@@ -227,36 +234,37 @@ class PackageRange extends PackageName {
       }
     });
 
-    var description = "";
+    var description = '';
     if (enabledFeatures.isNotEmpty) {
-      description += "with ${toSentence(enabledFeatures)}";
-      if (disabledFeatures.isNotEmpty) description += ", ";
+      description += 'with ${toSentence(enabledFeatures)}';
+      if (disabledFeatures.isNotEmpty) description += ', ';
     }
 
     if (disabledFeatures.isNotEmpty) {
-      description += "without ${toSentence(disabledFeatures)}";
+      description += 'without ${toSentence(disabledFeatures)}';
     }
     return description;
   }
 
+  @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
     if (isMagic) return name;
 
     var buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {
-      buffer.write(" $constraint");
+      buffer.write(' $constraint');
     }
 
     if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
-      buffer.write(" from $source");
+      buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(" ${source.formatDescription(description)}");
+        buffer.write(' ${source.formatDescription(description)}');
       }
     }
 
     if (detail.showFeatures && features.isNotEmpty) {
-      buffer.write(" $featureDescription");
+      buffer.write(' $featureDescription');
     }
 
     return buffer.toString();
@@ -282,7 +290,7 @@ class PackageRange extends PackageName {
   /// constraint if possible.
   PackageRange withTerseConstraint() {
     if (constraint is! VersionRange) return this;
-    if (constraint.toString().startsWith("^")) return this;
+    if (constraint.toString().startsWith('^')) return this;
 
     var range = constraint as VersionRange;
     if (!range.includeMin) return this;
@@ -302,9 +310,11 @@ class PackageRange extends PackageName {
   /// [constraint] allows `id.version`.
   bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
 
+  @override
   int get hashCode =>
       super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
 
+  @override
   bool operator ==(other) =>
       other is PackageRange &&
       samePackage(other) &&
@@ -315,15 +325,15 @@ class PackageRange extends PackageName {
 /// An enum of types of dependencies on a [Feature].
 class FeatureDependency {
   /// The feature must exist and be enabled for this dependency to be satisfied.
-  static const required = FeatureDependency._("required");
+  static const required = FeatureDependency._('required');
 
   /// The feature must be enabled if it exists, but is not required to exist for
   /// this dependency to be satisfied.
-  static const ifAvailable = FeatureDependency._("if available");
+  static const ifAvailable = FeatureDependency._('if available');
 
   /// The feature is neither required to exist nor to be enabled for this
   /// feature to be satisfied.
-  static const unused = FeatureDependency._("unused");
+  static const unused = FeatureDependency._('unused');
 
   final String _name;
 
@@ -332,6 +342,7 @@ class FeatureDependency {
 
   const FeatureDependency._(this._name);
 
+  @override
   String toString() => _name;
 }
 

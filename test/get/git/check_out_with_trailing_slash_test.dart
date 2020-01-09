@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  group("(regression)", () {
+void main() {
+  group('(regression)', () {
     test('checks out a package from Git with a trailing slash', () async {
       ensureGit();
 
@@ -16,7 +16,7 @@ main() {
           'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
       await d.appDir({
-        "foo": {"git": "../foo.git/"}
+        'foo': {'git': '../foo.git/'}
       }).create();
 
       await pubGet();

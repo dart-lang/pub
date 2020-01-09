@@ -26,13 +26,13 @@ import 'utils.dart';
 /// compatibility with Google's internal Dart packages, but they may not be used
 /// when publishing a package to pub.dartlang.org.
 final _packageName =
-    RegExp("^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$");
+    RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
 
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
 /// This provides a sane default for packages that don't have an upper bound.
 final VersionRange _defaultUpperBoundSdkConstraint =
-    VersionConstraint.parse("<2.0.0");
+    VersionConstraint.parse('<2.0.0');
 
 /// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
@@ -48,7 +48,7 @@ bool get _allowPreReleaseSdk => _allowPreReleaseSdkValue != 'false';
 /// to `true`.
 final String _allowPreReleaseSdkValue = () {
   var value =
-      Platform.environment["PUB_ALLOW_PRERELEASE_SDK"]?.toLowerCase() ?? 'true';
+      Platform.environment['PUB_ALLOW_PRERELEASE_SDK']?.toLowerCase() ?? 'true';
   if (!['true', 'quiet', 'false'].contains(value)) {
     warning(yellow('''
 The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$value`.
@@ -254,7 +254,7 @@ class Pubspec {
   /// `sdkConstraints["dart"]`.
   VersionConstraint get originalDartSdkConstraint {
     _ensureEnvironment();
-    return _originalDartSdkConstraint ?? sdkConstraints["dart"];
+    return _originalDartSdkConstraint ?? sdkConstraints['dart'];
   }
 
   VersionConstraint _originalDartSdkConstraint;
@@ -265,13 +265,13 @@ class Pubspec {
     if (_sdkConstraints != null) return;
 
     var sdkConstraints = _parseEnvironment(fields);
-    var parsedDartSdkConstraint = sdkConstraints["dart"];
+    var parsedDartSdkConstraint = sdkConstraints['dart'];
 
     if (parsedDartSdkConstraint is VersionRange &&
         _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
       _originalDartSdkConstraint = parsedDartSdkConstraint;
       _dartSdkWasOverridden = true;
-      sdkConstraints["dart"] = VersionRange(
+      sdkConstraints['dart'] = VersionRange(
           min: parsedDartSdkConstraint.min,
           includeMin: parsedDartSdkConstraint.includeMin,
           max: sdk.version,
@@ -316,7 +316,7 @@ class Pubspec {
     var yaml = parent['environment'];
     if (yaml == null) {
       return {
-        "dart": _includeDefaultSdkConstraint
+        'dart': _includeDefaultSdkConstraint
             ? _defaultUpperBoundSdkConstraint
             : VersionConstraint.any
       };
@@ -328,7 +328,7 @@ class Pubspec {
     }
 
     var constraints = {
-      "dart": _parseVersionConstraint(yaml.nodes['sdk'],
+      'dart': _parseVersionConstraint(yaml.nodes['sdk'],
           defaultUpperBoundConstraint: _includeDefaultSdkConstraint
               ? _defaultUpperBoundSdkConstraint
               : null)
@@ -336,10 +336,10 @@ class Pubspec {
     yaml.nodes.forEach((name, constraint) {
       if (name.value is! String) {
         _error('SDK names must be strings.', name.span);
-      } else if (name.value == "dart") {
+      } else if (name.value == 'dart') {
         _error('Use "sdk" to for Dart SDK constraints.', name.span);
       }
-      if (name.value == "sdk") return;
+      if (name.value == 'sdk') return;
 
       constraints[name.value as String] = _parseVersionConstraint(constraint);
     });
@@ -364,11 +364,11 @@ class Pubspec {
       }
 
       // It must be "none" or a valid URL.
-      if (publishTo != "none") {
+      if (publishTo != 'none') {
         _wrapFormatException('"publish_to" field', span, () {
           var url = Uri.parse(publishTo);
           if (url.scheme.isEmpty) {
-            throw FormatException("must be an absolute URL.");
+            throw FormatException('must be an absolute URL.');
           }
         });
       }
@@ -408,7 +408,7 @@ class Pubspec {
         _error('"executables" keys must be strings.', key.span);
       }
 
-      final keyPattern = RegExp(r"^[a-zA-Z0-9_-]+$");
+      final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
       if (!keyPattern.hasMatch(key.value)) {
         _error(
             '"executables" keys may only contain letters, '
@@ -422,7 +422,7 @@ class Pubspec {
         _error('"executables" values must be strings or null.', value.span);
       }
 
-      final valuePattern = RegExp(r"[/\\]");
+      final valuePattern = RegExp(r'[/\\]');
       if (valuePattern.hasMatch(value.value)) {
         _error('"executables" values may not contain path separators.',
             value.span);
@@ -439,7 +439,7 @@ class Pubspec {
   /// Whether the package is private and cannot be published.
   ///
   /// This is specified in the pubspec by setting "publish_to" to "none".
-  bool get isPrivate => publishTo == "none";
+  bool get isPrivate => publishTo == 'none';
 
   /// Whether or not the pubspec has no contents.
   bool get isEmpty =>
@@ -485,7 +485,7 @@ class Pubspec {
         _dependencyOverrides = dependencyOverrides == null
             ? null
             : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
-        _sdkConstraints = UnmodifiableMapView({"dart": VersionConstraint.any}),
+        _sdkConstraints = UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
         fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
         _sources = sources;
@@ -496,7 +496,7 @@ class Pubspec {
         _version = Version.none,
         _dependencies = {},
         _devDependencies = {},
-        _sdkConstraints = {"dart": VersionConstraint.any},
+        _sdkConstraints = {'dart': VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
         fields = YamlMap();
 
@@ -521,7 +521,7 @@ class Pubspec {
     throw PubspecException(
         '"name" field doesn\'t match expected name '
         '"$expectedName".',
-        this.fields.nodes["name"].span);
+        this.fields.nodes['name'].span);
   }
 
   /// Parses the pubspec stored at [filePath] whose text is [contents].
@@ -558,7 +558,7 @@ class Pubspec {
   /// This will return at most one error for each field.
   List<PubspecException> get allErrors {
     var errors = <PubspecException>[];
-    _getError(fn()) {
+    void _collectError(void Function() fn) {
       try {
         fn();
       } on PubspecException catch (e) {
@@ -566,13 +566,13 @@ class Pubspec {
       }
     }
 
-    _getError(() => name);
-    _getError(() => version);
-    _getError(() => dependencies);
-    _getError(() => devDependencies);
-    _getError(() => publishTo);
-    _getError(() => features);
-    _getError(_ensureEnvironment);
+    _collectError(() => name);
+    _collectError(() => version);
+    _collectError(() => dependencies);
+    _collectError(() => devDependencies);
+    _collectError(() => publishTo);
+    _collectError(() => features);
+    _collectError(_ensureEnvironment);
     return errors;
   }
 
@@ -709,7 +709,7 @@ class Pubspec {
             return value
                 ? FeatureDependency.required
                 : FeatureDependency.unused;
-          } else if (value is String && value == "if available") {
+          } else if (value is String && value == 'if available') {
             return FeatureDependency.ifAvailable;
           } else {
             _error('Features must be true, false, or "if available".',
@@ -735,7 +735,7 @@ class Pubspec {
   ///
   /// If [validate] is passed, it's called for each string in [node].
   List<String> _parseStringList(YamlNode node,
-      {void validate(String value, SourceSpan span)}) {
+      {void Function(String value, SourceSpan) validate}) {
     var list = _parseList(node);
     for (var element in list.nodes) {
       var value = element.value;
@@ -764,7 +764,8 @@ class Pubspec {
   ///
   /// If [targetPackage] is provided, the value is used to describe the
   /// dependency that caused the problem.
-  T _wrapFormatException<T>(String description, SourceSpan span, T fn(),
+  T _wrapFormatException<T>(
+      String description, SourceSpan span, T Function() fn,
       {String targetPackage}) {
     try {
       return fn();

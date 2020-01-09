@@ -7,25 +7,25 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('runs a named Dart application in a dev dependency', () async {
-    await d.dir("foo", [
-      d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [d.file("bar.dart", "main() => print('foobar');")])
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dev_dependencies": {
-          "foo": {"path": "../foo"}
+        'name': 'myapp',
+        'dev_dependencies': {
+          'foo': {'path': '../foo'}
         }
       })
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["foo:bar"]);
-    expect(pub.stdout, emits("foobar"));
+    var pub = await pubRun(args: ['foo:bar']);
+    expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
   });
 }

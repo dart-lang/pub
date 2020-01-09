@@ -14,7 +14,7 @@ import 'package:test_process/test_process.dart';
 import 'package:pub/src/utils.dart';
 
 Future authorizePub(TestProcess pub, ShelfTestServer server,
-    [String accessToken = "access token"]) async {
+    [String accessToken = 'access token']) async {
   await expectLater(
       pub.stdout,
       emits('Pub needs your authorization to upload packages on your '
@@ -45,7 +45,7 @@ void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {
     expect(body, matches(RegExp(r'(^|&)code=access\+code(&|$)')));
 
     return shelf.Response.ok(
-        jsonEncode({"access_token": accessToken, "token_type": "bearer"}),
+        jsonEncode({'access_token': accessToken, 'token_type': 'bearer'}),
         headers: {'content-type': 'application/json'});
   });
 }
@@ -55,7 +55,7 @@ void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {
 Uri _addQueryParameters(Uri url, Map<String, String> parameters) {
   var queryMap = queryToMap(url.query);
   queryMap.addAll(parameters);
-  return url.resolve("?${_mapToQuery(queryMap)}");
+  return url.resolve('?${_mapToQuery(queryMap)}');
 }
 
 /// Convert a [Map] from parameter names to values to a URL query string.
@@ -70,6 +70,6 @@ String _mapToQuery(Map<String, String> map) {
   });
   return pairs.map((pair) {
     if (pair[1] == null) return pair[0];
-    return "${pair[0]}=${pair[1]}";
-  }).join("&");
+    return '${pair[0]}=${pair[1]}';
+  }).join('&');
 }

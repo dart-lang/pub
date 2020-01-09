@@ -10,12 +10,18 @@ import '../solver.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
-  String get name => "get";
+  @override
+  String get name => 'get';
+  @override
   String get description => "Get the current package's dependencies.";
-  String get invocation => "pub get";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-get";
-  List<String> get aliases => const ["install"];
-  bool get isOffline => argResults["offline"];
+  @override
+  String get invocation => 'pub get';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
+  @override
+  List<String> get aliases => const ['install'];
+  @override
+  bool get isOffline => argResults['offline'];
 
   GetCommand() {
     argParser.addFlag('offline',
@@ -28,11 +34,12 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         defaultsTo: false,
-        help: "Precompile executables in immediate dependencies.");
+        help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
 
+  @override
   Future run() {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(

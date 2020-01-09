@@ -15,7 +15,7 @@ import 'utils.dart';
 Validator deprecatedFields(Entrypoint entrypoint) =>
     DeprecatedFieldsValidator(entrypoint);
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('should not warn if neither transformers or web is included', () {

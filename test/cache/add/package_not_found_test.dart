@@ -8,14 +8,14 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('fails if the package cound not be found on the source', () async {
     await serveNoPackages();
 
     await runPub(
-        args: ["cache", "add", "foo"],
+        args: ['cache', 'add', 'foo'],
         error: RegExp(r"Package doesn't exist \(could not find package foo at "
-            r"http://.*\)\."),
+            r'http://.*\)\.'),
         exitCode: exit_codes.UNAVAILABLE);
   });
 }

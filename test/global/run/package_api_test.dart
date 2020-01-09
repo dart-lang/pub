@@ -8,16 +8,16 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('an immutable application sees a file: package config', () async {
     await servePackages((builder) {
-      builder.serve("bar", "1.0.0");
+      builder.serve('bar', '1.0.0');
 
-      builder.serve("foo", "1.0.0", deps: {
-        "bar": "1.0.0"
+      builder.serve('foo', '1.0.0', deps: {
+        'bar': '1.0.0'
       }, contents: [
-        d.dir("bin", [
-          d.file("script.dart", """
+        d.dir('bin', [
+          d.file('script.dart', """
 import 'dart:isolate';
 
 main() async {
@@ -33,36 +33,36 @@ main() async {
       ]);
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ["foo:script"]);
+    var pub = await pubRun(global: true, args: ['foo:script']);
 
-    expect(pub.stdout, emits("null"));
+    expect(pub.stdout, emits('null'));
 
     var packageConfigPath =
-        p.join(d.sandbox, cachePath, "global_packages/foo/.packages");
+        p.join(d.sandbox, cachePath, 'global_packages/foo/.packages');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), "lib/resource.txt");
+        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
     var barResourcePath = p.join(
-        globalPackageServer.pathInCache('bar', '1.0.0'), "lib/resource.txt");
+        globalPackageServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
     await pub.shouldExit(0);
   });
 
   test('a mutable untransformed application sees a file: package root',
       () async {
-    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       }),
-      d.dir("bin", [
-        d.file("script.dart", """
+      d.dir('bin', [
+        d.file('script.dart', """
 import 'dart:isolate';
 
 main() async {
@@ -77,19 +77,19 @@ main() async {
       ])
     ]).create();
 
-    await runPub(args: ["global", "activate", "-s", "path", "."]);
+    await runPub(args: ['global', 'activate', '-s', 'path', '.']);
 
-    var pub = await pubRun(global: true, args: ["myapp:script"]);
+    var pub = await pubRun(global: true, args: ['myapp:script']);
 
-    expect(pub.stdout, emits("null"));
+    expect(pub.stdout, emits('null'));
 
-    var packageConfigPath = p.join(d.sandbox, "myapp/.packages");
+    var packageConfigPath = p.join(d.sandbox, 'myapp/.packages');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    var myappResourcePath = p.join(d.sandbox, "myapp/lib/resource.txt");
+    var myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(myappResourcePath).toString()));
 
-    var fooResourcePath = p.join(d.sandbox, "foo/lib/resource.txt");
+    var fooResourcePath = p.join(d.sandbox, 'foo/lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

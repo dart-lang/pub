@@ -16,30 +16,30 @@ import 'utils.dart';
 
 Validator readme(Entrypoint entrypoint) => ReadmeValidator(entrypoint);
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   group('should consider a package valid if it', () {
     test('looks normal', () => expectNoValidationError(readme));
 
     test('has a non-primary readme', () async {
-      deleteEntry(p.join(d.sandbox, "myapp/README.md"));
+      deleteEntry(p.join(d.sandbox, 'myapp/README.md'));
 
-      await d.dir(appPath, [d.file("README.whatever")]).create();
+      await d.dir(appPath, [d.file('README.whatever')]).create();
       expectNoValidationError(readme);
     });
 
     test('has a non-primary readme with invalid utf-8', () async {
       await d.dir(appPath, [
-        d.file("README.x.y.z", [192])
+        d.file('README.x.y.z', [192])
       ]).create();
       expectNoValidationError(readme);
     });
 
     test('has a gitignored README with invalid utf-8', () async {
       var repo = d.git(appPath, [
-        d.file("README", [192]),
-        d.file(".gitignore", "README")
+        d.file('README', [192]),
+        d.file('.gitignore', 'README')
       ]);
       await repo.create();
       expectNoValidationError(readme);
@@ -48,18 +48,18 @@ main() {
 
   group('should consider a package invalid if it', () {
     test('has no README', () {
-      deleteEntry(p.join(d.sandbox, "myapp/README.md"));
+      deleteEntry(p.join(d.sandbox, 'myapp/README.md'));
       expectValidationWarning(readme);
     });
 
     test('has only a .gitignored README', () async {
-      await d.git(appPath, [d.file(".gitignore", "README.md")]).create();
+      await d.git(appPath, [d.file('.gitignore', 'README.md')]).create();
       expectValidationWarning(readme);
     });
 
     test('has a primary README with invalid utf-8', () async {
       await d.dir(appPath, [
-        d.file("README", [192])
+        d.file('README', [192])
       ]).create();
       expectValidationWarning(readme);
     });

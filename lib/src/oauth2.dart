@@ -75,12 +75,12 @@ void _clearCredentials(SystemCache cache) {
 void logout(SystemCache cache) {
   var credentialsFile = _credentialsFile(cache);
   if (entryExists(_credentialsFile(cache))) {
-    log.message("Logging out of pub.dartlang.org.");
-    log.message("Deleting $credentialsFile");
+    log.message('Logging out of pub.dartlang.org.');
+    log.message('Deleting $credentialsFile');
     _clearCredentials(cache);
   } else {
     log.message(
-        "No existing credentials file $credentialsFile. Cannot log out.");
+        'No existing credentials file $credentialsFile. Cannot log out.');
   }
 }
 
@@ -90,7 +90,7 @@ void logout(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
+Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
   return _getClient(cache).then((client) {
     return fn(client).whenComplete(() {
       client.close();
@@ -103,11 +103,11 @@ Future<T> withClient<T>(SystemCache cache, Future<T> fn(Client client)) {
           "can't be automatically refreshed.");
       return withClient(cache, fn);
     } else if (error is AuthorizationException) {
-      var message = "OAuth2 authorization failed";
+      var message = 'OAuth2 authorization failed';
       if (error.description != null) {
-        message = "$message (${error.description})";
+        message = '$message (${error.description})';
       }
-      log.error("$message.");
+      log.error('$message.');
       _clearCredentials(cache);
       return withClient(cache, fn);
     } else {

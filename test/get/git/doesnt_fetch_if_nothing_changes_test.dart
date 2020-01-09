@@ -10,7 +10,7 @@ import 'package:pub/src/io.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test("doesn't re-fetch a repository if nothing changes", () async {
     ensureGit();
 
@@ -18,8 +18,8 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {
-        "git": {"url": "../foo.git"}
+      'foo': {
+        'git': {'url': '../foo.git'}
       }
     }).create();
 

@@ -41,26 +41,26 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
-  _PubHttpClient([http.Client inner])
-      : _inner = inner == null ? http.Client() : inner;
+  _PubHttpClient([http.Client inner]) : _inner = inner ?? http.Client();
 
+  @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_shouldAddMetadata(request)) {
-      request.headers["X-Pub-OS"] = Platform.operatingSystem;
-      request.headers["X-Pub-Command"] = PubCommandRunner.command;
-      request.headers["X-Pub-Session-ID"] = _sessionId;
+      request.headers['X-Pub-OS'] = Platform.operatingSystem;
+      request.headers['X-Pub-Command'] = PubCommandRunner.command;
+      request.headers['X-Pub-Session-ID'] = _sessionId;
 
-      var environment = Platform.environment["PUB_ENVIRONMENT"];
+      var environment = Platform.environment['PUB_ENVIRONMENT'];
       if (environment != null) {
-        request.headers["X-Pub-Environment"] = environment;
+        request.headers['X-Pub-Environment'] = environment;
       }
 
       var type = Zone.current[#_dependencyType];
-      if (type != null) request.headers["X-Pub-Reason"] = type.toString();
+      if (type != null) request.headers['X-Pub-Reason'] = type.toString();
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
-    request.headers[HttpHeaders.userAgentHeader] = "Dart pub ${sdk.version}";
+    request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
 
     http.StreamedResponse streamedResponse;
@@ -97,28 +97,28 @@ class _PubHttpClient extends http.BaseClient {
 
   /// Whether extra metadata headers should be added to [request].
   bool _shouldAddMetadata(http.BaseRequest request) {
-    if (runningFromTest && Platform.environment.containsKey("PUB_HOSTED_URL")) {
-      if (request.url.origin != Platform.environment["PUB_HOSTED_URL"]) {
+    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
+      if (request.url.origin != Platform.environment['PUB_HOSTED_URL']) {
         return false;
       }
     } else {
-      if (request.url.origin != "https://pub.dartlang.org") return false;
+      if (request.url.origin != 'https://pub.dartlang.org') return false;
     }
 
     return const [
-      "cache add",
-      "cache repair",
-      "downgrade",
-      "get",
-      "global activate",
-      "upgrade",
+      'cache add',
+      'cache repair',
+      'downgrade',
+      'get',
+      'global activate',
+      'upgrade',
     ].contains(PubCommandRunner.command);
   }
 
   /// Logs the fact that [request] was sent, and information about it.
   void _logRequest(http.BaseRequest request) {
     var requestLog = StringBuffer();
-    requestLog.writeln("HTTP ${request.method} ${request.url}");
+    requestLog.writeln('HTTP ${request.method} ${request.url}');
     request.headers
         .forEach((name, value) => requestLog.writeln(_logField(name, value)));
 
@@ -127,7 +127,7 @@ class _PubHttpClient extends http.BaseClient {
       var contentType = ContentType.parse(contentTypeString ?? '');
       if (request is http.MultipartRequest) {
         requestLog.writeln();
-        requestLog.writeln("Body fields:");
+        requestLog.writeln('Body fields:');
         request.fields.forEach(
             (name, value) => requestLog.writeln(_logField(name, value)));
 
@@ -135,7 +135,7 @@ class _PubHttpClient extends http.BaseClient {
       } else if (request is http.Request) {
         if (contentType.value == 'application/x-www-form-urlencoded') {
           requestLog.writeln();
-          requestLog.writeln("Body fields:");
+          requestLog.writeln('Body fields:');
           request.bodyFields.forEach(
               (name, value) => requestLog.writeln(_logField(name, value)));
         } else if (contentType.value == 'text/plain' ||
@@ -156,9 +156,9 @@ class _PubHttpClient extends http.BaseClient {
     var responseLog = StringBuffer();
     var request = response.request;
     var stopwatch = _requestStopwatches.remove(request)..stop();
-    responseLog.writeln("HTTP response ${response.statusCode} "
-        "${response.reasonPhrase} for ${request.method} ${request.url}");
-    responseLog.writeln("took ${stopwatch.elapsed}");
+    responseLog.writeln('HTTP response ${response.statusCode} '
+        '${response.reasonPhrase} for ${request.method} ${request.url}');
+    responseLog.writeln('took ${stopwatch.elapsed}');
     response.headers
         .forEach((name, value) => responseLog.writeln(_logField(name, value)));
 
@@ -169,9 +169,9 @@ class _PubHttpClient extends http.BaseClient {
   /// [name] and [value].
   String _logField(String name, String value) {
     if (_censoredFields.contains(name.toLowerCase())) {
-      return "$name: <censored>";
+      return '$name: <censored>';
     } else {
-      return "$name: $value";
+      return '$name: $value';
     }
   }
 }
@@ -190,6 +190,7 @@ class _ThrowingClient extends http.BaseClient {
 
   _ThrowingClient(this._inner);
 
+  @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final streamedResponse = await _inner.send(request);
 
@@ -203,16 +204,16 @@ class _ThrowingClient extends http.BaseClient {
     }
 
     if (status == 406 && request.headers['Accept'] == pubApiHeaders['Accept']) {
-      fail("Pub ${sdk.version} is incompatible with the current version of "
-          "${request.url.host}.\n"
-          "Upgrade pub to the latest version and try again.");
+      fail('Pub ${sdk.version} is incompatible with the current version of '
+          '${request.url.host}.\n'
+          'Upgrade pub to the latest version and try again.');
     }
 
     if (status == 500 &&
-        (request.url.host == "pub.dartlang.org" ||
-            request.url.host == "storage.googleapis.com")) {
-      fail("HTTP error 500: Internal Server Error at ${request.url}.\n"
-          "This is likely a transient error. Please try again later.");
+        (request.url.host == 'pub.dartlang.org' ||
+            request.url.host == 'storage.googleapis.com')) {
+      fail('HTTP error 500: Internal Server Error at ${request.url}.\n'
+          'This is likely a transient error. Please try again later.');
     }
 
     throw PubHttpException(await http.Response.fromStream(streamedResponse));
@@ -230,7 +231,7 @@ final httpClient = ThrottleClient(
           if (error is! IOException) return false;
 
           var chain = Chain.forTrace(stackTrace);
-          log.io("HTTP error:\n$error\n\n${chain.terse}");
+          log.io('HTTP error:\n$error\n\n${chain.terse}');
           return true;
         },
         delay: (retryCount) {
@@ -249,13 +250,13 @@ final httpClient = ThrottleClient(
           }
         },
         onRetry: (request, response, retryCount) {
-          log.io("Retry #${retryCount + 1} for "
-              "${request.method} ${request.url}...");
+          log.io('Retry #${retryCount + 1} for '
+              '${request.method} ${request.url}...');
           if (retryCount != 3) return;
           if (!_retriedHosts.add(request.url.host)) return;
           log.message(
-              "It looks like ${request.url.host} is having some trouble.\n"
-              "Pub will wait for a while before trying to connect again.");
+              'It looks like ${request.url.host} is having some trouble.\n'
+              'Pub will wait for a while before trying to connect again.');
         })));
 
 /// The underlying HTTP client wrapped by [httpClient].
@@ -267,7 +268,8 @@ set innerHttpClient(http.Client client) => _pubClient._inner = client;
 /// the package being requested.
 ///
 /// If [type] is [DependencyType.none], no extra metadata is added.
-Future<T> withDependencyType<T>(DependencyType type, Future<T> callback()) {
+Future<T> withDependencyType<T>(
+    DependencyType type, Future<T> Function() callback) {
   if (type == DependencyType.none) return callback();
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
@@ -327,6 +329,7 @@ class PubHttpException implements Exception {
 
   const PubHttpException(this.response);
 
+  @override
   String toString() => 'HTTP error ${response.statusCode}: '
       '${response.reasonPhrase}';
 }

@@ -15,10 +15,11 @@ import '../validator.dart';
 class SdkConstraintValidator extends Validator {
   SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() async {
     var dartConstraint = entrypoint.root.pubspec.originalDartSdkConstraint;
     if (dartConstraint is VersionRange) {
-      if (dartConstraint.toString().startsWith("^")) {
+      if (dartConstraint.toString().startsWith('^')) {
         var dartConstraintWithoutCaret = VersionRange(
             min: dartConstraint.min,
             max: dartConstraint.max,
@@ -27,10 +28,10 @@ class SdkConstraintValidator extends Validator {
         errors.add(
             "^ version constraints aren't allowed for SDK constraints since "
             "older versions of pub don't support them.\n"
-            "Expand it manually instead:\n"
-            "\n"
-            "environment:\n"
-            "  sdk: \"$dartConstraintWithoutCaret\"");
+            'Expand it manually instead:\n'
+            '\n'
+            'environment:\n'
+            '  sdk: \"$dartConstraintWithoutCaret\"');
       }
 
       if (dartConstraint.max == null) {

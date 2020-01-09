@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('upload form provides an error', () async {

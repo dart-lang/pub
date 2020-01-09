@@ -173,7 +173,7 @@ class PackageLister {
           await withDependencyType(_dependencyType, () => _source.describe(id));
     } on PubspecException catch (error) {
       // The lockfile for the pubspec couldn't be parsed,
-      log.fine("Failed to parse pubspec for $id:\n$error");
+      log.fine('Failed to parse pubspec for $id:\n$error');
       _knownInvalidVersions = _knownInvalidVersions.union(id.version);
       return [
         Incompatibility(
@@ -321,7 +321,7 @@ class PackageLister {
   ///
   /// Assumes [match] returns true for the pubspec whose version is at [index].
   Future<Pair<int, int>> _findBounds(
-      int start, bool match(Pubspec pubspec)) async {
+      int start, bool Function(Pubspec) match) async {
     var versions = await _versions;
 
     var first = start - 1;
@@ -421,27 +421,35 @@ class PackageLister {
 class _RootSource extends BoundSource {
   /// An error to throw for unused source methods.
   UnsupportedError get _unsupported =>
-      UnsupportedError("_RootSource is not a full source.");
+      UnsupportedError('_RootSource is not a full source.');
 
   /// The entrypoint package.
   final Package _package;
 
   _RootSource(this._package);
 
+  @override
   Future<List<PackageId>> getVersions(PackageRef ref) {
     assert(ref.isRoot);
     return Future.value([PackageId.root(_package)]);
   }
 
+  @override
   Future<Pubspec> describe(PackageId id) {
     assert(id.isRoot);
     return Future.value(_package.pubspec);
   }
 
+  @override
   Source get source => throw _unsupported;
+  @override
   SystemCache get systemCache => throw _unsupported;
+  @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) => throw _unsupported;
+  @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
+  @override
   Future get(PackageId id, String symlink) => throw _unsupported;
+  @override
   String getDirectory(PackageId id) => throw _unsupported;
 }

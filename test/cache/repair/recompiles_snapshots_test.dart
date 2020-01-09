@@ -7,21 +7,21 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('recompiles activated executable snapshots', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", contents: [
-        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
       ]);
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
       d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')])
     ]).create();
 
-    await runPub(args: ["cache", "repair"], output: '''
+    await runPub(args: ['cache', 'repair'], output: '''
           Downloading foo 1.0.0...
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
@@ -29,8 +29,8 @@ main() {
           Precompiled foo:script.
           Reactivated 1 package.''');
 
-    var pub = await pubRun(global: true, args: ["foo:script"]);
-    expect(pub.stdout, emits("ok"));
+    var pub = await pubRun(global: true, args: ['foo:script']);
+    expect(pub.stdout, emits('ok'));
     await pub.shouldExit();
   });
 }

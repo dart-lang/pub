@@ -9,23 +9,23 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("errors on an unknown explicit executable", () async {
-    await d.dir("foo", [
+void main() {
+  test('errors on an unknown explicit executable', () async {
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {"one": "one"}
+        'name': 'foo',
+        'executables': {'one': 'one'}
       }),
-      d.dir("bin", [d.file("one.dart", "main() => print('ok');")])
+      d.dir('bin', [d.file('one.dart', "main() => print('ok');")])
     ]).create();
 
     var pub = await startPub(args: [
-      "global", "activate", "--source", "path", "../foo", //
-      "-x", "who", "-x", "one", "--executable", "wat"
+      'global', 'activate', '--source', 'path', '../foo', //
+      '-x', 'who', '-x', 'one', '--executable', 'wat'
     ]);
 
-    expect(pub.stdout, emitsThrough("Installed executable one."));
-    expect(pub.stderr, emits("Unknown executables wat and who."));
+    expect(pub.stdout, emitsThrough('Installed executable one.'));
+    expect(pub.stderr, emits('Unknown executables wat and who.'));
     await pub.shouldExit(exit_codes.DATA);
   });
 }

@@ -10,18 +10,18 @@ import 'package:pub/src/io.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('deactivates an active path package', () async {
-    await d.dir("foo", [
-      d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    var path = canonicalize(p.join(d.sandbox, "foo"));
+    var path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
-        args: ["global", "deactivate", "foo"],
+        args: ['global', 'deactivate', 'foo'],
         output: 'Deactivated package foo 1.0.0 at path "$path".');
   });
 }

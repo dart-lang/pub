@@ -41,6 +41,7 @@ abstract class PubCommand extends Command {
 
   // Lazily initialize the parser because the superclass constructor requires
   // it but we want to initialize it based on [allowTrailingOptions].
+  @override
   ArgParser get argParser =>
       _argParser ??= ArgParser(allowTrailingOptions: allowTrailingOptions);
 
@@ -52,11 +53,13 @@ abstract class PubCommand extends Command {
   /// it has no effect. This only needs to be set in leaf commands.
   bool get isOffline => false;
 
+  @override
   String get usageFooter {
     if (docUrl == null) return null;
-    return "See $docUrl for detailed documentation.";
+    return 'See $docUrl for detailed documentation.';
   }
 
+  @override
   void printUsage() {
     log.message(usage);
   }

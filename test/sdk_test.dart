@@ -12,7 +12,7 @@ import 'package:pub/src/io.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     setUp(() async {
       await servePackages((builder) {
@@ -36,7 +36,7 @@ main() {
 
     test("gets an SDK dependency's dependencies", () async {
       await d.appDir({
-        "foo": {"sdk": "flutter"}
+        'foo': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -50,9 +50,9 @@ main() {
       ]).validate();
     });
 
-    test("gets an SDK dependency from bin/cache/pkg", () async {
+    test('gets an SDK dependency from bin/cache/pkg', () async {
       await d.appDir({
-        "baz": {"sdk": "flutter"}
+        'baz': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -65,16 +65,16 @@ main() {
       ]).validate();
     });
 
-    test("unlocks an SDK dependency when the version changes", () async {
+    test('unlocks an SDK dependency when the version changes', () async {
       await d.appDir({
-        "foo": {"sdk": "flutter"}
+        'foo': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
       await d
-          .file("$appPath/pubspec.lock",
-              allOf([contains("0.0.1"), isNot(contains("0.0.2"))]))
+          .file('$appPath/pubspec.lock',
+              allOf([contains('0.0.1'), isNot(contains('0.0.2'))]))
           .validate();
 
       await d
@@ -83,15 +83,15 @@ main() {
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
       await d
-          .file("$appPath/pubspec.lock",
-              allOf([isNot(contains("0.0.1")), contains("0.0.2")]))
+          .file('$appPath/pubspec.lock',
+              allOf([isNot(contains('0.0.1')), contains('0.0.2')]))
           .validate();
     });
 
     // Regression test for #1883
     test(
         "doesn't fail if the Flutter SDK's version file doesn't exist when "
-        "nothing depends on Flutter", () async {
+        'nothing depends on Flutter', () async {
       await d.appDir().create();
       deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
       await pubCommand(command,
@@ -102,10 +102,10 @@ main() {
       ]).validate();
     });
 
-    group("fails if", () {
+    group('fails if', () {
       test("the version constraint doesn't match", () async {
         await d.appDir({
-          "foo": {"sdk": "flutter", "version": "^1.0.0"}
+          'foo': {'sdk': 'flutter', 'version': '^1.0.0'}
         }).create();
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
@@ -115,9 +115,9 @@ main() {
             """));
       });
 
-      test("the SDK is unknown", () async {
+      test('the SDK is unknown', () async {
         await d.appDir({
-          "foo": {"sdk": "unknown"}
+          'foo': {'sdk': 'unknown'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on foo any from sdk which doesn't exist
@@ -125,9 +125,9 @@ main() {
             """), exitCode: exit_codes.UNAVAILABLE);
       });
 
-      test("the SDK is unavailable", () async {
+      test('the SDK is unavailable', () async {
         await d.appDir({
-          "foo": {"sdk": "flutter"}
+          'foo': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on foo any from sdk which doesn't exist (the
@@ -140,7 +140,7 @@ main() {
 
       test("the SDK doesn't contain the package", () async {
         await d.appDir({
-          "bar": {"sdk": "flutter"}
+          'bar': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
@@ -154,7 +154,7 @@ main() {
 
       test("the Dart SDK doesn't contain the package", () async {
         await d.appDir({
-          "bar": {"sdk": "dart"}
+          'bar': {'sdk': 'dart'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
               Because myapp depends on bar any from sdk which doesn't exist
@@ -164,11 +164,11 @@ main() {
       });
     });
 
-    test("supports the Fuchsia SDK", () async {
+    test('supports the Fuchsia SDK', () async {
       renameDir(p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
 
       await d.appDir({
-        "foo": {"sdk": "fuchsia"}
+        'foo': {'sdk': 'fuchsia'}
       }).create();
       await pubCommand(command,
           environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')});

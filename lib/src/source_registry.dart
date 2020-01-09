@@ -15,10 +15,10 @@ class SourceRegistry {
   ///
   /// This is initialized with the three built-in sources.
   final _sources = {
-    "git": GitSource(),
-    "hosted": HostedSource(),
-    "path": PathSource(),
-    "sdk": SdkSource()
+    'git': GitSource(),
+    'hosted': HostedSource(),
+    'path': PathSource(),
+    'sdk': SdkSource()
   };
 
   /// The default source, which is used when no source is specified.
@@ -35,16 +35,16 @@ class SourceRegistry {
   }
 
   /// The built-in [GitSource].
-  GitSource get git => _sources["git"] as GitSource;
+  GitSource get git => _sources['git'] as GitSource;
 
   /// The built-in [HostedSource].
-  HostedSource get hosted => _sources["hosted"] as HostedSource;
+  HostedSource get hosted => _sources['hosted'] as HostedSource;
 
   /// The built-in [PathSource].
-  PathSource get path => _sources["path"] as PathSource;
+  PathSource get path => _sources['path'] as PathSource;
 
   /// The built-in [SdkSource].
-  SdkSource get sdk => _sources["sdk"] as SdkSource;
+  SdkSource get sdk => _sources['sdk'] as SdkSource;
 
   SourceRegistry() {
     _default = hosted;

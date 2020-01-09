@@ -9,22 +9,22 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("errors if -x and --no-executables are both passed", () async {
-    await d.dir("foo", [d.libPubspec("foo", "1.0.0")]).create();
+void main() {
+  test('errors if -x and --no-executables are both passed', () async {
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await runPub(
         args: [
-          "global",
-          "activate",
-          "--source",
-          "path",
-          "../foo",
-          "-x",
-          "anything",
-          "--no-executables"
+          'global',
+          'activate',
+          '--source',
+          'path',
+          '../foo',
+          '-x',
+          'anything',
+          '--no-executables'
         ],
-        error: contains("Cannot pass both --no-executables and --executable."),
+        error: contains('Cannot pass both --no-executables and --executable.'),
         exitCode: exit_codes.USAGE);
   });
 }

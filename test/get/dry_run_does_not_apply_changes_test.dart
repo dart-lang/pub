@@ -7,26 +7,26 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
-  test("--dry-run shows but does not apply changes", () async {
+void main() {
+  test('--dry-run shows but does not apply changes', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0");
+      builder.serve('foo', '1.0.0');
     });
 
-    await d.appDir({"foo": "1.0.0"}).create();
+    await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet(
-        args: ["--dry-run"],
+        args: ['--dry-run'],
         output: allOf(
-            [contains("+ foo 1.0.0"), contains("Would change 1 dependency.")]));
+            [contains('+ foo 1.0.0'), contains('Would change 1 dependency.')]));
 
     await d.dir(appPath, [
       // The lockfile should not be created.
-      d.nothing("pubspec.lock"),
+      d.nothing('pubspec.lock'),
       // The "packages" directory should not have been generated.
-      d.nothing("packages"),
+      d.nothing('packages'),
       // The ".packages" file should not have been created.
-      d.nothing(".packages"),
+      d.nothing('.packages'),
     ]).validate();
   });
 }

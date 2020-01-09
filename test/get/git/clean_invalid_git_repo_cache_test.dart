@@ -15,17 +15,15 @@ void _invalidateGitCache(String repo) {
       path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
   final Directory fooCacheDir =
       Directory(cacheDir).listSync().firstWhere((entity) {
-    if (entity is Directory &&
-        entity.path.split(Platform.pathSeparator).last.startsWith(repo))
-      return true;
-    return false;
+    return entity is Directory &&
+        entity.path.split(Platform.pathSeparator).last.startsWith(repo);
   });
 
   fooCacheDir.deleteSync(recursive: true);
   fooCacheDir.createSync();
 }
 
-main() {
+void main() {
   test('Clean-up invalid git repo cache', () async {
     ensureGit();
 
@@ -33,7 +31,7 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();
@@ -56,11 +54,11 @@ main() {
     var repo =
         d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
     await repo.create();
-    await repo.runGit(["branch", "old"]);
+    await repo.runGit(['branch', 'old']);
 
     await d.appDir({
-      "foo": {
-        "git": {"url": "../foo.git", "ref": "old"}
+      'foo': {
+        'git': {'url': '../foo.git', 'ref': 'old'}
       }
     }).create();
 
@@ -87,8 +85,8 @@ main() {
     var commit = await repo.revParse('HEAD');
 
     await d.appDir({
-      "foo": {
-        "git": {"url": "../foo.git", "ref": commit}
+      'foo': {
+        'git': {'url': '../foo.git', 'ref': commit}
       }
     }).create();
 

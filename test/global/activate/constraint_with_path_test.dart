@@ -8,10 +8,10 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('fails if a version is passed with the path source', () {
     return runPub(
-        args: ["global", "activate", "-spath", "foo", "1.2.3"],
+        args: ['global', 'activate', '-spath', 'foo', '1.2.3'],
         error: contains('Unexpected argument "1.2.3".'),
         exitCode: exit_codes.USAGE);
   });

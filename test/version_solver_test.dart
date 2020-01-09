@@ -15,7 +15,7 @@ import 'package:pub/src/source_registry.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   group('basic graph', basicGraph);
   group('with lockfile', withLockFile);
   group('root dependency', rootDependency);
@@ -206,7 +206,7 @@ void withLockFile() {
   // Issue 1853
   test(
       "produces a nice message for a locked dependency that's the only "
-      "version of its package", () async {
+      'version of its package', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'});
       builder.serve('bar', '1.0.0');
@@ -253,11 +253,11 @@ void rootDependency() {
     });
 
     await d.appDir({'foo': '1.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0,
         myapp >0.0.0 is required.
       So, because myapp is 0.0.0, version solving failed.
-    """));
+    '''));
   });
 }
 
@@ -305,8 +305,8 @@ void devDependency() {
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
-  group("with both a dev and regular dependency", () {
-    test("succeeds when both are satisfied", () async {
+  group('with both a dev and regular dependency', () {
+    test('succeeds when both are satisfied', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0');
         builder.serve('foo', '2.0.0');
@@ -337,11 +337,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace("""
+      await expectResolves(error: equalsIgnoringWhitespace('''
         Because no versions of foo match ^2.0.0 and myapp depends on foo
           >=1.0.0 <3.0.0, foo ^1.0.0 is required.
         So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      """));
+      '''));
     });
 
     test("fails when dev dependency isn't satisfied", () async {
@@ -357,14 +357,14 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace("""
+      await expectResolves(error: equalsIgnoringWhitespace('''
         Because no versions of foo match ^2.0.0 and myapp depends on foo
           >=1.0.0 <3.0.0, foo ^1.0.0 is required.
         So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      """));
+      '''));
     });
 
-    test("fails when dev and main constraints are incompatible", () async {
+    test('fails when dev and main constraints are incompatible', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0');
       });
@@ -377,13 +377,13 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace("""
+      await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version
           solving failed.
-      """));
+      '''));
     });
 
-    test("fails when dev and main sources are incompatible", () async {
+    test('fails when dev and main sources are incompatible', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0');
       });
@@ -398,13 +398,13 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace("""
+      await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp depends on both foo from hosted and foo from path, version
           solving failed.
-      """));
+      '''));
     });
 
-    test("fails when dev and main descriptions are incompatible", () async {
+    test('fails when dev and main descriptions are incompatible', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0');
       });
@@ -421,13 +421,11 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: anyOf(equalsIgnoringWhitespace("""
-        Because myapp depends on both foo from path foo and foo from path
-          ../foo, version solving failed.
-      """), equalsIgnoringWhitespace("""
+      await expectResolves(error: anyOf(equalsIgnoringWhitespace('''
+      '''), equalsIgnoringWhitespace('''
         Because myapp depends on both foo from path foo and foo from path
           ..\\foo, version solving failed.
-      """)));
+      ''')));
     });
   });
 }
@@ -455,7 +453,7 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of foo depends on shared ^2.0.0 and no versions of
         shared match ^2.9.0, every version of foo requires
         shared >=2.0.0 <2.9.0.
@@ -463,7 +461,7 @@ void unsolvable() {
         incompatible with foo.
       So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
         solving failed.
-    """));
+    '''));
   });
 
   test('disjoint constraints', () async {
@@ -475,12 +473,12 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of bar depends on shared >3.0.0 and every version
         of foo depends on shared <=2.0.0, bar is incompatible with foo.
       So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
         solving failed.
-    """));
+    '''));
   });
 
   test('mismatched descriptions', () async {
@@ -525,13 +523,13 @@ void unsolvable() {
     });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of bar depends on shared from path and every
         version of foo depends on shared from hosted, bar is incompatible with
         foo.
       So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
         solving failed.
-    """));
+    '''));
   });
 
   test('no valid solution', () async {
@@ -543,14 +541,14 @@ void unsolvable() {
     });
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because b <2.0.0 depends on a 2.0.0 which depends on b 2.0.0, b <2.0.0 is
         forbidden.
       Because b >=2.0.0 depends on a 1.0.0 which depends on b 1.0.0, b >=2.0.0
         is forbidden.
       Thus, b is forbidden.
       So, because myapp depends on b any, version solving failed.
-    """), tries: 2);
+    '''), tries: 2);
   });
 
   // This is a regression test for #15550.
@@ -584,12 +582,12 @@ void unsolvable() {
     });
 
     await d.appDir({'angular': 'any', 'collection': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of angular depends on di ^0.0.32 which depends on
         analyzer ^0.13.0, every version of angular requires analyzer ^0.13.0.
       So, because no versions of analyzer match ^0.13.0 and myapp depends on
         angular any, version solving failed.
-    """));
+    '''));
   });
 }
 
@@ -598,10 +596,10 @@ void badSource() {
     await d.appDir({
       'foo': {'bad': 'any'}
     }).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo from unknown source "bad", version solving
         failed.
-    """));
+    '''));
   });
 
   test('fail if the root package has a bad source in dev dep', () async {
@@ -614,10 +612,10 @@ void badSource() {
       })
     ]).create();
 
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo from unknown source "bad", version solving
         failed.
-    """));
+    '''));
   });
 
   test('fail if all versions have bad source in dep', () async {
@@ -634,7 +632,7 @@ void badSource() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
         forbidden.
       And because foo >=1.0.1 <1.0.2 depends on baz any from bad, foo <1.0.2
@@ -643,7 +641,7 @@ void badSource() {
         bang any from bad, every version of foo requires bang any from bad.
       So, because bang comes from unknown source "bad" and myapp depends on foo
         any, version solving failed.
-    """), tries: 3);
+    '''), tries: 3);
   });
 
   test('ignore versions with bad source in dep', () async {
@@ -696,7 +694,7 @@ void backtracking() {
     await expectResolves(result: {'a': '1.0.0'}, tries: 2);
   });
 
-  test("diamond dependency graph", () async {
+  test('diamond dependency graph', () async {
     await servePackages((builder) {
       builder.serve('a', '2.0.0', deps: {'c': '^1.0.0'});
       builder.serve('a', '1.0.0');
@@ -709,14 +707,14 @@ void backtracking() {
       builder.serve('c', '1.0.0');
     });
 
-    await d.appDir({"a": "any", "b": "any"}).create();
+    await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '2.0.0', 'c': '3.0.0'});
   });
 
   // c 2.0.0 is incompatible with y 2.0.0 because it requires x 1.0.0, but that
   // requirement only exists because of both a and b. The solver should be able
   // to deduce c 2.0.0's incompatibility and select c 1.0.0 instead.
-  test("backjumps after a partial satisfier", () async {
+  test('backjumps after a partial satisfier', () async {
     await servePackages((builder) {
       builder.serve('a', '1.0.0', deps: {'x': '>=1.0.0'});
       builder.serve('b', '1.0.0', deps: {'x': '<2.0.0'});
@@ -732,13 +730,13 @@ void backtracking() {
       builder.serve('y', '2.0.0');
     });
 
-    await d.appDir({"c": "any", "y": "^2.0.0"}).create();
+    await d.appDir({'c': 'any', 'y': '^2.0.0'}).create();
     await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
   });
 
   // This matches the Branching Error Reporting example in the version solver
   // documentation, and tests that we display line numbers correctly.
-  test("branching error reporting", () async {
+  test('branching error reporting', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'a': '^1.0.0', 'b': '^1.0.0'});
       builder.serve('foo', '1.1.0', deps: {'x': '^1.0.0', 'y': '^1.0.0'});
@@ -750,7 +748,7 @@ void backtracking() {
       builder.serve('y', '2.0.0');
     });
 
-    await d.appDir({"foo": "^1.0.0"}).create();
+    await d.appDir({'foo': '^1.0.0'}).create();
     await expectResolves(
         // We avoid equalsIgnoringWhitespace() here because we want to test the
         // formatting of the line number.
@@ -900,11 +898,11 @@ void backtracking() {
     });
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of b depends on a from path and myapp depends on
         a from hosted, b is forbidden.
       So, because myapp depends on b any, version solving failed.
-    """));
+    '''));
   });
 
   test('failing backjump to conflicting description', () async {
@@ -1008,7 +1006,7 @@ void backtracking() {
   // "forget" that a package had previously led to an error. In that case, it
   // would backtrack over the failed package instead of trying different
   // versions of it.
-  test("finds solution with less strict constraint", () async {
+  test('finds solution with less strict constraint', () async {
     await servePackages((builder) {
       builder.serve('a', '2.0.0');
       builder.serve('a', '1.0.0');
@@ -1018,7 +1016,7 @@ void backtracking() {
       builder.serve('d', '1.0.0', deps: {'myapp': '<1.0.0'});
     });
 
-    await d.appDir({"a": "any", "c": "any", "d": "any"}).create();
+    await d.appDir({'a': 'any', 'c': 'any', 'd': 'any'}).create();
     await expectResolves(
         result: {'a': '1.0.0', 'b': '1.0.0', 'c': '1.0.0', 'd': '2.0.0'});
   });
@@ -1059,12 +1057,12 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       The current Dart SDK version is 0.1.2+3.
 
       Because myapp depends on foo any which requires SDK version 0.0.0, version
         solving failed.
-    """));
+    '''));
   });
 
   test('transitive dependency does not match SDK', () async {
@@ -1076,13 +1074,13 @@ void dartSdkConstraint() {
     });
 
     await d.appDir({'foo': 'any'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
+    await expectResolves(error: equalsIgnoringWhitespace('''
       The current Dart SDK version is 0.1.2+3.
 
       Because every version of foo depends on bar any which requires SDK version
         0.0.0, foo is forbidden.
       So, because myapp depends on foo any, version solving failed.
-    """));
+    '''));
   });
 
   test('selects a dependency version that allows the SDK', () async {
@@ -1171,7 +1169,7 @@ void dartSdkConstraint() {
         await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
       });
 
-      test("allow pre-release versions of the upper bound", () async {
+      test('allow pre-release versions of the upper bound', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1290,7 +1288,7 @@ void dartSdkConstraint() {
     });
 
     group("don't apply if", () {
-      test("major SDK versions differ", () async {
+      test('major SDK versions differ', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1303,7 +1301,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("minor SDK versions differ", () async {
+      test('minor SDK versions differ', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1316,7 +1314,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("patch SDK versions differ", () async {
+      test('patch SDK versions differ', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1329,7 +1327,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("SDK max is inclusive", () async {
+      test('SDK max is inclusive', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1359,7 +1357,7 @@ void dartSdkConstraint() {
             '''));
       });
 
-      test("upper bound is pre-release", () async {
+      test('upper bound is pre-release', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1372,7 +1370,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("lower bound is pre-release and matches SDK", () async {
+      test('lower bound is pre-release and matches SDK', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1385,7 +1383,7 @@ void dartSdkConstraint() {
             output: isNot(contains('PUB_ALLOW_PRERELEASE_SDK')));
       });
 
-      test("upper bound has build identifier", () async {
+      test('upper bound has build identifier', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1399,8 +1397,8 @@ void dartSdkConstraint() {
       });
     });
 
-    group("apply if", () {
-      test("upper bound is exclusive and matches SDK", () async {
+    group('apply if', () {
+      test('upper bound is exclusive and matches SDK', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -1937,20 +1935,20 @@ void override() {
   // Regression test for #1853
   test("overrides a locked package's dependency", () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.2.3", deps: {"bar": "1.2.3"});
-      builder.serve("bar", "1.2.3");
-      builder.serve("bar", "0.0.1");
+      builder.serve('foo', '1.2.3', deps: {'bar': '1.2.3'});
+      builder.serve('bar', '1.2.3');
+      builder.serve('bar', '0.0.1');
     });
 
-    await d.appDir({"foo": "any"}).create();
+    await d.appDir({'foo': 'any'}).create();
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '1.2.3'});
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dependencies": {"foo": "any"},
-        "dependency_overrides": {"bar": '0.0.1'}
+        'name': 'myapp',
+        'dependencies': {'foo': 'any'},
+        'dependency_overrides': {'bar': '0.0.1'}
       })
     ]).create();
 
@@ -1959,7 +1957,7 @@ void override() {
 }
 
 void downgrade() {
-  test("downgrades a dependency to the lowest matching version", () async {
+  test('downgrades a dependency to the lowest matching version', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');
       builder.serve('foo', '2.0.0-dev');
@@ -1993,10 +1991,10 @@ void features() {
   test("doesn't enable an opt-in feature by default", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2007,13 +2005,13 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
-  test("enables an opt-out feature by default", () async {
+  test('enables an opt-out feature by default', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": true,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': true,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2024,12 +2022,12 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
-  test("features are opt-out by default", () async {
+  test('features are opt-out by default', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2043,10 +2041,10 @@ void features() {
   test("enables an opt-in feature if it's required", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2065,9 +2063,9 @@ void features() {
   test("doesn't enable an opt-out feature if it's disabled", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2083,12 +2081,12 @@ void features() {
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
-  test("opting in takes precedence over opting out", () async {
+  test('opting in takes precedence over opting out', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2112,12 +2110,12 @@ void features() {
         result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
   });
 
-  test("implicitly opting in takes precedence over opting out", () async {
+  test('implicitly opting in takes precedence over opting out', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2143,10 +2141,10 @@ void features() {
   test("doesn't select a version with an unavailable feature", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
@@ -2166,18 +2164,18 @@ void features() {
   test("doesn't select a version with an incompatible feature", () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
       builder.serve('foo', '1.1.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '2.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '2.0.0'}
           }
         }
       });
@@ -2196,8 +2194,8 @@ void features() {
   });
 
   test(
-      "backtracks if a feature is transitively incompatible with another "
-      "feature", () async {
+      'backtracks if a feature is transitively incompatible with another '
+      'feature', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         'features': {
@@ -2248,18 +2246,18 @@ void features() {
       () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '1.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '1.0.0'}
           }
         }
       });
       builder.serve('foo', '1.1.0', pubspec: {
-        "features": {
-          "stuff": {
-            "default": false,
-            "dependencies": {'bar': '2.0.0'}
+        'features': {
+          'stuff': {
+            'default': false,
+            'dependencies': {'bar': '2.0.0'}
           }
         }
       });
@@ -2282,7 +2280,7 @@ void features() {
         result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}, tries: 2);
   });
 
-  test("disables a feature when it backtracks", () async {
+  test('disables a feature when it backtracks', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'myapp': '0.0.0'});
       builder.serve('foo', '1.1.0', deps: {
@@ -2431,17 +2429,17 @@ void features() {
     ]).create();
     await expectResolves(
         error: "foo 1.0.0 doesn't have a feature named stuff:\n"
-            "- myapp depends on version ^1.0.0 with stuff");
+            '- myapp depends on version ^1.0.0 with stuff');
   });
 
   group('an "if available" dependency', () {
-    test("enables an opt-in feature", () async {
+    test('enables an opt-in feature', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "stuff": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+          'features': {
+            'stuff': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             }
           }
         });
@@ -2477,8 +2475,8 @@ void features() {
       return d.dir('flutter', [d.file('version', '1.2.3')]).create();
     });
 
-    group("succeeds when", () {
-      test("a Dart SDK constraint is matched", () async {
+    group('succeeds when', () {
+      test('a Dart SDK constraint is matched', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.0.0', pubspec: {
             'features': {
@@ -2499,7 +2497,7 @@ void features() {
         await expectResolves(result: {'foo': '1.0.0'});
       });
 
-      test("a Flutter SDK constraint is matched", () async {
+      test('a Flutter SDK constraint is matched', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.0.0', pubspec: {
             'features': {
@@ -2593,7 +2591,7 @@ void features() {
       });
     });
 
-    group("resolution fails because", () {
+    group('resolution fails because', () {
       test("a Dart SDK constraint isn't matched", () async {
         await servePackages((builder) {
           builder.serve('foo', '1.0.0', pubspec: {
@@ -2614,8 +2612,8 @@ void features() {
 
         await expectResolves(
             error:
-                "Package foo feature stuff requires SDK version 0.0.1 but the "
-                "current SDK is 0.1.2+3.");
+                'Package foo feature stuff requires SDK version 0.0.1 but the '
+                'current SDK is 0.1.2+3.');
       });
 
       test("Flutter isn't available", () async {
@@ -2637,8 +2635,8 @@ void features() {
         ]).create();
 
         await expectResolves(
-            error: "Package foo feature stuff requires the Flutter SDK, which "
-                "is not available.");
+            error: 'Package foo feature stuff requires the Flutter SDK, which '
+                'is not available.');
       });
 
       test("a Flutter SDK constraint isn't matched", () async {
@@ -2661,21 +2659,21 @@ void features() {
 
         await expectResolves(
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-            error: "Package foo feature stuff requires Flutter SDK version "
-                "^2.0.0 but the current SDK is 1.2.3.");
+            error: 'Package foo feature stuff requires Flutter SDK version '
+                '^2.0.0 but the current SDK is 1.2.3.');
       });
     });
   });
 
-  group("with overlapping dependencies", () {
-    test("can enable extra features", () async {
+  group('with overlapping dependencies', () {
+    test('can enable extra features', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "dependencies": {'bar': '1.0.0'},
-          "features": {
-            "stuff": {
-              "default": false,
-              "dependencies": {
+          'dependencies': {'bar': '1.0.0'},
+          'features': {
+            'stuff': {
+              'default': false,
+              'dependencies': {
                 'bar': {
                   'features': {'stuff': true}
                 }
@@ -2685,10 +2683,10 @@ void features() {
         });
 
         builder.serve('bar', '1.0.0', pubspec: {
-          "features": {
-            "stuff": {
-              "default": false,
-              "dependencies": {'baz': '1.0.0'}
+          'features': {
+            'stuff': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'}
             }
           }
         });
@@ -2714,16 +2712,16 @@ void features() {
     test("can't disable features", () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "dependencies": {
+          'dependencies': {
             'bar': {
               'version': '1.0.0',
               'features': {'stuff': false}
             },
           },
-          "features": {
-            "stuff": {
-              "default": false,
-              "dependencies": {
+          'features': {
+            'stuff': {
+              'default': false,
+              'dependencies': {
                 'bar': {
                   'features': {'stuff': true}
                 }
@@ -2733,10 +2731,10 @@ void features() {
         });
 
         builder.serve('bar', '1.0.0', pubspec: {
-          "features": {
-            "stuff": {
-              "default": true,
-              "dependencies": {'baz': '1.0.0'}
+          'features': {
+            'stuff': {
+              'default': true,
+              'dependencies': {'baz': '1.0.0'}
             }
           }
         });
@@ -2755,22 +2753,22 @@ void features() {
     });
   });
 
-  group("with required features", () {
-    test("enables those features", () async {
+  group('with required features', () {
+    test('enables those features', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "main": {
-              "default": false,
-              "requires": ["required1", "required2"]
+          'features': {
+            'main': {
+              'default': false,
+              'requires': ['required1', 'required2']
             },
-            "required1": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+            'required1': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             },
-            "required2": {
-              "default": true,
-              "dependencies": {'baz': '1.0.0'}
+            'required2': {
+              'default': true,
+              'dependencies': {'baz': '1.0.0'}
             }
           }
         });
@@ -2788,20 +2786,20 @@ void features() {
           result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
     });
 
-    test("enables those features by default", () async {
+    test('enables those features by default', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "main": {
-              "requires": ["required1", "required2"]
+          'features': {
+            'main': {
+              'requires': ['required1', 'required2']
             },
-            "required1": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+            'required1': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             },
-            "required2": {
-              "default": true,
-              "dependencies": {'baz': '1.0.0'}
+            'required2': {
+              'default': true,
+              'dependencies': {'baz': '1.0.0'}
             }
           }
         });
@@ -2817,13 +2815,13 @@ void features() {
     test("doesn't enable those features if it's disabled", () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "main": {
-              "requires": ["required"]
+          'features': {
+            'main': {
+              'requires': ['required']
             },
-            "required": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+            'required': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             }
           }
         });
@@ -2843,13 +2841,13 @@ void features() {
         () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "main": {
-              "requires": ["required"]
+          'features': {
+            'main': {
+              'requires': ['required']
             },
-            "required": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+            'required': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             }
           }
         });
@@ -2865,20 +2863,20 @@ void features() {
       await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
     });
 
-    test("enables features transitively", () async {
+    test('enables features transitively', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0', pubspec: {
-          "features": {
-            "main": {
-              "requires": ["required1"]
+          'features': {
+            'main': {
+              'requires': ['required1']
             },
-            "required1": {
-              "default": false,
-              "requires": ["required2"]
+            'required1': {
+              'default': false,
+              'requires': ['required2']
             },
-            "required2": {
-              "default": false,
-              "dependencies": {'bar': '1.0.0'}
+            'required2': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'}
             }
           }
         });
@@ -2939,7 +2937,7 @@ Future expectResolves(
   var registry = SourceRegistry();
   var lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
-  var resultPubspec = Pubspec.fromMap({"dependencies": result}, registry);
+  var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
 
   var ids = Map.from(lockFile.packages);
   for (var dep in resultPubspec.dependencies.values) {
@@ -2953,8 +2951,8 @@ Future expectResolves(
           .refFor(dep.name, url: globalPackageServer.url)
           .withConstraint(dep.constraint);
     }
-    expect(dep.allows(id), isTrue, reason: "Expected $id to match $dep.");
+    expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');
   }
 
-  expect(ids, isEmpty, reason: "Expected no additional packages.");
+  expect(ids, isEmpty, reason: 'Expected no additional packages.');
 }

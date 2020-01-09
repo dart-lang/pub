@@ -8,13 +8,13 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('errors if the package is not activated', () async {
     await serveNoPackages();
 
     await runPub(
-        args: ["global", "deactivate", "foo"],
-        error: "No active package foo.",
+        args: ['global', 'deactivate', 'foo'],
+        error: 'No active package foo.',
         exitCode: exit_codes.DATA);
   });
 }

@@ -10,17 +10,17 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test("an outdated binstub runs 'pub global run'", () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0", pubspec: {
-        "executables": {"foo-script": "script"}
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'foo-script': 'script'}
       }, contents: [
-        d.dir("bin", [d.file("script.dart", "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
       ]);
     });
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
@@ -31,11 +31,11 @@ main() {
     ]).create();
 
     var process = await TestProcess.start(
-        p.join(d.sandbox, cachePath, "bin", binStubName("foo-script")),
-        ["arg1", "arg2"],
+        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+        ['arg1', 'arg2'],
         environment: getEnvironment());
 
-    expect(process.stdout, emitsThrough("ok"));
+    expect(process.stdout, emitsThrough('ok'));
     await process.shouldExit();
   });
 }

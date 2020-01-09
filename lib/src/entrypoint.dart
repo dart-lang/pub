@@ -44,7 +44,7 @@ final _sdkConstraint = () {
   // sdks:
   //   dart: ">=1.2.3 <2.0.0"
   // ```
-  var sdkNames = sdks.keys.map((name) => "  " + name).join('|');
+  var sdkNames = sdks.keys.map((name) => '  ' + name).join('|');
   return RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
 }();
 
@@ -109,11 +109,9 @@ class Entrypoint {
     if (_packageGraph != null) return _packageGraph;
 
     assertUpToDate();
-    var packages = Map<String, Package>.fromIterable(
-      lockFile.packages.values,
-      key: (id) => id.name,
-      value: (id) => cache.load(id as PackageId),
-    );
+    var packages = {
+      for (var id in lockFile.packages.values) id.name: cache.load(id)
+    };
     packages[root.name] = root;
 
     _packageGraph = PackageGraph(this, lockFile, packages);
@@ -282,12 +280,12 @@ class Entrypoint {
 
     if (executables.isEmpty) return;
 
-    await log.progress("Precompiling executables", () async {
+    await log.progress('Precompiling executables', () async {
       ensureDir(_snapshotPath);
 
       // Make sure there's a trailing newline so our version file matches the
       // SDK's.
-      writeTextFile(p.join(_snapshotPath, 'sdk-version'), "${sdk.version}\n");
+      writeTextFile(p.join(_snapshotPath, 'sdk-version'), '${sdk.version}\n');
 
       await _precompileExecutables(executables);
     });
@@ -305,7 +303,7 @@ class Entrypoint {
 
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(String package, String path) async {
-    return await log.progress("Precompiling executable", () async {
+    return await log.progress('Precompiling executable', () async {
       var dir = p.join(_snapshotPath, package);
       ensureDir(dir);
       return waitAndPrintErrors([_precompileExecutable(package, path)]);
@@ -339,7 +337,7 @@ class Entrypoint {
     // TODO(nweiz): Use the VM to check this when issue 20802 is fixed.
     var sdkVersionPath = p.join(_snapshotPath, 'sdk-version');
     if (!fileExists(sdkVersionPath) ||
-        readTextFile(sdkVersionPath) != "${sdk.version}\n") {
+        readTextFile(sdkVersionPath) != '${sdk.version}\n') {
       deleteEntry(_snapshotPath);
       return;
     }
@@ -378,7 +376,7 @@ class Entrypoint {
     // it's good to start from scratch anyway.
     var executablesExist = executables.every((executable) {
       var snapshotPath = p.join(_snapshotPath, packageName,
-          "${p.basename(executable)}.snapshot.dart2");
+          '${p.basename(executable)}.snapshot.dart2');
       return fileExists(snapshotPath);
     });
     if (!executablesExist) return executables;
@@ -425,7 +423,7 @@ class Entrypoint {
     // Manually parse the lockfile because a full YAML parse is relatively slow
     // and this is on the hot path for "pub run".
     var lockFileText = readTextFile(lockFilePath);
-    var hasPathDependencies = lockFileText.contains("\n    source: path\n");
+    var hasPathDependencies = lockFileText.contains('\n    source: path\n');
 
     var pubspecModified = File(pubspecPath).lastModifiedSync();
     var lockFileModified = File(lockFilePath).lastModifiedSync();
@@ -471,7 +469,7 @@ class Entrypoint {
 
       var parsedConstraint = VersionConstraint.parse(match[2]);
       if (!parsedConstraint.allows(sdk.version)) {
-        dataError("${sdk.name} ${sdk.version} is incompatible with your "
+        dataError('${sdk.name} ${sdk.version} is incompatible with your '
             "dependencies' SDK constraints. Please run \"pub get\" again.");
       }
     }
@@ -535,7 +533,7 @@ class Entrypoint {
       // Get the directory.
       var dir = source.getDirectory(package);
       // See if the directory is there and looks like a package.
-      return dirExists(dir) && fileExists(p.join(dir, "pubspec.yaml"));
+      return dirExists(dir) && fileExists(p.join(dir, 'pubspec.yaml'));
     });
   }
 
@@ -572,7 +570,7 @@ class Entrypoint {
         // package. This is also done by [_arePackagesAvailable] but that may not
         // be run if the lockfile is newer than the pubspec.
         if (source is CachedSource && !dirExists(lockFilePackagePath) ||
-            !fileExists(p.join(lockFilePackagePath, "pubspec.yaml"))) {
+            !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
           return false;
         }
 

@@ -6,14 +6,14 @@ import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('deactivates an active hosted package', () async {
-    await servePackages((builder) => builder.serve("foo", "1.0.0"));
+    await servePackages((builder) => builder.serve('foo', '1.0.0'));
 
-    await runPub(args: ["global", "activate", "foo"]);
+    await runPub(args: ['global', 'activate', 'foo']);
 
     await runPub(
-        args: ["global", "deactivate", "foo"],
-        output: "Deactivated package foo 1.0.0.");
+        args: ['global', 'deactivate', 'foo'],
+        output: 'Deactivated package foo 1.0.0.');
   });
 }

@@ -9,19 +9,20 @@ import '../utils.dart';
 /// Shared base class for [BuildCommand] and [ServeCommand].
 abstract class BarbackCommand extends PubCommand {
   BarbackCommand() {
-    argParser.addOption("mode", hide: true);
-    argParser.addFlag("all", hide: true);
-    argParser.addOption("web-compiler", hide: true);
+    argParser.addOption('mode', hide: true);
+    argParser.addFlag('all', hide: true);
+    argParser.addOption('web-compiler', hide: true);
   }
 
-  run() {
+  @override
+  void run() {
     // Switch to JSON output if specified. We need to do this before parsing
     // the source directories so an error will be correctly reported in JSON
     // format.
     log.json.enabled =
-        argResults.options.contains("format") && argResults["format"] == "json";
+        argResults.options.contains('format') && argResults['format'] == 'json';
 
-    fail(log.red("Dart 2 has a new build system. Learn how to migrate "
+    fail(log.red('Dart 2 has a new build system. Learn how to migrate '
         "from ${log.bold('pub build')} and\n"
         "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n"));
   }
