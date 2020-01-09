@@ -25,14 +25,15 @@ class GitException implements ApplicationException {
   final String stdout;
 
   /// The error code
-  final int errorCode;
+  final int exitCode;
 
   @override
   String get message => 'Git error. Command: `git ${args.join(' ')}`\n'
       'stdout: $stdout\n'
-      'stderr: $stderr';
+      'stderr: $stderr\n'
+      'exit code: $exitCode';
 
-  GitException(Iterable<String> args, this.stdout, this.stderr, this.errorCode)
+  GitException(Iterable<String> args, this.stdout, this.stderr, this.exitCode)
       : args = args.toList();
 
   @override
