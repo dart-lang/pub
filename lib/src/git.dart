@@ -24,12 +24,15 @@ class GitException implements ApplicationException {
   /// The standard out emitted by git.
   final String stdout;
 
+  /// The error code
+  final int errorCode;
+
   @override
   String get message => 'Git error. Command: `git ${args.join(' ')}`\n'
       'stdout: $stdout\n'
       'stderr: $stderr';
 
-  GitException(Iterable<String> args, this.stdout, this.stderr)
+  GitException(Iterable<String> args, this.stdout, this.stderr, this.errorCode)
       : args = args.toList();
 
   @override
@@ -55,8 +58,8 @@ Future<List<String>> run(List<String> args,
     var result = await runProcess(command, args,
         workingDir: workingDir, environment: environment);
     if (!result.success) {
-      throw GitException(
-          args, result.stdout.join('\n'), result.stderr.join('\n'));
+      throw GitException(args, result.stdout.join('\n'),
+          result.stderr.join('\n'), result.exitCode);
     }
     return result.stdout;
   } finally {
@@ -75,8 +78,8 @@ List<String> runSync(List<String> args,
   var result = runProcessSync(command, args,
       workingDir: workingDir, environment: environment);
   if (!result.success) {
-    throw GitException(
-        args, result.stdout.join('\n'), result.stderr.join('\n'));
+    throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
+        result.exitCode);
   }
 
   return result.stdout;
