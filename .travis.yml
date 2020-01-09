@@ -4,6 +4,11 @@ sudo: false
 dart:
   - dev
 
+os:
+  - linux
+  - osx
+  - windows
+
 dart_task:
   - test: --preset travis --total-shards 5 --shard-index 0
   - test: --preset travis --total-shards 5 --shard-index 1
