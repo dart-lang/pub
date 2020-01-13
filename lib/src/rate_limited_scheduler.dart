@@ -9,8 +9,8 @@ import 'package:pool/pool.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///
-/// Tasks are named with a key of type [J] (should be useful as a Hash-key) and
-/// run with a supplied asynch function.
+/// Tasks are identified by a jobId of type [J] (should be useful as a Hash-key)
+/// and run with a supplied async function.
 ///
 /// Designed to allow speculatively running tasks that will likely be needed
 /// later with [withPrescheduling].
