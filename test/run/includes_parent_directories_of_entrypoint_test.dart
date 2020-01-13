@@ -17,24 +17,24 @@ main() {
 }
 """;
 
-main() {
+void main() {
   test(
       'allows assets in parent directories of the entrypoint to be'
       'accessed', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("tool", [
-        d.file("a.dart", "var a = 'a';"),
-        d.dir("a", [
-          d.file("b.dart", "var b = 'b';"),
-          d.dir("b", [d.file("app.dart", SCRIPT)])
+      d.dir('tool', [
+        d.file('a.dart', "var a = 'a';"),
+        d.dir('a', [
+          d.file('b.dart', "var b = 'b';"),
+          d.dir('b', [d.file('app.dart', SCRIPT)])
         ])
       ])
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [path.join("tool", "a", "b", "app")]);
-    expect(pub.stdout, emits("a b"));
+    var pub = await pubRun(args: [path.join('tool', 'a', 'b', 'app')]);
+    expect(pub.stdout, emits('a b'));
     await pub.shouldExit();
   });
 }

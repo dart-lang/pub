@@ -17,17 +17,17 @@ main() {
 }
 """;
 
-main() {
+void main() {
   test('allows a ".dart" extension on the argument', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [d.file("script.dart", SCRIPT)])
+      d.dir('bin', [d.file('script.dart', SCRIPT)])
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["script.dart"]);
-    expect(pub.stdout, emits("stdout output"));
-    expect(pub.stderr, emits("stderr output"));
+    var pub = await pubRun(args: ['script.dart']);
+    expect(pub.stdout, emits('stdout output'));
+    expect(pub.stderr, emits('stderr output'));
     await pub.shouldExit(123);
   });
 }

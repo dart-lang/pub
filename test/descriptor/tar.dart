@@ -20,6 +20,7 @@ class TarFileDescriptor extends FileDescriptor {
 
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
+  @override
   Future create([String parent]) {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
@@ -37,13 +38,16 @@ class TarFileDescriptor extends FileDescriptor {
 
   /// Validates that the `.tar.gz` file at [path] contains the expected
   /// contents.
+  @override
   Future validate([String parent]) {
-    throw UnimplementedError("TODO(nweiz): implement this");
+    throw UnimplementedError('TODO(nweiz): implement this');
   }
 
+  @override
   Future<String> read() =>
-      throw UnsupportedError("TarFileDescriptor.read() is not supported.");
+      throw UnsupportedError('TarFileDescriptor.read() is not supported.');
 
+  @override
   Stream<List<int>> readAsBytes() {
     return Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
       await create(tempDir);
@@ -54,11 +58,11 @@ class TarFileDescriptor extends FileDescriptor {
 
 /// Creates [file] and writes [contents] to it.
 String _writeBinaryFile(String file, List<int> contents) {
-  log.io("Writing ${contents.length} bytes to binary file $file.");
+  log.io('Writing ${contents.length} bytes to binary file $file.');
   deleteIfLink(file);
   File(file).openSync(mode: FileMode.write)
     ..writeFromSync(contents)
     ..closeSync();
-  log.fine("Wrote text file $file.");
+  log.fine('Wrote text file $file.');
   return file;
 }

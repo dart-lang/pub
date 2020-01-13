@@ -9,7 +9,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test(
       'requires the dependency to have a pubspec with a name '
       'field', () async {
@@ -18,7 +18,7 @@ main() {
     await d.git('foo.git', [d.libDir('foo'), d.pubspec({})]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet(

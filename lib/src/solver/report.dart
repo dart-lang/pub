@@ -69,23 +69,23 @@ class SolveReport {
 
     if (dryRun) {
       if (numChanged == 0) {
-        log.message("No dependencies would change.");
+        log.message('No dependencies would change.');
       } else if (numChanged == 1) {
-        log.message("Would change $numChanged dependency.");
+        log.message('Would change $numChanged dependency.');
       } else {
-        log.message("Would change $numChanged dependencies.");
+        log.message('Would change $numChanged dependencies.');
       }
     } else {
       if (numChanged == 0) {
         if (_type == SolveType.GET) {
-          log.message("Got dependencies!");
+          log.message('Got dependencies!');
         } else {
-          log.message("No dependencies changed.");
+          log.message('No dependencies changed.');
         }
       } else if (numChanged == 1) {
-        log.message("Changed $numChanged dependency!");
+        log.message('Changed $numChanged dependency!');
       } else {
-        log.message("Changed $numChanged dependencies!");
+        log.message('Changed $numChanged dependencies!');
       }
     }
   }
@@ -105,7 +105,7 @@ class SolveReport {
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
     if (removed.isNotEmpty) {
-      _output.writeln("These packages are no longer being depended on:");
+      _output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
         _reportPackage(name, alwaysShow: true);
       }
@@ -119,7 +119,7 @@ class SolveReport {
     _output.clear();
 
     if (_root.dependencyOverrides.isNotEmpty) {
-      _output.writeln("Warning: You are using these overridden dependencies:");
+      _output.writeln('Warning: You are using these overridden dependencies:');
 
       for (var name in ordered(_root.dependencyOverrides.keys)) {
         _reportPackage(name, alwaysShow: true, highlightOverride: false);
@@ -138,7 +138,7 @@ class SolveReport {
       {bool alwaysShow = false, bool highlightOverride = true}) {
     var newId = _dependencies[name];
     var oldId = _previousLockFile.packages[name];
-    var id = newId != null ? newId : oldId;
+    var id = newId ?? oldId;
 
     var isOverridden = _root.dependencyOverrides.containsKey(id.name);
 
@@ -159,25 +159,25 @@ class SolveReport {
     //     * Any other change between the old and new package.
     String icon;
     if (isOverridden) {
-      icon = log.magenta("! ");
+      icon = log.magenta('! ');
     } else if (newId == null) {
-      icon = log.red("- ");
+      icon = log.red('- ');
       addedOrRemoved = true;
     } else if (oldId == null) {
-      icon = log.green("+ ");
+      icon = log.green('+ ');
       addedOrRemoved = true;
     } else if (!oldId.samePackage(newId)) {
-      icon = log.cyan("* ");
+      icon = log.cyan('* ');
       changed = true;
     } else if (oldId.version < newId.version) {
-      icon = log.green("> ");
+      icon = log.green('> ');
       changed = true;
     } else if (oldId.version > newId.version) {
-      icon = log.cyan("< ");
+      icon = log.cyan('< ');
       changed = true;
     } else {
       // Unchanged.
-      icon = "  ";
+      icon = '  ';
     }
 
     if (_type == SolveType.GET && !(alwaysShow || changed || addedOrRemoved)) {
@@ -186,14 +186,14 @@ class SolveReport {
 
     _output.write(icon);
     _output.write(log.bold(id.name));
-    _output.write(" ");
+    _output.write(' ');
     _writeId(id);
 
     // If the package was upgraded, show what it was upgraded from.
     if (changed) {
-      _output.write(" (was ");
+      _output.write(' (was ');
       _writeId(oldId);
-      _output.write(")");
+      _output.write(')');
     }
 
     // Highlight overridden packages.
@@ -222,12 +222,12 @@ class SolveReport {
       // If there are newer stable versions, only show those.
       String message;
       if (newerStable) {
-        message = "(${maxAll(versions, Version.prioritize)} available)";
+        message = '(${maxAll(versions, Version.prioritize)} available)';
       } else if (newerUnstable) {
-        message = "(${maxAll(versions)} available)";
+        message = '(${maxAll(versions)} available)';
       }
 
-      if (message != null) _output.write(" ${log.cyan(message)}");
+      if (message != null) _output.write(' ${log.cyan(message)}');
     }
 
     _output.writeln();
@@ -239,7 +239,7 @@ class SolveReport {
 
     if (id.source != _sources.defaultSource) {
       var description = id.source.formatDescription(id.description);
-      _output.write(" from ${id.source} $description");
+      _output.write(' from ${id.source} $description');
     }
   }
 }

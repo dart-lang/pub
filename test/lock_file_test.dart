@@ -11,26 +11,32 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
-class MockSource extends Source {
-  final String name = 'mock';
+class FakeSource extends Source {
+  @override
+  final String name = 'fake';
 
+  @override
   BoundSource bind(SystemCache cache) =>
-      throw UnsupportedError("Cannot download mock packages.");
+      throw UnsupportedError('Cannot download fake packages.');
 
+  @override
   PackageRef parseRef(String name, description, {String containingPath}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
 
+  @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageId(name, this, version, description);
   }
 
+  @override
   bool descriptionsEqual(description1, description2) =>
       description1 == description2;
 
+  @override
   int hashDescription(description) => description.hashCode;
 
   String packageName(String description) {
@@ -39,10 +45,10 @@ class MockSource extends Source {
   }
 }
 
-main() {
+void main() {
   var sources = SourceRegistry();
-  var mockSource = MockSource();
-  sources.register(mockSource);
+  var fakeSource = FakeSource();
+  sources.register(fakeSource);
 
   group('LockFile', () {
     group('parse()', () {
@@ -61,11 +67,11 @@ main() {
 packages:
   bar:
     version: 1.2.3
-    source: mock
+    source: fake
     description: bar desc
   foo:
     version: 2.3.4
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
 
@@ -74,17 +80,17 @@ packages:
         var bar = lockFile.packages['bar'];
         expect(bar.name, equals('bar'));
         expect(bar.version, equals(Version(1, 2, 3)));
-        expect(bar.source, equals(mockSource));
+        expect(bar.source, equals(fakeSource));
         expect(bar.description, equals('bar desc'));
 
         var foo = lockFile.packages['foo'];
         expect(foo.name, equals('foo'));
         expect(foo.version, equals(Version(2, 3, 4)));
-        expect(foo.source, equals(mockSource));
+        expect(foo.source, equals(fakeSource));
         expect(foo.description, equals('foo desc'));
       });
 
-      test("allows an unknown source", () {
+      test('allows an unknown source', () {
         var lockFile = LockFile.parse('''
 packages:
   foo:
@@ -96,14 +102,14 @@ packages:
         expect(foo.source, equals(sources['bad']));
       });
 
-      test("allows an empty dependency map", () {
+      test('allows an empty dependency map', () {
         var lockFile = LockFile.parse('''
 packages:
 ''', sources);
         expect(lockFile.packages, isEmpty);
       });
 
-      test("allows an old-style SDK constraint", () {
+      test('allows an old-style SDK constraint', () {
         var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
         expect(lockFile.sdkConstraints,
             containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')));
@@ -111,7 +117,7 @@ packages:
         expect(lockFile.sdkConstraints, isNot(contains('fuchsia')));
       });
 
-      test("allows new-style SDK constraints", () {
+      test('allows new-style SDK constraints', () {
         var lockFile = LockFile.parse('''
 sdks:
   dart: ">=1.2.3 <4.0.0"
@@ -126,7 +132,7 @@ sdks:
             containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
       });
 
-      test("throws if the top level is not a map", () {
+      test('throws if the top level is not a map', () {
         expect(() {
           LockFile.parse('''
 not a map
@@ -142,30 +148,30 @@ packages: not a map
         }, throwsFormatException);
       });
 
-      test("throws if the version is missing", () {
+      test('throws if the version is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
   foo:
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
         }, throwsFormatException);
       });
 
-      test("throws if the version is invalid", () {
+      test('throws if the version is invalid', () {
         expect(() {
           LockFile.parse('''
 packages:
   foo:
     version: vorpal
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
         }, throwsFormatException);
       });
 
-      test("throws if the source is missing", () {
+      test('throws if the source is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
@@ -176,24 +182,24 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if the description is missing", () {
+      test('throws if the description is missing', () {
         expect(() {
           LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
-    source: mock
+    source: fake
 ''', sources);
         }, throwsFormatException);
       });
 
-      test("throws if the description is invalid", () {
+      test('throws if the description is invalid', () {
         expect(() {
           LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
-    source: mock
+    source: fake
     description: foo desc is bad
 ''', sources);
         }, throwsFormatException);
@@ -204,7 +210,7 @@ packages:
             () => LockFile.parse('sdk: 1.0', sources), throwsFormatException);
       });
 
-      test("throws if the old-style SDK constraint is invalid", () {
+      test('throws if the old-style SDK constraint is invalid', () {
         expect(
             () => LockFile.parse('sdk: oops', sources), throwsFormatException);
       });
@@ -222,7 +228,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("throws if an sdk constraint is invalid", () {
+      test('throws if an sdk constraint is invalid', () {
         expect(() => LockFile.parse('sdks: {dart: oops}', sources),
             throwsFormatException);
         expect(() {
@@ -230,7 +236,7 @@ packages:
         }, throwsFormatException);
       });
 
-      test("ignores extra stuff in file", () {
+      test('ignores extra stuff in file', () {
         LockFile.parse('''
 extra:
   some: stuff
@@ -238,7 +244,7 @@ packages:
   foo:
     bonus: not used
     version: 1.2.3
-    source: mock
+    source: fake
     description: foo desc
 ''', sources);
       });
@@ -246,8 +252,8 @@ packages:
 
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = LockFile([
-        PackageId('foo', mockSource, Version.parse('1.2.3'), 'foo desc'),
-        PackageId('bar', mockSource, Version.parse('3.2.1'), 'bar desc')
+        PackageId('foo', fakeSource, Version.parse('1.2.3'), 'foo desc'),
+        PackageId('bar', fakeSource, Version.parse('3.2.1'), 'bar desc')
       ], devDependencies: {
         'bar'
       });
@@ -259,13 +265,13 @@ packages:
             'packages': {
               'foo': {
                 'version': '1.2.3',
-                'source': 'mock',
+                'source': 'fake',
                 'description': 'foo desc',
                 'dependency': 'transitive'
               },
               'bar': {
                 'version': '3.2.1',
-                'source': 'mock',
+                'source': 'fake',
                 'description': 'bar desc',
                 'dependency': 'direct dev'
               }

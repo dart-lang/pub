@@ -10,7 +10,7 @@ import 'package:pub/src/io.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   // Regression test for issue 20947.
   test(
       'checks out an unfetched and locked revision of a cached '
@@ -24,7 +24,7 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();
@@ -32,18 +32,18 @@ main() {
     var originalFooSpec = packageSpecLine('foo');
 
     // Switch to a new cache.
-    renameInSandbox(cachePath, "$cachePath.old");
+    renameInSandbox(cachePath, '$cachePath.old');
 
     // Make the lockfile point to a new revision of the git repository.
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    await pubUpgrade(output: contains("Changed 1 dependency!"));
+    await pubUpgrade(output: contains('Changed 1 dependency!'));
 
     // Switch back to the old cache.
     var cacheDir = p.join(d.sandbox, cachePath);
     deleteEntry(cacheDir);
-    renameInSandbox("$cachePath.old", cacheDir);
+    renameInSandbox('$cachePath.old', cacheDir);
 
     // Get the updated version of the git dependency based on the lockfile.
     await pubGet();

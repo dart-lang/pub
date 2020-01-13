@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test(
       'doesn\'t require the repository name to match the name in the '
       'pubspec', () async {
@@ -18,7 +18,7 @@ main() {
 
     await d.dir(appPath, [
       d.appPubspec({
-        "weirdname": {"git": "../foo.git"}
+        'weirdname': {'git': '../foo.git'}
       })
     ]).create();
 

@@ -10,13 +10,18 @@ import '../solver.dart';
 
 /// Handles the `downgrade` pub command.
 class DowngradeCommand extends PubCommand {
-  String get name => "downgrade";
+  @override
+  String get name => 'downgrade';
+  @override
   String get description =>
       "Downgrade the current package's dependencies to oldest versions.\n\n"
       "This doesn't modify the lockfile, so it can be reset with \"pub get\".";
-  String get invocation => "pub downgrade [dependencies...]";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-downgrade";
+  @override
+  String get invocation => 'pub downgrade [dependencies...]';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
+  @override
   bool get isOffline => argResults['offline'];
 
   DowngradeCommand() {
@@ -31,6 +36,7 @@ class DowngradeCommand extends PubCommand {
     argParser.addFlag('packages-dir', negatable: true, hide: true);
   }
 
+  @override
   Future run() async {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(
@@ -41,8 +47,8 @@ class DowngradeCommand extends PubCommand {
         useLatest: argResults.rest, dryRun: dryRun);
 
     if (isOffline) {
-      log.warning("Warning: Downgrading when offline may not update you to "
-          "the oldest versions of your dependencies.");
+      log.warning('Warning: Downgrading when offline may not update you to '
+          'the oldest versions of your dependencies.');
     }
   }
 }

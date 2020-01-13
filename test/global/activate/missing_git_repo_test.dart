@@ -8,12 +8,12 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('fails if the Git repo does not exist', () async {
     ensureGit();
 
     await runPub(
-        args: ["global", "activate", "-sgit", "../nope.git"],
+        args: ['global', 'activate', '-sgit', '../nope.git'],
         error: contains("repository '../nope.git' does not exist"),
         exitCode: exit_codes.UNAVAILABLE);
   });

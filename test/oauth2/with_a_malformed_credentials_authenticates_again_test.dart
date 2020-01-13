@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test(
       'with a malformed credentials.json, authenticates again and '
       'saves credentials.json', () async {
@@ -21,7 +21,7 @@ main() {
 
     var pub = await startPublish(server);
     await confirmPublish(pub);
-    await authorizePub(pub, server, "new access token");
+    await authorizePub(pub, server, 'new access token');
 
     server.handler.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,

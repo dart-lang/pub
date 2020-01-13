@@ -15,7 +15,7 @@ import 'utils.dart';
 Validator strictDeps(Entrypoint entrypoint) =>
     StrictDependenciesValidator(entrypoint);
 
-main() {
+void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
@@ -23,8 +23,8 @@ main() {
 
     test('declares an "import" as a dependency in lib/', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec('test_pkg', '1.0.0',
+            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
         d.dir('lib', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -37,8 +37,8 @@ main() {
 
     test('declares an "export" as a dependency in lib/', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec('test_pkg', '1.0.0',
+            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
         d.dir('lib', [
           d.file('library.dart', r'''
             export 'package:silly_monkey/silly_monkey.dart';
@@ -51,8 +51,8 @@ main() {
 
     test('declares an "import" as a dependency in bin/', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec('test_pkg', '1.0.0',
+            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
         d.dir('bin', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -69,17 +69,17 @@ main() {
         Map<String, String> devDeps;
 
         if (isDev) {
-          devDeps = {"silly_monkey": "^1.2.3"};
+          devDeps = {'silly_monkey': '^1.2.3'};
         } else {
-          deps = {"silly_monkey": "^1.2.3"};
+          deps = {'silly_monkey': '^1.2.3'};
         }
         for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
           test(
               'declares an "$port" as a '
               '${isDev ? 'dev ' : ''}dependency in $devDir/', () async {
             await d.dir(appPath, [
-              d.libPubspec("test_pkg", "1.0.0",
-                  deps: deps, devDeps: devDeps, sdk: ">=1.8.0 <2.0.0"),
+              d.libPubspec('test_pkg', '1.0.0',
+                  deps: deps, devDeps: devDeps, sdk: '>=1.8.0 <2.0.0'),
               d.dir(devDir, [
                 d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
@@ -153,8 +153,8 @@ main() {
 
     test('has analysis_options.yaml that excludes files', () async {
       await d.dir(appPath, [
-        d.libPubspec("test_pkg", "1.0.0",
-            deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+        d.libPubspec('test_pkg', '1.0.0',
+            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
         d.dir('lib', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -190,7 +190,7 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -198,7 +198,7 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     test('has an invalid URI', () async {
@@ -206,15 +206,15 @@ linter:
         import 'package:/';
       ''').create();
 
-      expectValidationWarning(strictDeps);
+      expectValidationError(strictDeps);
     });
 
     for (var port in ['import', 'export']) {
       for (var codeDir in ['bin', 'lib']) {
         test('declares an "$port" as a devDependency for $codeDir/', () async {
           await d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0",
-                devDeps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+            d.libPubspec('test_pkg', '1.0.0',
+                devDeps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
             d.dir(codeDir, [
               d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
@@ -222,7 +222,7 @@ linter:
             ]),
           ]).create();
 
-          expectValidationWarning(strictDeps);
+          expectValidationError(strictDeps);
         });
       }
     }
@@ -232,7 +232,7 @@ linter:
         test('does not declare an "$port" as a dependency in $devDir/',
             () async {
           await d.dir(appPath, [
-            d.libPubspec("test_pkg", "1.0.0", sdk: ">=1.8.0 <2.0.0"),
+            d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0'),
             d.dir(devDir, [
               d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
@@ -255,13 +255,13 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:silly_monkey"', () async {
         await d.dir(appPath, [
-          d.libPubspec("test_pkg", "1.0.0",
-              deps: {"silly_monkey": "^1.2.3"}, sdk: ">=1.8.0 <2.0.0"),
+          d.libPubspec('test_pkg', '1.0.0',
+              deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
           d.dir('lib', [
             d.file('library.dart', r'''
             import 'package:silly_monkey';
@@ -269,7 +269,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:/"', () async {
@@ -281,7 +281,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
 
       test('"package:/]"', () async {
@@ -293,7 +293,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationWarning(strictDeps);
+        expectValidationError(strictDeps);
       });
     });
   });

@@ -14,6 +14,7 @@ import '../validator.dart';
 class DependencyOverrideValidator extends Validator {
   DependencyOverrideValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
     var dev = MapKeySet(entrypoint.root.devDependencies);

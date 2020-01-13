@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test('does not touch directories named "packages"', () async {
       await d.dir(appPath, [

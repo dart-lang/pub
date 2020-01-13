@@ -6,9 +6,9 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
-import "package:http/http.dart" as http;
-import "package:stack_trace/stack_trace.dart";
-import "package:yaml/yaml.dart";
+import 'package:http/http.dart' as http;
+import 'package:stack_trace/stack_trace.dart';
+import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
 import 'sdk.dart';
@@ -22,12 +22,14 @@ class ApplicationException implements Exception {
 
   ApplicationException(this.message);
 
+  @override
   String toString() => message;
 }
 
 /// An exception class for exceptions that are intended to be seen by the user
 /// and are associated with a problem in a file at some path.
 class FileException implements ApplicationException {
+  @override
   final String message;
 
   /// The path to the file that was missing or erroneous.
@@ -35,6 +37,7 @@ class FileException implements ApplicationException {
 
   FileException(this.message, this.path);
 
+  @override
   String toString() => message;
 }
 
@@ -87,6 +90,7 @@ class PackageNotFoundException extends WrappedException {
       {innerError, StackTrace innerTrace, this.missingSdk})
       : super(message, innerError, innerTrace);
 
+  @override
   String toString() => "Package doesn't exist ($message).";
 }
 

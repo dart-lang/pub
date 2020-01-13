@@ -7,16 +7,16 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test(
       "doesn't upgrade one locked Git package's dependencies if it's "
-      "not necessary", () async {
+      'not necessary', () async {
     ensureGit();
 
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec("foo", "1.0.0", deps: {
-        "foo_dep": {"git": "../foo_dep.git"}
+      d.libPubspec('foo', '1.0.0', deps: {
+        'foo_dep': {'git': '../foo_dep.git'}
       })
     ]).create();
 
@@ -24,7 +24,7 @@ main() {
         [d.libDir('foo_dep'), d.libPubspec('foo_dep', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();
@@ -44,8 +44,8 @@ main() {
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
-      d.libPubspec("foo", "1.0.0", deps: {
-        "foo_dep": {"git": "../foo_dep.git"}
+      d.libPubspec('foo', '1.0.0', deps: {
+        'foo_dep': {'git': '../foo_dep.git'}
       })
     ]).create();
 

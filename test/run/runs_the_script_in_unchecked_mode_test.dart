@@ -14,7 +14,7 @@ main() {
 }
 ''';
 
-main() {
+void main() {
   test('runs the script without assertions by default', () async {
     await d.dir(appPath, [
       d.appPubspec(),

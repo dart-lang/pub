@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   test("includes root package's dev dependencies", () async {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
@@ -17,24 +17,24 @@ main() {
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dev_dependencies": {
-          "foo": {"path": "../foo"},
-          "bar": {"path": "../bar"},
+        'name': 'myapp',
+        'dev_dependencies': {
+          'foo': {'path': '../foo'},
+          'bar': {'path': '../bar'},
         }
       })
     ]).create();
 
     await pubGet();
 
-    await d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
+    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
   });
 
   test("includes dev dependency's transitive dependencies", () async {
     await d.dir('foo', [
       d.libDir('foo'),
       d.libPubspec('foo', '0.0.1', deps: {
-        "bar": {"path": "../bar"}
+        'bar': {'path': '../bar'}
       })
     ]).create();
 
@@ -43,26 +43,26 @@ main() {
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dev_dependencies": {
-          "foo": {"path": "../foo"}
+        'name': 'myapp',
+        'dev_dependencies': {
+          'foo': {'path': '../foo'}
         }
       })
     ]).create();
 
     await pubGet();
 
-    await d.appPackagesFile({"foo": "../foo", "bar": "../bar"}).validate();
+    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
   });
 
   test("ignores transitive dependency's dev dependencies", () async {
     await d.dir('foo', [
       d.libDir('foo'),
       d.pubspec({
-        "name": "foo",
-        "version": "0.0.1",
-        "dev_dependencies": {
-          "bar": {"path": "../bar"}
+        'name': 'foo',
+        'version': '0.0.1',
+        'dev_dependencies': {
+          'bar': {'path': '../bar'}
         }
       })
     ]).create();
@@ -72,12 +72,12 @@ main() {
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": "../foo"}
+        'foo': {'path': '../foo'}
       })
     ]).create();
 
     await pubGet();
 
-    await d.appPackagesFile({"foo": "../foo"}).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
   });
 }

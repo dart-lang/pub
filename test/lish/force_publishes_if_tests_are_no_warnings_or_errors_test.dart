@@ -14,7 +14,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('--force publishes if there are no warnings or errors', () async {

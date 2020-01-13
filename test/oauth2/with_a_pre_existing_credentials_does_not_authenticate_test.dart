@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('with a pre-existing credentials.json does not authenticate', () async {
     await d.validPackage.create();
 

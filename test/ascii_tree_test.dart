@@ -5,24 +5,24 @@
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:test/test.dart';
 
-main() {
+void main() {
   group('tree.fromFiles', () {
     test('no files', () {
-      expect(tree.fromFiles([]), equals(""));
+      expect(tree.fromFiles([]), equals(''));
     });
 
     test('up to ten files in one directory are shown', () {
       var files = [
-        "dir/a.dart",
-        "dir/b.dart",
-        "dir/c.dart",
-        "dir/d.dart",
-        "dir/e.dart",
-        "dir/f.dart",
-        "dir/g.dart",
-        "dir/h.dart",
-        "dir/i.dart",
-        "dir/j.dart"
+        'dir/a.dart',
+        'dir/b.dart',
+        'dir/c.dart',
+        'dir/d.dart',
+        'dir/e.dart',
+        'dir/f.dart',
+        'dir/g.dart',
+        'dir/h.dart',
+        'dir/i.dart',
+        'dir/j.dart'
       ];
       expect(tree.fromFiles(files), equals("""
 '-- dir
@@ -41,17 +41,17 @@ main() {
 
     test('files are elided if there are more than ten', () {
       var files = [
-        "dir/a.dart",
-        "dir/b.dart",
-        "dir/c.dart",
-        "dir/d.dart",
-        "dir/e.dart",
-        "dir/f.dart",
-        "dir/g.dart",
-        "dir/h.dart",
-        "dir/i.dart",
-        "dir/j.dart",
-        "dir/k.dart"
+        'dir/a.dart',
+        'dir/b.dart',
+        'dir/c.dart',
+        'dir/d.dart',
+        'dir/e.dart',
+        'dir/f.dart',
+        'dir/g.dart',
+        'dir/h.dart',
+        'dir/i.dart',
+        'dir/j.dart',
+        'dir/k.dart'
       ];
       expect(tree.fromFiles(files), equals("""
 '-- dir
@@ -67,17 +67,17 @@ main() {
 
     test('files are not elided at the top level', () {
       var files = [
-        "a.dart",
-        "b.dart",
-        "c.dart",
-        "d.dart",
-        "e.dart",
-        "f.dart",
-        "g.dart",
-        "h.dart",
-        "i.dart",
-        "j.dart",
-        "k.dart"
+        'a.dart',
+        'b.dart',
+        'c.dart',
+        'd.dart',
+        'e.dart',
+        'f.dart',
+        'g.dart',
+        'h.dart',
+        'i.dart',
+        'j.dart',
+        'k.dart'
       ];
       expect(tree.fromFiles(files), equals("""
 |-- a.dart
@@ -96,27 +96,27 @@ main() {
 
     test('a complex example', () {
       var files = [
-        "TODO",
-        "example/console_example.dart",
-        "example/main.dart",
-        "example/web copy/web_example.dart",
-        "test/absolute_test.dart",
-        "test/basename_test.dart",
-        "test/dirname_test.dart",
-        "test/extension_test.dart",
-        "test/is_absolute_test.dart",
-        "test/is_relative_test.dart",
-        "test/join_test.dart",
-        "test/normalize_test.dart",
-        "test/relative_test.dart",
-        "test/split_test.dart",
-        ".gitignore",
-        "README.md",
-        "lib/path.dart",
-        "pubspec.yaml",
-        "test/all_test.dart",
-        "test/path_posix_test.dart",
-        "test/path_windows_test.dart"
+        'TODO',
+        'example/console_example.dart',
+        'example/main.dart',
+        'example/web copy/web_example.dart',
+        'test/absolute_test.dart',
+        'test/basename_test.dart',
+        'test/dirname_test.dart',
+        'test/extension_test.dart',
+        'test/is_absolute_test.dart',
+        'test/is_relative_test.dart',
+        'test/join_test.dart',
+        'test/normalize_test.dart',
+        'test/relative_test.dart',
+        'test/split_test.dart',
+        '.gitignore',
+        'README.md',
+        'lib/path.dart',
+        'pubspec.yaml',
+        'test/all_test.dart',
+        'test/path_posix_test.dart',
+        'test/path_windows_test.dart'
       ];
 
       expect(tree.fromFiles(files), equals("""
@@ -145,32 +145,32 @@ main() {
 
   group('treeFromMap', () {
     test('empty map', () {
-      expect(tree.fromMap({}), equals(""));
+      expect(tree.fromMap({}), equals(''));
     });
 
     test('a complex example', () {
       var map = {
-        ".gitignore": <String, Map>{},
-        "README.md": <String, Map>{},
-        "TODO": <String, Map>{},
-        "example": {
-          "console_example.dart": <String, Map>{},
-          "main.dart": <String, Map>{},
-          "web copy": {"web_example.dart": <String, Map>{}},
+        '.gitignore': <String, Map>{},
+        'README.md': <String, Map>{},
+        'TODO': <String, Map>{},
+        'example': {
+          'console_example.dart': <String, Map>{},
+          'main.dart': <String, Map>{},
+          'web copy': {'web_example.dart': <String, Map>{}},
         },
-        "lib": {"path.dart": <String, Map>{}},
-        "pubspec.yaml": <String, Map>{},
-        "test": {
-          "absolute_test.dart": <String, Map>{},
-          "basename_test.dart": <String, Map>{},
-          "dirname_test.dart": <String, Map>{},
-          "extension_test.dart": <String, Map>{},
-          "is_absolute_test.dart": <String, Map>{},
-          "is_relative_test.dart": <String, Map>{},
-          "join_test.dart": <String, Map>{},
-          "normalize_test.dart": <String, Map>{},
-          "relative_test.dart": <String, Map>{},
-          "split_test.dart": <String, Map>{}
+        'lib': {'path.dart': <String, Map>{}},
+        'pubspec.yaml': <String, Map>{},
+        'test': {
+          'absolute_test.dart': <String, Map>{},
+          'basename_test.dart': <String, Map>{},
+          'dirname_test.dart': <String, Map>{},
+          'extension_test.dart': <String, Map>{},
+          'is_absolute_test.dart': <String, Map>{},
+          'is_relative_test.dart': <String, Map>{},
+          'join_test.dart': <String, Map>{},
+          'normalize_test.dart': <String, Map>{},
+          'relative_test.dart': <String, Map>{},
+          'split_test.dart': <String, Map>{}
         }
       };
 

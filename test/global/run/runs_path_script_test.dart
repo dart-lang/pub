@@ -7,17 +7,17 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('runs a script in a path package', () async {
-    await d.dir("foo", [
-      d.libPubspec("foo", "1.0.0"),
-      d.dir("bin", [d.file("foo.dart", "main() => print('ok');")])
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    var pub = await pubRun(global: true, args: ["foo"]);
-    expect(pub.stdout, emits("ok"));
+    var pub = await pubRun(global: true, args: ['foo']);
+    expect(pub.stdout, emits('ok'));
     await pub.shouldExit();
   });
 }

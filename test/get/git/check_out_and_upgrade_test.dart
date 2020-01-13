@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('checks out and upgrades a package from Git', () async {
     ensureGit();
 
@@ -15,7 +15,7 @@ main() {
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();
@@ -41,7 +41,7 @@ main() {
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    await pubUpgrade(output: contains("Changed 1 dependency!"));
+    await pubUpgrade(output: contains('Changed 1 dependency!'));
 
     // When we download a new version of the git package, we should re-use the
     // git/cache directory but create a new git/ directory.

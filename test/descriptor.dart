@@ -23,18 +23,18 @@ export 'descriptor/tar.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
 GitRepoDescriptor git(String name, [Iterable<Descriptor> contents]) =>
-    GitRepoDescriptor(name, contents == null ? <Descriptor>[] : contents);
+    GitRepoDescriptor(name, contents ?? <Descriptor>[]);
 
 /// Creates a new [TarFileDescriptor] with [name] and [contents].
 TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
-    TarFileDescriptor(name, contents == null ? <Descriptor>[] : contents);
+    TarFileDescriptor(name, contents ?? <Descriptor>[]);
 
 /// Describes a package that passes all validation.
 Descriptor get validPackage => dir(appPath, [
-      libPubspec("test_pkg", "1.0.0", sdk: '>=1.8.0 <=2.0.0'),
-      file("LICENSE", "Eh, do what you want."),
-      file("README.md", "This package isn't real."),
-      dir("lib", [file("test_pkg.dart", "int i = 1;")])
+      libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      file('LICENSE', 'Eh, do what you want.'),
+      file('README.md', "This package isn't real."),
+      dir('lib', [file('test_pkg.dart', 'int i = 1;')])
     ]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
@@ -49,13 +49,13 @@ FileDescriptor outOfDateSnapshot(String name) =>
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
 Descriptor pubspec(Map<String, Object> contents) =>
-    file("pubspec.yaml", yaml(contents));
+    file('pubspec.yaml', yaml(contents));
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
 Descriptor appPubspec([Map dependencies]) {
-  var map = <String, dynamic>{"name": "myapp"};
-  if (dependencies != null) map["dependencies"] = dependencies;
+  var map = <String, dynamic>{'name': 'myapp'};
+  if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
 }
 
@@ -65,7 +65,7 @@ Descriptor appPubspec([Map dependencies]) {
 Descriptor libPubspec(String name, String version,
     {Map deps, Map devDeps, String sdk}) {
   var map = packageMap(name, version, deps, devDeps);
-  if (sdk != null) map["environment"] = {"sdk": sdk};
+  if (sdk != null) map['environment'] = {'sdk': sdk};
   return pubspec(map);
 }
 
@@ -74,7 +74,7 @@ Descriptor libPubspec(String name, String version,
 Descriptor libDir(String name, [String code]) {
   // Default to printing the name if no other code was given.
   code ??= name;
-  return dir("lib", [file("$name.dart", 'main() => "$code";')]);
+  return dir('lib', [file('$name.dart', 'main() => "$code";')]);
 }
 
 /// Describes a directory whose name ends with a hyphen followed by an
@@ -86,7 +86,7 @@ Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
 /// found in the revision cache of the global package cache.
 Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
   var value = name;
-  if (modifier != null) value = "$name $modifier";
+  if (modifier != null) value = '$name $modifier';
   return hashDir(name, [libDir(name, value)]);
 }
 
@@ -119,7 +119,7 @@ Descriptor cacheDir(Map packages, {int port, bool includePubspecs = false}) {
       if (includePubspecs) {
         packageContents.add(libPubspec(name, version));
       }
-      contents.add(dir("$name-$version", packageContents));
+      contents.add(dir('$name-$version', packageContents));
     }
   });
 
@@ -188,8 +188,6 @@ Descriptor packageConfigFile(List<PackageConfigEntry> packages) =>
 
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].
-///
-/// If not given [languageVersion] will be inferred from current SDK version.
 PackageConfigEntry packageConfigEntry({
   @required String name,
   String version,
@@ -214,7 +212,7 @@ PackageConfigEntry packageConfigEntry({
     name: name,
     rootUri: rootUri,
     packageUri: Uri(path: 'lib/'),
-    languageVersion: languageVersion ?? '0.1', // from '0.1.2+3'
+    languageVersion: languageVersion,
   );
 }
 
@@ -222,6 +220,6 @@ PackageConfigEntry packageConfigEntry({
 /// implicit entry for the app itself.
 Descriptor appPackagesFile(Map<String, String> dependencies) {
   var copied = Map<String, String>.from(dependencies);
-  copied["myapp"] = ".";
+  copied['myapp'] = '.';
   return dir(appPath, [packagesFile(copied)]);
 }

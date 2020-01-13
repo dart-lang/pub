@@ -30,7 +30,7 @@ Future runUri(Uri url, List<String> args, Object message,
       onExit: exitPort.sendPort);
 
   errorPort.listen((list) {
-    stderr.writeln("Unhandled exception:");
+    stderr.writeln('Unhandled exception:');
     stderr.writeln(list[0]);
     stderr.write(list[1]);
     exitCode = 255;

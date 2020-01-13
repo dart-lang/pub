@@ -6,12 +6,15 @@ import 'barback.dart';
 
 /// Handles the `serve` pub command.
 class ServeCommand extends BarbackCommand {
-  String get name => "serve";
-  String get description => "Deprecated command";
+  @override
+  String get name => 'serve';
+  @override
+  String get description => 'Deprecated command';
+  @override
   bool get hidden => true;
 
   ServeCommand() {
-    argParser.addOption("define", hide: true);
+    argParser.addOption('define', hide: true);
     argParser.addOption('hostname', hide: true);
     argParser.addOption('port', hide: true);
     argParser.addFlag('log-admin-url', hide: true);

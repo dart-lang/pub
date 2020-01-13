@@ -13,7 +13,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   // Regression test for issue 8849.
   test(
       'with a server-rejected refresh token, authenticates again and '
@@ -32,7 +32,7 @@ main() {
     server.handler.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
         return shelf.Response(400,
-            body: jsonEncode({"error": "invalid_request"}),
+            body: jsonEncode({'error': 'invalid_request'}),
             headers: {'content-type': 'application/json'});
       });
     });

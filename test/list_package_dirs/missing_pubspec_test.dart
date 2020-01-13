@@ -11,18 +11,18 @@ import 'package:pub/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   // This is a regression test for #20065.
-  test("reports a missing pubspec error using JSON", () async {
+  test('reports a missing pubspec error using JSON', () async {
     await d.dir(appPath).create();
 
     await runPub(args: [
-      "list-package-dirs",
-      "--format=json"
+      'list-package-dirs',
+      '--format=json'
     ], outputJson: {
-      "error": 'Could not find a file named "pubspec.yaml" in "'
+      'error': 'Could not find a file named "pubspec.yaml" in "'
           '${canonicalize(path.join(d.sandbox, appPath))}".',
-      "path": canonicalize(path.join(d.sandbox, appPath, "pubspec.yaml"))
+      'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
     }, exitCode: exit_codes.NO_INPUT);
   });
 }

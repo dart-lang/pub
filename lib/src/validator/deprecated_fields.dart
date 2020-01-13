@@ -12,6 +12,7 @@ import '../validator.dart';
 class DeprecatedFieldsValidator extends Validator {
   DeprecatedFieldsValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() async {
     if (entrypoint.root.pubspec.fields.containsKey('transformers')) {
       warnings.add('Your pubpsec.yaml includes a "transformers" section which'

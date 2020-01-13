@@ -14,8 +14,8 @@ import 'pubspec.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
-final _readmeRegexp = RegExp(r"^README($|\.)", caseSensitive: false);
-final _changelogRegexp = RegExp(r"^CHANGELOG($|\.)", caseSensitive: false);
+final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);
+final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -71,7 +71,7 @@ class Package {
   /// Returns a list of asset ids for all Dart executables in this package's bin
   /// directory.
   List<String> get executablePaths {
-    return ordered(listFiles(beneath: "bin", recursive: false))
+    return ordered(listFiles(beneath: 'bin', recursive: false))
         .where((executable) => p.extension(executable) == '.dart')
         .map((executable) => p.relative(executable, from: dir))
         .toList();
@@ -90,8 +90,8 @@ class Package {
     if (readmes.isEmpty) return null;
 
     return p.join(dir, readmes.reduce((readme1, readme2) {
-      var extensions1 = ".".allMatches(readme1).length;
-      var extensions2 = ".".allMatches(readme2).length;
+      var extensions1 = '.'.allMatches(readme1).length;
+      var extensions2 = '.'.allMatches(readme2).length;
       var comparison = extensions1.compareTo(extensions2);
       if (comparison == 0) comparison = readme1.compareTo(readme2);
       return (comparison <= 0) ? readme1 : readme2;
@@ -158,7 +158,7 @@ class Package {
       String part7]) {
     if (dir == null) {
       throw StateError("Package $name is in-memory and doesn't have paths "
-          "on disk.");
+          'on disk.');
     }
     return p.join(dir, part1, part2, part3, part4, part5, part6, part7);
   }
@@ -168,7 +168,7 @@ class Package {
   String relative(String path) {
     if (dir == null) {
       throw StateError("Package $name is in-memory and doesn't have paths "
-          "on disk.");
+          'on disk.');
     }
     return p.relative(path, from: dir);
   }
@@ -230,7 +230,7 @@ class Package {
       // to Git. Use [beneath] as the working dir rather than passing it as a
       // parameter so that we list a submodule using its own git logic.
       files = git.runSync(
-          ["ls-files", "--cached", "--others", "--exclude-standard"],
+          ['ls-files', '--cached', '--others', '--exclude-standard'],
           workingDir: beneath);
 
       // If we're not listing recursively, strip out paths that contain
@@ -249,7 +249,7 @@ class Package {
       files = files.where((file) => file != './').map((file) {
         return Platform.isWindows
             ? "$beneath\\${file.replaceAll("/", "\\")}"
-            : "$beneath/$file";
+            : '$beneath/$file';
       }).expand((file) {
         if (fileExists(file)) return [file];
         if (!dirExists(file)) return [];
@@ -316,23 +316,25 @@ class Package {
   }
 
   /// Returns a debug string for the package.
+  @override
   String toString() => '$name $version ($dir)';
 }
 
 /// The type of dependency from one package to another.
 class DependencyType {
   /// A dependency declared in `dependencies`.
-  static const direct = DependencyType._("direct");
+  static const direct = DependencyType._('direct');
 
   /// A dependency declared in `dev_dependencies`.
-  static const dev = DependencyType._("dev");
+  static const dev = DependencyType._('dev');
 
   /// No dependency exists.
-  static const none = DependencyType._("none");
+  static const none = DependencyType._('none');
 
   final String _name;
 
   const DependencyType._(this._name);
 
+  @override
   String toString() => _name;
 }

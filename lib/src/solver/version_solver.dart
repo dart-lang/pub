@@ -186,7 +186,7 @@ class VersionSolver {
     if (unsatisfied == null) return #conflict;
 
     _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
-        "${unsatisfied.package}");
+        '${unsatisfied.package}');
     _solution.derive(
         unsatisfied.package, !unsatisfied.isPositive, incompatibility);
     return unsatisfied.package.name;
@@ -276,10 +276,12 @@ class VersionSolver {
       // true (that is, we know for sure no solution will satisfy the
       // incompatibility) while also approximating the intuitive notion of the
       // "root cause" of the conflict.
-      var newTerms = <Term>[]
-        ..addAll(incompatibility.terms.where((term) => term != mostRecentTerm))
-        ..addAll(mostRecentSatisfier.cause.terms
-            .where((term) => term.package != mostRecentSatisfier.package));
+      var newTerms = <Term>[
+        for (var term in incompatibility.terms)
+          if (term != mostRecentTerm) term,
+        for (var term in mostRecentSatisfier.cause.terms)
+          if (term.package != mostRecentSatisfier.package) term,
+      ];
 
       // The [mostRecentSatisfier] may not satisfy [mostRecentTerm] on its own
       // if there are a collection of constraints on [mostRecentTerm] that
@@ -299,12 +301,12 @@ class VersionSolver {
           newTerms, ConflictCause(incompatibility, mostRecentSatisfier.cause));
       newIncompatibility = true;
 
-      var partially = difference == null ? "" : " partially";
+      var partially = difference == null ? '' : ' partially';
       var bang = log.red('!');
       _log('$bang $mostRecentTerm is$partially satisfied by '
           '$mostRecentSatisfier');
       _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
-      _log("$bang thus: $incompatibility");
+      _log('$bang thus: $incompatibility');
     }
 
     throw SolveFailure(reformatRanges(_packageListers, incompatibility));
@@ -325,9 +327,7 @@ class VersionSolver {
       if (_useLatest.contains(candidate.name) &&
           candidate.source.hasMultipleVersions) {
         var ref = candidate.toRef();
-        if (!_haveUsedLatest.contains(ref)) {
-          _haveUsedLatest.add(ref);
-
+        if (_haveUsedLatest.add(ref)) {
           // All versions of [ref] other than the latest are forbidden.
           var latestVersion = (await _packageLister(ref).latest).version;
           _addIncompatibility(Incompatibility([
@@ -399,7 +399,7 @@ class VersionSolver {
 
     if (!conflict) {
       _solution.decide(version);
-      _log("selecting $version");
+      _log('selecting $version');
     }
 
     return package.name;
@@ -407,7 +407,7 @@ class VersionSolver {
 
   /// Adds [incompatibility] to [_incompatibilities].
   void _addIncompatibility(Incompatibility incompatibility) {
-    _log("fact: $incompatibility");
+    _log('fact: $incompatibility');
 
     for (var term in incompatibility.terms) {
       _incompatibilities

@@ -33,11 +33,11 @@ See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
 Future<TestProcess> startPubUploader(
     ShelfTestServer server, List<String> args) {
   var tokenEndpoint = server.url.resolve('/token').toString();
-  var allArgs = ['uploader', '--server', tokenEndpoint]..addAll(args);
+  var allArgs = ['uploader', '--server', tokenEndpoint, ...args];
   return startPub(args: allArgs, tokenEndpoint: tokenEndpoint);
 }
 
-main() {
+void main() {
   group('displays usage', () {
     test('when run with no arguments', () {
       return runPub(
@@ -164,7 +164,7 @@ main() {
         await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
 
     server.handler.expect('POST', '/api/packages/pkg/uploaders',
-        (request) => shelf.Response.ok("{not json"));
+        (request) => shelf.Response.ok('{not json'));
 
     expect(
         pub.stderr,
@@ -180,7 +180,7 @@ main() {
         await startPubUploader(server, ['--package', 'pkg', 'remove', 'email']);
 
     server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
-        (request) => shelf.Response.ok("{not json"));
+        (request) => shelf.Response.ok('{not json'));
 
     expect(
         pub.stderr,

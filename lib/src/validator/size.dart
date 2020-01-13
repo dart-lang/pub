@@ -18,6 +18,7 @@ class SizeValidator extends Validator {
 
   SizeValidator(Entrypoint entrypoint, this.packageSize) : super(entrypoint);
 
+  @override
   Future validate() {
     return packageSize.then((size) {
       if (size <= _MAX_SIZE) return;
@@ -25,15 +26,15 @@ class SizeValidator extends Validator {
       // Current implementation of Package.listFiles skips hidden files
       var ignoreExists = fileExists(entrypoint.root.path('.gitignore'));
 
-      var error = StringBuffer("Your package is $sizeInMb MB. Hosted "
-          "packages must be smaller than 100 MB.");
+      var error = StringBuffer('Your package is $sizeInMb MB. Hosted '
+          'packages must be smaller than 100 MB.');
 
       if (ignoreExists && !entrypoint.root.inGitRepo) {
-        error.write(" Your .gitignore has no effect since your project "
-            "does not appear to be in version control.");
+        error.write(' Your .gitignore has no effect since your project '
+            'does not appear to be in version control.');
       } else if (!ignoreExists && entrypoint.root.inGitRepo) {
-        error.write(" Consider adding a .gitignore to avoid including "
-            "temporary files.");
+        error.write(' Consider adding a .gitignore to avoid including '
+            'temporary files.');
       }
 
       errors.add(error.toString());

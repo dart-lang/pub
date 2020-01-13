@@ -11,7 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('upload form is missing fields', () async {

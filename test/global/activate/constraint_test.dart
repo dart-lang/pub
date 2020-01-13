@@ -7,16 +7,16 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('chooses the highest version that matches the constraint', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0");
-      builder.serve("foo", "1.0.1");
-      builder.serve("foo", "1.1.0");
-      builder.serve("foo", "1.2.3");
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '1.0.1');
+      builder.serve('foo', '1.1.0');
+      builder.serve('foo', '1.2.3');
     });
 
-    await runPub(args: ["global", "activate", "foo", "<1.1.0"]);
+    await runPub(args: ['global', 'activate', 'foo', '<1.1.0']);
 
     await d.dir(cachePath, [
       d.dir('global_packages', [

@@ -11,7 +11,7 @@ dart_task:
   - test: --preset travis --total-shards 5 --shard-index 3
   - test: --preset travis --total-shards 5 --shard-index 4
   - dartfmt
-  - dartanalyzer
+  - dartanalyzer: --fatal-infos --fatal-warnings .
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.

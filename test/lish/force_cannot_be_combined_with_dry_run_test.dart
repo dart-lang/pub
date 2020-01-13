@@ -9,11 +9,11 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('--force cannot be combined with --dry-run', () async {
-    await runPub(args: ['lish', '--force', '--dry-run'], error: """
+    await runPub(args: ['lish', '--force', '--dry-run'], error: '''
           Cannot use both --force and --dry-run.
           
           Usage: pub publish [options]
@@ -24,6 +24,6 @@ main() {
 
           Run "pub help" to see global options.
           See https://dart.dev/tools/pub/cmd/pub-lish for detailed documentation.
-          """, exitCode: exit_codes.USAGE);
+          ''', exitCode: exit_codes.USAGE);
   });
 }

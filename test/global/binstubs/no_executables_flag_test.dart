@@ -7,30 +7,30 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("does not create binstubs if --no-executables is passed", () async {
-    await d.dir("foo", [
+void main() {
+  test('does not create binstubs if --no-executables is passed', () async {
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {"one": null}
+        'name': 'foo',
+        'executables': {'one': null}
       }),
-      d.dir("bin", [d.file("one.dart", "main() => print('ok');")])
+      d.dir('bin', [d.file('one.dart', "main() => print('ok');")])
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
     await runPub(args: [
-      "global",
-      "activate",
-      "--source",
-      "path",
-      "../foo",
-      "--no-executables"
+      'global',
+      'activate',
+      '--source',
+      'path',
+      '../foo',
+      '--no-executables'
     ]);
 
     // Should still delete old one.
     await d.dir(cachePath, [
-      d.dir("bin", [d.nothing(binStubName("one"))])
+      d.dir('bin', [d.nothing(binStubName('one'))])
     ]).validate();
   });
 }

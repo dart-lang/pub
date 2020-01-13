@@ -33,17 +33,17 @@ main() {
 }
 """;
 
-main() {
+void main() {
   test('forwards signals to the inner script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir("bin", [d.file("script.dart", SCRIPT)])
+      d.dir('bin', [d.file('script.dart', SCRIPT)])
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ["bin/script"]);
+    var pub = await pubRun(args: ['bin/script']);
 
-    await expectLater(pub.stdout, emits("ready"));
+    await expectLater(pub.stdout, emits('ready'));
     for (var signal in _catchableSignals) {
       pub.signal(signal);
       await expectLater(pub.stdout, emits(signal.toString()));

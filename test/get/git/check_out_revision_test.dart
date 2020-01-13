@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('checks out a package at a specific revision from Git', () async {
     ensureGit();
 
@@ -20,8 +20,8 @@ main() {
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
     await d.appDir({
-      "foo": {
-        "git": {"url": "../foo.git", "ref": commit}
+      'foo': {
+        'git': {'url': '../foo.git', 'ref': commit}
       }
     }).create();
 

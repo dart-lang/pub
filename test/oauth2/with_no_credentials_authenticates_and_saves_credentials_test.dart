@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   test(
       'with no credentials.json, authenticates and saves '
       'credentials.json', () async {

@@ -8,7 +8,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('fails if no executable was given', () {
     return runPub(args: ['global', 'run'], error: '''
             Must specify an executable to run.

@@ -100,6 +100,7 @@ class SolveResult {
         .summarize(dryRun: dryRun);
   }
 
+  @override
   String toString() => 'Took $attemptedSolutions tries to resolve to\n'
       '- ${packages.join("\n- ")}';
 }
