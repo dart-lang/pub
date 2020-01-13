@@ -10,20 +10,13 @@ os:
   - windows
 
 dart_task:
-  - test: --preset travis --total-shards 14 --shard-index 0
-  - test: --preset travis --total-shards 14 --shard-index 1
-  - test: --preset travis --total-shards 14 --shard-index 2
-  - test: --preset travis --total-shards 14 --shard-index 3
-  - test: --preset travis --total-shards 14 --shard-index 4
-  - test: --preset travis --total-shards 14 --shard-index 5
-  - test: --preset travis --total-shards 14 --shard-index 6
-  - test: --preset travis --total-shards 14 --shard-index 7
-  - test: --preset travis --total-shards 14 --shard-index 8
-  - test: --preset travis --total-shards 14 --shard-index 9
-  - test: --preset travis --total-shards 14 --shard-index 10
-  - test: --preset travis --total-shards 14 --shard-index 11
-  - test: --preset travis --total-shards 14 --shard-index 12
-  - test: --preset travis --total-shards 14 --shard-index 13
+  - test: --preset travis `split -n l/1/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/2/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/3/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/4/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/5/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/6/7 .dart_tool/test_files`
+  - test: --preset travis `split -n l/7/7 .dart_tool/test_files`
   - dartfmt
   - dartanalyzer
 
@@ -31,6 +24,7 @@ dart_task:
 # snapshot if it's available.
 before_script:
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
+  - find test -name "*_test\\.dart" > .dart_tool/test_files
 
 # Only building these branches means that we don't run two builds for each pull
 # request.
