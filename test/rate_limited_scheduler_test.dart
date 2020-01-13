@@ -5,10 +5,12 @@
 import 'dart:async';
 
 import 'package:test/test.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:pub/src/rate_limited_scheduler.dart';
 
-main() {
-  threeCompleters() => {'a': Completer(), 'b': Completer(), 'c': Completer()};
+void main() {
+  Map<String, Completer> threeCompleters() =>
+      {'a': Completer(), 'b': Completer(), 'c': Completer()};
 
   test('scheduler is rate limited', () async {
     final completers = threeCompleters();
@@ -21,7 +23,7 @@ main() {
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
-    scheduler.withPrescheduling((preschedule) async {
+    await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
       preschedule('c');
@@ -48,8 +50,8 @@ main() {
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
 
-    scheduler.withPrescheduling((preschedule1) async {
-      scheduler.withPrescheduling((preschedule2) async {
+    await scheduler.withPrescheduling((preschedule1) async {
+      await scheduler.withPrescheduling((preschedule2) async {
         preschedule1('a');
         preschedule2('b');
         preschedule1('c');
@@ -82,7 +84,7 @@ main() {
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
 
     Future b;
-    scheduler.withPrescheduling((preschedule) async {
+    await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
       await isBeingProcessed['a'].future;
@@ -127,9 +129,9 @@ main() {
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
-    scheduler.withPrescheduling((preschedule) async {
-      scheduler.schedule('a');
-      scheduler.schedule('b');
+    await scheduler.withPrescheduling((preschedule) async {
+      preschedule('a');
+      preschedule('b');
       await isBeingProcessed['a'].future;
       final cResult = scheduler.schedule('c');
       expect(isBeingProcessed['b'].isCompleted, isFalse);
@@ -153,14 +155,14 @@ main() {
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
 
-    scheduler.withPrescheduling((preschedule) async {
+    await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
       preschedule('c');
       await isBeingProcessed['a'].future;
       await isBeingProcessed['b'].future;
       expect(isBeingProcessed['c'].isCompleted, isFalse);
-      completers['c'].future.catchError((_) {});
+      unawaited(completers['c'].future.catchError((_) {}));
       completers['c'].completeError('errorC');
       completers['a'].completeError('errorA');
       await isBeingProcessed['c'].future;
@@ -182,7 +184,7 @@ main() {
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
-    scheduler.withPrescheduling((preschedule) async {
+    await scheduler.withPrescheduling((preschedule) async {
       runZoned(() {
         preschedule('a');
       }, zoneValues: {'zoneValue': 'A'});

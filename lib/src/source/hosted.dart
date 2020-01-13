@@ -3,12 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import "dart:convert";
+import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pedantic/pedantic.dart';
 import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -188,13 +189,13 @@ class BoundHostedSource extends CachedSource {
           PackageId(ref.name, source, latestVersion, ref.description);
 
       final dependencies = result[latestVersionId]?.dependencies?.values ?? [];
-      withDependencyType(DependencyType.none, () async {
+      unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
             preschedule(packageRange.toRef());
           }
         }
-      });
+      }));
     }
     return result;
   }

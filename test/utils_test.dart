@@ -129,7 +129,7 @@ b: {}"""));
     test('is stable', () async {
       {
         final completers = <String, Completer>{};
-        completer(k) => completers.putIfAbsent(k, () => Completer());
+        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
@@ -146,7 +146,7 @@ b: {}"""));
       }
       {
         final completers = <String, Completer>{};
-        completer(k) => completers.putIfAbsent(k, () => Completer());
+        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
