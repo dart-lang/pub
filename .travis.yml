@@ -9,14 +9,23 @@ os:
   - osx
   - windows
 
+addons:
+  homebrew:
+    packages:
+    - coreutils
+
+env:
+  global:
+    - SPLIT=`which gsplit || which split`
+
 dart_task:
-  - test: --preset travis `split -n l/1/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/2/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/3/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/4/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/5/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/6/7 .dart_tool/test_files`
-  - test: --preset travis `split -n l/7/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/1/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/2/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/3/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/4/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/5/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/6/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/7/7 .dart_tool/test_files`
   - dartfmt
   - dartanalyzer
 
@@ -25,6 +34,7 @@ dart_task:
 before_script:
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
   - find test -name "*_test\\.dart" > .dart_tool/test_files
+  -
 
 # Only building these branches means that we don't run two builds for each pull
 # request.
