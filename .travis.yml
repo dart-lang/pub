@@ -33,7 +33,7 @@ dart_task:
 # snapshot if it's available.
 before_script:
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
-  - find test -name "*_test\\.dart" > .dart_tool/test_files
+  - find test -name "*_test\\.dart" | sort > .dart_tool/test_files
   -
 
 # Only building these branches means that we don't run two builds for each pull
