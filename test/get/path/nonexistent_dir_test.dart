@@ -10,20 +10,20 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('path dependency to non-existent directory', () async {
-    var badPath = path.join(d.sandbox, "bad_path");
+    var badPath = path.join(d.sandbox, 'bad_path');
 
     await d.dir(appPath, [
       d.appPubspec({
-        "foo": {"path": badPath}
+        'foo': {'path': badPath}
       })
     ]).create();
 
     await pubGet(
         error: allOf([
           contains("Because myapp depends on foo from path which doesn't exist "
-              "(could not find package foo at"),
+              '(could not find package foo at'),
           contains('bad_path"), version solving failed.')
         ]),
         exitCode: exit_codes.NO_INPUT);

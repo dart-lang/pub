@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("upgrades locked Git packages", () async {
+void main() {
+  test('upgrades locked Git packages', () async {
     ensureGit();
 
     await d.git(
@@ -18,8 +18,8 @@ main() {
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"},
-      "bar": {"git": "../bar.git"}
+      'foo': {'git': '../foo.git'},
+      'bar': {'git': '../bar.git'}
     }).create();
 
     await pubGet();

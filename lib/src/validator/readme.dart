@@ -13,12 +13,13 @@ import '../validator.dart';
 class ReadmeValidator extends Validator {
   ReadmeValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     return Future.sync(() {
       var readme = entrypoint.root.readmePath;
       if (readme == null) {
         warnings
-            .add("Please add a README.md file that describes your package.");
+            .add('Please add a README.md file that describes your package.');
         return;
       }
 
@@ -27,9 +28,9 @@ class ReadmeValidator extends Validator {
         // utf8.decode doesn't allow invalid UTF-8.
         utf8.decode(bytes);
       } on FormatException catch (_) {
-        warnings.add("$readme contains invalid UTF-8.\n"
-            "This will cause it to be displayed incorrectly on "
-            "the Pub site (https://pub.dev).");
+        warnings.add('$readme contains invalid UTF-8.\n'
+            'This will cause it to be displayed incorrectly on '
+            'the Pub site (https://pub.dev).');
       }
     });
   }

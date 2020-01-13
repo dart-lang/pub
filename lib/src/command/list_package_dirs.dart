@@ -12,17 +12,23 @@ import '../utils.dart';
 
 /// Handles the `list-package-dirs` pub command.
 class ListPackageDirsCommand extends PubCommand {
-  String get name => "list-package-dirs";
-  String get description => "Print local paths to dependencies.";
-  String get invocation => "pub list-package-dirs";
+  @override
+  String get name => 'list-package-dirs';
+  @override
+  String get description => 'Print local paths to dependencies.';
+  @override
+  String get invocation => 'pub list-package-dirs';
+  @override
   bool get takesArguments => false;
+  @override
   bool get hidden => true;
 
   ListPackageDirsCommand() {
-    argParser.addOption("format",
-        help: "How output should be displayed.", allowed: ["json"]);
+    argParser.addOption('format',
+        help: 'How output should be displayed.', allowed: ['json']);
   }
 
+  @override
   void run() {
     log.json.enabled = true;
 
@@ -38,18 +44,18 @@ class ListPackageDirsCommand extends PubCommand {
       var packageDir = source.getDirectory(package);
       // Normalize paths and make them absolute for backwards compatibility
       // with the protocol used by the analyzer.
-      return p.normalize(p.absolute(p.join(packageDir, "lib")));
+      return p.normalize(p.absolute(p.join(packageDir, 'lib')));
     });
 
     // Include the self link.
     packages[entrypoint.root.name] =
-        p.normalize(p.absolute(entrypoint.root.path("lib")));
+        p.normalize(p.absolute(entrypoint.root.path('lib')));
 
-    output["packages"] = packages;
+    output['packages'] = packages;
 
     // Include the file(s) which when modified will affect the results. For pub,
     // that's just the pubspec and lockfile.
-    output["input_files"] = [
+    output['input_files'] = [
       p.normalize(p.absolute(entrypoint.lockFilePath)),
       p.normalize(p.absolute(entrypoint.pubspecPath))
     ];

@@ -9,13 +9,13 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if the url does not resolve', () async {
       await d.dir(appPath, [
         d.appPubspec({
-          "foo": {
-            "hosted": {"name": "foo", "url": "http://pub.invalid"}
+          'foo': {
+            'hosted': {'name': 'foo', 'url': 'http://pub.invalid'}
           }
         })
       ]).create();

@@ -12,7 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('package creation provides a malformed error', () async {

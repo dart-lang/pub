@@ -9,28 +9,28 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   forBothPubGetAndUpgrade((command) {
     test('upgrades a package using the cache', () async {
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.2", "1.2.3"],
-        "bar": ["1.2.3"]
+        'foo': ['1.2.2', '1.2.3'],
+        'bar': ['1.2.3']
       }, includePubspecs: true).create();
 
-      await d.appDir({"foo": "any", "bar": "any"}).create();
+      await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
       String warning;
       if (command == RunCommand.upgrade) {
-        warning = "Warning: Upgrading when offline may not update you "
-            "to the latest versions of your dependencies.";
+        warning = 'Warning: Upgrading when offline may not update you '
+            'to the latest versions of your dependencies.';
       }
 
       await pubCommand(command, args: ['--offline'], warning: warning);
 
-      await d.appPackagesFile({"foo": "1.2.3", "bar": "1.2.3"}).validate();
+      await d.appPackagesFile({'foo': '1.2.3', 'bar': '1.2.3'}).validate();
     });
 
     test('supports prerelease versions', () async {
@@ -38,27 +38,27 @@ main() {
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.3-alpha.1"]
+        'foo': ['1.2.3-alpha.1']
       }, includePubspecs: true).create();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       String warning;
       if (command == RunCommand.upgrade) {
-        warning = "Warning: Upgrading when offline may not update you "
-            "to the latest versions of your dependencies.";
+        warning = 'Warning: Upgrading when offline may not update you '
+            'to the latest versions of your dependencies.';
       }
 
       await pubCommand(command, args: ['--offline'], warning: warning);
 
-      await d.appPackagesFile({"foo": "1.2.3-alpha.1"}).validate();
+      await d.appPackagesFile({'foo': '1.2.3-alpha.1'}).validate();
     });
 
     test('fails gracefully if a dependency is not cached', () async {
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await pubCommand(command,
           args: ['--offline'],
@@ -74,10 +74,10 @@ main() {
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.2", "1.2.3"]
+        'foo': ['1.2.2', '1.2.3']
       }, includePubspecs: true).create();
 
-      await d.appDir({"foo": ">2.0.0"}).create();
+      await d.appDir({'foo': '>2.0.0'}).create();
 
       await pubCommand(command,
           args: ['--offline'], error: equalsIgnoringWhitespace("""
@@ -92,7 +92,7 @@ main() {
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
@@ -110,16 +110,16 @@ main() {
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.2", "1.2.3"]
+        'foo': ['1.2.2', '1.2.3']
       }, includePubspecs: true).create();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({"foo": "1.2.3"}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
     });
 
     test('skips invalid cached versions', () async {
@@ -127,18 +127,18 @@ main() {
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.2", "1.2.3"]
+        'foo': ['1.2.2', '1.2.3']
       }, includePubspecs: true).create();
 
       await d.hostedCache([
-        d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")])
+        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
       ]).create();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({"foo": "1.2.2"}).validate();
+      await d.appPackagesFile({'foo': '1.2.2'}).validate();
     });
 
     test('skips invalid locked versions', () async {
@@ -146,20 +146,20 @@ main() {
       await serveErrors();
 
       await d.cacheDir({
-        "foo": ["1.2.2", "1.2.3"]
+        'foo': ['1.2.2', '1.2.3']
       }, includePubspecs: true).create();
 
       await d.hostedCache([
-        d.dir("foo-1.2.3", [d.file("pubspec.yaml", "{")])
+        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
       ]).create();
 
-      await d.appDir({"foo": "any"}).create();
+      await d.appDir({'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.3'});
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({"foo": "1.2.2"}).validate();
+      await d.appPackagesFile({'foo': '1.2.2'}).validate();
     });
   });
 }

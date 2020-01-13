@@ -7,37 +7,37 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("removes previous binstubs when reactivating a package", () async {
-    await d.dir("foo", [
+void main() {
+  test('removes previous binstubs when reactivating a package', () async {
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {"one": null, "two": null}
+        'name': 'foo',
+        'executables': {'one': null, 'two': null}
       }),
-      d.dir("bin", [
-        d.file("one.dart", "main() => print('ok');"),
-        d.file("two.dart", "main() => print('ok');")
+      d.dir('bin', [
+        d.file('one.dart', "main() => print('ok');"),
+        d.file('two.dart', "main() => print('ok');")
       ])
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    await d.dir("foo", [
+    await d.dir('foo', [
       d.pubspec({
-        "name": "foo",
-        "executables": {
+        'name': 'foo',
+        'executables': {
           // Remove "one".
-          "two": null
+          'two': null
         }
       }),
     ]).create();
 
-    await runPub(args: ["global", "activate", "--source", "path", "../foo"]);
+    await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
     await d.dir(cachePath, [
-      d.dir("bin", [
-        d.nothing(binStubName("one")),
-        d.file(binStubName("two"), contains("two"))
+      d.dir('bin', [
+        d.nothing(binStubName('one')),
+        d.file(binStubName('two'), contains('two'))
       ])
     ]).validate();
   });

@@ -14,6 +14,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       : super(name, contents);
 
   /// Creates the Git repository and commits the contents.
+  @override
   Future create([String parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [

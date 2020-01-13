@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import "dart:async" show Future;
-import "dart:convert" show JsonEncoder, json, utf8;
-import "dart:io" show File;
+import 'dart:async' show Future;
+import 'dart:convert' show JsonEncoder, json, utf8;
+import 'dart:io' show File;
 
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
@@ -18,7 +18,7 @@ import '../test_pub.dart';
 // Resolve against a dummy URL so that we can test whether the URLs in
 // the package file are themselves relative. We can't resolve against just
 // "." due to sdk#23809.
-final _base = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p";
+final _base = '/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p';
 
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {
@@ -31,6 +31,7 @@ class PackagesFileDescriptor extends Descriptor {
   /// are located on disk.
   PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
+  @override
   Future create([String parent]) {
     var contents = const <int>[];
     if (_dependencies != null) {
@@ -39,13 +40,13 @@ class PackagesFileDescriptor extends Descriptor {
         String packagePath;
         if (_isSemver(version)) {
           // It's a cache reference.
-          packagePath = p.join(cachePath, "$package-$version");
+          packagePath = p.join(cachePath, '$package-$version');
         } else {
           // Otherwise it's a path relative to the pubspec file,
           // which is also relative to the .packages file.
           packagePath = p.fromUri(version);
         }
-        mapping[package] = p.toUri(p.join(packagePath, "lib", ""));
+        mapping[package] = p.toUri(p.join(packagePath, 'lib', ''));
       });
       var buffer = StringBuffer();
       packages_file.write(buffer, mapping);
@@ -54,6 +55,7 @@ class PackagesFileDescriptor extends Descriptor {
     return File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
   }
 
+  @override
   Future validate([String parent]) async {
     var fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
@@ -66,14 +68,14 @@ class PackagesFileDescriptor extends Descriptor {
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {
-        fail(".packages does not contain $package entry");
+        fail('.packages does not contain $package entry');
       }
 
       var description = _dependencies[package];
       if (_isSemver(description)) {
         if (!map[package].path.contains(description)) {
-          fail(".packages of $package has incorrect version. "
-              "Expected $description, found location: ${map[package]}.");
+          fail('.packages of $package has incorrect version. '
+              'Expected $description, found location: ${map[package]}.');
         }
       } else {
         var expected = p.normalize(p.join(p.fromUri(description), 'lib'));
@@ -81,7 +83,7 @@ class PackagesFileDescriptor extends Descriptor {
             p.url.relative(map[package].toString(), from: p.dirname(_base))));
 
         if (expected != actual) {
-          fail("Relative path: Expected $expected, found $actual");
+          fail('Relative path: Expected $expected, found $actual');
         }
       }
     }
@@ -89,12 +91,13 @@ class PackagesFileDescriptor extends Descriptor {
     if (map.length != _dependencies.length) {
       for (var key in map.keys) {
         if (!_dependencies.containsKey(key)) {
-          fail(".packages file contains unexpected entry: $key");
+          fail('.packages file contains unexpected entry: $key');
         }
       }
     }
   }
 
+  @override
   String describe() => name;
 }
 
@@ -120,6 +123,7 @@ class PackageConfigFileDescriptor extends Descriptor {
   PackageConfigFileDescriptor(this._packages)
       : super('.dart_tool/package_config.json');
 
+  @override
   Future<void> create([String parent]) async {
     final packageConfigFile = File(p.join(parent ?? sandbox, name));
     await packageConfigFile.parent.create();
@@ -128,6 +132,7 @@ class PackageConfigFileDescriptor extends Descriptor {
     );
   }
 
+  @override
   Future<void> validate([String parent]) async {
     final packageConfigFile = p.join(parent ?? sandbox, name);
     if (!await File(packageConfigFile).exists()) {
@@ -162,6 +167,7 @@ class PackageConfigFileDescriptor extends Descriptor {
         reason: '"$packageConfigFile" does not match expected values');
   }
 
+  @override
   String describe() => name;
 }
 

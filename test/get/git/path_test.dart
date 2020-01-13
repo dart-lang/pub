@@ -10,7 +10,7 @@ import 'package:pub/src/io.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('depends on a package in a subdirectory', () async {
     ensureGit();
 
@@ -20,8 +20,8 @@ main() {
     await repo.create();
 
     await d.appDir({
-      "sub": {
-        "git": {"url": "../foo.git", "path": "subdir"}
+      'sub': {
+        'git': {'url': '../foo.git', 'path': 'subdir'}
       }
     }).create();
 
@@ -52,8 +52,8 @@ main() {
     await repo.create();
 
     await d.appDir({
-      "sub": {
-        "git": {"url": "../foo.git", "path": "sub/dir"}
+      'sub': {
+        'git': {'url': '../foo.git', 'path': 'sub/dir'}
       }
     }).create();
 
@@ -87,11 +87,11 @@ main() {
     await repo.create();
 
     await d.appDir({
-      "sub1": {
-        "git": {"url": "../foo.git", "path": "subdir1"}
+      'sub1': {
+        'git': {'url': '../foo.git', 'path': 'subdir1'}
       },
-      "sub2": {
-        "git": {"url": "../foo.git", "path": "subdir2"}
+      'sub2': {
+        'git': {'url': '../foo.git', 'path': 'subdir2'}
       }
     }).create();
 
@@ -133,11 +133,11 @@ main() {
     var newRevision = await repo.revParse('HEAD');
 
     await d.appDir({
-      "sub1": {
-        "git": {"url": "../foo.git", "path": "subdir", "ref": oldRevision}
+      'sub1': {
+        'git': {'url': '../foo.git', 'path': 'subdir', 'ref': oldRevision}
       },
-      "sub2": {
-        "git": {"url": "../foo.git", "path": "subdir"}
+      'sub2': {
+        'git': {'url': '../foo.git', 'path': 'subdir'}
       }
     }).create();
 

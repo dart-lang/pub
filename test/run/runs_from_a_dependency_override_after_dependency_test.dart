@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   // Regression test for issue 23113
   test('runs a named Dart application in a dependency', () async {
     await servePackages((builder) {
@@ -15,38 +15,38 @@ main() {
         'name': 'foo',
         'version': '1.0.0'
       }, contents: [
-        d.dir("bin", [d.file("bar.dart", "main() => print('foobar');")])
+        d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
       ]);
     });
 
     await d.dir(appPath, [
-      d.appPubspec({"foo": null})
+      d.appPubspec({'foo': null})
     ]).create();
 
     await pubGet(args: ['--precompile']);
 
-    var pub = await pubRun(args: ["foo:bar"]);
-    expect(pub.stdout, emits("foobar"));
+    var pub = await pubRun(args: ['foo:bar']);
+    expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
 
-    await d.dir("foo", [
-      d.libPubspec("foo", "2.0.0"),
-      d.dir("bin", [d.file("bar.dart", "main() => print('different');")])
+    await d.dir('foo', [
+      d.libPubspec('foo', '2.0.0'),
+      d.dir('bin', [d.file('bar.dart', "main() => print('different');")])
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
-        "name": "myapp",
-        "dependencies": {
-          "foo": {"path": "../foo"}
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'}
         }
       })
     ]).create();
 
     await pubGet();
 
-    pub = await pubRun(args: ["foo:bar"]);
-    expect(pub.stdout, emits("different"));
+    pub = await pubRun(args: ['foo:bar']);
+    expect(pub.stdout, emits('different'));
     await pub.shouldExit();
   });
 }

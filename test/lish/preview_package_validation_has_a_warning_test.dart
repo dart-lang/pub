@@ -10,13 +10,13 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   test('preview package validation has a warning', () async {
     var pkg =
-        packageMap("test_pkg", "1.0.0", null, null, {'sdk': '>=1.8.0 <2.0.0'});
-    pkg["dependencies"] = {'foo': 'any'};
+        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+    pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     var server = await ShelfTestServer.create();

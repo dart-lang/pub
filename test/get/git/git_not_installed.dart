@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-@TestOn("linux")
+@TestOn('linux')
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart' show sandbox;
 import 'package:path/path.dart' as p;
@@ -13,7 +13,7 @@ import 'package:pub/src/io.dart' show runProcess;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('reports failure if Git is not installed', () async {
     // Create temporary folder 'bin/' containing a 'git' script in [sandbox]
     // By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
@@ -31,7 +31,7 @@ exit 1
     await runProcess('chmod', ['+x', p.join(sandbox, 'bin', 'git')]);
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet(

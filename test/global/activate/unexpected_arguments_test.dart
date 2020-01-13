@@ -7,10 +7,10 @@ import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('fails if there are extra arguments', () {
     return runPub(
-        args: ["global", "activate", "foo", "1.0.0", "bar", "baz"],
+        args: ['global', 'activate', 'foo', '1.0.0', 'bar', 'baz'],
         error: contains('Unexpected arguments "bar" and "baz".'),
         exitCode: exit_codes.USAGE);
   });

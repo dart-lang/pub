@@ -60,7 +60,7 @@ class Transcript<T> {
   /// where excess entries where dropped, invokes [onGap] with the number of
   /// dropped entries. If no more than [max] entries were added, does not
   /// invoke [onGap].
-  void forEach(void onEntry(T entry), [void Function(int) onGap]) {
+  void forEach(void Function(T) onEntry, [void Function(int) onGap]) {
     if (_oldest.isNotEmpty) {
       _oldest.forEach(onEntry);
       if (onGap != null) onGap(discarded);

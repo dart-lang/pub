@@ -13,12 +13,18 @@ import '../utils.dart';
 
 /// Handles the `cache repair` pub command.
 class CacheRepairCommand extends PubCommand {
-  String get name => "repair";
-  String get description => "Reinstall cached packages.";
-  String get invocation => "pub cache repair";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-cache";
+  @override
+  String get name => 'repair';
+  @override
+  String get description => 'Reinstall cached packages.';
+  @override
+  String get invocation => 'pub cache repair';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
+  @override
   bool get takesArguments => false;
 
+  @override
   Future run() async {
     var successes = [];
     var failures = [];
@@ -33,19 +39,19 @@ class CacheRepairCommand extends PubCommand {
     }
 
     if (successes.isNotEmpty) {
-      var packages = pluralize("package", successes.length);
-      log.message("Reinstalled ${log.green(successes.length)} $packages.");
+      var packages = pluralize('package', successes.length);
+      log.message('Reinstalled ${log.green(successes.length)} $packages.');
     }
 
     if (failures.isNotEmpty) {
-      var packages = pluralize("package", failures.length);
+      var packages = pluralize('package', failures.length);
       var buffer = StringBuffer(
-          "Failed to reinstall ${log.red(failures.length)} $packages:\n");
+          'Failed to reinstall ${log.red(failures.length)} $packages:\n');
 
       for (var id in failures) {
-        buffer.write("- ${log.bold(id.name)} ${id.version}");
+        buffer.write('- ${log.bold(id.name)} ${id.version}');
         if (id.source != cache.sources.defaultSource) {
-          buffer.write(" from ${id.source}");
+          buffer.write(' from ${id.source}');
         }
         buffer.writeln();
       }
@@ -55,19 +61,19 @@ class CacheRepairCommand extends PubCommand {
 
     var results = await globals.repairActivatedPackages();
     if (results.first.isNotEmpty) {
-      var packages = pluralize("package", results.first.length);
-      log.message("Reactivated ${log.green(results.first.length)} $packages.");
+      var packages = pluralize('package', results.first.length);
+      log.message('Reactivated ${log.green(results.first.length)} $packages.');
     }
 
     if (results.last.isNotEmpty) {
-      var packages = pluralize("package", results.last.length);
+      var packages = pluralize('package', results.last.length);
       log.message(
-          "Failed to reactivate ${log.red(results.last.length)} $packages:\n" +
-              results.last.map((name) => "- ${log.bold(name)}").join("\n"));
+          'Failed to reactivate ${log.red(results.last.length)} $packages:\n' +
+              results.last.map((name) => '- ${log.bold(name)}').join('\n'));
     }
 
     if (successes.isEmpty && failures.isEmpty) {
-      log.message("No packages in cache, so nothing to repair.");
+      log.message('No packages in cache, so nothing to repair.');
     }
 
     if (failures.isNotEmpty || results.last.isNotEmpty) {

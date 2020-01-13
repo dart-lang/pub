@@ -9,10 +9,14 @@ import 'cache_repair.dart';
 
 /// Handles the `cache` pub command.
 class CacheCommand extends PubCommand {
-  String get name => "cache";
-  String get description => "Work with the system cache.";
-  String get invocation => "pub cache <subcommand>";
-  String get docUrl => "https://dart.dev/tools/pub/cmd/pub-cache";
+  @override
+  String get name => 'cache';
+  @override
+  String get description => 'Work with the system cache.';
+  @override
+  String get invocation => 'pub cache <subcommand>';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
   CacheCommand() {
     addSubcommand(CacheAddCommand());

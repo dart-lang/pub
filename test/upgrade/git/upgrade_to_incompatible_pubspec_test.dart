@@ -9,15 +9,15 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-main() {
-  test("upgrades Git packages to an incompatible pubspec", () async {
+void main() {
+  test('upgrades Git packages to an incompatible pubspec', () async {
     ensureGit();
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      "foo": {"git": "../foo.git"}
+      'foo': {'git': '../foo.git'}
     }).create();
 
     await pubGet();

@@ -13,10 +13,11 @@ import '../validator.dart';
 class LicenseValidator extends Validator {
   LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  @override
   Future validate() {
     return Future.sync(() {
       var licenseLike =
-          RegExp(r"^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$");
+          RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
       if (entrypoint.root
           .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)
@@ -25,9 +26,9 @@ class LicenseValidator extends Validator {
       }
 
       errors.add(
-          "You must have a COPYING, LICENSE or UNLICENSE file in the root directory.\n"
-          "An open-source license helps ensure people can legally use your "
-          "code.");
+          'You must have a COPYING, LICENSE or UNLICENSE file in the root directory.\n'
+          'An open-source license helps ensure people can legally use your '
+          'code.');
     });
   }
 }

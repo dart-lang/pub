@@ -11,7 +11,7 @@ import 'package:test_process/test_process.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/sdk.dart';
 
-main() {
+void main() {
   // This test is a bit funny.
   //
   // Pub parses the "version" file that gets generated and shipped with the SDK.
@@ -25,10 +25,10 @@ main() {
   test('parse the real SDK "version" file', () async {
     // Get the path to the pub binary in the SDK.
     var pubPath = path.join(
-        sdk.rootDirectory, 'bin', Platform.isWindows ? "pub.bat" : "pub");
+        sdk.rootDirectory, 'bin', Platform.isWindows ? 'pub.bat' : 'pub');
 
     var pub = await TestProcess.start(pubPath, ['version']);
-    expect(pub.stdout, emits(startsWith("Pub")));
+    expect(pub.stdout, emits(startsWith('Pub')));
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 }

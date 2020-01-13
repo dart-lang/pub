@@ -11,17 +11,17 @@ import 'package:pub/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
-  test("reports the lockfile path when there is an error in it", () async {
+void main() {
+  test('reports the lockfile path when there is an error in it', () async {
     await d.dir(appPath,
-        [d.appPubspec(), d.file("pubspec.lock", "some bad yaml")]).create();
+        [d.appPubspec(), d.file('pubspec.lock', 'some bad yaml')]).create();
 
     await runPub(args: [
-      "list-package-dirs",
-      "--format=json"
+      'list-package-dirs',
+      '--format=json'
     ], outputJson: {
-      "error": contains('The lockfile must be a YAML mapping.'),
-      "path": canonicalize(path.join(d.sandbox, appPath, "pubspec.lock"))
+      'error': contains('The lockfile must be a YAML mapping.'),
+      'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock'))
     }, exitCode: exit_codes.DATA);
   });
 }

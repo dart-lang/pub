@@ -21,8 +21,10 @@ import 'cached.dart';
 
 /// A package source that gets packages from Git repos.
 class GitSource extends Source {
-  final name = "git";
+  @override
+  final name = 'git';
 
+  @override
   BoundGitSource bind(SystemCache systemCache) =>
       BoundGitSource(this, systemCache);
 
@@ -37,31 +39,32 @@ class GitSource extends Source {
 
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
-  String urlFromDescription(description) => description["url"];
+  String urlFromDescription(description) => description['url'];
 
+  @override
   PackageRef parseRef(String name, description, {String containingPath}) {
     // TODO(rnystrom): Handle git URLs that are relative file paths (#8570).
     if (description is String) description = {'url': description};
 
     if (description is! Map) {
-      throw FormatException("The description must be a Git URL or a map "
+      throw FormatException('The description must be a Git URL or a map '
           "with a 'url' key.");
     }
 
-    if (description["url"] is! String) {
+    if (description['url'] is! String) {
       throw FormatException("The 'url' field of the description must be a "
-          "string.");
+          'string.');
     }
 
-    _validateUrl(description["url"]);
+    _validateUrl(description['url']);
 
-    var ref = description["ref"];
+    var ref = description['ref'];
     if (ref != null && ref is! String) {
       throw FormatException("The 'ref' field of the description must be a "
-          "string.");
+          'string.');
     }
 
-    var path = description["path"];
+    var path = description['path'];
     if (path != null) {
       if (path is! String) {
         throw FormatException(
@@ -72,42 +75,43 @@ class GitSource extends Source {
       } else if (!p.url.isWithin('.', path)) {
         throw FormatException(
             "The 'path' field of the description must not reach outside the "
-            "repository.");
+            'repository.');
       }
 
       _validateUrl(path);
     }
 
     return PackageRef(name, this,
-        {"url": description["url"], "ref": ref ?? "HEAD", "path": path ?? "."});
+        {'url': description['url'], 'ref': ref ?? 'HEAD', 'path': path ?? '.'});
   }
 
+  @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
     if (description is! Map) {
       throw FormatException("The description must be a map with a 'url' "
-          "key.");
+          'key.');
     }
 
-    if (description["url"] is! String) {
+    if (description['url'] is! String) {
       throw FormatException("The 'url' field of the description must be a "
-          "string.");
+          'string.');
     }
 
-    _validateUrl(description["url"]);
+    _validateUrl(description['url']);
 
-    var ref = description["ref"];
+    var ref = description['ref'];
     if (ref != null && ref is! String) {
       throw FormatException("The 'ref' field of the description must be a "
-          "string.");
+          'string.');
     }
 
-    if (description["resolved-ref"] is! String) {
+    if (description['resolved-ref'] is! String) {
       throw FormatException("The 'resolved-ref' field of the description "
-          "must be a string.");
+          'must be a string.');
     }
 
-    var path = description["path"];
+    var path = description['path'];
     if (path != null) {
       if (path is! String) {
         throw FormatException(
@@ -121,10 +125,10 @@ class GitSource extends Source {
     }
 
     return PackageId(name, this, version, {
-      "url": description["url"],
-      "ref": ref ?? "HEAD",
-      "resolved-ref": description["resolved-ref"],
-      "path": path ?? "."
+      'url': description['url'],
+      'ref': ref ?? 'HEAD',
+      'resolved-ref': description['resolved-ref'],
+      'path': path ?? '.'
     });
   }
 
@@ -132,7 +136,7 @@ class GitSource extends Source {
   void _validateUrl(String url) {
     // If the URL contains an @, it's probably an SSH hostname, which we don't
     // know how to validate.
-    if (url.contains("@")) return;
+    if (url.contains('@')) return;
 
     // Otherwise, we use Dart's URL parser to validate the URL.
     Uri.parse(url);
@@ -142,11 +146,12 @@ class GitSource extends Source {
   ///
   /// This helps distinguish different git commits with the same pubspec
   /// version.
+  @override
   String formatDescription(description) {
     if (description is Map && description.containsKey('resolved-ref')) {
       var result = "${description['url']} at "
           "${description['resolved-ref'].substring(0, 6)}";
-      if (description["path"] != ".") result += " in ${description["path"]}";
+      if (description['path'] != '.') result += " in ${description["path"]}";
       return result;
     } else {
       return super.formatDescription(description);
@@ -155,6 +160,7 @@ class GitSource extends Source {
 
   /// Two Git descriptions are equal if both their URLs and their refs are
   /// equal.
+  @override
   bool descriptionsEqual(description1, description2) {
     // TODO(nweiz): Do we really want to throw an error if you have two
     // dependencies on some repo, one of which specifies a ref and one of which
@@ -171,6 +177,7 @@ class GitSource extends Source {
     return true;
   }
 
+  @override
   int hashDescription(description) {
     // Don't include the resolved ref in the hash code because we ignore it in
     // [descriptionsEqual] if only one description defines it.
@@ -182,8 +189,10 @@ class GitSource extends Source {
 
 /// The [BoundSource] for [GitSource].
 class BoundGitSource extends CachedSource {
+  @override
   final GitSource source;
 
+  @override
   final SystemCache systemCache;
 
   /// A map from revision cache locations to futures that will complete once
@@ -210,6 +219,7 @@ class BoundGitSource extends CachedSource {
     });
   }
 
+  @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     await _ensureRepoCache(ref);
     var path = _repoCachePath(ref);
@@ -229,6 +239,7 @@ class BoundGitSource extends CachedSource {
 
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
+  @override
   Future<Pubspec> describeUncached(PackageId id) => _describeUncached(
       id.toRef(), id.description['resolved-ref'], id.description['path']);
 
@@ -244,18 +255,18 @@ class BoundGitSource extends CachedSource {
     var pubspecPath = p.normalize(p.join(p.fromUri(path), 'pubspec.yaml'));
 
     // Git doesn't recognize backslashes in paths, even on Windows.
-    if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll("\\", "/");
+    if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll('\\', '/');
 
     List<String> lines;
     try {
       lines = await git
-          .run(["show", "$revision:$pubspecPath"], workingDir: repoPath);
+          .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pubspecPath" in '
           '${ref.description['url']} $revision.');
     }
 
-    return Pubspec.parse(lines.join("\n"), systemCache.sources,
+    return Pubspec.parse(lines.join('\n'), systemCache.sources,
         expectedName: ref.name);
   }
 
@@ -271,11 +282,12 @@ class BoundGitSource extends CachedSource {
   /// `<package name>-<url hash>`. These are used to check out the repository
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
+  @override
   Future<Package> downloadToSystemCache(PackageId id) async {
     var ref = id.toRef();
     if (!git.isInstalled) {
       fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
-          "Please ensure Git is correctly installed.");
+          'Please ensure Git is correctly installed.');
     }
 
     ensureDir(p.join(systemCacheRoot, 'cache'));
@@ -297,9 +309,11 @@ class BoundGitSource extends CachedSource {
   }
 
   /// Returns the path to the revision-specific cache of [id].
+  @override
   String getDirectory(PackageId id) =>
       p.join(_revisionCachePath(id), id.description['path']);
 
+  @override
   List<Package> getCachedPackages() {
     // TODO(keertip): Implement getCachedPackages().
     throw UnimplementedError(
@@ -308,6 +322,7 @@ class BoundGitSource extends CachedSource {
 
   /// Resets all cached packages back to the pristine state of the Git
   /// repository at the revision they are pinned to.
+  @override
   Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
     if (!dirExists(systemCacheRoot)) return Pair([], []);
 
@@ -315,7 +330,7 @@ class BoundGitSource extends CachedSource {
     var failures = <PackageId>[];
 
     var packages = listDir(systemCacheRoot)
-        .where((entry) => dirExists(p.join(entry, ".git")))
+        .where((entry) => dirExists(p.join(entry, '.git')))
         .expand((revisionCachePath) {
           return _readPackageList(revisionCachePath).map((relative) {
             // If we've already failed to load another package from this
@@ -326,7 +341,7 @@ class BoundGitSource extends CachedSource {
             try {
               return Package.load(null, packageDir, systemCache.sources);
             } catch (error, stackTrace) {
-              log.error("Failed to load package", error, stackTrace);
+              log.error('Failed to load package', error, stackTrace);
               var name = p.basename(revisionCachePath).split('-').first;
               failures.add(PackageId(name, source, Version.none, '???'));
               tryDeleteEntry(revisionCachePath);
@@ -348,21 +363,21 @@ class BoundGitSource extends CachedSource {
 
       var id = PackageId(package.name, source, package.version, null);
 
-      log.message("Resetting Git repository for "
-          "${log.bold(package.name)} ${package.version}...");
+      log.message('Resetting Git repository for '
+          '${log.bold(package.name)} ${package.version}...');
 
       try {
         // Remove all untracked files.
         await git
-            .run(["clean", "-d", "--force", "-x"], workingDir: package.dir);
+            .run(['clean', '-d', '--force', '-x'], workingDir: package.dir);
 
         // Discard all changes to tracked files.
-        await git.run(["reset", "--hard", "HEAD"], workingDir: package.dir);
+        await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
         successes.add(id);
       } on git.GitException catch (error, stackTrace) {
-        log.error("Failed to reset ${log.bold(package.name)} "
-            "${package.version}. Error:\n$error");
+        log.error('Failed to reset ${log.bold(package.name)} '
+            '${package.version}. Error:\n$error');
         log.fine(stackTrace);
         failures.add(id);
 
@@ -431,7 +446,7 @@ class BoundGitSource extends CachedSource {
   Future _updateRepoCache(PackageRef ref) async {
     var path = _repoCachePath(ref);
     if (_updatedRepos.contains(path)) return Future.value();
-    await git.run(["fetch"], workingDir: path);
+    await git.run(['fetch'], workingDir: path);
     _updatedRepos.add(path);
   }
 
@@ -479,7 +494,7 @@ class BoundGitSource extends CachedSource {
     // version of pub where pubspecs were only allowed at the root of the
     // repository.
     if (!fileExists(path)) return ['.'];
-    return readTextFile(path).split("\n");
+    return readTextFile(path).split('\n');
   }
 
   /// Writes a package list indicating that [packages] exist in
@@ -498,7 +513,7 @@ class BoundGitSource extends CachedSource {
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
     var lines = await git
-        .run(["rev-list", "--max-count=1", reference], workingDir: path);
+        .run(['rev-list', '--max-count=1', reference], workingDir: path);
     return lines.first;
   }
 
@@ -518,10 +533,10 @@ class BoundGitSource extends CachedSource {
       // Git on Windows does not seem to automatically create the destination
       // directory.
       ensureDir(to);
-      var args = ["clone", from, to];
+      var args = ['clone', from, to];
 
-      if (mirror) args.insert(1, "--mirror");
-      if (shallow) args.insertAll(1, ["--depth", "1"]);
+      if (mirror) args.insert(1, '--mirror');
+      if (shallow) args.insertAll(1, ['--depth', '1']);
 
       return git.run(args);
     }).then((result) => null);
@@ -530,7 +545,7 @@ class BoundGitSource extends CachedSource {
   /// Checks out the reference [ref] in [repoPath].
   Future _checkOut(String repoPath, String ref) {
     return git
-        .run(["checkout", ref], workingDir: repoPath).then((result) => null);
+        .run(['checkout', ref], workingDir: repoPath).then((result) => null);
   }
 
   String _revisionCachePath(PackageId id) => p.join(

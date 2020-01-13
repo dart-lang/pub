@@ -10,7 +10,7 @@ import 'package:pub/src/io.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('lists an activated hosted package', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');

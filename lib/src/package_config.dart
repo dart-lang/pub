@@ -5,7 +5,6 @@
 import 'package:meta/meta.dart';
 
 import 'package:pub_semver/pub_semver.dart';
-import 'sdk.dart' show sdk;
 
 /// Contents of a `.dart_tool/package_config.json` file.
 class PackageConfig {
@@ -248,27 +247,30 @@ class PackageConfigEntry {
   Map<String, Object> toJson() => {
         'name': name,
         'rootUri': rootUri.toString(),
-        'packageUri': packageUri?.toString(),
-        'languageVersion': languageVersion,
+        if (packageUri != null) 'packageUri': packageUri?.toString(),
+        if (languageVersion != null) 'languageVersion': languageVersion,
       }..addAll(additionalProperties ?? {});
 }
 
 /// Extract the _language version_ from an SDK constraint from `pubspec.yaml`.
+///
+/// This returns `null` if there is no language version.
 String extractLanguageVersion(VersionConstraint c) {
   Version minVersion;
   if (c == null || c.isEmpty) {
-    // If we have no language version, we use the version of the current
-    // SDK processing the 'pubspec.yaml' file.
-    minVersion = sdk.version;
+    return null;
   } else if (c is Version) {
     minVersion = c;
   } else if (c is VersionRange) {
-    minVersion = c.min ?? sdk.version;
+    minVersion = c.min;
   } else if (c is VersionUnion) {
     // `ranges` is non-empty and sorted.
-    minVersion = c.ranges.first.min ?? sdk.version;
+    minVersion = c.ranges.first.min;
   } else {
     throw ArgumentError('Unknown VersionConstraint type $c.');
+  }
+  if (minVersion == null) {
+    return null;
   }
   return '${minVersion.major}.${minVersion.minor}';
 }

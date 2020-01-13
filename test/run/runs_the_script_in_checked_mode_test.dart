@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-main() {
+void main() {
   test('runs the script with assertions enabled', () async {
     await d.dir(appPath, [
       d.appPubspec(),

@@ -6,26 +6,26 @@ import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
-main() {
+void main() {
   test('activates a different version after deactivating', () async {
     await servePackages((builder) {
-      builder.serve("foo", "1.0.0");
-      builder.serve("foo", "2.0.0");
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
     });
 
     // Activate an old version.
-    await runPub(args: ["global", "activate", "foo", "1.0.0"]);
+    await runPub(args: ['global', 'activate', 'foo', '1.0.0']);
 
     await runPub(
-        args: ["global", "deactivate", "foo"],
-        output: "Deactivated package foo 1.0.0.");
+        args: ['global', 'deactivate', 'foo'],
+        output: 'Deactivated package foo 1.0.0.');
 
     // Activating again should forget the old version.
-    await runPub(args: ["global", "activate", "foo"], output: """
+    await runPub(args: ['global', 'activate', 'foo'], output: '''
         Resolving dependencies...
         + foo 2.0.0
         Downloading foo 2.0.0...
         Precompiling executables...
-        Activated foo 2.0.0.""");
+        Activated foo 2.0.0.''');
   });
 }

@@ -15,7 +15,7 @@ import 'utils.dart';
 Validator compiledDartdoc(Entrypoint entrypoint) =>
     CompiledDartdocValidator(entrypoint);
 
-main() {
+void main() {
   setUp(d.validPackage.create);
 
   group('should consider a package valid if it', () {
@@ -23,11 +23,11 @@ main() {
 
     test('has most but not all files from compiling dartdoc', () async {
       await d.dir(appPath, [
-        d.dir("doc-out", [
-          d.file("nav.json", ""),
-          d.file("index.html", ""),
-          d.file("styles.css", ""),
-          d.file("dart-logo-small.png", "")
+        d.dir('doc-out', [
+          d.file('nav.json', ''),
+          d.file('index.html', ''),
+          d.file('styles.css', ''),
+          d.file('dart-logo-small.png', '')
         ])
       ]).create();
       expectNoValidationError(compiledDartdoc);
@@ -37,7 +37,7 @@ main() {
       ensureGit();
 
       await d.dir(appPath, [
-        d.dir(".doc-out", [
+        d.dir('.doc-out', [
           d.file('nav.json', ''),
           d.file('index.html', ''),
           d.file('styles.css', ''),
@@ -52,20 +52,20 @@ main() {
       ensureGit();
 
       await d.git(appPath, [
-        d.dir("doc-out", [
+        d.dir('doc-out', [
           d.file('nav.json', ''),
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
           d.file('client-live-nav.js', '')
         ]),
-        d.file(".gitignore", "/doc-out")
+        d.file('.gitignore', '/doc-out')
       ]).create();
       expectNoValidationError(compiledDartdoc);
     });
   });
 
-  group("should consider a package invalid if it", () {
+  group('should consider a package invalid if it', () {
     test('contains compiled dartdoc', () async {
       await d.dir(appPath, [
         d.dir('doc-out', [

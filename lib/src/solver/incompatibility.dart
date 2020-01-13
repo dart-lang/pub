@@ -97,6 +97,7 @@ class Incompatibility {
   ///
   /// If [details] is passed, it controls the amount of detail that's written
   /// for packages with the given names.
+  @override
   String toString([Map<String, PackageDetail> details]) {
     if (cause == IncompatibilityCause.dependency) {
       assert(terms.length == 2);
@@ -106,43 +107,43 @@ class Incompatibility {
       assert(depender.isPositive);
       assert(!dependee.isPositive);
 
-      return "${_terse(depender, details, allowEvery: true)} depends on "
-          "${_terse(dependee, details)}";
+      return '${_terse(depender, details, allowEvery: true)} depends on '
+          '${_terse(dependee, details)}';
     } else if (cause == IncompatibilityCause.useLatest) {
       assert(terms.length == 1);
 
       var forbidden = terms.last;
       assert(forbidden.isPositive);
 
-      return "the latest version of ${_terseRef(forbidden, details)} "
-          "(${VersionConstraint.any.difference(forbidden.constraint)}) "
-          "is required";
+      return 'the latest version of ${_terseRef(forbidden, details)} '
+          '(${VersionConstraint.any.difference(forbidden.constraint)}) '
+          'is required';
     } else if (cause is SdkCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
       var cause = this.cause as SdkCause;
       var buffer = StringBuffer(
-          "${_terse(terms.first, details, allowEvery: true)} requires ");
+          '${_terse(terms.first, details, allowEvery: true)} requires ');
       if (!cause.sdk.isAvailable) {
-        buffer.write("the ${cause.sdk.name} SDK");
+        buffer.write('the ${cause.sdk.name} SDK');
       } else {
-        if (cause.sdk.name != "Dart") buffer.write(cause.sdk.name + " ");
-        buffer.write("SDK version ${cause.constraint}");
+        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
+        buffer.write('SDK version ${cause.constraint}');
       }
       return buffer.toString();
     } else if (cause == IncompatibilityCause.noVersions) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
-      return "no versions of ${_terseRef(terms.first, details)} "
-          "match ${terms.first.constraint}";
+      return 'no versions of ${_terseRef(terms.first, details)} '
+          'match ${terms.first.constraint}';
     } else if (cause is PackageNotFoundCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
       var cause = this.cause as PackageNotFoundCause;
       return "${_terseRef(terms.first, details)} doesn't exist "
-          "(${cause.exception.message})";
+          '(${cause.exception.message})';
     } else if (cause == IncompatibilityCause.unknownSource) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -155,18 +156,18 @@ class Incompatibility {
       assert(terms.length == 1);
       assert(!terms.first.isPositive);
       assert(terms.first.package.isRoot);
-      return "${terms.first.package.name} is ${terms.first.constraint}";
+      return '${terms.first.package.name} is ${terms.first.constraint}';
     } else if (isFailure) {
-      return "version solving failed";
+      return 'version solving failed';
     }
 
     if (terms.length == 1) {
       var term = terms.single;
       if (term.constraint.isAny) {
-        return "${_terseRef(term, details)} is "
+        return '${_terseRef(term, details)} is '
             "${term.isPositive ? 'forbidden' : 'required'}";
       } else {
-        return "${_terse(term, details)} is "
+        return '${_terse(term, details)} is '
             "${term.isPositive ? 'forbidden' : 'required'}";
       }
     }
@@ -182,10 +183,10 @@ class Incompatibility {
           var package2 = term2.constraint.isAny
               ? _terseRef(term2, details)
               : _terse(term2, details);
-          return "$package1 is incompatible with $package2";
+          return '$package1 is incompatible with $package2';
         } else {
-          return "either ${_terse(term1, details)} or "
-              "${_terse(term2, details)}";
+          return 'either ${_terse(term1, details)} or '
+              '${_terse(term2, details)}';
         }
       }
     }
@@ -199,7 +200,7 @@ class Incompatibility {
     if (positive.isNotEmpty && negative.isNotEmpty) {
       if (positive.length == 1) {
         var positiveTerm = terms.firstWhere((term) => term.isPositive);
-        return "${_terse(positiveTerm, details, allowEvery: true)} requires "
+        return '${_terse(positiveTerm, details, allowEvery: true)} requires '
             "${negative.join(' or ')}";
       } else {
         return "if ${positive.join(' and ')} then ${negative.join(' or ')}";
@@ -233,9 +234,9 @@ class Incompatibility {
     if (requiresForbidden != null) return requiresForbidden;
 
     var buffer = StringBuffer(toString(details));
-    if (thisLine != null) buffer.write(" $thisLine");
-    buffer.write(" and ${other.toString(details)}");
-    if (otherLine != null) buffer.write(" $thisLine");
+    if (thisLine != null) buffer.write(' $thisLine');
+    buffer.write(' and ${other.toString(details)}');
+    if (otherLine != null) buffer.write(' $thisLine');
     return buffer.toString();
   }
 
@@ -263,14 +264,14 @@ class Incompatibility {
         .join(' or ');
 
     var buffer =
-        StringBuffer(_terse(thisPositive, details, allowEvery: true) + " ");
+        StringBuffer(_terse(thisPositive, details, allowEvery: true) + ' ');
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
-    buffer.write(isDependency ? "depends on" : "requires");
-    buffer.write(" both $thisNegatives");
-    if (thisLine != null) buffer.write(" ($thisLine)");
-    buffer.write(" and $otherNegatives");
-    if (otherLine != null) buffer.write(" ($otherLine)");
+    buffer.write(isDependency ? 'depends on' : 'requires');
+    buffer.write(' both $thisNegatives');
+    if (thisLine != null) buffer.write(' ($thisLine)');
+    buffer.write(' and $otherNegatives');
+    if (otherLine != null) buffer.write(' ($otherLine)');
     return buffer.toString();
   }
 
@@ -322,23 +323,23 @@ class Incompatibility {
     if (priorPositives.length > 1) {
       var priorString =
           priorPositives.map((term) => _terse(term, details)).join(' or ');
-      buffer.write("if $priorString then ");
+      buffer.write('if $priorString then ');
     } else {
       var verb = prior.cause == IncompatibilityCause.dependency
-          ? "depends on"
-          : "requires";
-      buffer.write("${_terse(priorPositives.first, details, allowEvery: true)} "
-          "$verb ");
+          ? 'depends on'
+          : 'requires';
+      buffer.write('${_terse(priorPositives.first, details, allowEvery: true)} '
+          '$verb ');
     }
 
     buffer.write(_terse(priorNegative, details));
-    if (priorLine != null) buffer.write(" ($priorLine)");
-    buffer.write(" which ");
+    if (priorLine != null) buffer.write(' ($priorLine)');
+    buffer.write(' which ');
 
     if (latter.cause == IncompatibilityCause.dependency) {
-      buffer.write("depends on ");
+      buffer.write('depends on ');
     } else {
-      buffer.write("requires ");
+      buffer.write('requires ');
     }
 
     buffer.write(latter.terms
@@ -346,7 +347,7 @@ class Incompatibility {
         .map((term) => _terse(term, details))
         .join(' or '));
 
-    if (latterLine != null) buffer.write(" ($latterLine)");
+    if (latterLine != null) buffer.write(' ($latterLine)');
 
     return buffer.toString();
   }
@@ -385,49 +386,49 @@ class Incompatibility {
     if (positives.length > 1) {
       var priorString =
           positives.map((term) => _terse(term, details)).join(' or ');
-      buffer.write("if $priorString then ");
+      buffer.write('if $priorString then ');
     } else {
       buffer.write(_terse(positives.first, details, allowEvery: true));
       buffer.write(prior.cause == IncompatibilityCause.dependency
-          ? " depends on "
-          : " requires ");
+          ? ' depends on '
+          : ' requires ');
     }
 
     if (latter.cause == IncompatibilityCause.unknownSource) {
       var package = latter.terms.first.package;
-      buffer.write("${package.name} ");
-      if (priorLine != null) buffer.write("($priorLine) ");
+      buffer.write('${package.name} ');
+      if (priorLine != null) buffer.write('($priorLine) ');
       buffer.write('from unknown source "${package.source}"');
-      if (latterLine != null) buffer.write(" ($latterLine)");
+      if (latterLine != null) buffer.write(' ($latterLine)');
       return buffer.toString();
     }
 
-    buffer.write("${_terse(latter.terms.first, details)} ");
-    if (priorLine != null) buffer.write("($priorLine) ");
+    buffer.write('${_terse(latter.terms.first, details)} ');
+    if (priorLine != null) buffer.write('($priorLine) ');
 
     if (latter.cause == IncompatibilityCause.useLatest) {
       var latest =
           VersionConstraint.any.difference(latter.terms.single.constraint);
-      buffer.write("but the latest version ($latest) is required");
+      buffer.write('but the latest version ($latest) is required');
     } else if (latter.cause is SdkCause) {
       var cause = latter.cause as SdkCause;
-      buffer.write("which requires ");
+      buffer.write('which requires ');
       if (!cause.sdk.isAvailable) {
-        buffer.write("the ${cause.sdk.name} SDK");
+        buffer.write('the ${cause.sdk.name} SDK');
       } else {
-        if (cause.sdk.name != "Dart") buffer.write(cause.sdk.name + " ");
-        buffer.write("SDK version ${cause.constraint}");
+        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
+        buffer.write('SDK version ${cause.constraint}');
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");
     } else if (cause is PackageNotFoundCause) {
       buffer.write("which doesn't exist "
-          "(${(cause as PackageNotFoundCause).exception.message})");
+          '(${(cause as PackageNotFoundCause).exception.message})');
     } else {
-      buffer.write("which is forbidden");
+      buffer.write('which is forbidden');
     }
 
-    if (latterLine != null) buffer.write(" ($latterLine)");
+    if (latterLine != null) buffer.write(' ($latterLine)');
 
     return buffer.toString();
   }
@@ -436,7 +437,7 @@ class Incompatibility {
   /// term.
   ///
   /// Otherwise, returns `null`.
-  Term _singleTermWhere(bool filter(Term term)) {
+  Term _singleTermWhere(bool Function(Term) filter) {
     Term found;
     for (var term in terms) {
       if (!filter(term)) continue;
@@ -459,7 +460,7 @@ class Incompatibility {
   String _terse(Term term, Map<String, PackageDetail> details,
       {bool allowEvery = false}) {
     if (allowEvery && term.constraint.isAny) {
-      return "every version of ${_terseRef(term, details)}";
+      return 'every version of ${_terseRef(term, details)}';
     } else {
       return term.package
           .toString(details == null ? null : details[term.package.name]);
