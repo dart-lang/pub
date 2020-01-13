@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import "dart:collection";
+import 'dart:collection';
 
-import "package:pool/pool.dart";
+import 'package:pool/pool.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///
@@ -132,5 +132,6 @@ class _Task<J> {
   final Zone zone;
   _Task(this.jobId, this.zone);
 
-  toString() => jobId.toString();
+  @override
+  String toString() => jobId.toString();
 }
