@@ -44,7 +44,7 @@ class PackagesFileDescriptor extends Descriptor {
         } else {
           // Otherwise it's a path relative to the pubspec file,
           // which is also relative to the .packages file.
-          packagePath = p.fromUri(version);
+          packagePath = version;
         }
         mapping[package] = p.toUri(p.join(packagePath, 'lib', ''));
       });
@@ -78,7 +78,7 @@ class PackagesFileDescriptor extends Descriptor {
               'Expected $description, found location: ${map[package]}.');
         }
       } else {
-        var expected = p.normalize(p.join(p.fromUri(description), 'lib'));
+        var expected = p.normalize(p.join(description, 'lib'));
         var actual = p.normalize(p.fromUri(
             p.url.relative(map[package].toString(), from: p.dirname(_base))));
 

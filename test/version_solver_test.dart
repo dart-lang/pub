@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -422,8 +423,8 @@ void devDependency() {
       ]).create();
 
       await expectResolves(error: equalsIgnoringWhitespace('''
-        Because myapp depends on both foo from path foo and foo from path
-          ../foo, version solving failed.
+      Because myapp depends on both foo from path foo and foo from path
+          ..${Platform.pathSeparator}foo, version solving failed.
       '''));
     });
   });

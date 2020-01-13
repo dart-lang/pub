@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:pub/src/git.dart' as git;
 import 'package:test_descriptor/test_descriptor.dart';
@@ -19,7 +20,11 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['init'],
-      ['config', 'core.excludesfile', ''],
+      [
+        'config', 'core.excludesfile',
+        // TODO(sigurdm): This works around https://github.com/dart-lang/sdk/issues/40060
+        Platform.isWindows ? '""' : ''
+      ],
       ['add', '.'],
       ['commit', '-m', 'initial commit', '--allow-empty']
     ]);
