@@ -4,12 +4,28 @@ sudo: false
 dart:
   - dev
 
+os:
+  - linux
+  - osx
+  - windows
+
+addons:
+  homebrew:
+    packages:
+    - coreutils
+
+env:
+  global:
+    - SPLIT=`which gsplit || which split`
+
 dart_task:
-  - test: --preset travis --total-shards 5 --shard-index 0
-  - test: --preset travis --total-shards 5 --shard-index 1
-  - test: --preset travis --total-shards 5 --shard-index 2
-  - test: --preset travis --total-shards 5 --shard-index 3
-  - test: --preset travis --total-shards 5 --shard-index 4
+  - test: --preset travis `$SPLIT -n l/1/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/2/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/3/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/4/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/5/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/6/7 .dart_tool/test_files`
+  - test: --preset travis `$SPLIT -n l/7/7 .dart_tool/test_files`
   - dartfmt
   - dartanalyzer: --fatal-infos --fatal-warnings .
 
@@ -17,6 +33,8 @@ dart_task:
 # snapshot if it's available.
 before_script:
   - dart --snapshot=bin/pub.dart.snapshot.dart2 bin/pub.dart
+  - find test -name "*_test\\.dart" | sort > .dart_tool/test_files
+  -
 
 # Only building these branches means that we don't run two builds for each pull
 # request.

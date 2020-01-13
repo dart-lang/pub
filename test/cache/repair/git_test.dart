@@ -185,7 +185,7 @@ void main() {
             contains('Failed to load package:'),
             contains('Could not find a file named "pubspec.yaml" in '),
             contains('foo-'),
-            contains('/subdir'),
+            contains('${path.separator}subdir'),
           ]),
           output: allOf([
             startsWith('Failed to reinstall 2 packages:'),

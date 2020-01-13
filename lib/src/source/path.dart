@@ -128,11 +128,19 @@ class PathSource extends Source {
   dynamic serializeDescription(String containingPath, description) {
     if (description['relative']) {
       return {
-        'path': p.relative(description['path'], from: containingPath),
+        'path': relativePathWithPosixSeperators(
+            p.relative(description['path'], from: containingPath)),
         'relative': true
       };
     }
     return description;
+  }
+
+  /// On both Windows and linux we prefer `/` in the pubspec.lock for relative
+  /// paths.
+  static String relativePathWithPosixSeperators(String path) {
+    assert(p.isRelative(path));
+    return p.posix.joinAll(p.split(path));
   }
 
   /// Converts a parsed relative path to its original relative form.

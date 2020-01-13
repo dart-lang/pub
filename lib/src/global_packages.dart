@@ -263,7 +263,7 @@ class GlobalPackages {
         var snapshotPath = p.join(binDir, '$basename.snapshot.dart2');
         await dart.snapshot(url, snapshotPath,
             packagesFile: p.toUri(_getPackagesFilePath(package.name)),
-            name: '${package.name}:${p.url.basenameWithoutExtension(path)}');
+            name: '${package.name}:${p.basenameWithoutExtension(path)}');
         precompiled[p.withoutExtension(basename)] = snapshotPath;
       }));
       return precompiled;
