@@ -63,7 +63,9 @@ class RateLimitedScheduler<J, V> {
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
-  /// Runs the next task in [_queue].
+  /// Pick the next task in [_queue] and run it.
+  ///
+  /// If the task is already in [_started] it will not be run again.
   Future<void> _processNextTask() async {
     if (_queue.isEmpty) {
       return;
