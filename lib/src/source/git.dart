@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
@@ -189,6 +190,10 @@ class GitSource extends Source {
 
 /// The [BoundSource] for [GitSource].
 class BoundGitSource extends CachedSource {
+  /// Limit the number of concurrent git operations to 1.
+  // TODO(sigurdm): Use RateLimitedScheduler.
+  final Pool _pool = Pool(1);
+
   @override
   final GitSource source;
 
@@ -221,20 +226,22 @@ class BoundGitSource extends CachedSource {
 
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    await _ensureRepoCache(ref);
-    var path = _repoCachePath(ref);
-    var revision = await _firstRevision(path, ref.description['ref']);
-    var pubspec =
-        await _describeUncached(ref, revision, ref.description['path']);
+    return await _pool.withResource(() async {
+      await _ensureRepoCache(ref);
+      var path = _repoCachePath(ref);
+      var revision = await _firstRevision(path, ref.description['ref']);
+      var pubspec =
+          await _describeUncached(ref, revision, ref.description['path']);
 
-    return [
-      PackageId(ref.name, source, pubspec.version, {
-        'url': ref.description['url'],
-        'ref': ref.description['ref'],
-        'resolved-ref': revision,
-        'path': ref.description['path']
-      })
-    ];
+      return [
+        PackageId(ref.name, source, pubspec.version, {
+          'url': ref.description['url'],
+          'ref': ref.description['ref'],
+          'resolved-ref': revision,
+          'path': ref.description['path']
+        })
+      ];
+    });
   }
 
   /// Since we don't have an easy way to read from a remote Git repo, this
@@ -284,28 +291,32 @@ class BoundGitSource extends CachedSource {
   /// in `cache/`.
   @override
   Future<Package> downloadToSystemCache(PackageId id) async {
-    var ref = id.toRef();
-    if (!git.isInstalled) {
-      fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
-          'Please ensure Git is correctly installed.');
-    }
-
-    ensureDir(p.join(systemCacheRoot, 'cache'));
-    await _ensureRevision(ref, id.description['resolved-ref']);
-
-    var revisionCachePath = _revisionCachePath(id);
-    await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
-      if (!entryExists(revisionCachePath)) {
-        await _clone(_repoCachePath(ref), revisionCachePath);
-        await _checkOut(revisionCachePath, id.description['resolved-ref']);
-        _writePackageList(revisionCachePath, [id.description['path']]);
-      } else {
-        _updatePackageList(revisionCachePath, id.description['path']);
+    return await _pool.withResource(() async {
+      var ref = id.toRef();
+      if (!git.isInstalled) {
+        fail("Cannot get ${id.name} from Git (${ref.description['url']}).\n"
+            'Please ensure Git is correctly installed.');
       }
-    });
 
-    return Package.load(id.name,
-        p.join(revisionCachePath, id.description['path']), systemCache.sources);
+      ensureDir(p.join(systemCacheRoot, 'cache'));
+      await _ensureRevision(ref, id.description['resolved-ref']);
+
+      var revisionCachePath = _revisionCachePath(id);
+      await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
+        if (!entryExists(revisionCachePath)) {
+          await _clone(_repoCachePath(ref), revisionCachePath);
+          await _checkOut(revisionCachePath, id.description['resolved-ref']);
+          _writePackageList(revisionCachePath, [id.description['path']]);
+        } else {
+          _updatePackageList(revisionCachePath, id.description['path']);
+        }
+      });
+
+      return Package.load(
+          id.name,
+          p.join(revisionCachePath, id.description['path']),
+          systemCache.sources);
+    });
   }
 
   /// Returns the path to the revision-specific cache of [id].
