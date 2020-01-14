@@ -91,13 +91,15 @@ class VersionSolver {
         [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
 
     try {
-      var next = _root.name;
-      while (next != null) {
-        _propagate(next);
-        next = await _choosePackageVersion();
-      }
+      return await _systemCache.hosted.withPrefetching(() async {
+        var next = _root.name;
+        while (next != null) {
+          _propagate(next);
+          next = await _choosePackageVersion();
+        }
 
-      return await _result();
+        return await _result();
+      });
     } finally {
       // Gather some solving metrics.
       log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'

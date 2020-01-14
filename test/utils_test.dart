@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
 
@@ -119,6 +121,45 @@ b: {}'''));
       for (var i = 0; i < 100; i++) {
         var uuid = createUuid();
         expect(uuid, matches(uuidRegexp));
+      }
+    });
+  });
+
+  group('minByAsync', () {
+    test('is stable', () async {
+      {
+        final completers = <String, Completer>{};
+        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
+        Future<int> lengthWhenComplete(String s) async {
+          await completer(s).future;
+          return s.length;
+        }
+
+        final w = expectLater(
+            minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
+            completion('a'));
+        completer('aa').complete();
+        completer('b').complete();
+        completer('a').complete();
+        completer('ccc').complete();
+        await w;
+      }
+      {
+        final completers = <String, Completer>{};
+        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
+        Future<int> lengthWhenComplete(String s) async {
+          await completer(s).future;
+          return s.length;
+        }
+
+        final w = expectLater(
+            minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
+            completion('a'));
+        completer('ccc').complete();
+        completer('a').complete();
+        completer('b').complete();
+        completer('aa').complete();
+        await w;
       }
     });
   });

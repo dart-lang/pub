@@ -295,20 +295,27 @@ T maxAll<T extends Comparable>(Iterable<T> iter, [int Function(T, T) compare]) {
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }
 
-/// Like [minBy], but with an asynchronous [orderBy] callback.
+/// Returns the element of [values] for which [orderBy] returns the smallest
+/// value.
+///
+/// Returns the first such value in case of ties.
+///
+/// Starts all the [orderBy] invocations in parallel.
 Future<S> minByAsync<S, T>(
     Iterable<S> values, Future<T> Function(S) orderBy) async {
-  S minValue;
+  int minIndex;
   T minOrderBy;
-  for (var element in values) {
-    var elementOrderBy = await orderBy(element);
+  List valuesList = values.toList();
+  final orderByResults = await Future.wait(values.map(orderBy));
+  for (var i = 0; i < orderByResults.length; i++) {
+    final elementOrderBy = orderByResults[i];
     if (minOrderBy == null ||
         (elementOrderBy as Comparable).compareTo(minOrderBy) < 0) {
-      minValue = element;
+      minIndex = i;
       minOrderBy = elementOrderBy;
     }
   }
-  return minValue;
+  return valuesList[minIndex];
 }
 
 /// Like [List.sublist], but for any iterable.

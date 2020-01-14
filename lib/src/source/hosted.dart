@@ -6,8 +6,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
+import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pedantic/pedantic.dart';
+import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -154,36 +157,66 @@ class BoundHostedSource extends CachedSource {
 
   @override
   final SystemCache systemCache;
+  RateLimitedScheduler<PackageRef, Map<PackageId, Pubspec>> _scheduler;
 
-  BoundHostedSource(this.source, this.systemCache);
+  BoundHostedSource(this.source, this.systemCache) {
+    _scheduler =
+        RateLimitedScheduler(_fetchVersions, maxConcurrentOperations: 10);
+  }
 
-  /// Downloads a list of all versions of a package that are available from the
-  /// site.
-  @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<Map<PackageId, Pubspec>> _fetchVersions(PackageRef ref) async {
     var url = _makeUrl(
         ref.description, (server, package) => '$server/api/packages/$package');
-
     log.io('Get versions from $url.');
 
     String body;
     try {
+      // TODO(sigurdm): Implement cancellation of requests. This probably
+      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       body = await httpClient.read(url, headers: pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
-
-    var doc = jsonDecode(body);
-    return (doc['versions'] as List).map((map) {
+    final doc = jsonDecode(body);
+    final versions = doc['versions'] as List;
+    final result = Map.fromEntries(versions.map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description));
-      memoizePubspec(id, pubspec);
+      return MapEntry(id, pubspec);
+    }));
 
-      return id;
-    }).toList();
+    // Prefetch the dependencies of the latest version, we are likely to need
+    // them later.
+    final preschedule =
+        Zone.current[_prefetchingKey] as void Function(PackageRef);
+    if (preschedule != null) {
+      final latestVersion =
+          maxBy(result.keys.map((id) => id.version), (e) => e);
+
+      final latestVersionId =
+          PackageId(ref.name, source, latestVersion, ref.description);
+
+      final dependencies = result[latestVersionId]?.dependencies?.values ?? [];
+      unawaited(withDependencyType(DependencyType.none, () async {
+        for (final packageRange in dependencies) {
+          if (packageRange.source is HostedSource) {
+            preschedule(packageRange.toRef());
+          }
+        }
+      }));
+    }
+    return result;
+  }
+
+  /// Downloads a list of all versions of a package that are available from the
+  /// site.
+  @override
+  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+    final versions = await _scheduler.schedule(ref);
+    return versions.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -198,27 +231,15 @@ class BoundHostedSource extends CachedSource {
     return Uri.parse(pattern(server, package));
   }
 
-  /// Downloads and parses the pubspec for a specific version of a package that
-  /// is available from the site.
+  /// Retrieves the pubspec for a specific version of a package that is
+  /// available from the site.
   @override
   Future<Pubspec> describeUncached(PackageId id) async {
-    // Request it from the server.
-    var url = _makeVersionUrl(
-        id,
-        (server, package, version) =>
-            '$server/api/packages/$package/versions/$version');
-
-    log.io('Describe package at $url.');
-    Map<String, dynamic> version;
-    try {
-      version = jsonDecode(await httpClient.read(url, headers: pubApiHeaders));
-    } catch (error, stackTrace) {
-      var parsed = source._parseDescription(id.description);
-      _throwFriendlyError(error, stackTrace, id.name, parsed.last);
-    }
-
-    return Pubspec.fromMap(version['pubspec'], systemCache.sources,
-        expectedName: id.name, location: url);
+    final versions = await _scheduler.schedule(id.toRef());
+    final url = _makeUrl(
+        id.description, (server, package) => '$server/api/packages/$package');
+    return versions[id] ??
+        (throw PackageNotFoundException('Could not find package $id at $url'));
   }
 
   /// Downloads the package identified by [id] to the system cache.
@@ -441,18 +462,17 @@ class BoundHostedSource extends CachedSource {
   Uri _serverFor(description) =>
       Uri.parse(source._parseDescription(description).last);
 
-  /// Parses [id] into its server, package name, and version components, then
-  /// converts that to a Uri given [pattern].
-  ///
-  /// Ensures the package name is properly URL encoded.
-  Uri _makeVersionUrl(PackageId id,
-      String Function(String server, String package, String version) pattern) {
-    var parsed = source._parseDescription(id.description);
-    var server = parsed.last;
-    var package = Uri.encodeComponent(parsed.first);
-    var version = Uri.encodeComponent(id.version.toString());
-    return Uri.parse(pattern(server, package, version));
+  /// Enables speculative prefetching of dependencies of packages queried with
+  /// [getVersions].
+  Future<T> withPrefetching<T>(Future<T> Function() callback) async {
+    return await _scheduler.withPrescheduling((preschedule) async {
+      return await runZoned(callback,
+          zoneValues: {_prefetchingKey: preschedule});
+    });
   }
+
+  /// Key for storing the current prefetch function in the current [Zone].
+  static const _prefetchingKey = #_prefetch;
 }
 
 /// This is the modified hosted source used when pub get or upgrade are run
