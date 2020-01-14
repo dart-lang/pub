@@ -247,8 +247,10 @@ class BoundGitSource extends CachedSource {
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
   @override
-  Future<Pubspec> describeUncached(PackageId id) => _describeUncached(
-      id.toRef(), id.description['resolved-ref'], id.description['path']);
+  Future<Pubspec> describeUncached(PackageId id) {
+    return _pool.withResource(() => _describeUncached(
+        id.toRef(), id.description['resolved-ref'], id.description['path']));
+  }
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
   /// rather than a single ID.
