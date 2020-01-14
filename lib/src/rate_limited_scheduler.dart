@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:pool/pool.dart';
+import 'package:pedantic/pedantic.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///
@@ -69,11 +70,12 @@ class RateLimitedScheduler<J, V> {
     }
     final task = _queue.removeFirst();
     final completer = _cache[task.jobId];
-    if (_started.contains(task.jobId)) {
+
+    if (!_started.add(task.jobId)) {
       return;
     }
-    _started.add(task.jobId);
 
+    // Use an async function to catch sync exceptions from _runJob.
     Future<V> runJob() async {
       return await task.zone.runUnary(_runJob, task.jobId);
     }
@@ -104,7 +106,8 @@ class RateLimitedScheduler<J, V> {
         _cache.putIfAbsent(jobId, () => Completer());
         _queue.addLast(task);
         prescheduled.add(task);
-        scheduleMicrotask(() => _pool.withResource(_processNextTask));
+
+        unawaited(_pool.withResource(_processNextTask));
       });
     } finally {
       _queue.removeWhere(prescheduled.contains);

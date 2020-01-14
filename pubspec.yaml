@@ -20,6 +20,7 @@ dependencies:
   oauth2: ^1.0.0
   package_config: ^1.0.0
   path: ^1.2.0
+  pedantic: ^1.9.0
   pool: ^1.0.0
   pub_semver: ^1.4.0
   shelf: ^0.7.0
