@@ -349,14 +349,19 @@ Future<PubProcess> startPub(
     dartBin = p.absolute(dartBin);
   }
 
-  // If there's a snapshot available, use it. The user is responsible for
-  // ensuring this is up-to-date..
+  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
+
+  // If there's a snapshot for "pub" available we use it. If the snapshot is
+  // out-of-date local source the tests will be useless, therefore it is
+  // recommended to use a temporary file with a unique name for each test run.
+  // Note: running tests without a snapshot is significantly slower.
   //
   // TODO(nweiz): When the test runner supports plugins, create one to
   // auto-generate the snapshot before each run.
-  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
-  var snapshotPath = '$pubPath.snapshot.dart2';
-  if (fileExists(snapshotPath)) pubPath = snapshotPath;
+  final snapshotPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  if (snapshotPath.isNotEmpty && fileExists(snapshotPath)) {
+    pubPath = snapshotPath;
+  }
 
   var dartArgs = [await PackageResolver.current.processArgument];
   dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
