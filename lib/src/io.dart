@@ -887,7 +887,6 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// silenced by this flag.
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
-  if (!Platform.isLinux) return false;
   var result = Process.runSync('tar', ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
