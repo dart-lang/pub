@@ -842,10 +842,28 @@ Future<HttpServer> bindServer(String host, int port) async {
   return server;
 }
 
+/// Find a tar. Prefering system installed tar.
+///
+/// On linux tar should always be /bin/tar [See FHS 2.3][1]
+/// On MacOS it seems to always be /usr/bin/tar.
+///
+/// [1]: https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.pdf
+String _findTarPath() {
+  for (final file in ['/bin/tar', '/usr/bin/tar']) {
+    if (File(file).existsSync()) {
+      return file;
+    }
+  }
+  log.warning(
+      'Could not find a system `tar` installed in /bin/tar or /usr/bin/tar, '
+      'attempting to use tar from PATH');
+  return 'tar';
+}
+
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  if (Platform.isWindows) {
+  if (!Platform.isWindows) {
     return await _extractTarGzWindows(stream, destination);
   }
 
@@ -859,7 +877,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     destination
   ];
 
-  var process = await _startProcess('tar', args);
+  final tarPath = _findTarPath();
+  var process = await _startProcess(tarPath, args);
 
   // Ignore errors on process.std{out,err}. They'll be passed to
   // process.exitCode, and we don't want them being top-levelled by
@@ -887,6 +906,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// silenced by this flag.
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
+  if (Platform.isLinux) return false;
   var result = Process.runSync('tar', ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
