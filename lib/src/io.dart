@@ -850,7 +850,7 @@ Future<HttpServer> bindServer(String host, int port) async {
 /// [1]: https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.pdf
 String _findTarPath() {
   for (final file in ['/bin/tar', '/usr/bin/tar']) {
-    if (File(file).existsSync()) {
+    if (fileExists(file)) {
       return file;
     }
   }
@@ -906,7 +906,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// silenced by this flag.
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
-  if (Platform.isLinux) return false;
+  if (!Platform.isLinux) return false;
   var result = Process.runSync('tar', ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
