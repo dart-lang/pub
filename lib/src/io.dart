@@ -863,7 +863,7 @@ String _findTarPath() {
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  if (!Platform.isWindows) {
+  if (Platform.isWindows) {
     return await _extractTarGzWindows(stream, destination);
   }
 
