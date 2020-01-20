@@ -842,6 +842,8 @@ Future<HttpServer> bindServer(String host, int port) async {
   return server;
 }
 
+String _tarPath = _findTarPath();
+
 /// Find a tar. Prefering system installed tar.
 ///
 /// On linux tar should always be /bin/tar [See FHS 2.3][1]
@@ -877,8 +879,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     destination
   ];
 
-  final tarPath = _findTarPath();
-  var process = await _startProcess(tarPath, args);
+  var process = await _startProcess(_tarPath, args);
 
   // Ignore errors on process.std{out,err}. They'll be passed to
   // process.exitCode, and we don't want them being top-levelled by
@@ -907,7 +908,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 final bool _noUnknownKeyword = _computeNoUnknownKeyword();
 bool _computeNoUnknownKeyword() {
   if (!Platform.isLinux) return false;
-  var result = Process.runSync('tar', ['--version']);
+  var result = Process.runSync(_tarPath, ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
         'Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
@@ -1047,7 +1048,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
       // input file, relative paths in the mtree file are interpreted as
       // relative to the current working directory, not the "--directory"
       // argument.
-      var process = await _startProcess('tar', args, workingDir: baseDir);
+      var process = await _startProcess(_tarPath, args, workingDir: baseDir);
       process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
