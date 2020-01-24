@@ -474,7 +474,8 @@ class Pubspec {
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
       Map fields,
-      SourceRegistry sources})
+      SourceRegistry sources,
+      Map<String, VersionConstraint> sdkConstraints})
       : _version = version,
         _dependencies = dependencies == null
             ? null
@@ -485,7 +486,8 @@ class Pubspec {
         _dependencyOverrides = dependencyOverrides == null
             ? null
             : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
-        _sdkConstraints = UnmodifiableMapView({'dart': VersionConstraint.any}),
+        _sdkConstraints = sdkConstraints ??
+            UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
         fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
         _sources = sources;

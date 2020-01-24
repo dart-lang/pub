@@ -1,0 +1,26 @@
+$ pub outdated --format=json
+Resolving dependencies...
+{
+  "packages": []
+}
+$ pub outdated --format=no-color
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --mark=none
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --include=transitive
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --include=up-to-date
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --include=pre-releases
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --exclude=dev-dependencies
+Resolving dependencies...
+Found no outdated packages
+$ pub outdated --format=no-color --exclude=dev-dependencies --include=transitive
+Resolving dependencies...
+Found no outdated packages

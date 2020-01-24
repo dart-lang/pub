@@ -9,6 +9,7 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/command/outdated.dart';
 
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -102,6 +103,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(GetCommand());
     addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
+    addCommand(OutdatedCommand());
     addCommand(RunCommand());
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
