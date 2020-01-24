@@ -15,8 +15,13 @@ class PubspecFieldValidator extends Validator {
   @override
   Future validate() {
     _validateFieldIsString('description');
-    _validateFieldIsString('homepage');
     _validateFieldUrl('homepage');
+    _validateFieldUrl('repository');
+    if (!_hasField('homepage') && !_hasField('repository')) {
+      warnings.add(
+          'You are strongly reccomended to add either a "homepage" or a "repository" field');
+    }
+
     _validateFieldUrl('documentation');
 
     // Any complex parsing errors in version will be exposed through
@@ -31,6 +36,8 @@ class PubspecFieldValidator extends Validator {
 
     return Future.value();
   }
+
+  bool _hasField(String field) => entrypoint.root.pubspec.fields[field] != null;
 
   /// Adds an error if [field] doesn't exist or isn't a string.
   void _validateFieldIsString(String field) {
