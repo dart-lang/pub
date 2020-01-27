@@ -15,7 +15,7 @@ void main() {
 
   test('--force does not publish if there are errors', () async {
     var pkg = packageMap('test_pkg', '1.0.0');
-    pkg.remove('homepage');
+    pkg.remove('description');
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     var server = await ShelfTestServer.create();
