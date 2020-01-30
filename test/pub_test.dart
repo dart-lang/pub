@@ -36,6 +36,7 @@ void main() {
           global      Work with global packages.
           help        Display help information for pub.
           logout      Log out of pub.dartlang.org.
+          outdated    Analyze your dependencies to find which ones can be upgraded.
           publish     Publish the current package to pub.dartlang.org.
           run         Run an executable from a package.
           upgrade     Upgrade the current package's dependencies to latest versions.

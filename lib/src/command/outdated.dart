@@ -204,6 +204,7 @@ Pubspec _loosenConstraints(Pubspec original, {bool includeDevDependencies}) {
 
   return Pubspec(
     original.name,
+    sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
     devDependencies: includeDevDependencies
         ? _unconstrained(original.devDependencies)
