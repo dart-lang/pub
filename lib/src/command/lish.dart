@@ -186,6 +186,8 @@ class LishCommand extends PubCommand {
       var s = warnings.length == 1 ? '' : 's';
       message = '\nPackage has ${warnings.length} warning$s. Upload anyway';
     }
+    
+    message+='\nNote: Uploads are subject to the policy: https://pub.dev/policy';
 
     var confirmed = await confirm(message);
     if (!confirmed) {
