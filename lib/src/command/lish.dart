@@ -180,14 +180,20 @@ class LishCommand extends PubCommand {
       return warnings.isEmpty;
     }
 
-    var message = '\nLooks great! Are you ready to upload your package';
+    log.message('\nUploads to pub.dev are subject to https://pub.dev/policy');
+
+    final package = entrypoint.root;
+    var message = 'Do you want to publish ${package.name} ${package.version}';
 
     if (warnings.isNotEmpty) {
-      var s = warnings.length == 1 ? '' : 's';
-      message = '\nPackage has ${warnings.length} warning$s. Upload anyway';
+      final s = warnings.length == 1 ? '' : 's';
+      final warning = log.bold(log.red(
+        'Package has ${warnings.length} warning$s',
+      ));
+      message = '$warning. $message';
     }
 
-    var confirmed = await confirm(message);
+    var confirmed = await confirm('\n$message');
     if (!confirmed) {
       log.error('Package upload canceled.');
       return false;
