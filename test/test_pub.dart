@@ -289,8 +289,11 @@ Future confirmPublish(TestProcess pub) async {
   // test packages. Should validate this a little more loosely.
   await expectLater(
       pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
-  await expectLater(pub.stdout,
-      emitsThrough('Looks great! Are you ready to upload your package (y/n)?'));
+  await expectLater(
+      pub.stdout,
+      emitsThrough(matches(
+        r'^Do you want to publish [^ ]+ [^ ]+ (y/n)?',
+      )));
   pub.stdin.writeln('y');
 }
 
