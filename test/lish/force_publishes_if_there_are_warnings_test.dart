@@ -37,7 +37,10 @@ void main() {
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stderr, emitsThrough('Suggestions:'));
+    expect(
+      pub.stderr,
+      emitsThrough('Package validation found the following potential issue:'),
+    );
     expect(
         pub.stderr,
         emitsLines(

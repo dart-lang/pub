@@ -23,7 +23,10 @@ void main() {
     var pub = await startPublish(server, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.DATA);
-    expect(pub.stderr, emitsThrough('Suggestions:'));
+    expect(
+      pub.stderr,
+      emitsThrough('Package validation found the following potential issue:'),
+    );
     expect(
         pub.stderr,
         emitsLines(

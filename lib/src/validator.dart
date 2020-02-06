@@ -138,7 +138,8 @@ abstract class Validator {
           validators.expand((validator) => validator.warnings).toList();
 
       if (errors.isNotEmpty) {
-        log.error('Missing requirements:');
+        final s = errors.length > 1 ? 's' : '';
+        log.error('Package validation found the following error$s:');
         for (var error in errors) {
           log.error("* ${error.split('\n').join('\n  ')}");
         }
@@ -146,7 +147,10 @@ abstract class Validator {
       }
 
       if (warnings.isNotEmpty) {
-        log.warning('Suggestions:');
+        final s = warnings.length > 1 ? 's' : '';
+        log.warning(
+          'Package validation found the following potential issue$s:',
+        );
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");
         }
