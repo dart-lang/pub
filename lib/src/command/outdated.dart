@@ -20,7 +20,6 @@ import '../pubspec.dart';
 import '../solver.dart';
 import '../source.dart';
 
-/// Handles the `upgrade` pub command.
 class OutdatedCommand extends PubCommand {
   @override
   String get name => 'outdated';
@@ -35,25 +34,28 @@ class OutdatedCommand extends PubCommand {
 
   OutdatedCommand() {
     argParser.addOption('format',
-        help:
-            'Defines how the output should be formatted. Defaults to color when'
-            'connected to a terminal, and no-color otherwise.',
-        valueHelp: 'TYPE',
+        help: 'Defines how the output should be formatted. Defaults to color '
+            'when connected to a terminal, and no-color otherwise.',
+        valueHelp: 'FORMAT',
         allowed: ['color', 'no-color', 'json']);
 
-    argParser.addMultiOption('include',
-        allowed: ['pre-releases', 'transitive', 'up-to-date'],
-        help:
-            'pre-releases: include pre-releases when reporting latest version.\n'
-            'up-to-date: include dependencies that are already at the latest version.\n'
-            'transitive: include transitive dependencies in the reports',
-        valueHelp: 'optionA,optionB');
+    argParser.addFlag('transitive',
+        defaultsTo: false,
+        help: 'Include transitive dependencies in the reports');
 
-    argParser.addMultiOption('exclude',
-        allowed: ['dev-dependencies'],
-        help:
-            'dev-dependencies: do not take dev-dependencies into account when resolving.',
-        valueHelp: 'options');
+    argParser.addFlag('up-to-date',
+        defaultsTo: false,
+        help: 'Include dependencies that are already at the latest version');
+
+    argParser.addFlag('pre-releases',
+        defaultsTo: false,
+        help: 'Include pre-releases when reporting latest version');
+
+    argParser.addFlag(
+      'dev-dependencies',
+      defaultsTo: true,
+      help: 'When true take dev-dependencies into account when resolving.',
+    );
 
     argParser.addOption('mark',
         help: 'Highlight packages with some property in the report.',
@@ -64,21 +66,24 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future run() async {
-    final includeDevDependencies =
-        !argResults['exclude'].contains('dev-dependencies');
+    final includeDevDependencies = argResults['dev-dependencies'];
 
     final oldVerbosity = log.verbosity;
     // Unless the user overrides the verbosity, we want to filter out the
     // normal pub output from 'Resolving dependencies...` if we are
     // not attached to a terminal. This is to not pollute stdout when the output
-    // of `pub run` is piped somewhere.
+    // of `pub` is piped somewhere.
     if (log.verbosity == log.Verbosity.NORMAL && !stdout.hasTerminal) {
       log.verbosity = log.Verbosity.WARNING;
     }
 
-    final unconstrained = Package.inMemory(_loosenConstraints(
-        entrypoint.root.pubspec,
-        includeDevDependencies: includeDevDependencies));
+    var unconstrainedPubspec =
+        _stripVersionConstraints(entrypoint.root.pubspec);
+    if (!includeDevDependencies) {
+      unconstrainedPubspec = _stripDevDependencies(unconstrainedPubspec);
+    }
+
+    final unconstrained = Package.inMemory(unconstrainedPubspec);
 
     final solveResult = await resolveVersions(
       SolveType.UPGRADE,
@@ -97,9 +102,7 @@ class OutdatedCommand extends PubCommand {
               .doGetVersions(packageRange.toRef()))
           .map((id) => id.version)
           .toList()
-            ..sort(argResults['include'].contains('pre-releases')
-                ? null
-                : Version.prioritize);
+            ..sort(argResults['pre-releases'] ? null : Version.prioritize);
       final constraint = packageRange.constraint;
       final allowed = constraint == null
           ? null
@@ -126,16 +129,17 @@ class OutdatedCommand extends PubCommand {
       rows.add(await analyzeDependency(packageRange));
     }
 
-    if (argResults['include'].contains('transitive')) {
-      final visited = <String>{};
+    if (argResults['transitive']) {
+      final visited = <String>{
+        entrypoint.root.name,
+        ...immediateDependencies.map((d) => d.name)
+      };
       for (final id in [
         if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
         ...solveResult.packages
       ]) {
         final name = id.name;
-        if (visited.contains(name) ||
-            name == entrypoint.root.name ||
-            immediateDependencies.any((r) => r.name == name)) continue;
+        if (visited.contains(name)) continue;
         visited.add(name);
         rows.add(await analyzeDependency(PackageRange(
             name,
@@ -146,11 +150,11 @@ class OutdatedCommand extends PubCommand {
       }
     }
 
-    if (!argResults['include'].contains('up-to-date')) {
+    if (!argResults['up-to-date']) {
       rows.retainWhere(
           (r) => (r.current ?? r.allowed)?.version != r.latest?.version);
     }
-    if (argResults['exclude'].contains('dev-dependencies')) {
+    if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);
     }
 
@@ -181,9 +185,18 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
+Pubspec _stripDevDependencies(Pubspec original) {
+  return Pubspec(
+    original.name,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: original.dependencies.values,
+    devDependencies: null,
+  );
+}
+
 /// Returns new pubspec with the same dependencies as [original] but with no
 /// version constraints on hosted packages.
-Pubspec _loosenConstraints(Pubspec original, {bool includeDevDependencies}) {
+Pubspec _stripVersionConstraints(Pubspec original) {
   List<PackageRange> _unconstrained(Map<String, PackageRange> constrained) {
     final result = <PackageRange>[];
     for (final name in constrained.keys) {
@@ -206,9 +219,7 @@ Pubspec _loosenConstraints(Pubspec original, {bool includeDevDependencies}) {
     original.name,
     sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
-    devDependencies: includeDevDependencies
-        ? _unconstrained(original.devDependencies)
-        : null,
+    devDependencies: _unconstrained(original.devDependencies),
     // TODO(sigurdm): consider dependency overrides.
   );
 }

@@ -9,18 +9,18 @@ Found no outdated packages
 $ pub outdated --format=no-color --mark=none
 Resolving dependencies...
 Found no outdated packages
-$ pub outdated --format=no-color --include=transitive
+$ pub outdated --format=no-color --transitive
 Resolving dependencies...
 Found no outdated packages
-$ pub outdated --format=no-color --include=up-to-date
+$ pub outdated --format=no-color --up-to-date
 Resolving dependencies...
 Found no outdated packages
-$ pub outdated --format=no-color --include=pre-releases
+$ pub outdated --format=no-color --pre-releases
 Resolving dependencies...
 Found no outdated packages
-$ pub outdated --format=no-color --exclude=dev-dependencies
+$ pub outdated --format=no-color --no-dev-dependencies
 Resolving dependencies...
 Found no outdated packages
-$ pub outdated --format=no-color --exclude=dev-dependencies --include=transitive
+$ pub outdated --format=no-color --no-dev-dependencies --transitive
 Resolving dependencies...
 Found no outdated packages

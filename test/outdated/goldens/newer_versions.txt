@@ -32,7 +32,7 @@ foo      1.2.3    1.3.0    2.0.0       3.0.0
 
 dev_dependencies
 builder  1.2.3    1.3.0    2.0.0       2.0.0   
-$ pub outdated --format=no-color --include=transitive
+$ pub outdated --format=no-color --transitive
 Resolving dependencies...
 Package      Current  Allowed  Resolvable  Latest  
 foo          !1.2.3   !1.3.0   !2.0.0      3.0.0   
@@ -44,7 +44,7 @@ Transitive dependencies
 transitive   !1.2.3   !-       !1.3.0      2.0.0   
 transitive2  !-       !-       1.0.0       1.0.0   
 transitive3  !-       !-       1.0.0       1.0.0   
-$ pub outdated --format=no-color --include=up-to-date
+$ pub outdated --format=no-color --up-to-date
 Resolving dependencies...
 Package        Current  Allowed  Resolvable  Latest  
 foo            !1.2.3   !1.3.0   !2.0.0      3.0.0   
@@ -52,18 +52,18 @@ local_package  0.0.1    0.0.1    0.0.1       0.0.1
 
 dev_dependencies
 builder        !1.2.3   !1.3.0   2.0.0       2.0.0   
-$ pub outdated --format=no-color --include=pre-releases
+$ pub outdated --format=no-color --pre-releases
 Resolving dependencies...
 Package  Current  Allowed  Resolvable  Latest       
 foo      !1.2.3   !1.3.0   !2.0.0      3.0.0        
 
 dev_dependencies
 builder  !1.2.3   !1.3.0   !2.0.0      3.0.0-alpha  
-$ pub outdated --format=no-color --exclude=dev-dependencies
+$ pub outdated --format=no-color --no-dev-dependencies
 Resolving dependencies...
 Package  Current  Allowed  Resolvable  Latest  
 foo      !1.2.3   !1.3.0   3.0.0       3.0.0   
-$ pub outdated --format=no-color --exclude=dev-dependencies --include=transitive
+$ pub outdated --format=no-color --no-dev-dependencies --transitive
 Resolving dependencies...
 Package     Current  Allowed  Resolvable  Latest  
 foo         !1.2.3   !1.3.0   3.0.0       3.0.0   

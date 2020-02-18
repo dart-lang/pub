@@ -9,7 +9,6 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:pub/src/command/outdated.dart';
 
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -20,6 +19,7 @@ import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
 import 'command/logout.dart';
+import 'command/outdated.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';

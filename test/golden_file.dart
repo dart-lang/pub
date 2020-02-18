@@ -19,6 +19,9 @@ void expectMatchesGoldenFile(String actual, String goldenFilePath) {
   } else {
     // This enables writing the updated file when run in otherwise hermetic
     // settings.
+    //
+    // This is to make updating the golden files easier in a bazel environment
+    // See https://docs.bazel.build/versions/2.0.0/user-manual.html#run .
     final workspaceDirectory =
         Platform.environment['BUILD_WORKSPACE_DIRECTORY'];
     if (workspaceDirectory != null) {

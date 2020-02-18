@@ -16,11 +16,11 @@ Future<void> variations(String name) async {
     ['--format=json'],
     ['--format=no-color'],
     ['--format=no-color', '--mark=none'],
-    ['--format=no-color', '--include=transitive'],
-    ['--format=no-color', '--include=up-to-date'],
-    ['--format=no-color', '--include=pre-releases'],
-    ['--format=no-color', '--exclude=dev-dependencies'],
-    ['--format=no-color', '--exclude=dev-dependencies', '--include=transitive'],
+    ['--format=no-color', '--transitive'],
+    ['--format=no-color', '--up-to-date'],
+    ['--format=no-color', '--pre-releases'],
+    ['--format=no-color', '--no-dev-dependencies'],
+    ['--format=no-color', '--no-dev-dependencies', '--transitive'],
   ]) {
     final process = await startPub(args: ['outdated', ...args]);
     await process.shouldExit(0);
@@ -32,7 +32,7 @@ Future<void> variations(String name) async {
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
-  expectMatchesGoldenFile(buffer.toString(), 'test/outdated/goldens/$name');
+  expectMatchesGoldenFile(buffer.toString(), 'test/outdated/goldens/$name.txt');
 }
 
 void main() async {
