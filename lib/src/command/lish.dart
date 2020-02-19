@@ -151,7 +151,7 @@ class LishCommand extends PubCommand {
   }
 
   /// Returns the value associated with [key] in [map]. Throws a user-friendly
-  /// error if [map] doens't contain [key].
+  /// error if [map] doesn't contain [key].
   dynamic _expectField(Map map, String key, http.Response response) {
     if (map.containsKey(key)) return map[key];
     invalidServerResponse(response);

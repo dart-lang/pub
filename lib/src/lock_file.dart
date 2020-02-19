@@ -240,7 +240,7 @@ class LockFile {
   /// This file is planned to eventually replace the `.packages` file.
   ///
   /// If [entrypoint] is passed, an accompanying [entrypointSdkConstraint]
-  /// should be given, these identifiy the current package in which this file is
+  /// should be given, these identify the current package in which this file is
   /// written. Passing `null` as [entrypointSdkConstraint] is correct if the
   /// current package has no SDK constraint.
   Future<String> packageConfigFile(

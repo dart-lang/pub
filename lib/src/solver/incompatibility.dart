@@ -12,7 +12,7 @@ import 'term.dart';
 ///
 /// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility.
 class Incompatibility {
-  /// The mutually-incompatibile terms.
+  /// The mutually-incompatible terms.
   final List<Term> terms;
 
   /// The reason [terms] are incompatible.
