@@ -299,9 +299,8 @@ class Package {
     if (p.isWithin(dir, target)) {
       // If the link points within this repo, use git to list the target
       // location so we respect .gitignore.
-      targetFiles = listFiles(
-          beneath: p.relative(target, from: dir),
-          useGitIgnore: true);
+      targetFiles =
+          listFiles(beneath: p.relative(target, from: dir), useGitIgnore: true);
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.
