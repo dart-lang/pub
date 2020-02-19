@@ -70,7 +70,7 @@ class VersionSolver {
   final Set<String> _overriddenPackages;
 
   /// The set of packages for which the lockfile should be ignored and only the
-  /// most recent versions shuld be used.
+  /// most recent versions should be used.
   final Set<String> _useLatest;
 
   /// The set of packages for which we've added an incompatibility that forces
@@ -181,7 +181,7 @@ class VersionSolver {
       }
     }
 
-    // If *all* terms in [incompatibility] are satsified by [_solution], then
+    // If *all* terms in [incompatibility] are satisfied by [_solution], then
     // [incompatibility] is satisfied and we have a conflict.
     if (unsatisfied == null) return #conflict;
 

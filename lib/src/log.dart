@@ -60,8 +60,8 @@ final _none = getSpecial('\u001b[0m');
 final _noColor = getSpecial('\u001b[39m');
 final _bold = getSpecial('\u001b[1m');
 
-/// All color codees.
-var _allColors = [_cyan, _green, _magenta, _red, _yellow, _blue, ''];
+/// All color codes.
+final _allColors = [_cyan, _green, _magenta, _red, _yellow, _blue, ''];
 
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.

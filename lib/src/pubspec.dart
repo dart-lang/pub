@@ -633,7 +633,7 @@ class Pubspec {
         if (sourceNames.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
         } else if (sourceNames.isEmpty) {
-          // Default to a hosted dependency if no source is specifid.
+          // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
           descriptionNode = nameNode;
         }
