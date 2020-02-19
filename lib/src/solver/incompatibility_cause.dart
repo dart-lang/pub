@@ -33,7 +33,7 @@ abstract class IncompatibilityCause {
 /// conflict resolution.
 class ConflictCause implements IncompatibilityCause {
   /// The incompatibility that was originally found to be in conflict, from
-  /// which the target incompatiblity was derived.
+  /// which the target incompatibility was derived.
   final Incompatibility conflict;
 
   /// The incompatibility that caused the most recent satisfier for [conflict],

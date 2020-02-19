@@ -95,7 +95,7 @@ class RateLimitedScheduler<J, V> {
   ///
   /// When [callback] returns, all jobs that where prescheduled by [callback]
   /// that have not started running will be removed from the work queue
-  /// (if they have been added seperately by [schedule] they will still be
+  /// (if they have been added separately by [schedule] they will still be
   /// executed).
   Future<R> withPrescheduling<R>(
     FutureOr<R> Function(void Function(J) preschedule) callback,

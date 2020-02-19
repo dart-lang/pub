@@ -758,7 +758,7 @@ pub global run ${package.name}:$script "\$@"
       }
 
       // Write this as the system encoding since the system is going to execute
-      // it and it might contain non-ASCII caharacters in the pathnames.
+      // it and it might contain non-ASCII characters in the pathnames.
       writeTextFile(binStubPath, bash, encoding: const SystemEncoding());
 
       // Make it executable.

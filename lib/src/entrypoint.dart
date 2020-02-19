@@ -542,7 +542,7 @@ class Entrypoint {
   /// The [packagePathsMapping] is a mapping from package names to paths where
   /// the packages are located. (The library is located under
   /// `lib/` relative to the path given).
-  bool _isPackagePathsMappingUptodateWithLockfile(
+  bool _isPackagePathsMappingUpToDateWithLockfile(
           Map<String, String> packagePathsMapping) =>
       lockFile.packages.values.every((lockFileId) {
         // It's very unlikely that the lockfile is invalid here, but it's not
@@ -605,7 +605,7 @@ class Entrypoint {
       packagePathsMapping[package] = packagePath;
     }
 
-    if (!_isPackagePathsMappingUptodateWithLockfile(packagePathsMapping)) {
+    if (!_isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
       outOfDate();
     }
   }
@@ -661,7 +661,7 @@ class Entrypoint {
       packagePathsMapping[pkg.name] =
           root.path('.dart_tool', p.fromUri(pkg.rootUri));
     }
-    if (!_isPackagePathsMappingUptodateWithLockfile(packagePathsMapping)) {
+    if (!_isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
       outOfDate();
     }
 

@@ -46,7 +46,7 @@ class ErrorGroup {
   /// we can check if it has listeners and signal errors on it.
   _ErrorGroupFuture _done;
 
-  /// Returns a [Future] that completes successully when all members of [this]
+  /// Returns a [Future] that completes successfully when all members of [this]
   /// are complete, or with an error if any member receives an error.
   ///
   /// This [Future] is effectively in the group in that an error on it won't be

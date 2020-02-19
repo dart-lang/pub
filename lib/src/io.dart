@@ -259,7 +259,7 @@ List<String> listDir(String dir,
   var whitelistFilter = createFileFilter(whitelist);
 
   // This is used in some performance-sensitive paths and can list many, many
-  // files. As such, it leans more havily towards optimization as opposed to
+  // files. As such, it leans more heavily towards optimization as opposed to
   // readability than most code in pub. In particular, it avoids using the path
   // package, since re-parsing a path is very expensive relative to string
   // operations.
