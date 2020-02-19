@@ -96,13 +96,12 @@ class Level {
   static const FINE = Level._('FINE');
 
   const Level._(this.name);
+
   final String name;
 
   @override
   String toString() => name;
 }
-
-typedef _LogFn = Function(_Entry entry);
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
@@ -178,8 +177,9 @@ class Verbosity {
   });
 
   const Verbosity._(this.name, this._loggers);
+
   final String name;
-  final Map<Level, _LogFn> _loggers;
+  final Map<Level, void Function(_Entry entry)> _loggers;
 
   /// Returns whether or not logs at [level] will be printed.
   bool isLevelVisible(Level level) => _loggers[level] != null;

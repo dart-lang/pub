@@ -19,6 +19,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart' hide fail;
+import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
 
 import 'package:pub/src/entrypoint.dart';
@@ -60,15 +61,15 @@ String yaml(value) => jsonEncode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
-final String cachePath = 'cache';
+const String cachePath = 'cache';
 
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
-final String appPath = 'myapp';
+const String appPath = 'myapp';
 
 /// The path of the ".packages" file in the mock app used for tests, relative
 /// to the sandbox directory.
-final String packagesFilePath = '$appPath/.packages';
+const String packagesFilePath = '$appPath/.packages';
 
 /// The line from the `.packages` file for [packageName].
 String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
@@ -264,7 +265,7 @@ Future runPub(
     _validateOutput(failures, 'stderr', error, actualError);
     _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) throw TestFailure(failures.join('\n'));
+    if (failures.isNotEmpty) test.fail(failures.join('\n'));
   }(), completes);
 }
 

@@ -185,6 +185,7 @@ class VersionSolver {
     // [incompatibility] is satisfied and we have a conflict.
     if (unsatisfied == null) return #conflict;
 
+    // ignore: missing_whitespace_between_adjacent_strings
     _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
         '${unsatisfied.package}');
     _solution.derive(

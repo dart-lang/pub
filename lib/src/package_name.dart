@@ -13,7 +13,7 @@ import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
-final _featureEquality = const MapEquality<String, FeatureDependency>();
+const _featureEquality = MapEquality<String, FeatureDependency>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {

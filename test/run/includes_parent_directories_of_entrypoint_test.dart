@@ -19,7 +19,7 @@ main() {
 
 void main() {
   test(
-      'allows assets in parent directories of the entrypoint to be'
+      'allows assets in parent directories of the entrypoint to be '
       'accessed', () async {
     await d.dir(appPath, [
       d.appPubspec(),

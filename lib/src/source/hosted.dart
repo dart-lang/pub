@@ -10,7 +10,6 @@ import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
-import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -21,6 +20,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../rate_limited_scheduler.dart';
 import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -57,6 +57,7 @@ class HostedSource extends Source {
   }
 
   String _defaultUrl;
+
   String _pubHostedUrlConfig() {
     var url = io.Platform.environment['PUB_HOSTED_URL'];
     if (url == null) return null;
