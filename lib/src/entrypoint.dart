@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
-import 'package:pub/src/package_config.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'dart.dart' as dart;
@@ -19,6 +18,7 @@ import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
+import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';

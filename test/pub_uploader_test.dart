@@ -15,7 +15,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-final _usageString = '''
+const _usageString = '''
 Manage uploaders for a package on pub.dartlang.org.
 
 Usage: pub uploader [options] {add/remove} <email>

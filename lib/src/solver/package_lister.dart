@@ -257,7 +257,7 @@ class PackageLister {
     }
 
     var lower = await _dependencyBounds(dependencies, index, upper: false);
-    var upper = await _dependencyBounds(dependencies, index, upper: true);
+    var upper = await _dependencyBounds(dependencies, index);
 
     return ordered(dependencies.keys).map((package) {
       var constraint = VersionRange(

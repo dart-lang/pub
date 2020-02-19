@@ -20,8 +20,8 @@ void main() {
       'list-package-dirs',
       '--format=json'
     ], outputJson: {
-      'error': 'Could not find a file named "pubspec.yaml" in "'
-          '${canonicalize(path.join(d.sandbox, appPath))}".',
+      'error': 'Could not find a file named "pubspec.yaml" in '
+          '"${canonicalize(path.join(d.sandbox, appPath))}".',
       'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
     }, exitCode: exit_codes.NO_INPUT);
   });

@@ -109,7 +109,7 @@ class Pair<E, F> {
 Future<T> captureErrors<T>(Future<T> Function() callback,
     {bool captureStackChains = false}) {
   var completer = Completer<T>();
-  var wrappedCallback = () {
+  void wrappedCallback() {
     Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
@@ -120,7 +120,7 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
       }
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
-  };
+  }
 
   if (captureStackChains) {
     Chain.capture(wrappedCallback, onError: (error, stackTrace) {
@@ -241,7 +241,8 @@ bool isLoopback(String host) {
 
   try {
     return InternetAddress(host).isLoopback;
-  } on ArgumentError catch (_) {
+  } on ArgumentError catch (_) // ignore: avoid_catching_errors
+  {
     // The host isn't an IP address and isn't "localhost', so it's almost
     // certainly not a loopback host.
     return false;

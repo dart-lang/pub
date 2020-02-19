@@ -17,13 +17,13 @@ import 'system_cache.dart';
 import 'utils.dart';
 
 /// The pub client's OAuth2 identifier.
-final _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
+const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
     'googleusercontent.com';
 
 /// The pub client's OAuth2 secret.
 ///
 /// This isn't actually meant to be kept a secret.
-final _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
+const _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
 
 /// The URL to which the user will be directed to authorize the pub client to
 /// get an OAuth2 access token.

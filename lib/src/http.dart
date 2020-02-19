@@ -22,14 +22,14 @@ import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
-final _censoredFields = const ['refresh_token', 'authorization'];
+const _censoredFields = ['refresh_token', 'authorization'];
 
 /// Headers required for pub.dartlang.org API requests.
 ///
 /// The Accept header tells pub.dartlang.org which version of the API we're
 /// expecting, so it can either serve that version or give us a 406 error if
 /// it's not supported.
-final pubApiHeaders = const {'Accept': 'application/vnd.pub.v2+json'};
+const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
 
 /// A unique ID to identify this particular invocation of pub.
 final _sessionId = createUuid();

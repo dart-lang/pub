@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-final _script = """
+const _script = """
   import 'dart:isolate';
 
   main() async {

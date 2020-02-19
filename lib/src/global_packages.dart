@@ -304,7 +304,7 @@ class GlobalPackages {
       }
     } on IOException {
       // If we couldn't read the lock file, it's not activated.
-      return null;
+      return;
     }
   }
 

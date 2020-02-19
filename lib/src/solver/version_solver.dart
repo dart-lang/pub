@@ -185,7 +185,7 @@ class VersionSolver {
     // [incompatibility] is satisfied and we have a conflict.
     if (unsatisfied == null) return #conflict;
 
-    _log("derived: ${unsatisfied.isPositive ? 'not ' : ''}"
+    _log("derived:${unsatisfied.isPositive ? ' not' : ''} "
         '${unsatisfied.package}');
     _solution.derive(
         unsatisfied.package, !unsatisfied.isPositive, incompatibility);

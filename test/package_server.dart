@@ -95,7 +95,7 @@ class PackageServer {
     _builder._packages.forEach((name, versions) {
       _servedApiPackageDir.contents.addAll([
         d.file(
-            '$name',
+            name,
             jsonEncode({
               'name': name,
               'uploaders': ['nweiz@google.com'],

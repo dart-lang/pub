@@ -185,7 +185,7 @@ class Package {
   }
 
   /// The basenames of files that are included in [list] despite being hidden.
-  static final _whitelistedFiles = const ['.htaccess'];
+  static const _whitelistedFiles = ['.htaccess'];
 
   /// A set of patterns that match paths to blacklisted files.
   static final _blacklistedFiles = createFileFilter(['pubspec.lock']);
@@ -299,10 +299,8 @@ class Package {
     if (p.isWithin(dir, target)) {
       // If the link points within this repo, use git to list the target
       // location so we respect .gitignore.
-      targetFiles = listFiles(
-          beneath: p.relative(target, from: dir),
-          recursive: true,
-          useGitIgnore: true);
+      targetFiles =
+          listFiles(beneath: p.relative(target, from: dir), useGitIgnore: true);
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.

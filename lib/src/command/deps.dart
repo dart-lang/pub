@@ -18,14 +18,19 @@ import '../utils.dart';
 class DepsCommand extends PubCommand {
   @override
   String get name => 'deps';
+
   @override
   String get description => 'Print package dependencies.';
+
   @override
   List<String> get aliases => const ['dependencies', 'tab'];
+
   @override
   String get invocation => 'pub deps';
+
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-deps';
+
   @override
   bool get takesArguments => false;
 
@@ -255,13 +260,14 @@ class DepsCommand extends PubCommand {
 
   /// Outputs all executables reachable from [entrypoint].
   void _outputExecutables() {
-    var packages = []
-      ..add(entrypoint.root)
-      ..addAll((_includeDev
+    var packages = [
+      entrypoint.root,
+      ...(_includeDev
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys
-          .map((name) => entrypoint.packageGraph.packages[name]));
+          .map((name) => entrypoint.packageGraph.packages[name])
+    ];
 
     for (var package in packages) {
       var executables = _getExecutablesFor(package);
