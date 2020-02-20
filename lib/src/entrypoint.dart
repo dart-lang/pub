@@ -430,6 +430,12 @@ class Entrypoint {
 
     var touchedLockFile = false;
     if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
+      // If `pubspec.lock` is newer than `pubspec.yaml` or we have path
+      // dependencies, then we check that `pubspec.lock` is a correct solution
+      // for the requirements in `pubspec.yaml`. This aims to:
+      //  * Prevent missing packages when `pubspec.lock` is checked into git.
+      //  * Mitigate missing transitive dependencies when the `pubspec.yaml` in
+      //    a path dependency is changed.
       _assertLockFileUpToDate();
       if (_arePackagesAvailable()) {
         touchedLockFile = true;
@@ -451,6 +457,11 @@ class Entrypoint {
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
+      // If `package_config.json` is newer than `pubspec.lock` or we have
+      // path dependencies, then we check that `package_config.json` is a
+      // correct configuration on the local machine. This aims to:
+      //  * Mitigate issues when copying a folder from one machine to another.
+      //  * Force `pub get` if a path dependency has changed language verison.
       _checkPackageConfigUpToDate();
       touch(packageConfigFile);
     } else if (touchedLockFile) {
@@ -537,45 +548,60 @@ class Entrypoint {
     });
   }
 
-  /// Determines [lockfile] agrees with the given [packagePathsMapping].
+  /// Determines [lockFile] agrees with the given [packagePathsMapping].
   ///
   /// The [packagePathsMapping] is a mapping from package names to paths where
   /// the packages are located. (The library is located under
   /// `lib/` relative to the path given).
   bool _isPackagePathsMappingUpToDateWithLockfile(
-          Map<String, String> packagePathsMapping) =>
-      lockFile.packages.values.every((lockFileId) {
-        // It's very unlikely that the lockfile is invalid here, but it's not
-        // impossible—for example, the user may have a very old application
-        // package with a checked-in lockfile that's newer than the pubspec, but
-        // that contains SDK dependencies.
-        if (lockFileId.source is UnknownSource) return false;
+    Map<String, String> packagePathsMapping,
+  ) {
+    // Check that [packagePathsMapping] does not contain more packages than what
+    // is required. This could lead to import statements working, when they are
+    // not supposed to work.
+    final hasExtraMappings = packagePathsMapping.keys.every((packageName) {
+      return packageName == root.name ||
+          lockFile.packages.containsKey(packageName);
+    });
+    if (!hasExtraMappings) {
+      return false;
+    }
 
-        final packagePath = packagePathsMapping[lockFileId.name];
-        if (packagePath == null) {
-          return false;
-        }
+    // Check that all packages in the [lockFile] are reflected in the
+    // [packagePathsMapping].
+    return lockFile.packages.values.every((lockFileId) {
+      // It's very unlikely that the lockfile is invalid here, but it's not
+      // impossible—for example, the user may have a very old application
+      // package with a checked-in lockfile that's newer than the pubspec, but
+      // that contains SDK dependencies.
+      if (lockFileId.source is UnknownSource) return false;
 
-        final source = cache.source(lockFileId.source);
-        final lockFilePackagePath =
-            p.join(root.dir, source.getDirectory(lockFileId));
+      final packagePath = packagePathsMapping[lockFileId.name];
+      if (packagePath == null) {
+        return false;
+      }
 
-        // Make sure that the packagePath agrees with the lock file about the
-        // path to the package.
-        if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
-          return false;
-        }
+      final source = cache.source(lockFileId.source);
+      final lockFilePackagePath =
+          p.join(root.dir, source.getDirectory(lockFileId));
 
-        // For cached sources, make sure the directory exists and looks like a
-        // package. This is also done by [_arePackagesAvailable] but that may not
-        // be run if the lockfile is newer than the pubspec.
-        if (source is CachedSource && !dirExists(lockFilePackagePath) ||
-            !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
-          return false;
-        }
+      // Make sure that the packagePath agrees with the lock file about the
+      // path to the package.
+      if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
+        return false;
+      }
 
-        return true;
-      });
+      // For cached sources, make sure the directory exists and looks like a
+      // package. This is also done by [_arePackagesAvailable] but that may not
+      // be run if the lockfile is newer than the pubspec.
+      if (source is CachedSource && !dirExists(lockFilePackagePath) ||
+          !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
+        return false;
+      }
+
+      return true;
+    });
+  }
 
   /// Checks whether or not the `.packages` file is out of date with respect
   /// to the [lockfile].
@@ -646,9 +672,12 @@ class Entrypoint {
     } on FormatException {
       badPackageConfig();
     }
-    if (cfg.configVersion != 2 ||
-        cfg.generator != 'pub' ||
-        cfg.generatorVersion != sdk.version) {
+
+    // Version 2 is the initial version number for `package_config.json`,
+    // because `.packages` was version 1 (even if it was a different file).
+    // If the version is differnet from 2, then it must be a newer incompatible
+    // version, hence, the user should run `pub get` with the downgraded SDK.
+    if (cfg.configVersion != 2) {
       badPackageConfig();
     }
 
@@ -665,18 +694,29 @@ class Entrypoint {
       outOfDate();
     }
 
+    // Check if language version specified in the `package_config.json` is
+    // correct. This is important for path dependencies as these can mutate.
     for (final pkg in cfg.packages) {
       final id = lockFile.packages[pkg.name];
       if (id == null) {
-        continue; // Ignore entries that aren't in the lockFile
+        assert(
+          false,
+          'unnecessary package_config.json entries should be forbidden by '
+          '_isPackagePathsMappingUpToDateWithLockfile',
+        );
+        continue;
       }
 
+      // If a package is cached, then it's universially immutable and we need
+      // not check if the language version is correct.
       final source = cache.source(id.source);
       if (source is CachedSource) {
         continue;
       }
 
       try {
+        // Load `pubspec.yaml` and extract language version to compare with the
+        // language version from `package_config.json`.
         final languageVersion = extractLanguageVersion(
           cache.load(id).pubspec.sdkConstraints[sdk.identifier],
         );
