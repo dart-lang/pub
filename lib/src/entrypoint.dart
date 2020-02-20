@@ -212,8 +212,16 @@ class Entrypoint {
       {List<String> useLatest,
       bool dryRun = false,
       bool precompile = false}) async {
-    var result = await resolveVersions(type, cache, root,
-        lockFile: lockFile, useLatest: useLatest);
+    var result = await log.progress(
+      'Resolving dependencies',
+      () => resolveVersions(
+        type,
+        cache,
+        root,
+        lockFile: lockFile,
+        useLatest: useLatest,
+      ),
+    );
 
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {

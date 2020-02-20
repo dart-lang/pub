@@ -16,11 +16,9 @@ Future<void> variations(String name) async {
     ['--format=json'],
     ['--format=no-color'],
     ['--format=no-color', '--mark=none'],
-    ['--format=no-color', '--transitive'],
     ['--format=no-color', '--up-to-date'],
     ['--format=no-color', '--pre-releases'],
     ['--format=no-color', '--no-dev-dependencies'],
-    ['--format=no-color', '--no-dev-dependencies', '--transitive'],
   ]) {
     final process = await startPub(args: ['outdated', ...args]);
     await process.shouldExit(0);
@@ -29,6 +27,7 @@ Future<void> variations(String name) async {
       '\$ pub outdated ${args.join(' ')}',
       ...await process.stdout.rest.toList()
     ].join('\n'));
+    buffer.write('\n');
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -45,6 +44,7 @@ void main() async {
   test('newer versions available', () async {
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
+      ..serve('bar', '1.0.0')
       ..serve('builder', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('transitive', '1.2.3'));
 
@@ -58,6 +58,7 @@ void main() async {
         'name': 'app',
         'dependencies': {
           'foo': '^1.0.0',
+          'bar': '^1.0.0',
           'local_package': {'path': '../local_package'}
         },
         'dev_dependencies': {'builder': '^1.0.0'},

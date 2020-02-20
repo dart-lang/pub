@@ -29,9 +29,11 @@ export 'solver/type.dart';
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile lockFile, Iterable<String> useLatest}) {
-  return log.progress('Resolving dependencies', () {
-    return VersionSolver(type, cache, root, lockFile ?? LockFile.empty(),
-            useLatest ?? const [])
-        .solve();
-  });
+  return VersionSolver(
+    type,
+    cache,
+    root,
+    lockFile ?? LockFile.empty(),
+    useLatest ?? const [],
+  ).solve();
 }

@@ -39,10 +39,6 @@ class OutdatedCommand extends PubCommand {
         valueHelp: 'FORMAT',
         allowed: ['color', 'no-color', 'json']);
 
-    argParser.addFlag('transitive',
-        defaultsTo: false,
-        help: 'Include transitive dependencies in the reports');
-
     argParser.addFlag('up-to-date',
         defaultsTo: false,
         help: 'Include dependencies that are already at the latest version');
@@ -77,45 +73,50 @@ class OutdatedCommand extends PubCommand {
       log.verbosity = log.Verbosity.WARNING;
     }
 
-    var unconstrainedPubspec =
-        _stripVersionConstraints(entrypoint.root.pubspec);
-    if (!includeDevDependencies) {
-      unconstrainedPubspec = _stripDevDependencies(unconstrainedPubspec);
-    }
+    final constrainedPubspec = includeDevDependencies
+        ? entrypoint.root.pubspec
+        : _stripDevDependencies(entrypoint.root.pubspec);
 
-    final unconstrained = Package.inMemory(unconstrainedPubspec);
+    var unconstrainedPubspec = _stripVersionConstraints(constrainedPubspec);
 
-    final solveResult = await resolveVersions(
-      SolveType.UPGRADE,
-      cache,
-      unconstrained,
-    );
+    SolveResult constrainedSolveResult;
+    SolveResult unconstrainedSolveResult;
+    await log.spinner('Resolving', () async {
+      constrainedSolveResult = await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(constrainedPubspec),
+      );
+
+      unconstrainedSolveResult = await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(unconstrainedPubspec),
+      );
+    });
 
     log.verbosity = oldVerbosity;
 
-    Future<_PackageDetails> analyzeDependency(PackageRange packageRange) async {
-      final name = packageRange.name;
+    Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
+      final name = packageRef.name;
       final current = (entrypoint.lockFile?.packages ?? {})[name]?.version;
-      final source = packageRange.source;
-      final available = (await cache
-              .source(source)
-              .doGetVersions(packageRange.toRef()))
+      final source = packageRef.source;
+      final available = (await cache.source(source).doGetVersions(packageRef))
           .map((id) => id.version)
           .toList()
             ..sort(argResults['pre-releases'] ? null : Version.prioritize);
-      final constraint = packageRange.constraint;
-      final allowed = constraint == null
-          ? null
-          : available.lastWhere(constraint.allows, orElse: () => null);
-      final resolvable = solveResult.packages
+      final upgradable = constrainedSolveResult.packages
+          .firstWhere((id) => id.name == name, orElse: () => null)
+          ?.version;
+      final resolvable = unconstrainedSolveResult.packages
           .firstWhere((id) => id.name == name, orElse: () => null)
           ?.version;
       final latest = available.last;
-      final description = packageRange.description;
+      final description = packageRef.description;
       return _PackageDetails(
           name,
           await _describeVersion(name, source, description, current),
-          await _describeVersion(name, source, description, allowed),
+          await _describeVersion(name, source, description, upgradable),
           await _describeVersion(name, source, description, resolvable),
           await _describeVersion(name, source, description, latest),
           _kind(name, entrypoint));
@@ -126,33 +127,27 @@ class OutdatedCommand extends PubCommand {
     final immediateDependencies = entrypoint.root.immediateDependencies.values;
 
     for (final packageRange in immediateDependencies) {
-      rows.add(await analyzeDependency(packageRange));
+      rows.add(await analyzeDependency(packageRange.toRef()));
     }
 
-    if (argResults['transitive']) {
-      final visited = <String>{
-        entrypoint.root.name,
-        ...immediateDependencies.map((d) => d.name)
-      };
-      for (final id in [
-        if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
-        ...solveResult.packages
-      ]) {
-        final name = id.name;
-        if (visited.contains(name)) continue;
-        visited.add(name);
-        rows.add(await analyzeDependency(PackageRange(
-            name,
-            id.source,
-            // No allowed version for transitive dependencies.
-            VersionConstraint.empty,
-            id.description)));
-      }
+    // Now add transitive dependencies:
+    final visited = <String>{
+      entrypoint.root.name,
+      ...immediateDependencies.map((d) => d.name)
+    };
+    for (final id in [
+      if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
+      ...unconstrainedSolveResult.packages
+    ]) {
+      final name = id.name;
+      if (visited.contains(name)) continue;
+      visited.add(name);
+      rows.add(await analyzeDependency(id.toRef()));
     }
 
     if (!argResults['up-to-date']) {
       rows.retainWhere(
-          (r) => (r.current ?? r.allowed)?.version != r.latest?.version);
+          (r) => (r.current ?? r.upgradable)?.version != r.latest?.version);
     }
     if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);
@@ -235,12 +230,12 @@ Future<void> _outputHuman(
     log.message('Found no outdated packages');
     return;
   }
+
   final formattedRows = <FormattedRow>[
     FormattedRow(
         null,
-        ['Package', 'Current', 'Allowed', 'Resolvable', 'Latest']
-            .map((s) =>
-                _FormattedString(s, formatting: _Formatting(isBold: true)))
+        ['Package', 'Current', 'Upgradable', 'Resolvable', 'Latest']
+            .map((s) => _FormattedString(s, format: log.bold))
             .toList()),
   ];
   for (final row in rows) {
@@ -263,14 +258,14 @@ Future<void> _outputHuman(
         case _DependencyKind.production:
           break;
         case _DependencyKind.dev:
-          outputRows.add(_FormattedString('\ndev_dependencies',
-                  formatting: _Formatting(isBold: true))
-              .formatted(useColors: useColors));
+          outputRows.add(
+              _FormattedString('\ndev_dependencies', format: log.bold)
+                  .formatted(useColors: useColors));
           break;
         case _DependencyKind.transitive:
-          outputRows.add(_FormattedString('\nTransitive dependencies',
-                  formatting: _Formatting(isBold: true))
-              .formatted(useColors: useColors));
+          outputRows.add(
+              _FormattedString('\nTransitive dependencies', format: log.bold)
+                  .formatted(useColors: useColors));
       }
       lastKind = row.kind;
     }
@@ -284,13 +279,50 @@ Future<void> _outputHuman(
     outputRows.add(b.toString());
   }
   outputRows.forEach(log.message);
+
+  var upgradable = rows
+      .where((row) =>
+          row.current != null &&
+          row.upgradable != null &&
+          row.current != row.upgradable)
+      .length;
+
+  var notAtResolvable = rows
+      .where(
+          (row) => row.resolvable != null && row.upgradable != row.resolvable)
+      .length;
+
+  if (upgradable != 0) {
+    if (upgradable == 1) {
+      log.message('1 dependency is currently not `pubspec.lock`\'ed at '
+          'the `Upgradable` version.\n'
+          'It can be upgraded with `pub upgrade`.');
+    } else {
+      log.message(
+          '\n$upgradable dependencies are currently not `pubspec.lock`\'ed at '
+          'the `Upgradable` version.\n'
+          'They can be upgraded with `pub upgrade`.');
+    }
+  }
+
+  if (notAtResolvable != 0) {
+    if (notAtResolvable == 1) {
+      log.message('\n1 dependency can be '
+          'upgraded to the ‘Resolvable’ version by updating the\n'
+          'constraints in `pubspec.yaml`.');
+    } else {
+      log.message('\n$notAtResolvable dependencies can be '
+          'upgraded to the ‘Resolvable’ version by updating the\n'
+          'constraints in `pubspec.yaml`.');
+    }
+  }
 }
 
 class FormattedRow {
-  final _PackageDetails row;
+  final _PackageDetails _row;
   final List<_FormattedString> columns;
-  FormattedRow(this.row, this.columns);
-  _DependencyKind get kind => row?.kind;
+  FormattedRow(this._row, this.columns);
+  _DependencyKind get kind => _row?.kind;
 }
 
 abstract class _Marker {
@@ -306,17 +338,17 @@ class _OutdatedMarker implements _Marker {
     Version previous;
     for (final pubspec in [
       packageDetails.current,
-      packageDetails.allowed,
+      packageDetails.upgradable,
       packageDetails.resolvable,
       packageDetails.latest
     ]) {
       final version = pubspec?.version;
       final isLatest = version == packageDetails.latest.version;
       final color =
-          isLatest ? (version == previous ? Color.gray : null) : Color.red;
-      final prefix = isLatest ? '' : '!';
+          isLatest ? (version == previous ? log.gray : null) : log.red;
+      final prefix = isLatest ? '' : '*';
       cols.add(_FormattedString((version ?? '-').toString(),
-          formatting: _Formatting(color: color, prefix: prefix)));
+          format: color, prefix: prefix));
       previous = version;
     }
     return FormattedRow(packageDetails, cols);
@@ -330,7 +362,7 @@ class _NoneMarker implements _Marker {
       _FormattedString(packageDetails.name),
       ...[
         packageDetails.current,
-        packageDetails.allowed,
+        packageDetails.upgradable,
         packageDetails.resolvable,
         packageDetails.latest,
       ].map((p) => _FormattedString(p?.version?.toString() ?? '-'))
@@ -341,12 +373,12 @@ class _NoneMarker implements _Marker {
 class _PackageDetails implements Comparable<_PackageDetails> {
   final String name;
   final Pubspec current;
-  final Pubspec allowed;
+  final Pubspec upgradable;
   final Pubspec resolvable;
   final Pubspec latest;
   final _DependencyKind kind;
 
-  _PackageDetails(this.name, this.current, this.allowed, this.resolvable,
+  _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
       this.latest, this.kind);
 
   @override
@@ -361,7 +393,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     return {
       'package': name,
       'current': current?.version?.toString(),
-      'allowed': allowed?.version?.toString(),
+      'allowed': upgradable?.version?.toString(),
       'resolvable': resolvable?.version?.toString(),
       'latest': latest?.version?.toString(),
     };
@@ -380,65 +412,29 @@ _DependencyKind _kind(String name, Entrypoint entrypoint) {
 
 enum _DependencyKind { production, dev, transitive }
 
-enum Color {
-  gray,
-  cyan,
-  green,
-  magenta,
-  red,
-  yellow,
-}
-
-class _Formatting {
-  final bool isBold;
-  final Color color;
-  final String prefix;
-  const _Formatting({this.isBold = false, this.color, this.prefix = ''});
-  String format(String text, bool useColors) {
-    if (useColors) {
-      if (isBold) {
-        text = log.bold(text);
-      }
-      if (color != null) {
-        switch (color) {
-          case Color.gray:
-            text = log.gray(text);
-            break;
-          case Color.cyan:
-            text = log.cyan(text);
-            break;
-          case Color.green:
-            text = log.green(text);
-            break;
-          case Color.magenta:
-            text = log.magenta(text);
-            break;
-          case Color.red:
-            text = log.red(text);
-            break;
-          case Color.yellow:
-            text = log.yellow(text);
-            break;
-        }
-      }
-      return text;
-    }
-    return prefix + text;
-  }
-
-  int computeLength(String text, {@required bool useColors}) {
-    return useColors ? text.length : prefix.length + text.length;
-  }
-}
-
 class _FormattedString {
   final String value;
-  final _Formatting formatting;
-  _FormattedString(this.value,
-      {this.formatting = const _Formatting(isBold: false)});
 
-  int computeLength({@required bool useColors}) =>
-      formatting.computeLength(value, useColors: useColors);
-  String formatted({@required bool useColors}) =>
-      formatting.format(value, useColors);
+  /// Should apply the ansi codes to present this string.
+  final String Function(String) _format;
+
+  /// A prefix for marking this string if colors are not used.
+  final String _prefix;
+
+  _FormattedString(this.value, {String Function(String) format, prefix = ''})
+      : _format = format ?? _noFormat,
+        _prefix = prefix;
+
+  String formatted({@required bool useColors}) {
+    if (useColors) {
+      return _format(value);
+    }
+    return _prefix + value;
+  }
+
+  int computeLength({@required bool useColors}) {
+    return useColors ? value.length : _prefix.length + value.length;
+  }
+
+  static String _noFormat(String x) => x;
 }

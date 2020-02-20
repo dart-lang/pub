@@ -75,6 +75,26 @@ class Progress {
     stdout.writeln();
   }
 
+  /// Erases the progress message and stops the progress indicator.
+  void stopAndClear() async {
+    _stopwatch.stop();
+
+    if (_timer != null) {
+      stdout.write('\b' * (_message.length + '... '.length + _timeLength));
+    }
+
+    // Always log the final time as [log.fine] because for the most part normal
+    // users don't care about the precise time information beyond what's shown
+    // in the animation.
+    log.fine('$_message finished $_time.');
+
+    // If we were animating, print one final update to show the user the final
+    // time.
+    if (_timer == null) return;
+    _timer.cancel();
+    _timer = null;
+  }
+
   /// Stop animating the progress indicator.
   ///
   /// This will continue running the stopwatch so that the full time can be
