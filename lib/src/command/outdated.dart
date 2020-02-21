@@ -64,15 +64,6 @@ class OutdatedCommand extends PubCommand {
   Future run() async {
     final includeDevDependencies = argResults['dev-dependencies'];
 
-    final oldVerbosity = log.verbosity;
-    // Unless the user overrides the verbosity, we want to filter out the
-    // normal pub output from 'Resolving dependencies...` if we are
-    // not attached to a terminal. This is to not pollute stdout when the output
-    // of `pub` is piped somewhere.
-    if (log.verbosity == log.Verbosity.NORMAL && !stdout.hasTerminal) {
-      log.verbosity = log.Verbosity.WARNING;
-    }
-
     final upgradePubspec = includeDevDependencies
         ? entrypoint.root.pubspec
         : _stripDevDependencies(entrypoint.root.pubspec);
@@ -81,21 +72,25 @@ class OutdatedCommand extends PubCommand {
 
     SolveResult upgradableSolveResult;
     SolveResult resolvableSolveResult;
-    await log.spinner('Resolving', () async {
-      upgradableSolveResult = await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(upgradePubspec),
-      );
 
-      resolvableSolveResult = await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(resolvablePubspec),
-      );
-    });
+    await log.warningsOnlyUnlessTerminal(
+      () => log.spinner(
+        'Resolving',
+        () async {
+          upgradableSolveResult = await resolveVersions(
+            SolveType.UPGRADE,
+            cache,
+            Package.inMemory(upgradePubspec),
+          );
 
-    log.verbosity = oldVerbosity;
+          resolvableSolveResult = await resolveVersions(
+            SolveType.UPGRADE,
+            cache,
+            Package.inMemory(resolvablePubspec),
+          );
+        },
+      ),
+    );
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
