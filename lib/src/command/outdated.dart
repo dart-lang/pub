@@ -73,25 +73,25 @@ class OutdatedCommand extends PubCommand {
       log.verbosity = log.Verbosity.WARNING;
     }
 
-    final constrainedPubspec = includeDevDependencies
+    final upgradePubspec = includeDevDependencies
         ? entrypoint.root.pubspec
         : _stripDevDependencies(entrypoint.root.pubspec);
 
-    var unconstrainedPubspec = _stripVersionConstraints(constrainedPubspec);
+    var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
 
-    SolveResult constrainedSolveResult;
-    SolveResult unconstrainedSolveResult;
+    SolveResult upgradableSolveResult;
+    SolveResult resolvableSolveResult;
     await log.spinner('Resolving', () async {
-      constrainedSolveResult = await resolveVersions(
+      upgradableSolveResult = await resolveVersions(
         SolveType.UPGRADE,
         cache,
-        Package.inMemory(constrainedPubspec),
+        Package.inMemory(upgradePubspec),
       );
 
-      unconstrainedSolveResult = await resolveVersions(
+      resolvableSolveResult = await resolveVersions(
         SolveType.UPGRADE,
         cache,
-        Package.inMemory(unconstrainedPubspec),
+        Package.inMemory(resolvablePubspec),
       );
     });
 
@@ -105,10 +105,10 @@ class OutdatedCommand extends PubCommand {
           .map((id) => id.version)
           .toList()
             ..sort(argResults['pre-releases'] ? null : Version.prioritize);
-      final upgradable = constrainedSolveResult.packages
+      final upgradable = upgradableSolveResult.packages
           .firstWhere((id) => id.name == name, orElse: () => null)
           ?.version;
-      final resolvable = unconstrainedSolveResult.packages
+      final resolvable = resolvableSolveResult.packages
           .firstWhere((id) => id.name == name, orElse: () => null)
           ?.version;
       final latest = available.last;
@@ -137,11 +137,11 @@ class OutdatedCommand extends PubCommand {
     };
     for (final id in [
       if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
-      ...unconstrainedSolveResult.packages
+      ...upgradableSolveResult.packages,
+      ...resolvableSolveResult.packages
     ]) {
       final name = id.name;
-      if (visited.contains(name)) continue;
-      visited.add(name);
+      if (!visited.add(name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
@@ -156,14 +156,13 @@ class OutdatedCommand extends PubCommand {
     rows.sort();
 
     if (argResults['format'] == 'json') {
-      // TODO(sigurdm): decide on and document the json format.
       await _outputJson(rows);
     } else {
       final useColors = argResults['format'] == 'color' ||
           (!argResults.wasParsed('format') && stdin.hasTerminal);
       final marker = {
-        'outdated': _OutdatedMarker(),
-        'none': _NoneMarker(),
+        'outdated': oudatedMarker,
+        'none': noneMarker,
       }[argResults['mark']];
       await _outputHuman(rows, marker, useColors);
     }
@@ -230,55 +229,44 @@ Future<void> _outputHuman(
     log.message('Found no outdated packages');
     return;
   }
+  final directRows = rows.where((row) => row.kind == _DependencyKind.direct);
+  final devRows = rows.where((row) => row.kind == _DependencyKind.dev);
+  final transitiveRows =
+      rows.where((row) => row.kind == _DependencyKind.transitive);
 
-  final formattedRows = <FormattedRow>[
-    FormattedRow(
-        null,
-        ['Package', 'Current', 'Upgradable', 'Resolvable', 'Latest']
-            .map((s) => _FormattedString(s, format: log.bold))
-            .toList()),
+  final formattedRows = <List<_FormattedString>>[
+    ['Package', 'Current', 'Upgradable', 'Resolvable', 'Latest']
+        .map((s) => _FormattedString(s, format: log.bold))
+        .toList(),
+    ...await Future.wait(directRows.map(marker)),
+    if (devRows.isNotEmpty) [_FormattedString('\ndev_dependencies')],
+    ...await Future.wait(devRows.map(marker)),
+    if (transitiveRows.isNotEmpty)
+      [_FormattedString('\nTransitive dependencies')],
+    ...await Future.wait(transitiveRows.map(marker)),
   ];
-  for (final row in rows) {
-    formattedRows.add(await marker.formatRow(row));
-  }
+
   final columnWidths = <int, int>{};
   for (var i = 0; i < formattedRows.length; i++) {
-    for (var j = 0; j < formattedRows[i].columns.length; j++) {
-      final currentMaxWidth = columnWidths[j] ?? 0;
-      columnWidths[j] = max(
-          formattedRows[i].columns[j].computeLength(useColors: useColors),
-          currentMaxWidth);
-    }
-  }
-  final outputRows = <String>[];
-  _DependencyKind lastKind;
-  for (final row in formattedRows) {
-    if (lastKind != row.kind) {
-      switch (row.kind) {
-        case _DependencyKind.production:
-          break;
-        case _DependencyKind.dev:
-          outputRows.add(
-              _FormattedString('\ndev_dependencies', format: log.bold)
-                  .formatted(useColors: useColors));
-          break;
-        case _DependencyKind.transitive:
-          outputRows.add(
-              _FormattedString('\nTransitive dependencies', format: log.bold)
-                  .formatted(useColors: useColors));
+    if (formattedRows[i].length > 1) {
+      for (var j = 0; j < formattedRows[i].length; j++) {
+        final currentMaxWidth = columnWidths[j] ?? 0;
+        columnWidths[j] = max(
+            formattedRows[i][j].computeLength(useColors: useColors),
+            currentMaxWidth);
       }
-      lastKind = row.kind;
     }
-    final b = StringBuffer();
-    for (var j = 0; j < row.columns.length; j++) {
-      b.write(row.columns[j].formatted(useColors: useColors));
-      b.write(' ' *
-          ((columnWidths[j] + 2) -
-              row.columns[j].computeLength(useColors: useColors)));
-    }
-    outputRows.add(b.toString());
   }
-  outputRows.forEach(log.message);
+
+  for (final row in formattedRows) {
+    final b = StringBuffer();
+    for (var j = 0; j < row.length; j++) {
+      b.write(row[j].formatted(useColors: useColors));
+      b.write(' ' *
+          ((columnWidths[j] + 2) - row[j].computeLength(useColors: useColors)));
+    }
+    log.message(b.toString());
+  }
 
   var upgradable = rows
       .where((row) =>
@@ -318,56 +306,40 @@ Future<void> _outputHuman(
   }
 }
 
-class FormattedRow {
-  final _PackageDetails _row;
-  final List<_FormattedString> columns;
-  FormattedRow(this._row, this.columns);
-  _DependencyKind get kind => _row?.kind;
+typedef _Marker = Future<List<_FormattedString>> Function(_PackageDetails);
+
+Future<List<_FormattedString>> oudatedMarker(
+    _PackageDetails packageDetails) async {
+  final cols = [_FormattedString(packageDetails.name)];
+  Version previous;
+  for (final pubspec in [
+    packageDetails.current,
+    packageDetails.upgradable,
+    packageDetails.resolvable,
+    packageDetails.latest
+  ]) {
+    final version = pubspec?.version;
+    final isLatest = version == packageDetails.latest.version;
+    final color = isLatest ? (version == previous ? log.gray : null) : log.red;
+    final prefix = isLatest ? '' : '*';
+    cols.add(_FormattedString((version ?? '-').toString(),
+        format: color, prefix: prefix));
+    previous = version;
+  }
+  return cols;
 }
 
-abstract class _Marker {
-  Future<FormattedRow> formatRow(_PackageDetails packageDetails);
-}
-
-class _OutdatedMarker implements _Marker {
-  _OutdatedMarker();
-
-  @override
-  Future<FormattedRow> formatRow(_PackageDetails packageDetails) async {
-    final cols = [_FormattedString(packageDetails.name)];
-    Version previous;
-    for (final pubspec in [
+Future<List<_FormattedString>> noneMarker(
+    _PackageDetails packageDetails) async {
+  return [
+    _FormattedString(packageDetails.name),
+    ...[
       packageDetails.current,
       packageDetails.upgradable,
       packageDetails.resolvable,
-      packageDetails.latest
-    ]) {
-      final version = pubspec?.version;
-      final isLatest = version == packageDetails.latest.version;
-      final color =
-          isLatest ? (version == previous ? log.gray : null) : log.red;
-      final prefix = isLatest ? '' : '*';
-      cols.add(_FormattedString((version ?? '-').toString(),
-          format: color, prefix: prefix));
-      previous = version;
-    }
-    return FormattedRow(packageDetails, cols);
-  }
-}
-
-class _NoneMarker implements _Marker {
-  @override
-  Future<FormattedRow> formatRow(_PackageDetails packageDetails) async {
-    return FormattedRow(packageDetails, [
-      _FormattedString(packageDetails.name),
-      ...[
-        packageDetails.current,
-        packageDetails.upgradable,
-        packageDetails.resolvable,
-        packageDetails.latest,
-      ].map((p) => _FormattedString(p?.version?.toString() ?? '-'))
-    ]);
-  }
+      packageDetails.latest,
+    ].map((p) => _FormattedString(p?.version?.toString() ?? '-'))
+  ];
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
@@ -402,7 +374,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
 
 _DependencyKind _kind(String name, Entrypoint entrypoint) {
   if (entrypoint.root.dependencies.containsKey(name)) {
-    return _DependencyKind.production;
+    return _DependencyKind.direct;
   } else if (entrypoint.root.devDependencies.containsKey(name)) {
     return _DependencyKind.dev;
   } else {
@@ -410,7 +382,16 @@ _DependencyKind _kind(String name, Entrypoint entrypoint) {
   }
 }
 
-enum _DependencyKind { production, dev, transitive }
+enum _DependencyKind {
+  /// Direct non-dev dependencies.
+  direct,
+
+  /// Direct dev dependencies.
+  dev,
+
+  /// Transitive dependencies.
+  transitive
+}
 
 class _FormattedString {
   final String value;
@@ -426,10 +407,7 @@ class _FormattedString {
         _prefix = prefix;
 
   String formatted({@required bool useColors}) {
-    if (useColors) {
-      return _format(value);
-    }
-    return _prefix + value;
+    return useColors ? _format(value) : _prefix + value;
   }
 
   int computeLength({@required bool useColors}) {
