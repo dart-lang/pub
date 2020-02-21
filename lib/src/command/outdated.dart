@@ -360,7 +360,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     return {
       'package': name,
       'current': current?.version?.toString(),
-      'allowed': upgradable?.version?.toString(),
+      'upgradable': upgradable?.version?.toString(),
       'resolvable': resolvable?.version?.toString(),
       'latest': latest?.version?.toString(),
     };
