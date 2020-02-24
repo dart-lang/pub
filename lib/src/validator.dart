@@ -19,6 +19,7 @@ import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/flutter_plugin_format.dart';
+import 'validator/language_version.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
 import 'validator/pubspec.dart';
@@ -126,6 +127,7 @@ abstract class Validator {
       SdkConstraintValidator(entrypoint),
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
+      LanguageVersionValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
