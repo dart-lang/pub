@@ -33,8 +33,6 @@ void main() {
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
-
     test('has no CHANGELOG', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0'),
