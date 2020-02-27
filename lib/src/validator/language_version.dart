@@ -4,11 +4,15 @@
 
 import 'dart:async';
 
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
 import '../entrypoint.dart';
+import '../log.dart' as log;
+import '../utils.dart';
 import '../validator.dart';
 
 /// Validates that libraries do not opt into newer language versions than what
@@ -38,8 +42,18 @@ class LanguageVersionValidator extends Validator {
     for (final path in ['lib', 'bin']
         .map((path) => entrypoint.root.listFiles(beneath: path))
         .expand((files) => files)
+        .map(p.absolute)
         .where((String file) => p.extension(file) == '.dart')) {
-      final unit = analysisContextManager.parse(path);
+      CompilationUnit unit;
+      try {
+        unit = analysisContextManager.parse(path);
+      } on AnalyzerErrorGroup catch (e, s) {
+        // Ignore files that do not parse.
+        log.fine(getErrorMessage(e));
+        log.fine(Chain.forTrace(s).terse);
+        continue;
+      }
+
       final unitLanguageVersion = unit.languageVersion;
       if (unitLanguageVersion != null) {
         if (Version(unitLanguageVersion.major, unitLanguageVersion.minor, 0) >
