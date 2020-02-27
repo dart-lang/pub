@@ -18,24 +18,15 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectNoValidationError(changelog));
-
-    test('has no CHANGELOG', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0'),
-      ]).create();
-      expectNoValidationError(changelog);
-    });
-
     test('has a CHANGELOG that includes the current package version', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0'),
         d.file('CHANGELOG.md', '''
-          # 1.0.0
-          
-          * Solves traveling salesman problem in polynomial time.
-          * Passes Turing test.
-        '''),
+# 1.0.0
+
+* Solves traveling salesman problem in polynomial time.
+* Passes Turing test.
+'''),
       ]).create();
       expectNoValidationError(changelog);
     });
@@ -44,16 +35,36 @@ void main() {
   group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
 
+    test('has no CHANGELOG', () async {
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0'),
+      ]).create();
+      expectValidationWarning(changelog);
+    });
+
+    test('has has a CHANGELOG not named CHANGELOG.md', () async {
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0'),
+        d.file('CHANGELOG', '''
+# 1.0.0
+
+* Solves traveling salesman problem in polynomial time.
+* Passes Turing test.
+'''),
+      ]).create();
+      expectValidationWarning(changelog);
+    });
+
     test('has a CHANGELOG that doesn\'t include the current package version',
         () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.1'),
         d.file('CHANGELOG.md', '''
-          # 1.0.0
-          
-          * Solves traveling salesman problem in polynomial time.
-          * Passes Turing test.
-        '''),
+# 1.0.0
+
+* Solves traveling salesman problem in polynomial time.
+* Passes Turing test.
+'''),
       ]).create();
       expectValidationWarning(changelog);
     });
