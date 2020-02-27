@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import 'lock_file.dart';
-import 'log.dart' as log;
 import 'package.dart';
 import 'solver/result.dart';
 import 'solver/type.dart';

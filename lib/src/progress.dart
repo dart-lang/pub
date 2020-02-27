@@ -76,7 +76,7 @@ class Progress {
   }
 
   /// Erases the progress message and stops the progress indicator.
-  void stopAndClear() async {
+  Future<void> stopAndClear() async {
     _stopwatch.stop();
 
     if (_timer != null) {

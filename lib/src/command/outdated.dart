@@ -7,18 +7,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:pub/src/entrypoint.dart';
-import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 import '../source.dart';
+import '../source/hosted.dart';
 
 class OutdatedCommand extends PubCommand {
   @override
@@ -179,7 +179,6 @@ Pubspec _stripDevDependencies(Pubspec original) {
     original.name,
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
-    devDependencies: null,
   );
 }
 
@@ -219,7 +218,9 @@ Future<void> _outputJson(List<_PackageDetails> rows) async {
 }
 
 Future<void> _outputHuman(
-    List<_PackageDetails> rows, _Marker marker, bool useColors) async {
+    List<_PackageDetails> rows,
+    Future<List<_FormattedString>> Function(_PackageDetails) marker,
+    bool useColors) async {
   if (rows.isEmpty) {
     log.message('Found no outdated packages');
     return;
@@ -300,8 +301,6 @@ Future<void> _outputHuman(
     }
   }
 }
-
-typedef _Marker = Future<List<_FormattedString>> Function(_PackageDetails);
 
 Future<List<_FormattedString>> oudatedMarker(
     _PackageDetails packageDetails) async {
