@@ -29,8 +29,7 @@ class OutdatedCommand extends PubCommand {
   @override
   String get invocation => 'pub outdated [options]';
   @override
-  String get docUrl =>
-      'https://dart.dev/tools/pub/cmd/pub-outdated'; // TODO(sigurdm): create this
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
   OutdatedCommand() {
     argParser.addOption('format',
@@ -62,6 +61,8 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future run() async {
+    entrypoint.assertUpToDate();
+
     final includeDevDependencies = argResults['dev-dependencies'];
 
     final upgradePubspec = includeDevDependencies
@@ -159,7 +160,12 @@ class OutdatedCommand extends PubCommand {
         'outdated': oudatedMarker,
         'none': noneMarker,
       }[argResults['mark']];
-      await _outputHuman(rows, marker, useColors);
+      await _outputHuman(
+        rows,
+        marker,
+        useColors: useColors,
+        includeDevDependencies: includeDevDependencies,
+      );
     }
   }
 
@@ -217,10 +223,9 @@ Future<void> _outputJson(List<_PackageDetails> rows) async {
       .convert({'packages': rows.map((row) => row.toJson()).toList()}));
 }
 
-Future<void> _outputHuman(
-    List<_PackageDetails> rows,
+Future<void> _outputHuman(List<_PackageDetails> rows,
     Future<List<_FormattedString>> Function(_PackageDetails) marker,
-    bool useColors) async {
+    {@required bool useColors, @required bool includeDevDependencies}) async {
   if (rows.isEmpty) {
     log.message('Found no outdated packages');
     return;
@@ -232,13 +237,26 @@ Future<void> _outputHuman(
 
   final formattedRows = <List<_FormattedString>>[
     ['Package', 'Current', 'Upgradable', 'Resolvable', 'Latest']
-        .map((s) => _FormattedString(s, format: log.bold))
+        .map((s) => _format(s, log.bold))
         .toList(),
+    [
+      directRows.isEmpty
+          ? _raw('dependencies: all up-to-date')
+          : _format('dependencies', log.bold),
+    ],
     ...await Future.wait(directRows.map(marker)),
-    if (devRows.isNotEmpty) [_FormattedString('\ndev_dependencies')],
+    if (includeDevDependencies)
+      [
+        devRows.isEmpty
+            ? _raw('\ndev_dependencies: all up-to-date')
+            : _format('\ndev_dependencies', log.bold),
+      ],
     ...await Future.wait(devRows.map(marker)),
-    if (transitiveRows.isNotEmpty)
-      [_FormattedString('\nTransitive dependencies')],
+    [
+      transitiveRows.isEmpty
+          ? _raw('\ntransitive dependencies: all up-to-date')
+          : _format('\ntransitive dependencies', log.bold)
+    ],
     ...await Future.wait(transitiveRows.map(marker)),
   ];
 
@@ -313,11 +331,19 @@ Future<List<_FormattedString>> oudatedMarker(
     packageDetails.latest
   ]) {
     final version = pubspec?.version;
-    final isLatest = version == packageDetails.latest.version;
-    final color = isLatest ? (version == previous ? log.gray : null) : log.red;
-    final prefix = isLatest ? '' : '*';
-    cols.add(_FormattedString((version ?? '-').toString(),
-        format: color, prefix: prefix));
+    if (version == null) {
+      cols.add(_raw('-'));
+    } else {
+      final isLatest = version == packageDetails.latest.version;
+      String Function(String) color;
+      if (isLatest) {
+        color = version == previous ? color = log.gray : null;
+      } else {
+        color = log.red;
+      }
+      final prefix = isLatest ? '' : '*';
+      cols.add(_format(version?.toString() ?? '-', color, prefix: prefix));
+    }
     previous = version;
   }
   return cols;
@@ -332,7 +358,7 @@ Future<List<_FormattedString>> noneMarker(
       packageDetails.upgradable,
       packageDetails.resolvable,
       packageDetails.latest,
-    ].map((p) => _FormattedString(p?.version?.toString() ?? '-'))
+    ].map((p) => _raw(p?.version?.toString() ?? '-'))
   ];
 }
 
@@ -386,6 +412,12 @@ enum _DependencyKind {
   /// Transitive dependencies.
   transitive
 }
+
+_FormattedString _format(String value, Function(String) format, {prefix = ''}) {
+  return _FormattedString(value, format: format, prefix: prefix);
+}
+
+_FormattedString _raw(String value) => _FormattedString(value);
 
 class _FormattedString {
   final String value;
