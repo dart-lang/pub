@@ -24,6 +24,6 @@ abstract class BarbackCommand extends PubCommand {
 
     fail(log.red('Dart 2 has a new build system. Learn how to migrate '
         "from ${log.bold('pub build')} and\n"
-        "${log.bold('pub serve')}: https://webdev.dartlang.org/dart-2\n"));
+        "${log.bold('pub serve')}: https://dart.dev/web/dart-2\n"));
   }
 }
