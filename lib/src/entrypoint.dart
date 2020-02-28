@@ -675,7 +675,7 @@ class Entrypoint {
 
     // Version 2 is the initial version number for `package_config.json`,
     // because `.packages` was version 1 (even if it was a different file).
-    // If the version is differnet from 2, then it must be a newer incompatible
+    // If the version is different from 2, then it must be a newer incompatible
     // version, hence, the user should run `pub get` with the downgraded SDK.
     if (cfg.configVersion != 2) {
       badPackageConfig();
@@ -707,7 +707,7 @@ class Entrypoint {
         continue;
       }
 
-      // If a package is cached, then it's universially immutable and we need
+      // If a package is cached, then it's universally immutable and we need
       // not check if the language version is correct.
       final source = cache.source(id.source);
       if (source is CachedSource) {
