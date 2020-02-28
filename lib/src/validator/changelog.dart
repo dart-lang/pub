@@ -25,7 +25,7 @@ class ChangelogValidator extends Validator {
       }
 
       if (!changelog.endsWith('CHANGELOG.md')) {
-        warnings.add('Please consider renaming $changelog to `CHANGELOG.md`.'
+        warnings.add('Please consider renaming $changelog to `CHANGELOG.md`. '
             'See https://dart.dev/tools/pub/publishing#important-files.');
       }
 
