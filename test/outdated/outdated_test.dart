@@ -34,7 +34,7 @@ Future<void> variations(String name) async {
   expectMatchesGoldenFile(buffer.toString(), 'test/outdated/goldens/$name.txt');
 }
 
-void main() async {
+Future<void> main() async {
   test('no dependencies', () async {
     await d.appDir().create();
     await pubGet();
