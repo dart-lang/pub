@@ -42,10 +42,10 @@ dependency_overrides:
   analyzer:
     git:
       url: https://github.com/dart-lang/sdk.git
-      ref: ce5fb94014d4859ace1d1732ac7c51599010a6ea
+      ref: bbb449dfa44ff40d3192959731b5893cbf66b205
       path: pkg/analyzer
   _fe_analyzer_shared:
     git:
       url: https://github.com/dart-lang/sdk.git
-      ref: ce5fb94014d4859ace1d1732ac7c51599010a6ea
+      ref: bbb449dfa44ff40d3192959731b5893cbf66b205
       path: pkg/_fe_analyzer_shared
