@@ -104,6 +104,7 @@ class SolveReport {
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
+    removed.remove(_root.name); // Never consider root.
     if (removed.isNotEmpty) {
       _output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
