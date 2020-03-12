@@ -76,21 +76,21 @@ class OutdatedCommand extends PubCommand {
 
     await log.warningsOnlyUnlessTerminal(
       () => log.spinner(
-        'Resolving',
-        () async {
-          upgradableSolveResult = await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(upgradePubspec),
-          );
+            'Resolving',
+            () async {
+              upgradableSolveResult = await resolveVersions(
+                SolveType.UPGRADE,
+                cache,
+                Package.inMemory(upgradePubspec),
+              );
 
-          resolvableSolveResult = await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(resolvablePubspec),
-          );
-        },
-      ),
+              resolvableSolveResult = await resolveVersions(
+                SolveType.UPGRADE,
+                cache,
+                Package.inMemory(resolvablePubspec),
+              );
+            },
+          ),
     );
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
@@ -296,26 +296,26 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 
   if (upgradable != 0) {
     if (upgradable == 1) {
-      log.message('1 dependency is currently not `pubspec.lock`\'ed at '
-          'the `Upgradable` version.\n'
-          'It can be upgraded with `pub upgrade`.');
+      log.message('1 upgradable dependency is locked (in pubspec.lock) to'
+          ' an older version.\n'
+          'To update it, use `pub upgrade`.');
     } else {
       log.message(
-          '\n$upgradable dependencies are currently not `pubspec.lock`\'ed at '
-          'the `Upgradable` version.\n'
-          'They can be upgraded with `pub upgrade`.');
+          '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
+          'to older versions.\n'
+          'To update these dependencies, use `pub upgrade`.');
     }
   }
 
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
-      log.message('\n1 dependency can be '
-          'upgraded to the ‘Resolvable’ version by updating the\n'
-          'constraints in `pubspec.yaml`.');
+      log.message('\n1 dependency is constrained to a'
+          'version that is older than a resolvable version.\n'
+          'To update it, edit pubspec.yaml.');
     } else {
-      log.message('\n$notAtResolvable dependencies can be '
-          'upgraded to the ‘Resolvable’ version by updating the\n'
-          'constraints in `pubspec.yaml`.');
+      log.message('\n$notAtResolvable  dependencies are constrained to '
+          'versions that are older than a resolvable version.\n'
+          'To update these dependencies, edit pubspec.yaml.');
     }
   }
 }
