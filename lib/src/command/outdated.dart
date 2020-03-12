@@ -76,21 +76,21 @@ class OutdatedCommand extends PubCommand {
 
     await log.warningsOnlyUnlessTerminal(
       () => log.spinner(
-            'Resolving',
-            () async {
-              upgradableSolveResult = await resolveVersions(
-                SolveType.UPGRADE,
-                cache,
-                Package.inMemory(upgradePubspec),
-              );
+        'Resolving',
+        () async {
+          upgradableSolveResult = await resolveVersions(
+            SolveType.UPGRADE,
+            cache,
+            Package.inMemory(upgradePubspec),
+          );
 
-              resolvableSolveResult = await resolveVersions(
-                SolveType.UPGRADE,
-                cache,
-                Package.inMemory(resolvablePubspec),
-              );
-            },
-          ),
+          resolvableSolveResult = await resolveVersions(
+            SolveType.UPGRADE,
+            cache,
+            Package.inMemory(resolvablePubspec),
+          );
+        },
+      ),
     );
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
