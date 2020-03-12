@@ -364,6 +364,21 @@ void dumpTranscript() {
   stderr.writeln('---- End log transcript ----');
 }
 
+/// Filter out normal pub output when not attached to a terminal
+///
+/// Unless the user has overriden the verbosity,
+///
+/// This is useful to not pollute stdout when the output is piped somewhere.
+Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
+  final oldVerbosity = verbosity;
+  if (verbosity == Verbosity.NORMAL && !stdout.hasTerminal) {
+    verbosity = Verbosity.WARNING;
+  }
+  final result = await callback();
+  verbosity = oldVerbosity;
+  return result;
+}
+
 /// Prints [message] then displays an updated elapsed time until the future
 /// returned by [callback] completes.
 ///
@@ -377,6 +392,17 @@ Future<T> progress<T>(String message, Future<T> Function() callback) {
   var progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
+}
+
+/// Like [progress] but erases the message once done.
+Future<T> spinner<T>(String message, Future<T> Function() callback) {
+  _stopProgress();
+
+  var progress = Progress(message);
+  _animatedProgress = progress;
+  return callback().whenComplete(() {
+    progress.stopAndClear();
+  });
 }
 
 /// Stops animating the running progress indicator, if currently running.
