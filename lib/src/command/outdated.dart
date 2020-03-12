@@ -296,8 +296,8 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 
   if (upgradable != 0) {
     if (upgradable == 1) {
-      log.message('1 upgradable dependency is locked (in pubspec.lock) to'
-          ' an older version.\n'
+      log.message('1 upgradable dependency is locked (in pubspec.lock) to '
+          'an older version.\n'
           'To update it, use `pub upgrade`.');
     } else {
       log.message(
@@ -309,7 +309,7 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
-      log.message('\n1 dependency is constrained to a'
+      log.message('\n1 dependency is constrained to a '
           'version that is older than a resolvable version.\n'
           'To update it, edit pubspec.yaml.');
     } else {

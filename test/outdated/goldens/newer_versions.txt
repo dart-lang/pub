@@ -134,6 +134,6 @@ transitive  *1.2.3   2.0.0       2.0.0       2.0.0
 2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-1 dependency is constrained to aversion that is older than a resolvable version.
+1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml.
 
