@@ -55,12 +55,12 @@ class SdkConstraintValidator extends Validator {
           constrainMin.isPreRelease &&
           !packageVersion.isPreRelease) {
         warnings.add(
-            'The Dart SDK constraint in `pubspec.yaml` is on pre-release '
-            'version $constrainMin, but you are publishing a '
-            'non-pre-release version $packageVersion.\n'
-            'Consider publishing a pre-release instead.\n'
-            'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
-            'For more information on pre-releases.');
+          'Packages with an SDK constraint on a pre-release of the Dart SDK '
+          'should themselves be published as a pre-release version. '
+          'If this package needs Dart version $constraintMin, consider '
+          'publishing the package as a pre-release instead.\n'
+          'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
+          'For more information on pre-releases.');
       }
     }
 
