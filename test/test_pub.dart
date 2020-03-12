@@ -10,11 +10,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
-import 'package:package_resolver/package_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf_test_handler/shelf_test_handler.dart';
@@ -367,7 +367,9 @@ Future<PubProcess> startPub(
     pubPath = snapshotPath;
   }
 
-  var dartArgs = [await PackageResolver.current.processArgument];
+  final dotPackagesPath = (await Isolate.packageConfig).toString();
+
+  var dartArgs = ['--packages=$dotPackagesPath'];
   dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
