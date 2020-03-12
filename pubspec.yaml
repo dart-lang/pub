@@ -35,7 +35,7 @@ dev_dependencies:
   test_process: ^1.0.0
 
 dependency_overrides:
-  // Use a never version of these packages while waiting for a release.
+  # Use a never version of these packages while waiting for a release.
   analyzer:
     git:
       url: https://github.com/dart-lang/sdk.git
