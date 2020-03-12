@@ -64,8 +64,9 @@ class LanguageVersionValidator extends Validator {
               '${unitLanguageVersion.major}.${unitLanguageVersion.minor}';
           final relativePath = p.relative(path);
           errors.add('$relativePath is declaring language version '
-              '$unitLanguageVersionString that is newer than '
-              '$packageLanguageVersionString declared in `pubspec.yaml`.');
+              '$unitLanguageVersionString that is newer than the SDK '
+              'constraint $packageLanguageVersionString declared in '
+              '`pubspec.yaml`.');
         }
       }
     }
