@@ -180,7 +180,8 @@ class GlobalPackages {
     // being available, report that as a [dataError].
     SolveResult result;
     try {
-      result = await resolveVersions(SolveType.GET, cache, root);
+      result = await log.progress('Resolving dependencies',
+          () => resolveVersions(SolveType.GET, cache, root));
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {

@@ -61,48 +61,46 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
   // normal pub output that may be shown when recompiling snapshots if we are
   // not attached to a terminal. This is to not pollute stdout when the output
   // of `pub run` is piped somewhere.
-  if (log.verbosity == log.Verbosity.NORMAL && !stdout.hasTerminal) {
-    log.verbosity = log.Verbosity.WARNING;
-  }
+  return await log.warningsOnlyUnlessTerminal(() async {
+    // Uncached packages are run from source.
+    if (snapshotPath != null) {
+      // Since we don't access the package graph, this doesn't happen
+      // automatically.
+      entrypoint.assertUpToDate();
 
-  // Uncached packages are run from source.
-  if (snapshotPath != null) {
-    // Since we don't access the package graph, this doesn't happen
-    // automatically.
-    entrypoint.assertUpToDate();
-
-    var result = await _runOrCompileSnapshot(snapshotPath, args,
-        packagesFile: packagesFile, checked: checked, recompile: recompile);
-    if (result != null) return result;
-  }
-
-  // If the command has a path separator, then it's a path relative to the
-  // root of the package. Otherwise, it's implicitly understood to be in
-  // "bin".
-  if (p.split(executable).length == 1) executable = p.join('bin', executable);
-
-  var executablePath = await _executablePath(entrypoint, package, executable);
-
-  if (executablePath == null) {
-    var message = 'Could not find ${log.bold(executable)}';
-    if (entrypoint.isGlobal || package != entrypoint.root.name) {
-      message += ' in package ${log.bold(package)}';
+      var result = await _runOrCompileSnapshot(snapshotPath, args,
+          packagesFile: packagesFile, checked: checked, recompile: recompile);
+      if (result != null) return result;
     }
-    log.error('$message.');
-    return exit_codes.NO_INPUT;
-  }
 
-  // We use an absolute path here not because the VM insists but because it's
-  // helpful for the subprocess to be able to spawn Dart with
-  // Platform.executableArguments and have that work regardless of the working
-  // directory.
-  var packageConfig = p.toUri(p.absolute(packagesFile));
+    // If the command has a path separator, then it's a path relative to the
+    // root of the package. Otherwise, it's implicitly understood to be in
+    // "bin".
+    if (p.split(executable).length == 1) executable = p.join('bin', executable);
 
-  await isolate.runUri(p.toUri(executablePath), args.toList(), null,
-      checked: checked,
-      automaticPackageResolution: packageConfig == null,
-      packageConfig: packageConfig);
-  return exitCode;
+    var executablePath = await _executablePath(entrypoint, package, executable);
+
+    if (executablePath == null) {
+      var message = 'Could not find ${log.bold(executable)}';
+      if (entrypoint.isGlobal || package != entrypoint.root.name) {
+        message += ' in package ${log.bold(package)}';
+      }
+      log.error('$message.');
+      return exit_codes.NO_INPUT;
+    }
+
+    // We use an absolute path here not because the VM insists but because it's
+    // helpful for the subprocess to be able to spawn Dart with
+    // Platform.executableArguments and have that work regardless of the working
+    // directory.
+    var packageConfig = p.toUri(p.absolute(packagesFile));
+
+    await isolate.runUri(p.toUri(executablePath), args.toList(), null,
+        checked: checked,
+        automaticPackageResolution: packageConfig == null,
+        packageConfig: packageConfig);
+    return exitCode;
+  });
 }
 
 /// Returns the full path the VM should use to load the executable at [path].
