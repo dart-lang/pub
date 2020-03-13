@@ -161,7 +161,7 @@ void main() {
           pairOf(
             isEmpty,
             anyElement(contains(
-                'The Dart SDK constraint in `pubspec.yaml` is on pre-release')),
+                'consider publishing the package as a pre-release instead')),
           ),
         ),
       );
