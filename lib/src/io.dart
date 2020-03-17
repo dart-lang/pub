@@ -569,7 +569,7 @@ final String dartRepoRoot = (() {
 
 /// A line-by-line stream of standard input.
 final Stream<String> _stdinLines =
-    streamToLines(ByteStream(stdin).toStringStream());
+    ByteStream(stdin).toStringStream().transform(const LineSplitter());
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -587,7 +587,7 @@ Future<bool> confirm(String message) {
   } else {
     stdout.write(log.format('$message (y/N)? '));
   }
-  return streamFirst(_stdinLines).then(RegExp(r'^[yY]').hasMatch);
+  return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
