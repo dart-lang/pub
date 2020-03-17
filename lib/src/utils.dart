@@ -354,12 +354,6 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
 
-/// Configures [future] so that its result (success or exception) is passed on
-/// to [completer].
-void chainToCompleter(Future future, Completer completer) {
-  future.then(completer.complete, onError: completer.completeError);
-}
-
 // TODO(nweiz): remove this when issue 7964 is fixed.
 /// Returns a [Future] that will complete to the first element of [stream].
 ///
