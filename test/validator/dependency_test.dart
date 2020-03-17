@@ -73,6 +73,19 @@ void main() {
       expectNoValidationError(dependency);
     });
 
+    test('with a dependency on a pre-release while being one', () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0-dev',
+          deps: {'foo': '^1.2.3-dev'},
+          sdk: '>=1.19.0 <2.0.0',
+        )
+      ]).create();
+
+      expectNoValidationError(dependency);
+    });
+
     test('has a git path dependency with an appropriate SDK constraint',
         () async {
       await d.dir(appPath, [
@@ -325,6 +338,18 @@ void main() {
       });
     });
 
+    test('with a dependency on a pre-release without being one', () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'foo': '^1.2.3-dev'},
+          sdk: '>=1.19.0 <2.0.0',
+        )
+      ]).create();
+
+      expectDependencyValidationWarning('Packages dependent on a pre-release');
+    });
     test(
         'with a single-version dependency and it should suggest a '
         'constraint based on the version', () async {
