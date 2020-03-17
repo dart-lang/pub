@@ -35,11 +35,13 @@ void main() {
     var pub = await startPub(args: ['cache', 'repair']);
 
     expect(pub.stdout, emits('Downloading foo 1.2.3...'));
-    expect(pub.stdout, emits('Downloading foo 1.2.4...'));
     expect(pub.stdout, emits('Downloading foo 1.2.5...'));
 
     expect(pub.stderr, emits(startsWith('Failed to repair foo 1.2.4. Error:')));
-    expect(pub.stderr, emits('HTTP error 404: Not Found'));
+    expect(
+        pub.stderr,
+        emits('Package doesn\'t exist '
+            '(Could not find archive of package foo 1.2.4).'));
 
     expect(pub.stdout, emits('Reinstalled 2 packages.'));
     expect(pub.stdout, emits('Failed to reinstall 1 package:'));

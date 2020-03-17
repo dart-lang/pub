@@ -614,17 +614,13 @@ String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
 /// this returns the complete map, including metadata that's only included when
 /// requesting the package version directly.
-Map packageVersionApiMap(Map pubspec, {bool full = false}) {
+Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
   var name = pubspec['name'];
   var version = pubspec['version'];
   var map = {
     'pubspec': pubspec,
     'version': version,
-    'url': '/api/packages/$name/versions/$version',
-    'archive_url': '/packages/$name/versions/$version.tar.gz',
-    'new_dartdoc_url': '/api/packages/$name/versions/$version'
-        '/new_dartdoc',
-    'package_url': '/api/packages/$name'
+    'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
   };
 
   if (full) {

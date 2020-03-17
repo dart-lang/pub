@@ -100,13 +100,15 @@ class PackageServer {
               'name': name,
               'uploaders': ['nweiz@google.com'],
               'versions': versions
-                  .map((version) => packageVersionApiMap(version.pubspec))
+                  .map((version) => packageVersionApiMap(url, version.pubspec))
                   .toList()
             })),
         d.dir(name, [
           d.dir('versions', versions.map((version) {
-            return d.file(version.version.toString(),
-                jsonEncode(packageVersionApiMap(version.pubspec, full: true)));
+            return d.file(
+                version.version.toString(),
+                jsonEncode(
+                    packageVersionApiMap(url, version.pubspec, full: true)));
           }))
         ])
       ]);

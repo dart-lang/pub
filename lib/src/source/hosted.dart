@@ -368,8 +368,6 @@ class BoundHostedSource extends CachedSource {
     final url = versions[id]?.archiveUrl ??
         (throw PackageNotFoundException(
             'Could not find archive of package $id'));
-
-    ;
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
