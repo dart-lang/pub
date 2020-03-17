@@ -151,6 +151,7 @@ class HostedSource extends Source {
   }
 }
 
+/// Information about a package version retrieved from /api/packages/$package
 class _VersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
@@ -361,13 +362,29 @@ class BoundHostedSource extends CachedSource {
         .toList();
   }
 
-  /// Downloads package [package] at [version] from [server], and unpacks it
-  /// into [destPath].
+  /// Downloads package [package] at [version] from the archive_url and unpacks
+  /// it into [destPath].
+  ///
+  /// If there is no archive_url, try to fetch it from
+  /// `$server/packages/$package/versions/$version.tar.gz` where server comes
+  /// from `id.description`.
   Future _download(PackageId id, String destPath) async {
     final versions = await _scheduler.schedule(id.toRef());
-    final url = versions[id]?.archiveUrl ??
-        (throw PackageNotFoundException(
-            'Could not find archive of package $id'));
+    final versionInfo = versions[id];
+    final packageName = id.name;
+    final version = id.version;
+    if (versionInfo == null) {
+      throw PackageNotFoundException(
+          'Package $packageName has no version $version');
+    }
+    var url = versionInfo.archiveUrl;
+    if (url == null) {
+      // To support old servers that has no archive_url we fall back to the
+      // hard-coded path.
+      final parsedDescription = source._parseDescription(id.description);
+      final server = parsedDescription.last;
+      url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
+    }
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 

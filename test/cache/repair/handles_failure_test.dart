@@ -41,7 +41,7 @@ void main() {
     expect(
         pub.stderr,
         emits('Package doesn\'t exist '
-            '(Could not find archive of package foo 1.2.4).'));
+            '(Package foo has no version 1.2.4).'));
 
     expect(pub.stdout, emits('Reinstalled 2 packages.'));
     expect(pub.stdout, emits('Failed to reinstall 1 package:'));
