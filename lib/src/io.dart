@@ -569,23 +569,25 @@ final String dartRepoRoot = (() {
 
 /// A line-by-line stream of standard input.
 final Stream<String> _stdinLines =
-    streamToLines(ByteStream(stdin).toStringStream());
+    ByteStream(stdin).toStringStream().transform(const LineSplitter());
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
 /// Returns a [Future] that completes to `true` if the user confirms or `false`
 /// if they do not.
 ///
-/// This will automatically append " (y/n)?" to the message, so [message]
-/// should just be a fragment like, "Are you sure you want to proceed".
+/// This will automatically append " (y/N)?" to the message, so [message]
+/// should just be a fragment like, "Are you sure you want to proceed". The
+/// default for an empty response, or any response not starting with `y` or `Y`
+/// is false.
 Future<bool> confirm(String message) {
   log.fine('Showing confirm message: $message');
   if (runningFromTest) {
-    log.message('$message (y/n)?');
+    log.message('$message (y/N)?');
   } else {
-    stdout.write(log.format('$message (y/n)? '));
+    stdout.write(log.format('$message (y/N)? '));
   }
-  return streamFirst(_stdinLines).then(RegExp(r'^[yY]').hasMatch);
+  return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given

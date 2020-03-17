@@ -293,7 +293,7 @@ Future confirmPublish(TestProcess pub) async {
   await expectLater(
       pub.stdout,
       emitsThrough(matches(
-        r'^Do you want to publish [^ ]+ [^ ]+ (y/n)?',
+        r'^Do you want to publish [^ ]+ [^ ]+ (y/N)?',
       )));
   pub.stdin.writeln('y');
 }
