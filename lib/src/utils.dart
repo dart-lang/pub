@@ -360,24 +360,6 @@ void chainToCompleter(Future future, Completer completer) {
   future.then(completer.complete, onError: completer.completeError);
 }
 
-// TODO(nweiz): remove this when issue 7964 is fixed.
-/// Returns a [Future] that will complete to the first element of [stream].
-///
-/// Unlike [Stream.first], this is safe to use with single-subscription streams.
-Future<T> streamFirst<T>(Stream<T> stream) {
-  var completer = Completer<T>();
-  StreamSubscription<T> subscription;
-  subscription = stream.listen((value) {
-    subscription.cancel();
-    completer.complete(value);
-  }, onError: (e, [StackTrace stackTrace]) {
-    completer.completeError(e, stackTrace);
-  }, onDone: () {
-    completer.completeError(StateError('No elements'), Chain.current());
-  }, cancelOnError: true);
-  return completer.future;
-}
-
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
 
@@ -386,35 +368,6 @@ final _trailingCR = RegExp(r'\r$');
 /// Splits [text] on its line breaks in a Windows-line-break-friendly way.
 List<String> splitLines(String text) =>
     text.split('\n').map((line) => line.replaceFirst(_trailingCR, '')).toList();
-
-/// Converts a stream of arbitrarily chunked strings into a line-by-line stream.
-///
-/// The lines don't include line termination characters. A single trailing
-/// newline is ignored.
-Stream<String> streamToLines(Stream<String> stream) {
-  var buffer = StringBuffer();
-  return stream
-      .transform(StreamTransformer.fromHandlers(handleData: (chunk, sink) {
-    var lines = splitLines(chunk);
-    var leftover = lines.removeLast();
-    for (var line in lines) {
-      if (buffer.isNotEmpty) {
-        buffer.write(line);
-        line = buffer.toString();
-        buffer = StringBuffer();
-      }
-
-      sink.add(line);
-    }
-    buffer.write(leftover);
-  }, handleDone: (sink) {
-    if (buffer.isNotEmpty) sink.add(buffer.toString());
-    sink.close();
-  }));
-}
-
-// TODO(nweiz): unify the following functions with the utility functions in
-// pkg/http.
 
 /// Like [String.split], but only splits on the first occurrence of the pattern.
 ///
