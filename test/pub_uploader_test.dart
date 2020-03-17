@@ -22,7 +22,6 @@ Usage: pub uploader [options] {add/remove} <email>
 -h, --help       Print this usage information.
     --server     The package server on which the package is hosted.
                  (defaults to "https://pub.dartlang.org")
-
     --package    The package whose uploaders will be modified.
                  (defaults to the current package)
 
