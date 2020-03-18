@@ -19,7 +19,9 @@ class PubspecFieldValidator extends Validator {
     _validateFieldUrl('repository');
     if (!_hasField('homepage') && !_hasField('repository')) {
       warnings.add(
-          'You are strongly reccomended to add either a "homepage" or a "repository" field');
+        'It\'s strongly recommended to include a "homepage" or '
+        '"repository" field in your pubspec.yaml',
+      );
     }
 
     _validateFieldUrl('documentation');
