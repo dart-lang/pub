@@ -6,8 +6,6 @@ import 'dart:async' show Future;
 import 'dart:convert' show JsonEncoder, json, utf8;
 import 'dart:io' show File;
 
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/package_config.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -47,10 +45,13 @@ class PackagesFileDescriptor extends Descriptor {
           // which is also relative to the .packages file.
           packagePath = version;
         }
-        mapping[package] = p.toUri(p.join(packagePath, 'lib', ''));
+        mapping[package] = p.toUri(p.join(packagePath, 'lib'));
       });
       var buffer = StringBuffer();
-      packages_file.write(buffer, mapping);
+      mapping.forEach((String packageName, Uri uri) {
+        assert(!uri.path.endsWith('/'));
+        buffer.writeln('$packageName:$uri/');
+      });
       contents = utf8.encode(buffer.toString());
     }
     return File(p.join(parent ?? sandbox, name)).writeAsBytes(contents);
@@ -64,8 +65,7 @@ class PackagesFileDescriptor extends Descriptor {
     }
 
     var bytes = await File(fullPath).readAsBytes();
-
-    var map = packages_file.parse(bytes, Uri.parse(_base));
+    var map = parsePackagesFile(bytes, Uri.parse(_base));
 
     for (var package in _dependencies.keys) {
       if (!map.containsKey(package)) {

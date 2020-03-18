@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:meta/meta.dart';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -273,4 +275,25 @@ String extractLanguageVersion(VersionConstraint c) {
     return null;
   }
   return '${minVersion.major}.${minVersion.minor}';
+}
+
+/// Parses the (now obsolete) .packages file.
+Map<String, Uri> parsePackagesFile(List<int> bytes, Uri base) {
+  final result = <String, Uri>{};
+  for (var line in utf8.decode(bytes).split('\n')) {
+    line = line.trim();
+    final commentLocation = line.indexOf('#');
+    if (commentLocation != -1) line = line.substring(0, commentLocation);
+    if (line.isEmpty) continue;
+    final colonLocation = line.indexOf(':');
+    if (colonLocation == -1) {
+      throw FormatException('Malformed line in .packages');
+    }
+    final packageName = line.substring(0, colonLocation);
+    if (result.containsKey(packageName)) {
+      throw FormatException('.packages contains $packageName twice');
+    }
+    result[packageName] = base.resolve(line.substring(colonLocation + 1));
+  }
+  return result;
 }
