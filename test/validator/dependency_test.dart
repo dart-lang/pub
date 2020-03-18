@@ -45,8 +45,8 @@ Future setUpDependency(Map dep, {List<String> hostedVersions}) {
             'name': 'foo',
             'uploaders': ['nweiz@google.com'],
             'versions': hostedVersions
-                .map((version) =>
-                    packageVersionApiMap(packageMap('foo', version)))
+                .map((version) => packageVersionApiMap(
+                    'https://pub.dartlang.org', packageMap('foo', version)))
                 .toList()
           }),
           200));
