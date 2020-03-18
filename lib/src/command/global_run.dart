@@ -58,7 +58,7 @@ class GlobalRunCommand extends PubCommand {
     }
 
     var exitCode = await globals.runExecutable(package, executable, args,
-        checked: argResults['enable-asserts'] || argResults['checked']);
+        enableAsserts: argResults['enable-asserts'] || argResults['checked']);
     await flushThenExit(exitCode);
   }
 }
