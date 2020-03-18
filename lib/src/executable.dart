@@ -123,7 +123,7 @@ Future<String> _executablePath(
 Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
     {Future<void> Function() recompile,
     String packagesFile,
-    bool enableAsserts: false}) async {
+    bool enableAsserts = false}) async {
   if (!fileExists(path)) {
     if (recompile == null) return null;
     await recompile();
@@ -151,7 +151,7 @@ Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
 Future<int> _runSnapshot(String path, Iterable<String> args,
     {Future<void> Function() recompile,
     String packagesFile,
-    bool enableAsserts: false}) async {
+    bool enableAsserts = false}) async {
   Uri packageConfig;
   if (packagesFile != null) {
     // We use an absolute path here not because the VM insists but because it's

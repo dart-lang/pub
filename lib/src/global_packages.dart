@@ -400,7 +400,7 @@ class GlobalPackages {
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
-      {bool enableAsserts: false}) {
+      {bool enableAsserts = false}) {
     var entrypoint = find(package);
     return exe.runExecutable(
         entrypoint, package, p.join('bin', '$executable.dart'), args,
