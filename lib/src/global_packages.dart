@@ -845,7 +845,7 @@ pub global run ${package.name}:$script "\$@"
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
   String _binStubProperty(String source, String name) {
-    var pattern = RegExp(quoteRegExp(name) + r': ([a-zA-Z0-9_-]+)');
+    var pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];
   }
