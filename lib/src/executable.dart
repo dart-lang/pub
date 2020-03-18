@@ -69,7 +69,9 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
       entrypoint.assertUpToDate();
 
       var result = await _runOrCompileSnapshot(snapshotPath, args,
-          packagesFile: packagesFile, checked: checked, recompile: recompile);
+          packagesFile: packagesFile,
+          enableAsserts: enableAsserts,
+          recompile: recompile);
       if (result != null) return result;
     }
 
@@ -130,7 +132,7 @@ Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
     if (!fileExists(path)) return null;
   }
 
-  return await runSnapshot(path, args,
+  return await _runSnapshot(path, args,
       recompile: recompile,
       packagesFile: packagesFile,
       enableAsserts: enableAsserts);

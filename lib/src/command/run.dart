@@ -76,7 +76,7 @@ class RunCommand extends PubCommand {
             !entrypoint.packageGraph.isPackageMutable(package));
 
     var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['enable-asserts'] || argResults['checked'],
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
         snapshotPath: useSnapshot ? snapshotPath : null, recompile: () {
       final pkg = entrypoint.packageGraph.packages[package];
       // The recompile function will only be called when [package] exists.
