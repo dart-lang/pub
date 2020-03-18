@@ -75,18 +75,22 @@ class DependencyValidator extends Validator {
           validateSdkConstraint(_firstGitPathVersion,
               "Older versions of pub don't support Git path dependencies.");
         }
-      } else if (constraint.isAny) {
-        _warnAboutNoConstraint(dependency);
-      } else if (constraint is Version) {
-        _warnAboutSingleVersionConstraint(dependency);
-      } else if (constraint is VersionRange) {
-        if (constraint.min == null) {
-          _warnAboutNoConstraintLowerBound(dependency);
-        } else if (constraint.max == null) {
-          _warnAboutNoConstraintUpperBound(dependency);
+      } else {
+        if (constraint.isAny) {
+          _warnAboutNoConstraint(dependency);
+        } else if (constraint is VersionRange) {
+          if (constraint is Version) {
+            _warnAboutSingleVersionConstraint(dependency);
+          } else {
+            _warnAboutPrerelease(dependency.name, constraint);
+            if (constraint.min == null) {
+              _warnAboutNoConstraintLowerBound(dependency);
+            } else if (constraint.max == null) {
+              _warnAboutNoConstraintUpperBound(dependency);
+            }
+          }
+          _hasCaretDep = _hasCaretDep || constraint.toString().startsWith('^');
         }
-
-        _hasCaretDep = _hasCaretDep || constraint.toString().startsWith('^');
       }
 
       _hasFeatures = _hasFeatures || dependency.features.isNotEmpty;
@@ -230,5 +234,19 @@ class DependencyValidator extends Validator {
             '\n'
             'Without an upper bound, you\'re promising to support '
             '${log.bold("all")} future versions of ${dep.name}.');
+  }
+
+  void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
+    final packageVersion = entrypoint.root.version;
+    if (constraint.min != null &&
+        constraint.min.isPreRelease &&
+        !packageVersion.isPreRelease) {
+      warnings.add('Packages dependent on a pre-release of another package '
+          'should themselves be published as a pre-release version. '
+          'If this package needs $dependencyName version ${constraint.min}, '
+          'consider publishing the package as a pre-release instead.\n'
+          'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
+          'For more information on pre-releases.');
+    }
   }
 }
