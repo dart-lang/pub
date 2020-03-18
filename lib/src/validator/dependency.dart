@@ -76,16 +76,18 @@ class DependencyValidator extends Validator {
               "Older versions of pub don't support Git path dependencies.");
         }
       } else {
-        _warnAboutPrerelease(dependency);
         if (constraint.isAny) {
           _warnAboutNoConstraint(dependency);
-        } else if (constraint is Version) {
-          _warnAboutSingleVersionConstraint(dependency);
         } else if (constraint is VersionRange) {
-          if (constraint.min == null) {
-            _warnAboutNoConstraintLowerBound(dependency);
-          } else if (constraint.max == null) {
-            _warnAboutNoConstraintUpperBound(dependency);
+          if (constraint is Version) {
+            _warnAboutSingleVersionConstraint(dependency);
+          } else {
+            _warnAboutPrerelease(dependency.name, constraint);
+            if (constraint.min == null) {
+              _warnAboutNoConstraintLowerBound(dependency);
+            } else if (constraint.max == null) {
+              _warnAboutNoConstraintUpperBound(dependency);
+            }
           }
           _hasCaretDep = _hasCaretDep || constraint.toString().startsWith('^');
         }
@@ -234,16 +236,14 @@ class DependencyValidator extends Validator {
             '${log.bold("all")} future versions of ${dep.name}.');
   }
 
-  void _warnAboutPrerelease(PackageRange dep) {
-    if (dep.constraint is! VersionRange) return;
-    final constraint = dep.constraint as VersionRange;
+  void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
     final packageVersion = entrypoint.root.version;
     if (constraint.min != null &&
         constraint.min.isPreRelease &&
         !packageVersion.isPreRelease) {
       warnings.add('Packages dependent on a pre-release of another package '
           'should themselves be published as a pre-release version. '
-          'If this package needs ${dep.name} version ${constraint.min}, '
+          'If this package needs $dependencyName version ${constraint.min}, '
           'consider publishing the package as a pre-release instead.\n'
           'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
           'For more information on pre-releases.');
