@@ -395,16 +395,16 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [checked] is true, the program is run with assertions enabled.
+  /// If [enableAsserts] is true, the program is run with assertions enabled.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
       String package, String executable, Iterable<String> args,
-      {bool checked = false}) {
+      {bool enableAsserts: false}) {
     var entrypoint = find(package);
     return exe.runExecutable(
         entrypoint, package, p.join('bin', '$executable.dart'), args,
-        checked: checked,
+        enableAsserts: enableAsserts,
         packagesFile:
             entrypoint.isCached ? _getPackagesFilePath(package) : null,
         // Don't use snapshots for executables activated from paths.

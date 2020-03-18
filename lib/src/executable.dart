@@ -22,7 +22,7 @@ import 'utils.dart';
 ///
 /// Arguments from [args] will be passed to the spawned Dart application.
 ///
-/// If [checked] is true, the program is run with assertions enabled.
+/// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
 /// If [packagesFile] is passed, it's used as the package config file path for
 /// the executable. Otherwise, `entrypoint.packagesFile` is used.
@@ -36,7 +36,7 @@ import 'utils.dart';
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(Entrypoint entrypoint, String package,
     String executable, Iterable<String> args,
-    {bool checked = false,
+    {bool enableAsserts = false,
     String packagesFile,
     String snapshotPath,
     Future<void> Function() recompile}) async {
@@ -96,7 +96,7 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
     var packageConfig = p.toUri(p.absolute(packagesFile));
 
     await isolate.runUri(p.toUri(executablePath), args.toList(), null,
-        checked: checked,
+        enableAsserts: enableAsserts,
         automaticPackageResolution: packageConfig == null,
         packageConfig: packageConfig);
     return exitCode;
@@ -123,15 +123,17 @@ Future<String> _executablePath(
 Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
     {Future<void> Function() recompile,
     String packagesFile,
-    bool checked = false}) async {
+    bool enableAsserts: false}) async {
   if (!fileExists(path)) {
     if (recompile == null) return null;
     await recompile();
     if (!fileExists(path)) return null;
   }
 
-  return await _runSnapshot(path, args,
-      recompile: recompile, packagesFile: packagesFile, checked: checked);
+  return await runSnapshot(path, args,
+      recompile: recompile,
+      packagesFile: packagesFile,
+      enableAsserts: enableAsserts);
 }
 
 /// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and
@@ -141,7 +143,7 @@ Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
 /// expected to regenerate a snapshot at [path], after which the snapshot will
 /// be re-run.
 ///
-/// If [checked] is set, runs the snapshot with assertions enabled.
+/// If [enableAsserts] is set, runs the snapshot with assertions enabled.
 ///
 /// Returns the snapshot's exit code.
 ///
@@ -149,7 +151,7 @@ Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
 Future<int> _runSnapshot(String path, Iterable<String> args,
     {Future<void> Function() recompile,
     String packagesFile,
-    bool checked = false}) async {
+    bool enableAsserts: false}) async {
   Uri packageConfig;
   if (packagesFile != null) {
     // We use an absolute path here not because the VM insists but because it's
@@ -163,7 +165,7 @@ Future<int> _runSnapshot(String path, Iterable<String> args,
   var argList = args.toList();
   try {
     await isolate.runUri(url, argList, null,
-        checked: checked,
+        enableAsserts: enableAsserts,
         automaticPackageResolution: packageConfig == null,
         packageConfig: packageConfig);
   } on IsolateSpawnException catch (error) {
@@ -175,7 +177,7 @@ Future<int> _runSnapshot(String path, Iterable<String> args,
     log.fine('Precompiled executable is out of date.');
     await recompile();
     await isolate.runUri(url, argList, null,
-        checked: checked, packageConfig: packageConfig);
+        enableAsserts: enableAsserts, packageConfig: packageConfig);
   }
 
   return exitCode;
