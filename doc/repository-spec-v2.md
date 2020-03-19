@@ -44,7 +44,7 @@ repository.
   "name": "<PACKAGE>",
   "latest": {
     "version": "<VERSION>",
-    "archive_url": "<PUB_HOSTED_URL>/packages/<PACKAGE>/versions/<VERSION>.tar.gz",
+    "archive_url": "https://.../archive.tar.gz",
     "pubspec": {
       /* pubspec contents as JSON object */
     }
@@ -52,7 +52,7 @@ repository.
   "versions": [
     {
       "version": "<VERSION>",
-      "archive_url": "<PUB_HOSTED_URL>/packages/<PACKAGE>/versions/<VERSION>.tar.gz",
+      "archive_url": "https://.../archive.tar.gz",
       "pubspec": {
         /* pubspec contents as JSON object */
       }
@@ -62,9 +62,14 @@ repository.
 }
 ```
 
+To fetch the package archive an HTTP `GET` request _following retries_ must be
+made to the URL given as `archive_url`. The response (after following redirects)
+must be a gzipped TAR archive.
+
 ### (Deprecated) Inspect a specific version of a package
 
 **Deprecated** as of Dart 2.8, use "List all versions of a package" instead.
+Servers should still support this end-point for compatibility with older `pub` clients.
 
 **GET** `<PUB_HOSTED_URL>/api/packages/<PACKAGE>/versions/<VERSION>`
 
@@ -77,14 +82,17 @@ repository.
 ```js
 {
   "version": "1.1.0",
-  "archive_url": "<PUB_HOSTED_URL>/packages/<PACKAGE>/versions/<VERSION>.tar.gz",
+  "archive_url": "https://.../archive.tar.gz",
   "pubspec": {
     /* pubspec contents as JSON object */
   }
 }
 ```
 
-### Download a specific version of a package
+### (Deprecated) Download a specific version of a package
+
+**Deprecated** as of Dart 2.8, use the `archive_url` returned from the "List all versions of a package".
+Servers should still support this end-point for compatibility with older `pub` clients.
 
 **GET** `<PUB_HOSTED_URL>/packages/<PACKAGE>/versions/<VERSION>.tar.gz`
 
