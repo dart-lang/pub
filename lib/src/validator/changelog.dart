@@ -5,6 +5,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:path/path.dart' as p;
+
 import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
@@ -24,7 +26,7 @@ class ChangelogValidator extends Validator {
         return;
       }
 
-      if (!changelog.endsWith('CHANGELOG.md')) {
+      if (p.basename(changelog) != 'CHANGELOG.md') {
         warnings.add('Please consider renaming $changelog to `CHANGELOG.md`. '
             'See https://dart.dev/tools/pub/publishing#important-files.');
       }
