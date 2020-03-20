@@ -303,26 +303,27 @@ class BoundHostedSource extends CachedSource {
 
         packages.sort(Package.orderByNameAndVersion);
 
-        return results..addAll(await Future.wait(
-          packages.map(
-            (package) async {
-              var id = source.idFor(package.name, package.version, url: url);
-              try {
-                await _download(id, package.dir);
-                return RepairResult(id, success: true);
-              } catch (error, stackTrace) {
-                var message = 'Failed to repair ${log.bold(package.name)} '
-                    '${package.version}';
-                if (url != source.defaultUrl) message += ' from $url';
-                log.error('$message. Error:\n$error');
-                log.fine(stackTrace);
+        return results
+          ..addAll(await Future.wait(
+            packages.map(
+              (package) async {
+                var id = source.idFor(package.name, package.version, url: url);
+                try {
+                  await _download(id, package.dir);
+                  return RepairResult(id, success: true);
+                } catch (error, stackTrace) {
+                  var message = 'Failed to repair ${log.bold(package.name)} '
+                      '${package.version}';
+                  if (url != source.defaultUrl) message += ' from $url';
+                  log.error('$message. Error:\n$error');
+                  log.fine(stackTrace);
 
-                tryDeleteEntry(package.dir);
-                return RepairResult(id, success: false);
-              }
-            },
-          ),
-        ));
+                  tryDeleteEntry(package.dir);
+                  return RepairResult(id, success: false);
+                }
+              },
+            ),
+          ));
       },
     )))
         .expand((x) => x);

@@ -12,7 +12,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
-import '../utils.dart';
 
 /// Base class for a [BoundSource] that installs packages into pub's
 /// [SystemCache].
