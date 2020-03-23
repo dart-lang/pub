@@ -74,6 +74,11 @@ abstract class CachedSource extends BoundSource {
 
 /// The result of repairing a single cache entry.
 class RepairResult {
+  /// `true` if [package] was repaired successfully.
+  /// `false` if something failed during the repair.
+  ///
+  /// When something goes wrong the package is attempted removed from
+  /// cache (but that might itself have failed).
   final bool success;
   final PackageId package;
   RepairResult(this.package, {@required this.success});
