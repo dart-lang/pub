@@ -843,27 +843,21 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
   final decompressed = stream.transform(GZipCodec().decoder);
   // We used to stream directly to `tar`,  but that was fragile in certain
   // settings.
-  PubProcessResult processResult;
-  await withTempDir((tempDir) async {
-    final tarFile =
-        path.join(tempDir, path.basenameWithoutExtension(destination));
+  final processResult = await withTempDir((tempDir) async {
+    final tarFile = path.join(tempDir, '${path.basename(destination)}.tar');
     await _createFileFromStream(decompressed, tarFile);
-
-    if (Platform.isWindows) {
-      processResult = await runProcess(_pathTo7zip, ['x', tarFile],
-          workingDir: destination);
-    } else {
-      processResult = await runProcess(_tarPath, [
-        if (_noUnknownKeyword) '--warning=no-unknown-keyword',
-        '--extract',
-        '--no-same-owner',
-        '--no-same-permissions',
-        '--directory',
-        destination,
-        '--file',
-        tarFile,
-      ]);
-    }
+    return (Platform.isWindows)
+        ? runProcess(_pathTo7zip, ['x', '"$tarFile"', '-o"$destination"'])
+        : runProcess(_tarPath, [
+            if (_noUnknownKeyword) '--warning=no-unknown-keyword',
+            '--extract',
+            '--no-same-owner',
+            '--no-same-permissions',
+            '--directory',
+            destination,
+            '--file',
+            tarFile,
+          ]);
   });
   if (processResult.exitCode != exit_codes.SUCCESS) {
     throw FileSystemException(
