@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
