@@ -18,32 +18,45 @@ Validator license(Entrypoint entrypoint) => LicenseValidator(entrypoint);
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
-
-    test('looks normal', () => expectNoValidationError(license));
-
-    test('has a COPYING file', () async {
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'COPYING'), '').create();
+    test('looks normal', () async {
+      await d.validPackage.create();
       expectNoValidationError(license);
     });
 
-    test('has an UNLICENSE file', () async {
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+    test('has both LICENSE and UNLICENSE file', () async {
+      await d.validPackage.create();
       await d.file(path.join(appPath, 'UNLICENSE'), '').create();
       expectNoValidationError(license);
     });
+  });
 
-    test('has a prefixed LICENSE file', () async {
+  group('should warn if it', () {
+    test('has only a COPYING file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
-      expectNoValidationError(license);
+      await d.file(path.join(appPath, 'COPYING'), '').create();
+      expectValidationWarning(license);
     });
 
-    test('has a suffixed LICENSE file', () async {
+    test('has only an UNLICENSE file', () async {
+      await d.validPackage.create();
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'UNLICENSE'), '').create();
+      expectValidationWarning(license);
+    });
+
+    test('has only a prefixed LICENSE file', () async {
+      await d.validPackage.create();
+      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
+      expectValidationWarning(license);
+    });
+
+    test('has only a suffixed LICENSE file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'LICENSE.md'), '').create();
-      expectNoValidationError(license);
+      expectValidationWarning(license);
     });
   });
 

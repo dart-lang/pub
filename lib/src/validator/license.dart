@@ -16,17 +16,22 @@ class LicenseValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      var licenseLike =
+      final licenseLike =
           RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
-      if (entrypoint.root
+      final candidates = entrypoint.root
           .listFiles(recursive: false, useGitIgnore: true)
           .map(path.basename)
-          .any(licenseLike.hasMatch)) {
+          .where(licenseLike.hasMatch);
+      if (candidates.isNotEmpty) {
+        if (!candidates.contains('LICENSE')) {
+          final firstCandidate = candidates.first;
+          warnings.add('Please consider renaming $firstCandidate to `LICENSE`. '
+              'See https://dart.dev/tools/pub/publishing#important-files.');
+        }
         return;
       }
 
-      errors.add(
-          'You must have a COPYING, LICENSE or UNLICENSE file in the root directory.\n'
+      errors.add('You must have a LICENSE file in the root directory.\n'
           'An open-source license helps ensure people can legally use your '
           'code.');
     });
