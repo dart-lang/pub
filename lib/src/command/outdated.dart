@@ -183,8 +183,11 @@ class OutdatedCommand extends PubCommand {
 Pubspec _stripDevDependencies(Pubspec original) {
   return Pubspec(
     original.name,
+    version: original.version,
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
+    devDependencies: [], // explicitly give empty list, to prevent lazy parsing
+    // TODO(sigurdm): consider dependency overrides.
   );
 }
 
@@ -211,6 +214,7 @@ Pubspec _stripVersionConstraints(Pubspec original) {
 
   return Pubspec(
     original.name,
+    version: original.version,
     sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
     devDependencies: _unconstrained(original.devDependencies),

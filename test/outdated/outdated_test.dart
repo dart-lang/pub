@@ -80,4 +80,27 @@ Future<void> main() async {
       ..serve('transitive3', '1.0.0'));
     await variations('newer_versions');
   });
+
+  test('circular dependency on root', () async {
+    await servePackages(
+      (builder) => builder..serve('foo', '1.2.3', deps: {'app': '^1.0.0'}),
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      })
+    ]).create();
+
+    await pubGet();
+
+    globalPackageServer.add(
+      (builder) => builder..serve('foo', '1.3.0', deps: {'app': '^1.0.1'}),
+    );
+    await variations('circular_dependencies');
+  });
 }
