@@ -3,11 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
+
+import 'descriptor.dart';
 
 void main() {
   group('listDir', () {
@@ -343,6 +347,59 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
         }), completes);
       });
     }
+  });
+  group('extractTarGz', () {
+    test('decompresses simple archive', () async {
+      await withTempDir((tempDir) async {
+        await extractTarGz(
+            Stream.fromIterable(
+              [
+                base64Decode(
+                    'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
+                    'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
+                    '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
+                    'AAAAAAAAAAAAgM9dALkoaRMAKAAA')
+              ],
+            ),
+            tempDir);
+        await appDir().validate(tempDir);
+      });
+    });
+
+    test('throws on tar error', () async {
+      await withTempDir((tempDir) async {
+        expect(
+            () async => await extractTarGz(
+                Stream.fromIterable(
+                  [
+                    base64Decode(
+                        // Correct Gzip of a faulty tar archive.
+                        'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
+                        '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
+                        'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
+                        'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA==')
+                  ],
+                ),
+                tempDir),
+            throwsA(isA<FileSystemException>()));
+      });
+    });
+
+    test('throws on tar error', () async {
+      await withTempDir((tempDir) async {
+        expect(
+            () async => await extractTarGz(
+                Stream.fromIterable(
+                  [
+                    base64Decode(
+                        // Empty is not a gzip encoded file
+                        '')
+                  ],
+                ),
+                tempDir),
+            throwsA(isA<FileSystemException>()));
+      });
+    });
   });
 }
 
