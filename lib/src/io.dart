@@ -226,8 +226,8 @@ String createTempDir(String base, String prefix) {
 /// 'pub_' with characters appended to it to make a unique name.
 ///
 /// Returns the path of the created directory.
-String _createSystemTempDir() {
-  var tempDir = Directory.systemTemp.createTempSync('pub_');
+Future<String> _createSystemTempDir() async {
+  var tempDir = await Directory.systemTemp.createTemp('pub_');
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
 }
@@ -797,7 +797,7 @@ void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
 Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
-  var tempDir = _createSystemTempDir();
+  var tempDir = await _createSystemTempDir();
   try {
     return await fn(tempDir);
   } finally {
@@ -980,7 +980,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
 
     // Don't use [withTempDir] here because we don't want to delete the temp
     // directory until the returned stream has closed.
-    var tempDir = _createSystemTempDir();
+    var tempDir = await _createSystemTempDir();
 
     try {
       // Create the file containing the list of files to compress.
