@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '../io.dart';
@@ -11,7 +12,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
-import '../utils.dart';
 
 /// Base class for a [BoundSource] that installs packages into pub's
 /// [SystemCache].
@@ -67,8 +67,19 @@ abstract class CachedSource extends BoundSource {
   /// Reinstalls all packages that have been previously installed into the
   /// system cache by this source.
   ///
-  /// Returns a [Pair] whose first element is the packages that were
-  /// successfully repaired and the second is the packages that failed to be
-  /// repaired.
-  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages();
+  /// Returns a list of results indicating for each if that package was
+  /// successfully repaired.
+  Future<Iterable<RepairResult>> repairCachedPackages();
+}
+
+/// The result of repairing a single cache entry.
+class RepairResult {
+  /// `true` if [package] was repaired successfully.
+  /// `false` if something failed during the repair.
+  ///
+  /// When something goes wrong the package is attempted removed from
+  /// cache (but that might itself have failed).
+  final bool success;
+  final PackageId package;
+  RepairResult(this.package, {@required this.success});
 }

@@ -282,47 +282,51 @@ class BoundHostedSource extends CachedSource {
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
   @override
-  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return Pair([], []);
+  Future<Iterable<RepairResult>> repairCachedPackages() async {
+    if (!dirExists(systemCacheRoot)) return [];
 
-    var successes = <PackageId>[];
-    var failures = <PackageId>[];
-
-    for (var serverDir in listDir(systemCacheRoot)) {
-      var url = _directoryToUrl(p.basename(serverDir));
-
-      var packages = <Package>[];
-      for (var entry in listDir(serverDir)) {
-        try {
-          packages.add(Package.load(null, entry, systemCache.sources));
-        } catch (error, stackTrace) {
-          log.error('Failed to load package', error, stackTrace);
-          failures.add(_idForBasename(p.basename(entry)));
-          tryDeleteEntry(entry);
+    return (await Future.wait(listDir(systemCacheRoot).map(
+      (serverDir) async {
+        var url = _directoryToUrl(p.basename(serverDir));
+        final results = <RepairResult>[];
+        var packages = <Package>[];
+        for (var entry in listDir(serverDir)) {
+          try {
+            packages.add(Package.load(null, entry, systemCache.sources));
+          } catch (error, stackTrace) {
+            log.error('Failed to load package', error, stackTrace);
+            results.add(RepairResult(_idForBasename(p.basename(entry)),
+                success: false));
+            tryDeleteEntry(entry);
+          }
         }
-      }
 
-      packages.sort(Package.orderByNameAndVersion);
+        packages.sort(Package.orderByNameAndVersion);
 
-      for (var package in packages) {
-        var id = source.idFor(package.name, package.version, url: url);
-        try {
-          await _download(id, package.dir);
-          successes.add(id);
-        } catch (error, stackTrace) {
-          failures.add(id);
-          var message = 'Failed to repair ${log.bold(package.name)} '
-              '${package.version}';
-          if (url != source.defaultUrl) message += ' from $url';
-          log.error('$message. Error:\n$error');
-          log.fine(stackTrace);
+        return results
+          ..addAll(await Future.wait(
+            packages.map(
+              (package) async {
+                var id = source.idFor(package.name, package.version, url: url);
+                try {
+                  await _download(id, package.dir);
+                  return RepairResult(id, success: true);
+                } catch (error, stackTrace) {
+                  var message = 'Failed to repair ${log.bold(package.name)} '
+                      '${package.version}';
+                  if (url != source.defaultUrl) message += ' from $url';
+                  log.error('$message. Error:\n$error');
+                  log.fine(stackTrace);
 
-          tryDeleteEntry(package.dir);
-        }
-      }
-    }
-
-    return Pair(successes, failures);
+                  tryDeleteEntry(package.dir);
+                  return RepairResult(id, success: false);
+                }
+              },
+            ),
+          ));
+      },
+    )))
+        .expand((x) => x);
   }
 
   /// Returns the best-guess package ID for [basename], which should be a

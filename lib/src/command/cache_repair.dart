@@ -26,17 +26,21 @@ class CacheRepairCommand extends PubCommand {
 
   @override
   Future run() async {
-    var successes = [];
-    var failures = [];
-
     // Repair every cached source.
-    for (var source in cache.sources.all.map(cache.source)) {
-      if (source is CachedSource) {
-        var results = await source.repairCachedPackages();
-        successes.addAll(results.first);
-        failures.addAll(results.last);
-      }
-    }
+    final repairResults = (await Future.wait(
+            cache.sources.all.map(cache.source).map((source) async {
+      return source is CachedSource
+          ? await source.repairCachedPackages()
+          : <RepairResult>[];
+    })))
+        .expand((x) => x);
+
+    final successes = [
+      for (final result in repairResults) if (result.success) result.package
+    ];
+    final failures = [
+      for (final result in repairResults) if (!result.success) result.package
+    ];
 
     if (successes.isNotEmpty) {
       var packages = pluralize('package', successes.length);
@@ -59,24 +63,27 @@ class CacheRepairCommand extends PubCommand {
       log.message(buffer.toString());
     }
 
-    var results = await globals.repairActivatedPackages();
-    if (results.first.isNotEmpty) {
-      var packages = pluralize('package', results.first.length);
-      log.message('Reactivated ${log.green(results.first.length)} $packages.');
+    var globalRepairResults = await globals.repairActivatedPackages();
+    if (globalRepairResults.first.isNotEmpty) {
+      var packages = pluralize('package', globalRepairResults.first.length);
+      log.message(
+          'Reactivated ${log.green(globalRepairResults.first.length)} $packages.');
     }
 
-    if (results.last.isNotEmpty) {
-      var packages = pluralize('package', results.last.length);
+    if (globalRepairResults.last.isNotEmpty) {
+      var packages = pluralize('package', globalRepairResults.last.length);
       log.message(
-          'Failed to reactivate ${log.red(results.last.length)} $packages:\n' +
-              results.last.map((name) => '- ${log.bold(name)}').join('\n'));
+          'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:\n' +
+              globalRepairResults.last
+                  .map((name) => '- ${log.bold(name)}')
+                  .join('\n'));
     }
 
     if (successes.isEmpty && failures.isEmpty) {
       log.message('No packages in cache, so nothing to repair.');
     }
 
-    if (failures.isNotEmpty || results.last.isNotEmpty) {
+    if (failures.isNotEmpty || globalRepairResults.last.isNotEmpty) {
       await flushThenExit(exit_codes.UNAVAILABLE);
     }
   }
