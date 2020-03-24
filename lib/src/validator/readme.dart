@@ -5,6 +5,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:path/path.dart' as path;
+
 import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
@@ -21,6 +23,11 @@ class ReadmeValidator extends Validator {
         warnings
             .add('Please add a README.md file that describes your package.');
         return;
+      }
+
+      if (path.basename(readme) != 'README.md') {
+        warnings.add('Please consider renaming $readme to `README.md`. '
+            'See https://dart.dev/tools/pub/publishing#important-files.');
       }
 
       var bytes = readBinaryFile(readme);
