@@ -72,5 +72,19 @@ void main() {
       await d.dir(appPath, [d.file('README.whatever')]).create();
       expectValidationWarning(readme);
     });
+
+    test('Uses only deprecated readme name .markdown', () async {
+      await d.validPackage.create();
+      deleteEntry(p.join(d.sandbox, 'myapp/README.md'));
+      await d.dir(appPath, [d.file('README.markdown')]).create();
+      expectValidationWarning(readme);
+    });
+
+    test('Uses only deprecated readme name .mdown', () async {
+      await d.validPackage.create();
+      deleteEntry(p.join(d.sandbox, 'myapp/README.md'));
+      await d.dir(appPath, [d.file('README.mdown')]).create();
+      expectValidationWarning(readme);
+    });
   });
 }
