@@ -322,6 +322,11 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
           'To update these dependencies, edit pubspec.yaml.');
     }
   }
+
+  if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
+    log.message(
+        '\nDependencies are all on the latest mutually compatible versions');
+  }
 }
 
 Future<List<_FormattedString>> oudatedMarker(
