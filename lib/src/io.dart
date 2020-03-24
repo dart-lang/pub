@@ -844,7 +844,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
   // We used to stream directly to `tar`,  but that was fragile in certain
   // settings.
   final processResult = await withTempDir((tempDir) async {
-    final tarFile = path.join(tempDir, '${path.basename(destination)}.tar');
+    final tarFile = path.join(tempDir, 'archive.tar');
     await _createFileFromStream(decompressed, tarFile);
     return (Platform.isWindows)
         ? runProcess(_pathTo7zip, ['x', '"$tarFile"', '-o"$destination"'])
