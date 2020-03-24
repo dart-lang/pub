@@ -7,8 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:pool/pool.dart';
-import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -401,38 +399,6 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
             throwsA(isA<FileSystemException>()));
       });
     });
-
-    test('can untar all of pub.dev', () async {
-      Stream<String> allPackageNames() async* {
-        var nextUrl = 'https://pub.dev/api/packages';
-        do {
-          final result = json.decode(await httpClient.read(nextUrl));
-          for (final package in result['packages']) {
-            yield package['name'];
-          }
-          nextUrl = result['next_url'];
-        } while (nextUrl != null);
-      }
-
-      Future<List<String>> versionArchiveUrls(String packageName) async {
-        final result = json.decode(
-            await httpClient.read('https://pub.dev/api/package/$packageName'));
-        return result['versions'].map((v) => v['archive_urls']);
-      }
-
-      final pool = Pool(30);
-      withTempDir(fn)
-       allPackageNames().expand((packageName) async {
-        final versions = await versionArchiveUrls(packageName);
-        return versions.map((archiveUrl) async {
-return pool.withResource(() {
-
-});
-        });
-      });
-    },
-        // This test is extremely expensive.
-        skip: false);
   });
 }
 
