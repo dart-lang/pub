@@ -43,6 +43,7 @@ class LanguageVersionValidator extends Validator {
         .map((path) => entrypoint.root.listFiles(beneath: path))
         .expand((files) => files)
         .map(p.absolute)
+        .map(p.normalize)
         .where((String file) => p.extension(file) == '.dart')) {
       CompilationUnit unit;
       try {
