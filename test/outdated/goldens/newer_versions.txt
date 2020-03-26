@@ -1,4 +1,4 @@
-$ pub outdated --format=json
+$ pub outdated --json
 Resolving...
 {
   "packages": [
@@ -40,7 +40,7 @@ Resolving...
   ]
 }
 
-$ pub outdated --format=no-color
+$ pub outdated --no-color
 Resolving...
 Package      Current  Upgradable  Resolvable  Latest  
 dependencies 
@@ -60,7 +60,7 @@ To update these dependencies, use `pub upgrade`.
 4  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
-$ pub outdated --format=no-color --mark=none
+$ pub outdated --no-color --mark=none
 Resolving...
 Package      Current  Upgradable  Resolvable  Latest  
 dependencies 
@@ -80,7 +80,7 @@ To update these dependencies, use `pub upgrade`.
 4  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
-$ pub outdated --format=no-color --up-to-date
+$ pub outdated --no-color --up-to-date
 Resolving...
 Package        Current  Upgradable  Resolvable  Latest  
 dependencies   
@@ -102,7 +102,7 @@ To update these dependencies, use `pub upgrade`.
 4  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
-$ pub outdated --format=no-color --pre-releases
+$ pub outdated --no-color --pre-releases
 Resolving...
 Package      Current  Upgradable  Resolvable  Latest       
 dependencies 
@@ -122,7 +122,7 @@ To update these dependencies, use `pub upgrade`.
 4  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
-$ pub outdated --format=no-color --no-dev-dependencies
+$ pub outdated --no-color --no-dev-dependencies
 Resolving...
 Package     Current  Upgradable  Resolvable  Latest  
 dependencies

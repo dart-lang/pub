@@ -32,11 +32,12 @@ class OutdatedCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
   OutdatedCommand() {
-    argParser.addOption('format',
-        help: 'Defines how the output should be formatted. Defaults to color '
-            'when connected to a terminal, and no-color otherwise.',
-        valueHelp: 'FORMAT',
-        allowed: ['color', 'no-color', 'json']);
+    argParser.addFlag('color',
+        help: 'Whether to color the output. Defaults to color '
+            'when connected to a terminal, and no-color otherwise.');
+
+    argParser.addFlag('json',
+        help: 'Outputs the results in a json formatted report');
 
     argParser.addFlag('up-to-date',
         defaultsTo: false,
@@ -151,11 +152,11 @@ class OutdatedCommand extends PubCommand {
 
     rows.sort();
 
-    if (argResults['format'] == 'json') {
+    if (argResults['json']) {
       await _outputJson(rows);
     } else {
-      final useColors = argResults['format'] == 'color' ||
-          (!argResults.wasParsed('format') && stdin.hasTerminal);
+      final useColors = argResults['color'] ||
+          (!argResults.wasParsed('color') && stdin.hasTerminal);
       final marker = {
         'outdated': oudatedMarker,
         'none': noneMarker,
