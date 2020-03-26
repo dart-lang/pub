@@ -232,7 +232,7 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
     Future<List<_FormattedString>> Function(_PackageDetails) marker,
     {@required bool useColors, @required bool includeDevDependencies}) async {
   if (rows.isEmpty) {
-    log.message('Found no outdated packages');
+    log.message('Found no outdated packages.');
     return;
   }
   final directRows = rows.where((row) => row.kind == _DependencyKind.direct);

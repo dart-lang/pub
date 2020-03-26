@@ -80,14 +80,7 @@ class _PubHttpClient extends http.BaseClient {
       if (request.url.origin != 'https://pub.dartlang.org') return false;
     }
 
-    return const [
-      'cache add',
-      'cache repair',
-      'downgrade',
-      'get',
-      'global activate',
-      'upgrade',
-    ].contains(PubCommandRunner.command);
+    return true;
   }
 
   /// Logs the fact that [request] was sent, and information about it.
