@@ -1,0 +1,89 @@
+$ pub outdated --format=json
+Resolving...
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": "1.0.0",
+      "upgradable": "1.0.0",
+      "resolvable": "1.0.0",
+      "latest": "2.0.0"
+    },
+    {
+      "package": "foo",
+      "current": "1.0.0",
+      "upgradable": "1.0.0",
+      "resolvable": "1.0.0",
+      "latest": "2.0.0"
+    }
+  ]
+}
+
+$ pub outdated --format=no-color
+Resolving...
+Package  Current  Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+Dependencies are all on the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --format=no-color --mark=none
+Resolving...
+Package  Current  Upgradable  Resolvable  Latest  
+dependencies
+bar      1.0.0    1.0.0       1.0.0       2.0.0   
+foo      1.0.0    1.0.0       1.0.0       2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+Dependencies are all on the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --format=no-color --up-to-date
+Resolving...
+Package  Current  Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+Dependencies are all on the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --format=no-color --pre-releases
+Resolving...
+Package  Current  Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+Dependencies are all on the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --format=no-color --no-dev-dependencies
+Resolving...
+Package  Current  Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+
+transitive dependencies: all up-to-date
+
+Dependencies are all on the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
