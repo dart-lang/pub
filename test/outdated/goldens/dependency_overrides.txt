@@ -1,0 +1,116 @@
+$ pub outdated --format=json
+Resolving...
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": "1.0.1(overridden, path)",
+      "upgradable": "2.0.0",
+      "resolvable": "2.0.0",
+      "latest": "2.0.0"
+    },
+    {
+      "package": "baz",
+      "current": "2.0.0(overridden)",
+      "upgradable": "1.0.0",
+      "resolvable": "2.0.0",
+      "latest": "2.0.0"
+    },
+    {
+      "package": "foo",
+      "current": "1.0.1(overridden, git)",
+      "upgradable": "1.0.0",
+      "resolvable": "1.0.0",
+      "latest": "2.0.0"
+    }
+  ]
+}
+
+$ pub outdated --format=no-color
+Resolving...
+Package  Current                   Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.1(overridden, path)  2.0.0       2.0.0       2.0.0   
+baz      *2.0.0(overridden)        *1.0.0      2.0.0       2.0.0   
+foo      *1.0.1(overridden, git)   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `pub upgrade`.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --format=no-color --mark=none
+Resolving...
+Package  Current                  Upgradable  Resolvable  Latest  
+dependencies
+bar      1.0.1(overridden, path)  2.0.0       2.0.0       2.0.0   
+baz      2.0.0(overridden)        1.0.0       2.0.0       2.0.0   
+foo      1.0.1(overridden, git)   1.0.0       1.0.0       2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `pub upgrade`.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --format=no-color --up-to-date
+Resolving...
+Package  Current                   Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.1(overridden, path)  2.0.0       2.0.0       2.0.0   
+baz      *2.0.0(overridden)        *1.0.0      2.0.0       2.0.0   
+foo      *1.0.1(overridden, git)   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `pub upgrade`.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --format=no-color --pre-releases
+Resolving...
+Package  Current                   Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.1(overridden, path)  2.0.0       2.0.0       2.0.0   
+baz      *2.0.0(overridden)        *1.0.0      2.0.0       2.0.0   
+foo      *1.0.1(overridden, git)   *1.0.0      *1.0.0      2.0.0   
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `pub upgrade`.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --format=no-color --no-dev-dependencies
+Resolving...
+Package  Current                   Upgradable  Resolvable  Latest  
+dependencies
+bar      *1.0.1(overridden, path)  2.0.0       2.0.0       2.0.0   
+baz      *2.0.0(overridden)        *1.0.0      2.0.0       2.0.0   
+foo      *1.0.1(overridden, git)   *1.0.0      *1.0.0      2.0.0   
+
+transitive dependencies: all up-to-date
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `pub upgrade`.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+

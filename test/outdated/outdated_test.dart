@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
@@ -124,5 +125,49 @@ Future<void> main() async {
     await pubGet();
 
     await variations('mutually_incompatible');
+  });
+
+  test('overridden dependencies', () async {
+    ensureGit();
+    await servePackages(
+      (builder) => builder
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+        ..serve('bar', '1.0.0')
+        ..serve('bar', '2.0.0')
+        ..serve('baz', '1.0.0')
+        ..serve('baz', '2.0.0'),
+    );
+
+    await d.git('foo.git', [
+      d.libPubspec('foo', '1.0.1'),
+    ]).create();
+
+    await d.dir('bar', [
+      d.libPubspec('bar', '1.0.1'),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^2.0.0',
+          'baz': '^1.0.0',
+        },
+        'dependency_overrides': {
+          'foo': {
+            'git': {'url': '../foo.git'}
+          },
+          'bar': {'path': '../bar'},
+          'baz': '2.0.0'
+        },
+      })
+    ]).create();
+
+    await pubGet();
+
+    await variations('dependency_overrides');
   });
 }

@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
 
@@ -17,7 +18,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
-import '../source.dart';
 import '../source/hosted.dart';
 
 class OutdatedCommand extends PubCommand {
@@ -64,11 +64,9 @@ class OutdatedCommand extends PubCommand {
     entrypoint.assertUpToDate();
 
     final includeDevDependencies = argResults['dev-dependencies'];
-
     final upgradePubspec = includeDevDependencies
-        ? entrypoint.root.pubspec
+        ? _stripOverrides(entrypoint.root.pubspec)
         : _stripDevDependencies(entrypoint.root.pubspec);
-
     var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
 
     SolveResult upgradableSolveResult;
@@ -83,7 +81,6 @@ class OutdatedCommand extends PubCommand {
             cache,
             Package.inMemory(upgradePubspec),
           );
-
           resolvableSolveResult = await resolveVersions(
             SolveType.UPGRADE,
             cache,
@@ -95,55 +92,49 @@ class OutdatedCommand extends PubCommand {
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
-      final current = (entrypoint.lockFile?.packages ?? {})[name]?.version;
-      final source = packageRef.source;
-      final available = (await cache.source(source).doGetVersions(packageRef))
-          .map((id) => id.version)
-          .toList()
-            ..sort(argResults['pre-releases'] ? null : Version.prioritize);
+      final current = (entrypoint.lockFile?.packages ?? {})[name];
+
       final upgradable = upgradableSolveResult.packages
-          .firstWhere((id) => id.name == name, orElse: () => null)
-          ?.version;
+          .firstWhere((id) => id.name == name, orElse: () => null);
       final resolvable = resolvableSolveResult.packages
-          .firstWhere((id) => id.name == name, orElse: () => null)
-          ?.version;
+          .firstWhere((id) => id.name == name, orElse: () => null);
+      // This is the upgradable version if it exists to get the non-overridden
+      // source.
+      final nonOverriddenIfAvailable = upgradable?.toRef() ?? packageRef;
+      final available = (await cache
+              .source(nonOverriddenIfAvailable.source)
+              .getVersions(nonOverriddenIfAvailable))
+          .toList()
+            ..sort(argResults['pre-releases']
+                ? (x, y) => x.version.compareTo(y.version)
+                : (x, y) => Version.prioritize(x.version, y.version));
       final latest = available.last;
-      final description = packageRef.description;
       return _PackageDetails(
           name,
-          await _describeVersion(name, source, description, current),
-          await _describeVersion(name, source, description, upgradable),
-          await _describeVersion(name, source, description, resolvable),
-          await _describeVersion(name, source, description, latest),
+          await _describeVersion(current, isOverridden: isOverridden(name)),
+          await _describeVersion(upgradable),
+          await _describeVersion(resolvable),
+          await _describeVersion(latest),
           _kind(name, entrypoint));
     }
 
     final rows = <_PackageDetails>[];
 
-    final immediateDependencies = entrypoint.root.immediateDependencies.values;
-
-    for (final packageRange in immediateDependencies) {
-      rows.add(await analyzeDependency(packageRange.toRef()));
-    }
-
-    // Now add transitive dependencies:
     final visited = <String>{
       entrypoint.root.name,
-      ...immediateDependencies.map((d) => d.name)
     };
+    // Add all dependencies from the lockfile.
     for (final id in [
-      if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
+      ...entrypoint.lockFile.packages.values,
       ...upgradableSolveResult.packages,
       ...resolvableSolveResult.packages
     ]) {
-      final name = id.name;
-      if (!visited.add(name)) continue;
+      if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
     if (!argResults['up-to-date']) {
-      rows.retainWhere(
-          (r) => (r.current ?? r.upgradable)?.version != r.latest?.version);
+      rows.retainWhere((r) => (r.current ?? r.upgradable) != r.latest);
     }
     if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);
@@ -170,13 +161,16 @@ class OutdatedCommand extends PubCommand {
   }
 
   /// Retrieves the pubspec of package [name] in [version] from [source].
-  Future<Pubspec> _describeVersion(
-      String name, Source source, dynamic description, Version version) async {
-    return version == null
-        ? null
-        : await cache
-            .source(source)
-            .describe(PackageId(name, source, version, description));
+  Future<_VersionDetails> _describeVersion(PackageId id,
+      {bool isOverridden = false}) async {
+    final pubspec =
+        id == null ? null : await cache.source(id.source).describe(id);
+    if (pubspec == null) return null;
+    return _VersionDetails(pubspec, id, isOverridden);
+  }
+
+  bool isOverridden(String name) {
+    return entrypoint.root.pubspec.dependencyOverrides.containsKey(name);
   }
 }
 
@@ -187,7 +181,16 @@ Pubspec _stripDevDependencies(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
     devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    // TODO(sigurdm): consider dependency overrides.
+  );
+}
+
+Pubspec _stripOverrides(Pubspec original) {
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: original.dependencies.values,
+    devDependencies: original.devDependencies.values,
   );
 }
 
@@ -332,28 +335,27 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 Future<List<_FormattedString>> oudatedMarker(
     _PackageDetails packageDetails) async {
   final cols = [_FormattedString(packageDetails.name)];
-  Version previous;
-  for (final pubspec in [
+  _VersionDetails previous;
+  for (final versionDetails in [
     packageDetails.current,
     packageDetails.upgradable,
     packageDetails.resolvable,
     packageDetails.latest
   ]) {
-    final version = pubspec?.version;
-    if (version == null) {
+    if (versionDetails == null) {
       cols.add(_raw('-'));
     } else {
-      final isLatest = version == packageDetails.latest.version;
+      final isLatest = versionDetails == packageDetails.latest;
       String Function(String) color;
       if (isLatest) {
-        color = version == previous ? color = log.gray : null;
+        color = versionDetails == previous ? color = log.gray : null;
       } else {
         color = log.red;
       }
       final prefix = isLatest ? '' : '*';
-      cols.add(_format(version?.toString() ?? '-', color, prefix: prefix));
+      cols.add(_format(versionDetails.describe ?? '-', color, prefix: prefix));
     }
-    previous = version;
+    previous = versionDetails;
   }
   return cols;
 }
@@ -367,16 +369,47 @@ Future<List<_FormattedString>> noneMarker(
       packageDetails.upgradable,
       packageDetails.resolvable,
       packageDetails.latest,
-    ].map((p) => _raw(p?.version?.toString() ?? '-'))
+    ].map((p) => _raw(p?.describe ?? '-'))
   ];
+}
+
+/// Details about a single version of a package.
+class _VersionDetails {
+  final Pubspec _pubspec;
+
+  /// True if this version is overridden.
+  final bool _overridden;
+  final PackageId _id;
+  _VersionDetails(this._pubspec, this._id, this._overridden);
+
+  /// A string representation of this version to include in the outdated report.
+  String get describe {
+    final version = _pubspec.version;
+    final extras = [
+      if (_overridden) 'overridden',
+      if (_id.source is! HostedSource) _id.source.name,
+    ];
+
+    final extrasInParentheses = extras.isEmpty ? '' : '(${extras.join(', ')})';
+
+    return '$version$extrasInParentheses';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _VersionDetails &&
+          _overridden == other._overridden &&
+          _id.source == other._id.source &&
+          _pubspec.version == other._pubspec.version;
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
   final String name;
-  final Pubspec current;
-  final Pubspec upgradable;
-  final Pubspec resolvable;
-  final Pubspec latest;
+  final _VersionDetails current;
+  final _VersionDetails upgradable;
+  final _VersionDetails resolvable;
+  final _VersionDetails latest;
   final _DependencyKind kind;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
@@ -393,10 +426,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   Map<String, Object> toJson() {
     return {
       'package': name,
-      'current': current?.version?.toString(),
-      'upgradable': upgradable?.version?.toString(),
-      'resolvable': resolvable?.version?.toString(),
-      'latest': latest?.version?.toString(),
+      'current': current?.describe,
+      'upgradable': upgradable?.describe,
+      'resolvable': resolvable?.describe,
+      'latest': latest?.describe,
     };
   }
 }
