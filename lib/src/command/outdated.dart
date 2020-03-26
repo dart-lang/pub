@@ -324,8 +324,7 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
   }
 
   if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
-    log.message(
-        '\nDependencies are all on the latest mutually compatible versions.'
+    log.message('\nDependencies are all on the latest resolvable versions.'
         '\nNewer versions, while available, are not mutually compatible.');
   }
 }
