@@ -30,7 +30,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest mutually compatible versions
+Dependencies are all on the latest mutually compatible versions.
+Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --format=no-color --mark=none
 Resolving...
@@ -43,7 +44,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest mutually compatible versions
+Dependencies are all on the latest mutually compatible versions.
+Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --format=no-color --up-to-date
 Resolving...
@@ -56,7 +58,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest mutually compatible versions
+Dependencies are all on the latest mutually compatible versions.
+Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --format=no-color --pre-releases
 Resolving...
@@ -69,7 +72,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest mutually compatible versions
+Dependencies are all on the latest mutually compatible versions.
+Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --format=no-color --no-dev-dependencies
 Resolving...
@@ -80,5 +84,6 @@ foo      *1.0.0   *1.0.0      *1.0.0      2.0.0
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest mutually compatible versions
+Dependencies are all on the latest mutually compatible versions.
+Newer versions, while available, are not mutually compatible.
 
