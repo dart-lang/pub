@@ -56,7 +56,8 @@ class OutdatedCommand extends PubCommand {
         help: 'Highlight packages with some property in the report.',
         valueHelp: 'OPTION',
         allowed: ['outdated', 'none'],
-        defaultsTo: 'outdated');
+        defaultsTo: 'outdated',
+        hide: true);
   }
 
   @override
