@@ -55,7 +55,7 @@ class LanguageVersionValidator extends Validator {
         continue;
       }
 
-      final unitLanguageVersion = unit.languageVersion;
+      final unitLanguageVersion = unit.languageVersionToken;
       if (unitLanguageVersion != null) {
         if (Version(unitLanguageVersion.major, unitLanguageVersion.minor, 0) >
             packageSdkMinVersion) {
