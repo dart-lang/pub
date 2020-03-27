@@ -230,7 +230,6 @@ class BoundGitSource extends CachedSource {
       await _ensureRepoCache(ref);
       var path = _repoCachePath(ref);
       var revision = await _firstRevision(path, ref.description['ref']);
-      print('rev $revision');
       var pubspec =
           await _describeUncached(ref, revision, ref.description['path']);
 
@@ -249,11 +248,8 @@ class BoundGitSource extends CachedSource {
   /// just installs [id] into the system cache, then describes it from there.
   @override
   Future<Pubspec> describeUncached(PackageId id) {
-    print(id.description);
     return _pool.withResource(() => _describeUncached(
-        id.toRef(),
-        id.description['resolved-ref'] ?? id.description['ref'],
-        id.description['path']));
+        id.toRef(), id.description['resolved-ref'], id.description['path']));
   }
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
@@ -275,7 +271,6 @@ class BoundGitSource extends CachedSource {
       lines = await git
           .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
     } on git.GitException catch (_) {
-      print(StackTrace.current);
       fail('Could not find a file named "$pubspecPath" in '
           '${ref.description['url']} $revision.');
     }
