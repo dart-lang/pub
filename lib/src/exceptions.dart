@@ -91,9 +91,7 @@ class PackageNotFoundException extends WrappedException {
       : super(message, innerError, innerTrace);
 
   @override
-  String toString() {
-    return "Package doesn't exist ($message) $innerChain.";
-  }
+  String toString() => "Package doesn't exist ($message).";
 }
 
 /// Returns whether [error] is a user-facing error object.
