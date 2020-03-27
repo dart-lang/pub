@@ -280,7 +280,6 @@ class DepsCommand extends PubCommand {
   /// Returns `true` if [path] looks like a Dart entrypoint.
   bool _isDartExecutable(String path) {
     try {
-      path = p.normalize(path);
       var unit = analysisContextManager.parse(path);
       return isEntrypoint(unit);
     } on AnalyzerErrorGroup {

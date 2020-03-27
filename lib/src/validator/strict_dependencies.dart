@@ -36,9 +36,7 @@ class StrictDependenciesValidator extends Validator {
       List<UriBasedDirective> directives;
       var contents = readTextFile(file);
       try {
-        var normalizedPath = p.normalize(p.absolute(file));
-        directives =
-            analysisContextManager.parseImportsAndExports(normalizedPath);
+        directives = analysisContextManager.parseImportsAndExports(file);
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));
