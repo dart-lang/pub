@@ -37,7 +37,8 @@ class OutdatedCommand extends PubCommand {
             'when connected to a terminal, and no-color otherwise.');
 
     argParser.addFlag('json',
-        help: 'Outputs the results in a json formatted report');
+        help: 'Outputs the results in a json formatted report',
+        negatable: false);
 
     argParser.addFlag('up-to-date',
         defaultsTo: false,
