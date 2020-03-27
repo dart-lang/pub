@@ -39,11 +39,11 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag('up-to-date',
         defaultsTo: false,
-        help: 'Include dependencies that are already at the latest version');
+        help: 'Include dependencies that are already at the latest version.');
 
     argParser.addFlag('pre-releases',
         defaultsTo: false,
-        help: 'Include pre-releases when reporting latest version');
+        help: 'Include pre-releases when reporting latest version.');
 
     argParser.addFlag(
       'dev-dependencies',
@@ -55,7 +55,8 @@ class OutdatedCommand extends PubCommand {
         help: 'Highlight packages with some property in the report.',
         valueHelp: 'OPTION',
         allowed: ['outdated', 'none'],
-        defaultsTo: 'outdated');
+        defaultsTo: 'outdated',
+        hide: true);
   }
 
   @override

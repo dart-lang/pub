@@ -78,7 +78,7 @@ class AnalysisContextManager {
   /// the given [path]. It is expected that the client knows analysis roots
   /// in advance. Pub does know, it is the packages it works with.
   void createContextsForDirectory(String path) {
-    _throwIfNotAbsolutePath(path);
+    path = p.normalize(p.absolute(path));
 
     // We add all contexts below the given directory.
     // So, children contexts must also have been added.
@@ -121,6 +121,7 @@ class AnalysisContextManager {
   ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
+    path = p.normalize(p.absolute(path));
     var parseResult = _getExistingSession(path).getParsedUnit(path);
     if (parseResult.errors.isNotEmpty) {
       throw AnalyzerErrorGroup(parseResult.errors);
@@ -147,8 +148,6 @@ class AnalysisContextManager {
   }
 
   AnalysisSession _getExistingSession(String path) {
-    _throwIfNotAbsolutePath(path);
-
     for (var context in _contexts.values) {
       if (context.contextRoot.isAnalyzed(path)) {
         return context.currentSession;
@@ -156,14 +155,6 @@ class AnalysisContextManager {
     }
 
     throw StateError('Unable to find the context to $path');
-  }
-
-  /// The driver supports only absolute paths, this method is used to validate
-  /// any input paths to prevent errors later.
-  void _throwIfNotAbsolutePath(String path) {
-    if (!p.isAbsolute(path)) {
-      throw ArgumentError('Only absolute paths are supported: $path');
-    }
   }
 }
 

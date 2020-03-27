@@ -42,8 +42,6 @@ class LanguageVersionValidator extends Validator {
     for (final path in ['lib', 'bin']
         .map((path) => entrypoint.root.listFiles(beneath: path))
         .expand((files) => files)
-        .map(p.normalize)
-        .map(p.absolute)
         .where((String file) => p.extension(file) == '.dart')) {
       CompilationUnit unit;
       try {
@@ -55,7 +53,7 @@ class LanguageVersionValidator extends Validator {
         continue;
       }
 
-      final unitLanguageVersion = unit.languageVersion;
+      final unitLanguageVersion = unit.languageVersionToken;
       if (unitLanguageVersion != null) {
         if (Version(unitLanguageVersion.major, unitLanguageVersion.minor, 0) >
             packageSdkMinVersion) {
