@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
 
