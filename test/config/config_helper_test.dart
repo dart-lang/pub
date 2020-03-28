@@ -14,7 +14,7 @@ void main() {
   ];
   const standardConfig = '''verbosity: "normal"''';
   var args = [allowedOptions, standardConfig];
-  var conf = null;
+  ConfigHelper conf;
 
   group('Value insertion', () {
     setUp(() {
@@ -28,24 +28,24 @@ void main() {
     });
 
     test('Array can be inserted into top level field', () {
-      conf.set('test-value', [1, "a", true, 3.14]);
-      expect(conf.get('test-value'), equals([1, "a", true, 3.14]));
+      conf.set('test-value', [1, 'a', true, 3.14]);
+      expect(conf.get('test-value'), equals([1, 'a', true, 3.14]));
     });
 
     test('Array can be inserted into nested field', () {
-      conf.set('nested.something.test-value', [1, "a", true, 3.14]);
+      conf.set('nested.something.test-value', [1, 'a', true, 3.14]);
       expect(conf.get('nested.something.test-value'),
-          equals([1, "a", true, 3.14]));
+          equals([1, 'a', true, 3.14]));
     });
 
     test('A single value in an array can be changed (top level)', () {
-      conf.set('test-value', [1, "a", true, 3.14]);
+      conf.set('test-value', [1, 'a', true, 3.14]);
       conf.set('test-value', 3, index: 0);
       expect(conf.get('test-value')[0], equals(3));
     });
 
     test('A single value in an array can be changed (nested)', () {
-      conf.set('nested.something.test-value', [1, "a", true, 3.14]);
+      conf.set('nested.something.test-value', [1, 'a', true, 3.14]);
       conf.set('nested.something.test-value', false, index: 2);
       expect(conf.get('nested.something.test-value')[2], equals(false));
     });
@@ -116,7 +116,7 @@ void main() {
     });
 
     test('Custom missing config file is being handled (multiple times)', () {
-      for (int i = 0; i < 3; i++) {
+      for (var i = 0; i < 3; i++) {
         var conf = ConfigHelper.simpleTest(args, 'temp_config.yaml');
         if (conf.exists) conf.delete();
         conf.set('test-value', 'smthin else');
@@ -149,15 +149,15 @@ ConfigHelper fileTest(var args, String filename) {
     'solver',
     'all'
   ];
-  String tempVal = allowedValues[
+  final tempVal = allowedValues[
       (allowedValues.indexOf(previousValue) + 1) % allowedValues.length];
   conf.set('verbosity', tempVal);
   conf.write();
   var file = File(conf.location);
-  String content = file.readAsStringSync();
+  final content = file.readAsStringSync();
   conf.set('verbosity', previousValue);
   conf.write();
-  expect(content, contains('verbosity: "${tempVal}"'));
+  expect(content, contains('verbosity: "$tempVal"'));
   expect(conf.get('verbosity'), equals(previousValue));
   return conf;
 }

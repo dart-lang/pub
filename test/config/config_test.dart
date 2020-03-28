@@ -4,11 +4,11 @@
 
 import 'dart:io';
 import 'package:test/test.dart';
-import '../test_pub.dart';
 import 'package:pub/src/config_helper.dart';
+import '../test_pub.dart';
 
 void main() {
-  var basicCommand = null;
+  RunCommand basicCommand;
   const allowedOptions = [
     'verbosity',
     'test-value',
@@ -17,12 +17,12 @@ void main() {
   const standardConfig = '''verbosity: "normal"''';
   var args = [allowedOptions, standardConfig];
   basicCommand = RunCommand('config', RegExp(''));
-  String oldContent = null;
-  var conf = null;
-  var file = null;
+  String oldContent;
+  ConfigHelper conf;
+  File file;
 
   test('pub config help page shows all available flags/options', () async {
-    String expectedOutput = '''Change configuration for pub.
+    const expectedOutput = '''Change configuration for pub.
 
 Usage: pub config [options]
 -h, --help          Print this usage information.
@@ -39,7 +39,7 @@ Run "pub help" to see global options.''';
   group('Messing with the config file..', () {
     setUp(() {
       conf = ConfigHelper.simpleTest(args);
-      file = new File(conf.location);
+      file = File(conf.location);
     });
 
     test('An error message is created if the configuration file is invalid',

@@ -26,6 +26,7 @@ import 'command/serve.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
+import 'config_helper.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
@@ -35,7 +36,6 @@ import 'log.dart' as log;
 import 'sdk.dart';
 import 'solver.dart';
 import 'utils.dart';
-import 'config_helper.dart';
 
 class PubCommandRunner extends CommandRunner {
   /// Returns the nested name of the command that's currently being run.
@@ -156,14 +156,16 @@ class PubCommandRunner extends CommandRunner {
     }
 
     if (topLevelResults['verbosity'] == null) {
-      if (topLevelResults['verbose'])
+      if (topLevelResults['verbose']) {
         log.verbosity = log.Verbosity.ALL;
-      else
+      } else {
         log.verbosity = verbosityMapping[conf.get('verbosity')];
-    } else if (topLevelResults['verbose'])
+      }
+    } else if (topLevelResults['verbose']) {
       log.verbosity = verbosityMapping['all'];
-    else
+    } else {
       log.verbosity = verbosityMapping[topLevelResults['verbosity']];
+    }
 
     log.fine('Pub ${sdk.version}');
 

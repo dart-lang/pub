@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import '../command.dart';
-import '../log.dart' as log;
 import '../config_helper.dart';
+import '../log.dart' as log;
 
 /// Handles the `config` pub command.
 class ConfigCommand extends PubCommand {
@@ -39,18 +39,20 @@ class ConfigCommand extends PubCommand {
 
   @override
   void run() {
-    List<String> availableSettings = ['verbosity'];
-    String standardConfig = '''verbosity: "normal"''';
-    var conf = new ConfigHelper(availableSettings, standardConfig);
+    const availableSettings = ['verbosity'];
+    const standardConfig = '''verbosity: "normal"''';
+    var conf = ConfigHelper(availableSettings, standardConfig);
     var _buffer = StringBuffer();
     var maxRestArguments = 0;
 
     /// show flag can have infinitely many arguments (they are validated below)
-    if (argResults.wasParsed('show'))
+    if (argResults.wasParsed('show')) {
       maxRestArguments = availableSettings.length;
+    }
 
-    if (argResults.rest.length > maxRestArguments)
+    if (argResults.rest.length > maxRestArguments) {
       usageException('Too many arguments');
+    }
 
     if (argResults.wasParsed('verbosity')) {
       conf.set('verbosity', argResults['verbosity']);
@@ -61,18 +63,19 @@ class ConfigCommand extends PubCommand {
     }
 
     if (argResults.wasParsed('show')) {
-      List<String> listToBeLooped =
-          (argResults.rest.length > 0 ? argResults.rest : availableSettings);
-      if (listToBeLooped == availableSettings)
+      final listToBeLooped =
+          argResults.rest.isNotEmpty ? argResults.rest : availableSettings;
+      if (listToBeLooped == availableSettings) {
         _buffer.writeln('Current config:');
+      }
 
-      for (int i = 0; i < listToBeLooped.length; i++) {
+      for (var i = 0; i < listToBeLooped.length; i++) {
         if (availableSettings.contains(listToBeLooped[i])) {
           _buffer.writeln(
-              listToBeLooped[i] + ": " + conf.get(listToBeLooped[i]) ??
+              listToBeLooped[i] + ': ' + conf.get(listToBeLooped[i]) ??
                   'not set');
         } else {
-          usageException("No such config option: ${listToBeLooped[i]}");
+          usageException('No such config option: ${listToBeLooped[i]}');
         }
       }
       printBuffer(_buffer);
@@ -80,13 +83,14 @@ class ConfigCommand extends PubCommand {
     }
 
     if (argResults.wasParsed('is-verbose')) {
-      if (log.verbosity == log.Verbosity.ALL)
+      if (log.verbosity == log.Verbosity.ALL) {
         _buffer.writeln('pub currently has verbose output');
+      }
       printBuffer(_buffer);
       return;
     }
 
-    this.printUsage();
+    printUsage();
   }
 
   /// This function prints a String Buffer regardless of the verbosity setting
