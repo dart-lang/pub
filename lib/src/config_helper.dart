@@ -3,38 +3,64 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:collection';
+<<<<<<< HEAD
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+=======
+import 'dart:io';
+import 'package:path/path.dart' as path;
+import 'dart:convert';
+>>>>>>> Add new command pub config
 import 'package:yaml/yaml.dart';
 import 'package:yamlicious/yamlicious.dart';
 
 import 'log.dart' as log;
 
 class ConfigHelper {
+<<<<<<< HEAD
+=======
+  var _parsedYAML;
+
+>>>>>>> Add new command pub config
   // PUBLIC API
 
   List<String> availableSettings;
   String standardConfig;
   String location;
 
+<<<<<<< HEAD
   String get content => File(location).readAsStringSync();
 
   ConfigHelper(var settings, this.standardConfig, [String basename]) {
     availableSettings = List.from(settings);
     location = _getFileLocation(basename);
+=======
+  ConfigHelper(var settings, this.standardConfig, [String basename]) {
+    availableSettings = List.from(settings);
+    basename = basename ?? 'pub_config.yaml';
+    location = path.join(path.dirname(Platform.script.path), basename);
+>>>>>>> Add new command pub config
     _read();
   }
 
   ConfigHelper.simple(var args, [String basename]) {
+<<<<<<< HEAD
     availableSettings = List.from(args[0]);
     standardConfig = args[1];
     location = _getFileLocation(basename);
+=======
+    basename = basename ?? 'pub_config.yaml';
+    location = path.join(path.dirname(Platform.script.path), basename);
+    availableSettings = List.from(args[0]);
+    standardConfig = args[1];
+>>>>>>> Add new command pub config
     _read();
   }
 
   ConfigHelper.test(var settings, this.standardConfig, [String basename]) {
     availableSettings = List.from(settings);
+<<<<<<< HEAD
     location = _getFileLocation(basename, isTest: true);
     _read();
   }
@@ -51,13 +77,43 @@ class ConfigHelper {
   Future<bool> get existsAsync => File(location).exists();
 
   void write() => File(location).writeAsStringSync(toYamlString(_parsedYAML));
+=======
+    basename = basename ?? 'pub_config.yaml';
+    String cleanPath = path.dirname(Platform.script.path).split('file://')[1];
+    final splitCleanPath = cleanPath.split('/test');
+    location = path.join(splitCleanPath[0], 'bin', basename);
+    _read();
+  }
+
+  ConfigHelper.simpleTest(var args, [String basename]) {
+    availableSettings = List.from(args[0]);
+    standardConfig = args[1];
+    basename = basename ?? 'pub_config.yaml';
+    String cleanPath = path.dirname(Platform.script.path).split('file://')[1];
+    final splitCleanPath = cleanPath.split('/test');
+    location = path.join(splitCleanPath[0], 'bin', basename);
+    _read();
+  }
+
+  bool get exists => new File(location).existsSync();
+
+  get existsAsync => new File(location).exists();
+
+  void write() =>
+      new File(location).writeAsStringSync(toYamlString(_parsedYAML));
+>>>>>>> Add new command pub config
 
   void delete() {
     if (exists) File(location).deleteSync();
   }
 
+<<<<<<< HEAD
   Future<void> deleteAsync() async {
     if (await existsAsync) await File(location).delete();
+=======
+  void deleteAsync() async {
+    if (await exists) await File(location).delete();
+>>>>>>> Add new command pub config
   }
 
   /// Set/create value: `set('something', 1337);`
@@ -79,12 +135,19 @@ class ConfigHelper {
         var valueList = _parsedYAML[key];
         valueList[index] = value;
         _parsedYAML[key] = valueList;
+<<<<<<< HEAD
       } else {
         _parsedYAML[key] = value;
       }
     } else {
       _handleNestedFields(nestedFields, value, index);
     }
+=======
+      } else
+        _parsedYAML[key] = value;
+    } else
+      _handleNestedFields(nestedFields, value, index);
+>>>>>>> Add new command pub config
   }
 
   /// Get a value from the config
@@ -94,7 +157,11 @@ class ConfigHelper {
     final nestedFields = key.split('.');
     var pivot = _parsedYAML;
 
+<<<<<<< HEAD
     for (var i = 0; i < nestedFields.length; i++) {
+=======
+    for (int i = 0; i < nestedFields.length; i++) {
+>>>>>>> Add new command pub config
       if (availableSettings.contains(nestedFields[i])) {
         pivot = pivot[nestedFields[i]];
       }
@@ -109,6 +176,7 @@ class ConfigHelper {
   /// operators cannot be generic so the value gets converted to String
   String operator [](var key) => get(key).toString();
 
+<<<<<<< HEAD
   // END OF PUBLIC API
 
   dynamic _parsedYAML;
@@ -135,6 +203,21 @@ class ConfigHelper {
   dynamic _getPivot(fields, insertionIndex) {
     var pivot = _parsedYAML;
     for (var i = 0; i < insertionIndex; i++) {
+=======
+  void createEmptyConfigFile() {
+    var file = File(location);
+    file.writeAsStringSync("");
+  }
+
+  // END OF PUBLIC API
+
+  bool _isInvalidState = false;
+  String get _content => new File(location).readAsStringSync();
+
+  _getPivot(fields, insertionIndex) {
+    var pivot = _parsedYAML;
+    for (int i = 0; i < insertionIndex; i++) {
+>>>>>>> Add new command pub config
       pivot = pivot[fields[i]];
     }
     return pivot;
@@ -143,16 +226,25 @@ class ConfigHelper {
   void _create() {
     // only create config file if it does not exist yet
     if (!exists) {
+<<<<<<< HEAD
       var config = File(location);
+=======
+      var config = new File(location);
+>>>>>>> Add new command pub config
       config.writeAsStringSync(standardConfig);
       _parsedYAML = _parseYAML();
     }
   }
 
   void _transformAvailableSettings() {
+<<<<<<< HEAD
     var nestedKeys = ['']; //empty string to denote nestedKeys as List<String>
     nestedKeys.removeLast();
     for (var i = 0; i < availableSettings.length; i++) {
+=======
+    List<String> nestedKeys = [];
+    for (int i = 0; i < availableSettings.length; i++) {
+>>>>>>> Add new command pub config
       var splitSettings = availableSettings[i].split('.');
       if (splitSettings.length > 1) nestedKeys.add(availableSettings[i]);
       availableSettings.removeAt(i);
@@ -161,12 +253,20 @@ class ConfigHelper {
     availableSettings.addAll(nestedKeys);
   }
 
+<<<<<<< HEAD
   dynamic _parseYAML() {
     try {
       return json.decode(json.encode(loadYaml(content)));
     } catch (e) {
       log.error('Could not parse configuration file: ${e.toString()}');
       File(location).writeAsStringSync(previousContent);
+=======
+  _parseYAML() {
+    try {
+      return json.decode(json.encode(loadYaml(_content)));
+    } catch (e) {
+      log.error('Could not parse configuration file: ${e.toString()}');
+>>>>>>> Add new command pub config
       exit(1);
     }
   }
@@ -174,47 +274,76 @@ class ConfigHelper {
   List _findInsertionField(List<String> fields) {
     var datMap = Map.from(_parsedYAML);
 
+<<<<<<< HEAD
     for (var i = 0; i < fields.length; i++) {
+=======
+    for (int i = 0; i < fields.length; i++) {
+>>>>>>> Add new command pub config
       if (datMap.containsKey(fields[i]) && datMap[fields[i]] is Map) {
         datMap = datMap[fields[i]];
       } else {
         if (i > 0) {
           return [i - 1, fields[i - 1]];
+<<<<<<< HEAD
         } else {
           return [null, null];
         }
+=======
+        } else
+          return [null, null];
+>>>>>>> Add new command pub config
       }
     }
     return [fields.length - 1, fields[fields.length - 1]];
   }
 
+<<<<<<< HEAD
   dynamic _handleNestedFields(List<String> fields, value, index) {
     final fieldLength = fields.length;
     if (fieldLength < 2) return _parsedYAML;
 
     final searchResult = _findInsertionField(fields);
+=======
+  _handleNestedFields(List<String> fields, value, index) {
+    final fieldLength = fields.length;
+    if (fieldLength < 2) return _parsedYAML;
+
+    List searchResult = _findInsertionField(fields);
+>>>>>>> Add new command pub config
 
     final insertionIndex = searchResult[0] ?? 0;
     final insertionElement = searchResult[1] ?? fields[0];
 
     var pivot = _getPivot(fields, insertionIndex);
 
+<<<<<<< HEAD
     dynamic actualValue;
+=======
+    var actualValue = null;
+>>>>>>> Add new command pub config
     try {
       actualValue = pivot[insertionElement][fields[fieldLength - 1]];
     } catch (e) {
       actualValue = null;
     }
 
+<<<<<<< HEAD
     Map nestedMap;
     if (actualValue is! List) {
       nestedMap = {fields[fieldLength - 1]: value};
     } else if (index != null) {
+=======
+    Map nestedMap = null;
+    if (actualValue is! List)
+      nestedMap = {fields[fieldLength - 1]: value};
+    else if (index != null) {
+>>>>>>> Add new command pub config
       actualValue[index] = value;
       nestedMap = {fields[fieldLength - 1]: actualValue};
     }
 
     //create nested map object
+<<<<<<< HEAD
     for (var j = fieldLength - 2; j >= insertionIndex + 1; j--) {
       nestedMap = {fields[j]: nestedMap};
     }
@@ -223,6 +352,16 @@ class ConfigHelper {
       pivot[insertionElement] = nestedMap;
     } else {
       var tmp = Map.from(pivot[insertionElement]);
+=======
+    for (int j = fieldLength - 2; j >= insertionIndex + 1; j--) {
+      nestedMap = {fields[j]: nestedMap};
+    }
+
+    if (pivot[insertionElement] is! LinkedHashMap)
+      pivot[insertionElement] = nestedMap;
+    else {
+      Map tmp = Map.from(pivot[insertionElement]);
+>>>>>>> Add new command pub config
       tmp.addAll(nestedMap);
       pivot[insertionElement] = tmp;
     }
@@ -243,6 +382,7 @@ class ConfigHelper {
     _transformAvailableSettings();
     _parsedYAML = _parseYAML();
   }
+<<<<<<< HEAD
 
   // TESTING
 
@@ -259,4 +399,6 @@ class ConfigHelper {
     file.writeAsStringSync('\ninvalid yaml content', mode: FileMode.append);
     _parsedYAML = _parseYAML();
   }
+=======
+>>>>>>> Add new command pub config
 }

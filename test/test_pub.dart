@@ -376,10 +376,19 @@ Future<PubProcess> startPub(
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
+<<<<<<< HEAD
   var dartArgs = ['--packages=$dotPackagesPath'];
   dartArgs.addAll(
       [pubPath, (verbosity != null ? '--verbosity=$verbosity' : '--verbose')]);
   dartArgs.addAll(args);
+=======
+  var dartArgs = ['--packages=$dotPackagesPath']
+    ..addAll([
+      pubPath,
+      (verbosity != null ? '--verbosity=${verbosity}' : '--verbose')
+    ])
+    ..addAll(args);
+>>>>>>> Add new command pub config
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)

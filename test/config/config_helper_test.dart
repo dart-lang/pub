@@ -6,6 +6,11 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:pub/src/config_helper.dart';
 
+<<<<<<< HEAD
+=======
+import '../validator/language_version_test.dart';
+
+>>>>>>> Add new command pub config
 void main() {
   const allowedOptions = [
     'verbosity',
@@ -14,7 +19,11 @@ void main() {
   ];
   const standardConfig = '''verbosity: "normal"''';
   var args = [allowedOptions, standardConfig];
+<<<<<<< HEAD
   ConfigHelper conf;
+=======
+  var conf = null;
+>>>>>>> Add new command pub config
 
   group('Value insertion', () {
     setUp(() {
@@ -28,6 +37,7 @@ void main() {
     });
 
     test('Array can be inserted into top level field', () {
+<<<<<<< HEAD
       conf.set('test-value', [1, 'a', true, 3.14]);
       expect(conf.get('test-value'), equals([1, 'a', true, 3.14]));
     });
@@ -40,12 +50,30 @@ void main() {
 
     test('A single value in an array can be changed (top level)', () {
       conf.set('test-value', [1, 'a', true, 3.14]);
+=======
+      conf.set('test-value', [1, "a", true, 3.14]);
+      expect(conf.get('test-value'), equals([1, "a", true, 3.14]));
+    });
+
+    test('Array can be inserted into nested field', () {
+      conf.set('nested.something.test-value', [1, "a", true, 3.14]);
+      expect(conf.get('nested.something.test-value'),
+          equals([1, "a", true, 3.14]));
+    });
+
+    test('A single value in an array can be changed (top level)', () {
+      conf.set('test-value', [1, "a", true, 3.14]);
+>>>>>>> Add new command pub config
       conf.set('test-value', 3, index: 0);
       expect(conf.get('test-value')[0], equals(3));
     });
 
     test('A single value in an array can be changed (nested)', () {
+<<<<<<< HEAD
       conf.set('nested.something.test-value', [1, 'a', true, 3.14]);
+=======
+      conf.set('nested.something.test-value', [1, "a", true, 3.14]);
+>>>>>>> Add new command pub config
       conf.set('nested.something.test-value', false, index: 2);
       expect(conf.get('nested.something.test-value')[2], equals(false));
     });
@@ -105,7 +133,11 @@ void main() {
 
   group('File handling', () {
     test('Empty config file is being handled', () {
+<<<<<<< HEAD
       var conf = ConfigHelper.simpleTest(args, basename: 'temp_config.yaml');
+=======
+      var conf = ConfigHelper.simpleTest(args, 'temp_config.yaml');
+>>>>>>> Add new command pub config
 
       if (conf.exists) conf.delete();
       conf.createEmptyConfigFile();
@@ -116,8 +148,13 @@ void main() {
     });
 
     test('Custom missing config file is being handled (multiple times)', () {
+<<<<<<< HEAD
       for (var i = 0; i < 3; i++) {
         var conf = ConfigHelper.simpleTest(args, basename: 'temp_config.yaml');
+=======
+      for (int i = 0; i < 3; i++) {
+        var conf = ConfigHelper.simpleTest(args, 'temp_config.yaml');
+>>>>>>> Add new command pub config
         if (conf.exists) conf.delete();
         conf.set('test-value', 'smthin else');
         var receivedValue = conf.get('test-value');
@@ -138,7 +175,11 @@ void main() {
 }
 
 ConfigHelper fileTest(var args, String filename) {
+<<<<<<< HEAD
   var conf = ConfigHelper.simpleTest(args, basename: filename);
+=======
+  var conf = ConfigHelper.simpleTest(args, filename);
+>>>>>>> Add new command pub config
   final previousValue = conf.get('verbosity');
   final allowedValues = [
     'none',
@@ -149,15 +190,26 @@ ConfigHelper fileTest(var args, String filename) {
     'solver',
     'all'
   ];
+<<<<<<< HEAD
   final tempVal = allowedValues[
+=======
+  String tempVal = allowedValues[
+>>>>>>> Add new command pub config
       (allowedValues.indexOf(previousValue) + 1) % allowedValues.length];
   conf.set('verbosity', tempVal);
   conf.write();
   var file = File(conf.location);
+<<<<<<< HEAD
   final content = file.readAsStringSync();
   conf.set('verbosity', previousValue);
   conf.write();
   expect(content, contains('verbosity: "$tempVal"'));
+=======
+  String content = file.readAsStringSync();
+  conf.set('verbosity', previousValue);
+  conf.write();
+  expect(content, contains('verbosity: "${tempVal}"'));
+>>>>>>> Add new command pub config
   expect(conf.get('verbosity'), equals(previousValue));
   return conf;
 }

@@ -37,6 +37,7 @@ import 'log.dart' as log;
 import 'sdk.dart';
 import 'solver.dart';
 import 'utils.dart';
+import 'config_helper.dart';
 
 class PubCommandRunner extends CommandRunner {
   /// Returns the nested name of the command that's currently being run.
@@ -171,6 +172,7 @@ class PubCommandRunner extends CommandRunner {
     }
 
     if (topLevelResults['verbosity'] == null) {
+<<<<<<< HEAD
       if (topLevelResults['verbose']) {
         log.verbosity = log.Verbosity.ALL;
       } else {
@@ -181,6 +183,16 @@ class PubCommandRunner extends CommandRunner {
     } else {
       log.verbosity = verbosityMapping[topLevelResults['verbosity']];
     }
+=======
+      if (topLevelResults['verbose'])
+        log.verbosity = log.Verbosity.ALL;
+      else
+        log.verbosity = verbosityMapping[conf.get('verbosity')];
+    } else if (topLevelResults['verbose'])
+      log.verbosity = verbosityMapping['all'];
+    else
+      log.verbosity = verbosityMapping[topLevelResults['verbosity']];
+>>>>>>> Add new command pub config
 
     log.fine('Pub ${sdk.version}');
 
