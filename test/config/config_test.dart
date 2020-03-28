@@ -92,8 +92,8 @@ Run "pub help" to see global options.''';
       });
 
       test('verbose flag overrides config', () async {
-        await pubCommand(basicCommand, args: ['--is-verbose'],
-            output: 'pub currently has verbose output');
+        await pubCommand(basicCommand,
+            args: ['--is-verbose'], output: 'pub currently has verbose output');
       });
     });
   });

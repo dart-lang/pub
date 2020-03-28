@@ -6,8 +6,6 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:pub/src/config_helper.dart';
 
-import '../validator/language_version_test.dart';
-
 void main() {
   const allowedOptions = [
     'verbosity',
