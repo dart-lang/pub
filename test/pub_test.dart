@@ -30,6 +30,7 @@ void main() {
 
         Available commands:
           cache       Work with the system cache.
+          config      Change configuration for pub.
           deps        Print package dependencies.
           downgrade   Downgrade the current package's dependencies to oldest versions.
           get         Get the current package's dependencies.

@@ -121,6 +121,7 @@ Future pubCommand(RunCommand command,
     silent,
     warning,
     int exitCode,
+    String verbosity,
     Map<String, String> environment}) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -143,6 +144,7 @@ Future pubCommand(RunCommand command,
       error: error,
       silent: silent,
       exitCode: exitCode,
+      verbosity: verbosity,
       environment: environment);
 }
 
@@ -242,12 +244,16 @@ Future runPub(
     silent,
     int exitCode = exit_codes.SUCCESS,
     String workingDirectory,
+    String verbosity,
     Map<String, String> environment}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
-      args: args, workingDirectory: workingDirectory, environment: environment);
+      args: args,
+      workingDirectory: workingDirectory,
+      verbosity: verbosity,
+      environment: environment);
   await pub.shouldExit(exitCode);
 
   expect(() async {
@@ -338,7 +344,8 @@ Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    String verbosity}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -369,8 +376,12 @@ Future<PubProcess> startPub(
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
-  var dartArgs = ['--packages=$dotPackagesPath'];
-  dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
+  var dartArgs = ['--packages=$dotPackagesPath']
+    ..addAll([
+      pubPath,
+      (verbosity != null ? '--verbosity=${verbosity}' : '--verbose')
+    ])
+    ..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)

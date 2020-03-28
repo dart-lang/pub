@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 
 import 'command/build.dart';
 import 'command/cache.dart';
+import 'command/config.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
 import 'command/get.dart';
@@ -34,6 +35,7 @@ import 'log.dart' as log;
 import 'sdk.dart';
 import 'solver.dart';
 import 'utils.dart';
+import 'config_helper.dart';
 
 class PubCommandRunner extends CommandRunner {
   /// Returns the nested name of the command that's currently being run.
@@ -59,6 +61,19 @@ class PubCommandRunner extends CommandRunner {
 
   /// The top-level options parsed by the command runner.
   static ArgResults _options;
+
+  static ConfigHelper conf =
+      ConfigHelper(['verbosity'], '''verbosity: "normal"''');
+
+  static Map<String, log.Verbosity> verbosityMapping = {
+    'none': log.Verbosity.NONE,
+    'error': log.Verbosity.ERROR,
+    'warning': log.Verbosity.WARNING,
+    'normal': log.Verbosity.NORMAL,
+    'io': log.Verbosity.IO,
+    'solver': log.Verbosity.SOLVER,
+    'all': log.Verbosity.ALL
+  };
 
   @override
   String get usageFooter =>
@@ -97,6 +112,7 @@ class PubCommandRunner extends CommandRunner {
 
     addCommand(BuildCommand());
     addCommand(CacheCommand());
+    addCommand(ConfigCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
     addCommand(GlobalCommand());
@@ -139,30 +155,15 @@ class PubCommandRunner extends CommandRunner {
       log.recordTranscript();
     }
 
-    switch (topLevelResults['verbosity']) {
-      case 'error':
-        log.verbosity = log.Verbosity.ERROR;
-        break;
-      case 'warning':
-        log.verbosity = log.Verbosity.WARNING;
-        break;
-      case 'normal':
-        log.verbosity = log.Verbosity.NORMAL;
-        break;
-      case 'io':
-        log.verbosity = log.Verbosity.IO;
-        break;
-      case 'solver':
-        log.verbosity = log.Verbosity.SOLVER;
-        break;
-      case 'all':
+    if (topLevelResults['verbosity'] == null) {
+      if (topLevelResults['verbose'])
         log.verbosity = log.Verbosity.ALL;
-        break;
-      default:
-        // No specific verbosity given, so check for the shortcut.
-        if (topLevelResults['verbose']) log.verbosity = log.Verbosity.ALL;
-        break;
-    }
+      else
+        log.verbosity = verbosityMapping[conf.get('verbosity')];
+    } else if (topLevelResults['verbose'])
+      log.verbosity = verbosityMapping['all'];
+    else
+      log.verbosity = verbosityMapping[topLevelResults['verbosity']];
 
     log.fine('Pub ${sdk.version}');
 
