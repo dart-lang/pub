@@ -32,9 +32,9 @@ class ConfigCommand extends PubCommand {
     );
 
     argParser.addFlag('is-verbose',
-    help: 'Print a message if output is verbose',
-    negatable: false,
-    defaultsTo: false);
+        help: 'Print a message if output is verbose',
+        negatable: false,
+        defaultsTo: false);
   }
 
   @override
@@ -79,8 +79,9 @@ class ConfigCommand extends PubCommand {
       return;
     }
 
-    if(argResults.wasParsed('is-verbose')){
-      if(log.verbosity == log.Verbosity.ALL) _buffer.writeln('pub currently has verbose output');
+    if (argResults.wasParsed('is-verbose')) {
+      if (log.verbosity == log.Verbosity.ALL)
+        _buffer.writeln('pub currently has verbose output');
       printBuffer(_buffer);
       return;
     }

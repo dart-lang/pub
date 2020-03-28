@@ -123,7 +123,6 @@ class ConfigHelper {
 
   // END OF PUBLIC API
 
-  bool _isInvalidState = false;
   String get _content => new File(location).readAsStringSync();
 
   _getPivot(fields, insertionIndex) {
