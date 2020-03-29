@@ -45,7 +45,7 @@ Run "pub help" to see global options.''';
     test('An error message is created if the configuration file is invalid',
         () async {
       oldContent = file.readAsStringSync();
-      file.writeAsStringSync('\ninvalid yaml content', mode: FileMode.append);
+      file.writeAsStringSync('invalid yaml content');
       await pubCommand(basicCommand,
           args: ['--show'],
           error: RegExp(r'^Could not parse configuration file:'));
