@@ -39,10 +39,10 @@ class ConfigHelper {
     _read();
   }
 
-  ConfigHelper.simpleTest(var args, [String basename]) {
+  ConfigHelper.simpleTest(var args, {String basename, String dir}) {
     availableSettings = List.from(args[0]);
     standardConfig = args[1];
-    location = _getFileLocation(basename, isTest: true);
+    location = _getFileLocation(basename, isTest: true, dir: dir);
     _read();
   }
 
@@ -113,14 +113,19 @@ class ConfigHelper {
 
   dynamic _parsedYAML;
 
-  String _getFileLocation(String basename, {bool isTest = false}) {
+  String _getFileLocation(String basename, {bool isTest = false, String dir}) {
     final actualBasename = basename ?? 'pub_config.yaml';
     String ret;
 
     if (isTest) {
-      final cleanPath = path.dirname(Platform.script.path).split('file://')[1];
-      final splitCleanPath = cleanPath.split('/test');
-      ret = path.join(splitCleanPath[0], 'bin', actualBasename);
+      if (dir == null) {
+        final cleanPath =
+            path.dirname(Platform.script.path).split('file://')[1];
+        final splitCleanPath = cleanPath.split('/test');
+        ret = path.join(splitCleanPath[0], 'bin', actualBasename);
+      } else {
+        ret = path.join(dir, 'bin', actualBasename);
+      }
     } else {
       ret = path.join(path.dirname(Platform.script.path), actualBasename);
     }

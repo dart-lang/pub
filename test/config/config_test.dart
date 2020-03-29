@@ -35,14 +35,16 @@ Run "pub help" to see global options.''';
   });
 
   group('Messing with the config file..', () {
-    setUp(() {
+    /*setUp(() {
       conf = ConfigHelper.simpleTest(args);
-    });
+    });*/
 
     test('An error message is created if the configuration file is invalid',
         () async {
+      conf = ConfigHelper.simpleTest(args);
       oldContent = conf.content;
       conf.makeInvalid();
+      expect(oldContent, isNot(equals(conf.content)));
       await pubCommand(basicCommand,
           args: ['--show'],
           error: RegExp(r'^Could not parse configuration file:'));

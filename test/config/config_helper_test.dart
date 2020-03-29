@@ -105,7 +105,7 @@ void main() {
 
   group('File handling', () {
     test('Empty config file is being handled', () {
-      var conf = ConfigHelper.simpleTest(args, 'temp_config.yaml');
+      var conf = ConfigHelper.simpleTest(args, basename: 'temp_config.yaml');
 
       if (conf.exists) conf.delete();
       conf.createEmptyConfigFile();
@@ -117,7 +117,7 @@ void main() {
 
     test('Custom missing config file is being handled (multiple times)', () {
       for (var i = 0; i < 3; i++) {
-        var conf = ConfigHelper.simpleTest(args, 'temp_config.yaml');
+        var conf = ConfigHelper.simpleTest(args, basename: 'temp_config.yaml');
         if (conf.exists) conf.delete();
         conf.set('test-value', 'smthin else');
         var receivedValue = conf.get('test-value');
@@ -138,7 +138,7 @@ void main() {
 }
 
 ConfigHelper fileTest(var args, String filename) {
-  var conf = ConfigHelper.simpleTest(args, filename);
+  var conf = ConfigHelper.simpleTest(args, basename: filename);
   final previousValue = conf.get('verbosity');
   final allowedValues = [
     'none',
