@@ -20,35 +20,27 @@ class ConfigHelper {
 
   ConfigHelper(var settings, this.standardConfig, [String basename]) {
     availableSettings = List.from(settings);
-    basename = basename ?? 'pub_config.yaml';
-    location = path.join(path.dirname(Platform.script.path), basename);
+    location = _getFileLocation(basename);
     _read();
   }
 
   ConfigHelper.simple(var args, [String basename]) {
-    basename = basename ?? 'pub_config.yaml';
-    location = path.join(path.dirname(Platform.script.path), basename);
     availableSettings = List.from(args[0]);
     standardConfig = args[1];
+    location = _getFileLocation(basename);
     _read();
   }
 
   ConfigHelper.test(var settings, this.standardConfig, [String basename]) {
     availableSettings = List.from(settings);
-    basename = basename ?? 'pub_config.yaml';
-    final cleanPath = path.dirname(Platform.script.path).split('file://')[1];
-    final splitCleanPath = cleanPath.split('/test');
-    location = path.join(splitCleanPath[0], 'bin', basename);
+    location = _getFileLocation(basename, isTest: true);
     _read();
   }
 
   ConfigHelper.simpleTest(var args, [String basename]) {
     availableSettings = List.from(args[0]);
     standardConfig = args[1];
-    basename = basename ?? 'pub_config.yaml';
-    final cleanPath = path.dirname(Platform.script.path).split('file://')[1];
-    final splitCleanPath = cleanPath.split('/test');
-    location = path.join(splitCleanPath[0], 'bin', basename);
+    location = _getFileLocation(basename, isTest: true);
     _read();
   }
 
@@ -125,6 +117,20 @@ class ConfigHelper {
   dynamic _parsedYAML;
 
   String get _content => File(location).readAsStringSync();
+
+  String _getFileLocation(String basename, {bool isTest: false}) {
+    final actualBasename = basename ?? 'pub_config.yaml';
+    String ret;
+
+    if (isTest) {
+      final cleanPath = path.dirname(Platform.script.path).split('file://')[1];
+      final splitCleanPath = cleanPath.split('/test');
+      ret = path.join(splitCleanPath[0], 'bin', actualBasename);
+    } else {
+      ret = path.join(path.dirname(Platform.script.path), actualBasename);
+    }
+    return Platform.isWindows ? (ret[0] == '/' ? ret.substring(1) : ret) : ret;
+  }
 
   dynamic _getPivot(fields, insertionIndex) {
     var pivot = _parsedYAML;
