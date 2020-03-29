@@ -18,6 +18,8 @@ class ConfigHelper {
   String standardConfig;
   String location;
 
+  String get content => File(location).readAsStringSync();
+
   ConfigHelper(var settings, this.standardConfig, [String basename]) {
     availableSettings = List.from(settings);
     location = _getFileLocation(basename);
@@ -107,16 +109,9 @@ class ConfigHelper {
   /// operators cannot be generic so the value gets converted to String
   String operator [](var key) => get(key).toString();
 
-  void createEmptyConfigFile() {
-    var file = File(location);
-    file.writeAsStringSync('');
-  }
-
   // END OF PUBLIC API
 
   dynamic _parsedYAML;
-
-  String get _content => File(location).readAsStringSync();
 
   String _getFileLocation(String basename, {bool isTest = false}) {
     final actualBasename = basename ?? 'pub_config.yaml';
@@ -163,7 +158,7 @@ class ConfigHelper {
 
   dynamic _parseYAML() {
     try {
-      return json.decode(json.encode(loadYaml(_content)));
+      return json.decode(json.encode(loadYaml(content)));
     } catch (e) {
       log.error('Could not parse configuration file: ${e.toString()}');
       exit(1);
@@ -241,5 +236,22 @@ class ConfigHelper {
     _create();
     _transformAvailableSettings();
     _parsedYAML = _parseYAML();
+  }
+
+  // TESTING
+
+  void createEmptyConfigFile() {
+    var file = File(location);
+    file.writeAsStringSync('');
+  }
+
+  void makeInvalid() {
+    var file = File(location);
+    file.writeAsStringSync('\ninvalid yaml content', mode: FileMode.append);
+  }
+
+  void rawWrite(String content) {
+    var file = File(location);
+    file.writeAsStringSync(content);
   }
 }
