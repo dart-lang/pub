@@ -34,6 +34,8 @@ class ConfigCommand extends PubCommand {
         help: 'Print a message if output is verbose', negatable: false);
 
     argParser.addFlag('make-invalid', negatable: false, hide: true);
+
+    argParser.addFlag('make-empty', negatable: false, hide: true);
   }
 
   @override
@@ -41,9 +43,10 @@ class ConfigCommand extends PubCommand {
     const availableSettings = ['verbosity'];
     const standardConfig = '''verbosity: "normal"''';
     var conf = ConfigHelper(availableSettings, standardConfig);
-    final oldContent = conf.content;
     if (argResults.wasParsed('make-invalid')) {
       conf.makeInvalid();
+    } else if (argResults.wasParsed('make-empty')) {
+      conf.createEmptyConfigFile();
     }
     var _buffer = StringBuffer();
     var maxRestArguments = 0;
@@ -80,9 +83,6 @@ class ConfigCommand extends PubCommand {
         } else {
           usageException('No such config option: ${listToBeLooped[i]}');
         }
-      }
-      if (argResults.wasParsed('make-invalid')) {
-        conf.rawWrite(oldContent);
       }
       printBuffer(_buffer);
       return;

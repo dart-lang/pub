@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:test/test.dart';
-//import 'package:pub/src/config_helper.dart';
 import '../test_pub.dart';
 
 void main() {
@@ -13,7 +12,7 @@ void main() {
     'test-value',
     'nested.something.test-value'
   ];*/
-  //const standardConfig = '''verbosity: "normal"''';
+  const standardConfig = '''verbosity: "normal"''';
   //var args = [allowedOptions, standardConfig];
   basicCommand = RunCommand('config', RegExp(''));
   //ConfigHelper conf;
@@ -34,10 +33,6 @@ Run "pub help" to see global options.''';
   });
 
   group('Messing with the config file..', () {
-    /*setUp(() {
-      conf = ConfigHelper.simpleTest(args);
-    });*/
-
     test('An error message is created if the configuration file is invalid',
         () async {
       await pubCommand(basicCommand,
@@ -45,36 +40,41 @@ Run "pub help" to see global options.''';
           error: RegExp(r'^Could not parse configuration file:'));
     });
 
-    /*test('Default config is being displayed correctly', () async {
-      file.writeAsStringSync('');
+    test('Default config is being displayed correctly', () async {
       await pubCommand(basicCommand,
-          args: ['--show'],
+          args: ['--make-empty', '--show'],
           output: 'Current config:\n' + standardConfig.replaceAll('"', ''));
-      file.writeAsStringSync(oldContent);
     });
 
-    test('Notifies about inserted values and displays them correctly',
-        () async {
+    test('Notifies about inserted value and displays it correctly', () async {
+      var previousVerbosity = await getCurrentValue('verbosity');
+
       await pubCommand(basicCommand,
           args: ['--verbosity', 'all'],
           output: RegExp(r'verbosity set to all'));
+
       await pubCommand(basicCommand,
-          args: ['--show'],
-          output: 'Current config:\n' +
-              standardConfig
-                  .replaceAll('"', '')
-                  .replaceAll('verbosity: normal', 'verbosity: all'));
-      file.writeAsStringSync(oldContent);
+          args: ['--show'], output: contains('verbosity: all'));
+
+      await pubCommand(basicCommand,
+          args: ['--show', 'verbosity'], output: 'verbosity: all');
+
+      await pubCommand(basicCommand, args: ['--verbosity', previousVerbosity]);
     });
 
     group('verbosity', () {
-      setUp(() {
-        conf.set('verbosity', 'normal');
-        conf.write();
+      String previousVal;
+
+      setUpAll(() async {
+        previousVal = await getCurrentValue('verbosity');
       });
 
-      tearDown(() {
-        file.writeAsStringSync(oldContent);
+      tearDownAll(() async {
+        await pubCommand(basicCommand, args: ['--verbosity', previousVal]);
+      });
+
+      setUp(() async {
+        await pubCommand(basicCommand, args: ['--verbosity', 'none']);
       });
 
       test('verbosity option overrides config', () async {
@@ -88,6 +88,18 @@ Run "pub help" to see global options.''';
         await pubCommand(basicCommand,
             args: ['--is-verbose'], output: 'pub currently has verbose output');
       });
-    });*/
+    });
   });
+}
+
+Future<String> getCurrentValue(String val) async {
+  var pub = await startPub(args: ['config', '--show', val]);
+  var output =
+      await pub.stdoutStream().toList(); //see ../test_pub.dart line 252
+  for (var i = 0; i < output.length; i++) {
+    if (output[i].contains(val)) {
+      return output[i].substring(11);
+    }
+  }
+  return null;
 }

@@ -166,6 +166,7 @@ class ConfigHelper {
       return json.decode(json.encode(loadYaml(content)));
     } catch (e) {
       log.error('Could not parse configuration file: ${e.toString()}');
+      File(location).writeAsStringSync(previousContent);
       exit(1);
     }
   }
@@ -250,14 +251,12 @@ class ConfigHelper {
     file.writeAsStringSync('');
   }
 
+  String previousContent = '';
+
   void makeInvalid() {
+    previousContent = content;
     var file = File(location);
     file.writeAsStringSync('\ninvalid yaml content', mode: FileMode.append);
     _parsedYAML = _parseYAML();
-  }
-
-  void rawWrite(String content) {
-    var file = File(location);
-    file.writeAsStringSync(content);
   }
 }
