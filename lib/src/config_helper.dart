@@ -118,7 +118,7 @@ class ConfigHelper {
 
   String get _content => File(location).readAsStringSync();
 
-  String _getFileLocation(String basename, {bool isTest: false}) {
+  String _getFileLocation(String basename, {bool isTest = false}) {
     final actualBasename = basename ?? 'pub_config.yaml';
     String ret;
 
