@@ -3,21 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:test/test.dart';
-import 'package:pub/src/config_helper.dart';
+//import 'package:pub/src/config_helper.dart';
 import '../test_pub.dart';
 
 void main() {
   RunCommand basicCommand;
-  const allowedOptions = [
+  /*const allowedOptions = [
     'verbosity',
     'test-value',
     'nested.something.test-value'
-  ];
-  const standardConfig = '''verbosity: "normal"''';
-  var args = [allowedOptions, standardConfig];
+  ];*/
+  //const standardConfig = '''verbosity: "normal"''';
+  //var args = [allowedOptions, standardConfig];
   basicCommand = RunCommand('config', RegExp(''));
-  String oldContent;
-  ConfigHelper conf;
+  //ConfigHelper conf;
 
   test('pub config help page shows all available flags/options', () async {
     const expectedOutput = '''Change configuration for pub.
@@ -41,14 +40,9 @@ Run "pub help" to see global options.''';
 
     test('An error message is created if the configuration file is invalid',
         () async {
-      conf = ConfigHelper.simpleTest(args);
-      oldContent = conf.content;
-      conf.makeInvalid();
-      expect(oldContent, isNot(equals(conf.content)));
       await pubCommand(basicCommand,
-          args: ['--show'],
+          args: ['--make-invalid', '--show'],
           error: RegExp(r'^Could not parse configuration file:'));
-      conf.rawWrite(oldContent);
     });
 
     /*test('Default config is being displayed correctly', () async {

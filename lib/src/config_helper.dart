@@ -253,6 +253,7 @@ class ConfigHelper {
   void makeInvalid() {
     var file = File(location);
     file.writeAsStringSync('\ninvalid yaml content', mode: FileMode.append);
+    _parsedYAML = _parseYAML();
   }
 
   void rawWrite(String content) {

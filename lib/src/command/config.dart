@@ -27,14 +27,13 @@ class ConfigCommand extends PubCommand {
       'show',
       abbr: 's',
       help: 'Show current config',
-      defaultsTo: false,
       negatable: false,
     );
 
     argParser.addFlag('is-verbose',
-        help: 'Print a message if output is verbose',
-        negatable: false,
-        defaultsTo: false);
+        help: 'Print a message if output is verbose', negatable: false);
+
+    argParser.addFlag('make-invalid', negatable: false, hide: true);
   }
 
   @override
@@ -42,6 +41,10 @@ class ConfigCommand extends PubCommand {
     const availableSettings = ['verbosity'];
     const standardConfig = '''verbosity: "normal"''';
     var conf = ConfigHelper(availableSettings, standardConfig);
+    final oldContent = conf.content;
+    if (argResults.wasParsed('make-invalid')) {
+      conf.makeInvalid();
+    }
     var _buffer = StringBuffer();
     var maxRestArguments = 0;
 
@@ -77,6 +80,9 @@ class ConfigCommand extends PubCommand {
         } else {
           usageException('No such config option: ${listToBeLooped[i]}');
         }
+      }
+      if (argResults.wasParsed('make-invalid')) {
+        conf.rawWrite(oldContent);
       }
       printBuffer(_buffer);
       return;
