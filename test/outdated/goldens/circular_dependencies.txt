@@ -18,6 +18,8 @@ foo           *1.2.3   1.3.0       1.3.0       1.3.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `pub upgrade`.
 
@@ -28,6 +30,8 @@ foo           1.2.3    1.3.0       1.3.0       1.3.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `pub upgrade`.
 
@@ -38,6 +42,8 @@ foo           *1.2.3   1.3.0       1.3.0       1.3.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `pub upgrade`.
 
@@ -48,6 +54,8 @@ foo           *1.2.3   1.3.0       1.3.0       1.3.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `pub upgrade`.
 

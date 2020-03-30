@@ -74,23 +74,25 @@ class OutdatedCommand extends PubCommand {
 
     var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
 
-    SolveResult upgradableSolveResult;
-    SolveResult resolvableSolveResult;
+    List<PackageId> upgradablePackages;
+    List<PackageId> resolvablePackages;
 
     final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
 
     Future<void> resolve() async {
-      upgradableSolveResult = await resolveVersions(
+      upgradablePackages = (await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(upgradePubspec),
-      );
+      ))
+          .packages;
 
-      resolvableSolveResult = await resolveVersions(
+      resolvablePackages = (await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(resolvablePubspec),
-      );
+      ))
+          .packages;
     }
 
     if (shouldShowSpinner) {
@@ -98,6 +100,17 @@ class OutdatedCommand extends PubCommand {
     } else {
       await resolve();
     }
+
+    final currentPackages = entrypoint.lockFile.packages.values;
+
+    /// The set of all dependencies (direct and transitive) that are in the
+    /// closure of the non-dev dependencies from the root in at least one of
+    /// the current, upgradable and resolvable resolutions.
+    final nonDevDependencies = <String>{
+      ...await nonDevDependencyClosure(entrypoint.root, currentPackages),
+      ...await nonDevDependencyClosure(entrypoint.root, upgradablePackages),
+      ...await nonDevDependencyClosure(entrypoint.root, resolvablePackages)
+    };
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
@@ -107,10 +120,10 @@ class OutdatedCommand extends PubCommand {
           .map((id) => id.version)
           .toList()
             ..sort(argResults['pre-releases'] ? null : Version.prioritize);
-      final upgradable = upgradableSolveResult.packages
+      final upgradable = upgradablePackages
           .firstWhere((id) => id.name == name, orElse: () => null)
           ?.version;
-      final resolvable = resolvableSolveResult.packages
+      final resolvable = resolvablePackages
           .firstWhere((id) => id.name == name, orElse: () => null)
           ?.version;
       final latest = available.last;
@@ -121,7 +134,7 @@ class OutdatedCommand extends PubCommand {
           await _describeVersion(name, source, description, upgradable),
           await _describeVersion(name, source, description, resolvable),
           await _describeVersion(name, source, description, latest),
-          _kind(name, entrypoint));
+          _kind(name, entrypoint, nonDevDependencies));
     }
 
     final rows = <_PackageDetails>[];
@@ -138,9 +151,9 @@ class OutdatedCommand extends PubCommand {
       ...immediateDependencies.map((d) => d.name)
     };
     for (final id in [
-      if (includeDevDependencies) ...entrypoint.lockFile.packages.values,
-      ...upgradableSolveResult.packages,
-      ...resolvableSolveResult.packages
+      ...currentPackages,
+      ...upgradablePackages,
+      ...resolvablePackages
     ]) {
       final name = id.name;
       if (!visited.add(name)) continue;
@@ -183,6 +196,24 @@ class OutdatedCommand extends PubCommand {
         : await cache
             .source(source)
             .describe(PackageId(name, source, version, description));
+  }
+
+  /// Computes the closure of the graph of dependencies (not including
+  /// dev_dependencies from [root], given the package versions in [resolution].
+  Future<Set<String>> nonDevDependencyClosure(
+      Package root, Iterable<PackageId> resolution) async {
+    final mapping =
+        Map<String, PackageId>.fromIterable(resolution, key: (id) => id.name);
+    final visited = <String>{root.name};
+    final toVisit = [...root.dependencies.keys];
+    while (toVisit.isNotEmpty) {
+      final name = toVisit.removeLast();
+      if (!visited.add(name)) continue;
+      final id = mapping[name];
+      toVisit.addAll(
+          (await cache.source(id.source).describe(id)).dependencies.keys);
+    }
+    return visited;
   }
 }
 
@@ -244,6 +275,8 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
   final devRows = rows.where((row) => row.kind == _DependencyKind.dev);
   final transitiveRows =
       rows.where((row) => row.kind == _DependencyKind.transitive);
+  final devTransitiveRows =
+      rows.where((row) => row.kind == _DependencyKind.devTransitive);
 
   final formattedRows = <List<_FormattedString>>[
     ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
@@ -264,6 +297,13 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
           : _format('\ntransitive dependencies', log.bold)
     ],
     ...await Future.wait(transitiveRows.map(marker)),
+    if (includeDevDependencies)
+      [
+        devTransitiveRows.isEmpty
+            ? _raw('\ntransitive dev_dependencies: all up-to-date')
+            : _format('\ntransitive dev_dependencies', log.bold)
+      ],
+    ...await Future.wait(devTransitiveRows.map(marker)),
   ];
 
   final columnWidths = <int, int>{};
@@ -296,8 +336,10 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
       .length;
 
   var notAtResolvable = rows
-      .where(
-          (row) => row.resolvable != null && row.upgradable != row.resolvable)
+      .where((row) =>
+          row.current != null &&
+          row.resolvable != null &&
+          row.upgradable != row.resolvable)
       .length;
 
   if (upgradable != 0) {
@@ -403,13 +445,18 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   }
 }
 
-_DependencyKind _kind(String name, Entrypoint entrypoint) {
+_DependencyKind _kind(
+    String name, Entrypoint entrypoint, Set<String> nonDevTransitive) {
   if (entrypoint.root.dependencies.containsKey(name)) {
     return _DependencyKind.direct;
   } else if (entrypoint.root.devDependencies.containsKey(name)) {
     return _DependencyKind.dev;
   } else {
-    return _DependencyKind.transitive;
+    if (nonDevTransitive.contains(name)) {
+      return _DependencyKind.transitive;
+    } else {
+      return _DependencyKind.devTransitive;
+    }
   }
 }
 
@@ -420,8 +467,11 @@ enum _DependencyKind {
   /// Direct dev dependencies.
   dev,
 
-  /// Transitive dependencies.
-  transitive
+  /// Transitive dependencies of direct dependencies.
+  transitive,
+
+  /// Transitive dependencies needed only by dev_dependencies.
+  devTransitive,
 }
 
 _FormattedString _format(String value, Function(String) format, {prefix = ''}) {
