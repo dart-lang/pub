@@ -77,24 +77,27 @@ class OutdatedCommand extends PubCommand {
     SolveResult upgradableSolveResult;
     SolveResult resolvableSolveResult;
 
-    await log.warningsOnlyUnlessTerminal(
-      () => log.spinner(
-        'Resolving',
-        () async {
-          upgradableSolveResult = await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(upgradePubspec),
-          );
+    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
 
-          resolvableSolveResult = await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(resolvablePubspec),
-          );
-        },
-      ),
-    );
+    Future<void> resolve() async {
+      upgradableSolveResult = await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(upgradePubspec),
+      );
+
+      resolvableSolveResult = await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(resolvablePubspec),
+      );
+    }
+
+    if (shouldShowSpinner) {
+      await log.spinner('Resolving', resolve);
+    } else {
+      await resolve();
+    }
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;

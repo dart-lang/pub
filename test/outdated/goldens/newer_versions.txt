@@ -1,5 +1,4 @@
 $ pub outdated --json
-Resolving...
 {
   "packages": [
     {
@@ -41,7 +40,6 @@ Resolving...
 }
 
 $ pub outdated --no-color
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
 
@@ -60,7 +58,6 @@ To update these dependencies, use `pub upgrade`.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --mark=none
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           1.2.3    1.3.0       2.0.0       3.0.0   
 
@@ -79,7 +76,6 @@ To update these dependencies, use `pub upgrade`.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --up-to-date
-Resolving...
 Dependencies   Current  Upgradable  Resolvable  Latest  
 bar            1.0.0    1.0.0       1.0.0       1.0.0   
 foo            *1.2.3   *1.3.0      *2.0.0      3.0.0   
@@ -100,7 +96,6 @@ To update these dependencies, use `pub upgrade`.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --pre-releases
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest       
 foo           *1.2.3   *1.3.0      *2.0.0      3.0.0        
 
@@ -119,7 +114,6 @@ To update these dependencies, use `pub upgrade`.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --no-dev-dependencies
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   *1.3.0      3.0.0       3.0.0   
 
