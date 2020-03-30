@@ -207,7 +207,6 @@ class OutdatedCommand extends PubCommand {
       final name = toVisit.removeLast();
       if (!visited.add(name)) continue;
       final id = mapping[name];
-      if (id == null) print('id $name mapping $mapping');
       toVisit.addAll(
           (await cache.source(id.source).describe(id)).dependencies.keys);
     }
