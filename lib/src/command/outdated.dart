@@ -88,26 +88,28 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    await log.warningsOnlyUnlessTerminal(
-      () => log.spinner(
-        'Resolving',
-        () async {
-          upgradablePackages = (await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(upgradablePubspec),
-          ))
-              .packages;
+    Future<void> resolve() async {
+      upgradablePackages = (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(upgradablePubspec),
+      ))
+          .packages;
 
-          resolvablePackages = (await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(resolvablePubspec),
-          ))
-              .packages;
-        },
-      ),
-    );
+      resolvablePackages = (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(resolvablePubspec),
+      ))
+          .packages;
+    }
+
+    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
+    if (shouldShowSpinner) {
+      await log.spinner('Resolving', resolve);
+    } else {
+      await resolve();
+    }
 
     final currentPackages = entrypoint.lockFile.packages.values;
 
@@ -536,10 +538,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   Map<String, Object> toJson() {
     return {
       'package': name,
-      'current': current?.describe,
-      'upgradable': upgradable?.describe,
-      'resolvable': resolvable?.describe,
-      'latest': latest?.describe,
+      'current': {'version': current?.describe},
+      'upgradable': {'version': upgradable?.describe},
+      'resolvable': {'version': resolvable?.describe},
+      'latest': {'version': latest?.describe},
     };
   }
 }
