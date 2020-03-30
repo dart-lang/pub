@@ -97,7 +97,8 @@ class OutdatedCommand extends PubCommand {
       upgradablePackages = await _tryResolve(upgradablePubspec);
       resolvablePackages = await _tryResolve(resolvablePubspec);
     }
-    // Use an empty list if we have no resolution.
+    // Check if resolutions failed, and fallback to empty resolutions.
+    final upgradableFailed = upgradablePackages == null;
     upgradablePackages ??= [];
     resolvablePackages ??= [];
 
@@ -209,6 +210,7 @@ class OutdatedCommand extends PubCommand {
         marker,
         useColors: useColors,
         includeDevDependencies: includeDevDependencies,
+        upgradableFailed: upgradableFailed,
       );
     }
   }
@@ -356,9 +358,13 @@ Future<void> _outputJson(List<_PackageDetails> rows) async {
       .convert({'packages': rows.map((row) => row.toJson()).toList()}));
 }
 
-Future<void> _outputHuman(List<_PackageDetails> rows,
-    Future<List<_FormattedString>> Function(_PackageDetails) marker,
-    {@required bool useColors, @required bool includeDevDependencies}) async {
+Future<void> _outputHuman(
+  List<_PackageDetails> rows,
+  Future<List<_FormattedString>> Function(_PackageDetails) marker, {
+  @required bool useColors,
+  @required bool includeDevDependencies,
+  @required bool upgradableFailed,
+}) async {
   if (rows.isEmpty) {
     log.message('Found no outdated packages.');
     return;
@@ -434,9 +440,20 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
           row.upgradable != row.resolvable)
       .length;
 
+  if (upgradableFailed) {
+    log.message(
+      '\nUpgradable package resolution could not be computed.\n'
+      'Use `pub upgrade --dry-run` for an explanation.',
+    );
+    // Note. we don't care if resolvableFailed, because if it has failed then
+    // the upgradable resolution has also failed. A single mesage about what to
+    // do should be sufficient -- and running `pub upgrade --dry-run` should
+    // given the user a solid explanation.
+  }
+
   if (upgradable != 0) {
     if (upgradable == 1) {
-      log.message('1 upgradable dependency is locked (in pubspec.lock) to '
+      log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
           'an older version.\n'
           'To update it, use `pub upgrade`.');
     } else {
