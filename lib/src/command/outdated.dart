@@ -277,14 +277,10 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
       rows.where((row) => row.kind == _DependencyKind.devTransitive);
 
   final formattedRows = <List<_FormattedString>>[
-    ['Package', 'Current', 'Upgradable', 'Resolvable', 'Latest']
+    ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    [
-      directRows.isEmpty
-          ? _raw('dependencies: all up-to-date')
-          : _format('dependencies', log.bold),
-    ],
+    [if (directRows.isEmpty) _raw('all up-to-date')],
     ...await Future.wait(directRows.map(marker)),
     if (includeDevDependencies)
       [

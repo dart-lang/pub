@@ -21,10 +21,9 @@ Resolving...
 
 $ pub outdated --no-color
 Resolving...
-Package  Current  Upgradable  Resolvable  Latest  
-dependencies
-bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -37,10 +36,9 @@ Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --mark=none
 Resolving...
-Package  Current  Upgradable  Resolvable  Latest  
-dependencies
-bar      1.0.0    1.0.0       1.0.0       2.0.0   
-foo      1.0.0    1.0.0       1.0.0       2.0.0   
+Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           1.0.0    1.0.0       1.0.0       2.0.0   
+foo           1.0.0    1.0.0       1.0.0       2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -53,10 +51,9 @@ Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --up-to-date
 Resolving...
-Package  Current  Upgradable  Resolvable  Latest  
-dependencies
-bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -69,10 +66,9 @@ Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --pre-releases
 Resolving...
-Package  Current  Upgradable  Resolvable  Latest  
-dependencies
-bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -85,10 +81,9 @@ Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --no-dev-dependencies
 Resolving...
-Package  Current  Upgradable  Resolvable  Latest  
-dependencies
-bar      *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo      *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
 transitive dependencies: all up-to-date
 
