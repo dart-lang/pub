@@ -77,26 +77,28 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    await log.warningsOnlyUnlessTerminal(
-      () => log.spinner(
-        'Resolving',
-        () async {
-          upgradablePackages = (await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(upgradePubspec),
-          ))
-              .packages;
+    Future<void> resolve() async {
+      upgradablePackages = (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(upgradePubspec),
+      ))
+          .packages;
 
-          resolvablePackages = (await resolveVersions(
-            SolveType.UPGRADE,
-            cache,
-            Package.inMemory(resolvablePubspec),
-          ))
-              .packages;
-        },
-      ),
-    );
+      resolvablePackages = (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(resolvablePubspec),
+      ))
+          .packages;
+    }
+
+    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
+    if (shouldShowSpinner) {
+      await log.spinner('Resolving', resolve);
+    } else {
+      await resolve();
+    }
 
     final currentPackages = entrypoint.lockFile.packages.values;
 

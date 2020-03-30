@@ -1,5 +1,4 @@
 $ pub outdated --json
-Resolving...
 {
   "packages": [
     {
@@ -21,7 +20,6 @@ Resolving...
 }
 
 $ pub outdated --no-color
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   1.3.0       1.3.0       1.3.0   
 
@@ -34,7 +32,6 @@ transitive dev_dependencies: all up-to-date
 To update it, use `pub upgrade`.
 
 $ pub outdated --no-color --mark=none
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           1.2.3    1.3.0       1.3.0       1.3.0   
 
@@ -47,7 +44,6 @@ transitive dev_dependencies: all up-to-date
 To update it, use `pub upgrade`.
 
 $ pub outdated --no-color --up-to-date
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   1.3.0       1.3.0       1.3.0   
 
@@ -60,7 +56,6 @@ transitive dev_dependencies: all up-to-date
 To update it, use `pub upgrade`.
 
 $ pub outdated --no-color --pre-releases
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   1.3.0       1.3.0       1.3.0   
 
@@ -73,7 +68,6 @@ transitive dev_dependencies: all up-to-date
 To update it, use `pub upgrade`.
 
 $ pub outdated --no-color --no-dev-dependencies
-Resolving...
 Dependencies  Current  Upgradable  Resolvable  Latest  
 foo           *1.2.3   1.3.0       1.3.0       1.3.0   
 
