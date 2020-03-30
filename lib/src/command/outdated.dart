@@ -48,6 +48,10 @@ class OutdatedCommand extends PubCommand {
         defaultsTo: false,
         help: 'Include pre-releases when reporting latest version.');
 
+    argParser.addFlag('dependency-overrides',
+        defaultsTo: true,
+        help: 'Show resolutions without `dependency_override`');
+
     argParser.addFlag(
       'dev-dependencies',
       defaultsTo: true,
@@ -67,10 +71,15 @@ class OutdatedCommand extends PubCommand {
     entrypoint.assertUpToDate();
 
     final includeDevDependencies = argResults['dev-dependencies'];
+    final includeDependencyOverrides = argResults['dependency-overrides'];
+
+    final rootPubspec = includeDependencyOverrides
+        ? entrypoint.root.pubspec
+        : _stripDependencyOverrides(entrypoint.root.pubspec);
 
     final upgradePubspec = includeDevDependencies
-        ? entrypoint.root.pubspec
-        : _stripDevDependencies(entrypoint.root.pubspec);
+        ? rootPubspec
+        : _stripDevDependencies(rootPubspec);
 
     var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
 
@@ -113,12 +122,16 @@ class OutdatedCommand extends PubCommand {
       final latest = available.last;
       final description = packageRef.description;
       return _PackageDetails(
-          name,
-          await _describeVersion(name, source, description, current),
-          await _describeVersion(name, source, description, upgradable),
-          await _describeVersion(name, source, description, resolvable),
-          await _describeVersion(name, source, description, latest),
-          _kind(name, entrypoint));
+        name,
+        await _describeVersion(name, source, description, current),
+        entrypoint.root.dependencyOverrides.containsKey(name),
+        await _describeVersion(name, source, description, upgradable),
+        upgradePubspec.dependencyOverrides.containsKey(name),
+        await _describeVersion(name, source, description, resolvable),
+        resolvablePubspec.dependencyOverrides.containsKey(name),
+        await _describeVersion(name, source, description, latest),
+        _kind(name, entrypoint),
+      );
     }
 
     final rows = <_PackageDetails>[];
@@ -183,6 +196,17 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
+Pubspec _stripDependencyOverrides(Pubspec original) {
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: original.dependencies.values,
+    devDependencies: original.devDependencies.values,
+    dependencyOverrides: [],
+  );
+}
+
 Pubspec _stripDevDependencies(Pubspec original) {
   return Pubspec(
     original.name,
@@ -190,7 +214,7 @@ Pubspec _stripDevDependencies(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
     devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    // TODO(sigurdm): consider dependency overrides.
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
@@ -221,7 +245,7 @@ Pubspec _stripVersionConstraints(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
     devDependencies: _unconstrained(original.devDependencies),
-    // TODO(sigurdm): consider dependency overrides.
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
@@ -332,58 +356,92 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
   }
 }
 
-Future<List<_FormattedString>> oudatedMarker(
-    _PackageDetails packageDetails) async {
-  final cols = [_FormattedString(packageDetails.name)];
-  Version previous;
-  for (final pubspec in [
-    packageDetails.current,
-    packageDetails.upgradable,
-    packageDetails.resolvable,
-    packageDetails.latest
-  ]) {
+Future<List<_FormattedString>> oudatedMarker(_PackageDetails pkg) async {
+  _FormattedString _render(Pubspec pubspec, Pubspec prev, bool hasOverride) {
     final version = pubspec?.version;
     if (version == null) {
-      cols.add(_raw('-'));
-    } else {
-      final isLatest = version == packageDetails.latest.version;
-      String Function(String) color;
-      if (isLatest) {
-        color = version == previous ? color = log.gray : null;
-      } else {
-        color = log.red;
-      }
-      final prefix = isLatest ? '' : '*';
-      cols.add(_format(version?.toString() ?? '-', color, prefix: prefix));
+      return _raw('-');
     }
-    previous = version;
+
+    final isLatest = version == pkg.latest.version;
+    final isDifferent = prev?.version != version;
+    final color = !isLatest ? log.red : (!isDifferent ? log.gray : null);
+    final prefix = isLatest ? '' : '*';
+    final suffix = hasOverride ? ' (override)' : '';
+    return _format('$version$suffix', color, prefix: prefix);
   }
-  return cols;
+
+  return [
+    _FormattedString(pkg.name),
+    _render(pkg.current, null, pkg.hasOverride),
+    _render(pkg.upgradable, pkg.current, pkg.upgradableHasOverride),
+    _render(pkg.resolvable, pkg.upgradable, pkg.resolvableHasOverride),
+    _render(pkg.latest, pkg.resolvable, false),
+  ];
 }
 
 Future<List<_FormattedString>> noneMarker(
     _PackageDetails packageDetails) async {
+  _FormattedString _render(Pubspec p, bool override) {
+    final version = p?.version?.toString() ?? '-';
+    if (override) {
+      return _raw(version + ' (overridden)');
+    }
+    return _raw(version);
+  }
+
   return [
     _FormattedString(packageDetails.name),
-    ...[
-      packageDetails.current,
-      packageDetails.upgradable,
-      packageDetails.resolvable,
-      packageDetails.latest,
-    ].map((p) => _raw(p?.version?.toString() ?? '-'))
+    _render(packageDetails.current, packageDetails.hasOverride),
+    _render(packageDetails.upgradable, packageDetails.upgradableHasOverride),
+    _render(packageDetails.resolvable, packageDetails.resolvableHasOverride),
+    _render(packageDetails.latest, false),
   ];
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
   final String name;
+
+  /// Version currently locked in `pubspec.lock`, `null` if not present.
   final Pubspec current;
+
+  /// True, if [current] was overriden with a `dependency_override` in
+  /// `pubspec.yaml`
+  final bool hasOverride;
+
+  /// Version that picked with a `pub upgrade` resolution, `null` if not
+  /// present in this resolution.
   final Pubspec upgradable;
+
+  /// True, if [upgradable] was resolved with a `dependency_override` in
+  /// `pubspec.yaml`.
+  final bool upgradableHasOverride;
+
+  /// Version that picked with a `pub upgrade` resolution after dropping
+  /// dependency constraints from `pubspec.yaml`. `null` if not present in
+  /// this resolution.
   final Pubspec resolvable;
+
+  /// True, if [resolvable] was resolved with a `dependency_override` in
+  /// `pubspec.yaml`.
+  final bool resolvableHasOverride;
+
+  /// Latest version available.
   final Pubspec latest;
+
   final _DependencyKind kind;
 
-  _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind);
+  _PackageDetails(
+    this.name,
+    this.current,
+    this.hasOverride,
+    this.upgradable,
+    this.upgradableHasOverride,
+    this.resolvable,
+    this.resolvableHasOverride,
+    this.latest,
+    this.kind,
+  );
 
   @override
   int compareTo(_PackageDetails other) {
