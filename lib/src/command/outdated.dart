@@ -85,35 +85,49 @@ class OutdatedCommand extends PubCommand {
 
     final resolvablePubspec = _stripVersionConstraints(upgradablePubspec);
 
-    SolveResult upgradableSolveResult;
-    SolveResult resolvableSolveResult;
+    List<PackageId> upgradablePackages;
+    List<PackageId> resolvablePackages;
 
     await log.warningsOnlyUnlessTerminal(
       () => log.spinner(
         'Resolving',
         () async {
-          upgradableSolveResult = await resolveVersions(
+          upgradablePackages = (await resolveVersions(
             SolveType.UPGRADE,
             cache,
             Package.inMemory(upgradablePubspec),
-          );
-          resolvableSolveResult = await resolveVersions(
+          ))
+              .packages;
+
+          resolvablePackages = (await resolveVersions(
             SolveType.UPGRADE,
             cache,
             Package.inMemory(resolvablePubspec),
-          );
+          ))
+              .packages;
         },
       ),
     );
+
+    final currentPackages = entrypoint.lockFile.packages.values;
+
+    /// The set of all dependencies (direct and transitive) that are in the
+    /// closure of the non-dev dependencies from the root in at least one of
+    /// the current, upgradable and resolvable resolutions.
+    final nonDevDependencies = <String>{
+      ...await nonDevDependencyClosure(entrypoint.root, currentPackages),
+      ...await nonDevDependencyClosure(entrypoint.root, upgradablePackages),
+      ...await nonDevDependencyClosure(entrypoint.root, resolvablePackages)
+    };
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
       final current = (entrypoint.lockFile?.packages ?? {})[name];
 
-      final upgradable = upgradableSolveResult.packages
-          .firstWhere((id) => id.name == name, orElse: () => null);
-      final resolvable = resolvableSolveResult.packages
-          .firstWhere((id) => id.name == name, orElse: () => null);
+      final upgradable = upgradablePackages.firstWhere((id) => id.name == name,
+          orElse: () => null);
+      final resolvable = resolvablePackages.firstWhere((id) => id.name == name,
+          orElse: () => null);
 
       // Find the latest version, and if it's overridden
       var latestIsOverridden = false;
@@ -164,7 +178,7 @@ class OutdatedCommand extends PubCommand {
           latest,
           latestIsOverridden,
         ),
-        _kind(name, entrypoint),
+        _kind(name, entrypoint, nonDevDependencies),
       );
     }
 
@@ -175,9 +189,9 @@ class OutdatedCommand extends PubCommand {
     };
     // Add all dependencies from the lockfile.
     for (final id in [
-      ...entrypoint.lockFile.packages.values,
-      ...upgradableSolveResult.packages,
-      ...resolvableSolveResult.packages
+      ...currentPackages,
+      ...upgradablePackages,
+      ...resolvablePackages
     ]) {
       if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
@@ -246,6 +260,24 @@ class OutdatedCommand extends PubCommand {
       id,
       isOverridden,
     );
+  }
+
+  /// Computes the closure of the graph of dependencies (not including
+  /// dev_dependencies from [root], given the package versions in [resolution].
+  Future<Set<String>> nonDevDependencyClosure(
+      Package root, Iterable<PackageId> resolution) async {
+    final mapping =
+        Map<String, PackageId>.fromIterable(resolution, key: (id) => id.name);
+    final visited = <String>{root.name};
+    final toVisit = [...root.dependencies.keys];
+    while (toVisit.isNotEmpty) {
+      final name = toVisit.removeLast();
+      if (!visited.add(name)) continue;
+      final id = mapping[name];
+      toVisit.addAll(
+          (await cache.source(id.source).describe(id)).dependencies.keys);
+    }
+    return visited;
   }
 }
 
@@ -318,6 +350,8 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
   final devRows = rows.where((row) => row.kind == _DependencyKind.dev);
   final transitiveRows =
       rows.where((row) => row.kind == _DependencyKind.transitive);
+  final devTransitiveRows =
+      rows.where((row) => row.kind == _DependencyKind.devTransitive);
 
   final formattedRows = <List<_FormattedString>>[
     ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
@@ -338,6 +372,13 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
           : _format('\ntransitive dependencies', log.bold)
     ],
     ...await Future.wait(transitiveRows.map(marker)),
+    if (includeDevDependencies)
+      [
+        devTransitiveRows.isEmpty
+            ? _raw('\ntransitive dev_dependencies: all up-to-date')
+            : _format('\ntransitive dev_dependencies', log.bold)
+      ],
+    ...await Future.wait(devTransitiveRows.map(marker)),
   ];
 
   final columnWidths = <int, int>{};
@@ -370,8 +411,10 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
       .length;
 
   var notAtResolvable = rows
-      .where(
-          (row) => row.resolvable != null && row.upgradable != row.resolvable)
+      .where((row) =>
+          row.current != null &&
+          row.resolvable != null &&
+          row.upgradable != row.resolvable)
       .length;
 
   if (upgradable != 0) {
@@ -501,13 +544,18 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   }
 }
 
-_DependencyKind _kind(String name, Entrypoint entrypoint) {
+_DependencyKind _kind(
+    String name, Entrypoint entrypoint, Set<String> nonDevTransitive) {
   if (entrypoint.root.dependencies.containsKey(name)) {
     return _DependencyKind.direct;
   } else if (entrypoint.root.devDependencies.containsKey(name)) {
     return _DependencyKind.dev;
   } else {
-    return _DependencyKind.transitive;
+    if (nonDevTransitive.contains(name)) {
+      return _DependencyKind.transitive;
+    } else {
+      return _DependencyKind.devTransitive;
+    }
   }
 }
 
@@ -518,8 +566,11 @@ enum _DependencyKind {
   /// Direct dev dependencies.
   dev,
 
-  /// Transitive dependencies.
-  transitive
+  /// Transitive dependencies of direct dependencies.
+  transitive,
+
+  /// Transitive dependencies needed only by dev_dependencies.
+  devTransitive,
 }
 
 _FormattedString _format(String value, Function(String) format, {prefix = ''}) {
