@@ -29,6 +29,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
+transitive dev_dependencies: all up-to-date
+
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
@@ -41,6 +43,8 @@ foo           1.0.0    1.0.0       1.0.0       2.0.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
@@ -55,6 +59,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
+transitive dev_dependencies: all up-to-date
+
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
@@ -67,6 +73,8 @@ foo           *1.0.0   *1.0.0      *1.0.0      2.0.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.

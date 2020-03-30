@@ -51,6 +51,8 @@ builder       *1.2.3   *1.3.0      2.0.0       2.0.0
 transitive dependencies
 transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0   
 transitive2   -        -           1.0.0       1.0.0   
+
+transitive dev_dependencies
 transitive3   -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
@@ -70,6 +72,8 @@ builder       1.2.3    1.3.0       2.0.0       2.0.0
 transitive dependencies
 transitive    1.2.3    1.3.0       1.3.0       2.0.0   
 transitive2   -        -           1.0.0       1.0.0   
+
+transitive dev_dependencies
 transitive3   -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
@@ -91,6 +95,8 @@ builder        *1.2.3   *1.3.0      2.0.0       2.0.0
 transitive dependencies
 transitive     *1.2.3   *1.3.0      *1.3.0      2.0.0   
 transitive2    -        -           1.0.0       1.0.0   
+
+transitive dev_dependencies
 transitive3    -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
@@ -110,6 +116,8 @@ builder       *1.2.3   *1.3.0      *2.0.0      3.0.0-alpha
 transitive dependencies
 transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0        
 transitive2   -        -           1.0.0       1.0.0        
+
+transitive dev_dependencies
 transitive3   -        -           1.0.0       1.0.0        
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
