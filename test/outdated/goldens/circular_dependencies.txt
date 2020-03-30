@@ -4,10 +4,18 @@ Resolving...
   "packages": [
     {
       "package": "foo",
-      "current": "1.2.3",
-      "upgradable": "1.3.0",
-      "resolvable": "1.3.0",
-      "latest": "1.3.0"
+      "current": {
+        "version": "1.2.3"
+      },
+      "upgradable": {
+        "version": "1.3.0"
+      },
+      "resolvable": {
+        "version": "1.3.0"
+      },
+      "latest": {
+        "version": "1.3.0"
+      }
     }
   ]
 }

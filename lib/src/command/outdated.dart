@@ -434,10 +434,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   Map<String, Object> toJson() {
     return {
       'package': name,
-      'current': current?.version?.toString(),
-      'upgradable': upgradable?.version?.toString(),
-      'resolvable': resolvable?.version?.toString(),
-      'latest': latest?.version?.toString(),
+      'current': {'version': current?.version?.toString()},
+      'upgradable': {'version': upgradable?.version?.toString()},
+      'resolvable': {'version': resolvable?.version?.toString()},
+      'latest': {'version': latest?.version?.toString()},
     };
   }
 }

@@ -4,17 +4,33 @@ Resolving...
   "packages": [
     {
       "package": "bar",
-      "current": "1.0.0",
-      "upgradable": "1.0.0",
-      "resolvable": "1.0.0",
-      "latest": "2.0.0"
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
     },
     {
       "package": "foo",
-      "current": "1.0.0",
-      "upgradable": "1.0.0",
-      "resolvable": "1.0.0",
-      "latest": "2.0.0"
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
     }
   ]
 }
