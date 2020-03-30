@@ -295,11 +295,12 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
           : _format('\ntransitive dependencies', log.bold)
     ],
     ...await Future.wait(transitiveRows.map(marker)),
-    [
-      transitiveRows.isEmpty
-          ? _raw('\ntransitive dev_dependencies: all up-to-date')
-          : _format('\ntransitive dev_dependencies', log.bold)
-    ],
+    if (includeDevDependencies)
+      [
+        devTransitiveRows.isEmpty
+            ? _raw('\ntransitive dev_dependencies: all up-to-date')
+            : _format('\ntransitive dev_dependencies', log.bold)
+      ],
     ...await Future.wait(devTransitiveRows.map(marker)),
   ];
 
