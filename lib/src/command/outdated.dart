@@ -246,9 +246,7 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
     ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    [
-      if (directRows.isEmpty) _raw('all up-to-date')
-    ],
+    [if (directRows.isEmpty) _raw('all up-to-date')],
     ...await Future.wait(directRows.map(marker)),
     if (includeDevDependencies)
       [
