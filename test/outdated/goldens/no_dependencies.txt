@@ -1,26 +1,20 @@
 $ pub outdated --json
-Resolving...
 {
   "packages": []
 }
 
 $ pub outdated --no-color
-Resolving...
 Found no outdated packages.
 
 $ pub outdated --no-color --mark=none
-Resolving...
 Found no outdated packages.
 
 $ pub outdated --no-color --up-to-date
-Resolving...
 Found no outdated packages.
 
 $ pub outdated --no-color --pre-releases
-Resolving...
 Found no outdated packages.
 
 $ pub outdated --no-color --no-dev-dependencies
-Resolving...
 Found no outdated packages.
 
