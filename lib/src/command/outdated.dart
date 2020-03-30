@@ -77,8 +77,6 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
-
     Future<void> resolve() async {
       upgradablePackages = (await resolveVersions(
         SolveType.UPGRADE,
@@ -95,6 +93,7 @@ class OutdatedCommand extends PubCommand {
           .packages;
     }
 
+    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
     if (shouldShowSpinner) {
       await log.spinner('Resolving', resolve);
     } else {
