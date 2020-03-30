@@ -100,6 +100,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
+transitive dev_dependencies: all up-to-date
+
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 

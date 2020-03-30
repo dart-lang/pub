@@ -37,6 +37,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
+transitive dev_dependencies: all up-to-date
+
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
@@ -50,6 +52,8 @@ foo           1.0.1 (overridden)  1.0.1 (overridden)  1.0.1 (overridden)  2.0.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
@@ -65,6 +69,8 @@ dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
 
+transitive dev_dependencies: all up-to-date
+
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
@@ -78,6 +84,8 @@ foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
@@ -104,6 +112,8 @@ foo           *1.0.1 (overridden)  *1.0.0      *1.0.0      2.0.0
 dev_dependencies: all up-to-date
 
 transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
