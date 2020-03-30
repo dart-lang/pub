@@ -12,7 +12,6 @@ import 'package:meta/meta.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
-import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -88,28 +87,19 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    Future<void> resolve() async {
-      upgradablePackages = (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(upgradablePubspec),
-      ))
-          .packages;
-
-      resolvablePackages = (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(resolvablePubspec),
-      ))
-          .packages;
-    }
-
     final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
     if (shouldShowSpinner) {
-      await log.spinner('Resolving', resolve);
+      await log.spinner('Resolving', () async {
+        upgradablePackages = await _tryResolve(upgradablePubspec);
+        resolvablePackages = await _tryResolve(resolvablePubspec);
+      });
     } else {
-      await resolve();
+      upgradablePackages = await _tryResolve(upgradablePubspec);
+      resolvablePackages = await _tryResolve(resolvablePubspec);
     }
+    // Use an empty list if we have no resolution.
+    upgradablePackages ??= [];
+    resolvablePackages ??= [];
 
     final currentPackages = entrypoint.lockFile.packages.values;
 
@@ -117,9 +107,9 @@ class OutdatedCommand extends PubCommand {
     /// closure of the non-dev dependencies from the root in at least one of
     /// the current, upgradable and resolvable resolutions.
     final nonDevDependencies = <String>{
-      ...await nonDevDependencyClosure(entrypoint.root, currentPackages),
-      ...await nonDevDependencyClosure(entrypoint.root, upgradablePackages),
-      ...await nonDevDependencyClosure(entrypoint.root, resolvablePackages)
+      ...await _nonDevDependencyClosure(entrypoint.root, currentPackages),
+      ...await _nonDevDependencyClosure(entrypoint.root, upgradablePackages),
+      ...await _nonDevDependencyClosure(entrypoint.root, resolvablePackages),
     };
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
@@ -131,22 +121,23 @@ class OutdatedCommand extends PubCommand {
       final resolvable = resolvablePackages.firstWhere((id) => id.name == name,
           orElse: () => null);
 
-      // Find the latest version, and if it's overridden
+      // Find the latest version, and if it's overridden.
       var latestIsOverridden = false;
-      // If present as a dependency of dev_dependency we use this ref
-      var latest = await _getLatest(rootPubspec.dependencies[name]?.toRef());
-      latest ??= await _getLatest(rootPubspec.devDependencies[name]?.toRef());
-      // If not overridden in current resolution we can use this ref
+      PackageId latest;
+      // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(current?.toRef());
+        latest ??= await _getLatest(current);
       }
+      // If present as a dependency or dev_dependency we use this
+      latest ??= await _getLatest(rootPubspec.dependencies[name]);
+      latest ??= await _getLatest(rootPubspec.devDependencies[name]);
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
       if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(upgradable?.toRef());
+        latest ??= await _getLatest(upgradable);
       }
       if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(resolvable?.toRef());
+        latest ??= await _getLatest(resolvable);
       }
       // Otherwise, we might simply not have a latest, when a transitive
       // dependency is overridden the source can depend on which versions we
@@ -154,12 +145,8 @@ class OutdatedCommand extends PubCommand {
       // allow 3rd party pub servers, but other servers might. Hence, we choose
       // to fallback to using the overridden source for latest.
       if (latest == null) {
-        latest ??= await _getLatest(current?.toRef());
-        latest ??= await _getLatest(upgradable?.toRef());
-        latest ??= await _getLatest(resolvable?.toRef());
-        if (latest != null) {
-          latestIsOverridden = true;
-        }
+        latest ??= await _getLatest(current ?? upgradable ?? resolvable);
+        latestIsOverridden = true;
       }
 
       return _PackageDetails(
@@ -226,25 +213,22 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
-  /// Get the latest version of [ref] given its [PackageRef].
+  /// Get the latest version of [package].
   ///
   /// Returns `null`, if unable to find the package.
-  Future<PackageId> _getLatest(PackageRef ref) async {
-    if (ref == null) {
+  Future<PackageId> _getLatest(PackageName package) async {
+    if (package == null) {
       return null;
     }
-    try {
-      final available = await cache.source(ref.source).getVersions(ref);
-      if (available.isEmpty) {
-        return null;
-      }
-      available.sort(argResults['pre-releases']
-          ? (x, y) => x.version.compareTo(y.version)
-          : (x, y) => Version.prioritize(x.version, y.version));
-      return available.last;
-    } on PackageNotFoundException {
-      return null; // give up if we can't find a latest version
+    final ref = package.toRef();
+    final available = await cache.source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return null;
     }
+    available.sort(argResults['pre-releases']
+        ? (x, y) => x.version.compareTo(y.version)
+        : (x, y) => Version.prioritize(x.version, y.version));
+    return available.last;
   }
 
   /// Retrieves the pubspec of package [name] in [version] from [source].
@@ -265,21 +249,52 @@ class OutdatedCommand extends PubCommand {
   }
 
   /// Computes the closure of the graph of dependencies (not including
-  /// dev_dependencies from [root], given the package versions in [resolution].
-  Future<Set<String>> nonDevDependencyClosure(
-      Package root, Iterable<PackageId> resolution) async {
-    final mapping =
-        Map<String, PackageId>.fromIterable(resolution, key: (id) => id.name);
-    final visited = <String>{root.name};
-    final toVisit = [...root.dependencies.keys];
-    while (toVisit.isNotEmpty) {
-      final name = toVisit.removeLast();
-      if (!visited.add(name)) continue;
-      final id = mapping[name];
-      toVisit.addAll(
-          (await cache.source(id.source).describe(id)).dependencies.keys);
+  /// `dev_dependencies` from [root], given the package versions
+  /// in [resolution].
+  ///
+  /// The [resolution] is allowed to be a partial (or empty) resolution not
+  /// satisfying all the dependencies of [root].
+  Future<Set<String>> _nonDevDependencyClosure(
+    Package root,
+    Iterable<PackageId> resolution,
+  ) async {
+    final nameToId = Map<String, PackageId>.fromIterable(
+      resolution,
+      key: (id) => id.name,
+    );
+
+    final nonDevDependencies = <String>{root.name};
+    final queue = [...root.dependencies.keys];
+
+    while (queue.isNotEmpty) {
+      final name = queue.removeLast();
+      if (!nonDevDependencies.add(name)) {
+        continue;
+      }
+
+      final id = nameToId[name];
+      if (id == null) {
+        continue; // allow partial resolutions
+      }
+      final pubspec = await cache.source(id.source).describe(id);
+      queue.addAll(pubspec.dependencies.keys);
     }
-    return visited;
+
+    return nonDevDependencies;
+  }
+
+  /// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
+  Future<List<PackageId>> _tryResolve(Pubspec pubspec) async {
+    try {
+      return (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(pubspec),
+      ))
+          .packages;
+    } on SolveFailure {
+      return null;
+    }
   }
 }
 

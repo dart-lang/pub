@@ -19,6 +19,5 @@ $ pub outdated --no-color --no-dev-dependencies
 Found no outdated packages.
 
 $ pub outdated --no-color --no-dependency-overrides
-Resolving...
 Found no outdated packages.
 

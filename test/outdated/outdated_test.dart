@@ -170,4 +170,34 @@ Future<void> main() async {
 
     await variations('dependency_overrides');
   });
+
+  test('overridden dependencies - no resolution', () async {
+    ensureGit();
+    await servePackages(
+      (builder) => builder
+        ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
+        ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+        ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
+        ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'}),
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': 'any',
+          'bar': 'any',
+        },
+        'dependency_overrides': {
+          'foo': '1.0.0',
+          'bar': '1.0.0',
+        },
+      })
+    ]).create();
+
+    await pubGet();
+
+    await variations('dependency_overrides_no_solution');
+  });
 }
