@@ -333,8 +333,10 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
       .length;
 
   var notAtResolvable = rows
-      .where(
-          (row) => row.resolvable != null && row.upgradable != row.resolvable)
+      .where((row) =>
+          row.current != null &&
+          row.resolvable != null &&
+          row.upgradable != row.resolvable)
       .length;
 
   if (upgradable != 0) {
