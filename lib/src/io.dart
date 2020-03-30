@@ -847,7 +847,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
     final tarFile = path.join(tempDir, 'archive.tar');
     await _createFileFromStream(decompressed, tarFile);
     return (Platform.isWindows)
-        ? runProcess(_pathTo7zip, ['x', '$tarFile', '-o$destination'])
+        ? runProcess(_pathTo7zip, ['x', '$tarFile'], workingDir: destination)
         : runProcess(_tarPath, [
             if (_noUnknownKeyword) '--warning=no-unknown-keyword',
             '--extract',
