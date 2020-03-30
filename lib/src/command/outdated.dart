@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
+import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -53,6 +54,12 @@ class OutdatedCommand extends PubCommand {
       help: 'When true take dev-dependencies into account when resolving.',
     );
 
+    argParser.addFlag(
+      'dependency-overrides',
+      defaultsTo: true,
+      help: 'Show resolutions with `dependency_override`',
+    );
+
     argParser.addOption('mark',
         help: 'Highlight packages with some property in the report.',
         valueHelp: 'OPTION',
@@ -66,10 +73,17 @@ class OutdatedCommand extends PubCommand {
     entrypoint.assertUpToDate();
 
     final includeDevDependencies = argResults['dev-dependencies'];
-    final upgradePubspec = includeDevDependencies
-        ? _stripOverrides(entrypoint.root.pubspec)
-        : _stripDevDependencies(entrypoint.root.pubspec);
-    var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
+    final includeDependencyOverrides = argResults['dependency-overrides'];
+
+    final rootPubspec = includeDependencyOverrides
+        ? entrypoint.root.pubspec
+        : _stripDependencyOverrides(entrypoint.root.pubspec);
+
+    final upgradablePubspec = includeDevDependencies
+        ? rootPubspec
+        : _stripDevDependencies(rootPubspec);
+
+    final resolvablePubspec = _stripVersionConstraints(upgradablePubspec);
 
     SolveResult upgradableSolveResult;
     SolveResult resolvableSolveResult;
@@ -81,7 +95,7 @@ class OutdatedCommand extends PubCommand {
           upgradableSolveResult = await resolveVersions(
             SolveType.UPGRADE,
             cache,
-            Package.inMemory(upgradePubspec),
+            Package.inMemory(upgradablePubspec),
           );
           resolvableSolveResult = await resolveVersions(
             SolveType.UPGRADE,
@@ -100,24 +114,58 @@ class OutdatedCommand extends PubCommand {
           .firstWhere((id) => id.name == name, orElse: () => null);
       final resolvable = resolvableSolveResult.packages
           .firstWhere((id) => id.name == name, orElse: () => null);
-      // This is the upgradable version if it exists to get the non-overridden
-      // source.
-      final nonOverriddenIfAvailable = upgradable?.toRef() ?? packageRef;
-      final available = (await cache
-              .source(nonOverriddenIfAvailable.source)
-              .getVersions(nonOverriddenIfAvailable))
-          .toList()
-            ..sort(argResults['pre-releases']
-                ? (x, y) => x.version.compareTo(y.version)
-                : (x, y) => Version.prioritize(x.version, y.version));
-      final latest = available.last;
+
+      // Find the latest version, and if it's overridden
+      var latestIsOverridden = false;
+      // If present as a dependency of dev_dependency we use this ref
+      var latest = await _getLatest(rootPubspec.dependencies[name]?.toRef());
+      latest ??= await _getLatest(rootPubspec.devDependencies[name]?.toRef());
+      // If not overridden in current resolution we can use this ref
+      if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(current?.toRef());
+      }
+      // If not overridden and present in either upgradable or resolvable we
+      // use this reference to find the latest
+      if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(upgradable?.toRef());
+      }
+      if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(resolvable?.toRef());
+      }
+      // Otherwise, we might simply not have a latest, when a transitive
+      // dependency is overridden the source can depend on which versions we
+      // are picking. This is not a problem on `pub.dev` because it does not
+      // allow 3rd party pub servers, but other servers might. Hence, we choose
+      // to fallback to using the overridden source for latest.
+      if (latest == null) {
+        latest ??= await _getLatest(current?.toRef());
+        latest ??= await _getLatest(upgradable?.toRef());
+        latest ??= await _getLatest(resolvable?.toRef());
+        if (latest != null) {
+          latestIsOverridden = true;
+        }
+      }
+
       return _PackageDetails(
-          name,
-          await _describeVersion(current, isOverridden: isOverridden(name)),
-          await _describeVersion(upgradable),
-          await _describeVersion(resolvable),
-          await _describeVersion(latest),
-          _kind(name, entrypoint));
+        name,
+        await _describeVersion(
+          current,
+          entrypoint.root.pubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          upgradable,
+          upgradablePubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          resolvable,
+          resolvablePubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          latest,
+          latestIsOverridden,
+        ),
+        _kind(name, entrypoint),
+      );
     }
 
     final rows = <_PackageDetails>[];
@@ -162,17 +210,42 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
-  /// Retrieves the pubspec of package [name] in [version] from [source].
-  Future<_VersionDetails> _describeVersion(PackageId id,
-      {bool isOverridden = false}) async {
-    final pubspec =
-        id == null ? null : await cache.source(id.source).describe(id);
-    if (pubspec == null) return null;
-    return _VersionDetails(pubspec, id, isOverridden);
+  /// Get the latest version of [ref] given its [PackageRef].
+  ///
+  /// Returns `null`, if unable to find the package.
+  Future<PackageId> _getLatest(PackageRef ref) async {
+    if (ref == null) {
+      return null;
+    }
+    try {
+      final available = await cache.source(ref.source).getVersions(ref);
+      if (available.isEmpty) {
+        return null;
+      }
+      available.sort(argResults['pre-releases']
+          ? (x, y) => x.version.compareTo(y.version)
+          : (x, y) => Version.prioritize(x.version, y.version));
+      return available.last;
+    } on PackageNotFoundException {
+      return null; // give up if we can't find a latest version
+    }
   }
 
-  bool isOverridden(String name) {
-    return entrypoint.root.pubspec.dependencyOverrides.containsKey(name);
+  /// Retrieves the pubspec of package [name] in [version] from [source].
+  ///
+  /// Returns `null`, if given `null` as a convinience.
+  Future<_VersionDetails> _describeVersion(
+    PackageId id,
+    bool isOverridden,
+  ) async {
+    if (id == null) {
+      return null;
+    }
+    return _VersionDetails(
+      await cache.source(id.source).describe(id),
+      id,
+      isOverridden,
+    );
   }
 }
 
@@ -183,16 +256,18 @@ Pubspec _stripDevDependencies(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
     devDependencies: [], // explicitly give empty list, to prevent lazy parsing
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
-Pubspec _stripOverrides(Pubspec original) {
+Pubspec _stripDependencyOverrides(Pubspec original) {
   return Pubspec(
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
     devDependencies: original.devDependencies.values,
+    dependencyOverrides: [],
   );
 }
 
@@ -223,7 +298,7 @@ Pubspec _stripVersionConstraints(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
     devDependencies: _unconstrained(original.devDependencies),
-    // TODO(sigurdm): consider dependency overrides.
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
@@ -383,14 +458,8 @@ class _VersionDetails {
   /// A string representation of this version to include in the outdated report.
   String get describe {
     final version = _pubspec.version;
-    final extras = [
-      if (_overridden) 'overridden',
-      if (_id.source is! HostedSource) _id.source.name,
-    ];
-
-    final extrasInParentheses = extras.isEmpty ? '' : '(${extras.join(', ')})';
-
-    return '$version$extrasInParentheses';
+    final suffix = _overridden ? ' (overridden)' : '';
+    return '$version$suffix';
   }
 
   @override

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
@@ -20,6 +19,7 @@ Future<void> variations(String name) async {
     ['--no-color', '--up-to-date'],
     ['--no-color', '--pre-releases'],
     ['--no-color', '--no-dev-dependencies'],
+    ['--no-color', '--no-dependency-overrides'],
   ]) {
     final process = await startPub(args: ['outdated', ...args]);
     await process.shouldExit(0);
