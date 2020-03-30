@@ -14,12 +14,12 @@ import '../test_pub.dart';
 Future<void> variations(String name) async {
   final buffer = StringBuffer();
   for (final args in [
-    ['--format=json'],
-    ['--format=no-color'],
-    ['--format=no-color', '--mark=none'],
-    ['--format=no-color', '--up-to-date'],
-    ['--format=no-color', '--pre-releases'],
-    ['--format=no-color', '--no-dev-dependencies'],
+    ['--json'],
+    ['--no-color'],
+    ['--no-color', '--mark=none'],
+    ['--no-color', '--up-to-date'],
+    ['--no-color', '--pre-releases'],
+    ['--no-color', '--no-dev-dependencies'],
   ]) {
     final process = await startPub(args: ['outdated', ...args]);
     await process.shouldExit(0);
