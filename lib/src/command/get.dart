@@ -19,8 +19,6 @@ class GetCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
-  List<String> get aliases => const ['install'];
-  @override
   bool get isOffline => argResults['offline'];
 
   GetCommand() {

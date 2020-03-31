@@ -19,8 +19,6 @@ class UpgradeCommand extends PubCommand {
   String get invocation => 'pub upgrade [dependencies...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
-  @override
-  List<String> get aliases => const ['update'];
 
   @override
   bool get isOffline => argResults['offline'];

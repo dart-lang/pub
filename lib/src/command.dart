@@ -10,6 +10,17 @@ import 'global_packages.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
 
+/// All of the aliases used for [PubCommand] subclasses.
+///
+/// Centralized so invocations with aliases can be normalized to the primary
+/// command name when sending telemetry.
+const pubCommandAliases = {
+  'deps': ['dependencies', 'tab'],
+  'get': ['install'],
+  'publish': ['lish', 'lush'],
+  'upgrade': ['update'],
+};
+
 /// The base class for commands for the pub executable.
 ///
 /// A command may either be a "leaf" command or it may be a parent for a set
@@ -58,6 +69,9 @@ abstract class PubCommand extends Command {
     if (docUrl == null) return null;
     return 'See $docUrl for detailed documentation.';
   }
+
+  @override
+  List<String> get aliases => pubCommandAliases[name] ?? const [];
 
   @override
   void printUsage() {
