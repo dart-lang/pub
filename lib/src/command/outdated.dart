@@ -17,7 +17,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
-import '../source.dart';
 import '../source/hosted.dart';
 
 class OutdatedCommand extends PubCommand {
@@ -54,6 +53,12 @@ class OutdatedCommand extends PubCommand {
       help: 'When true take dev-dependencies into account when resolving.',
     );
 
+    argParser.addFlag(
+      'dependency-overrides',
+      defaultsTo: true,
+      help: 'Show resolutions with `dependency_override`',
+    );
+
     argParser.addOption('mark',
         help: 'Highlight packages with some property in the report.',
         valueHelp: 'OPTION',
@@ -67,37 +72,30 @@ class OutdatedCommand extends PubCommand {
     entrypoint.assertUpToDate();
 
     final includeDevDependencies = argResults['dev-dependencies'];
+    final includeDependencyOverrides = argResults['dependency-overrides'];
 
-    final upgradePubspec = includeDevDependencies
+    final rootPubspec = includeDependencyOverrides
         ? entrypoint.root.pubspec
-        : _stripDevDependencies(entrypoint.root.pubspec);
+        : _stripDependencyOverrides(entrypoint.root.pubspec);
 
-    var resolvablePubspec = _stripVersionConstraints(upgradePubspec);
+    final upgradablePubspec = includeDevDependencies
+        ? rootPubspec
+        : _stripDevDependencies(rootPubspec);
+
+    final resolvablePubspec = _stripVersionConstraints(upgradablePubspec);
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    Future<void> resolve() async {
-      upgradablePackages = (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(upgradePubspec),
-      ))
-          .packages;
-
-      resolvablePackages = (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(resolvablePubspec),
-      ))
-          .packages;
-    }
-
     final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
     if (shouldShowSpinner) {
-      await log.spinner('Resolving', resolve);
+      await log.spinner('Resolving', () async {
+        upgradablePackages = await _tryResolve(upgradablePubspec);
+        resolvablePackages = await _tryResolve(resolvablePubspec);
+      });
     } else {
-      await resolve();
+      upgradablePackages = await _tryResolve(upgradablePubspec);
+      resolvablePackages = await _tryResolve(resolvablePubspec);
     }
 
     final currentPackages = entrypoint.lockFile.packages.values;
@@ -106,62 +104,87 @@ class OutdatedCommand extends PubCommand {
     /// closure of the non-dev dependencies from the root in at least one of
     /// the current, upgradable and resolvable resolutions.
     final nonDevDependencies = <String>{
-      ...await nonDevDependencyClosure(entrypoint.root, currentPackages),
-      ...await nonDevDependencyClosure(entrypoint.root, upgradablePackages),
-      ...await nonDevDependencyClosure(entrypoint.root, resolvablePackages)
+      ...await _nonDevDependencyClosure(entrypoint.root, currentPackages),
+      ...await _nonDevDependencyClosure(entrypoint.root, upgradablePackages),
+      ...await _nonDevDependencyClosure(entrypoint.root, resolvablePackages),
     };
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
-      final current = (entrypoint.lockFile?.packages ?? {})[name]?.version;
-      final source = packageRef.source;
-      final available = (await cache.source(source).doGetVersions(packageRef))
-          .map((id) => id.version)
-          .toList()
-            ..sort(argResults['pre-releases'] ? null : Version.prioritize);
-      final upgradable = upgradablePackages
-          .firstWhere((id) => id.name == name, orElse: () => null)
-          ?.version;
-      final resolvable = resolvablePackages
-          .firstWhere((id) => id.name == name, orElse: () => null)
-          ?.version;
-      final latest = available.last;
-      final description = packageRef.description;
+      final current = (entrypoint.lockFile?.packages ?? {})[name];
+
+      final upgradable = upgradablePackages.firstWhere((id) => id.name == name,
+          orElse: () => null);
+      final resolvable = resolvablePackages.firstWhere((id) => id.name == name,
+          orElse: () => null);
+
+      // Find the latest version, and if it's overridden.
+      var latestIsOverridden = false;
+      PackageId latest;
+      // If not overridden in current resolution we can use this
+      if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(current);
+      }
+      // If present as a dependency or dev_dependency we use this
+      latest ??= await _getLatest(rootPubspec.dependencies[name]);
+      latest ??= await _getLatest(rootPubspec.devDependencies[name]);
+      // If not overridden and present in either upgradable or resolvable we
+      // use this reference to find the latest
+      if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(upgradable);
+      }
+      if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
+        latest ??= await _getLatest(resolvable);
+      }
+      // Otherwise, we might simply not have a latest, when a transitive
+      // dependency is overridden the source can depend on which versions we
+      // are picking. This is not a problem on `pub.dev` because it does not
+      // allow 3rd party pub servers, but other servers might. Hence, we choose
+      // to fallback to using the overridden source for latest.
+      if (latest == null) {
+        latest ??= await _getLatest(current ?? upgradable ?? resolvable);
+        latestIsOverridden = true;
+      }
+
       return _PackageDetails(
-          name,
-          await _describeVersion(name, source, description, current),
-          await _describeVersion(name, source, description, upgradable),
-          await _describeVersion(name, source, description, resolvable),
-          await _describeVersion(name, source, description, latest),
-          _kind(name, entrypoint, nonDevDependencies));
+        name,
+        await _describeVersion(
+          current,
+          entrypoint.root.pubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          upgradable,
+          upgradablePubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          resolvable,
+          resolvablePubspec.dependencyOverrides.containsKey(name),
+        ),
+        await _describeVersion(
+          latest,
+          latestIsOverridden,
+        ),
+        _kind(name, entrypoint, nonDevDependencies),
+      );
     }
 
     final rows = <_PackageDetails>[];
 
-    final immediateDependencies = entrypoint.root.immediateDependencies.values;
-
-    for (final packageRange in immediateDependencies) {
-      rows.add(await analyzeDependency(packageRange.toRef()));
-    }
-
-    // Now add transitive dependencies:
     final visited = <String>{
       entrypoint.root.name,
-      ...immediateDependencies.map((d) => d.name)
     };
+    // Add all dependencies from the lockfile.
     for (final id in [
       ...currentPackages,
       ...upgradablePackages,
       ...resolvablePackages
     ]) {
-      final name = id.name;
-      if (!visited.add(name)) continue;
+      if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
     if (!argResults['up-to-date']) {
-      rows.retainWhere(
-          (r) => (r.current ?? r.upgradable)?.version != r.latest?.version);
+      rows.retainWhere((r) => (r.current ?? r.upgradable) != r.latest);
     }
     if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);
@@ -187,32 +210,88 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
+  /// Get the latest version of [package].
+  ///
+  /// Returns `null`, if unable to find the package.
+  Future<PackageId> _getLatest(PackageName package) async {
+    if (package == null) {
+      return null;
+    }
+    final ref = package.toRef();
+    final available = await cache.source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return null;
+    }
+    available.sort(argResults['pre-releases']
+        ? (x, y) => x.version.compareTo(y.version)
+        : (x, y) => Version.prioritize(x.version, y.version));
+    return available.last;
+  }
+
   /// Retrieves the pubspec of package [name] in [version] from [source].
-  Future<Pubspec> _describeVersion(
-      String name, Source source, dynamic description, Version version) async {
-    return version == null
-        ? null
-        : await cache
-            .source(source)
-            .describe(PackageId(name, source, version, description));
+  ///
+  /// Returns `null`, if given `null` as a convinience.
+  Future<_VersionDetails> _describeVersion(
+    PackageId id,
+    bool isOverridden,
+  ) async {
+    if (id == null) {
+      return null;
+    }
+    return _VersionDetails(
+      await cache.source(id.source).describe(id),
+      id,
+      isOverridden,
+    );
   }
 
   /// Computes the closure of the graph of dependencies (not including
-  /// dev_dependencies from [root], given the package versions in [resolution].
-  Future<Set<String>> nonDevDependencyClosure(
-      Package root, Iterable<PackageId> resolution) async {
-    final mapping =
-        Map<String, PackageId>.fromIterable(resolution, key: (id) => id.name);
-    final visited = <String>{root.name};
-    final toVisit = [...root.dependencies.keys];
-    while (toVisit.isNotEmpty) {
-      final name = toVisit.removeLast();
-      if (!visited.add(name)) continue;
-      final id = mapping[name];
-      toVisit.addAll(
-          (await cache.source(id.source).describe(id)).dependencies.keys);
+  /// `dev_dependencies` from [root], given the package versions
+  /// in [resolution].
+  ///
+  /// The [resolution] is allowed to be a partial (or empty) resolution not
+  /// satisfying all the dependencies of [root].
+  Future<Set<String>> _nonDevDependencyClosure(
+    Package root,
+    Iterable<PackageId> resolution,
+  ) async {
+    final nameToId = Map<String, PackageId>.fromIterable(
+      resolution,
+      key: (id) => id.name,
+    );
+
+    final nonDevDependencies = <String>{root.name};
+    final queue = [...root.dependencies.keys];
+
+    while (queue.isNotEmpty) {
+      final name = queue.removeLast();
+      if (!nonDevDependencies.add(name)) {
+        continue;
+      }
+
+      final id = nameToId[name];
+      if (id == null) {
+        continue; // allow partial resolutions
+      }
+      final pubspec = await cache.source(id.source).describe(id);
+      queue.addAll(pubspec.dependencies.keys);
     }
-    return visited;
+
+    return nonDevDependencies;
+  }
+
+  /// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
+  Future<List<PackageId>> _tryResolve(Pubspec pubspec) async {
+    try {
+      return (await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(pubspec),
+      ))
+          .packages;
+    } on SolveFailure {
+      return [];
+    }
   }
 }
 
@@ -223,7 +302,18 @@ Pubspec _stripDevDependencies(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: original.dependencies.values,
     devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    // TODO(sigurdm): consider dependency overrides.
+    dependencyOverrides: original.dependencyOverrides.values,
+  );
+}
+
+Pubspec _stripDependencyOverrides(Pubspec original) {
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: original.dependencies.values,
+    devDependencies: original.devDependencies.values,
+    dependencyOverrides: [],
   );
 }
 
@@ -254,7 +344,7 @@ Pubspec _stripVersionConstraints(Pubspec original) {
     sdkConstraints: original.sdkConstraints,
     dependencies: _unconstrained(original.dependencies),
     devDependencies: _unconstrained(original.devDependencies),
-    // TODO(sigurdm): consider dependency overrides.
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
@@ -263,9 +353,12 @@ Future<void> _outputJson(List<_PackageDetails> rows) async {
       .convert({'packages': rows.map((row) => row.toJson()).toList()}));
 }
 
-Future<void> _outputHuman(List<_PackageDetails> rows,
-    Future<List<_FormattedString>> Function(_PackageDetails) marker,
-    {@required bool useColors, @required bool includeDevDependencies}) async {
+Future<void> _outputHuman(
+  List<_PackageDetails> rows,
+  Future<List<_FormattedString>> Function(_PackageDetails) marker, {
+  @required bool useColors,
+  @required bool includeDevDependencies,
+}) async {
   if (rows.isEmpty) {
     log.message('Found no outdated packages.');
     return;
@@ -343,7 +436,7 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 
   if (upgradable != 0) {
     if (upgradable == 1) {
-      log.message('1 upgradable dependency is locked (in pubspec.lock) to '
+      log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
           'an older version.\n'
           'To update it, use `pub upgrade`.');
     } else {
@@ -375,28 +468,27 @@ Future<void> _outputHuman(List<_PackageDetails> rows,
 Future<List<_FormattedString>> oudatedMarker(
     _PackageDetails packageDetails) async {
   final cols = [_FormattedString(packageDetails.name)];
-  Version previous;
-  for (final pubspec in [
+  _VersionDetails previous;
+  for (final versionDetails in [
     packageDetails.current,
     packageDetails.upgradable,
     packageDetails.resolvable,
     packageDetails.latest
   ]) {
-    final version = pubspec?.version;
-    if (version == null) {
+    if (versionDetails == null) {
       cols.add(_raw('-'));
     } else {
-      final isLatest = version == packageDetails.latest.version;
+      final isLatest = versionDetails == packageDetails.latest;
       String Function(String) color;
       if (isLatest) {
-        color = version == previous ? color = log.gray : null;
+        color = versionDetails == previous ? color = log.gray : null;
       } else {
         color = log.red;
       }
       final prefix = isLatest ? '' : '*';
-      cols.add(_format(version?.toString() ?? '-', color, prefix: prefix));
+      cols.add(_format(versionDetails.describe ?? '-', color, prefix: prefix));
     }
-    previous = version;
+    previous = versionDetails;
   }
   return cols;
 }
@@ -410,16 +502,46 @@ Future<List<_FormattedString>> noneMarker(
       packageDetails.upgradable,
       packageDetails.resolvable,
       packageDetails.latest,
-    ].map((p) => _raw(p?.version?.toString() ?? '-'))
+    ].map((p) => _raw(p?.describe ?? '-'))
   ];
+}
+
+/// Details about a single version of a package.
+class _VersionDetails {
+  final Pubspec _pubspec;
+
+  /// True if this version is overridden.
+  final bool _overridden;
+  final PackageId _id;
+  _VersionDetails(this._pubspec, this._id, this._overridden);
+
+  /// A string representation of this version to include in the outdated report.
+  String get describe {
+    final version = _pubspec.version;
+    final suffix = _overridden ? ' (overridden)' : '';
+    return '$version$suffix';
+  }
+
+  Map<String, Object> toJson() => {
+        'version': _pubspec.version.toString(),
+        if (_overridden) 'overridden': true,
+      };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _VersionDetails &&
+          _overridden == other._overridden &&
+          _id.source == other._id.source &&
+          _pubspec.version == other._pubspec.version;
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
   final String name;
-  final Pubspec current;
-  final Pubspec upgradable;
-  final Pubspec resolvable;
-  final Pubspec latest;
+  final _VersionDetails current;
+  final _VersionDetails upgradable;
+  final _VersionDetails resolvable;
+  final _VersionDetails latest;
   final _DependencyKind kind;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
@@ -436,10 +558,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   Map<String, Object> toJson() {
     return {
       'package': name,
-      'current': {'version': current?.version?.toString()},
-      'upgradable': {'version': upgradable?.version?.toString()},
-      'resolvable': {'version': resolvable?.version?.toString()},
-      'latest': {'version': latest?.version?.toString()},
+      'current': current?.toJson(),
+      'upgradable': upgradable?.toJson(),
+      'resolvable': resolvable?.toJson(),
+      'latest': latest?.toJson(),
     };
   }
 }
