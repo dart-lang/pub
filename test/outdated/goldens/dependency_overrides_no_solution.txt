@@ -4,13 +4,16 @@ $ pub outdated --json
     {
       "package": "bar",
       "current": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -19,13 +22,16 @@ $ pub outdated --json
     {
       "package": "foo",
       "current": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -35,9 +41,9 @@ $ pub outdated --json
 }
 
 $ pub outdated --no-color
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current              Upgradable           Resolvable           Latest  
+bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -49,9 +55,9 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --mark=none
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           1.0.0    1.0.0       1.0.0       2.0.0   
-foo           1.0.0    1.0.0       1.0.0       2.0.0   
+Dependencies  Current             Upgradable          Resolvable          Latest  
+bar           1.0.0 (overridden)  1.0.0 (overridden)  1.0.0 (overridden)  2.0.0   
+foo           1.0.0 (overridden)  1.0.0 (overridden)  1.0.0 (overridden)  2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -63,9 +69,9 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --up-to-date
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current              Upgradable           Resolvable           Latest  
+bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -77,9 +83,9 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --pre-releases
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current              Upgradable           Resolvable           Latest  
+bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
 
 dev_dependencies: all up-to-date
 
@@ -91,9 +97,9 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --no-dev-dependencies
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current              Upgradable           Resolvable           Latest  
+bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
 
 transitive dependencies: all up-to-date
 
@@ -101,9 +107,9 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --no-dependency-overrides
-Dependencies  Current  Upgradable  Resolvable  Latest  
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+Dependencies  Current              Upgradable  Resolvable  Latest  
+bar           *1.0.0 (overridden)  -           -           2.0.0   
+foo           *1.0.0 (overridden)  -           -           2.0.0   
 
 dev_dependencies: all up-to-date
 
