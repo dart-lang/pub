@@ -23,9 +23,6 @@ class DepsCommand extends PubCommand {
   String get description => 'Print package dependencies.';
 
   @override
-  List<String> get aliases => const ['dependencies', 'tab'];
-
-  @override
   String get invocation => 'pub deps';
 
   @override
