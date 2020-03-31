@@ -4,13 +4,16 @@ $ pub outdated --json
     {
       "package": "bar",
       "current": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -19,13 +22,16 @@ $ pub outdated --json
     {
       "package": "foo",
       "current": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0 (overridden)"
+        "version": "1.0.0",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -110,9 +116,6 @@ dev_dependencies: all up-to-date
 transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
-
-Upgradable package resolution could not be computed.
-Use `pub upgrade --dry-run` for an explanation.
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.

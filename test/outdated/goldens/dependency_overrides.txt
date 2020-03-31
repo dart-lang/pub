@@ -4,13 +4,16 @@ $ pub outdated --json
     {
       "package": "bar",
       "current": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -19,13 +22,16 @@ $ pub outdated --json
     {
       "package": "baz",
       "current": {
-        "version": "2.0.0 (overridden)"
+        "version": "2.0.0",
+        "overridden": true
       },
       "upgradable": {
-        "version": "2.0.0 (overridden)"
+        "version": "2.0.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "2.0.0 (overridden)"
+        "version": "2.0.0",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"
@@ -34,13 +40,16 @@ $ pub outdated --json
     {
       "package": "foo",
       "current": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "upgradable": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.1 (overridden)"
+        "version": "1.0.1",
+        "overridden": true
       },
       "latest": {
         "version": "2.0.0"

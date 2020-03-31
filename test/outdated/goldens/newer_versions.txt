@@ -48,12 +48,8 @@ $ pub outdated --json
     },
     {
       "package": "transitive2",
-      "current": {
-        "version": null
-      },
-      "upgradable": {
-        "version": null
-      },
+      "current": null,
+      "upgradable": null,
       "resolvable": {
         "version": "1.0.0"
       },
@@ -63,12 +59,8 @@ $ pub outdated --json
     },
     {
       "package": "transitive3",
-      "current": {
-        "version": null
-      },
-      "upgradable": {
-        "version": null
-      },
+      "current": null,
+      "upgradable": null,
       "resolvable": {
         "version": "1.0.0"
       },

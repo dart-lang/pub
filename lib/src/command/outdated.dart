@@ -97,10 +97,6 @@ class OutdatedCommand extends PubCommand {
       upgradablePackages = await _tryResolve(upgradablePubspec);
       resolvablePackages = await _tryResolve(resolvablePubspec);
     }
-    // Check if resolutions failed, and fallback to empty resolutions.
-    final upgradableFailed = upgradablePackages == null;
-    upgradablePackages ??= [];
-    resolvablePackages ??= [];
 
     final currentPackages = entrypoint.lockFile.packages.values;
 
@@ -210,7 +206,6 @@ class OutdatedCommand extends PubCommand {
         marker,
         useColors: useColors,
         includeDevDependencies: includeDevDependencies,
-        upgradableFailed: upgradableFailed,
       );
     }
   }
@@ -295,7 +290,7 @@ class OutdatedCommand extends PubCommand {
       ))
           .packages;
     } on SolveFailure {
-      return null;
+      return [];
     }
   }
 }
@@ -363,7 +358,6 @@ Future<void> _outputHuman(
   Future<List<_FormattedString>> Function(_PackageDetails) marker, {
   @required bool useColors,
   @required bool includeDevDependencies,
-  @required bool upgradableFailed,
 }) async {
   if (rows.isEmpty) {
     log.message('Found no outdated packages.');
@@ -439,17 +433,6 @@ Future<void> _outputHuman(
           row.resolvable != null &&
           row.upgradable != row.resolvable)
       .length;
-
-  if (upgradableFailed) {
-    log.message(
-      '\nUpgradable package resolution could not be computed.\n'
-      'Use `pub upgrade --dry-run` for an explanation.',
-    );
-    // Note. we don't care if resolvableFailed, because if it has failed then
-    // the upgradable resolution has also failed. A single mesage about what to
-    // do should be sufficient -- and running `pub upgrade --dry-run` should
-    // given the user a solid explanation.
-  }
 
   if (upgradable != 0) {
     if (upgradable == 1) {
@@ -539,6 +522,11 @@ class _VersionDetails {
     return '$version$suffix';
   }
 
+  Map<String, Object> toJson() => {
+        'version': _pubspec.version.toString(),
+        if (_overridden) 'overridden': true,
+      };
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -570,10 +558,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   Map<String, Object> toJson() {
     return {
       'package': name,
-      'current': {'version': current?.describe},
-      'upgradable': {'version': upgradable?.describe},
-      'resolvable': {'version': resolvable?.describe},
-      'latest': {'version': latest?.describe},
+      'current': current?.toJson(),
+      'upgradable': upgradable?.toJson(),
+      'resolvable': resolvable?.toJson(),
+      'latest': latest?.toJson(),
     };
   }
 }
