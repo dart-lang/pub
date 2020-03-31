@@ -36,14 +36,14 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
 
 Future<void> main() async {
   var alreadyDonePackages = <String>{};
-  var failures = <String>[];
+  var failures = <Map<String, dynamic>>[];
   if (fileExists(statusFilename)) {
     final json = jsonDecode(readTextFile(statusFilename));
     for (final packageName in json['packages'] ?? []) {
       alreadyDonePackages.add(packageName);
     }
-    for (final packageName in json['failures'] ?? []) {
-      failures.add(packageName);
+    for (final failure in json['failures'] ?? []) {
+      failures.add(failure);
     }
   }
   print('Already processed ${alreadyDonePackages.length} packages');
@@ -90,8 +90,8 @@ Future<void> main() async {
                 await extractTarGz(response.stream, tempDir);
                 print('Extracted $archiveUrl');
               } catch (e, _) {
-                print('Failed to get and extract $archiveUrl');
-                failures.add(archiveUrl);
+                print('Failed to get and extract $archiveUrl $e');
+                failures.add({'archive': archiveUrl, 'error': e.toString()});
                 allVersionsGood = false;
                 return;
               }

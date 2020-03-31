@@ -367,7 +367,7 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
 
     test('throws on tar error', () async {
       await withTempDir((tempDir) async {
-        expect(
+        await expectLater(
             () async => await extractTarGz(
                 Stream.fromIterable(
                   [
@@ -386,7 +386,7 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
 
     test('throws on gzip error', () async {
       await withTempDir((tempDir) async {
-        expect(
+        await expectLater(
             () async => await extractTarGz(
                 Stream.fromIterable(
                   [
