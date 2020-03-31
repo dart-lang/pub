@@ -384,15 +384,13 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
       });
     });
 
-    test('throws on tar error', () async {
+    test('throws on gzip error', () async {
       await withTempDir((tempDir) async {
         expect(
             () async => await extractTarGz(
                 Stream.fromIterable(
                   [
-                    base64Decode(
-                        // Empty is not a gzip encoded file
-                        '')
+                    [10, 20, 30] // Not a good gz stream.
                   ],
                 ),
                 tempDir),

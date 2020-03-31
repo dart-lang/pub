@@ -840,12 +840,20 @@ String _findTarPath() {
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  final decompressed = stream.transform(GZipCodec().decoder);
+  final gzipErrorCompleter = Completer();
+  final decompressed = stream.transform(GZipCodec().decoder).handleError((e) {
+    // We don't know the error type here: https://dartbug.com/41270
+    gzipErrorCompleter.completeError(
+        FileSystemException('Could not decompress gz stream $e'));
+  });
   // We used to stream directly to `tar`,  but that was fragile in certain
   // settings.
   final processResult = await withTempDir((tempDir) async {
     final tarFile = path.join(tempDir, 'archive.tar');
-    await _createFileFromStream(decompressed, tarFile);
+    await Future.any([
+      _createFileFromStream(decompressed, tarFile),
+      gzipErrorCompleter.future
+    ]);
     return (Platform.isWindows)
         ? runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination)
         : runProcess(_tarPath, [
