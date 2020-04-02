@@ -46,8 +46,12 @@ Future<void> main() async {
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
-      ..serve('builder', '1.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('transitive', '1.2.3'));
+      ..serve('builder', '1.2.3', deps: {
+        'transitive': '^1.0.0',
+        'dev_trans': '^1.0.0',
+      })
+      ..serve('transitive', '1.2.3')
+      ..serve('dev_trans', '1.0.0'));
 
     await d.dir('local_package', [
       d.libDir('local_package'),
@@ -72,13 +76,17 @@ Future<void> main() async {
           deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
       ..serve('foo', '3.0.0', deps: {'transitive': '^2.0.0'})
       ..serve('builder', '1.3.0', deps: {'transitive': '^1.0.0'})
-      ..serve('builder', '2.0.0',
-          deps: {'transitive': '^1.0.0', 'transitive3': '^1.0.0'})
+      ..serve('builder', '2.0.0', deps: {
+        'transitive': '^1.0.0',
+        'transitive3': '^1.0.0',
+        'dev_trans': '^1.0.0'
+      })
       ..serve('builder', '3.0.0-alpha', deps: {'transitive': '^1.0.0'})
       ..serve('transitive', '1.3.0')
       ..serve('transitive', '2.0.0')
       ..serve('transitive2', '1.0.0')
-      ..serve('transitive3', '1.0.0'));
+      ..serve('transitive3', '1.0.0')
+      ..serve('dev_trans', '2.0.0'));
     await variations('newer_versions');
   });
 
