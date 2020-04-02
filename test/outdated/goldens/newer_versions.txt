@@ -58,6 +58,19 @@ $ pub outdated --json
       }
     },
     {
+      "package": "dev_trans",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": null,
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
       "package": "transitive3",
       "current": null,
       "upgradable": null,
@@ -83,12 +96,13 @@ transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0
 transitive2   -        -           1.0.0       1.0.0   
 
 transitive dev_dependencies
+dev_trans     *1.0.0   -           *1.0.0      2.0.0   
 transitive3   -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
+3  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --mark=none
@@ -103,12 +117,13 @@ transitive    1.2.3    1.3.0       1.3.0       2.0.0
 transitive2   -        -           1.0.0       1.0.0   
 
 transitive dev_dependencies
+dev_trans     1.0.0    -           1.0.0       2.0.0   
 transitive3   -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
+3  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --up-to-date
@@ -125,12 +140,13 @@ transitive     *1.2.3   *1.3.0      *1.3.0      2.0.0
 transitive2    -        -           1.0.0       1.0.0   
 
 transitive dev_dependencies
+dev_trans      *1.0.0   -           *1.0.0      2.0.0   
 transitive3    -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
+3  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --pre-releases
@@ -145,12 +161,13 @@ transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0
 transitive2   -        -           1.0.0       1.0.0        
 
 transitive dev_dependencies
+dev_trans     *1.0.0   -           *1.0.0      2.0.0        
 transitive3   -        -           1.0.0       1.0.0        
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
+3  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --no-dev-dependencies
@@ -178,11 +195,12 @@ transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0
 transitive2   -        -           1.0.0       1.0.0   
 
 transitive dev_dependencies
+dev_trans     *1.0.0   -           *1.0.0      2.0.0   
 transitive3   -        -           1.0.0       1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
+3  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 

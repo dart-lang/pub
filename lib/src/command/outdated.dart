@@ -376,26 +376,28 @@ Future<void> _outputHuman(
         .toList(),
     [if (directRows.isEmpty) _raw('all up-to-date')],
     ...await Future.wait(directRows.map(marker)),
-    if (includeDevDependencies)
+    if (includeDevDependencies) ...[
       [
         devRows.isEmpty
             ? _raw('\ndev_dependencies: all up-to-date')
             : _format('\ndev_dependencies', log.bold),
       ],
-    ...await Future.wait(devRows.map(marker)),
+      ...await Future.wait(devRows.map(marker)),
+    ],
     [
       transitiveRows.isEmpty
           ? _raw('\ntransitive dependencies: all up-to-date')
           : _format('\ntransitive dependencies', log.bold)
     ],
     ...await Future.wait(transitiveRows.map(marker)),
-    if (includeDevDependencies)
+    if (includeDevDependencies) ...[
       [
         devTransitiveRows.isEmpty
             ? _raw('\ntransitive dev_dependencies: all up-to-date')
             : _format('\ntransitive dev_dependencies', log.bold)
       ],
-    ...await Future.wait(devTransitiveRows.map(marker)),
+      ...await Future.wait(devTransitiveRows.map(marker)),
+    ],
   ];
 
   final columnWidths = <int, int>{};
