@@ -32,9 +32,7 @@ class OutdatedCommand extends PubCommand {
 
   OutdatedCommand() {
     argParser.addFlag('json',
-        help: 'Outputs the results in a json formatted\n'
-            'report.',
-        negatable: false);
+        help: 'Outputs the results using a json format.', negatable: false);
 
     argParser.addFlag('color',
         help: 'Whether to color the output.\n'
@@ -47,9 +45,7 @@ class OutdatedCommand extends PubCommand {
             'latest version.');
 
     argParser.addFlag('prereleases',
-        defaultsTo: false,
-        help: 'Include prereleases when reporting latest\n'
-            'version.');
+        defaultsTo: false, help: 'Include prereleases in latest version.');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
