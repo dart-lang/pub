@@ -3,8 +3,7 @@ Analyze your dependencies to find which ones can be upgraded.
 
 Usage: pub outdated [options]
 -h, --help                         Print this usage information.
-    --json                         Outputs the results in a json formatted
-                                   report.
+    --json                         Output the results in JSON format.
     --[no-]color                   Whether to color the output.
                                    Defaults to color when connected to a
                                    terminal, and no-color otherwise.
@@ -19,4 +18,3 @@ Usage: pub outdated [options]
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-outdated for detailed documentation.
-
