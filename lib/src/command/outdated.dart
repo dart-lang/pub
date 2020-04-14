@@ -31,18 +31,32 @@ class OutdatedCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
   OutdatedCommand() {
-    argParser.addFlag('json',
-        help: 'Outputs the results using a json format.', negatable: false);
-
     argParser.addFlag('color',
         help: 'Whether to color the output.\n'
             'Defaults to color when connected to a\n'
             'terminal, and no-color otherwise.');
 
-    argParser.addFlag('up-to-date',
-        defaultsTo: false,
-        help: 'Include dependencies that are already at the\n'
-            'latest version.');
+    argParser.addFlag(
+      'dependency-overrides',
+      defaultsTo: true,
+      help: 'Show resolutions with `dependency_overrides`.',
+    );
+
+    argParser.addFlag(
+      'dev-dependencies',
+      defaultsTo: true,
+      help: 'Take dev dependencies into account.',
+    );
+
+    argParser.addFlag('json',
+        help: 'Output the results using a json format.', negatable: false);
+
+    argParser.addOption('mark',
+        help: 'Highlight packages with some property in the report.',
+        valueHelp: 'OPTION',
+        allowed: ['outdated', 'none'],
+        defaultsTo: 'outdated',
+        hide: true);
 
     argParser.addFlag('prereleases',
         defaultsTo: false, help: 'Include prereleases in latest version.');
@@ -51,24 +65,10 @@ class OutdatedCommand extends PubCommand {
     argParser.addFlag('pre-releases',
         defaultsTo: false, help: 'Alias of prereleases.', hide: true);
 
-    argParser.addFlag(
-      'dev-dependencies',
-      defaultsTo: true,
-      help: 'Take dev dependencies into account.',
-    );
-
-    argParser.addFlag(
-      'dependency-overrides',
-      defaultsTo: true,
-      help: 'Show resolutions with `dependency_overrides`.',
-    );
-
-    argParser.addOption('mark',
-        help: 'Highlight packages with some property in the report.',
-        valueHelp: 'OPTION',
-        allowed: ['outdated', 'none'],
-        defaultsTo: 'outdated',
-        hide: true);
+    argParser.addFlag('up-to-date',
+        defaultsTo: false,
+        help: 'Include dependencies that are already at the\n'
+            'latest version.');
   }
 
   @override
