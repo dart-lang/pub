@@ -226,8 +226,8 @@ String createTempDir(String base, String prefix) {
 /// 'pub_' with characters appended to it to make a unique name.
 ///
 /// Returns the path of the created directory.
-String _createSystemTempDir() {
-  var tempDir = Directory.systemTemp.createTempSync('pub_');
+Future<String> _createSystemTempDir() async {
+  var tempDir = await Directory.systemTemp.createTemp('pub_');
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
 }
@@ -610,33 +610,6 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
   return Pair(controller.sink, done);
 }
 
-// TODO(nweiz): remove this when issue 7786 is fixed.
-/// Pipes all data and errors from [stream] into [sink].
-///
-/// When [stream] is done, the returned [Future] is completed and [sink] is
-/// closed if [closeSink] is true.
-///
-/// When an error occurs on [stream], that error is passed to [sink]. If
-/// [cancelOnError] is true, [Future] will be completed successfully and no
-/// more data or errors will be piped from [stream] to [sink]. If
-/// [cancelOnError] and [closeSink] are both true, [sink] will then be
-/// closed.
-Future _store(Stream stream, EventSink sink,
-    {bool cancelOnError = true, bool closeSink = true}) {
-  var completer = Completer();
-  stream.listen(sink.add, onError: (e, stackTrace) {
-    sink.addError(e, stackTrace);
-    if (cancelOnError) {
-      completer.complete();
-      if (closeSink) sink.close();
-    }
-  }, onDone: () {
-    if (closeSink) sink.close();
-    completer.complete();
-  }, cancelOnError: cancelOnError);
-  return completer.future;
-}
-
 /// Spawns and runs the process located at [executable], passing in [args].
 ///
 /// Returns a [Future] that will complete with the results of the process after
@@ -824,7 +797,7 @@ void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
 Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
-  var tempDir = _createSystemTempDir();
+  var tempDir = await _createSystemTempDir();
   try {
     return await fn(tempDir);
   } finally {
@@ -867,38 +840,38 @@ String _findTarPath() {
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  if (Platform.isWindows) {
-    return await _extractTarGzWindows(stream, destination);
+  final decompressed = stream.transform(GZipCodec().decoder);
+
+  // We used to stream directly to `tar`,  but that was fragile in certain
+  // settings.
+  final processResult = await withTempDir((tempDir) async {
+    final tarFile = path.join(tempDir, 'archive.tar');
+    try {
+      await _createFileFromStream(decompressed, tarFile);
+    } catch (e) {
+      // We don't know the error type here: https://dartbug.com/41270
+      throw FileSystemException('Could not decompress gz stream $e');
+    }
+    return (Platform.isWindows)
+        ? runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination)
+        : runProcess(_tarPath, [
+            if (_noUnknownKeyword) '--warning=no-unknown-keyword',
+            '--extract',
+            '--no-same-owner',
+            '--no-same-permissions',
+            '--directory',
+            destination,
+            '--file',
+            tarFile,
+          ]);
+  });
+  if (processResult.exitCode != exit_codes.SUCCESS) {
+    throw FileSystemException(
+        'Could not un-tar (exit code ${processResult.exitCode}). Error:\n'
+        '${processResult.stdout.join("\n")}\n'
+        '${processResult.stderr.join("\n")}');
   }
-
-  var args = [
-    if (_noUnknownKeyword) '--warning=no-unknown-keyword',
-    '--extract',
-    '--gunzip',
-    '--no-same-owner',
-    '--no-same-permissions',
-    '--directory',
-    destination
-  ];
-
-  var process = await _startProcess(_tarPath, args);
-
-  // Ignore errors on process.std{out,err}. They'll be passed to
-  // process.exitCode, and we don't want them being top-levelled by
-  // std{out,err}Sink.
-  unawaited(
-      _store(process.stdout.handleError((_) {}), stdout, closeSink: false));
-  unawaited(
-      _store(process.stderr.handleError((_) {}), stderr, closeSink: false));
-  var results =
-      await Future.wait([_store(stream, process.stdin), process.exitCode]);
-
-  var exitCode = results[1];
-  if (exitCode != exit_codes.SUCCESS) {
-    throw Exception('Failed to extract .tar.gz stream to $destination '
-        '(exit code $exitCode).');
-  }
-  log.fine('Extracted .tar.gz stream to $destination. Exit code $exitCode.');
+  log.fine('Extracted .tar.gz to $destination. Exit code $exitCode.');
 }
 
 /// Whether to include "--warning=no-unknown-keyword" when invoking tar.
@@ -929,51 +902,6 @@ final String _pathTo7zip = (() {
   if (!runningFromDartRepo) return _sdkAssetPath(path.join('7zip', '7za.exe'));
   return path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe');
 })();
-
-Future _extractTarGzWindows(Stream<List<int>> stream, String destination) {
-  // TODO(rnystrom): In the repo's history, there is an older implementation of
-  // this that does everything in memory by piping streams directly together
-  // instead of writing out temp files. The code is simpler, but unfortunately,
-  // 7zip seems to periodically fail when we invoke it from Dart and tell it to
-  // read from stdin instead of a file. Consider resurrecting that version if
-  // we can figure out why it fails.
-
-  return withTempDir((tempDir) async {
-    // Write the archive to a temp file.
-    var dataFile = path.join(tempDir, 'data.tar.gz');
-    await _createFileFromStream(stream, dataFile);
-
-    // 7zip can't unarchive from gzip -> tar -> destination all in one step
-    // first we un-gzip it to a tar file.
-    // Note: Setting the working directory instead of passing in a full file
-    // path because 7zip says "A full path is not allowed here."
-    var unzipResult = await runProcess(_pathTo7zip, ['e', 'data.tar.gz'],
-        workingDir: tempDir);
-
-    if (unzipResult.exitCode != exit_codes.SUCCESS) {
-      throw Exception(
-          'Could not un-gzip (exit code ${unzipResult.exitCode}). Error:\n'
-          '${unzipResult.stdout.join("\n")}\n'
-          '${unzipResult.stderr.join("\n")}');
-    }
-
-    // Find the tar file we just created since we don't know its name.
-    var tarFile = listDir(tempDir)
-        .firstWhere((file) => path.extension(file) == '.tar', orElse: () {
-      throw FormatException('The gzip file did not contain a tar file.');
-    });
-
-    // Untar the archive into the destination directory.
-    var untarResult =
-        await runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination);
-    if (untarResult.exitCode != exit_codes.SUCCESS) {
-      throw Exception(
-          'Could not un-tar (exit code ${untarResult.exitCode}). Error:\n'
-          '${untarResult.stdout.join("\n")}\n'
-          '${untarResult.stderr.join("\n")}');
-    }
-  });
-}
 
 /// Create a .tar.gz archive from a list of entries.
 ///
@@ -1058,7 +986,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
 
     // Don't use [withTempDir] here because we don't want to delete the temp
     // directory until the returned stream has closed.
-    var tempDir = _createSystemTempDir();
+    var tempDir = await _createSystemTempDir();
 
     try {
       // Create the file containing the list of files to compress.
