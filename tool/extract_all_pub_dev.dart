@@ -70,10 +70,9 @@ Future<void> main() async {
       }
       print('Processing all versions of $packageName '
           '[+${alreadyDonePackages.length}, - ${failures.length}]');
+      final resource = await pool.request();
       scheduleMicrotask(() async {
-        PoolResource resource;
         try {
-          resource = await pool.request();
           final versions = await versionArchiveUrls(packageName);
           var allVersionsGood = true;
           await Future.wait(versions.map((archiveUrl) async {
