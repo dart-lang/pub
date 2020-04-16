@@ -17,15 +17,10 @@ import 'package:pub/src/io.dart';
 
 const statusFilename = 'extract_all_pub_status.json';
 
-Stream<String> allPackageNames() async* {
-  var nextUrl = 'https://pub.dev/api/packages';
-  do {
-    final result = json.decode(await httpClient.read(nextUrl));
-    for (final package in result['packages']) {
-      yield package['name'];
-    }
-    nextUrl = result['next_url'];
-  } while (nextUrl != null);
+Future<List<String>> allPackageNames() async {
+  var nextUrl = 'https://pub.dev/api/packages?compact=1';
+  final result = json.decode(await httpClient.read(nextUrl));
+  return List<String>.from(result['packages']);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
@@ -57,6 +52,7 @@ Future<void> main() async {
         'failures': [...failures],
       }),
     );
+    print('Wrote status to $statusFilename');
   }
 
   ProcessSignal.sigint.watch().listen((_) {
@@ -67,17 +63,17 @@ Future<void> main() async {
   final pool = Pool(10); // Process 10 packages at a time.
 
   try {
-    await for (final packageName in allPackageNames()) {
+    for (final packageName in await allPackageNames()) {
       if (alreadyDonePackages.contains(packageName)) {
         print('Skipping $packageName - already done');
         continue;
-      } else {
-        print('Processing all versions of $packageName '
-            '[+${alreadyDonePackages.length}, - ${failures.length}]');
       }
-      final resource = await pool.request();
+      print('Processing all versions of $packageName '
+          '[+${alreadyDonePackages.length}, - ${failures.length}]');
       scheduleMicrotask(() async {
+        PoolResource resource;
         try {
+          resource = await pool.request();
           final versions = await versionArchiveUrls(packageName);
           var allVersionsGood = true;
           await Future.wait(versions.map((archiveUrl) async {
@@ -105,5 +101,6 @@ Future<void> main() async {
     }
   } finally {
     writeStatus();
+    exit(failures.isEmpty ? 0 : 1);
   }
 }
