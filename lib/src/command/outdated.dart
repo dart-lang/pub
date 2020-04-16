@@ -32,32 +32,24 @@ class OutdatedCommand extends PubCommand {
 
   OutdatedCommand() {
     argParser.addFlag('color',
-        help: 'Whether to color the output. Defaults to color '
-            'when connected to a terminal, and no-color otherwise.');
-
-    argParser.addFlag('json',
-        help: 'Outputs the results in a json formatted report',
-        negatable: false);
-
-    argParser.addFlag('up-to-date',
-        defaultsTo: false,
-        help: 'Include dependencies that are already at the latest version.');
-
-    argParser.addFlag('pre-releases',
-        defaultsTo: false,
-        help: 'Include pre-releases when reporting latest version.');
-
-    argParser.addFlag(
-      'dev-dependencies',
-      defaultsTo: true,
-      help: 'When true take dev-dependencies into account when resolving.',
-    );
+        help: 'Whether to color the output.\n'
+            'Defaults to color when connected to a\n'
+            'terminal, and no-color otherwise.');
 
     argParser.addFlag(
       'dependency-overrides',
       defaultsTo: true,
-      help: 'Show resolutions with `dependency_override`',
+      help: 'Show resolutions with `dependency_overrides`.',
     );
+
+    argParser.addFlag(
+      'dev-dependencies',
+      defaultsTo: true,
+      help: 'Take dev dependencies into account.',
+    );
+
+    argParser.addFlag('json',
+        help: 'Output the results using a json format.', negatable: false);
 
     argParser.addOption('mark',
         help: 'Highlight packages with some property in the report.',
@@ -65,6 +57,18 @@ class OutdatedCommand extends PubCommand {
         allowed: ['outdated', 'none'],
         defaultsTo: 'outdated',
         hide: true);
+
+    argParser.addFlag('prereleases',
+        defaultsTo: false, help: 'Include prereleases in latest version.');
+
+    // Preserve for backwards compatibility.
+    argParser.addFlag('pre-releases',
+        defaultsTo: false, help: 'Alias of prereleases.', hide: true);
+
+    argParser.addFlag('up-to-date',
+        defaultsTo: false,
+        help: 'Include dependencies that are already at the\n'
+            'latest version.');
   }
 
   @override
@@ -222,7 +226,10 @@ class OutdatedCommand extends PubCommand {
     if (available.isEmpty) {
       return null;
     }
-    available.sort(argResults['pre-releases']
+    final prereleases = argResults.wasParsed('prereleases')
+        ? argResults['prereleases']
+        : argResults['pre-releases'];
+    available.sort(prereleases
         ? (x, y) => x.version.compareTo(y.version)
         : (x, y) => Version.prioritize(x.version, y.version));
     return available.last;

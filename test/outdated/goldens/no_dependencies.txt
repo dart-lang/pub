@@ -12,7 +12,7 @@ Found no outdated packages.
 $ pub outdated --no-color --up-to-date
 Found no outdated packages.
 
-$ pub outdated --no-color --pre-releases
+$ pub outdated --no-color --prereleases
 Found no outdated packages.
 
 $ pub outdated --no-color --no-dev-dependencies

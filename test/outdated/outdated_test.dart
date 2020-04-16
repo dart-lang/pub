@@ -7,6 +7,18 @@ import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
+/// Runs `pub outdated [args]` and appends the output to [buffer].
+Future<void> runPubOutdated(List<String> args, StringBuffer buffer) async {
+  final process = await startPub(args: ['outdated', ...args]);
+  await process.shouldExit(0);
+  expect(await process.stderr.rest.toList(), isEmpty);
+  buffer.writeln([
+    '\$ pub outdated ${args.join(' ')}',
+    ...await process.stdout.rest.toList()
+  ].join('\n'));
+  buffer.write('\n');
+}
+
 /// Try running 'pub outdated' with a number of different sets of arguments.
 ///
 /// Compare the output to the file in goldens/$[name].
@@ -17,18 +29,11 @@ Future<void> variations(String name) async {
     ['--no-color'],
     ['--no-color', '--mark=none'],
     ['--no-color', '--up-to-date'],
-    ['--no-color', '--pre-releases'],
+    ['--no-color', '--prereleases'],
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
   ]) {
-    final process = await startPub(args: ['outdated', ...args]);
-    await process.shouldExit(0);
-    expect(await process.stderr.rest.toList(), isEmpty);
-    buffer.writeln([
-      '\$ pub outdated ${args.join(' ')}',
-      ...await process.stdout.rest.toList()
-    ].join('\n'));
-    buffer.write('\n');
+    await runPubOutdated(args, buffer);
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -36,6 +41,12 @@ Future<void> variations(String name) async {
 }
 
 Future<void> main() async {
+  test('help text', () async {
+    final buffer = StringBuffer();
+    await runPubOutdated(['--help'], buffer);
+    expectMatchesGoldenFile(
+        buffer.toString(), 'test/outdated/goldens/helptext.txt');
+  });
   test('no dependencies', () async {
     await d.appDir().create();
     await pubGet();
