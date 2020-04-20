@@ -67,7 +67,7 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag('up-to-date',
         defaultsTo: false,
-        help: 'Include dependencies that are already at the\n'
+        help: 'Include dependencies that are already at the '
             'latest version.');
   }
 
