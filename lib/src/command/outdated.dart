@@ -33,7 +33,7 @@ class OutdatedCommand extends PubCommand {
   OutdatedCommand() {
     argParser.addFlag('color',
         help: 'Whether to color the output.\n'
-            'Defaults to color when connected to a\n'
+            'Defaults to color when connected to a '
             'terminal, and no-color otherwise.');
 
     argParser.addFlag(
@@ -67,7 +67,7 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag('up-to-date',
         defaultsTo: false,
-        help: 'Include dependencies that are already at the\n'
+        help: 'Include dependencies that are already at the '
             'latest version.');
   }
 

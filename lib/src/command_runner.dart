@@ -10,7 +10,7 @@ import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
-import 'command.dart' show pubCommandAliases;
+import 'command.dart' show pubCommandAliases, lineLength;
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
@@ -79,7 +79,9 @@ class PubCommandRunner extends CommandRunner {
   String get usageFooter =>
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
-  PubCommandRunner() : super('pub', 'Pub is a package manager for Dart.') {
+  PubCommandRunner()
+      : super('pub', 'Pub is a package manager for Dart.',
+            usageLineLength: lineLength) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
