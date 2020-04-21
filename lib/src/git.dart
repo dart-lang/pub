@@ -57,7 +57,7 @@ Future<List<String>> run(List<String> args,
   log.muteProgress();
   try {
     var result = await runProcess(command, args,
-        workingDir: workingDir, environment: environment);
+        environment: {...?environment, 'LANG': 'en_GB'});
     if (!result.success) {
       throw GitException(args, result.stdout.join('\n'),
           result.stderr.join('\n'), result.exitCode);
@@ -77,7 +77,7 @@ List<String> runSync(List<String> args,
   }
 
   var result = runProcessSync(command, args,
-      workingDir: workingDir, environment: environment);
+      workingDir: workingDir, environment: {...?environment, 'LANG': 'en_GB'});
   if (!result.success) {
     throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
         result.exitCode);
