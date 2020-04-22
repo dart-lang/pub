@@ -101,16 +101,17 @@ class RunCommand extends PubCommand {
   /// If neither `package` or `command` is given and `command` with name of
   /// the current package doesn't exist we fallback to `'main'`.
   ///
-  /// Runs `bin/<command>.dart` from package `<package>`, with snapshot stored
-  /// in `.dart_tool/pub/bin/<package>/<command>.dart.snapshot.dart2`.
+  /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
+  /// mutable (local root package or path-dependency) a source snapshot will be
+  /// cached in `.dart_tool/pub/bin/<package>/<command>.dart.snapshot.dart2`.
   Future _runV2() async {
     var package = entrypoint.root.name;
     var command = package;
     var args = <String>[];
 
     if (argResults.rest.isNotEmpty) {
-      if (argResults.rest[0].contains('/')) {
-        usageException('[<package>[:command]] cannot contain "/"');
+      if (argResults.rest[0].contains(RegExp(r'[/\\]'))) {
+        usageException('[<package>[:command]] cannot contain "/" or "\\"');
       }
 
       package = argResults.rest[0];
