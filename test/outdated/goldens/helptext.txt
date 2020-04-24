@@ -11,6 +11,8 @@ Usage: pub outdated [options]
     --[no-]dev-dependencies        Take dev dependencies into account.
                                    (defaults to on)
     --json                         Output the results using a json format.
+    --mark=<OPTION>                Highlight packages with some property in the report.
+                                   [null-safety, outdated (default), none]
     --[no-]prereleases             Include prereleases in latest version.
     --[no-]up-to-date              Include dependencies that are already at the
                                    latest version.

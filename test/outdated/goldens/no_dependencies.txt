@@ -21,3 +21,6 @@ Found no outdated packages.
 $ pub outdated --no-color --no-dependency-overrides
 Found no outdated packages.
 
+$ pub outdated --no-color --mark=null-safety
+Found no outdated packages.
+

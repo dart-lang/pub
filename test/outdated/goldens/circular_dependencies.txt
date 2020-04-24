@@ -93,3 +93,17 @@ transitive dev_dependencies: all up-to-date
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `pub upgrade`.
 
+$ pub outdated --no-color --mark=null-safety
+Computing null-safety...
+Dependencies  Current  Upgradable  Resolvable  Latest  
+foo           ?1.2.3   ?1.3.0      ?1.3.0      ?1.3.0  
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+1 upgradable dependency is locked (in pubspec.lock) to an older version.
+To update it, use `pub upgrade`.
+

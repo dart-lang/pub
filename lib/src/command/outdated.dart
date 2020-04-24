@@ -13,6 +13,7 @@ import 'package:meta/meta.dart';
 import '../command.dart';
 import '../entrypoint.dart';
 import '../log.dart' as log;
+import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -54,9 +55,8 @@ class OutdatedCommand extends PubCommand {
     argParser.addOption('mark',
         help: 'Highlight packages with some property in the report.',
         valueHelp: 'OPTION',
-        allowed: ['outdated', 'none'],
-        defaultsTo: 'outdated',
-        hide: true);
+        allowed: ['null-safety', 'outdated', 'none'],
+        defaultsTo: 'outdated');
 
     argParser.addFlag('prereleases',
         defaultsTo: false, help: 'Include prereleases in latest version.');
@@ -203,6 +203,7 @@ class OutdatedCommand extends PubCommand {
           (!argResults.wasParsed('color') && stdin.hasTerminal);
       final marker = {
         'outdated': oudatedMarker,
+        'null-safety': nullSafetyMarker,
         'none': noneMarker,
       }[argResults['mark']];
       await _outputHuman(
@@ -300,6 +301,72 @@ class OutdatedCommand extends PubCommand {
       return [];
     }
   }
+
+  Future<List<List<_FormattedString>>> nullSafetyMarker(
+      List<_PackageDetails> packages) async {
+    final nullSafetyMap = await log.spinner('Computing null-safety', () async {
+      /// Find all unique ids.
+      final ids = {
+        for (final packageDetails in packages) ...[
+          packageDetails.current?._id,
+          packageDetails.upgradable?._id,
+          packageDetails.resolvable?._id,
+          packageDetails.latest?._id,
+        ]
+      }.where((id) => id != null);
+      final nullSafetyAnalyzer = NullSafetyAnalysis(cache);
+      return Map.fromEntries(
+        await Future.wait(
+          ids.map(
+            (id) async => MapEntry(
+              id,
+              await nullSafetyAnalyzer.nullSafetyCompliance(id),
+            ),
+          ),
+        ),
+      );
+    });
+    final rows = <List<_FormattedString>>[];
+    for (final packageDetails in packages) {
+      final cols = [_FormattedString(packageDetails.name)];
+
+      for (final versionDetails in [
+        packageDetails.current,
+        packageDetails.upgradable,
+        packageDetails.resolvable,
+        packageDetails.latest
+      ]) {
+        if (versionDetails == null) {
+          cols.add(_raw('-'));
+        } else {
+          final nullSafety = nullSafetyMap[versionDetails._id];
+          String Function(String) color;
+          String prefix;
+          switch (nullSafety) {
+            case NullSafetyCompliance.analysisFailed:
+              color = color = log.gray;
+              prefix = '?';
+              break;
+            case NullSafetyCompliance.compliant:
+              color = log.green;
+              prefix = '✓';
+              break;
+            case NullSafetyCompliance.notCompliant:
+              color = log.red;
+              prefix = '✗';
+              break;
+            case NullSafetyCompliance.apiOnly:
+              color = log.yellow;
+              prefix = '~';
+          }
+          cols.add(
+              _format(versionDetails.describe ?? '-', color, prefix: prefix));
+        }
+      }
+      rows.add(cols);
+    }
+    return rows;
+  }
 }
 
 Pubspec _stripDevDependencies(Pubspec original) {
@@ -362,7 +429,7 @@ Future<void> _outputJson(List<_PackageDetails> rows) async {
 
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
-  Future<List<_FormattedString>> Function(_PackageDetails) marker, {
+  Future<List<List<_FormattedString>>> Function(List<_PackageDetails>) marker, {
   @required bool useColors,
   @required bool includeDevDependencies,
 }) async {
@@ -370,40 +437,46 @@ Future<void> _outputHuman(
     log.message('Found no outdated packages.');
     return;
   }
-  final directRows = rows.where((row) => row.kind == _DependencyKind.direct);
-  final devRows = rows.where((row) => row.kind == _DependencyKind.dev);
+  final markedRows = Map.fromIterables(rows, await marker(rows));
+  List<_FormattedString> formatted(_PackageDetails package) =>
+      markedRows[package];
+  bool Function(_PackageDetails) hasKind(_DependencyKind kind) =>
+      (row) => row.kind == kind;
+
+  final directRows = rows.where(hasKind(_DependencyKind.direct)).map(formatted);
+  final devRows = rows.where(hasKind(_DependencyKind.dev)).map(formatted);
   final transitiveRows =
-      rows.where((row) => row.kind == _DependencyKind.transitive);
+      rows.where(hasKind(_DependencyKind.transitive)).map(formatted);
   final devTransitiveRows =
-      rows.where((row) => row.kind == _DependencyKind.devTransitive);
+      rows.where(hasKind(_DependencyKind.devTransitive)).map(formatted);
 
   final formattedRows = <List<_FormattedString>>[
     ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
     [if (directRows.isEmpty) _raw('all up-to-date')],
-    ...await Future.wait(directRows.map(marker)),
+    ...directRows,
     if (includeDevDependencies) ...[
       [
         devRows.isEmpty
             ? _raw('\ndev_dependencies: all up-to-date')
             : _format('\ndev_dependencies', log.bold),
       ],
-      ...await Future.wait(devRows.map(marker)),
+      ...devRows,
     ],
     [
       transitiveRows.isEmpty
           ? _raw('\ntransitive dependencies: all up-to-date')
           : _format('\ntransitive dependencies', log.bold)
     ],
-    ...await Future.wait(transitiveRows.map(marker)),
+    ...transitiveRows,
     if (includeDevDependencies) ...[
       [
         devTransitiveRows.isEmpty
             ? _raw('\ntransitive dev_dependencies: all up-to-date')
             : _format('\ntransitive dev_dependencies', log.bold)
       ],
-      ...await Future.wait(devTransitiveRows.map(marker)),
+      ...devTransitiveRows,
     ],
   ];
 
@@ -474,44 +547,52 @@ Future<void> _outputHuman(
   }
 }
 
-Future<List<_FormattedString>> oudatedMarker(
-    _PackageDetails packageDetails) async {
-  final cols = [_FormattedString(packageDetails.name)];
-  _VersionDetails previous;
-  for (final versionDetails in [
-    packageDetails.current,
-    packageDetails.upgradable,
-    packageDetails.resolvable,
-    packageDetails.latest
-  ]) {
-    if (versionDetails == null) {
-      cols.add(_raw('-'));
-    } else {
-      final isLatest = versionDetails == packageDetails.latest;
-      String Function(String) color;
-      if (isLatest) {
-        color = versionDetails == previous ? color = log.gray : null;
-      } else {
-        color = log.red;
-      }
-      final prefix = isLatest ? '' : '*';
-      cols.add(_format(versionDetails.describe ?? '-', color, prefix: prefix));
-    }
-    previous = versionDetails;
-  }
-  return cols;
-}
-
-Future<List<_FormattedString>> noneMarker(
-    _PackageDetails packageDetails) async {
-  return [
-    _FormattedString(packageDetails.name),
-    ...[
+Future<List<List<_FormattedString>>> oudatedMarker(
+    List<_PackageDetails> packages) async {
+  final rows = <List<_FormattedString>>[];
+  for (final packageDetails in packages) {
+    final cols = [_FormattedString(packageDetails.name)];
+    _VersionDetails previous;
+    for (final versionDetails in [
       packageDetails.current,
       packageDetails.upgradable,
       packageDetails.resolvable,
-      packageDetails.latest,
-    ].map((p) => _raw(p?.describe ?? '-'))
+      packageDetails.latest
+    ]) {
+      if (versionDetails == null) {
+        cols.add(_raw('-'));
+      } else {
+        final isLatest = versionDetails == packageDetails.latest;
+        String Function(String) color;
+        if (isLatest) {
+          color = versionDetails == previous ? color = log.gray : null;
+        } else {
+          color = log.red;
+        }
+        final prefix = isLatest ? '' : '*';
+        cols.add(
+            _format(versionDetails.describe ?? '-', color, prefix: prefix));
+      }
+      previous = versionDetails;
+    }
+    rows.add(cols);
+  }
+  return rows;
+}
+
+Future<List<List<_FormattedString>>> noneMarker(
+    List<_PackageDetails> packages) async {
+  return [
+    for (final packageDetails in packages)
+      [
+        _FormattedString(packageDetails.name),
+        ...[
+          packageDetails.current,
+          packageDetails.upgradable,
+          packageDetails.resolvable,
+          packageDetails.latest,
+        ].map((p) => _raw(p?.describe ?? '-'))
+      ]
   ];
 }
 
