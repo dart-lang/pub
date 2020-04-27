@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
@@ -20,6 +22,8 @@ const pubCommandAliases = {
   'publish': ['lish', 'lush'],
   'upgrade': ['update'],
 };
+
+final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
 
 /// The base class for commands for the pub executable.
 ///
@@ -53,8 +57,8 @@ abstract class PubCommand extends Command {
   // Lazily initialize the parser because the superclass constructor requires
   // it but we want to initialize it based on [allowTrailingOptions].
   @override
-  ArgParser get argParser =>
-      _argParser ??= ArgParser(allowTrailingOptions: allowTrailingOptions);
+  ArgParser get argParser => _argParser ??= ArgParser(
+      allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
 
   ArgParser _argParser;
 
