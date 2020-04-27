@@ -5,13 +5,11 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
-import 'package:pub/src/validator/first_null_safe.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
-import 'system_cache.dart';
 import 'utils.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
@@ -27,6 +25,7 @@ import 'validator/name.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/readme.dart';
+import 'validator/relative_version_numbering.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
 import 'validator/strict_dependencies.dart';
@@ -130,7 +129,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
-      FirstNullSafeValidator(entrypoint, serverUrl),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));

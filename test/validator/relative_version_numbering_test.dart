@@ -6,14 +6,14 @@ import 'package:test/test.dart';
 
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
-import 'package:pub/src/validator/first_null_safe.dart';
+import 'package:pub/src/validator/relative_version_numbering.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
 Validator validator(Entrypoint entrypoint) =>
-    FirstNullSafeValidator(entrypoint, globalPackageServer.url);
+    RelativeVersionNumberingValidator(entrypoint, globalPackageServer.url);
 
 Future<void> setup({String sdkConstraint}) async {
   await d.validPackage.create();

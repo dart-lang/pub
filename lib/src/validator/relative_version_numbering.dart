@@ -14,12 +14,12 @@ import '../validator.dart';
 
 /// Gives a warning when publishing a new version, if the latest published version
 /// was not opted into null-safety.
-class FirstNullSafeValidator extends Validator {
+class RelativeVersionNumberingValidator extends Validator {
   static final String guideUrl =
       'http://dart.dev/null-safety-package-migration-guide';
   final String _server;
 
-  FirstNullSafeValidator(Entrypoint entrypoint, this._server)
+  RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
 
   @override
