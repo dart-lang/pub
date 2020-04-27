@@ -15,7 +15,7 @@ import '../validator.dart';
 /// Gives a warning when publishing a new version, if the latest published version
 /// was not opted into null-safety.
 class RelativeVersionNumberingValidator extends Validator {
-  static final String guideUrl =
+  static const String guideUrl =
       'http://dart.dev/null-safety-package-migration-guide';
   final String _server;
 
