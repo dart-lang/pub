@@ -30,7 +30,6 @@ Future<void> setup(
     ])
   ]).create();
   await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.7.0'});
-  print(await d.file('.dart_tool/package_config.json').read());
 }
 
 void main() {

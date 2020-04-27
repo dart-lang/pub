@@ -158,7 +158,8 @@ class LishCommand extends PubCommand {
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
   Future<bool> _validate(Future<int> packageSize) async {
-    var pair = await Validator.runAll(entrypoint, packageSize);
+    var pair =
+        await Validator.runAll(entrypoint, packageSize, server.toString());
     var errors = pair.first;
     var warnings = pair.last;
 

@@ -5,11 +5,13 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/validator/first_null_safe.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
@@ -109,8 +111,8 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<Pair<List<String>, List<String>>> runAll(Entrypoint entrypoint,
-      [Future<int> packageSize]) {
+  static Future<Pair<List<String>, List<String>>> runAll(
+      Entrypoint entrypoint, Future<int> packageSize, String serverUrl) {
     var validators = [
       PubspecValidator(entrypoint),
       LicenseValidator(entrypoint),
@@ -128,6 +130,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
+      FirstNullSafeValidator(entrypoint, serverUrl),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
