@@ -396,7 +396,7 @@ Future<T> progress<T>(String message, Future<T> Function() callback) {
 
 /// Like [progress] but erases the message once done.
 Future<T> spinner<T>(String message, Future<T> Function() callback,
-    {bool condition: true}) {
+    {bool condition = true}) {
   if (condition) {
     _stopProgress();
 

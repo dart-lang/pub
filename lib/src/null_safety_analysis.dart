@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
-import 'package:pub/src/source/path.dart';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:path/path.dart' as path;
@@ -18,6 +17,7 @@ import 'package_name.dart';
 import 'pubspec.dart';
 import 'solver.dart';
 import 'source/cached.dart';
+import 'source/path.dart';
 import 'system_cache.dart';
 
 enum NullSafetyCompliance {
