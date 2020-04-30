@@ -15,8 +15,10 @@ import '../validator.dart';
 /// Gives a warning when publishing a new version, if the latest published
 /// version lower to this was not opted into null-safety.
 class RelativeVersionNumberingValidator extends Validator {
-  static const String guideUrl =
-      'http://dart.dev/null-safety-package-migration-guide';
+  static const String guideUrl = 'https://dart.dev/null-safety/migration-guide';
+  static const String semverUrl =
+      'https://dart.dev/tools/pub/versioning#semantic-version';
+
   final String _server;
 
   RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
@@ -38,7 +40,7 @@ class RelativeVersionNumberingValidator extends Validator {
         (id) =>
             !id.version.isPreRelease && id.version < entrypoint.root.version,
         orElse: () => null);
-    if (previousVersion == null) return; // TODO(sigurdm): is this right?
+    if (previousVersion == null) return;
 
     final previousPubspec =
         await hostedSource.bind(entrypoint.cache).describe(previousVersion);
@@ -52,9 +54,9 @@ class RelativeVersionNumberingValidator extends Validator {
           'Be sure to read $guideUrl for best practices.');
     } else if (!currentOptedIn && previousOptedIn) {
       hints.add(
-          'You are about to publish a package not opting into null-safety.\n'
-          'The previous version ${previousVersion.version} was opted in.\n'
-          'Be sure to read $guideUrl for best practices.');
+          'You\'re about to publish a package that doesn\'t opt into null safety,\n'
+          'but the previous version (${previousVersion.version}) was opted in.\n'
+          'This change is likely to be backwards incompatible. See $semverUrl');
     }
   }
 
@@ -70,8 +72,12 @@ class RelativeVersionNumberingValidator extends Validator {
     if (sdkConstraint is! VersionRange) return false;
     final constraintMin = (sdkConstraint as VersionRange).min;
 
-    return constraintMin != null &&
-        constraintMin >= _firstVersionSupportingNullSafety;
+    if (constraintMin == null) return false;
+
+    final languageVersion =
+        Version(constraintMin.major, constraintMin.minor, 0);
+
+    return languageVersion >= _firstVersionSupportingNullSafety;
   }
 
   static final _firstVersionSupportingNullSafety = Version.parse('2.10.0');

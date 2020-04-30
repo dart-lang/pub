@@ -114,6 +114,23 @@ void main() {
     });
 
     test(
+        'is opting in to null-safety using a pre-release of 2.10.0 '
+        'with previous null-safe version', () async {
+      await servePackages(
+        (server) => server.serve(
+          'test_pkg',
+          '0.0.1',
+          pubspec: {
+            'environment': {'sdk': '>=2.10.0<3.0.0'}
+          },
+        ),
+      );
+
+      await setup(sdkConstraint: '>=2.10.0-dev <3.0.0');
+      await expectValidation(validator);
+    });
+
+    test(
         'is opting in to null-safety with previous null-safe version. '
         'Even with a later non-null-safe version', () async {
       await servePackages(
