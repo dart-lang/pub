@@ -19,6 +19,7 @@ import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
+import 'command/login.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/run.dart';
@@ -125,6 +126,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
+    addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
   }

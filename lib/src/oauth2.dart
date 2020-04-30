@@ -121,7 +121,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
 Future<Client> _getClient(SystemCache cache) async {
-  var credentials = _loadCredentials(cache);
+  var credentials = loadCredentials(cache);
   if (credentials == null) return await _authorize();
 
   var client = Client(credentials,
@@ -139,7 +139,7 @@ Future<Client> _getClient(SystemCache cache) async {
 ///
 /// If the credentials can't be loaded for any reason, the returned [Future]
 /// completes to `null`.
-Credentials _loadCredentials(SystemCache cache) {
+Credentials loadCredentials(SystemCache cache) {
   log.fine('Loading OAuth2 credentials.');
 
   try {
@@ -200,7 +200,6 @@ Future<Client> _authorize() async {
 
     log.message('Authorization received, processing...');
     var queryString = request.url.query ?? '';
-
     // Closing the server here is safe, since it will wait until the response
     // is sent to actually shut down.
     server.close();
