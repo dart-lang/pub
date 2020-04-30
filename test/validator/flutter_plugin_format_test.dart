@@ -19,7 +19,7 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectNoValidationError(flutterPluginFormat));
+    test('looks normal', () => expectValidation(flutterPluginFormat));
 
     test('is a Flutter 1.9.0 package', () async {
       var pkg = packageMap('test_pkg', '1.0.0', {
@@ -29,7 +29,7 @@ void main() {
         'flutter': '>=1.9.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectNoValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0 package', () async {
@@ -40,7 +40,7 @@ void main() {
         'flutter': '>=1.10.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectNoValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0-0 package', () async {
@@ -51,7 +51,7 @@ void main() {
         'flutter': '>=1.10.0-0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectNoValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat);
     });
 
     test('is a flutter 1.10.0 plugin with the new format', () async {
@@ -72,7 +72,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectNoValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat);
     });
   });
 
@@ -100,7 +100,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test('is a flutter 1.9.0 plugin with old format', () async {
@@ -118,7 +118,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationWarning(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, warnings: isNotEmpty);
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
@@ -139,7 +139,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test(
@@ -161,7 +161,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test('is a non-flutter package with using the new format', () async {
@@ -179,7 +179,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test('is a flutter 1.8.0 plugin with new format', () async {
@@ -200,7 +200,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test('is a flutter 1.9.999 plugin with new format', () async {
@@ -221,7 +221,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      expectValidationError(flutterPluginFormat);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
   });
 }

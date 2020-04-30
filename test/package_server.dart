@@ -7,7 +7,9 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
+import 'package:test/test.dart' as test show expect;
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -21,8 +23,8 @@ PackageServer _globalPackageServer;
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future servePackages(void Function(PackageServerBuilder) callback) async {
-  _globalPackageServer = await PackageServer.start(callback);
+Future servePackages([void Function(PackageServerBuilder) callback]) async {
+  _globalPackageServer = await PackageServer.start(callback ?? (_) {});
   globalServer = _globalPackageServer._inner;
 
   addTearDown(() {
@@ -65,6 +67,9 @@ class PackageServer {
 
   /// The URL for the server.
   String get url => 'http://localhost:$port';
+
+  /// Handlers for requests not easily described as packages.
+  Map<Pattern, shelf.Handler> get extraHandlers => _inner.extraHandlers;
 
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///
@@ -119,6 +124,15 @@ class PackageServer {
             versions.map((version) =>
                 d.tar('${version.version}.tar.gz', version.contents)))
       ]));
+    });
+  }
+
+  // Installs a handler at [pattern] that expects to be called exactly once with
+  // the given [method].
+  void expect(String method, Pattern pattern, shelf.Handler handler) {
+    extraHandlers[pattern] = expectAsync1((request) {
+      test.expect(request.method, method);
+      return handler(request);
     });
   }
 

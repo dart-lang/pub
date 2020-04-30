@@ -32,4 +32,4 @@ echo 'Building snapshot'
 # Run tests
 echo 'Running tests'
 export _PUB_TEST_SNAPSHOT="$PUB_SNAPSHOT_FILE"
-pub run test -r expanded "$@"
+pub run test "$@"

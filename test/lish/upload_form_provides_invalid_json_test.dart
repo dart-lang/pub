@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -13,13 +12,13 @@ void main() {
   setUp(d.validPackage.create);
 
   test('upload form provides invalid JSON', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
 
-    server.handler.expect('GET', '/api/packages/versions/new',
+    globalPackageServer.expect('GET', '/api/packages/versions/new',
         (request) => shelf.Response.ok('{not json'));
 
     expect(

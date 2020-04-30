@@ -47,12 +47,11 @@ class RelativeVersionNumberingValidator extends Validator {
     final previousOptedIn = _optedIntoNullSafety(previousPubspec);
 
     if (currentOptedIn && !previousOptedIn) {
-      warnings.add(
-          'You are about to publish a package opting into null-safety.\n'
+      hints.add('You are about to publish a package opting into null-safety.\n'
           'The latest version ${previousVersion.version} has not opted in.\n'
           'Be sure to read $guideUrl for best practices.');
     } else if (!currentOptedIn && previousOptedIn) {
-      warnings.add(
+      hints.add(
           'You are about to publish a package not opting into null-safety.\n'
           'The previous version ${previousVersion.version} was opted in.\n'
           'Be sure to read $guideUrl for best practices.');

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -14,14 +13,14 @@ void main() {
   setUp(d.validPackage.create);
 
   test("cloud storage upload doesn't redirect", () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
-    handleUploadForm(server);
+    handleUploadForm(globalPackageServer);
 
-    server.handler.expect('POST', '/upload', (request) async {
+    globalPackageServer.expect('POST', '/upload', (request) async {
       await request.read().drain();
       return shelf.Response(200);
     });

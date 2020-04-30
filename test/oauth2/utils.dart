@@ -7,13 +7,14 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
 import 'package:pub/src/utils.dart';
 
-Future authorizePub(TestProcess pub, ShelfTestServer server,
+import '../test_pub.dart';
+
+Future authorizePub(TestProcess pub, PackageServer server,
     [String accessToken = 'access token']) async {
   await expectLater(
       pub.stdout,
@@ -39,8 +40,8 @@ Future authorizePub(TestProcess pub, ShelfTestServer server,
       equals('https://pub.dartlang.org/authorized'));
 }
 
-void handleAccessTokenRequest(ShelfTestServer server, String accessToken) {
-  server.handler.expect('POST', '/token', (request) async {
+void handleAccessTokenRequest(PackageServer server, String accessToken) {
+  server.expect('POST', '/token', (request) async {
     var body = await request.readAsString();
     expect(body, matches(RegExp(r'(^|&)code=access\+code(&|$)')));
 

@@ -44,7 +44,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -69,7 +69,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -94,7 +94,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test('is opting in to null-safety with previous null-safe version',
@@ -110,7 +110,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -135,7 +135,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -160,13 +160,13 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test('is opting in to null-safety with no existing versions', () async {
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
       await servePackages((x) => x);
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -182,14 +182,14 @@ void main() {
           },
         ),
       );
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test('is not opting in to null-safety with no existing versions', () async {
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
       await servePackages((x) => x);
 
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test(
@@ -206,7 +206,7 @@ void main() {
         ),
       );
 
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
   });
 
@@ -224,7 +224,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
 
     test(
@@ -249,7 +249,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
 
     test(
@@ -274,7 +274,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.10.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
 
     test('is not opting in to null-safety with previous null-safe version',
@@ -290,7 +290,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
 
     test(
@@ -315,7 +315,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
 
     test(
@@ -340,7 +340,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      expectValidationWarning(validator);
+      await expectValidation(validator, hints: isNotEmpty);
     });
   });
 }

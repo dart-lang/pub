@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -16,12 +15,12 @@ void main() {
       'credentials.json', () async {
     await d.validPackage.create();
 
-    var server = await ShelfTestServer.create();
-    var pub = await startPublish(server);
+    await servePackages();
+    var pub = await startPublish(globalPackageServer);
     await confirmPublish(pub);
-    await authorizePub(pub, server);
+    await authorizePub(pub, globalPackageServer);
 
-    server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer access token'));
 
@@ -32,6 +31,6 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(server, 'access token').validate();
+    await d.credentialsFile(globalPackageServer, 'access token').validate();
   });
 }
