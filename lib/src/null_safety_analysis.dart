@@ -38,16 +38,21 @@ enum NullSafetyCompliance {
 
 class NullSafetyAnalysis {
   final SystemCache _systemCache;
+
+  /// A cache of the analysis done for a single package-version, not taking
+  /// dependencies into account. (Only the sdk constraint and no-files-opt-out).
+  ///
+  /// This allows us to reuse the analysis of the same package-version when
+  /// used as a dependency from different packages.
+  ///
+  /// Furthermore by awaiting the Future stored here, we avoid race-conditions
+  /// from downloading the same package-version into [_systemCache]
+  /// simultaneously when doing concurrent analyses.
   final Map<PackageId, Future<NullSafetyCompliance>>
       _packageInternallyGoodCache = {};
   static final _firstVersionWithNullSafety = Version.parse('2.10.0');
 
   NullSafetyAnalysis(SystemCache systemCache) : _systemCache = systemCache;
-
-  Future<NullSafetyCompliance> nullSafetyCompliance(PackageId packageId) async {
-    final result = await _nullSafetyCompliance(packageId);
-    return result;
-  }
 
   /// Returns true if package version [packageId] and all its non-dev
   /// dependencies (transitively) have a language version >= 2.10, and no files
@@ -55,8 +60,11 @@ class NullSafetyAnalysis {
   ///
   /// This will do a full resolution of that package's import graph, and also
   /// download the package and all dependencies into [cache].
-  Future<NullSafetyCompliance> _nullSafetyCompliance(
-      PackageId packageId) async {
+  ///
+  /// To avoid race conditions on downloading to the cache, only one instance
+  /// should be computing nullSafetyCompliance simultaneously with the same
+  /// cache.
+  Future<NullSafetyCompliance> nullSafetyCompliance(PackageId packageId) async {
     return await withTempDir((tempPath) async {
       final importingPubspec = {
         'name': '${packageId.name}_importer',
