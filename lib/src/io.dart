@@ -569,9 +569,7 @@ final String dartRepoRoot = (() {
 
 /// A line-by-line stream of standard input.
 final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter()).map((x) {
-  return x;
-});
+    ByteStream(stdin).toStringStream().transform(const LineSplitter());
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
