@@ -356,12 +356,10 @@ class OutdatedCommand extends PubCommand {
               prefix = '✓';
               break;
             case NullSafetyCompliance.notCompliant:
+            case NullSafetyCompliance.apiOnly:
               color = log.red;
               prefix = '✗';
               break;
-            case NullSafetyCompliance.apiOnly:
-              color = log.yellow;
-              prefix = '~';
           }
           cols.add(
               _format(versionDetails.describe ?? '-', color, prefix: prefix));
