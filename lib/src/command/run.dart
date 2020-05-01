@@ -29,10 +29,15 @@ class RunCommand extends PubCommand {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
+    // mode exposed for `dartdev run` to use as subprocess.
+    argParser.addFlag('v2', hide: true);
   }
 
   @override
   Future run() async {
+    if (argResults['v2']) {
+      return await _runV2();
+    }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -85,5 +90,100 @@ class RunCommand extends PubCommand {
       return entrypoint.precompileExecutable(package, executablePath);
     });
     await flushThenExit(exitCode);
+  }
+
+  /// Implement a v2 mode for use in `dartdev run`.
+  ///
+  /// Usage: `dartdev run [package[:command]]`
+  ///
+  /// If `package` is not given, defaults to current root package.
+  /// If `command` is not given, defaults to name of `package`.
+  /// If neither `package` or `command` is given and `command` with name of
+  /// the current package doesn't exist we fallback to `'main'`.
+  ///
+  /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
+  /// mutable (local root package or path-dependency) a source snapshot will be
+  /// cached in `.dart_tool/pub/bin/<package>/<command>.dart.snapshot.dart2`.
+  Future _runV2() async {
+    var package = entrypoint.root.name;
+    var command = package;
+    var args = <String>[];
+
+    if (argResults.rest.isNotEmpty) {
+      if (argResults.rest[0].contains(RegExp(r'[/\\]'))) {
+        usageException('[<package>[:command]] cannot contain "/" or "\\"');
+      }
+
+      package = argResults.rest[0];
+      if (package.contains(':')) {
+        final parts = package.split(':');
+        if (parts.length > 2) {
+          usageException('[<package>[:command]] cannot contain multiple ":"');
+        }
+        package = parts[0];
+        command = parts[1];
+      } else {
+        command = package;
+      }
+      args = argResults.rest.skip(1).toList();
+    }
+
+    String snapshotPath(String command) => p.join(
+          entrypoint.cachePath,
+          'bin',
+          package,
+          '$command.dart.snapshot.dart2',
+        );
+
+    // If snapshot exists, we strive to avoid using [entrypoint.packageGraph]
+    // because this will load additional files. Instead we just run with the
+    // snapshot. Note. that `pub get|upgrade` will purge snapshots.
+    var snapshotExists = fileExists(snapshotPath(command));
+
+    // Don't ever compile snapshots for mutable packages, since their code may
+    // change later on. Don't check if this the case if a snapshot already
+    // exists.
+    var useSnapshot = snapshotExists ||
+        (package != entrypoint.root.name &&
+            !entrypoint.packageGraph.isPackageMutable(package));
+
+    // If argResults.rest.isEmpty, package == command, and 'bin/$command.dart'
+    // doesn't exist we use command = 'main' (if it exists).
+    // We don't need to check this if a snapshot already exists.
+    // This is a hack around the fact that we want 'dartdev run' to run either
+    // `bin/<packageName>.dart` or `bin/main.dart`, because `bin/main.dart` is
+    // a historical convention we've done in templates for a long time.
+    if (!snapshotExists && argResults.rest.isEmpty && package == command) {
+      final pkg = entrypoint.packageGraph.packages[package];
+      if (pkg == null) {
+        usageException('No such package "$package"');
+      }
+      if (!fileExists(pkg.path('bin', '$command.dart')) &&
+          fileExists(pkg.path('bin', 'main.dart'))) {
+        command = 'main';
+        snapshotExists = fileExists(snapshotPath(command));
+        useSnapshot = snapshotExists ||
+            (package != entrypoint.root.name &&
+                !entrypoint.packageGraph.isPackageMutable(package));
+      }
+    }
+
+    return await flushThenExit(await runExecutable(
+      entrypoint,
+      package,
+      '$command.dart',
+      args,
+      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      snapshotPath: useSnapshot ? snapshotPath(command) : null,
+      recompile: () {
+        final pkg = entrypoint.packageGraph.packages[package];
+        // The recompile function will only be called when [package] exists.
+        assert(pkg != null);
+        return entrypoint.precompileExecutable(
+          package,
+          pkg.path('bin', '$command.dart'),
+        );
+      },
+    ));
   }
 }
