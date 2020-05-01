@@ -17,7 +17,7 @@ import '../validator.dart';
 class RelativeVersionNumberingValidator extends Validator {
   static const String guideUrl = 'https://dart.dev/null-safety/migration-guide';
   static const String semverUrl =
-      'https://dart.dev/tools/pub/versioning#semantic-version';
+      'https://dart.dev/tools/pub/versioning#semantic-versions';
 
   final String _server;
 
@@ -49,14 +49,16 @@ class RelativeVersionNumberingValidator extends Validator {
     final previousOptedIn = _optedIntoNullSafety(previousPubspec);
 
     if (currentOptedIn && !previousOptedIn) {
-      hints.add('You are about to publish a package opting into null-safety.\n'
-          'The latest version ${previousVersion.version} has not opted in.\n'
-          'Be sure to read $guideUrl for best practices.');
+      hints.add(
+          'You\'re about to publish a package that opts into null safety.\n'
+          'The previous version (${previousVersion.version}) isn\'t opted in.\n'
+          'See $guideUrl for best practices.');
     } else if (!currentOptedIn && previousOptedIn) {
       hints.add(
           'You\'re about to publish a package that doesn\'t opt into null safety,\n'
           'but the previous version (${previousVersion.version}) was opted in.\n'
-          'This change is likely to be backwards incompatible. See $semverUrl');
+          'This change is likely to be backwards incompatible.\n'
+          'See $semverUrl for information about versioning.');
     }
   }
 
