@@ -98,8 +98,6 @@ class RunCommand extends PubCommand {
   ///
   /// If `package` is not given, defaults to current root package.
   /// If `command` is not given, defaults to name of `package`.
-  /// If neither `package` or `command` is given and `command` with name of
-  /// the current package doesn't exist we fallback to `'main'`.
   ///
   /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
   /// mutable (local root package or path-dependency) a source snapshot will be
@@ -146,27 +144,6 @@ class RunCommand extends PubCommand {
     var useSnapshot = snapshotExists ||
         (package != entrypoint.root.name &&
             !entrypoint.packageGraph.isPackageMutable(package));
-
-    // If argResults.rest.isEmpty, package == command, and 'bin/$command.dart'
-    // doesn't exist we use command = 'main' (if it exists).
-    // We don't need to check this if a snapshot already exists.
-    // This is a hack around the fact that we want 'dartdev run' to run either
-    // `bin/<packageName>.dart` or `bin/main.dart`, because `bin/main.dart` is
-    // a historical convention we've done in templates for a long time.
-    if (!snapshotExists && argResults.rest.isEmpty && package == command) {
-      final pkg = entrypoint.packageGraph.packages[package];
-      if (pkg == null) {
-        usageException('No such package "$package"');
-      }
-      if (!fileExists(pkg.path('bin', '$command.dart')) &&
-          fileExists(pkg.path('bin', 'main.dart'))) {
-        command = 'main';
-        snapshotExists = fileExists(snapshotPath(command));
-        useSnapshot = snapshotExists ||
-            (package != entrypoint.root.name &&
-                !entrypoint.packageGraph.isPackageMutable(package));
-      }
-    }
 
     return await flushThenExit(await runExecutable(
       entrypoint,
