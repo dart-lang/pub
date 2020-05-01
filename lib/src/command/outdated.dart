@@ -18,6 +18,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
+import '../utils.dart';
 
 class OutdatedCommand extends PubCommand {
   @override
@@ -200,7 +201,7 @@ class OutdatedCommand extends PubCommand {
       await _outputJson(rows);
     } else {
       final useColors = argResults['color'] ||
-          (!argResults.wasParsed('color') && stdin.hasTerminal);
+          (!argResults.wasParsed('color') && canUseSpecialChars);
       final marker = {
         'outdated': oudatedMarker,
         'none': noneMarker,
