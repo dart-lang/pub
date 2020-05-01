@@ -150,7 +150,7 @@ To update it, edit pubspec.yaml.
 $ pub outdated --no-color --mark=null-safety
 Computing null-safety...
 Dependencies  Current              Upgradable           Resolvable           Latest  
-bar           ?1.0.1 (overridden)  ?1.0.1 (overridden)  ?1.0.1 (overridden)  ✗2.0.0  
+bar           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 baz           ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0  
 foo           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 

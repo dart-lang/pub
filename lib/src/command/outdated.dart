@@ -9,6 +9,7 @@ import 'dart:math';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -320,7 +321,10 @@ class OutdatedCommand extends PubCommand {
           ids.map(
             (id) async => MapEntry(
               id,
-              await nullSafetyAnalyzer.nullSafetyCompliance(id),
+              await nullSafetyAnalyzer.nullSafetyCompliance(
+                id,
+                containingPath: path.absolute(entrypoint.root.dir),
+              ),
             ),
           ),
         ),
