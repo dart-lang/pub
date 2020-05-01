@@ -100,6 +100,14 @@ class SolveResult {
         .summarize(dryRun: dryRun);
   }
 
+  /// Displays a two-line message if outdated packages are detected.
+  ///
+  /// [type] is the type of version resolution that was run.
+  void showOutdated(SolveType type) {
+    SolveReport(type, _sources, _root, _previousLockFile, this)
+        .reportOutdated();
+  }
+
   @override
   String toString() => 'Took $attemptedSolutions tries to resolve to\n'
       '- ${packages.join("\n- ")}';
