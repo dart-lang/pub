@@ -189,6 +189,64 @@ class Pubspec {
     return _dependencyOverrides;
   }
 
+  /// Adds a new dependency to the pubspec, optionally with a custom [url]
+  bool addDependency(String name, String version, {String url}) {
+    if (fields['dependencies'].containsKey(name)) {
+      error('pubspec.yaml already contains $name. Refusing to alter it.');
+      return false;
+    }
+    var pubspecFile = File(_location.path);
+    var pubspecLines = pubspecFile.readAsStringSync().split('\n');
+    var index = pubspecLines.length - 1;
+    while (pubspecLines[index].length < 2) {
+      pubspecLines.removeLast();
+      index--;
+    }
+    int dependencyIndex;
+    var indentation = '';
+    for (var i = 0; i < pubspecLines.length; i++) {
+      final currentLine = pubspecLines[i].trim();
+      if (currentLine == 'dependencies:' ||
+          currentLine.startsWith('dependencies:{')) {
+        dependencyIndex = i;
+        break;
+      }
+    }
+    if (dependencyIndex == null) {
+      throw FormatException('Could not find dependency entry in pubspec.yaml');
+    }
+    for (var i = 0; i < pubspecLines[dependencyIndex + 1].length; i++) {
+      final currentChar = pubspecLines[dependencyIndex + 1][i];
+      if (currentChar == '\t' || currentChar == ' ') {
+        indentation += currentChar;
+      } else {
+        break;
+      }
+    }
+    final dependencyEntry =
+        '$name: ${url != null ? '\n${indentation * 2}hosted:\n${indentation * 3}name: $name\n${indentation * 3}url: $url' : '^$version'}';
+
+    var dependencyLines = pubspecLines.sublist(dependencyIndex + 1);
+    for (var i = 0; i < dependencyLines.length; i++) {
+      final currentLine = dependencyLines[i].trim();
+      if (currentLine.isEmpty || currentLine[0] == '#') {
+        continue;
+      }
+      if (currentLine.compareTo(dependencyEntry) > 0) {
+        dependencyLines.insert(i, indentation + dependencyEntry);
+        break;
+      }
+      if (i == dependencyLines.length - 1) {
+        dependencyLines.add(indentation + dependencyEntry);
+        break;
+      }
+    }
+    pubspecLines = (pubspecLines.sublist(0, dependencyIndex + 1))
+      ..addAll(dependencyLines);
+    pubspecFile.writeAsStringSync(pubspecLines.join('\n'));
+    return true;
+  }
+
   Map<String, PackageRange> _dependencyOverrides;
 
   Map<String, Feature> get features {

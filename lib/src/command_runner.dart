@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import 'command.dart' show pubCommandAliases, lineLength;
+import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
@@ -112,6 +113,7 @@ class PubCommandRunner extends CommandRunner {
         negatable: false,
         help: 'A more sparkly experience.');
 
+    addCommand(AddCommand());
     addCommand(BuildCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());

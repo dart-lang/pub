@@ -163,13 +163,15 @@ void main() {
     });
 
     test('all dependencies', _testAllDepsOutput('''
-        myapp
-        foo: foo, baz
-        bar:qux'''));
+myapp
+bar:qux
+foo: foo, baz
+'''));
     test('non-dev dependencies', _testNonDevDepsOutput('''
         myapp
+        bar:qux
         foo: foo, baz
-        bar:qux'''));
+        '''));
   });
 
   group('dev dependencies', () {

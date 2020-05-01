@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency.dart';
 
@@ -205,7 +206,8 @@ void main() {
     group('has a path dependency', () {
       group('where a hosted version exists', () {
         test('and should suggest the hosted primary version', () async {
-          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
+          await setUpDependency(
+              {'path': escapeBackslashes(path.join(d.sandbox, 'foo'))},
               hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0']);
           expectDependencyValidationError('  foo: ^2.0.0');
         });
@@ -213,7 +215,8 @@ void main() {
         test(
             'and should suggest the hosted prerelease version if '
             "it's the only version available", () async {
-          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
+          await setUpDependency(
+              {'path': escapeBackslashes(path.join(d.sandbox, 'foo'))},
               hostedVersions: ['3.0.0-pre', '2.0.0-pre']);
           expectDependencyValidationError('  foo: ^3.0.0-pre');
         });
@@ -221,7 +224,8 @@ void main() {
         test(
             'and should suggest a tighter constraint if primary is '
             'pre-1.0.0', () async {
-          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
+          await setUpDependency(
+              {'path': escapeBackslashes(path.join(d.sandbox, 'foo'))},
               hostedVersions: ['0.0.1', '0.0.2']);
           expectDependencyValidationError('  foo: ^0.0.2');
         });
@@ -230,7 +234,7 @@ void main() {
       group('where no hosted version exists', () {
         test("and should use the other source's version", () async {
           await setUpDependency({
-            'path': path.join(d.sandbox, 'foo'),
+            'path': escapeBackslashes(path.join(d.sandbox, 'foo')),
             'version': '>=1.0.0 <2.0.0'
           });
           expectDependencyValidationError('  foo: ">=1.0.0 <2.0.0"');
@@ -239,8 +243,10 @@ void main() {
         test(
             "and should use the other source's unquoted version if "
             'concrete', () async {
-          await setUpDependency(
-              {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
+          await setUpDependency({
+            'path': escapeBackslashes(path.join(d.sandbox, 'foo')),
+            'version': '0.2.3'
+          });
           expectDependencyValidationError('  foo: 0.2.3');
         });
       });

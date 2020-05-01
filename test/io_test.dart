@@ -354,10 +354,9 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
             Stream.fromIterable(
               [
                 base64Decode(
-                    'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
-                    'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
-                    '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
-                    'AAAAAAAAAAAAgM9dALkoaRMAKAAA')
+                    'H4sIAF08q14AA+3SSwrCMBSF4SwlK9AkzQPcTdTOmja0dtDd21YEUYoILSL+3+QOciEHzk1DzHkv'
+                    'NqVGwblp6uDU47wTuvDO+MIrNe5pY5UR0m0b66bvLrGVUlRlU8f23CztvXv/UWnuP/fHLpen3RBT'
+                    'tf4fU8He2uX+dfHUvw1GC6nWj/Lqz/uvYyoPcr6Cb0cBAAAAAAAAAAAAAAAA8KEr192SOwAoAAA=')
               ],
             ),
             tempDir);

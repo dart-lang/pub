@@ -28,6 +28,7 @@ Future servePackages(void Function(PackageServerBuilder) callback) async {
   addTearDown(() {
     _globalPackageServer = null;
   });
+  return _globalPackageServer.port;
 }
 
 /// Like [servePackages], but instead creates an empty server with no packages
@@ -93,11 +94,17 @@ class PackageServer {
     _servedPackageDir.contents.clear();
 
     _builder._packages.forEach((name, versions) {
+      var sortedVersions = List.from(versions);
+      sortedVersions
+        ..sort((a, b) => a.version.toString().compareTo(b.version.toString()));
+      final latestVersion = sortedVersions[sortedVersions.length - 1];
+
       _servedApiPackageDir.contents.addAll([
         d.file(
             name,
             jsonEncode({
               'name': name,
+              'latest': packageVersionApiMap(url, latestVersion.pubspec),
               'uploaders': ['nweiz@google.com'],
               'versions': versions
                   .map((version) => packageVersionApiMap(url, version.pubspec))

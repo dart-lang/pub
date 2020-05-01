@@ -47,29 +47,29 @@ void main() {
     test('in compact form', () async {
       await pubGet();
       await runPub(args: ['deps', '-s', 'compact'], output: '''
-          Dart SDK 0.1.2+3
-          myapp 0.0.0
+Dart SDK 0.1.2+3
+myapp 0.0.0
 
-          dependencies:
-          - from_path 1.2.3
-          - normal 1.2.3 [transitive circular_a]
-          - overridden 2.0.0
+dependencies:
+- from_path 1.2.3
+- normal 1.2.3 [circular_a transitive]
+- overridden 2.0.0
 
-          dev dependencies:
-          - unittest 1.2.3 [shared dev_only]
+dev dependencies:
+- unittest 1.2.3 [dev_only shared]
 
-          dependency overrides:
-          - overridden 2.0.0
-          - override_only 1.2.3
+dependency overrides:
+- overridden 2.0.0
+- override_only 1.2.3
 
-          transitive dependencies:
-          - circular_a 1.2.3 [circular_b]
-          - circular_b 1.2.3 [circular_a]
-          - dev_only 1.2.3
-          - other 1.0.0 [myapp]
-          - shared 1.2.3 [other]
-          - transitive 1.2.3 [shared]
-          ''');
+transitive dependencies:
+- circular_a 1.2.3 [circular_b]
+- circular_b 1.2.3 [circular_a]
+- dev_only 1.2.3
+- other 1.0.0 [myapp]
+- shared 1.2.3 [other]
+- transitive 1.2.3 [shared]
+''');
     });
 
     test('in list form', () async {
@@ -79,16 +79,16 @@ void main() {
           myapp 0.0.0
 
           dependencies:
-          - normal 1.2.3
-            - transitive any
-            - circular_a any
-          - overridden 2.0.0
           - from_path 1.2.3
+          - normal 1.2.3
+            - circular_a any
+            - transitive any
+          - overridden 2.0.0
 
           dev dependencies:
           - unittest 1.2.3
-            - shared any
             - dev_only any
+            - shared any
 
           dependency overrides:
           - overridden 2.0.0
@@ -161,7 +161,7 @@ void main() {
 
           dependencies:
           - from_path 1.2.3
-          - normal 1.2.3 [transitive circular_a]
+          - normal 1.2.3 [circular_a transitive]
           - overridden 2.0.0
 
           dependency overrides:
@@ -184,11 +184,11 @@ void main() {
           myapp 0.0.0
 
           dependencies:
-          - normal 1.2.3
-            - transitive any
-            - circular_a any
-          - overridden 2.0.0
           - from_path 1.2.3
+          - normal 1.2.3
+            - circular_a any
+            - transitive any
+          - overridden 2.0.0
 
           dependency overrides:
           - overridden 2.0.0

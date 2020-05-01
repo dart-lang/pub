@@ -609,3 +609,8 @@ bool equalsIgnoringPreRelease(Version version1, Version version2) =>
     version1.major == version2.major &&
     version1.minor == version2.minor &&
     version1.patch == version2.patch;
+
+String escapeBackslashes(String input) {
+  return input.replaceAllMapped(RegExp(r'(?<!\\)\\(?!\\)'),
+      (match) => r'\\'); //match backslashes but not double slashes
+}

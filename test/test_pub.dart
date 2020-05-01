@@ -57,7 +57,7 @@ Matcher isUnminifiedDart2JSOutput =
 final _entrypoint = Entrypoint(pubRoot, SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
-String yaml(value) => jsonEncode(value);
+String yaml(value) => yamlToString(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.

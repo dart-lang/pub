@@ -163,4 +163,9 @@ b: {}'''));
       }
     });
   });
+
+  test('Escape backslashes', () {
+    expect(escapeBackslashes(r'C:\Users\Foo\\Bar'),
+        equals(r'C:\\Users\\Foo\\Bar'));
+  });
 }

@@ -36,10 +36,12 @@ class CacheRepairCommand extends PubCommand {
         .expand((x) => x);
 
     final successes = [
-      for (final result in repairResults) if (result.success) result.package
+      for (final result in repairResults)
+        if (result.success) result.package
     ];
     final failures = [
-      for (final result in repairResults) if (!result.success) result.package
+      for (final result in repairResults)
+        if (!result.success) result.package
     ];
 
     if (successes.isNotEmpty) {

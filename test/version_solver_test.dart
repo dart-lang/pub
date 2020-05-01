@@ -219,9 +219,9 @@ void withLockFile() {
 
     await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      Because myapp depends on foo any which depends on bar >=2.0.0,
-        bar >=2.0.0 is required.
-      So, because myapp depends on bar <2.0.0, version solving failed.
+      Because every version of foo depends on bar >=2.0.0 and myapp depends on
+      bar <2.0.0, foo is forbidden. So, because myapp depends on foo any,
+      version solving failed.
     '''));
   });
 }
@@ -256,8 +256,8 @@ void rootDependency() {
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0,
-        myapp >0.0.0 is required.
-      So, because myapp is 0.0.0, version solving failed.
+      myapp >0.0.0 is required. So, because myapp is 0.0.0,
+      version solving failed.
     '''));
   });
 }
@@ -454,13 +454,11 @@ void unsolvable() {
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      Because every version of foo depends on shared ^2.0.0 and no versions of
-        shared match ^2.9.0, every version of foo requires
-        shared >=2.0.0 <2.9.0.
-      And because every version of bar depends on shared >=2.9.0 <4.0.0, bar is
-        incompatible with foo.
-      So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
-        solving failed.
+      Because every version of bar depends on shared >=2.9.0 <4.0.0
+      and no versions of shared match ^2.9.0, every version of bar requires
+      shared ^3.0.0. And because every version of foo depends on shared ^2.0.0,
+      foo is incompatible with bar. So, because myapp depends on both bar 1.0.0
+      and foo 1.0.0, version solving failed.
     '''));
   });
 
@@ -474,10 +472,9 @@ void unsolvable() {
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      Because every version of bar depends on shared >3.0.0 and every version
-        of foo depends on shared <=2.0.0, bar is incompatible with foo.
-      So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
-        solving failed.
+        Because every version of foo depends on shared <=2.0.0 and every version
+        of bar depends on shared >3.0.0, foo is incompatible with bar.
+        So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version solving failed.
     '''));
   });
 
@@ -501,13 +498,13 @@ void unsolvable() {
 
     await expectResolves(
         error: allOf([
-      contains('Because every version of bar depends on shared from hosted on '
+      contains('Because every version of foo depends on shared from hosted on '
           'http://localhost:'),
-      contains(' and every version of foo depends on shared from hosted on '
+      contains(' and every version of bar depends on shared from hosted on '
           'http://localhost:'),
-      contains(', bar is incompatible with foo.'),
-      contains('So, because myapp depends on both foo 1.0.0 and bar 1.0.0, '
-          'version solving failed.')
+      contains(', foo is incompatible with bar.'),
+      contains(
+          'So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version solving failed.')
     ]));
   });
 
@@ -524,11 +521,9 @@ void unsolvable() {
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      Because every version of bar depends on shared from path and every
-        version of foo depends on shared from hosted, bar is incompatible with
-        foo.
-      So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
-        solving failed.
+      Because every version of foo depends on shared from hosted and every
+      version of bar depends on shared from path, foo is incompatible with bar.
+      So, because myapp depends on both bar 1.0.0 and foo 1.0.0, version solving failed.
     '''));
   });
 
@@ -675,9 +670,8 @@ void badSource() {
     }).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of foo depends on bar any which depends on baz any,
-        every version of foo requires baz from hosted.
-      So, because myapp depends on both foo any and baz from path, version
-        solving failed.
+      every version of foo requires baz from hosted. So, because myapp depends
+      on both baz from path and foo any, version solving failed.
     '''));
   });
 }
