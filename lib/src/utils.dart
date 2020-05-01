@@ -408,8 +408,8 @@ String _urlDecode(String encoded) =>
 bool get canUseSpecialChars =>
     !runningFromTest &&
     !runningAsTest &&
-    !Platform.isWindows &&
-    stdioType(stdout) == StdioType.terminal;
+    stdioType(stdout) == StdioType.terminal &&
+    stdout.supportsAnsiEscapes;
 
 /// Gets a "special" string (ANSI escape or Unicode).
 ///
