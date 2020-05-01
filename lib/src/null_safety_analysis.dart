@@ -117,30 +117,31 @@ class NullSafetyAnalysis {
         final packageDir = boundSource.getDirectory(dependencyId);
         final libDir =
             path.absolute(path.normalize(path.join(packageDir, 'lib')));
-        if (!dirExists(libDir)) {}
-        final analysisSession = ContextBuilder()
-            .createContext(
-              contextRoot: ContextLocator().locateRoots(
-                includedPaths: [packageDir],
-              ).first,
-            )
-            .currentSession;
+        if (dirExists(libDir)) {
+          final analysisSession = ContextBuilder()
+              .createContext(
+                contextRoot: ContextLocator().locateRoots(
+                  includedPaths: [packageDir],
+                ).first,
+              )
+              .currentSession;
 
-        for (final file in listDir(libDir,
-            recursive: true, includeDirs: false, includeHidden: true)) {
-          if (file.endsWith('.dart')) {
-            final unitResult =
-                analysisSession.getParsedUnit(path.normalize(file));
-            if (unitResult == null || unitResult.errors.isNotEmpty) {
-              return NullSafetyCompliance.analysisFailed;
-            }
-            if (unitResult.isPart) continue;
-            final languageVersionToken = unitResult.unit.languageVersionToken;
-            if (languageVersionToken == null) continue;
-            if (Version(
-                    languageVersionToken.major, languageVersionToken.minor, 0) <
-                _firstVersionWithNullSafety) {
-              return NullSafetyCompliance.notCompliant;
+          for (final file in listDir(libDir,
+              recursive: true, includeDirs: false, includeHidden: true)) {
+            if (file.endsWith('.dart')) {
+              final unitResult =
+                  analysisSession.getParsedUnit(path.normalize(file));
+              if (unitResult == null || unitResult.errors.isNotEmpty) {
+                return NullSafetyCompliance.analysisFailed;
+              }
+              if (unitResult.isPart) continue;
+              final languageVersionToken = unitResult.unit.languageVersionToken;
+              if (languageVersionToken == null) continue;
+              if (Version(languageVersionToken.major,
+                      languageVersionToken.minor, 0) <
+                  _firstVersionWithNullSafety) {
+                return NullSafetyCompliance.notCompliant;
+              }
             }
           }
         }
