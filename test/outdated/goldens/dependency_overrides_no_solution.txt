@@ -121,7 +121,6 @@ Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --mark=null-safety
-Computing null-safety...
 Dependencies  Current              Upgradable           Resolvable           Latest  
 bar           ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?2.0.0  
 foo           ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?2.0.0  
@@ -134,4 +133,54 @@ transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --json --mark=null-safety
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": null
+      }
+    },
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "overridden": true,
+        "nullSafety": null
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": null
+      }
+    }
+  ]
+}
 

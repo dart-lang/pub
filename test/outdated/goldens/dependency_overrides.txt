@@ -148,7 +148,6 @@ To update these dependencies, use `pub upgrade`.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --mark=null-safety
-Computing null-safety...
 Dependencies  Current              Upgradable           Resolvable           Latest  
 bar           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 baz           ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0  
@@ -162,4 +161,76 @@ transitive dev_dependencies: all up-to-date
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --json --mark=null-safety
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "baz",
+      "current": {
+        "version": "2.0.0",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "2.0.0",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "2.0.0",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.0.1",
+        "overridden": true,
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": false
+      }
+    }
+  ]
+}
 

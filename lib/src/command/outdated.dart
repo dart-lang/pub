@@ -32,6 +32,10 @@ class OutdatedCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
+  /// Avoid showing spinning progress messages when not in a terminal, and
+  /// when we are outputting machine-readable json.
+  bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+
   OutdatedCommand() {
     argParser.addFlag('color',
         help: 'Whether to color the output.\n'
@@ -92,16 +96,10 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
 
-    final shouldShowSpinner = stdout.hasTerminal && !argResults['json'];
-    if (shouldShowSpinner) {
-      await log.spinner('Resolving', () async {
-        upgradablePackages = await _tryResolve(upgradablePubspec);
-        resolvablePackages = await _tryResolve(resolvablePubspec);
-      });
-    } else {
+    await log.spinner('Resolving', () async {
       upgradablePackages = await _tryResolve(upgradablePubspec);
       resolvablePackages = await _tryResolve(resolvablePubspec);
-    }
+    }, condition: _shouldShowSpinner);
 
     final currentPackages = entrypoint.lockFile.packages.values;
 
@@ -196,17 +194,17 @@ class OutdatedCommand extends PubCommand {
     }
 
     rows.sort();
-
+    final marker = <String, Marker>{
+      'outdated': oudatedMarker,
+      'null-safety': nullSafetyMarker,
+      'none': noneMarker,
+    }[argResults['mark']];
     if (argResults['json']) {
-      await _outputJson(rows);
+      await _outputJson(rows, marker);
     } else {
       final useColors = argResults['color'] ||
           (!argResults.wasParsed('color') && stdin.hasTerminal);
-      final marker = {
-        'outdated': oudatedMarker,
-        'null-safety': nullSafetyMarker,
-        'none': noneMarker,
-      }[argResults['mark']];
+
       await _outputHuman(
         rows,
         marker,
@@ -303,7 +301,7 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
-  Future<List<List<_FormattedString>>> nullSafetyMarker(
+  Future<List<List<_MarkedVersionDetails>>> nullSafetyMarker(
       List<_PackageDetails> packages) async {
     final nullSafetyMap = await log.spinner('Computing null-safety', () async {
       /// Find all unique ids.
@@ -329,45 +327,50 @@ class OutdatedCommand extends PubCommand {
           ),
         ),
       );
-    });
-    final rows = <List<_FormattedString>>[];
-    for (final packageDetails in packages) {
-      final cols = [_FormattedString(packageDetails.name)];
+    }, condition: _shouldShowSpinner);
+    return [
+      for (final packageDetails in packages)
+        [
+          packageDetails.current,
+          packageDetails.upgradable,
+          packageDetails.resolvable,
+          packageDetails.latest
+        ].map(
+          (versionDetails) {
+            String Function(String) color;
+            String prefix;
+            bool nullSafetyJson;
+            if (versionDetails != null) {
+              final nullSafety = nullSafetyMap[versionDetails._id];
 
-      for (final versionDetails in [
-        packageDetails.current,
-        packageDetails.upgradable,
-        packageDetails.resolvable,
-        packageDetails.latest
-      ]) {
-        if (versionDetails == null) {
-          cols.add(_raw('-'));
-        } else {
-          final nullSafety = nullSafetyMap[versionDetails._id];
-          String Function(String) color;
-          String prefix;
-          switch (nullSafety) {
-            case NullSafetyCompliance.analysisFailed:
-              color = color = log.gray;
-              prefix = '?';
-              break;
-            case NullSafetyCompliance.compliant:
-              color = log.green;
-              prefix = '✓';
-              break;
-            case NullSafetyCompliance.notCompliant:
-            case NullSafetyCompliance.apiOnly:
-              color = log.red;
-              prefix = '✗';
-              break;
-          }
-          cols.add(
-              _format(versionDetails.describe ?? '-', color, prefix: prefix));
-        }
-      }
-      rows.add(cols);
-    }
-    return rows;
+              switch (nullSafety) {
+                case NullSafetyCompliance.analysisFailed:
+                  color = color = log.gray;
+                  prefix = '?';
+                  nullSafetyJson = null;
+                  break;
+                case NullSafetyCompliance.compliant:
+                  color = log.green;
+                  prefix = '✓';
+                  nullSafetyJson = true;
+                  break;
+                case NullSafetyCompliance.notCompliant:
+                case NullSafetyCompliance.apiOnly:
+                  color = log.red;
+                  prefix = '✗';
+                  nullSafetyJson = false;
+                  break;
+              }
+            }
+            return _MarkedVersionDetails(
+              versionDetails,
+              format: color,
+              prefix: prefix,
+              jsonExplanation: MapEntry('nullSafety', nullSafetyJson),
+            );
+          },
+        ).toList()
+    ];
   }
 }
 
@@ -424,14 +427,31 @@ Pubspec _stripVersionConstraints(Pubspec original) {
   );
 }
 
-Future<void> _outputJson(List<_PackageDetails> rows) async {
-  log.message(JsonEncoder.withIndent('  ')
-      .convert({'packages': rows.map((row) => row.toJson()).toList()}));
+Future<void> _outputJson(
+  List<_PackageDetails> rows,
+  Marker marker,
+) async {
+  final markedRows = Map.fromIterables(rows, await marker(rows));
+  log.message(
+    JsonEncoder.withIndent('  ').convert(
+      {
+        'packages': [
+          ...markedRows.entries.map((entry) => {
+                'package': entry.key.name,
+                'current': entry.value[0]?.toJson(),
+                'upgradable': entry.value[1]?.toJson(),
+                'resolvable': entry.value[2]?.toJson(),
+                'latest': entry.value[3]?.toJson(),
+              })
+        ]
+      },
+    ),
+  );
 }
 
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
-  Future<List<List<_FormattedString>>> Function(List<_PackageDetails>) marker, {
+  Marker marker, {
   @required bool useColors,
   @required bool includeDevDependencies,
 }) async {
@@ -440,8 +460,10 @@ Future<void> _outputHuman(
     return;
   }
   final markedRows = Map.fromIterables(rows, await marker(rows));
-  List<_FormattedString> formatted(_PackageDetails package) =>
-      markedRows[package];
+  List<_FormattedString> formatted(_PackageDetails package) => [
+        _FormattedString(package.name),
+        ...markedRows[package].map((m) => m.toHuman()),
+      ];
   bool Function(_PackageDetails) hasKind(_DependencyKind kind) =>
       (row) => row.kind == kind;
 
@@ -549,11 +571,14 @@ Future<void> _outputHuman(
   }
 }
 
-Future<List<List<_FormattedString>>> oudatedMarker(
+typedef Marker = Future<List<List<_MarkedVersionDetails>>> Function(
+    List<_PackageDetails>);
+
+Future<List<List<_MarkedVersionDetails>>> oudatedMarker(
     List<_PackageDetails> packages) async {
-  final rows = <List<_FormattedString>>[];
+  final rows = <List<_MarkedVersionDetails>>[];
   for (final packageDetails in packages) {
-    final cols = [_FormattedString(packageDetails.name)];
+    final cols = <_MarkedVersionDetails>[];
     _VersionDetails previous;
     for (final versionDetails in [
       packageDetails.current,
@@ -561,20 +586,21 @@ Future<List<List<_FormattedString>>> oudatedMarker(
       packageDetails.resolvable,
       packageDetails.latest
     ]) {
-      if (versionDetails == null) {
-        cols.add(_raw('-'));
-      } else {
+      String Function(String) color;
+      String prefix;
+
+      if (versionDetails != null) {
         final isLatest = versionDetails == packageDetails.latest;
-        String Function(String) color;
         if (isLatest) {
           color = versionDetails == previous ? color = log.gray : null;
         } else {
           color = log.red;
         }
-        final prefix = isLatest ? '' : '*';
-        cols.add(
-            _format(versionDetails.describe ?? '-', color, prefix: prefix));
+        prefix = isLatest ? '' : '*';
       }
+      cols.add(
+        _MarkedVersionDetails(versionDetails, format: color, prefix: prefix),
+      );
       previous = versionDetails;
     }
     rows.add(cols);
@@ -582,18 +608,18 @@ Future<List<List<_FormattedString>>> oudatedMarker(
   return rows;
 }
 
-Future<List<List<_FormattedString>>> noneMarker(
+Future<List<List<_MarkedVersionDetails>>> noneMarker(
     List<_PackageDetails> packages) async {
   return [
     for (final packageDetails in packages)
       [
-        _FormattedString(packageDetails.name),
-        ...[
+        for (final versionDetails in [
           packageDetails.current,
           packageDetails.upgradable,
           packageDetails.resolvable,
           packageDetails.latest,
-        ].map((p) => _raw(p?.describe ?? '-'))
+        ])
+          _MarkedVersionDetails(versionDetails)
       ]
   ];
 }
@@ -693,6 +719,32 @@ _FormattedString _format(String value, Function(String) format, {prefix = ''}) {
 
 _FormattedString _raw(String value) => _FormattedString(value);
 
+class _MarkedVersionDetails {
+  final MapEntry<String, Object> _jsonExplanation;
+  final _VersionDetails _versionDetails;
+  final String Function(String) _format;
+  final String _prefix;
+  _MarkedVersionDetails(this._versionDetails,
+      {format, prefix = '', jsonExplanation})
+      : _format = format,
+        _prefix = prefix,
+        _jsonExplanation = jsonExplanation;
+
+  _FormattedString toHuman() => _FormattedString(
+        _versionDetails?.describe ?? '-',
+        format: _format,
+        prefix: _prefix,
+      );
+
+  Object toJson() {
+    if (_versionDetails == null) return null;
+
+    return _jsonExplanation == null
+        ? _versionDetails.toJson()
+        : (_versionDetails.toJson()..addEntries([_jsonExplanation]));
+  }
+}
+
 class _FormattedString {
   final String value;
 
@@ -702,9 +754,9 @@ class _FormattedString {
   /// A prefix for marking this string if colors are not used.
   final String _prefix;
 
-  _FormattedString(this.value, {String Function(String) format, prefix = ''})
+  _FormattedString(this.value, {String Function(String) format, prefix})
       : _format = format ?? _noFormat,
-        _prefix = prefix;
+        _prefix = prefix ?? '';
 
   String formatted({@required bool useColors}) {
     return useColors ? _format(value) : _prefix + value;

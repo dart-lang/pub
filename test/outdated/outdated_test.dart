@@ -16,7 +16,11 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
   expect(await process.stderr.rest.toList(), isEmpty);
   buffer.writeln([
     '\$ pub outdated ${args.join(' ')}',
-    ...await process.stdout.rest.toList()
+    ...await process.stdout.rest.where((line) {
+      // Downloading order is not deterministic, so to avoid flakiness we filter
+      // out these lines.
+      return !line.startsWith('Downloading ');
+    }).toList()
   ].join('\n'));
   buffer.write('\n');
 }
@@ -35,6 +39,7 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
     ['--no-color', '--mark=null-safety'],
+    ['--json', '--mark=null-safety'],
   ]) {
     await runPubOutdated(args, buffer, environment: environment);
   }
