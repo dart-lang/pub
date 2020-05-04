@@ -210,6 +210,20 @@ Future<PubProcess> pubRun({bool global = false, Iterable<String> args}) async {
   return pub;
 }
 
+/// Schedules starting the "pub run --v2" process and validates the
+/// expected startup output.
+///
+/// Returns the `pub run` process.
+Future<PubProcess> pubRunV2({Iterable<String> args}) async {
+  final pub = await startPub(args: ['run', '--v2', ...args]);
+
+  // Loading sources and transformers isn't normally printed, but the pub test
+  // infrastructure runs pub in verbose mode, which enables this.
+  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
+
+  return pub;
+}
+
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
 /// are assumed to be relative to [d.sandbox].
 void renameInSandbox(String from, String to) {
