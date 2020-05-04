@@ -111,7 +111,7 @@ class NullSafetyAnalysis {
         }
 
         if (boundSource is CachedSource) {
-          /// TODO(sigurdm): Should we set metadata here?
+          // TODO(sigurdm): Consider using withDependencyType here.
           await boundSource.downloadToSystemCache(dependencyId);
         }
         final packageDir = boundSource.getDirectory(dependencyId);
