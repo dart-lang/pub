@@ -135,6 +135,11 @@ class SolveReport {
   void reportOutdated() {
     final outdatedPackagesCount = _result.packages.where((id) {
       final versions = _result.availableVersions[id.name];
+      // A version is counted:
+      // - if there is a newer version which is not a pre-release and current
+      // version is also not a pre-release
+      // - if the current version is pre-release then any upgraded version is
+      // considered.
       return versions.any((v) =>
           v > id.version &&
           (id.version.isPreRelease == true || v.isPreRelease == false));
