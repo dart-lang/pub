@@ -400,16 +400,20 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
+/// Set to `true` if ANSI colors should be output regardless of terminalD
+bool forceColors = false;
+
 /// Whether "special" strings such as Unicode characters or color escapes are
 /// safe to use.
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
 bool get canUseSpecialChars =>
-    !runningFromTest &&
-    !runningAsTest &&
-    stdioType(stdout) == StdioType.terminal &&
-    stdout.supportsAnsiEscapes;
+    forceColors ||
+    (!runningFromTest &&
+        !runningAsTest &&
+        stdioType(stdout) == StdioType.terminal &&
+        stdout.supportsAnsiEscapes);
 
 /// Gets a "special" string (ANSI escape or Unicode).
 ///

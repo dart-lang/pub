@@ -200,8 +200,10 @@ class OutdatedCommand extends PubCommand {
     if (argResults['json']) {
       await _outputJson(rows);
     } else {
-      final useColors = argResults['color'] ||
-          (!argResults.wasParsed('color') && canUseSpecialChars);
+      if (argResults.wasParsed('color') && argResults['color']) {
+        forceColors = true;
+      }
+      final useColors = argResults['color'] || canUseSpecialChars;
       final marker = {
         'outdated': oudatedMarker,
         'none': noneMarker,
