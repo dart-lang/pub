@@ -54,20 +54,6 @@ transitive dev_dependencies: all up-to-date
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
-$ pub outdated --no-color --mark=none
-Dependencies  Current             Upgradable          Resolvable          Latest  
-bar           1.0.0 (overridden)  1.0.0 (overridden)  1.0.0 (overridden)  2.0.0   
-foo           1.0.0 (overridden)  1.0.0 (overridden)  1.0.0 (overridden)  2.0.0   
-
-dev_dependencies: all up-to-date
-
-transitive dependencies: all up-to-date
-
-transitive dev_dependencies: all up-to-date
-
-Dependencies are all on the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
-
 $ pub outdated --no-color --up-to-date
 Dependencies  Current              Upgradable           Resolvable           Latest  
 bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
@@ -120,7 +106,7 @@ transitive dev_dependencies: all up-to-date
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
-$ pub outdated --no-color --mark=null-safety
+$ pub outdated --no-color --mode=null-safety
 Dependencies  Current              Upgradable           Resolvable           Latest  
 bar           ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?2.0.0  
 foo           ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?1.0.0 (overridden)  ?2.0.0  
@@ -134,7 +120,7 @@ transitive dev_dependencies: all up-to-date
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
-$ pub outdated --json --mark=null-safety
+$ pub outdated --json --mode=null-safety
 {
   "packages": [
     {

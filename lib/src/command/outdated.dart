@@ -58,10 +58,12 @@ class OutdatedCommand extends PubCommand {
     argParser.addFlag('json',
         help: 'Output the results using a json format.', negatable: false);
 
-    argParser.addOption('mark',
-        help: 'Highlight packages with some property in the report.',
-        valueHelp: 'OPTION',
-        allowed: ['null-safety', 'outdated', 'none'],
+    argParser.addOption('mode',
+        help: 'Highlight versions with PROPERTY.\n'
+            'Only packages currently missing that PROPERTY will be included unless '
+            '--show-all.',
+        valueHelp: 'PROPERTY',
+        allowed: ['outdated', 'null-safety'],
         defaultsTo: 'outdated');
 
     argParser.addFlag('prereleases',
@@ -71,10 +73,16 @@ class OutdatedCommand extends PubCommand {
     argParser.addFlag('pre-releases',
         defaultsTo: false, help: 'Alias of prereleases.', hide: true);
 
+    argParser.addFlag('show-all',
+        defaultsTo: false,
+        help: 'Include dependencies that are already fullfilling --mode.');
+
+    // Preserve for backwards compatibility.
     argParser.addFlag('up-to-date',
         defaultsTo: false,
+        hide: true,
         help: 'Include dependencies that are already at the '
-            'latest version.');
+            'latest version. Alias of --show-all.');
   }
 
   @override
@@ -187,9 +195,6 @@ class OutdatedCommand extends PubCommand {
       rows.add(await analyzeDependency(id.toRef()));
     }
 
-    if (!argResults['up-to-date']) {
-      rows.retainWhere((r) => (r.current ?? r.upgradable) != r.latest);
-    }
     if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);
     }
@@ -198,8 +203,7 @@ class OutdatedCommand extends PubCommand {
     final marker = <String, Marker>{
       'outdated': oudatedMarker,
       'null-safety': nullSafetyMarker,
-      'none': noneMarker,
-    }[argResults['mark']];
+    }[argResults['mode']];
     if (argResults['json']) {
       await _outputJson(rows, marker);
     } else {
@@ -209,6 +213,7 @@ class OutdatedCommand extends PubCommand {
         rows,
         marker,
         useColors: useColors,
+        showAll: argResults['show-all'] || argResults['up-to-date'],
         includeDevDependencies: includeDevDependencies,
       );
     }
@@ -340,6 +345,7 @@ class OutdatedCommand extends PubCommand {
             String Function(String) color;
             String prefix;
             bool nullSafetyJson;
+            var asDesired = false;
             if (versionDetails != null) {
               final nullSafety = nullSafetyMap[versionDetails._id];
 
@@ -353,6 +359,7 @@ class OutdatedCommand extends PubCommand {
                   color = log.green;
                   prefix = '✓';
                   nullSafetyJson = true;
+                  asDesired = true;
                   break;
                 case NullSafetyCompliance.notCompliant:
                 case NullSafetyCompliance.apiOnly:
@@ -364,6 +371,7 @@ class OutdatedCommand extends PubCommand {
             }
             return _MarkedVersionDetails(
               versionDetails,
+              asDesired: asDesired,
               format: color,
               prefix: prefix,
               jsonExplanation: MapEntry('nullSafety', nullSafetyJson),
@@ -452,18 +460,25 @@ Future<void> _outputJson(
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
   Marker marker, {
+  @required bool showAll,
   @required bool useColors,
   @required bool includeDevDependencies,
 }) async {
-  if (rows.isEmpty) {
-    log.message('Found no outdated packages.');
-    return;
-  }
   final markedRows = Map.fromIterables(rows, await marker(rows));
+
   List<_FormattedString> formatted(_PackageDetails package) => [
         _FormattedString(package.name),
         ...markedRows[package].map((m) => m.toHuman()),
       ];
+
+  if (!showAll) {
+    rows.removeWhere((row) => markedRows[row][0].asDesired);
+  }
+  if (rows.isEmpty) {
+    log.message('Found no outdated packages.');
+    return;
+  }
+
   bool Function(_PackageDetails) hasKind(_DependencyKind kind) =>
       (row) => row.kind == kind;
 
@@ -571,6 +586,9 @@ Future<void> _outputHuman(
   }
 }
 
+/// Analyzes the [_PackageDetails] according to a --mode and outputs a
+/// corresponding list of the versions
+/// [current, upgradable, resolvable, latest].
 typedef Marker = Future<List<List<_MarkedVersionDetails>>> Function(
     List<_PackageDetails>);
 
@@ -588,40 +606,30 @@ Future<List<List<_MarkedVersionDetails>>> oudatedMarker(
     ]) {
       String Function(String) color;
       String prefix;
-
+      var asDesired = false;
       if (versionDetails != null) {
         final isLatest = versionDetails == packageDetails.latest;
         if (isLatest) {
           color = versionDetails == previous ? color = log.gray : null;
+          asDesired = true;
         } else {
           color = log.red;
         }
         prefix = isLatest ? '' : '*';
       }
       cols.add(
-        _MarkedVersionDetails(versionDetails, format: color, prefix: prefix),
+        _MarkedVersionDetails(
+          versionDetails,
+          asDesired: asDesired,
+          format: color,
+          prefix: prefix,
+        ),
       );
       previous = versionDetails;
     }
     rows.add(cols);
   }
   return rows;
-}
-
-Future<List<List<_MarkedVersionDetails>>> noneMarker(
-    List<_PackageDetails> packages) async {
-  return [
-    for (final packageDetails in packages)
-      [
-        for (final versionDetails in [
-          packageDetails.current,
-          packageDetails.upgradable,
-          packageDetails.resolvable,
-          packageDetails.latest,
-        ])
-          _MarkedVersionDetails(versionDetails)
-      ]
-  ];
 }
 
 /// Details about a single version of a package.
@@ -724,9 +732,21 @@ class _MarkedVersionDetails {
   final _VersionDetails _versionDetails;
   final String Function(String) _format;
   final String _prefix;
-  _MarkedVersionDetails(this._versionDetails,
-      {format, prefix = '', jsonExplanation})
-      : _format = format,
+
+  /// This should be true if the marker creating this consideres the version as
+  /// "good".
+  ///
+  /// By default only packages with a current version that is not as desired
+  /// will be shown in the report.
+  final bool asDesired;
+
+  _MarkedVersionDetails(
+    this._versionDetails, {
+    @required this.asDesired,
+    format,
+    prefix = '',
+    jsonExplanation,
+  })  : _format = format,
         _prefix = prefix,
         _jsonExplanation = jsonExplanation;
 

@@ -33,13 +33,12 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
   for (final args in [
     ['--json'],
     ['--no-color'],
-    ['--no-color', '--mark=none'],
     ['--no-color', '--up-to-date'],
     ['--no-color', '--prereleases'],
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
-    ['--no-color', '--mark=null-safety'],
-    ['--json', '--mark=null-safety'],
+    ['--no-color', '--mode=null-safety'],
+    ['--json', '--mode=null-safety'],
   ]) {
     await runPubOutdated(args, buffer, environment: environment);
   }

@@ -6,9 +6,6 @@ $ pub outdated --json
 $ pub outdated --no-color
 Found no outdated packages.
 
-$ pub outdated --no-color --mark=none
-Found no outdated packages.
-
 $ pub outdated --no-color --up-to-date
 Found no outdated packages.
 
@@ -21,10 +18,10 @@ Found no outdated packages.
 $ pub outdated --no-color --no-dependency-overrides
 Found no outdated packages.
 
-$ pub outdated --no-color --mark=null-safety
+$ pub outdated --no-color --mode=null-safety
 Found no outdated packages.
 
-$ pub outdated --json --mark=null-safety
+$ pub outdated --json --mode=null-safety
 {
   "packages": []
 }
