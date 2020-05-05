@@ -135,13 +135,9 @@ class SolveReport {
   void reportOutdated() {
     final outdatedPackagesCount = _result.packages.where((id) {
       final versions = _result.availableVersions[id.name];
-
-      if (versions.any((v) =>
+      return versions.any((v) =>
           v > id.version &&
-          (id.version.isPreRelease == true || v.isPreRelease == false))) {
-        return true;
-      }
-      return false;
+          (id.version.isPreRelease == true || v.isPreRelease == false));
     }).length;
 
     if (outdatedPackagesCount > 0) {
