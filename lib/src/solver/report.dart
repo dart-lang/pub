@@ -133,24 +133,17 @@ class SolveReport {
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
-    var outdatedPackagesCount = 0;
+    final outdatedPackagesCount = _result.packages.where((id) {
+      final versions = _result.availableVersions[id.name];
 
-    final names = _result.packages.map((id) => id.name);
-    for (var name in names) {
-      var newId = _dependencies[name];
-
-      // See if there are any newer versions of the package that we were
-      // unable to upgrade to.
-      if (newId != null) {
-        var versions = _result.availableVersions[newId.name];
-
-        if (versions.any((v) =>
-            v > newId.version &&
-            (newId.version.isPreRelease == true || v.isPreRelease == false))) {
-          ++outdatedPackagesCount;
-        }
+      if (versions.any((v) =>
+          v > id.version &&
+          (id.version.isPreRelease == true || v.isPreRelease == false))) {
+        return true;
       }
-    }
+      return false;
+    }).length;
+
     if (outdatedPackagesCount > 0) {
       String packageCountString;
       if (outdatedPackagesCount == 1) {
