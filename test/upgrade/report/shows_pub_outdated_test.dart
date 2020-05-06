@@ -83,6 +83,7 @@ Try `pub outdated` for more information.$''', multiLine: true));
       'one_newer_stable': '1.0.0'
     }).create();
 
+    // Upgrade everything.
     await pubUpgrade(output: RegExp(r'''
 1 package has newer versions incompatible with dependency constraints.
 Try `pub outdated` for more information.$''', multiLine: true));
