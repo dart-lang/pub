@@ -1,0 +1,118 @@
+$ pub outdated --json
+{
+  "packages": [
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0-dev.1"
+      },
+      "upgradable": {
+        "version": "1.0.0-dev.1"
+      },
+      "resolvable": {
+        "version": "0.9.0"
+      },
+      "latest": {
+        "version": "0.9.0"
+      }
+    },
+    {
+      "package": "mop",
+      "current": {
+        "version": "0.10.0-dev"
+      },
+      "upgradable": {
+        "version": "0.10.0-dev"
+      },
+      "resolvable": {
+        "version": "0.10.0"
+      },
+      "latest": {
+        "version": "1.0.0-dev"
+      }
+    }
+  ]
+}
+
+$ pub outdated --no-color
+Dependencies  Current       Upgradable    Resolvable  Latest     
+foo           *1.0.0-dev.1  *1.0.0-dev.1  0.9.0       0.9.0      
+mop           *0.10.0-dev   *0.10.0-dev   *0.10.0     1.0.0-dev  
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
+$ pub outdated --no-color --mark=none
+Dependencies  Current      Upgradable   Resolvable  Latest     
+foo           1.0.0-dev.1  1.0.0-dev.1  0.9.0       0.9.0      
+mop           0.10.0-dev   0.10.0-dev   0.10.0      1.0.0-dev  
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
+$ pub outdated --no-color --up-to-date
+Dependencies  Current       Upgradable    Resolvable  Latest     
+bar           0.9.0         0.9.0         0.9.0       0.9.0      
+foo           *1.0.0-dev.1  *1.0.0-dev.1  0.9.0       0.9.0      
+mop           *0.10.0-dev   *0.10.0-dev   *0.10.0     1.0.0-dev  
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
+$ pub outdated --no-color --prereleases
+Dependencies  Current       Upgradable    Resolvable  Latest       
+bar           *0.9.0        *0.9.0        *0.9.0      1.0.0-dev.2  
+foo           *1.0.0-dev.1  *1.0.0-dev.1  *0.9.0      1.0.0-dev.2  
+mop           *0.10.0-dev   *0.10.0-dev   *0.10.0     1.0.0-dev    
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
+$ pub outdated --no-color --no-dev-dependencies
+Dependencies  Current       Upgradable    Resolvable  Latest     
+foo           *1.0.0-dev.1  *1.0.0-dev.1  0.9.0       0.9.0      
+mop           *0.10.0-dev   *0.10.0-dev   *0.10.0     1.0.0-dev  
+
+transitive dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
+$ pub outdated --no-color --no-dependency-overrides
+Dependencies  Current       Upgradable    Resolvable  Latest     
+foo           *1.0.0-dev.1  *1.0.0-dev.1  0.9.0       0.9.0      
+mop           *0.10.0-dev   *0.10.0-dev   *0.10.0     1.0.0-dev  
+
+dev_dependencies: all up-to-date
+
+transitive dependencies: all up-to-date
+
+transitive dev_dependencies: all up-to-date
+
+2  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
