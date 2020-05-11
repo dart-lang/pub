@@ -20,6 +20,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 
 class OutdatedCommand extends PubCommand {
@@ -200,9 +201,10 @@ class OutdatedCommand extends PubCommand {
     }
 
     rows.sort();
-    final marker = <String, Marker>{
-      'outdated': oudatedMarker,
-      'null-safety': nullSafetyMarker,
+    final marker = <String, Mode>{
+      'outdated': _OutdatedMode(),
+      'null-safety': _NullSafetyMode(cache, entrypoint,
+          shouldShowSpinner: _shouldShowSpinner),
     }[argResults['mode']];
     if (argResults['json']) {
       await _outputJson(rows, marker);
@@ -305,81 +307,6 @@ class OutdatedCommand extends PubCommand {
       return [];
     }
   }
-
-  Future<List<List<_MarkedVersionDetails>>> nullSafetyMarker(
-      List<_PackageDetails> packages) async {
-    final nullSafetyMap = await log.spinner('Computing null-safety', () async {
-      /// Find all unique ids.
-      final ids = {
-        for (final packageDetails in packages) ...[
-          packageDetails.current?._id,
-          packageDetails.upgradable?._id,
-          packageDetails.resolvable?._id,
-          packageDetails.latest?._id,
-        ]
-      }.where((id) => id != null);
-      final nullSafetyAnalyzer = NullSafetyAnalysis(cache);
-      return Map.fromEntries(
-        await Future.wait(
-          ids.map(
-            (id) async => MapEntry(
-              id,
-              await nullSafetyAnalyzer.nullSafetyCompliance(
-                id,
-                containingPath: path.absolute(entrypoint.root.dir),
-              ),
-            ),
-          ),
-        ),
-      );
-    }, condition: _shouldShowSpinner);
-    return [
-      for (final packageDetails in packages)
-        [
-          packageDetails.current,
-          packageDetails.upgradable,
-          packageDetails.resolvable,
-          packageDetails.latest
-        ].map(
-          (versionDetails) {
-            String Function(String) color;
-            String prefix;
-            bool nullSafetyJson;
-            var asDesired = false;
-            if (versionDetails != null) {
-              final nullSafety = nullSafetyMap[versionDetails._id];
-
-              switch (nullSafety) {
-                case NullSafetyCompliance.analysisFailed:
-                  color = color = log.gray;
-                  prefix = '?';
-                  nullSafetyJson = null;
-                  break;
-                case NullSafetyCompliance.compliant:
-                  color = log.green;
-                  prefix = '✓';
-                  nullSafetyJson = true;
-                  asDesired = true;
-                  break;
-                case NullSafetyCompliance.notCompliant:
-                case NullSafetyCompliance.apiOnly:
-                  color = log.red;
-                  prefix = '✗';
-                  nullSafetyJson = false;
-                  break;
-              }
-            }
-            return _MarkedVersionDetails(
-              versionDetails,
-              asDesired: asDesired,
-              format: color,
-              prefix: prefix,
-              jsonExplanation: MapEntry('nullSafety', nullSafetyJson),
-            );
-          },
-        ).toList()
-    ];
-  }
 }
 
 Pubspec _stripDevDependencies(Pubspec original) {
@@ -437,9 +364,10 @@ Pubspec _stripVersionConstraints(Pubspec original) {
 
 Future<void> _outputJson(
   List<_PackageDetails> rows,
-  Marker marker,
+  Mode mode,
 ) async {
-  final markedRows = Map.fromIterables(rows, await marker(rows));
+  final markedRows =
+      Map.fromIterables(rows, await mode.markVersionDetails(rows));
   log.message(
     JsonEncoder.withIndent('  ').convert(
       {
@@ -459,12 +387,13 @@ Future<void> _outputJson(
 
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
-  Marker marker, {
+  Mode mode, {
   @required bool showAll,
   @required bool useColors,
   @required bool includeDevDependencies,
 }) async {
-  final markedRows = Map.fromIterables(rows, await marker(rows));
+  final markedRows =
+      Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
   List<_FormattedString> formatted(_PackageDetails package) => [
         _FormattedString(package.name),
@@ -475,7 +404,7 @@ Future<void> _outputHuman(
     rows.removeWhere((row) => markedRows[row][0].asDesired);
   }
   if (rows.isEmpty) {
-    log.message('Found no outdated packages.');
+    log.message('Found no ${mode.badText} packages.');
     return;
   }
 
@@ -493,26 +422,26 @@ Future<void> _outputHuman(
     ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    [if (directRows.isEmpty) _raw('all up-to-date')],
+    [if (directRows.isEmpty) _raw(mode.allGoodText)],
     ...directRows,
     if (includeDevDependencies) ...[
       [
         devRows.isEmpty
-            ? _raw('\ndev_dependencies: all up-to-date')
+            ? _raw('\ndev_dependencies: ${mode.allGoodText}')
             : _format('\ndev_dependencies', log.bold),
       ],
       ...devRows,
     ],
     [
       transitiveRows.isEmpty
-          ? _raw('\ntransitive dependencies: all up-to-date')
+          ? _raw('\ntransitive dependencies: ${mode.allGoodText}')
           : _format('\ntransitive dependencies', log.bold)
     ],
     ...transitiveRows,
     if (includeDevDependencies) ...[
       [
         devTransitiveRows.isEmpty
-            ? _raw('\ntransitive dev_dependencies: all up-to-date')
+            ? _raw('\ntransitive dev_dependencies: ${mode.allGoodText}')
             : _format('\ntransitive dev_dependencies', log.bold)
       ],
       ...devTransitiveRows,
@@ -586,50 +515,155 @@ Future<void> _outputHuman(
   }
 }
 
-/// Analyzes the [_PackageDetails] according to a --mode and outputs a
-/// corresponding list of the versions
-/// [current, upgradable, resolvable, latest].
-typedef Marker = Future<List<List<_MarkedVersionDetails>>> Function(
-    List<_PackageDetails>);
+abstract class Mode {
+  /// Analyzes the [_PackageDetails] according to a --mode and outputs a
+  /// corresponding list of the versions
+  /// [current, upgradable, resolvable, latest].
+  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+      List<_PackageDetails> packageDetails);
 
-Future<List<List<_MarkedVersionDetails>>> oudatedMarker(
-    List<_PackageDetails> packages) async {
-  final rows = <List<_MarkedVersionDetails>>[];
-  for (final packageDetails in packages) {
-    final cols = <_MarkedVersionDetails>[];
-    _VersionDetails previous;
-    for (final versionDetails in [
-      packageDetails.current,
-      packageDetails.upgradable,
-      packageDetails.resolvable,
-      packageDetails.latest
-    ]) {
-      String Function(String) color;
-      String prefix;
-      var asDesired = false;
-      if (versionDetails != null) {
-        final isLatest = versionDetails == packageDetails.latest;
-        if (isLatest) {
-          color = versionDetails == previous ? color = log.gray : null;
-          asDesired = true;
-        } else {
-          color = log.red;
+  String get allGoodText;
+  String get badText;
+}
+
+class _OutdatedMode implements Mode {
+  @override
+  String get allGoodText => 'all up-to-date';
+
+  @override
+  String get badText => 'outdated';
+
+  @override
+  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+      List<_PackageDetails> packages) async {
+    final rows = <List<_MarkedVersionDetails>>[];
+    for (final packageDetails in packages) {
+      final cols = <_MarkedVersionDetails>[];
+      _VersionDetails previous;
+      for (final versionDetails in [
+        packageDetails.current,
+        packageDetails.upgradable,
+        packageDetails.resolvable,
+        packageDetails.latest
+      ]) {
+        String Function(String) color;
+        String prefix;
+        var asDesired = false;
+        if (versionDetails != null) {
+          final isLatest = versionDetails == packageDetails.latest;
+          if (isLatest) {
+            color = versionDetails == previous ? color = log.gray : null;
+            asDesired = true;
+          } else {
+            color = log.red;
+          }
+          prefix = isLatest ? '' : '*';
         }
-        prefix = isLatest ? '' : '*';
+        cols.add(
+          _MarkedVersionDetails(
+            versionDetails,
+            asDesired: asDesired,
+            format: color,
+            prefix: prefix,
+          ),
+        );
+        previous = versionDetails;
       }
-      cols.add(
-        _MarkedVersionDetails(
-          versionDetails,
-          asDesired: asDesired,
-          format: color,
-          prefix: prefix,
+      rows.add(cols);
+    }
+    return rows;
+  }
+}
+
+class _NullSafetyMode implements Mode {
+  final SystemCache cache;
+  final Entrypoint entrypoint;
+  final bool shouldShowSpinner;
+
+  _NullSafetyMode(this.cache, this.entrypoint,
+      {@required this.shouldShowSpinner});
+
+  @override
+  String get allGoodText => 'all null-safety compliant';
+
+  @override
+  String get badText => 'not null-safety compliant';
+
+  @override
+  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+      List<_PackageDetails> packages) async {
+    final nullSafetyMap = await log.spinner('Computing null-safety', () async {
+      /// Find all unique ids.
+      final ids = {
+        for (final packageDetails in packages) ...[
+          packageDetails.current?._id,
+          packageDetails.upgradable?._id,
+          packageDetails.resolvable?._id,
+          packageDetails.latest?._id,
+        ]
+      }.where((id) => id != null);
+      final nullSafetyAnalyzer = NullSafetyAnalysis(cache);
+      return Map.fromEntries(
+        await Future.wait(
+          ids.map(
+            (id) async => MapEntry(
+              id,
+              await nullSafetyAnalyzer.nullSafetyCompliance(
+                id,
+                containingPath: path.absolute(entrypoint.root.dir),
+              ),
+            ),
+          ),
         ),
       );
-      previous = versionDetails;
-    }
-    rows.add(cols);
+    }, condition: shouldShowSpinner);
+    return [
+      for (final packageDetails in packages)
+        [
+          packageDetails.current,
+          packageDetails.upgradable,
+          packageDetails.resolvable,
+          packageDetails.latest
+        ].map(
+          (versionDetails) {
+            String Function(String) color;
+            String prefix;
+            bool nullSafetyJson;
+            var asDesired = false;
+            if (versionDetails != null) {
+              final nullSafety = nullSafetyMap[versionDetails._id];
+
+              switch (nullSafety) {
+                case NullSafetyCompliance.analysisFailed:
+                  color = color = log.gray;
+                  prefix = '?';
+                  nullSafetyJson = null;
+                  break;
+                case NullSafetyCompliance.compliant:
+                  color = log.green;
+                  prefix = '✓';
+                  nullSafetyJson = true;
+                  asDesired = true;
+                  break;
+                case NullSafetyCompliance.notCompliant:
+                case NullSafetyCompliance.apiOnly:
+                  color = log.red;
+                  prefix = '✗';
+                  nullSafetyJson = false;
+                  break;
+              }
+            }
+            return _MarkedVersionDetails(
+              versionDetails,
+              asDesired: asDesired,
+              format: color,
+              prefix: prefix,
+              jsonExplanation: MapEntry('nullSafety', nullSafetyJson),
+            );
+          },
+        ).toList()
+    ];
   }
-  return rows;
 }
 
 /// Details about a single version of a package.

@@ -138,11 +138,11 @@ bar           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden
 baz           ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0  
 foo           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 
-dev_dependencies: all up-to-date
+dev_dependencies: all null-safe
 
-transitive dependencies: all up-to-date
+transitive dependencies: all null-safe
 
-transitive dev_dependencies: all up-to-date
+transitive dev_dependencies: all null-safe
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.

@@ -189,11 +189,11 @@ file_in_dependency_opts_out   ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0
 file_opts_out                 ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
 foo                           ✗1.0.0   ✗1.0.0      ✗2.0.0      ✗2.0.0  
 
-dev_dependencies: all up-to-date
+dev_dependencies: all null-safe
 
-transitive dependencies: all up-to-date
+transitive dependencies: all null-safe
 
-transitive dev_dependencies: all up-to-date
+transitive dev_dependencies: all null-safe
 
 5  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
