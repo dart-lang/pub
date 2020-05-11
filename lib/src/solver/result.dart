@@ -104,8 +104,10 @@ class SolveResult {
   ///
   /// [type] is the type of version resolution that was run.
   void showOutdated(SolveType type) {
-    SolveReport(type, _sources, _root, _previousLockFile, this)
-        .reportOutdated();
+    if (type == SolveType.UPGRADE) {
+      SolveReport(type, _sources, _root, _previousLockFile, this)
+          .reportOutdated();
+    }
   }
 
   @override
