@@ -201,13 +201,13 @@ class OutdatedCommand extends PubCommand {
     }
 
     rows.sort();
-    final marker = <String, Mode>{
+    final mode = <String, Mode>{
       'outdated': _OutdatedMode(),
       'null-safety': _NullSafetyMode(cache, entrypoint,
           shouldShowSpinner: _shouldShowSpinner),
     }[argResults['mode']];
     if (argResults['json']) {
-      await _outputJson(rows, marker);
+      await _outputJson(rows, mode);
     } else {
       if (argResults.wasParsed('color') && argResults['color']) {
         forceColors = true;
@@ -215,7 +215,7 @@ class OutdatedCommand extends PubCommand {
       final useColors = argResults['color'] || canUseSpecialChars;
       await _outputHuman(
         rows,
-        marker,
+        mode,
         useColors: useColors,
         showAll: argResults['show-all'] || argResults['up-to-date'],
         includeDevDependencies: includeDevDependencies,
@@ -769,7 +769,7 @@ class _MarkedVersionDetails {
   final String Function(String) _format;
   final String _prefix;
 
-  /// This should be true if the marker creating this consideres the version as
+  /// This should be true if the mode creating this consideres the version as
   /// "good".
   ///
   /// By default only packages with a current version that is not as desired
