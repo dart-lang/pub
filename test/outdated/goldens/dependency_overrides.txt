@@ -133,16 +133,17 @@ To update these dependencies, use `pub upgrade`.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --mode=null-safety
+Running in 'null safety' mode; filtering versions to those that support null safety.
 Dependencies  Current              Upgradable           Resolvable           Latest  
 bar           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 baz           ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0  
 foo           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 
-dev_dependencies: all null-safe
+dev_dependencies: all null-safety compliant
 
-transitive dependencies: all null-safe
+transitive dependencies: all null-safety compliant
 
-transitive dev_dependencies: all null-safe
+transitive dev_dependencies: all null-safety compliant
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.

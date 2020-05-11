@@ -394,6 +394,10 @@ Future<void> _outputHuman(
   @required bool useColors,
   @required bool includeDevDependencies,
 }) async {
+  final explanation = mode.explanation;
+  if (explanation != null) {
+    log.message(explanation + '\n');
+  }
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -524,11 +528,15 @@ abstract class Mode {
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packageDetails);
 
+  String get explanation;
   String get allGoodText;
   String get badText;
 }
 
 class _OutdatedMode implements Mode {
+  @override
+  String get explanation => null;
+
   @override
   String get allGoodText => 'all up-to-date';
 
@@ -584,6 +592,10 @@ class _NullSafetyMode implements Mode {
 
   _NullSafetyMode(this.cache, this.entrypoint,
       {@required this.shouldShowSpinner});
+
+  @override
+  String get explanation => "Running in 'null safety' mode; "
+      'filtering versions to those that support null safety.';
 
   @override
   String get allGoodText => 'all null-safety compliant';

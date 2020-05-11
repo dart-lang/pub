@@ -181,6 +181,7 @@ transitive dev_dependencies: all up-to-date
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --mode=null-safety
+Running in 'null safety' mode; filtering versions to those that support null safety.
 Dependencies                  Current  Upgradable  Resolvable  Latest  
 bar                           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
 fails_analysis                ?1.0.0   ?1.0.0      ✓2.0.0      ✓2.0.0  
@@ -189,11 +190,11 @@ file_in_dependency_opts_out   ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0
 file_opts_out                 ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
 foo                           ✗1.0.0   ✗1.0.0      ✗2.0.0      ✗2.0.0  
 
-dev_dependencies: all null-safe
+dev_dependencies: all null-safety compliant
 
-transitive dependencies: all null-safe
+transitive dependencies: all null-safety compliant
 
-transitive dev_dependencies: all null-safe
+transitive dev_dependencies: all null-safety compliant
 
 5  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
