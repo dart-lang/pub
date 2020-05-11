@@ -607,7 +607,7 @@ class _NullSafetyMode implements Mode {
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packages) async {
     final nullSafetyMap =
-        await log.spinner('Computing null safety compliance', () async {
+        await log.spinner('Computing null safety support', () async {
       /// Find all unique ids.
       final ids = {
         for (final packageDetails in packages) ...[
