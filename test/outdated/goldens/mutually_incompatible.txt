@@ -106,11 +106,11 @@ Dependencies  Current  Upgradable  Resolvable  Latest
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ?2.0.0  
 foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ?2.0.0  
 
-dev_dependencies: all null-safety compliant
+dev_dependencies: all null safety compliant
 
-transitive dependencies: all null-safety compliant
+transitive dependencies: all null safety compliant
 
-transitive dev_dependencies: all null-safety compliant
+transitive dev_dependencies: all null safety compliant
 
 Dependencies are all on the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.

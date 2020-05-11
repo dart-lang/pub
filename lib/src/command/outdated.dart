@@ -598,15 +598,16 @@ class _NullSafetyMode implements Mode {
       'filtering versions to those that support null safety.';
 
   @override
-  String get allGoodText => 'all null-safety compliant';
+  String get allGoodText => 'all null safety compliant';
 
   @override
-  String get badText => 'not null-safety compliant';
+  String get badText => 'not null safety compliant';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packages) async {
-    final nullSafetyMap = await log.spinner('Computing null-safety', () async {
+    final nullSafetyMap =
+        await log.spinner('Computing null safety compliance', () async {
       /// Find all unique ids.
       final ids = {
         for (final packageDetails in packages) ...[

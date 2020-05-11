@@ -20,7 +20,7 @@ Found no outdated packages.
 
 $ pub outdated --no-color --mode=null-safety
 Running in 'null safety' mode; filtering versions to those that support null safety.
-Found no not null-safety compliant packages.
+Found no not null safety compliant packages.
 
 $ pub outdated --json --mode=null-safety
 {
