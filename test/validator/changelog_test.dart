@@ -28,7 +28,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      expectNoValidationError(changelog);
+      await expectValidation(changelog);
     });
   });
 
@@ -37,7 +37,7 @@ void main() {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0'),
       ]).create();
-      expectValidationWarning(changelog);
+      await expectValidation(changelog, warnings: isNotEmpty);
     });
 
     test('has has a CHANGELOG not named CHANGELOG.md', () async {
@@ -50,7 +50,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      expectValidationWarning(changelog);
+      await expectValidation(changelog, warnings: isNotEmpty);
     });
 
     test('has a CHANGELOG that doesn\'t include the current package version',
@@ -64,7 +64,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      expectValidationWarning(changelog);
+      await expectValidation(changelog, warnings: isNotEmpty);
     });
 
     test('has a CHANGELOG with invalid utf-8', () async {
@@ -72,7 +72,7 @@ void main() {
         d.libPubspec('test_pkg', '1.0.0'),
         d.file('CHANGELOG.md', [192]),
       ]).create();
-      expectValidationWarning(changelog);
+      await expectValidation(changelog, warnings: isNotEmpty);
     });
   });
 }

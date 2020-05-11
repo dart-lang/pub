@@ -17,7 +17,6 @@ import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
@@ -39,6 +38,7 @@ import 'package:pub/src/validator.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
+import 'package_server.dart';
 
 export 'descriptor_server.dart';
 export 'package_server.dart';
@@ -288,10 +288,10 @@ Future runPub(
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(ShelfTestServer server,
+Future<PubProcess> startPublish(PackageServer server,
     {List<String> args}) async {
-  var tokenEndpoint = server.url.resolve('/token').toString();
-  args = ['lish', '--server', tokenEndpoint, ...?args];
+  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  args = ['lish', '--server', server.url, ...?args];
   return await startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
@@ -751,14 +751,12 @@ typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
 
 /// Schedules a single [Validator] to run on the [appPath].
 ///
-/// Returns a scheduled Future that contains the errors and warnings produced
-/// by that validator.
-Future<Pair<List<String>, List<String>>> validatePackage(
-    ValidatorCreator fn) async {
+/// Returns a scheduled Future that contains the validator after validation.
+Future<Validator> validatePackage(ValidatorCreator fn) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var validator = fn(Entrypoint(_pathInSandbox(appPath), cache));
   await validator.validate();
-  return Pair(validator.errors, validator.warnings);
+  return validator;
 }
 
 /// A matcher that matches a Pair.

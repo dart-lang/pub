@@ -37,7 +37,7 @@ DescriptorServer _globalServer;
 /// This server will exist only for the duration of the pub run. It's accessible
 /// via [server]. Subsequent calls to [serve] replace the previous server.
 Future serve([List<d.Descriptor> contents]) async {
-  globalServer = await DescriptorServer.start(contents);
+  globalServer = (await DescriptorServer.start())..contents.addAll(contents);
 }
 
 /// Like [serve], but reports an error if a request ever comes in to the server.
@@ -63,21 +63,33 @@ class DescriptorServer {
   /// This can safely be modified between requests.
   List<d.Descriptor> get contents => _baseDir.contents;
 
+  /// Handlers for requests not easily described as files.
+  final Map<Pattern, shelf.Handler> extraHandlers = {};
+
   /// Creates an HTTP server to serve [contents] as static files.
   ///
   /// This server exists only for the duration of the pub run. Subsequent calls
   /// to [serve] replace the previous server.
-  static Future<DescriptorServer> start([List<d.Descriptor> contents]) async =>
-      DescriptorServer._(
-          await shelf_io.IOServer.bind('localhost', 0), contents);
+  static Future<DescriptorServer> start() async =>
+      DescriptorServer._(await shelf_io.IOServer.bind('localhost', 0));
 
   /// Creates a server that reports an error if a request is ever received.
   static Future<DescriptorServer> errors() async =>
-      DescriptorServer._errors(await shelf_io.IOServer.bind('localhost', 0));
+      DescriptorServer._(await shelf_io.IOServer.bind('localhost', 0))
+        ..extraHandlers[RegExp('.*')] = (request) {
+          fail('The HTTP server received an unexpected request:\n'
+              '${request.method} ${request.requestedUri}');
+        };
 
-  DescriptorServer._(this._server, Iterable<d.Descriptor> contents)
-      : _baseDir = d.dir('serve-dir', contents) {
+  DescriptorServer._(this._server) : _baseDir = d.dir('serve-dir', []) {
     _server.mount((request) async {
+      final pathWithInitialSlash = '/${request.url.path}';
+      final key = extraHandlers.keys.firstWhere((pattern) {
+        final match = pattern.matchAsPrefix(pathWithInitialSlash);
+        return match != null && match.end == pathWithInitialSlash.length;
+      }, orElse: () => null);
+      if (key != null) return extraHandlers[key](request);
+
       var path = p.posix.fromUri(request.url.path);
       requestedPaths.add(path);
 
@@ -87,14 +99,6 @@ class DescriptorServer {
       } catch (_) {
         return shelf.Response.notFound('File "$path" not found.');
       }
-    });
-    addTearDown(_server.close);
-  }
-
-  DescriptorServer._errors(this._server) : _baseDir = d.dir('serve-dir', []) {
-    _server.mount((request) {
-      fail('The HTTP server received an unexpected request:\n'
-          '${request.method} ${request.requestedUri}');
     });
     addTearDown(_server.close);
   }

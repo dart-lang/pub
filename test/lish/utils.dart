@@ -5,16 +5,17 @@
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
-void handleUploadForm(ShelfTestServer server, [Map body]) {
-  server.handler.expect('GET', '/api/packages/versions/new', (request) {
+import '../test_pub.dart';
+
+void handleUploadForm(PackageServer server, [Map body]) {
+  server.expect('GET', '/api/packages/versions/new', (request) {
     expect(
         request.headers, containsPair('authorization', 'Bearer access token'));
 
     body ??= {
-      'url': server.url.resolve('/upload').toString(),
+      'url': Uri.parse(server.url).resolve('/upload').toString(),
       'fields': {'field1': 'value1', 'field2': 'value2'}
     };
 
@@ -23,14 +24,14 @@ void handleUploadForm(ShelfTestServer server, [Map body]) {
   });
 }
 
-void handleUpload(ShelfTestServer server) {
-  server.handler.expect('POST', '/upload', (request) {
+void handleUpload(PackageServer server) {
+  server.expect('POST', '/upload', (request) {
     // TODO(nweiz): Once a multipart/form-data parser in Dart exists, validate
     // that the request body is correctly formatted. See issue 6952.
     return request
         .read()
         .drain()
         .then((_) => server.url)
-        .then((url) => shelf.Response.found(url.resolve('/create')));
+        .then((url) => shelf.Response.found(Uri.parse(url).resolve('/create')));
   });
 }

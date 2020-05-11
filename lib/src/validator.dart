@@ -10,7 +10,6 @@ import 'package:pub_semver/pub_semver.dart';
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
-import 'utils.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -25,6 +24,7 @@ import 'validator/name.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/readme.dart';
+import 'validator/relative_version_numbering.dart';
 import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
 import 'validator/strict_dependencies.dart';
@@ -49,6 +49,11 @@ abstract class Validator {
   ///
   /// Filled by calling [validate].
   final warnings = <String>[];
+
+  /// The accumulated hints for this validator.
+  ///
+  /// Filled by calling [validate].
+  final hints = <String>[];
 
   Validator(this.entrypoint);
 
@@ -104,13 +109,15 @@ abstract class Validator {
 
   /// Run all validators on the [entrypoint] package and print their results.
   ///
-  /// The future completes with the error and warning messages, respectively.
+  /// When the future completes [hints] [warnings] amd [errors] will have been
+  /// appended with the reported hints warnings and errors respectively.
   ///
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<Pair<List<String>, List<String>>> runAll(Entrypoint entrypoint,
-      [Future<int> packageSize]) {
+  static Future<void> runAll(
+      Entrypoint entrypoint, Future<int> packageSize, String serverUrl,
+      {List<String> hints, List<String> warnings, List<String> errors}) {
     var validators = [
       PubspecValidator(entrypoint),
       LicenseValidator(entrypoint),
@@ -128,6 +135,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
@@ -135,9 +143,10 @@ abstract class Validator {
 
     return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {
-      var errors = validators.expand((validator) => validator.errors).toList();
-      var warnings =
-          validators.expand((validator) => validator.warnings).toList();
+      hints.addAll([for (final validator in validators) ...validator.hints]);
+      warnings
+          .addAll([for (final validator in validators) ...validator.warnings]);
+      errors.addAll([for (final validator in validators) ...validator.errors]);
 
       if (errors.isNotEmpty) {
         final s = errors.length > 1 ? 's' : '';
@@ -158,8 +167,6 @@ abstract class Validator {
         }
         log.warning('');
       }
-
-      return Pair<List<String>, List<String>>(errors, warnings);
     });
   }
 }

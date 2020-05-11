@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -18,8 +17,8 @@ void main() {
     pkg.remove('description');
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    var server = await ShelfTestServer.create();
-    var pub = await startPublish(server, args: ['--force']);
+    await servePackages();
+    var pub = await startPublish(globalPackageServer, args: ['--force']);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
