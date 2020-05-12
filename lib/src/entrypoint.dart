@@ -246,7 +246,6 @@ class Entrypoint {
 
     if (dryRun) {
       result.summarizeChanges(type, dryRun: dryRun);
-      result.showOutdated(type);
       return;
     }
 
@@ -254,7 +253,6 @@ class Entrypoint {
     _saveLockFile(result);
 
     result.summarizeChanges(type, dryRun: dryRun);
-    result.showOutdated(type);
 
     /// Build a package graph from the version solver results so we don't
     /// have to reload and reparse all the pubspecs.

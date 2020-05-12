@@ -94,19 +94,15 @@ class SolveResult {
   /// Displays a one-line message summarizing what changes were made (or would
   /// be made) to the lockfile.
   ///
-  /// [type] is the type of version resolution that was run.
-  void summarizeChanges(SolveType type, {bool dryRun = false}) {
-    SolveReport(type, _sources, _root, _previousLockFile, this)
-        .summarize(dryRun: dryRun);
-  }
-
-  /// Displays a two-line message if outdated packages are detected.
+  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages
+  /// that are not at the latest available version.
   ///
   /// [type] is the type of version resolution that was run.
-  void showOutdated(SolveType type) {
+  void summarizeChanges(SolveType type, {bool dryRun = false}) {
+    final report = SolveReport(type, _sources, _root, _previousLockFile, this);
+    report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
-      SolveReport(type, _sources, _root, _previousLockFile, this)
-          .reportOutdated();
+      report.reportOutdated();
     }
   }
 
