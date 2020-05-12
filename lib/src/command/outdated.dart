@@ -374,13 +374,15 @@ Future<void> _outputJson(
     JsonEncoder.withIndent('  ').convert(
       {
         'packages': [
-          ...markedRows.entries.map((entry) => {
-                'package': entry.key.name,
-                'current': entry.value[0]?.toJson(),
-                'upgradable': entry.value[1]?.toJson(),
-                'resolvable': entry.value[2]?.toJson(),
-                'latest': entry.value[3]?.toJson(),
-              })
+          ...(markedRows.entries.toList()
+                ..sort((a, b) => a.key.name.compareTo(b.key.name)))
+              .map((entry) => {
+                    'package': entry.key.name,
+                    'current': entry.value[0]?.toJson(),
+                    'upgradable': entry.value[1]?.toJson(),
+                    'resolvable': entry.value[2]?.toJson(),
+                    'latest': entry.value[3]?.toJson(),
+                  })
         ]
       },
     ),
