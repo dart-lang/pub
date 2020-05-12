@@ -4,7 +4,6 @@
 
 import 'dart:convert';
 
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -15,9 +14,9 @@ void main() {
   setUp(d.validPackage.create);
 
   test('upload form fields has a non-string value', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server);
+    await servePackages((_) {});
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
 
@@ -25,7 +24,7 @@ void main() {
       'url': 'http://example.com/upload',
       'fields': {'field': 12}
     };
-    handleUploadForm(server, body);
+    handleUploadForm(globalPackageServer, body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);

@@ -18,13 +18,13 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectNoValidationError(directory));
+    test('looks normal', () => expectValidation(directory));
 
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
         d.dir('foo', [d.dir('tools')])
       ]).create();
-      expectNoValidationError(directory);
+      await expectValidation(directory);
     });
   });
 
@@ -46,7 +46,7 @@ void main() {
     for (var name in names) {
       test('"$name"', () async {
         await d.dir(appPath, [d.dir(name)]).create();
-        expectValidationWarning(directory);
+        await expectValidation(directory, warnings: isNotEmpty);
       });
     }
   });

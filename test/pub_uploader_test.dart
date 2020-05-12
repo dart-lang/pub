@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
@@ -29,9 +28,8 @@ Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
 ''';
 
-Future<TestProcess> startPubUploader(
-    ShelfTestServer server, List<String> args) {
-  var tokenEndpoint = server.url.resolve('/token').toString();
+Future<TestProcess> startPubUploader(PackageServer server, List<String> args) {
+  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   var allArgs = ['uploader', '--server', tokenEndpoint, ...args];
   return startPub(args: allArgs, tokenEndpoint: tokenEndpoint);
 }
@@ -59,12 +57,13 @@ void main() {
   });
 
   test('adds an uploader', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub =
-        await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(
+        globalPackageServer, ['--package', 'pkg', 'add', 'email']);
 
-    server.handler.expect('POST', '/api/packages/pkg/uploaders', (request) {
+    globalPackageServer.expect('POST', '/api/packages/pkg/uploaders',
+        (request) {
       return request.readAsString().then((body) {
         expect(body, equals('email=email'));
 
@@ -81,12 +80,12 @@ void main() {
   });
 
   test('removes an uploader', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub =
-        await startPubUploader(server, ['--package', 'pkg', 'remove', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(
+        globalPackageServer, ['--package', 'pkg', 'remove', 'email']);
 
-    server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
+    globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/email',
         (request) {
       return shelf.Response.ok(
           jsonEncode({
@@ -102,11 +101,11 @@ void main() {
   test('defaults to the current package', () async {
     await d.validPackage.create();
 
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPubUploader(server, ['add', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(globalPackageServer, ['add', 'email']);
 
-    server.handler.expect('POST', '/api/packages/test_pkg/uploaders',
+    globalPackageServer.expect('POST', '/api/packages/test_pkg/uploaders',
         (request) {
       return shelf.Response.ok(
           jsonEncode({
@@ -120,12 +119,13 @@ void main() {
   });
 
   test('add provides an error', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub =
-        await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(
+        globalPackageServer, ['--package', 'pkg', 'add', 'email']);
 
-    server.handler.expect('POST', '/api/packages/pkg/uploaders', (request) {
+    globalPackageServer.expect('POST', '/api/packages/pkg/uploaders',
+        (request) {
       return shelf.Response(400,
           body: jsonEncode({
             'error': {'message': 'Bad job!'}
@@ -138,12 +138,12 @@ void main() {
   });
 
   test('remove provides an error', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
     var pub = await startPubUploader(
-        server, ['--package', 'pkg', 'remove', 'e/mail']);
+        globalPackageServer, ['--package', 'pkg', 'remove', 'e/mail']);
 
-    server.handler.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail',
+    globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail',
         (request) {
       return shelf.Response(400,
           body: jsonEncode({
@@ -157,12 +157,12 @@ void main() {
   });
 
   test('add provides invalid JSON', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub =
-        await startPubUploader(server, ['--package', 'pkg', 'add', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(
+        globalPackageServer, ['--package', 'pkg', 'add', 'email']);
 
-    server.handler.expect('POST', '/api/packages/pkg/uploaders',
+    globalPackageServer.expect('POST', '/api/packages/pkg/uploaders',
         (request) => shelf.Response.ok('{not json'));
 
     expect(
@@ -173,12 +173,12 @@ void main() {
   });
 
   test('remove provides invalid JSON', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub =
-        await startPubUploader(server, ['--package', 'pkg', 'remove', 'email']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPubUploader(
+        globalPackageServer, ['--package', 'pkg', 'remove', 'email']);
 
-    server.handler.expect('DELETE', '/api/packages/pkg/uploaders/email',
+    globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/email',
         (request) => shelf.Response.ok('{not json'));
 
     expect(

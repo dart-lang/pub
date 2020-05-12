@@ -30,34 +30,33 @@ Future<void> setup(
     ])
   ]).create();
   await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.7.0'});
-  print(await d.file('.dart_tool/package_config.json').read());
 }
 
 void main() {
   group('should consider a package valid if it', () {
     test('has no library-level language version annotations', () async {
       await setup(sdkConstraint: '>=2.4.0 <3.0.0');
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test('opts in to older language versions', () async {
       await setup(
           sdkConstraint: '>=2.4.0 <3.0.0', libraryLanguageVersion: '2.0');
       await d.dir(appPath, []).create();
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
     test('opts in to same language versions', () async {
       await setup(
           sdkConstraint: '>=2.4.0 <3.0.0', libraryLanguageVersion: '2.4');
       await d.dir(appPath, []).create();
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
 
     test('opts in to older language version, with non-range constraint',
         () async {
       await setup(sdkConstraint: '2.7.0', libraryLanguageVersion: '2.3');
       await d.dir(appPath, []).create();
-      expectNoValidationError(validator);
+      await expectValidation(validator);
     });
   });
 
@@ -65,11 +64,11 @@ void main() {
     test('opts in to a newer version.', () async {
       await setup(
           sdkConstraint: '>=2.4.1 <3.0.0', libraryLanguageVersion: '2.5');
-      expectValidationError(validator);
+      await expectValidation(validator, errors: isNotEmpty);
     });
     test('opts in to a newer version, with non-range constraint.', () async {
       await setup(sdkConstraint: '2.7.0', libraryLanguageVersion: '2.8');
-      expectValidationError(validator);
+      await expectValidation(validator, errors: isNotEmpty);
     });
   });
 }

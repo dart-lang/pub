@@ -14,16 +14,16 @@ void main() {
   test('should consider a package valid if it has a pubspec', () async {
     await d.validPackage.create();
 
-    expectNoValidationError((entrypoint) => PubspecValidator(entrypoint));
+    await expectValidation((entrypoint) => PubspecValidator(entrypoint));
   });
 
-  test(
-      'should consider a package invalid if it has a .gitignored '
-      'pubspec', () async {
+  test('should consider a package invalid if it has a .gitignored pubspec',
+      () async {
     var repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
     await d.validPackage.create();
     await repo.create();
 
-    expectValidationError((entrypoint) => PubspecValidator(entrypoint));
+    await expectValidation((entrypoint) => PubspecValidator(entrypoint),
+        errors: isNotEmpty);
   });
 }

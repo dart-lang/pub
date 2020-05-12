@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -17,17 +16,17 @@ void main() {
       'refreshed access token to credentials.json', () async {
     await d.validPackage.create();
 
-    var server = await ShelfTestServer.create();
+    await servePackages();
     await d
-        .credentialsFile(server, 'access token',
+        .credentialsFile(globalPackageServer, 'access token',
             refreshToken: 'refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(server);
+    var pub = await startPublish(globalPackageServer);
     await confirmPublish(pub);
 
-    server.handler.expect('POST', '/token', (request) {
+    globalPackageServer.expect('POST', '/token', (request) {
       return request.readAsString().then((body) {
         expect(
             body, matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
@@ -39,7 +38,7 @@ void main() {
       });
     });
 
-    server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -49,7 +48,7 @@ void main() {
     await pub.shouldExit();
 
     await d
-        .credentialsFile(server, 'new access token',
+        .credentialsFile(globalPackageServer, 'new access token',
             refreshToken: 'refresh token')
         .validate();
   });

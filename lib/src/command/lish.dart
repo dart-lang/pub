@@ -158,9 +158,12 @@ class LishCommand extends PubCommand {
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
   Future<bool> _validate(Future<int> packageSize) async {
-    var pair = await Validator.runAll(entrypoint, packageSize);
-    var errors = pair.first;
-    var warnings = pair.last;
+    final hints = <String>[];
+    final warnings = <String>[];
+    final errors = <String>[];
+
+    await Validator.runAll(entrypoint, packageSize, server.toString(),
+        hints: hints, warnings: warnings, errors: errors);
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '
@@ -172,9 +175,15 @@ class LishCommand extends PubCommand {
 
     if (force) return true;
 
+    String formatWarningCount() {
+      final hs = hints.length == 1 ? '' : 's';
+      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
+      final ws = warnings.length == 1 ? '' : 's';
+      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+    }
+
     if (dryRun) {
-      var s = warnings.length == 1 ? '' : 's';
-      log.warning('\nPackage has ${warnings.length} warning$s.');
+      log.warning(formatWarningCount());
       return warnings.isEmpty;
     }
 
@@ -183,12 +192,9 @@ class LishCommand extends PubCommand {
     final package = entrypoint.root;
     var message = 'Do you want to publish ${package.name} ${package.version}';
 
-    if (warnings.isNotEmpty) {
-      final s = warnings.length == 1 ? '' : 's';
-      final warning = log.bold(log.red(
-        'Package has ${warnings.length} warning$s',
-      ));
-      message = '$warning. $message';
+    if (warnings.isNotEmpty || hints.isNotEmpty) {
+      final warning = formatWarningCount();
+      message = '${log.bold(log.red(warning))}. $message';
     }
 
     var confirmed = await confirm('\n$message');

@@ -19,7 +19,7 @@ void main() {
   setUp(d.validPackage.create);
 
   group('should consider a package valid if it', () {
-    test('looks normal', () => expectNoValidationError(compiledDartdoc));
+    test('looks normal', () => expectValidation(compiledDartdoc));
 
     test('has most but not all files from compiling dartdoc', () async {
       await d.dir(appPath, [
@@ -30,7 +30,7 @@ void main() {
           d.file('dart-logo-small.png', '')
         ])
       ]).create();
-      expectNoValidationError(compiledDartdoc);
+      await expectValidation(compiledDartdoc);
     });
 
     test('contains compiled dartdoc in a hidden directory', () async {
@@ -45,7 +45,7 @@ void main() {
           d.file('client-live-nav.js', '')
         ])
       ]).create();
-      expectNoValidationError(compiledDartdoc);
+      await expectValidation(compiledDartdoc);
     });
 
     test('contains compiled dartdoc in a gitignored directory', () async {
@@ -61,7 +61,7 @@ void main() {
         ]),
         d.file('.gitignore', '/doc-out')
       ]).create();
-      expectNoValidationError(compiledDartdoc);
+      await expectValidation(compiledDartdoc);
     });
   });
 
@@ -77,7 +77,7 @@ void main() {
         ])
       ]).create();
 
-      expectValidationWarning(compiledDartdoc);
+      await expectValidation(compiledDartdoc, warnings: isNotEmpty);
     });
 
     test(
@@ -95,7 +95,7 @@ void main() {
         ])
       ]).create();
 
-      expectValidationWarning(compiledDartdoc);
+      await expectValidation(compiledDartdoc, warnings: isNotEmpty);
     });
   });
 }

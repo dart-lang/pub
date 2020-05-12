@@ -6,7 +6,6 @@
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/package_config.dart';
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -141,14 +140,14 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int port}) {
 /// Describes the file in the system cache that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
-Descriptor credentialsFile(ShelfTestServer server, String accessToken,
+Descriptor credentialsFile(PackageServer server, String accessToken,
     {String refreshToken, DateTime expiration}) {
   return dir(cachePath, [
     file(
         'credentials.json',
         oauth2.Credentials(accessToken,
                 refreshToken: refreshToken,
-                tokenEndpoint: server.url.resolve('/token'),
+                tokenEndpoint: Uri.parse(server.url).resolve('/token'),
                 scopes: [
                   'openid',
                   'https://www.googleapis.com/auth/userinfo.email',
