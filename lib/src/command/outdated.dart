@@ -225,6 +225,12 @@ class OutdatedCommand extends PubCommand {
 
   /// Get the latest version of [package].
   ///
+  /// Will include prereleases in the comparison  '--prereleases' was provided
+  /// in arguments.
+  ///
+  /// If [package] is a [PackageId] with a prerelease version and there are no
+  /// later stable version we return a prerelease version if it exists.
+  ///
   /// Returns `null`, if unable to find the package.
   Future<PackageId> _getLatest(PackageName package) async {
     if (package == null) {
@@ -235,12 +241,19 @@ class OutdatedCommand extends PubCommand {
     if (available.isEmpty) {
       return null;
     }
+
     final prereleases = argResults.wasParsed('prereleases')
         ? argResults['prereleases']
         : argResults['pre-releases'];
+
     available.sort(prereleases
         ? (x, y) => x.version.compareTo(y.version)
         : (x, y) => Version.prioritize(x.version, y.version));
+    if (package is PackageId &&
+        package.version.isPreRelease &&
+        package.version < available.last.version) {
+      available.sort((x, y) => x.version.compareTo(y.version));
+    }
     return available.last;
   }
 

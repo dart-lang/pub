@@ -299,4 +299,34 @@ Future<void> main() async {
 
     await variations('dependency_overrides_no_solution');
   });
+
+  test(
+      'latest version reported while locked on a prerelease can be a prerelease',
+      () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '0.9.0')
+      ..serve('foo', '1.0.0-dev.1')
+      ..serve('foo', '1.0.0-dev.2')
+      ..serve('bar', '0.9.0')
+      ..serve('bar', '1.0.0-dev.1')
+      ..serve('bar', '1.0.0-dev.2')
+      ..serve('mop', '0.10.0-dev')
+      ..serve('mop', '0.10.0')
+      ..serve('mop', '1.0.0-dev'));
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '1.0.0-dev.1',
+          'bar': '^0.9.0',
+          'mop': '0.10.0-dev'
+        },
+      })
+    ]).create();
+
+    await pubGet();
+
+    await variations('prereleases');
+  });
 }
