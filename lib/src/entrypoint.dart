@@ -743,7 +743,8 @@ class Entrypoint {
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
   void _saveLockFile(SolveResult result) {
-    _lockFile = result.lockFile;
+    _lockFile =
+        result.lockFile(windowsLineEndings: lockFile.windowsLineEndings);
     var lockFilePath = root.path('pubspec.lock');
     writeTextFile(lockFilePath, _lockFile.serialize(root.dir));
   }

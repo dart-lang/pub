@@ -38,7 +38,7 @@ class SolveResult {
 
   /// The [LockFile] representing the packages selected by this version
   /// resolution.
-  LockFile get lockFile {
+  LockFile lockFile({bool windowsLineEndings: false}) {
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
@@ -58,7 +58,8 @@ class SolveResult {
         sdkConstraints: sdkConstraints,
         mainDependencies: MapKeySet(_root.dependencies),
         devDependencies: MapKeySet(_root.devDependencies),
-        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
+        overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+        windowsLineEndings: windowsLineEndings);
   }
 
   final SourceRegistry _sources;

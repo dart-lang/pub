@@ -45,6 +45,26 @@ class FakeSource extends Source {
   }
 }
 
+const unixEndings = '''
+packages:
+  bar:
+    dependency: transitive
+    description: "bar desc"
+    source: fake
+    version: "1.2.3"
+sdks: {}
+''';
+
+const windowsEndings = '''
+packages:\r
+  bar:\r
+    dependency: transitive\r
+    description: "bar desc"\r
+    source: fake\r
+    version: "1.2.3"\r
+sdks: {}\r
+''';
+
 void main() {
   var sources = SourceRegistry();
   var fakeSource = FakeSource();
@@ -248,6 +268,18 @@ packages:
     description: foo desc
 ''', sources);
       });
+    });
+
+    test('parse() detects windows line endings', () {
+      expect(LockFile.parse(unixEndings, sources).windowsLineEndings, false);
+      expect(LockFile.parse(windowsEndings, sources).windowsLineEndings, true);
+    });
+
+    test('serialize() preserves line ending style', () {
+      expect(LockFile.parse(unixEndings, sources).serialize(null),
+          endsWith(unixEndings));
+      expect(LockFile.parse(windowsEndings, sources).serialize(null),
+          endsWith(windowsEndings));
     });
 
     test('serialize() dumps the lockfile to YAML', () {
