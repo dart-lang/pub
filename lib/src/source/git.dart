@@ -73,7 +73,7 @@ class GitSource extends Source {
       } else if (!p.url.isRelative(path)) {
         throw FormatException(
             "The 'path' field of the description must be relative.");
-      } else if (!p.url.isWithin('.', path)) {
+      } else if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
         throw FormatException(
             "The 'path' field of the description must not reach outside the "
             'repository.');
