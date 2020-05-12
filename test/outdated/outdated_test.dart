@@ -54,6 +54,13 @@ Future<void> main() async {
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/helptext.txt');
   });
+
+  test('no lockfile', () async {
+    await d.appDir({'foo': '^1.0.0'}).create();
+    await servePackages((builder) => builder..serve('foo', '1.2.3'));
+    await variations('no_lockfile');
+  });
+
   test('no dependencies', () async {
     await d.appDir().create();
     await pubGet();
