@@ -410,7 +410,7 @@ Future<void> _outputHuman(
     rows.removeWhere((row) => markedRows[row][0].asDesired);
   }
   if (rows.isEmpty) {
-    log.message('Found no ${mode.badText} packages.');
+    log.message(mode.foundNoBadText);
     return;
   }
 
@@ -530,7 +530,7 @@ abstract class Mode {
 
   String get explanation;
   String get allGoodText;
-  String get badText;
+  String get foundNoBadText;
 }
 
 class _OutdatedMode implements Mode {
@@ -541,7 +541,7 @@ class _OutdatedMode implements Mode {
   String get allGoodText => 'all up-to-date';
 
   @override
-  String get badText => 'outdated';
+  String get foundNoBadText => 'Found no outdated packages';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -594,14 +594,17 @@ class _NullSafetyMode implements Mode {
       {@required this.shouldShowSpinner});
 
   @override
-  String get explanation => "Running in 'null safety' mode; "
-      'filtering versions to those that support null safety.';
+  String get explanation => '''
+Running in 'null safety' mode.
+Showing packages where the current version doesn't fully support null safety.
+''';
 
   @override
-  String get allGoodText => 'all null safety compliant';
+  String get allGoodText => 'all fully support null safety';
 
   @override
-  String get badText => 'not null safety compliant';
+  String get foundNoBadText =>
+      'Found no packages not fully supporting null safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
