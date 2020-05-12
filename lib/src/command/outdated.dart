@@ -206,8 +206,9 @@ class OutdatedCommand extends PubCommand {
       'null-safety': _NullSafetyMode(cache, entrypoint,
           shouldShowSpinner: _shouldShowSpinner),
     }[argResults['mode']];
+    final showAll = argResults['show-all'] || argResults['up-to-date'];
     if (argResults['json']) {
-      await _outputJson(rows, mode);
+      await _outputJson(rows, mode, showAll: showAll);
     } else {
       if (argResults.wasParsed('color') && argResults['color']) {
         forceColors = true;
@@ -217,7 +218,7 @@ class OutdatedCommand extends PubCommand {
         rows,
         mode,
         useColors: useColors,
-        showAll: argResults['show-all'] || argResults['up-to-date'],
+        showAll: showAll,
         includeDevDependencies: includeDevDependencies,
       );
     }
@@ -379,22 +380,25 @@ Pubspec _stripVersionConstraints(Pubspec original) {
 
 Future<void> _outputJson(
   List<_PackageDetails> rows,
-  Mode mode,
-) async {
+  Mode mode, {
+  @required bool showAll,
+}) async {
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
+  if (!showAll) {
+    rows.removeWhere((row) => markedRows[row][0].asDesired);
+  }
   log.message(
     JsonEncoder.withIndent('  ').convert(
       {
         'packages': [
-          ...(markedRows.entries.toList()
-                ..sort((a, b) => a.key.name.compareTo(b.key.name)))
-              .map((entry) => {
-                    'package': entry.key.name,
-                    'current': entry.value[0]?.toJson(),
-                    'upgradable': entry.value[1]?.toJson(),
-                    'resolvable': entry.value[2]?.toJson(),
-                    'latest': entry.value[3]?.toJson(),
+          ...(rows..sort((a, b) => a.name.compareTo(b.name)))
+              .map((packageDetails) => {
+                    'package': packageDetails.name,
+                    'current': markedRows[packageDetails][0]?.toJson(),
+                    'upgradable': markedRows[packageDetails][1]?.toJson(),
+                    'resolvable': markedRows[packageDetails][2]?.toJson(),
+                    'latest': markedRows[packageDetails][3]?.toJson(),
                   })
         ]
       },

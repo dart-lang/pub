@@ -2,21 +2,6 @@ $ pub outdated --json
 {
   "packages": [
     {
-      "package": "bar",
-      "current": {
-        "version": "1.0.0"
-      },
-      "upgradable": {
-        "version": "1.0.0"
-      },
-      "resolvable": {
-        "version": "1.0.0"
-      },
-      "latest": {
-        "version": "1.0.0"
-      }
-    },
-    {
       "package": "builder",
       "current": {
         "version": "1.2.3"
@@ -57,21 +42,6 @@ $ pub outdated --json
       },
       "latest": {
         "version": "3.0.0"
-      }
-    },
-    {
-      "package": "local_package",
-      "current": {
-        "version": "0.0.1"
-      },
-      "upgradable": {
-        "version": "0.0.1"
-      },
-      "resolvable": {
-        "version": "0.0.1"
-      },
-      "latest": {
-        "version": "0.0.1"
       }
     },
     {
