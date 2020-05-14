@@ -204,7 +204,7 @@ class GlobalPackages {
       });
     }));
 
-    var lockFile = result.lockFile();
+    var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
     // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
     final packagesFilePath = _getPackagesFilePath(dep.name);

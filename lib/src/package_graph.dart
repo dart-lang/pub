@@ -48,7 +48,7 @@ class PackageGraph {
               entrypoint.cache.source(id.source).getDirectory(id));
         });
 
-    return PackageGraph(entrypoint, result.lockFile(), packages);
+    return PackageGraph(entrypoint, result.lockFile, packages);
   }
 
   /// Returns all transitive dependencies of [package].

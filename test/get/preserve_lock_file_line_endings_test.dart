@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/entrypoint.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
 
@@ -34,5 +35,40 @@ Future<void> main() async {
     await pubGet();
 
     await d.dir(appPath, [d.file('pubspec.lock', contains('\r\n'))]).validate();
+  });
+
+  test('windows line endings detection', () {
+    expect(detectWindowsLineEndings(''), false);
+    expect(detectWindowsLineEndings('\n'), false);
+    expect(detectWindowsLineEndings('\r'), false);
+    expect(detectWindowsLineEndings('\r\n'), true);
+    expect(detectWindowsLineEndings('\n\r\n'), false);
+    expect(detectWindowsLineEndings('\r\n\n'), false);
+    expect(detectWindowsLineEndings('\r\n\r\n'), true);
+    expect(detectWindowsLineEndings('\n\n'), false);
+    expect(detectWindowsLineEndings('abcd\n'), false);
+    expect(detectWindowsLineEndings('abcd\nefg'), false);
+    expect(detectWindowsLineEndings('abcd\nefg\n'), false);
+    expect(detectWindowsLineEndings('\r\n'), true);
+    expect(detectWindowsLineEndings('abcd\r\nefg\n'), false);
+    expect(detectWindowsLineEndings('abcd\r\nefg\nhij\r\n'), true);
+    expect(detectWindowsLineEndings('''
+packages:\r
+  bar:\r
+    dependency: transitive\r
+    description: "bar desc"\r
+    source: fake\r
+    version: "1.2.3"\r
+sdks: {}\r
+'''), true);
+    expect(detectWindowsLineEndings('''
+packages:
+  bar:
+    dependency: transitive
+    description: "bar desc"
+    source: fake
+    version: "1.2.3"
+sdks: {}
+'''), false);
   });
 }

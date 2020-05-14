@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 // ignore: deprecated_member_use
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
@@ -742,11 +743,19 @@ class Entrypoint {
   }
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
+  ///
+  /// Will use Windows line endings (`\r\n` if a `pubspec.lock` exists, and uses
+  /// that.
   void _saveLockFile(SolveResult result) {
     _lockFile =
         result.lockFile(windowsLineEndings: lockFile.windowsLineEndings);
-    var lockFilePath = root.path('pubspec.lock');
-    writeTextFile(lockFilePath, _lockFile.serialize(root.dir));
+
+    final windowsLineEndings = fileExists(lockFilePath) &&
+        detectWindowsLineEndings(readTextFile(lockFilePath));
+
+    final serialized = _lockFile.serialize(root.dir);
+    writeTextFile(lockFilePath,
+        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
   }
 
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
@@ -765,4 +774,23 @@ class Entrypoint {
     ensureDir(p.dirname(newPath));
     renameDir(oldPath, newPath);
   }
+}
+
+/// Returns `true` if the [text] looks like it uses windows line endings.
+///
+/// The heuristic used is to count all `\n` in the text and if stricly more than
+/// half of them are preceded by `\r` we report `true`.
+@visibleForTesting
+bool detectWindowsLineEndings(String text) {
+  var index = -1;
+  var unixNewlines = 0;
+  var windowsNewlines = 0;
+  while ((index = text.indexOf('\n', index + 1)) != -1) {
+    if (index != 0 && text[index - 1] == '\r') {
+      windowsNewlines++;
+    } else {
+      unixNewlines++;
+    }
+  }
+  return windowsNewlines > unixNewlines;
 }
