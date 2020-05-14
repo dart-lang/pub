@@ -2,6 +2,19 @@ $ pub outdated --json
 {
   "packages": [
     {
+      "package": "bar",
+      "current": null,
+      "upgradable": {
+        "version": "1.2.3"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
       "package": "foo",
       "current": null,
       "upgradable": {
@@ -19,6 +32,7 @@ $ pub outdated --json
 
 $ pub outdated --no-color
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
 dev_dependencies: all up-to-date
@@ -29,9 +43,13 @@ transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --up-to-date
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
 dev_dependencies: all up-to-date
@@ -42,9 +60,13 @@ transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --prereleases
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
 dev_dependencies: all up-to-date
@@ -55,9 +77,13 @@ transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --no-dev-dependencies
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
 transitive dependencies: all up-to-date
@@ -65,8 +91,12 @@ transitive dependencies: all up-to-date
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
 $ pub outdated --no-color --no-dependency-overrides
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
 dev_dependencies: all up-to-date
@@ -77,12 +107,16 @@ transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --mode=null-safety
 Running in 'null safety' mode.
 Showing packages where the current version doesn't fully support null safety.
 
 Dependencies  Current  Upgradable  Resolvable  Latest  
+bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
 
 dev_dependencies: all fully support null safety
@@ -94,9 +128,28 @@ transitive dev_dependencies: all fully support null safety
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
 $ pub outdated --json --mode=null-safety
 {
   "packages": [
+    {
+      "package": "bar",
+      "current": null,
+      "upgradable": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "2.0.0",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": false
+      }
+    },
     {
       "package": "foo",
       "current": null,

@@ -9,25 +9,28 @@ import '../test_pub.dart';
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
 Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment}) async {
+    {Map<String, String> environment,
+    dynamic exitCode = 0,
+    dynamic stdErr = isEmpty}) async {
   final process =
       await startPub(args: ['outdated', ...args], environment: environment);
-  await process.shouldExit(0);
-  expect(await process.stderr.rest.toList(), isEmpty);
+  await process.shouldExit(exitCode);
+
+  expect(await process.stderr.rest.toList(), stdErr);
   buffer.writeln([
     '\$ pub outdated ${args.join(' ')}',
     ...await process.stdout.rest.where((line) {
       // Downloading order is not deterministic, so to avoid flakiness we filter
       // out these lines.
       return !line.startsWith('Downloading ');
-    }).toList()
+    }).toList(),
   ].join('\n'));
   buffer.write('\n');
 }
 
 /// Try running 'pub outdated' with a number of different sets of arguments.
 ///
-/// Compare the output to the file in goldens/$[name].
+/// Compare the stdout and stderr output to the file in goldens/$[name].
 Future<void> variations(String name, {Map<String, String> environment}) async {
   final buffer = StringBuffer();
   for (final args in [
@@ -55,9 +58,21 @@ Future<void> main() async {
         buffer.toString(), 'test/outdated/goldens/helptext.txt');
   });
 
+  test('no pubspec', () async {
+    await d.dir(appPath, []).create();
+    final buffer = StringBuffer();
+    await runPubOutdated([], buffer,
+        exitCode: isNot(0),
+        stdErr: contains(
+            startsWith('Could not find a file named "pubspec.yaml" in ')));
+  });
+
   test('no lockfile', () async {
-    await d.appDir({'foo': '^1.0.0'}).create();
-    await servePackages((builder) => builder..serve('foo', '1.2.3'));
+    await d.appDir({'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
+    await servePackages((builder) => builder
+      ..serve('foo', '1.2.3')
+      ..serve('bar', '1.2.3')
+      ..serve('bar', '2.0.0'));
     await variations('no_lockfile');
   });
 

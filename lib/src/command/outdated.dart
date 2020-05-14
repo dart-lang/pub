@@ -503,7 +503,7 @@ Future<void> _outputHuman(
 
   var notAtResolvable = rows
       .where((row) =>
-          row.current != null &&
+          (row.current != null || !lockFileExists) &&
           row.resolvable != null &&
           row.upgradable != row.resolvable)
       .length;
@@ -521,27 +521,31 @@ Future<void> _outputHuman(
             'To update these dependencies, use `pub upgrade`.');
       }
     }
-
-    if (notAtResolvable != 0) {
-      if (notAtResolvable == 1) {
-        log.message('\n1 dependency is constrained to a '
-            'version that is older than a resolvable version.\n'
-            'To update it, edit pubspec.yaml.');
-      } else {
-        log.message('\n$notAtResolvable  dependencies are constrained to '
-            'versions that are older than a resolvable version.\n'
-            'To update these dependencies, edit pubspec.yaml.');
-      }
-    }
-
-    if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
-      log.message('\nDependencies are all on the latest resolvable versions.'
-          '\nNewer versions, while available, are not mutually compatible.');
-    }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
         'Run `pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
+  }
+
+  if (lockFileExists &&
+      notAtResolvable == 0 &&
+      upgradable == 0 &&
+      rows.isNotEmpty) {
+    log.message(
+        '\nDependencies are all constrained to the latest resolvable versions.'
+        '\nNewer versions, while available, are not mutually compatible.');
+  }
+
+  if (notAtResolvable != 0) {
+    if (notAtResolvable == 1) {
+      log.message('\n1 dependency is constrained to a '
+          'version that is older than a resolvable version.\n'
+          'To update it, edit pubspec.yaml.');
+    } else {
+      log.message('\n$notAtResolvable  dependencies are constrained to '
+          'versions that are older than a resolvable version.\n'
+          'To update these dependencies, edit pubspec.yaml.');
+    }
   }
 }
 

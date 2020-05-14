@@ -51,7 +51,7 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --up-to-date
@@ -65,7 +65,7 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --prereleases
@@ -79,7 +79,7 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --no-dev-dependencies
@@ -89,7 +89,7 @@ foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0
 
 transitive dependencies: all up-to-date
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --no-dependency-overrides
@@ -103,7 +103,7 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --no-color --mode=null-safety
@@ -120,7 +120,7 @@ transitive dependencies: all fully support null safety
 
 transitive dev_dependencies: all fully support null safety
 
-Dependencies are all on the latest resolvable versions.
+Dependencies are all constrained to the latest resolvable versions.
 Newer versions, while available, are not mutually compatible.
 
 $ pub outdated --json --mode=null-safety
