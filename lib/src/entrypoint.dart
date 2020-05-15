@@ -744,11 +744,10 @@ class Entrypoint {
 
   /// Saves a list of concrete package versions to the `pubspec.lock` file.
   ///
-  /// Will use Windows line endings (`\r\n` if a `pubspec.lock` exists, and uses
-  /// that.
+  /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
+  /// uses that.
   void _saveLockFile(SolveResult result) {
-    _lockFile =
-        result.lockFile(windowsLineEndings: lockFile.windowsLineEndings);
+    _lockFile = result.lockFile;
 
     final windowsLineEndings = fileExists(lockFilePath) &&
         detectWindowsLineEndings(readTextFile(lockFilePath));
