@@ -8,13 +8,19 @@ import '../golden_file.dart';
 import '../test_pub.dart';
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
-Future<void> runPubOutdated(List<String> args, StringBuffer buffer) async {
-  final process = await startPub(args: ['outdated', ...args]);
+Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
+    {Map<String, String> environment}) async {
+  final process =
+      await startPub(args: ['outdated', ...args], environment: environment);
   await process.shouldExit(0);
   expect(await process.stderr.rest.toList(), isEmpty);
   buffer.writeln([
     '\$ pub outdated ${args.join(' ')}',
-    ...await process.stdout.rest.toList()
+    ...await process.stdout.rest.where((line) {
+      // Downloading order is not deterministic, so to avoid flakiness we filter
+      // out these lines.
+      return !line.startsWith('Downloading ');
+    }).toList()
   ].join('\n'));
   buffer.write('\n');
 }
@@ -22,18 +28,19 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer) async {
 /// Try running 'pub outdated' with a number of different sets of arguments.
 ///
 /// Compare the output to the file in goldens/$[name].
-Future<void> variations(String name) async {
+Future<void> variations(String name, {Map<String, String> environment}) async {
   final buffer = StringBuffer();
   for (final args in [
     ['--json'],
     ['--no-color'],
-    ['--no-color', '--mark=none'],
     ['--no-color', '--up-to-date'],
     ['--no-color', '--prereleases'],
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
+    ['--no-color', '--mode=null-safety'],
+    ['--json', '--mode=null-safety'],
   ]) {
-    await runPubOutdated(args, buffer);
+    await runPubOutdated(args, buffer, environment: environment);
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -146,6 +153,79 @@ Future<void> main() async {
     await variations('mutually_incompatible');
   });
 
+  test('null safety compliance', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+          'file_opts_out': '^1.0.0',
+          'fails_analysis': '^1.0.0',
+          'file_in_dependency_opts_out': '^1.0.0',
+          'fails_analysis_in_dependency': '^1.0.0',
+        },
+      })
+    ]).create();
+
+    await servePackages(
+      (builder) => builder
+        ..serve('foo', '1.0.0', deps: {
+          'bar': '^1.0.0'
+        }, pubspec: {
+          'environment': {'sdk': '>=2.9.0 < 3.0,0'}
+        })
+        ..serve('bar', '1.0.0', pubspec: {
+          'environment': {'sdk': '>=2.9.0 < 3.0,0'}
+        })
+        ..serve('foo', '2.0.0', deps: {
+          'bar': '^1.0.0'
+        }, pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'}
+        })
+        ..serve('bar', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.11.0 < 3.0,0'}
+        })
+        ..serve('file_opts_out', '1.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        }, contents: [
+          d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
+        ])
+        ..serve('file_opts_out', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        })
+        ..serve('fails_analysis', '1.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        }, contents: [
+          d.dir('lib', [d.file('main.dart', 'syntax error\n')])
+        ])
+        ..serve('fails_analysis', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        })
+        ..serve('file_in_dependency_opts_out', '1.0.0', deps: {
+          'file_opts_out': '^1.0.0'
+        }, pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        })
+        ..serve('file_in_dependency_opts_out', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        })
+        ..serve('fails_analysis_in_dependency', '1.0.0', deps: {
+          'fails_analysis': '^1.0.0'
+        }, pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        })
+        ..serve('fails_analysis_in_dependency', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.10.0 < 3.0,0'},
+        }),
+    );
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+
+    await variations('null_safety',
+        environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+  });
+
   test('overridden dependencies', () async {
     ensureGit();
     await servePackages(
@@ -218,5 +298,35 @@ Future<void> main() async {
     await pubGet();
 
     await variations('dependency_overrides_no_solution');
+  });
+
+  test(
+      'latest version reported while locked on a prerelease can be a prerelease',
+      () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '0.9.0')
+      ..serve('foo', '1.0.0-dev.1')
+      ..serve('foo', '1.0.0-dev.2')
+      ..serve('bar', '0.9.0')
+      ..serve('bar', '1.0.0-dev.1')
+      ..serve('bar', '1.0.0-dev.2')
+      ..serve('mop', '0.10.0-dev')
+      ..serve('mop', '0.10.0')
+      ..serve('mop', '1.0.0-dev'));
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '1.0.0-dev.1',
+          'bar': '^0.9.0',
+          'mop': '0.10.0-dev'
+        },
+      })
+    ]).create();
+
+    await pubGet();
+
+    await variations('prereleases');
   });
 }

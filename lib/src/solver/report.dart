@@ -130,6 +130,32 @@ class SolveReport {
     }
   }
 
+  /// Displays a two-line message, number of outdated packages and an
+  /// instruction to run `pub outdated` if outdated packages are detected.
+  void reportOutdated() {
+    final outdatedPackagesCount = _result.packages.where((id) {
+      final versions = _result.availableVersions[id.name];
+      // A version is counted:
+      // - if there is a newer version which is not a pre-release and current
+      // version is also not a pre-release or,
+      // - if the current version is pre-release then any upgraded version is
+      // considered.
+      return versions.any((v) =>
+          v > id.version && (id.version.isPreRelease || !v.isPreRelease));
+    }).length;
+
+    if (outdatedPackagesCount > 0) {
+      String packageCountString;
+      if (outdatedPackagesCount == 1) {
+        packageCountString = '1 package has';
+      } else {
+        packageCountString = '$outdatedPackagesCount packages have';
+      }
+      log.message('$packageCountString newer versions incompatible with '
+          'dependency constraints.\nTry `pub outdated` for more information.');
+    }
+  }
+
   /// Reports the results of the upgrade on the package named [name].
   ///
   /// If [alwaysShow] is true, the package is reported even if it didn't change,

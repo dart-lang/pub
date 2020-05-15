@@ -395,14 +395,18 @@ Future<T> progress<T>(String message, Future<T> Function() callback) {
 }
 
 /// Like [progress] but erases the message once done.
-Future<T> spinner<T>(String message, Future<T> Function() callback) {
-  _stopProgress();
+Future<T> spinner<T>(String message, Future<T> Function() callback,
+    {bool condition = true}) {
+  if (condition) {
+    _stopProgress();
 
-  var progress = Progress(message);
-  _animatedProgress = progress;
-  return callback().whenComplete(() {
-    progress.stopAndClear();
-  });
+    var progress = Progress(message);
+    _animatedProgress = progress;
+    return callback().whenComplete(() {
+      progress.stopAndClear();
+    });
+  }
+  return callback();
 }
 
 /// Stops animating the running progress indicator, if currently running.

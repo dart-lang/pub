@@ -305,8 +305,9 @@ class Entrypoint {
     return waitAndPrintErrors(executables.keys.map((package) {
       var dir = p.join(_snapshotPath, package);
       cleanDir(dir);
-      return waitAndPrintErrors(executables[package]
-          .map((path) => _precompileExecutable(package, path)));
+      return waitAndPrintErrors(executables[package].map((path) =>
+          _precompileExecutable(
+              package, p.join(packageGraph.packages[package].dir, path))));
     }));
   }
 
@@ -321,8 +322,8 @@ class Entrypoint {
 
   Future<void> _precompileExecutable(String package, String path) async {
     var dir = p.join(_snapshotPath, package);
-    var url = p.toUri(p.join(packageGraph.packages[package].dir, path));
-    await dart.snapshot(url, p.join(dir, p.basename(path) + '.snapshot.dart2'),
+    await dart.snapshot(
+        p.toUri(path), p.join(dir, p.basename(path) + '.snapshot.dart2'),
         packagesFile: p.toUri(packagesFile),
         name: '$package:${p.basenameWithoutExtension(path)}');
   }

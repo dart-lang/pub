@@ -81,8 +81,10 @@ String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
 class RunCommand {
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = RunCommand('upgrade',
-      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final upgrade = RunCommand('upgrade', RegExp(r'''
+(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
 
@@ -198,10 +200,13 @@ Future pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun({bool global = false, Iterable<String> args}) async {
+Future<PubProcess> pubRun(
+    {bool global = false,
+    Iterable<String> args,
+    Map<String, String> environment}) async {
   var pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(args: pubArgs);
+  var pub = await startPub(args: pubArgs, environment: environment);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
