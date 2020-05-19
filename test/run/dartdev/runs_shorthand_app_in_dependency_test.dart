@@ -8,28 +8,24 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('loads package imports in a dependency', () async {
+  test('runs a shorthand Dart application in a dependency', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('lib', [d.file('foo.dart', "final value = 'foobar';")]),
-      d.dir('bin', [
-        d.file('bar.dart', '''
-import "package:foo/foo.dart";
-
-main() => print(value);
-''')
-      ])
+      d.dir('bin', [d.file('foo.dart', "main() => print('foo');")])
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': '../foo'}
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'}
+        }
       })
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['foo:bar']);
-    expect(pub.stdout, emits('foobar'));
+    var pub = await pubRunFromDartDev(args: ['foo']);
+    expect(pub.stdout, emits('foo'));
     await pub.shouldExit();
   });
 }

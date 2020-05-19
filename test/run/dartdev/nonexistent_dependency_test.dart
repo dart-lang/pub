@@ -14,7 +14,7 @@ void main() {
     await d.dir(appPath, [d.appPubspec()]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['foo:script']);
+    var pub = await pubRunFromDartDev(args: ['foo:script']);
     expect(
         pub.stderr,
         emits('Could not find package "foo". Did you forget to add a '

@@ -219,8 +219,8 @@ Future<PubProcess> pubRun(
 /// expected startup output.
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRunV2({Iterable<String> args}) async {
-  final pub = await startPub(args: ['run', '--v2', ...args]);
+Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
+  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.

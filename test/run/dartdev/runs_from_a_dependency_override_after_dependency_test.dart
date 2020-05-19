@@ -25,7 +25,7 @@ void main() {
 
     await pubGet(args: ['--precompile']);
 
-    var pub = await pubRunV2(args: ['foo:bar']);
+    var pub = await pubRunFromDartDev(args: ['foo:bar']);
     expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
 
@@ -45,7 +45,7 @@ void main() {
 
     await pubGet();
 
-    pub = await pubRunV2(args: ['foo:bar']);
+    pub = await pubRunFromDartDev(args: ['foo:bar']);
     expect(pub.stdout, emits('different'));
     await pub.shouldExit();
   });
