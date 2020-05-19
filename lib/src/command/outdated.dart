@@ -241,6 +241,11 @@ class OutdatedCommand extends PubCommand {
       return null;
     }
 
+    // First check if 'prereleases' was passed as an argument.
+    // If that was not the case, use result of the legacy spelling
+    // 'pre-releases'.
+    // This implies that if none of these variants were given we fall
+    // back to the default for 'pre-releases'.
     final prereleases = argResults.wasParsed('prereleases')
         ? argResults['prereleases']
         : argResults['pre-releases'];
