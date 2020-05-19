@@ -24,7 +24,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['foo:bar']);
+    var pub = await pubRunFromDartDev(args: ['foo:bar']);
     expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
   });

@@ -33,7 +33,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['myapp:script']);
+    var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
     expect(pub.stdout, emits('null'));
     expect(pub.stdout,
@@ -58,7 +58,7 @@ void main() {
 
     await pubGet();
 
-    var pub = await pubRunV2(args: ['foo:script']);
+    var pub = await pubRunFromDartDev(args: ['foo:script']);
 
     expect(pub.stdout, emits('Precompiling executable...'));
     expect(pub.stdout, emits('Precompiled foo:script.'));

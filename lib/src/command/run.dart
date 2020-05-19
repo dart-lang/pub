@@ -30,13 +30,13 @@ class RunCommand extends PubCommand {
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     // mode exposed for `dartdev run` to use as subprocess.
-    argParser.addFlag('v2', hide: true);
+    argParser.addFlag('dart-dev-run', hide: true);
   }
 
   @override
   Future run() async {
-    if (argResults['v2']) {
-      return await _runV2();
+    if (argResults['dart-dev-run']) {
+      return await _runFromDartDev();
     }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
@@ -92,7 +92,7 @@ class RunCommand extends PubCommand {
     await flushThenExit(exitCode);
   }
 
-  /// Implement a v2 mode for use in `dartdev run`.
+  /// Implement a mode for use in `dartdev run`.
   ///
   /// Usage: `dartdev run [package[:command]]`
   ///
@@ -102,7 +102,7 @@ class RunCommand extends PubCommand {
   /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
   /// mutable (local root package or path-dependency) a source snapshot will be
   /// cached in `.dart_tool/pub/bin/<package>/<command>.dart.snapshot.dart2`.
-  Future _runV2() async {
+  Future _runFromDartDev() async {
     var package = entrypoint.root.name;
     var command = package;
     var args = <String>[];

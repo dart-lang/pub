@@ -15,7 +15,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: []);
+    var pub = await pubRunFromDartDev(args: []);
     expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
   });
@@ -27,7 +27,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: []);
+    var pub = await pubRunFromDartDev(args: []);
     expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
   });
@@ -42,7 +42,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: []);
+    var pub = await pubRunFromDartDev(args: []);
     expect(pub.stdout, emits('foobar'));
     await pub.shouldExit();
   });

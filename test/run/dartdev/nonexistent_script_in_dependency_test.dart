@@ -22,7 +22,7 @@ void main() {
 
     await pubGet();
 
-    var pub = await pubRunV2(args: ['foo:script']);
+    var pub = await pubRunFromDartDev(args: ['foo:script']);
     expect(
         pub.stderr,
         emits(

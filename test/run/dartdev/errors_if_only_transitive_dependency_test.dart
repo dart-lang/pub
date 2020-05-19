@@ -30,7 +30,7 @@ void main() {
 
     await pubGet();
 
-    var pub = await pubRunV2(args: ['foo:script']);
+    var pub = await pubRunFromDartDev(args: ['foo:script']);
     expect(pub.stderr, emits('Package "foo" is not an immediate dependency.'));
     expect(pub.stderr,
         emits('Cannot run executables in transitive dependencies.'));

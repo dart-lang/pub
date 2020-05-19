@@ -24,8 +24,8 @@ void main() {
 
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub =
-        await pubRunV2(args: ['myapp:args', '--verbose', '-m', '--', 'help']);
+    var pub = await pubRunFromDartDev(
+        args: ['myapp:args', '--verbose', '-m', '--', 'help']);
 
     expect(pub.stdout, emits('--verbose -m -- help'));
     await pub.shouldExit();

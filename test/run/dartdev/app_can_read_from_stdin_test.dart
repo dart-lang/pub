@@ -28,7 +28,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['myapp:script']);
+    var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
     await expectLater(pub.stdout, emits('started'));
     pub.stdin.writeln('first');
@@ -55,7 +55,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRunV2(args: ['myapp:script']);
+    var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
     await expectLater(pub.stdout, emits('started'));
     pub.stdin.writeln('first');
