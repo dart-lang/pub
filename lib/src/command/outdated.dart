@@ -13,6 +13,7 @@ import 'package:path/path.dart' as path;
 
 import '../command.dart';
 import '../entrypoint.dart';
+import '../io.dart';
 import '../log.dart' as log;
 import '../null_safety_analysis.dart';
 import '../package.dart';
@@ -88,8 +89,6 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future run() async {
-    entrypoint.assertUpToDate();
-
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
 
@@ -111,6 +110,7 @@ class OutdatedCommand extends PubCommand {
       resolvablePackages = await _tryResolve(resolvablePubspec);
     }, condition: _shouldShowSpinner);
 
+    // This list will be empty if there is no lock file.
     final currentPackages = entrypoint.lockFile.packages.values;
 
     /// The set of all dependencies (direct and transitive) that are in the
@@ -214,13 +214,11 @@ class OutdatedCommand extends PubCommand {
         forceColors = true;
       }
       final useColors = argResults['color'] || canUseSpecialChars;
-      await _outputHuman(
-        rows,
-        mode,
-        useColors: useColors,
-        showAll: showAll,
-        includeDevDependencies: includeDevDependencies,
-      );
+      await _outputHuman(rows, mode,
+          useColors: useColors,
+          showAll: showAll,
+          includeDevDependencies: includeDevDependencies,
+          lockFileExists: fileExists(entrypoint.lockFilePath));
     }
   }
 
@@ -412,6 +410,7 @@ Future<void> _outputHuman(
   @required bool showAll,
   @required bool useColors,
   @required bool includeDevDependencies,
+  @required bool lockFileExists,
 }) async {
   final explanation = mode.explanation;
   if (explanation != null) {
@@ -504,22 +503,37 @@ Future<void> _outputHuman(
 
   var notAtResolvable = rows
       .where((row) =>
-          row.current != null &&
+          (row.current != null || !lockFileExists) &&
           row.resolvable != null &&
           row.upgradable != row.resolvable)
       .length;
 
-  if (upgradable != 0) {
-    if (upgradable == 1) {
-      log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
-          'an older version.\n'
-          'To update it, use `pub upgrade`.');
-    } else {
-      log.message(
-          '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
-          'to older versions.\n'
-          'To update these dependencies, use `pub upgrade`.');
+  if (lockFileExists) {
+    if (upgradable != 0) {
+      if (upgradable == 1) {
+        log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
+            'an older version.\n'
+            'To update it, use `pub upgrade`.');
+      } else {
+        log.message(
+            '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
+            'to older versions.\n'
+            'To update these dependencies, use `pub upgrade`.');
+      }
     }
+  } else {
+    log.message('\nNo pubspec.lock found. There are no Current versions.\n'
+        'Run `pub get` to create a pubspec.lock with versions matching your '
+        'pubspec.yaml.');
+  }
+
+  if (lockFileExists &&
+      notAtResolvable == 0 &&
+      upgradable == 0 &&
+      rows.isNotEmpty) {
+    log.message(
+        '\nDependencies are all constrained to the latest resolvable versions.'
+        '\nNewer versions, while available, are not mutually compatible.');
   }
 
   if (notAtResolvable != 0) {
@@ -532,11 +546,6 @@ Future<void> _outputHuman(
           'versions that are older than a resolvable version.\n'
           'To update these dependencies, edit pubspec.yaml.');
     }
-  }
-
-  if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
-    log.message('\nDependencies are all on the latest resolvable versions.'
-        '\nNewer versions, while available, are not mutually compatible.');
   }
 }
 
