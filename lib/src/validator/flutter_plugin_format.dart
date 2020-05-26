@@ -44,15 +44,6 @@ class FlutterPluginFormatValidator extends Validator {
     // `flutter.plugin.platforms` keys is defined.
     final usesNewPluginFormat = plugin['platforms'] != null;
 
-    // Report an error, if both the new and the old format is used.
-    if (usesOldPluginFormat && usesNewPluginFormat) {
-      errors.add('In pubspec.yaml the flutter.plugin.platforms key cannot be '
-          'used in combination with the old '
-          'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys.\n\n'
-          'See $_pluginDocsUrl');
-      return;
-    }
-
     // If the new plugin format is used, and the flutter SDK dependency allows
     // SDKs older than 1.10.0, then this is going to be a problem.
     final flutterConstraint = pubspec.sdkConstraints['flutter'];
@@ -72,9 +63,9 @@ class FlutterPluginFormatValidator extends Validator {
     }
 
     if (usesOldPluginFormat) {
-      warnings.add('In pubspec.yaml the '
+      errors.add('In pubspec.yaml the '
           'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys are '
-          'deprecated. Consider using the flutter.plugin.platforms key '
+          'deprecated. Instead use the flutter.plugin.platforms key '
           'introduced in Flutter 1.10.0\n\nSee $_pluginDocsUrl');
     }
   }
