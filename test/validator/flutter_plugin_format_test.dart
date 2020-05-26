@@ -118,7 +118,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
-      await expectValidation(flutterPluginFormat, warnings: isNotEmpty);
+      await expectValidation(flutterPluginFormat, errors: isNotEmpty);
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
