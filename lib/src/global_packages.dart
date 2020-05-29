@@ -669,7 +669,6 @@ class GlobalPackages {
     // If the script was precompiled to a snapshot, just try to invoke that
     // directly and skip pub global run entirely.
     String invocation;
-    print('$snapshot ${fileExists(snapshot)}');
     if (Platform.isWindows) {
       if (snapshot != null && fileExists(snapshot)) {
         // We expect absolute paths from the precompiler since relative ones
