@@ -290,8 +290,8 @@ class Entrypoint {
 
   /// All executables that should be snapshotted from this entrypoint.
   ///
-  ///  This is all executables in direct dependencies.
-  ///  that don't transitively depend on [this] or on a mutable dependency.
+  /// This is all executables in direct dependencies.
+  /// that don't transitively depend on [this] or on a mutable dependency.
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.

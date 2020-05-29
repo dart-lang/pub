@@ -23,6 +23,7 @@ void main() {
         + foo 1.3.0
         Downloading foo 1.3.0...
         Precompiling executables...
+        Precompiled foo:foo.
         Activated foo 1.3.0.''');
   });
 }

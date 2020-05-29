@@ -38,8 +38,9 @@ void main() {
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        // 253 is the VM's exit code upon seeing an out-of-date snapshot.
-        d.file(binStubName('foo-script'), contains('253'))
+        // The new binstub should contain an if
+        d.file(binStubName('foo-script'),
+            contains('This file was created by pub v0.1.2+3.'))
       ])
     ]).validate();
   });

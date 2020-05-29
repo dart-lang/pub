@@ -162,6 +162,7 @@ class GlobalPackages {
 
     _updateBinStubs(entrypoint, entrypoint.root, executables,
         overwriteBinStubs: overwriteBinStubs);
+    log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
@@ -566,7 +567,7 @@ class GlobalPackages {
         script,
         overwrite: overwriteBinStubs,
         snapshot: entrypoint.snapshotPathOfExecutable(
-          Executable(package.name, executable),
+          Executable(package.name, script),
         ),
       );
       if (previousPackage != null) {
@@ -665,19 +666,24 @@ class GlobalPackages {
       }
     }
 
-    // If the script was precompiled to a snapshot, just invoke that directly
-    // and skip pub global run entirely.
+    // If the script was precompiled to a snapshot, just try to invoke that
+    // directly and skip pub global run entirely.
     String invocation;
-    if (snapshot != null && fileExists(snapshot)) {
-      // We expect absolute paths from the precompiler since relative ones
-      // won't be relative to the right directory when the user runs this.
-      assert(p.isAbsolute(snapshot));
-      invocation = 'dart "$snapshot"';
-    } else {
-      invocation = 'pub global run ${package.name}:$script';
-    }
-
+    print('$snapshot ${fileExists(snapshot)}');
     if (Platform.isWindows) {
+      if (snapshot != null && fileExists(snapshot)) {
+        // We expect absolute paths from the precompiler since relative ones
+        // won't be relative to the right directory when the user runs this.
+        assert(p.isAbsolute(snapshot));
+        invocation = '''
+if exists "$snapshot" (
+  dart "$snapshot"';
+) else (
+  pub global run ${package.name}:$script
+)''';
+      } else {
+        invocation = 'pub global run ${package.name}:$script';
+      }
       var batch = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
@@ -687,22 +693,22 @@ rem Executable: $executable
 rem Script: $script
 $invocation %*
 ''';
-
-      if (snapshot != null) {
-        batch += '''
-
-rem The VM exits with code 253 if the snapshot version is out-of-date.
-rem If it is, we need to delete it and run "pub global" manually.
-if not errorlevel 253 (
-  exit /b %errorlevel%
-)
-
-pub global run ${package.name}:$script %*
-''';
-      }
-
       writeTextFile(binStubPath, batch);
     } else {
+      if (snapshot != null && fileExists(snapshot)) {
+        // We expect absolute paths from the precompiler since relative ones
+        // won't be relative to the right directory when the user runs this.
+        assert(p.isAbsolute(snapshot));
+        invocation = '''
+if [ -f $snapshot ]; then
+  dart "$snapshot"';
+else
+  pub global run ${package.name}:$script
+fi
+''';
+      } else {
+        invocation = 'pub global run ${package.name}:$script';
+      }
       var bash = '''
 #!/usr/bin/env sh
 # This file was created by pub v${sdk.version}.
@@ -712,20 +718,6 @@ pub global run ${package.name}:$script %*
 # Script: $script
 $invocation "\$@"
 ''';
-
-      if (snapshot != null) {
-        bash += '''
-
-# The VM exits with code 253 if the snapshot version is out-of-date.
-# If it is, we need to delete it and run "pub global" manually.
-exit_code=\$?
-if [ \$exit_code != 253 ]; then
-  exit \$exit_code
-fi
-
-pub global run ${package.name}:$script "\$@"
-''';
-      }
 
       // Write this as the system encoding since the system is going to execute
       // it and it might contain non-ASCII characters in the pathnames.
