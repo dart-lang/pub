@@ -78,7 +78,7 @@ String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .firstWhere((l) => l.startsWith('$packageName:'));
 
 /// The suffix appended to a precompiled snapshot.
-final versionSuffix = sdk.version;
+final versionSuffix = testVersion ?? sdk.version;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
@@ -328,6 +328,8 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
+String testVersion = '0.1.2+3';
+
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
@@ -336,7 +338,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
     'PUB_ENVIRONMENT': 'test-environment',
 
     // Ensure a known SDK version is set for the tests that rely on that.
-    '_PUB_TEST_SDK_VERSION': '0.1.2+3'
+    '_PUB_TEST_SDK_VERSION': testVersion
   };
 
   if (tokenEndpoint != null) {

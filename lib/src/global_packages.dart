@@ -570,7 +570,7 @@ class GlobalPackages {
         script,
         overwrite: overwriteBinStubs,
         snapshot: entrypoint.snapshotPathOfExecutable(
-          Executable(package.name, script),
+          Executable.adaptProgramName(package.name, script),
         ),
       );
       if (previousPackage != null) {
@@ -690,7 +690,7 @@ if exists "$snapshot" (
   pub global run ${package.name}:$script %*
 )''';
       } else {
-        invocation = 'pub global run ${package.name}:$script';
+        invocation = 'pub global run ${package.name}:$script %*';
       }
       var batch = '''
 @echo off
@@ -722,7 +722,7 @@ else
 fi
 ''';
       } else {
-        invocation = 'pub global run ${package.name}:$script';
+        invocation = 'pub global run ${package.name}:$script "\$@"';
       }
       var bash = '''
 #!/usr/bin/env sh
