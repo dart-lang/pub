@@ -34,6 +34,8 @@ class Package {
   /// The path to the directory containing the package.
   final String dir;
 
+  bool get isInMemory => dir == null;
+
   /// The name of the package.
   String get name {
     if (pubspec.name != null) return pubspec.name;
@@ -156,7 +158,7 @@ class Package {
       String part5,
       String part6,
       String part7]) {
-    if (dir == null) {
+    if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }

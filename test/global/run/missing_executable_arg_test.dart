@@ -11,13 +11,15 @@ import '../../test_pub.dart';
 void main() {
   test('fails if no executable was given', () {
     return runPub(args: ['global', 'run'], error: '''
-            Must specify an executable to run.
+Must specify an executable to run.
 
-            Usage: pub global run <package>:<executable> [args...]
-            -h, --help                   Print this usage information.
-                --[no-]enable-asserts    Enable assert statements.
+Usage: pub global run <package>:<executable> [args...]
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled.
 
-            Run "pub help" to see global options.
-            ''', exitCode: exit_codes.USAGE);
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
   });
 }

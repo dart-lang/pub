@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../executable.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -27,6 +28,9 @@ class GlobalRunCommand extends PubCommand {
   GlobalRunCommand() {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
+    argParser.addMultiOption('enable-experiment',
+        help: 'Runs the executable in a VM with the given experiments enabled.',
+        valueHelp: 'experiment');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -57,8 +61,16 @@ class GlobalRunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    var exitCode = await globals.runExecutable(package, executable, args,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked']);
+    final experiments = argResults['enable-experiment'] as List;
+    final vmArgs = <String>[
+      if (experiments.isNotEmpty) "--enable_experiment=${experiments.join(',')}"
+    ];
+    final globalEntrypoint = await globals.find(package);
+    final exitCode = await runExecutable(
+        globalEntrypoint, Executable(package, executable), args,
+        vmArgs: vmArgs,
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+        recompile: globalEntrypoint.precompileExecutable);
     await flushThenExit(exitCode);
   }
 }

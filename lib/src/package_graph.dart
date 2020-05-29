@@ -39,7 +39,8 @@ class PackageGraph {
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
       Entrypoint entrypoint, SolveResult result) {
-    var packages = Map<String, Package>.fromIterable(result.packages,
+    var packages = Map<String, Package>.fromIterable(
+        result.packages.where((id) => id.source != null),
         key: (id) => id.name,
         value: (id) {
           if (id.name == entrypoint.root.name) return entrypoint.root;
@@ -75,6 +76,19 @@ class PackageGraph {
     return _transitiveDependencies[package];
   }
 
+  bool _isPackageCached(String package) {
+    // The root package is not included in the lock file, so we instead ask
+    // the entrypoint.
+    // TODO(sigurdm): there should be a way to get the id of any package
+    // including the root.
+    if (package == entrypoint.root.name) {
+      return entrypoint.isCached;
+    } else {
+      var id = lockFile.packages[package];
+      return entrypoint.cache.source(id.source) is CachedSource;
+    }
+  }
+
   /// Returns whether [package] is mutable.
   ///
   /// A package is considered to be mutable if it or any of its dependencies
@@ -82,19 +96,9 @@ class PackageGraph {
   /// without modifying the pub cache. Information generated from mutable
   /// packages is generally not safe to cache, since it may change frequently.
   bool isPackageMutable(String package) {
-    var id = lockFile.packages[package];
-    if (id == null) return true;
+    if (!_isPackageCached(package)) return true;
 
-    if (entrypoint.cache.source(id.source) is! CachedSource) return true;
-
-    return transitiveDependencies(package).any((dep) {
-      var depId = lockFile.packages[dep.name];
-
-      // The entrypoint package doesn't have a lockfile entry. It's always
-      // mutable.
-      if (depId == null) return true;
-
-      return entrypoint.cache.source(depId.source) is! CachedSource;
-    });
+    return transitiveDependencies(package)
+        .any((dep) => !_isPackageCached(dep.name));
   }
 }

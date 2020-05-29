@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
+import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
 import 'exit_codes.dart' as exit_codes;
@@ -27,24 +28,22 @@ import 'utils.dart';
 /// If [packagesFile] is passed, it's used as the package config file path for
 /// the executable. Otherwise, `entrypoint.packagesFile` is used.
 ///
-/// If [snapshotPath] is passed, this will run the executable from that snapshot
-/// if it exists. If [recompile] is passed, it's called if the snapshot is
-/// out-of-date or nonexistent. It's expected to regenerate a snapshot at
-/// [snapshotPath], after which the snapshot will be re-run. It's ignored if
-/// [snapshotPath] isn't passed.
+/// If the executable is in an immutable package and we pass no [vmArgs], it
+/// run from snapshot (and precompiled if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
-Future<int> runExecutable(Entrypoint entrypoint, String package,
-    String executable, Iterable<String> args,
+Future<int> runExecutable(
+    Entrypoint entrypoint, Executable executable, Iterable<String> args,
     {bool enableAsserts = false,
     String packagesFile,
-    String snapshotPath,
-    Future<void> Function() recompile}) async {
+    Future<void> Function(Executable) recompile,
+    List<String> vmArgs = const []}) async {
+  final package = executable.package;
   packagesFile ??= entrypoint.packagesFile;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
-  if (entrypoint.root.name != package &&
+  if (entrypoint.root.name != executable.package &&
       !entrypoint.root.immediateDependencies.containsKey(package)) {
     if (entrypoint.packageGraph.packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
@@ -57,130 +56,152 @@ Future<int> runExecutable(Entrypoint entrypoint, String package,
 
   entrypoint.migrateCache();
 
-  // Unless the user overrides the verbosity, we want to filter out the
-  // normal pub output that may be shown when recompiling snapshots if we are
-  // not attached to a terminal. This is to not pollute stdout when the output
-  // of `pub run` is piped somewhere.
-  return await log.warningsOnlyUnlessTerminal(() async {
-    // Uncached packages are run from source.
-    if (snapshotPath != null) {
-      // Since we don't access the package graph, this doesn't happen
-      // automatically.
-      entrypoint.assertUpToDate();
+  var snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
 
-      var result = await _runOrCompileSnapshot(snapshotPath, args,
-          packagesFile: packagesFile,
-          enableAsserts: enableAsserts,
-          recompile: recompile);
-      if (result != null) return result;
+  // Don't compile snapshots for mutable packages, since their code may
+  // change later on.
+  //
+  // Also we don't snapshot if we have non-default arguments to the VM, as
+  // these would be inconsistent if another set of settings are given in a
+  // later invocation.
+  var useSnapshot =
+      !entrypoint.packageGraph.isPackageMutable(package) && vmArgs.isEmpty;
+
+  var executablePath = entrypoint.resolveExecutable(executable);
+  if (!fileExists(executablePath)) {
+    var message = 'Could not find ${log.bold(executable.relativePath)}';
+    if (entrypoint.isGlobal || package != entrypoint.root.name) {
+      message += ' in package ${log.bold(package)}';
     }
+    log.error('$message.');
+    return exit_codes.NO_INPUT;
+  }
 
-    // If the command has a path separator, then it's a path relative to the
-    // root of the package. Otherwise, it's implicitly understood to be in
-    // "bin".
-    if (p.split(executable).length == 1) executable = p.join('bin', executable);
+  if (useSnapshot) {
+    // Since we don't access the package graph, this doesn't happen
+    // automatically.
+    entrypoint.assertUpToDate();
 
-    var executablePath = await _executablePath(entrypoint, package, executable);
-
+    if (!fileExists(snapshotPath)) {
+      await recompile(executable);
+    }
+    if (!fileExists(snapshotPath)) {
+      // TODO XXX compilation failed, run from source??
+    }
+    executablePath = snapshotPath;
+  } else {
     if (executablePath == null) {
-      var message = 'Could not find ${log.bold(executable)}';
+      var message = 'Could not find ${log.bold(executable.relativePath)}';
       if (entrypoint.isGlobal || package != entrypoint.root.name) {
         message += ' in package ${log.bold(package)}';
       }
       log.error('$message.');
       return exit_codes.NO_INPUT;
     }
-
-    // We use an absolute path here not because the VM insists but because it's
-    // helpful for the subprocess to be able to spawn Dart with
-    // Platform.executableArguments and have that work regardless of the working
-    // directory.
-    var packageConfig = p.toUri(p.absolute(packagesFile));
-
-    await isolate.runUri(p.toUri(executablePath), args.toList(), null,
-        enableAsserts: enableAsserts,
-        automaticPackageResolution: packageConfig == null,
-        packageConfig: packageConfig);
-    return exitCode;
-  });
-}
-
-/// Returns the full path the VM should use to load the executable at [path].
-///
-/// [path] must be relative to the root of [package]. If [path] doesn't exist,
-/// returns `null`. If the executable is global and doesn't already have a
-/// `.packages` file one will be created.
-Future<String> _executablePath(
-    Entrypoint entrypoint, String package, String path) async {
-  assert(p.isRelative(path));
-
-  var fullPath = entrypoint.packageGraph.packages[package].path(path);
-  if (!fileExists(fullPath)) return null;
-  return p.absolute(fullPath);
-}
-
-/// Like [_runSnapshot], but runs [recompile] if [path] doesn't exist yet.
-///
-/// Returns `null` if [path] doesn't exist and isn't generated by [recompile].
-Future<int> _runOrCompileSnapshot(String path, Iterable<String> args,
-    {Future<void> Function() recompile,
-    String packagesFile,
-    bool enableAsserts = false}) async {
-  if (!fileExists(path)) {
-    if (recompile == null) return null;
-    await recompile();
-    if (!fileExists(path)) return null;
   }
 
-  return await _runSnapshot(path, args,
-      recompile: recompile,
-      packagesFile: packagesFile,
-      enableAsserts: enableAsserts);
-}
+  // We use an absolute path here not because the VM insists but because it's
+  // helpful for the subprocess to be able to spawn Dart with
+  // Platform.executableArguments and have that work regardless of the working
+  // directory.
+  var packageConfig = p.absolute(packagesFile);
 
-/// Runs the snapshot at [path] with [args] and hooks its stdout, stderr, and
-/// sdtin to this process's.
-///
-/// If [recompile] is passed, it's called if the snapshot is out-of-date. It's
-/// expected to regenerate a snapshot at [path], after which the snapshot will
-/// be re-run.
-///
-/// If [enableAsserts] is set, runs the snapshot with assertions enabled.
-///
-/// Returns the snapshot's exit code.
-///
-/// This doesn't do any validation of the snapshot's SDK version.
-Future<int> _runSnapshot(String path, Iterable<String> args,
-    {Future<void> Function() recompile,
-    String packagesFile,
-    bool enableAsserts = false}) async {
-  Uri packageConfig;
-  if (packagesFile != null) {
-    // We use an absolute path here not because the VM insists but because it's
-    // helpful for the subprocess to be able to spawn Dart with
-    // Platform.executableArguments and have that work regardless of the working
-    // directory.
-    packageConfig = p.toUri(p.absolute(packagesFile));
-  }
-
-  var url = p.toUri(p.absolute(path));
-  var argList = args.toList();
   try {
-    await isolate.runUri(url, argList, null,
-        enableAsserts: enableAsserts,
-        automaticPackageResolution: packageConfig == null,
-        packageConfig: packageConfig);
+    return _runDartProgram(executablePath, args, packageConfig,
+        enableAsserts: enableAsserts, vmArgs: vmArgs);
   } on IsolateSpawnException catch (error) {
-    if (recompile == null) rethrow;
-    if (!error.message.contains('Invalid kernel binary format version')) {
+    if (!useSnapshot ||
+        !error.message.contains('Invalid kernel binary format version')) {
       rethrow;
     }
 
     log.fine('Precompiled executable is out of date.');
-    await recompile();
-    await isolate.runUri(url, argList, null,
-        enableAsserts: enableAsserts, packageConfig: packageConfig);
+    await recompile(executable);
+    return _runDartProgram(executablePath, args, packageConfig,
+        enableAsserts: enableAsserts, vmArgs: vmArgs);
   }
+}
 
-  return exitCode;
+/// Runs the dart program (can be a snapshot) at [path] with [args] and hooks
+/// its stdout, stderr, and sdtin to this process's.
+///
+/// [packageConfig] is the path to the ".dart_tool/package_config.json" file.
+///
+/// If [enableAsserts] is set, runs the program with assertions enabled.
+///
+/// Passes [vmArgs] to the vm.
+///
+/// Returns the programs's exit code.
+Future<int> _runDartProgram(
+    String path, List<String> args, String packageConfig,
+    {bool enableAsserts, List<String> vmArgs}) async {
+  path = p.absolute(path);
+  packageConfig = p.absolute(packageConfig);
+
+  // We use Isolate.spawnUri when there are no extra vm-options.
+  // That provides better signal handling, and possibly faster startup.
+  if (vmArgs.isEmpty) {
+    var argList = args.toList();
+    await isolate.runUri(p.toUri(path), argList, null,
+        enableAsserts: enableAsserts,
+        automaticPackageResolution: packageConfig == null,
+        packageConfig: p.toUri(packageConfig));
+    return exitCode;
+  } else {
+    // By ignoring sigint, only the child process will get it when
+    // they are sent to the current process group. That is what happens when
+    // you send signals from the terminal.
+    //
+    // This allows the child to not be orphaned if it sets up handlers for these
+    // signals.
+    //
+    // We do not drain sighub because it is generally a bad idea to have
+    // non-default handling for it.
+    //
+    // We do not drain sigterm and sigusr1/sigusr2 because it does not seem to
+    // work well in manual tests.
+    //
+    // We do not drain sigquit because dart doesn't support listening to it.
+    // https://github.com/dart-lang/sdk/issues/41961 .
+    //
+    // TODO(sigurdm) To handle signals better we would ideally have `exec`
+    // semantics without `fork` for starting the subprocess.
+    // https://github.com/dart-lang/sdk/issues/41966.
+    unawaited(ProcessSignal.sigint.watch().drain());
+
+    final process = await Process.start(
+      Platform.resolvedExecutable,
+      [
+        '--packages=$packageConfig',
+        ...vmArgs,
+        if (enableAsserts) '--enable-asserts',
+        p.toUri(path).toString(),
+        ...args,
+      ],
+      mode: ProcessStartMode.inheritStdio,
+    );
+
+    return process.exitCode;
+  }
+}
+
+/// An executable in a package
+class Executable {
+  String package;
+  // The relative path to the executable inside the root of [package].
+  String relativePath;
+  Executable(this.package, String program)
+      : relativePath = adaptProgramToPath(program);
+
+  static String adaptProgramToPath(String program) {
+    // If the command has a path separator, then it's a path relative to the
+    // root of the package. Otherwise, it's implicitly understood to be in
+    // "bin".
+    if (p.split(program).length == 1) program = p.join('bin', program);
+
+    // The user may pass in an executable without an extension, but the file
+    // to actually execute will always have one.
+    if (p.extension(program) != '.dart') program += '.dart';
+    return program;
+  }
 }

@@ -76,6 +76,9 @@ String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .readAsLinesSync()
     .firstWhere((l) => l.startsWith('$packageName:'));
 
+/// The suffix appended to a precompiled snapshot.
+final versionSuffix = Uri.encodeComponent(Platform.version);
+
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
