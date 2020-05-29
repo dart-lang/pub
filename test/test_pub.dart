@@ -31,6 +31,7 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -77,7 +78,7 @@ String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .firstWhere((l) => l.startsWith('$packageName:'));
 
 /// The suffix appended to a precompiled snapshot.
-final versionSuffix = Uri.encodeComponent(Platform.version);
+final versionSuffix = sdk.version;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.

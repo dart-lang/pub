@@ -206,10 +206,13 @@ class GlobalPackages {
     _writeLockFile(dep.name, lockFile);
     await _writePackageConfigFiles(dep.name, lockFile);
 
+    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+    result.packages.removeWhere((id) => id.name == 'pub global activate');
+
     var id = lockFile.packages[dep.name];
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
-    final entrypoint = Entrypoint.inMemory(
+    final entrypoint = Entrypoint.global(
         Package(result.pubspecs[dep.name],
             cache.source(dep.source).getDirectory(id)),
         result.lockFile,
@@ -332,7 +335,7 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.inMemory(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.global(cache.load(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -676,9 +679,15 @@ class GlobalPackages {
         assert(p.isAbsolute(snapshot));
         invocation = '''
 if exists "$snapshot" (
-  dart "$snapshot"';
+  dart "$snapshot" %*
+  rem The VM exits with code 253 if the snapshot version is out-of-date.	
+  rem If it is, we need to delete it and run "pub global" manually.	
+  if not errorlevel 253 (	
+    exit /b %errorlevel%	
+  )
+  pub global run ${package.name}:$script %*
 ) else (
-  pub global run ${package.name}:$script
+  pub global run ${package.name}:$script %*
 )''';
       } else {
         invocation = 'pub global run ${package.name}:$script';
@@ -690,7 +699,7 @@ rem Package: ${package.name}
 rem Version: ${package.version}
 rem Executable: $executable
 rem Script: $script
-$invocation %*
+$invocation
 ''';
       writeTextFile(binStubPath, batch);
     } else {
@@ -700,9 +709,16 @@ $invocation %*
         assert(p.isAbsolute(snapshot));
         invocation = '''
 if [ -f $snapshot ]; then
-  dart "$snapshot"';
+  dart "$snapshot" "\$@"
+  # The VM exits with code 253 if the snapshot version is out-of-date.	
+  # If it is, we need to delete it and run "pub global" manually.	
+  exit_code=\$?	
+  if [ \$exit_code != 253 ]; then	
+    exit \$exit_code	
+  fi	
+  pub global run ${package.name}:$script "\$@"
 else
-  pub global run ${package.name}:$script
+  pub global run ${package.name}:$script "\$@"
 fi
 ''';
       } else {
@@ -715,7 +731,7 @@ fi
 # Version: ${package.version}
 # Executable: $executable
 # Script: $script
-$invocation "\$@"
+$invocation
 ''';
 
       // Write this as the system encoding since the system is going to execute

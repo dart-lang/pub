@@ -66,13 +66,11 @@ class GlobalRunCommand extends PubCommand {
       if (experiments.isNotEmpty) "--enable_experiment=${experiments.join(',')}"
     ];
     final globalEntrypoint = await globals.find(package);
-    final exitCode = await runExecutable(
-        globalEntrypoint, Executable(package, executable), args,
+    final exitCode = await runExecutable(globalEntrypoint,
+        Executable.adaptProgramName(package, executable), args,
         vmArgs: vmArgs,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: (executable) async {
-      await globalEntrypoint.precompileExecutable(executable);
-    });
+        recompile: globalEntrypoint.precompileExecutable);
     await flushThenExit(exitCode);
   }
 }

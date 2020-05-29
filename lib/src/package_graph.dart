@@ -39,8 +39,7 @@ class PackageGraph {
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
       Entrypoint entrypoint, SolveResult result) {
-    var packages = Map<String, Package>.fromIterable(
-        result.packages.where((id) => id.source != null),
+    var packages = Map<String, Package>.fromIterable(result.packages,
         key: (id) => id.name,
         value: (id) {
           if (id.name == entrypoint.root.name) return entrypoint.root;

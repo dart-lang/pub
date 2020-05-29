@@ -76,7 +76,7 @@ class RunCommand extends PubCommand {
     ];
 
     var exitCode = await runExecutable(
-        entrypoint, Executable(package, executable), args,
+        entrypoint, Executable.adaptProgramName(package, executable), args,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
         recompile: entrypoint.precompileExecutable,
         vmArgs: vmArgs);
@@ -124,7 +124,7 @@ class RunCommand extends PubCommand {
     ];
 
     return await flushThenExit(await runExecutable(
-        entrypoint, Executable(package, '$command.dart'), args,
+        entrypoint, Executable(package, 'bin/$command.dart'), args,
         vmArgs: vmArgs,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
         recompile: entrypoint.precompileExecutable));

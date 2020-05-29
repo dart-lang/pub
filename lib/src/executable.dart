@@ -85,9 +85,6 @@ Future<int> runExecutable(
     if (!fileExists(snapshotPath)) {
       await recompile(executable);
     }
-    if (!fileExists(snapshotPath)) {
-      // TODO XXX compilation failed, run from source??
-    }
     executablePath = snapshotPath;
   } else {
     if (executablePath == null) {
@@ -190,10 +187,14 @@ class Executable {
   String package;
   // The relative path to the executable inside the root of [package].
   String relativePath;
-  Executable(this.package, String program)
-      : relativePath = adaptProgramToPath(program);
 
-  static String adaptProgramToPath(String program) {
+  // Adapts the program-name following conventions of dart run
+  Executable.adaptProgramName(this.package, String program)
+      : relativePath = _adaptProgramToPath(program);
+
+  Executable(this.package, this.relativePath);
+
+  static String _adaptProgramToPath(String program) {
     // If the command has a path separator, then it's a path relative to the
     // root of the package. Otherwise, it's implicitly understood to be in
     // "bin".

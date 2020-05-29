@@ -228,7 +228,7 @@ void main() {
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo',
-              [d.outOfDateSnapshot('hello.dart.snapshot.2.0.0-dev.58.0')])
+              [d.outOfDateSnapshot('hello.dart.snapshot.$versionSuffix')])
         ]).create();
 
         var process = await pubRun(args: ['foo:hello']);

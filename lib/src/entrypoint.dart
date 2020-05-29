@@ -76,10 +76,6 @@ class Entrypoint {
   /// the network.
   final SystemCache cache;
 
-  /// Whether this entrypoint is in memory only, as opposed to representing a
-  /// real directory on disk.
-  final bool _inMemory;
-
   /// Whether this entrypoint exists within the package cache.
   bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
 
@@ -127,30 +123,33 @@ class Entrypoint {
   ///
   /// Global packages (except those from path source)
   /// store these in the global cache.
-  String get _configPath => root.dir == null || isCached
-      ? p.join(cache.rootDir, 'global_packages', root.name)
-      : root.dir;
+  String get _configRoot =>
+      isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
 
   /// The path to the entrypoint's "packages" directory.
   String get packagesPath => root.path('packages');
 
   /// The path to the entrypoint's ".packages" file.
-  String get packagesFile => p.join(_configPath, '.packages');
+  String get packagesFile => p.join(_configRoot, '.packages');
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
   String get packageConfigFile =>
-      p.join(_configPath, '.dart_tool', 'package_config.json');
+      p.join(_configRoot, '.dart_tool', 'package_config.json');
 
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => root.path('pubspec.yaml');
 
   /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => p.join(_configPath, 'pubspec.lock');
+  String get lockFilePath => p.join(_configRoot, 'pubspec.lock');
 
   /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
   ///
   /// If the old-style `.pub` directory is being used, this returns that
   /// instead.
+  ///
+  /// For globally activated packages from path, this is not the same as
+  /// [configRoot], because the snapshots should be stored in the global cache,
+  /// but the configuration is stored at the package itself.
   String get cachePath {
     if (isGlobal) {
       return p.join(
@@ -172,21 +171,18 @@ class Entrypoint {
   /// Loads the entrypoint for the package at the current directory.
   Entrypoint.current(this.cache)
       : root = Package.load(null, '.', cache.sources, isRootPackage: true),
-        _inMemory = false,
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
-        _inMemory = false,
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passes as an optimization.
-  Entrypoint.inMemory(this.root, this._lockFile, this.cache,
+  Entrypoint.global(this.root, this._lockFile, this.cache,
       {SolveResult solveResult})
-      : _inMemory = true,
-        isGlobal = true {
+      : isGlobal = true {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     }
@@ -366,7 +362,7 @@ class Entrypoint {
   /// [path] must be relative.
   String snapshotPathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
-    final versionSuffix = Uri.encodeComponent(Platform.version);
+    final versionSuffix = sdk.version;
     return isGlobal
         ? p.join(_snapshotPath,
             '${p.basename(executable.relativePath)}.snapshot.$versionSuffix')
@@ -439,7 +435,7 @@ class Entrypoint {
   /// `.dart_tool/package_config.json` file doesn't exist or if it's out-of-date
   /// relative to the lockfile or the pubspec.
   void assertUpToDate() {
-    if (_inMemory) return;
+    if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
       dataError('No pubspec.lock file found, please run "pub get" first.');
@@ -786,9 +782,10 @@ class Entrypoint {
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
   /// to the new-style `.dart_tool/pub` directory.
   void migrateCache() {
-    // In-memory packages don't have these.
-    if (_inMemory) return;
-    var oldPath = root.path('.pub');
+    // Cached packages don't have these.
+    if (isCached) return;
+
+    var oldPath = p.join(_configRoot, '.pub');
     if (!dirExists(oldPath)) return;
 
     var newPath = root.path('.dart_tool/pub');
