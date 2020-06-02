@@ -77,7 +77,8 @@ Future<int> runExecutable(
 
   var executablePath = entrypoint.resolveExecutable(executable);
   if (!fileExists(executablePath)) {
-    var message = 'Could not find ${log.bold(executable.relativePath)}';
+    var message =
+        'Could not find ${log.bold(p.normalize(executable.relativePath))}';
     if (entrypoint.isGlobal || package != entrypoint.root.name) {
       message += ' in package ${log.bold(package)}';
     }
@@ -96,7 +97,8 @@ Future<int> runExecutable(
     executablePath = snapshotPath;
   } else {
     if (executablePath == null) {
-      var message = 'Could not find ${log.bold(executable.relativePath)}';
+      var message =
+          'Could not find ${log.bold(p.normalize(executable.relativePath))}';
       if (entrypoint.isGlobal || package != entrypoint.root.name) {
         message += ' in package ${log.bold(package)}';
       }
