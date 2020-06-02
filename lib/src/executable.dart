@@ -16,6 +16,14 @@ import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'utils.dart';
 
+/// Take a list of experiments to enable and turn them into a list with a single
+/// argument to pass to the VM enabling the same experiments.
+List<String> vmArgFromExperiments(List<String> experiments) {
+  return [
+    if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}"
+  ];
+}
+
 /// Runs [executable] from [package] reachable from [entrypoint].
 ///
 /// The [executable] is a relative path to a Dart file within [package], which

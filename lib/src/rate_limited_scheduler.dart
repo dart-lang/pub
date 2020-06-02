@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:meta/meta.dart';
 import 'package:pool/pool.dart';
 import 'package:pedantic/pedantic.dart';
 
@@ -59,7 +60,7 @@ class RateLimitedScheduler<J, V> {
   final Set<J> _started = {};
 
   RateLimitedScheduler(Future<V> Function(J) runJob,
-      {maxConcurrentOperations = 10})
+      {@required maxConcurrentOperations})
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 

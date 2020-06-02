@@ -36,7 +36,7 @@ class UpgradeCommand extends PubCommand {
         defaultsTo: false,
         help: 'Precompile executables in immediate dependencies.');
 
-    argParser.addFlag('packages-dir', negatable: true, hide: true);
+    argParser.addFlag('packages-dir', hide: true);
   }
 
   @override

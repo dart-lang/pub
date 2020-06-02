@@ -62,9 +62,7 @@ class GlobalRunCommand extends PubCommand {
     }
 
     final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = <String>[
-      if (experiments.isNotEmpty) "--enable_experiment=${experiments.join(',')}"
-    ];
+    final vmArgs = vmArgFromExperiments(experiments);
     final globalEntrypoint = await globals.find(package);
     final exitCode = await runExecutable(globalEntrypoint,
         Executable.adaptProgramName(package, executable), args,

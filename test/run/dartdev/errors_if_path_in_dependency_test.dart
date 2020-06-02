@@ -25,8 +25,10 @@ void main() {
 Cannot run an executable in a subdirectory of a dependency.
 
 Usage: pub run <executable> [args...]
--h, --help                   Print this usage information.
-    --[no-]enable-asserts    Enable assert statements.
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.

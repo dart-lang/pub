@@ -71,9 +71,7 @@ class RunCommand extends PubCommand {
     }
 
     final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = <String>[
-      if (experiments.isNotEmpty) "--enable_experiment=${experiments.join(',')}"
-    ];
+    final vmArgs = vmArgFromExperiments(experiments);
 
     var exitCode = await runExecutable(
         entrypoint, Executable.adaptProgramName(package, executable), args,
@@ -119,9 +117,7 @@ class RunCommand extends PubCommand {
     }
 
     final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = <String>[
-      if (experiments.isNotEmpty) "--enable_experiment=${experiments.join(',')}"
-    ];
+    final vmArgs = vmArgFromExperiments(experiments);
 
     return await flushThenExit(await runExecutable(
         entrypoint, Executable(package, 'bin/$command.dart'), args,
