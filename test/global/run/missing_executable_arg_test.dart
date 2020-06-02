@@ -18,6 +18,8 @@ Usage: pub global run <package>:<executable> [args...]
     --[no-]enable-asserts               Enable assert statements.
     --enable-experiment=<experiment>    Runs the executable in a VM with the
                                         given experiments enabled.
+                                        (Will disable snapshotting, resulting in
+                                        slower startup)
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);

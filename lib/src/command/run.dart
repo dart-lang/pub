@@ -31,7 +31,7 @@ class RunCommand extends PubCommand {
     argParser.addMultiOption('enable-experiment',
         help:
             'Runs the executable in a VM with the given experiments enabled.\n'
-            '(Enabling experiments will disable source snapshot caching)',
+            '(Will disable snapshotting, resulting in slower startup)',
         valueHelp: 'experiment');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     // mode exposed for `dartdev run` to use as subprocess.
