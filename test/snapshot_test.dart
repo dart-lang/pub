@@ -34,9 +34,9 @@ void main() {
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.dir('foo', [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello!')),
-          d.file('goodbye.dart.snapshot.$versionSuffix', contains('goodbye!')),
-          d.nothing('shell.sh.snapshot.$versionSuffix'),
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
+          d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
+          d.nothing('shell.sh-$versionSuffix.snapshot'),
           d.nothing('subdir')
         ])
       ]).validate();
@@ -75,9 +75,9 @@ void main() {
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.dir('foo', [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello!')),
-          d.file('goodbye.dart.snapshot.$versionSuffix', contains('goodbye!')),
-          d.nothing('shell.sh.snapshot.$versionSuffix'),
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
+          d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
+          d.nothing('shell.sh-$versionSuffix.snapshot'),
           d.nothing('subdir')
         ])
       ]).validate();
@@ -106,7 +106,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
         globalPackageServer.add((builder) {
@@ -120,7 +120,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -152,7 +152,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
         globalPackageServer.add((builder) {
@@ -165,7 +165,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -190,7 +190,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('Hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Hello!'))
         ]).validate();
 
         await d.git('foo.git', [
@@ -202,7 +202,7 @@ void main() {
             args: ['--precompile'], output: contains('Precompiled foo:hello.'));
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart.snapshot.$versionSuffix', contains('Goodbye!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!'))
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -224,7 +224,7 @@ void main() {
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo',
-              [d.outOfDateSnapshot('hello.dart.snapshot.$versionSuffix')])
+              [d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot')])
         ]).create();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -237,7 +237,7 @@ void main() {
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo', [
-            d.file('hello.dart.snapshot.$versionSuffix', contains('hello!'))
+            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
           ])
         ]).validate();
       });

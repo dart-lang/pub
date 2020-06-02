@@ -23,14 +23,14 @@ void main() {
       d.dir('global_packages', [
         d.dir('foo', [
           d.dir('bin', [
-            d.outOfDateSnapshot('script.dart.snapshot.$versionSuffix-1'),
+            d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1'),
           ])
         ])
       ])
     ]).create();
 
     deleteEntry(p.join(d.dir(cachePath).io.path, 'global_packages', 'foo',
-        'bin', 'script.dart.snapshot.$versionSuffix'));
+        'bin', 'script.dart-$versionSuffix.snapshot'));
     var pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
@@ -42,7 +42,7 @@ void main() {
       d.dir('global_packages', [
         d.dir('foo', [
           d.dir('bin',
-              [d.file('script.dart.snapshot.$versionSuffix', contains('ok'))])
+              [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))])
         ])
       ])
     ]).validate();

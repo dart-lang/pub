@@ -29,13 +29,13 @@ void main() {
       d.dir('global_packages', [
         d.dir('foo', [
           d.dir('bin',
-              [d.outOfDateSnapshot('script.dart.snapshot.$versionSuffix-1')])
+              [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')])
         ])
       ])
     ]).create();
 
     deleteEntry(p.join(d.dir(cachePath).io.path, 'global_packages', 'foo',
-        'bin', 'script.dart.snapshot.$versionSuffix'));
+        'bin', 'script.dart-$versionSuffix.snapshot'));
 
     var process = await TestProcess.start(
         p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
@@ -52,9 +52,9 @@ void main() {
     // await d.dir(cachePath, [
     //   d.dir('global_packages/foo/bin', [
     //     d.file(
-    //         'script.dart.snapshot.$versionSuffix',
+    //         'script.dart-$versionSuffix.snapshot',
     //         isNot(equals(
-    //             readBinaryFile(testAssetPath('out-of-date.snapshot.$versionSuffix')))))
+    //             readBinaryFile(testAssetPath('out-of-date-$versionSuffix.snapshot')))))
     //   ])
     // ]).validate();
   });

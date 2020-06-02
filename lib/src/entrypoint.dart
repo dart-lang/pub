@@ -365,9 +365,9 @@ class Entrypoint {
     final versionSuffix = sdk.version;
     return isGlobal
         ? p.join(_snapshotPath,
-            '${p.basename(executable.relativePath)}.snapshot.$versionSuffix')
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot')
         : p.join(_snapshotPath, executable.package,
-            '${p.basename(executable.relativePath)}.snapshot.$versionSuffix');
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot');
   }
 
   /// The absolute path of [executable] resolved relative to [this].

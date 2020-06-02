@@ -33,10 +33,10 @@ void main() {
         d.dir('foo', [
           d.file('pubspec.lock', contains('1.0.0')),
           d.dir('bin', [
-            d.file('hello.dart.snapshot.$versionSuffix', contains('hello!')),
+            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
             d.file(
-                'goodbye.dart.snapshot.$versionSuffix', contains('goodbye!')),
-            d.nothing('shell.sh.snapshot.$versionSuffix'),
+                'goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
+            d.nothing('shell.sh-$versionSuffix.snapshot'),
             d.nothing('subdir')
           ])
         ])

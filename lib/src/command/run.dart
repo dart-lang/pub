@@ -91,7 +91,7 @@ class RunCommand extends PubCommand {
   /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
   /// mutable (local root package or path-dependency) a source snapshot will be
   /// cached in
-  /// `.dart_tool/pub/bin/<package>/<command>.dart.snapshot.$versionSuffix`.
+  /// `.dart_tool/pub/bin/<package>/<command>.dart-$versionSuffix.snapshot`.
   Future _runFromDartDev() async {
     var package = entrypoint.root.name;
     var command = package;
