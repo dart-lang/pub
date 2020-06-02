@@ -27,8 +27,17 @@ dart_task:
   - test: --preset travis `$SPLIT -n l/5/7 .dart_tool/test_files`
   - test: --preset travis `$SPLIT -n l/6/7 .dart_tool/test_files`
   - test: --preset travis `$SPLIT -n l/7/7 .dart_tool/test_files`
-  - dartfmt
-  - dartanalyzer: --fatal-infos --fatal-warnings .
+
+jobs:
+  include:
+  - dart: dev
+    os: linux
+    dart_task:
+      dartfmt:
+  - dart: dev
+    os: linux
+    dart_task:
+      dartanalyzer: --fatal-infos --fatal-warnings .
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
