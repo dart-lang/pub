@@ -13,11 +13,13 @@ void main() {
     return runPub(args: ['global', 'run'], error: '''
 Must specify an executable to run.
 
-Usage: pub global run <package>:<executable> [args...]
+Usage: pub run <executable> [args...]
 -h, --help                              Print this usage information.
     --[no-]enable-asserts               Enable assert statements.
     --enable-experiment=<experiment>    Runs the executable in a VM with the
-                                        given experiments enabled.
+                                        given experiments enabled. (Enabling
+                                        experiments will disable source snapshot
+                                        caching.)
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);

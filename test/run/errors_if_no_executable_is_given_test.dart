@@ -17,10 +17,12 @@ void main() {
 Must specify an executable to run.
 
 Usage: pub run <executable> [args...]
- -h, --help                              Print this usage information.
-     --[no-]enable-asserts               Enable assert statements.
-     --enable-experiment=<experiment>    Runs the executable in a VM with the
-                                         given experiments enabled.
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled. (Enabling
+                                        experiments will disable source snapshot
+                                        caching.)
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.

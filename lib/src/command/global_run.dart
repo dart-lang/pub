@@ -29,7 +29,8 @@ class GlobalRunCommand extends PubCommand {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',
-        help: 'Runs the executable in a VM with the given experiments enabled.',
+        help: 'Runs the executable in a VM with the given experiments enabled. '
+            '(Enabling experiments will disable source snapshot caching.)',
         valueHelp: 'experiment');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
