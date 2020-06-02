@@ -678,7 +678,7 @@ class GlobalPackages {
         // won't be relative to the right directory when the user runs this.
         assert(p.isAbsolute(snapshot));
         invocation = '''
-if exists "$snapshot" (
+if exist "$snapshot" (
   dart "$snapshot" %*
   rem The VM exits with code 253 if the snapshot version is out-of-date.	
   rem If it is, we need to delete it and run "pub global" manually.	
