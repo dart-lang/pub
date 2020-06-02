@@ -421,10 +421,10 @@ class Entrypoint {
     }
     if (!entryExists(packageConfigFile)) {
       dataError(
-        'No .dart_tool/package_config.json file found, please run "pub get" '
-        'first.\n\n'
-        'Starting with Dart 2.7 this file configures the resolution of '
-        'package import URIs. Running "pub get" will generate this file.',
+        'No .dart_tool/package_config.json file found, please run "pub get".\n'
+        '\n'
+        'Starting with Dart 2.7, the package_config.json file configures '
+        'resolution of package import URIs; run "pub get" to generate it.',
       );
     }
     if (!entryExists(packagesFile)) {
