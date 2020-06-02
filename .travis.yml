@@ -1,5 +1,4 @@
 language: dart
-sudo: false
 
 dart:
   - dev
@@ -32,8 +31,7 @@ jobs:
   include:
   - dart: dev
     os: linux
-    dart_task:
-      dartfmt:
+    dart_task: dartfmt
   - dart: dev
     os: linux
     dart_task:
