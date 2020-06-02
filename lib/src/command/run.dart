@@ -29,7 +29,9 @@ class RunCommand extends PubCommand {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',
-        help: 'Runs the executable in a VM with the given experiments enabled.',
+        help:
+            'Runs the executable in a VM with the given experiments enabled.\n'
+            '(Enabling experiments will disable source snapshot caching)',
         valueHelp: 'experiment');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     // mode exposed for `dartdev run` to use as subprocess.
@@ -91,7 +93,7 @@ class RunCommand extends PubCommand {
   /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
   /// mutable (local root package or path-dependency) a source snapshot will be
   /// cached in
-  /// `.dart_tool/pub/bin/<package>/<command>.dart-$versionSuffix.snapshot`.
+  /// `.dart_tool/pub/bin/<package>/<command>.dart-<sdkVersion>.snapshot`.
   Future _runFromDartDev() async {
     var package = entrypoint.root.name;
     var command = package;
