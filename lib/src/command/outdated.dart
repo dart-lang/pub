@@ -69,19 +69,17 @@ class OutdatedCommand extends PubCommand {
         defaultsTo: 'outdated');
 
     argParser.addFlag('prereleases',
-        defaultsTo: false, help: 'Include prereleases in latest version.');
+        help: 'Include prereleases in latest version.');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
-        defaultsTo: false, help: 'Alias of prereleases.', hide: true);
+        help: 'Alias of prereleases.', hide: true);
 
     argParser.addFlag('show-all',
-        defaultsTo: false,
         help: 'Include dependencies that are already fullfilling --mode.');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('up-to-date',
-        defaultsTo: false,
         hide: true,
         help: 'Include dependencies that are already at the '
             'latest version. Alias of --show-all.');

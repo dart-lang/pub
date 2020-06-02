@@ -94,8 +94,7 @@ b: {}'''));
     });
 
     test('does not display extra zero when duration is less than a minute', () {
-      expect(niceDuration(Duration(minutes: 0, seconds: 0, milliseconds: 400)),
-          equals('0.4s'));
+      expect(niceDuration(Duration(milliseconds: 400)), equals('0.4s'));
     });
 
     test('has reasonable output on minute boundary', () {
