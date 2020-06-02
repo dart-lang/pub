@@ -112,7 +112,7 @@ Future<int> runExecutable(
   var packageConfig = p.absolute(packagesFile);
 
   try {
-    return _runDartProgram(executablePath, args, packageConfig,
+    return await _runDartProgram(executablePath, args, packageConfig,
         enableAsserts: enableAsserts, vmArgs: vmArgs);
   } on IsolateSpawnException catch (error) {
     if (!useSnapshot ||
