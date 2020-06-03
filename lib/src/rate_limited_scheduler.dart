@@ -60,7 +60,7 @@ class RateLimitedScheduler<J, V> {
   final Set<J> _started = {};
 
   RateLimitedScheduler(Future<V> Function(J) runJob,
-      {@required maxConcurrentOperations})
+      {@required int maxConcurrentOperations})
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
