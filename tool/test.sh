@@ -13,7 +13,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
 # PATH to a snapshot file.
-PUB_SNAPSHOT_FILE=`tempfile -p 'pub.' -s '.dart.snapshot.dart2'`;
+PUB_SNAPSHOT_FILE=`mktemp -t pub.XXXXXXX.dart.snapshot.dart2`
 
 # Always remove the snapshot
 function cleanup {
@@ -32,4 +32,4 @@ echo 'Building snapshot'
 # Run tests
 echo 'Running tests'
 export _PUB_TEST_SNAPSHOT="$PUB_SNAPSHOT_FILE"
-pub run test --reporter expanded "$@"
+pub run test "$@"

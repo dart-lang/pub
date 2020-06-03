@@ -4,6 +4,10 @@
 
 // Windows doesn't support sending signals.
 @TestOn('!windows')
+// TODO(sigurdm): Test this when vm-args are provided.
+// This test doesn't work when we subprocess instead of an isolate
+// in `pub run`. Now signals only work as expected when sent to the process
+// group. And this seems hard to emulate in a test.
 import 'dart:io';
 
 import 'package:test/test.dart';

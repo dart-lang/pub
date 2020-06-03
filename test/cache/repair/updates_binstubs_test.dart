@@ -47,8 +47,8 @@ void main() {
     // The broken versions should have been replaced.
     await d.dir(cachePath, [
       d.dir('bin', [
-        // 253 is the VM's exit code upon seeing an out-of-date snapshot.
-        d.file(binStubName('foo-script'), contains('253'))
+        d.file(binStubName('foo-script'),
+            contains('This file was created by pub v0.1.2+3'))
       ])
     ]).validate();
   });

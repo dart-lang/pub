@@ -34,7 +34,7 @@ bool isEntrypoint(CompilationUnit dart) {
   });
 }
 
-/// Snapshots the Dart executable at [executableUrl] to a snapshot at
+/// Snapshots the Dart executable at [executablePath] to a snapshot at
 /// [snapshotPath].
 ///
 /// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
@@ -43,11 +43,15 @@ bool isEntrypoint(CompilationUnit dart) {
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
-Future snapshot(Uri executableUrl, String snapshotPath,
-    {Uri packagesFile, String name}) async {
-  name = log.bold(name ?? executableUrl.toString());
+Future snapshot(
+  String executablePath,
+  String snapshotPath, {
+  Uri packagesFile,
+  String name,
+}) async {
+  name = log.bold(name ?? executablePath.toString());
 
-  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
+  var args = ['--snapshot=$snapshotPath', p.toUri(executablePath).toString()];
 
   if (packagesFile != null) {
     // Resolve [packagesFile] in case it's relative to work around sdk#33177.

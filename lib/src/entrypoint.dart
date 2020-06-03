@@ -15,6 +15,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'dart.dart' as dart;
 import 'exceptions.dart';
+import 'executable.dart';
 import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
@@ -75,10 +76,6 @@ class Entrypoint {
   /// the network.
   final SystemCache cache;
 
-  /// Whether this entrypoint is in memory only, as opposed to representing a
-  /// real directory on disk.
-  final bool _inMemory;
-
   /// Whether this entrypoint exists within the package cache.
   bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
 
@@ -122,31 +119,50 @@ class Entrypoint {
 
   PackageGraph _packageGraph;
 
+  /// Where the lock file and package configurations are to be found.
+  ///
+  /// Global packages (except those from path source)
+  /// store these in the global cache.
+  String get _configRoot =>
+      isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
+
   /// The path to the entrypoint's "packages" directory.
   String get packagesPath => root.path('packages');
 
   /// The path to the entrypoint's ".packages" file.
-  String get packagesFile => root.path('.packages');
+  String get packagesFile => p.join(_configRoot, '.packages');
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
   String get packageConfigFile =>
-      root.path('.dart_tool', 'package_config.json');
+      p.join(_configRoot, '.dart_tool', 'package_config.json');
 
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => root.path('pubspec.yaml');
 
   /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => root.path('pubspec.lock');
+  String get lockFilePath => p.join(_configRoot, 'pubspec.lock');
 
   /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
   ///
   /// If the old-style `.pub` directory is being used, this returns that
   /// instead.
+  ///
+  /// For globally activated packages from path, this is not the same as
+  /// [configRoot], because the snapshots should be stored in the global cache,
+  /// but the configuration is stored at the package itself.
   String get cachePath {
-    var newPath = root.path('.dart_tool/pub');
-    var oldPath = root.path('.pub');
-    if (!dirExists(newPath) && dirExists(oldPath)) return oldPath;
-    return newPath;
+    if (isGlobal) {
+      return p.join(
+        cache.rootDir,
+        'global_packages',
+        root.name,
+      );
+    } else {
+      var newPath = root.path('.dart_tool/pub');
+      var oldPath = root.path('.pub');
+      if (!dirExists(newPath) && dirExists(oldPath)) return oldPath;
+      return newPath;
+    }
   }
 
   /// The path to the directory containing dependency executable snapshots.
@@ -155,27 +171,21 @@ class Entrypoint {
   /// Loads the entrypoint for the package at the current directory.
   Entrypoint.current(this.cache)
       : root = Package.load(null, '.', cache.sources, isRootPackage: true),
-        _inMemory = false,
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
-        _inMemory = false,
-        isGlobal = true;
+        isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
-  Entrypoint.inMemory(this.root, this._lockFile, this.cache)
-      : _inMemory = true,
-        isGlobal = true;
-
-  /// Creates an entrypoint given a package and a [solveResult], from which the
-  /// package graph and lockfile will be computed.
-  Entrypoint.fromSolveResult(this.root, this.cache, SolveResult solveResult)
-      : _inMemory = true,
-        isGlobal = true {
-    _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
-    _lockFile = _packageGraph.lockFile;
+  /// If a SolveResult is already created it can be passes as an optimization.
+  Entrypoint.global(this.root, this._lockFile, this.cache,
+      {SolveResult solveResult})
+      : isGlobal = true {
+    if (solveResult != null) {
+      _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
+    }
   }
 
   /// Writes .packages and .dart_tool/package_config.json
@@ -274,59 +284,98 @@ class Entrypoint {
     }
   }
 
-  /// Precompiles all executables from dependencies that don't transitively
-  /// depend on [this] or on a path dependency.
-  Future precompileExecutables({Iterable<String> changed}) async {
-    migrateCache();
-    _deleteExecutableSnapshots(changed: changed);
-
-    var executables = mapMap<String, PackageRange, String, List<String>>(
-        root.immediateDependencies,
-        value: (name, _) => _executablesForPackage(name));
-
-    for (var package in executables.keys.toList()) {
-      if (executables[package].isEmpty) executables.remove(package);
+  /// All executables that should be snapshotted from this entrypoint.
+  ///
+  /// This is all executables in direct dependencies.
+  /// that don't transitively depend on [this] or on a mutable dependency.
+  ///
+  /// Except globally activated packages they should precompile executables from
+  /// the package itself if they are immutable.
+  List<Executable> get precompiledExecutables {
+    if (isGlobal) {
+      if (isCached) {
+        return root.executablePaths
+            .map((path) => Executable(root.name, path))
+            .toList();
+      } else {
+        return <Executable>[];
+      }
     }
+    final r = root.immediateDependencies.keys.expand((packageName) {
+      if (packageGraph.isPackageMutable(packageName)) {
+        return <Executable>[];
+      }
+      final package = packageGraph.packages[packageName];
+      return package.executablePaths
+          .map((path) => Executable(packageName, path));
+    }).toList();
+    return r;
+  }
+
+  /// Precompiles all [precompiledExecutables].
+  Future<void> precompileExecutables({Iterable<String> changed}) async {
+    migrateCache();
+
+    final executables = precompiledExecutables;
 
     if (executables.isEmpty) return;
 
     await log.progress('Precompiling executables', () async {
-      ensureDir(_snapshotPath);
-
-      // Make sure there's a trailing newline so our version file matches the
-      // SDK's.
-      writeTextFile(p.join(_snapshotPath, 'sdk-version'), '${sdk.version}\n');
-
-      await _precompileExecutables(executables);
+      if (isGlobal) {
+        /// Global snapshots might linger in the cache if we don't remove old
+        /// snapshots when it is re-activated.
+        cleanDir(_snapshotPath);
+      } else {
+        ensureDir(_snapshotPath);
+      }
+      return waitAndPrintErrors(executables.map((executable) {
+        var dir = p.dirname(snapshotPathOfExecutable(executable));
+        cleanDir(dir);
+        return waitAndPrintErrors(executables.map(_precompileExecutable));
+      }));
     });
-  }
-
-  //// Precompiles [executables] to snapshots from the filesystem.
-  Future<void> _precompileExecutables(Map<String, List<String>> executables) {
-    return waitAndPrintErrors(executables.keys.map((package) {
-      var dir = p.join(_snapshotPath, package);
-      cleanDir(dir);
-      return waitAndPrintErrors(executables[package].map((path) =>
-          _precompileExecutable(
-              package, p.join(packageGraph.packages[package].dir, path))));
-    }));
   }
 
   /// Precompiles executable .dart file at [path] to a snapshot.
-  Future<void> precompileExecutable(String package, String path) async {
+  Future<void> precompileExecutable(Executable executable) async {
     return await log.progress('Precompiling executable', () async {
-      var dir = p.join(_snapshotPath, package);
-      ensureDir(dir);
-      return waitAndPrintErrors([_precompileExecutable(package, path)]);
+      ensureDir(p.dirname(snapshotPathOfExecutable(executable)));
+      return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
   }
 
-  Future<void> _precompileExecutable(String package, String path) async {
-    var dir = p.join(_snapshotPath, package);
+  Future<void> _precompileExecutable(Executable executable) async {
+    final package = executable.package;
     await dart.snapshot(
-        p.toUri(path), p.join(dir, p.basename(path) + '.snapshot.dart2'),
+        resolveExecutable(executable), snapshotPathOfExecutable(executable),
         packagesFile: p.toUri(packagesFile),
-        name: '$package:${p.basenameWithoutExtension(path)}');
+        name:
+            '$package:${p.basenameWithoutExtension(executable.relativePath)}');
+  }
+
+  /// The location of the snapshot of the dart program at [path] in [package]
+  /// will be stored here.
+  ///
+  /// We use the sdk version to make sure we don't run snapshots from a
+  /// different sdk.
+  ///
+  /// [path] must be relative.
+  String snapshotPathOfExecutable(Executable executable) {
+    assert(p.isRelative(executable.relativePath));
+    final versionSuffix = sdk.version;
+    return isGlobal
+        ? p.join(_snapshotPath,
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot')
+        : p.join(_snapshotPath, executable.package,
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot');
+  }
+
+  /// The absolute path of [executable] resolved relative to [this].
+  String resolveExecutable(Executable executable) {
+    return p.join(
+      packageGraph.packages[executable.package].dir,
+      executable.relativePath,
+    );
   }
 
   /// Deletes outdated cached executable snapshots.
@@ -368,34 +417,6 @@ class Entrypoint {
     }
   }
 
-  /// Returns the list of all paths within [packageName] that should be
-  /// precompiled.
-  List<String> _executablesForPackage(String packageName) {
-    var package = packageGraph.packages[packageName];
-    var binDir = package.path('bin');
-    if (!dirExists(binDir)) return [];
-    if (packageGraph.isPackageMutable(packageName)) return [];
-
-    var executables = package.executablePaths;
-
-    // If any executables don't exist, recompile all executables.
-    //
-    // Normally, [_deleteExecutableSnapshots] will ensure that all the outdated
-    // executable directories will be deleted, any checking for any non-existent
-    // executable will save us a few IO operations over checking each one. If
-    // some executables do exist and some do not, the directory is corrupted and
-    // it's good to start from scratch anyway.
-    var executablesExist = executables.every((executable) {
-      var snapshotPath = p.join(_snapshotPath, packageName,
-          '${p.basename(executable)}.snapshot.dart2');
-      return fileExists(snapshotPath);
-    });
-    if (!executablesExist) return executables;
-
-    // Otherwise, we don't need to recompile.
-    return [];
-  }
-
   /// Makes sure the package at [id] is locally available.
   ///
   /// This automatically downloads the package to the system-wide cache as well
@@ -414,7 +435,7 @@ class Entrypoint {
   /// `.dart_tool/package_config.json` file doesn't exist or if it's out-of-date
   /// relative to the lockfile or the pubspec.
   void assertUpToDate() {
-    if (_inMemory) return;
+    if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
       dataError('No pubspec.lock file found, please run "pub get" first.');
@@ -761,7 +782,10 @@ class Entrypoint {
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
   /// to the new-style `.dart_tool/pub` directory.
   void migrateCache() {
-    var oldPath = root.path('.pub');
+    // Cached packages don't have these.
+    if (isCached) return;
+
+    var oldPath = p.join(_configRoot, '.pub');
     if (!dirExists(oldPath)) return;
 
     var newPath = root.path('.dart_tool/pub');
