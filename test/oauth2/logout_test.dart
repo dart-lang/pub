@@ -17,18 +17,14 @@ void main() {
         .create();
 
     await runPub(
-      args: ['logout'],
-      output: contains('Logging out of pub.dartlang.org.'),
-    );
+        args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
 
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
   });
   test('with no existing credentials.json, notifies.', () async {
     await d.dir(cachePath, [d.nothing('credentials.json')]).create();
     await runPub(
-      args: ['logout'],
-      output: contains('No existing credentials file'),
-    );
+        args: ['logout'], output: contains('No existing credentials file'));
 
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
   });
