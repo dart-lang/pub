@@ -169,8 +169,7 @@ class BoundHostedSource extends CachedSource {
   RateLimitedScheduler<PackageRef, Map<PackageId, _VersionInfo>> _scheduler;
 
   BoundHostedSource(this.source, this.systemCache) {
-    _scheduler =
-        RateLimitedScheduler(_fetchVersions, maxConcurrentOperations: 10);
+    _scheduler = RateLimitedScheduler(_fetchVersions);
   }
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {

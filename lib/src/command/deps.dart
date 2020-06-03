@@ -48,9 +48,7 @@ class DepsCommand extends PubCommand {
         defaultsTo: 'tree');
 
     argParser.addFlag('dev',
-        negatable: true,
-        help: 'Whether to include dev dependencies.',
-        defaultsTo: true);
+        help: 'Whether to include dev dependencies.', defaultsTo: true);
 
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
