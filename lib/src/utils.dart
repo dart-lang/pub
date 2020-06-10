@@ -257,7 +257,7 @@ Set<String> createFileFilter(Iterable<String> files) {
   }).toSet();
 }
 
-/// Given a blacklist of directory names, returns a set of patterns that can
+/// Given a denylist of directory names, returns a set of patterns that can
 /// be used to filter for those directory names.
 ///
 /// For a given path, that path contains some string in the returned set if
