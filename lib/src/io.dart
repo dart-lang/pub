@@ -239,7 +239,7 @@ Future<String> _createSystemTempDir() async {
 /// `.` (defaults to `false`). If [includeDirs] is `true`, includes directories
 /// as well as files (defaults to `true`).
 ///
-/// [whiteList] is a list of hidden filenames to include even when
+/// [allowed] is a list of hidden filenames to include even when
 /// [includeHidden] is `false`.
 ///
 /// Note that dart:io handles recursive symlinks in an unfortunate way. You
@@ -254,9 +254,9 @@ List<String> listDir(String dir,
     {bool recursive = false,
     bool includeHidden = false,
     bool includeDirs = true,
-    Iterable<String> whitelist}) {
-  whitelist ??= [];
-  var whitelistFilter = createFileFilter(whitelist);
+    Iterable<String> allowed}) {
+  allowed ??= [];
+  var allowlistFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
   // files. As such, it leans more heavily towards optimization as opposed to
@@ -283,13 +283,13 @@ List<String> listDir(String dir,
         assert(entity.path.startsWith(dir));
         var pathInDir = entity.path.substring(dir.length);
 
-        // If the basename is whitelisted, don't count its "/." as making the file
-        // hidden.
-        var whitelistedBasename =
-            whitelistFilter.firstWhere(pathInDir.contains, orElse: () => null);
-        if (whitelistedBasename != null) {
-          pathInDir = pathInDir.substring(
-              0, pathInDir.length - whitelistedBasename.length);
+        // If the basename is in [allowed], don't count its "/." as making the
+        // file hidden.
+        var allowedBasename =
+            allowlistFilter.firstWhere(pathInDir.contains, orElse: () => null);
+        if (allowedBasename != null) {
+          pathInDir =
+              pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }
 
         if (pathInDir.contains('/.')) return false;
