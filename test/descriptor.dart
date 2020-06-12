@@ -82,12 +82,20 @@ Descriptor libDir(String name, [String code]) {
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
     RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
 
-/// Describes a directory for a Git package. This directory is of the form
-/// found in the revision cache of the global package cache.
-Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
-  var value = name;
-  if (modifier != null) value = '$name $modifier';
-  return hashDir(name, [libDir(name, value)]);
+/// Describes a directory for a Git repo with a dart package.
+/// This directory is of the form found in the revision cache of the global
+/// package cache.
+///
+/// If [repoName] is not given it is assumed to be equal to [packageName].
+Descriptor gitPackageRevisionCacheDir(
+  String packageName, {
+  int modifier,
+  String repoName,
+}) {
+  repoName = repoName ?? packageName;
+  var value = packageName;
+  if (modifier != null) value = '$packageName $modifier';
+  return hashDir(repoName, [libDir(packageName, value)]);
 }
 
 /// Describes a directory for a Git package. This directory is of the form
