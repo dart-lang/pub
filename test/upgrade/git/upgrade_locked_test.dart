@@ -46,8 +46,8 @@ void main() {
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.gitPackageRevisionCacheDir('foo', 2),
-        d.gitPackageRevisionCacheDir('bar', 2),
+        d.gitPackageRevisionCacheDir('foo', modifier: 2),
+        d.gitPackageRevisionCacheDir('bar', modifier: 2),
       ])
     ]).validate();
 
