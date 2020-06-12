@@ -580,6 +580,6 @@ class BoundGitSource extends CachedSource {
     if (name.endsWith('.git')) {
       name = name.substring(0, name.length - '.git'.length);
     }
-    return name;
+    return name.replaceAll(RegExp('[^a-zA-Z0-9.-]'), '_');
   }
 }
