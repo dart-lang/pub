@@ -53,14 +53,10 @@ void main() {
         await _serveDirectory(p.join(descriptor.io.path, '.git'), funkyName);
 
     await d.appDir({
-      'foo': {'git': 'http://localhost:${server.url.port}/${funkyName}'}
+      'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'}
     }).create();
 
     await pubGet();
-
-    Directory(p.join(d.dir(cachePath).io.path))
-        .listSync(recursive: true)
-        .forEach((e) => print(e));
 
     await d.dir(cachePath, [
       d.dir('git', [
