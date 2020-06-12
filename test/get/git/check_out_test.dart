@@ -73,7 +73,6 @@ Future<shelf.Server> _serveDirectory(String dir, String prefix) async {
   final server = await shelf_io.IOServer.bind('localhost', 0);
   server.mount((request) async {
     final path = request.url.path.substring(prefix.length + 1);
-    print('${request.url.path} $path');
     try {
       return shelf.Response.ok(await File(p.join(dir, path)).readAsBytes());
     } catch (_) {
