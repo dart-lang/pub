@@ -136,16 +136,6 @@ class PartialSolution {
     for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
 
-      if (!assignment.package.isRoot &&
-          !assignment.package.samePackage(term.package)) {
-        // not foo from hosted has no bearing on foo from git
-        if (!assignment.isPositive) continue;
-
-        // foo from hosted satisfies not foo from git
-        assert(!term.isPositive);
-        return assignment;
-      }
-
       assignedTerm = assignedTerm == null
           ? assignment
           : assignedTerm.intersect(assignment);
