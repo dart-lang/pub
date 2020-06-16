@@ -207,10 +207,15 @@ Future pubDowngrade(
 Future<PubProcess> pubRun(
     {bool global = false,
     Iterable<String> args,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    bool verbose = true}) async {
   var pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(args: pubArgs, environment: environment);
+  var pub = await startPub(
+    args: pubArgs,
+    environment: environment,
+    verbose: verbose,
+  );
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -363,7 +368,8 @@ Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    bool verbose = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -395,7 +401,7 @@ Future<PubProcess> startPub(
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
   var dartArgs = ['--packages=$dotPackagesPath'];
-  dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
+  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)

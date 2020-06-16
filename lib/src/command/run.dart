@@ -76,10 +76,14 @@ class RunCommand extends PubCommand {
     final vmArgs = vmArgFromExperiments(experiments);
 
     var exitCode = await runExecutable(
-        entrypoint, Executable.adaptProgramName(package, executable), args,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: entrypoint.precompileExecutable,
-        vmArgs: vmArgs);
+      entrypoint,
+      Executable.adaptProgramName(package, executable),
+      args,
+      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      recompile: (executable) => log.warningsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(executable)),
+      vmArgs: vmArgs,
+    );
     await flushThenExit(exitCode);
   }
 
