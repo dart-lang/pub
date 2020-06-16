@@ -143,7 +143,7 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.GET, precompile: true);
+    await entrypoint.acquireDependencies(SolveType.GET);
     var name = entrypoint.root.name;
 
     // Call this just to log what the current active package is, if any.
