@@ -54,4 +54,28 @@ void main() {
         output: 'ok',
         workingDirectory: p.current);
   });
+
+  test("Doesn't precompile binaries when activating from path", () async {
+    await servePackages(
+      (builder) => builder.serve(
+        'bar',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
+        ],
+      ),
+    );
+
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0', deps: {'bar': '^1.0.0'}),
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+    ]).create();
+
+    await runPub(
+        args: ['global', 'activate', '--source', 'path', '../foo'],
+        output: allOf([
+          contains('Activated foo 1.0.0 at path'),
+          isNot(contains('Precompiled'))
+        ]));
+  });
 }
