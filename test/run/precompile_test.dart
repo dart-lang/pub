@@ -16,22 +16,39 @@ main(List<String> args) {
 ''';
 
 void main() {
-  test('`pub run` precompiles script', () async {
+  Future<void> setupForPubRunToPrecompile() async {
     await d.dir(appPath, [
       d.appPubspec({'test': '1.0.0'}),
     ]).create();
 
     await servePackages((server) => server
       ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
+        d.dir('bin',
+            [d.file('test.dart', 'main(List<String> args) => print("hello");')])
       ]));
 
     await pubGet(args: ['--no-precompile']);
+  }
 
+  test('`pub run` precompiles script', () async {
+    await setupForPubRunToPrecompile();
     var pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, contains('Precompiling executable...'));
+    expect(lines, contains('hello'));
+  });
+
+  test(
+      "`pub run` doesn't write about precompilation when a terminal is not attached",
+      () async {
+    await setupForPubRunToPrecompile();
+
+    var pub = await pubRun(args: ['test'], verbose: false);
+    await pub.shouldExit(0);
+    final lines = await pub.stdout.rest.toList();
+    expect(lines, isNot(contains('Precompiling executable...')));
+    expect(lines, contains('hello'));
   });
 
   // Regression test of https://github.com/dart-lang/pub/issues/2483
