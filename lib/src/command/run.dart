@@ -31,8 +31,10 @@ class RunCommand extends PubCommand {
     argParser.addMultiOption('enable-experiment',
         help:
             'Runs the executable in a VM with the given experiments enabled.\n'
-            '(Will disable snapshotting, resulting in slower startup)',
+            '(Will disable snapshotting, resulting in slower startup).',
         valueHelp: 'experiment');
+    argParser.addOption('sound-null-safety',
+        help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     // mode exposed for `dartdev run` to use as subprocess.
     argParser.addFlag('dart-dev-run', hide: true);
@@ -72,8 +74,7 @@ class RunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = vmArgFromExperiments(experiments);
+    final vmArgs = vmArgsFromArgResults(argResults);
 
     var exitCode = await runExecutable(
       entrypoint,
@@ -122,8 +123,7 @@ class RunCommand extends PubCommand {
       args = argResults.rest.skip(1).toList();
     }
 
-    final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = vmArgFromExperiments(experiments);
+    final vmArgs = vmArgsFromArgResults(argResults);
 
     return await flushThenExit(await runExecutable(
         entrypoint, Executable(package, 'bin/$command.dart'), args,

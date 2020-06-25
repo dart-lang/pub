@@ -22,7 +22,9 @@ Usage: pub run <executable> [args...]
     --enable-experiment=<experiment>    Runs the executable in a VM with the
                                         given experiments enabled.
                                         (Will disable snapshotting, resulting in
-                                        slower startup)
+                                        slower startup).
+     --sound-null-safety                 Override the default null safety
+                                         execution mode.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.
