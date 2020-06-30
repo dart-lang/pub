@@ -31,8 +31,8 @@ Usage: pub run <executable> [args...]
                                         given experiments enabled.
                                         (Will disable snapshotting, resulting in
                                         slower startup).
-     --sound-null-safety                 Override the default null safety
-                                         execution mode.
+    --[no-]sound-null-safety            Override the default null safety
+                                        execution mode.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.

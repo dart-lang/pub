@@ -32,7 +32,7 @@ class GlobalRunCommand extends PubCommand {
         help: 'Runs the executable in a VM with the given experiments enabled. '
             '(Will disable snapshotting, resulting in slower startup).',
         valueHelp: 'experiment');
-    argParser.addOption('sound-null-safety',
+    argParser.addFlag('sound-null-safety',
         help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }

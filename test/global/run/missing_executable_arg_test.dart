@@ -20,8 +20,8 @@ Usage: pub global run <package>:<executable> [args...]
                                         given experiments enabled. (Will disable
                                         snapshotting, resulting in slower
                                         startup).
-     --sound-null-safety                 Override the default null safety
-                                         execution mode.
+    --[no-]sound-null-safety            Override the default null safety
+                                        execution mode.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
