@@ -2,13 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' hide mapMap;
 
 import 'entrypoint.dart';
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver.dart';
 import 'source/cached.dart';
+import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
 class PackageGraph {

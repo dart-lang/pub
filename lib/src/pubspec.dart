@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' hide mapMap;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
