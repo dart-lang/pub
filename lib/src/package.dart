@@ -110,6 +110,14 @@ class Package {
         orElse: () => null);
   }
 
+  /// Returns the path to the pubspec file at the root of the entrypoint, or
+  /// null if no pubspec file is found.
+  String get pubspecPath {
+    return listFiles(recursive: false, useGitIgnore: true).firstWhere(
+        (entry) => p.basename(entry).contains('pubspec.yaml'),
+        orElse: () => null);
+  }
+
   /// Returns whether or not this package is in a Git repo.
   bool get inGitRepo {
     if (_inGitRepoCache != null) return _inGitRepoCache;

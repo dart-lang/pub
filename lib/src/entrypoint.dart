@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import 'dart.dart' as dart;
 import 'exceptions.dart';
@@ -173,6 +174,9 @@ class Entrypoint {
       : root = Package.load(null, '.', cache.sources, isRootPackage: true),
         isGlobal = false;
 
+  /// Loads the entrypoint for [root].
+  Entrypoint.fromRoot(this.root, this.cache) : isGlobal = false;
+
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
@@ -260,6 +264,105 @@ class Entrypoint {
       return;
     }
 
+    await Future.wait(result.packages.map(_get));
+    _saveLockFile(result);
+
+    result.summarizeChanges(type, dryRun: dryRun);
+
+    /// Build a package graph from the version solver results so we don't
+    /// have to reload and reparse all the pubspecs.
+    _packageGraph = PackageGraph.fromSolveResult(this, result);
+
+    await writePackagesFiles();
+
+    try {
+      if (precompile) {
+        await precompileExecutables(changed: result.changedPackages);
+      } else {
+        _deleteExecutableSnapshots(changed: result.changedPackages);
+      }
+    } catch (error, stackTrace) {
+      // Just log exceptions here. Since the method is just about acquiring
+      // dependencies, it shouldn't fail unless that fails.
+      log.exception(error, stackTrace);
+    }
+  }
+
+  /// TODO
+  Future addAndAcquireDependencies(SolveType type, List<String> packages,
+      {List<String> useLatest,
+      bool development = false,
+      bool dryRun = false,
+      bool precompile = false}) async {
+    if (root.pubspecPath == null) {
+      throw FileException(
+          // Make the package dir absolute because for the entrypoint it'll just
+          // be ".", which may be confusing.
+          'Could not find a file named "pubspec.yaml" in '
+          '"${canonicalize('.')}".',
+          root.pubspecPath);
+    }
+
+    final dependencyKey = development ? 'dev_dependencies' : 'dependencies';
+
+    final yamlEditor = YamlEditor(readTextFile(pubspecPath));
+
+    for (var package in packages) {
+      yamlEditor.assign([dependencyKey, package], 'any');
+    }
+
+    final pubspec = Pubspec.parse(yamlEditor.toString(), cache.sources,
+        expectedName: null,
+        includeDefaultSdkConstraint: false, // ?
+        location: p.toUri(root.pubspecPath));
+
+    final package = Package(pubspec, '.');
+
+    final result = await log.progress(
+      'Resolving dependencies',
+      () => resolveVersions(
+        type,
+        cache,
+        package,
+        lockFile: lockFile,
+        useLatest: useLatest,
+      ),
+    );
+
+    // Log once about all overridden packages.
+    if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
+      var overriddenPackages = (result.pubspecs.values
+              .where((pubspec) => pubspec.dartSdkWasOverridden)
+              .map((pubspec) => pubspec.name)
+              .toList()
+                ..sort())
+          .join(', ');
+      if (overriddenPackages.isNotEmpty) {
+        log.message(log.yellow(
+            'Overriding the upper bound Dart SDK constraint to <=${sdk.version} '
+            'for the following packages:\n\n$overriddenPackages\n\n'
+            'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
+            'environment variable to `false`, or you can silence this message '
+            'by setting it to `quiet`.'));
+      }
+    }
+
+    result.showReport(type);
+    final finalPackages = <String, Version>{};
+    for (var package in result.packages) {
+      finalPackages[package.name] = package.version;
+    }
+
+    for (var package in packages) {
+      yamlEditor.assign([dependencyKey, package], '^${finalPackages[package]}');
+    }
+
+    if (dryRun) {
+      result.summarizeChanges(type, dryRun: dryRun);
+      return;
+    }
+
+    _savePubspec(yamlEditor);
     await Future.wait(result.packages.map(_get));
     _saveLockFile(result);
 
@@ -776,6 +879,19 @@ class Entrypoint {
 
     final serialized = _lockFile.serialize(root.dir);
     writeTextFile(lockFilePath,
+        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
+  }
+
+  /// Saves a list of concrete package versions to the `pubspec.yaml` file.
+  ///
+  /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
+  /// uses that.
+  void _savePubspec(YamlEditor editor) {
+    final windowsLineEndings = fileExists(pubspecPath) &&
+        detectWindowsLineEndings(readTextFile(pubspecPath));
+
+    final serialized = editor.toString();
+    writeTextFile(pubspecPath,
         windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
   }
 
