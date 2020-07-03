@@ -1,6 +1,4 @@
 // import 'dart:async';
-import 'package:pub/src/solver/type.dart';
-
 import '../command.dart';
 import '../solver.dart';
 

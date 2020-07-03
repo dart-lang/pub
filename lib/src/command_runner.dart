@@ -9,9 +9,9 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:pub/src/command/add.dart';
 
 import 'command.dart' show pubCommandAliases, lineLength;
+import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';

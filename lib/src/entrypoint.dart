@@ -288,7 +288,25 @@ class Entrypoint {
     }
   }
 
-  /// TODO
+  /// Gets all dependencies of the [root] package, while adding [packages].
+  ///
+  /// Performs version resolution according to [SolveType].
+  ///
+  /// [useLatest], if provided, defines a list of packages that will be
+  /// unlocked and forced to their latest versions. If [upgradeAll] is
+  /// true, the previous lockfile is ignored and all packages are re-resolved
+  /// from scratch. Otherwise, it will attempt to preserve the versions of all
+  /// previously locked packages.
+  ///
+  /// Shows a report of the changes made relative to the previous lockfile. If
+  /// this is an upgrade or downgrade, all transitive dependencies are shown in
+  /// the report. Otherwise, only dependencies that were changed are shown. If
+  /// [dryRun] is `true`, no physical changes are made.
+  ///
+  /// If [precompile] is `true` (the default), this snapshots dependencies'
+  /// executables.
+  ///
+  /// Updates pubspec.yaml, [lockFile] and [packageRoot] accordingly.
   Future addAndAcquireDependencies(SolveType type, List<String> packages,
       {List<String> useLatest,
       bool development = false,
@@ -312,7 +330,6 @@ class Entrypoint {
     }
 
     final pubspec = Pubspec.parse(yamlEditor.toString(), cache.sources,
-        expectedName: null,
         includeDefaultSdkConstraint: false, // ?
         location: p.toUri(root.pubspecPath));
 
