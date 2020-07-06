@@ -1,0 +1,26 @@
+test: test
+---
+"a!\"#$%&'()*+,-.\/09:;<=>?@AZ[\\]^_`az{|}~": safe
+test: test
+---
+?foo: safe question mark
+"a!\"#$%&'()*+,-.\/09:;<=>?@AZ[\\]^_`az{|}~": safe
+test: test
+---
+:foo: safe colon
+?foo: safe question mark
+"a!\"#$%&'()*+,-.\/09:;<=>?@AZ[\\]^_`az{|}~": safe
+test: test
+---
+-foo: safe dash
+:foo: safe colon
+?foo: safe question mark
+"a!\"#$%&'()*+,-.\/09:;<=>?@AZ[\\]^_`az{|}~": safe
+test: test
+---
+-foo: safe dash
+:foo: safe colon
+?foo: safe question mark
+"a!\"#$%&'()*+,-.\/09:;<=>?@AZ[\\]^_`az{|}~": safe
+test: test
+this is#not: a comment

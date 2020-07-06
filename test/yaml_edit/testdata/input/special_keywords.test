@@ -1,0 +1,11 @@
+SPECIAL KEYWORDS 
+---
+~: null
+false: false
+No: No
+true: true
+---
+- [assign, [null], tilde]
+- [assign, [false], false]
+- [assign, [No], no]
+- [assign, [true], True]

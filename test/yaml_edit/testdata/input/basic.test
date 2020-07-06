@@ -1,0 +1,5 @@
+BASIC TEST
+---
+YAML: YAML Ain't Markup Language
+---
+- [assign, ['YAML'], hi]
