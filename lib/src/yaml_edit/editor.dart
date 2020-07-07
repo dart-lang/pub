@@ -69,10 +69,10 @@ class YamlEditor {
   @override
   String toString() => _yaml;
 
-  /// Returns the detected indentation level used for this YAML document, or defaults
-  /// to a value of `2` if no indentation level can be detected.
+  /// Returns the detected indentation step used for this YAML document, or defaults
+  /// to a value of `2` if no indentation step can be detected.
   ///
-  /// Indentation level is determined by the difference in indentation of the first
+  /// Indentation step is determined by the difference in indentation of the first
   /// block-styled yaml collection in the second level as compared to the top-level
   /// elements. In the case where there are multiple possible candidates, we choose
   /// the candidate closest to the start of [_yaml].
