@@ -20,7 +20,7 @@ bool isDangerousString(String string) {
 
     /// [string] should also not contain the `[`, `]`, `,`, `{` and `}` indicator characters.
     return string.contains(RegExp(r'\{|\[|\]|\}|,'));
-  } catch (YamlException) {
+  } on YamlException {
     return true;
   }
 }

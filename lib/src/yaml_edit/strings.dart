@@ -5,12 +5,13 @@
 import 'package:yaml/yaml.dart';
 import 'utils.dart';
 
-/// Given [value], tries to format it into a plain string recognizable by YAML. If
-/// it fails, it defaults to returning a double-quoted string.
+/// Given [value], tries to format it into a plain string recognizable by YAML.
+/// If it fails, it defaults to returning a double-quoted string.
 ///
-/// Not all values can be formatted into a plain string. If the string contains an
-/// escape sequence, it can only be detected when in a double-quoted sequence. Plain
-/// strings may also be misinterpreted by the YAML parser (e.g. ' null').
+/// Not all values can be formatted into a plain string. If the string contains
+/// an escape sequence, it can only be detected when in a double-quoted
+/// sequence. Plain strings may also be misinterpreted by the YAML parser (e.g.
+/// ' null').
 String _tryGetPlainString(Object value) {
   if (value is YamlNode) {
     AssertionError(
@@ -20,11 +21,12 @@ String _tryGetPlainString(Object value) {
   assertValidScalar(value);
 
   if (value is String) {
-    /// If it contains a dangerous character we want to wrap the result with double
-    /// quotes because the double quoted style allows for arbitrary strings with "\"
-    /// escape sequences.
+    /// If it contains a dangerous character we want to wrap the result with
+    /// double quotes because the double quoted style allows for arbitrary
+    /// strings with "\" escape sequences.
     ///
-    /// See 7.3.1 Double-Quoted Style https://yaml.org/spec/1.2/spec.html#id2787109
+    /// See 7.3.1 Double-Quoted Style
+    /// https://yaml.org/spec/1.2/spec.html#id2787109
     if (isDangerousString(value)) {
       return _getDoubleQuotedString(value);
     }
@@ -35,7 +37,8 @@ String _tryGetPlainString(Object value) {
   return value.toString();
 }
 
-/// Checks if [string] has unprintable characters according to [unprintableCharCodes].
+/// Checks if [string] has unprintable characters according to
+/// [unprintableCharCodes].
 bool hasUnprintableCharacters(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
@@ -67,10 +70,11 @@ String _getDoubleQuotedString(String string) {
   return '"$buffer"';
 }
 
-/// Generates a YAML-safe single-quoted string. Automatically escapes single-quotes.
+/// Generates a YAML-safe single-quoted string. Automatically escapes
+/// single-quotes.
 ///
-/// It is important that we ensure that [string] is free of unprintable characters
-/// by calling [assertValidScalar] before invoking this function.
+/// It is important that we ensure that [string] is free of unprintable
+/// characters by calling [assertValidScalar] before invoking this function.
 String _getSingleQuotedString(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
@@ -80,8 +84,8 @@ String _getSingleQuotedString(String string) {
 
 /// Generates a YAML-safe folded string.
 ///
-/// It is important that we ensure that [string] is free of unprintable characters
-/// by calling [assertValidScalar] before invoking this function.
+/// It is important that we ensure that [string] is free of unprintable
+/// characters by calling [assertValidScalar] before invoking this function.
 String _getFoldedString(String string, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(string, 'string');
   ArgumentError.checkNotNull(indentation, 'indentation');
@@ -108,8 +112,8 @@ String _getFoldedString(String string, int indentation, String lineEnding) {
 
 /// Generates a YAML-safe literal string.
 ///
-/// It is important that we ensure that [string] is free of unprintable characters
-/// by calling [assertValidScalar] before invoking this function.
+/// It is important that we ensure that [string] is free of unprintable
+/// characters by calling [assertValidScalar] before invoking this function.
 String _getLiteralString(String string, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(string, 'string');
   ArgumentError.checkNotNull(indentation, 'indentation');
@@ -200,9 +204,9 @@ String getBlockScalar(Object value, int indentation, String lineEnding) {
 /// Returns [value] with the necessary formatting applied in a flow context.
 ///
 /// If [value] is a [YamlNode], we try to respect its [style] parameter where
-/// possible. Certain cases make this impossible (e.g. a plain string scalar that
-/// starts with '>', a child having a block style parameters), in which case we
-/// will produce [value] with default styling options.
+/// possible. Certain cases make this impossible (e.g. a plain string scalar
+/// that starts with '>', a child having a block style parameters), in which
+/// case we will produce [value] with default styling options.
 String getFlowString(Object value) {
   if (value is List) {
     var list = value;

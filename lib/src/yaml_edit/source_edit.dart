@@ -15,7 +15,7 @@ import 'package:meta/meta.dart';
 /// ```
 /// foo: barbar
 /// ```
-/// will be represented by a `SourceEdit(offset: 4, length: 3, replacement: 'bar')`
+/// will be represented by `SourceEdit(offset: 4, length: 3, replacement: 'bar')`
 @sealed
 class SourceEdit {
   /// The offset from the start of the string where the modification begins.
@@ -30,8 +30,8 @@ class SourceEdit {
   factory SourceEdit(int offset, int length, String replacement) =>
       SourceEdit._(offset, length, replacement);
 
-  /// Creates a new [SourceEdit] instance. [offset], [length] and [replacement] must be
-  /// non-null, and [offset] and [length] must be non-negative.
+  /// Creates a new [SourceEdit] instance. [offset], [length] and [replacement]
+  /// must be non-null, and [offset] and [length] must be non-negative.
   SourceEdit._(this.offset, this.length, this.replacement) {
     ArgumentError.checkNotNull(offset, 'offset');
     ArgumentError.checkNotNull(length, 'length');
@@ -96,10 +96,11 @@ class SourceEdit {
   @override
   String toString() => 'SourceEdit($offset, $length, "$replacement")';
 
-  /// Applies a series of [SourceEdit]s to an original string, and return the final output.
+  /// Applies a series of [SourceEdit]s to an original string, and return the
+  /// final output.
   ///
-  /// [edits] should be in order i.e. the first [SourceEdit] in [edits] should be the first
-  /// edit applied to [original].
+  /// [edits] should be in order i.e. the first [SourceEdit] in [edits] should
+  /// be the first edit applied to [original].
   static String applyAll(String original, Iterable<SourceEdit> edits) {
     ArgumentError.checkNotNull(original, 'original');
     ArgumentError.checkNotNull(edits, 'edits');
@@ -107,7 +108,8 @@ class SourceEdit {
     return edits.fold(original, (current, edit) => edit.apply(current));
   }
 
-  /// Applies one [SourceEdit]s to an original string, and return the final output.
+  /// Applies one [SourceEdit]s to an original string, and return the final
+  /// output.
   String apply(String original) {
     ArgumentError.checkNotNull(original, 'original');
 

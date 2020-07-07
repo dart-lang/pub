@@ -31,8 +31,8 @@ YamlMap updatedYamlMap(YamlMap map, Function(Map) update) {
   update(dummyMap);
   final updatedMap = {};
 
-  /// This workaround is necessary since [yamlNodeFrom] will re-wrap [YamlNode]s,
-  /// so we need to unwrap them before passing them in.
+  /// This workaround is necessary since [yamlNodeFrom] will re-wrap
+  /// [YamlNode]s, so we need to unwrap them before passing them in.
   for (var key in dummyMap.keys) {
     updatedMap[key.value] = dummyMap[key];
   }
@@ -43,9 +43,9 @@ YamlMap updatedYamlMap(YamlMap map, Function(Map) update) {
 /// Wraps [value] into a [YamlNode].
 ///
 /// [Map]s, [List]s and Scalars will be wrapped as [YamlMap]s, [YamlList]s,
-/// and [YamlScalar]s respectively. If [collectionStyle]/[scalarStyle] is defined,
-/// and [value] is a collection or scalar, the wrapped [YamlNode] will have the
-/// respective style, otherwise it defaults to the ANY style.
+/// and [YamlScalar]s respectively. If [collectionStyle]/[scalarStyle] is
+/// defined, and [value] is a collection or scalar, the wrapped [YamlNode] will
+/// have the respective style, otherwise it defaults to the ANY style.
 ///
 /// If a [YamlNode] is passed in, no further wrapping will be done, and the
 /// [collectionStyle]/[scalarStyle] will not be applied.

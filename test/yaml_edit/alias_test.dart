@@ -3,7 +3,8 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-/// This test suite is a temporary measure until we are able to better handle aliases.
+/// This test suite is a temporary measure until we are able to better handle
+/// aliases.
 void main() {
   group('list ', () {
     test('removing an alias anchor results in AliasError', () {

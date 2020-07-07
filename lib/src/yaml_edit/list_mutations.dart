@@ -9,8 +9,8 @@ import 'source_edit.dart';
 import 'strings.dart';
 import 'utils.dart';
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of setting the element at [index] to [newValue] when re-parsed.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of setting the element at [index] to [newValue] when re-parsed.
 SourceEdit assignInList(
     YamlEditor yamlEdit, YamlList list, int index, Object newValue) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
@@ -45,8 +45,8 @@ SourceEdit assignInList(
   return SourceEdit(offset, currValue.span.length, valueString);
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of appending [elem] to the list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of appending [elem] to the list.
 SourceEdit appendIntoList(YamlEditor yamlEdit, YamlList list, Object elem) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
@@ -58,16 +58,16 @@ SourceEdit appendIntoList(YamlEditor yamlEdit, YamlList list, Object elem) {
   }
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of inserting [elem] to the list at [index].
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of inserting [elem] to the list at [index].
 SourceEdit insertInList(
     YamlEditor yamlEdit, YamlList list, int index, Object elem) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
   RangeError.checkValueInInterval(index, 0, list.length);
 
-  /// We call the append method if the user wants to append it to the end of the list
-  /// because appending requires different techniques.
+  /// We call the append method if the user wants to append it to the end of the
+  /// list because appending requires different techniques.
   if (index == list.length) {
     return appendIntoList(yamlEdit, list, elem);
   } else {
@@ -79,8 +79,8 @@ SourceEdit insertInList(
   }
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of removing the element at [index] when re-parsed.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of removing the element at [index] when re-parsed.
 SourceEdit removeInList(YamlEditor yamlEdit, YamlList list, int index) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
@@ -94,8 +94,8 @@ SourceEdit removeInList(YamlEditor yamlEdit, YamlList list, int index) {
   }
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of addition [elem] into [nodes], noting that this is a flow list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of addition [elem] into [nodes], noting that this is a flow list.
 SourceEdit _appendToFlowList(YamlEditor yamlEdit, YamlList list, Object elem) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
@@ -104,8 +104,8 @@ SourceEdit _appendToFlowList(YamlEditor yamlEdit, YamlList list, Object elem) {
   return SourceEdit(list.span.end.offset - 1, 0, valueString);
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of addition [elem] into [nodes], noting that this is a block list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of addition [elem] into [nodes], noting that this is a block list.
 SourceEdit _appendToBlockList(YamlEditor yamlEdit, YamlList list, Object elem) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
@@ -159,9 +159,9 @@ String _formatNewFlow(YamlList list, Object elem, [bool isLast = false]) {
   return valueString;
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of inserting [elem] into [nodes] at [index], noting that this is a block
-/// list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of inserting [elem] into [nodes] at [index], noting that this is
+/// a block list.
 ///
 /// [index] should be non-negative and less than or equal to [length].
 SourceEdit _insertInBlockList(
@@ -182,9 +182,9 @@ SourceEdit _insertInBlockList(
   return SourceEdit(start, 0, formattedValue);
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of inserting [elem] into [nodes] at [index], noting that this is a flow
-/// list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of inserting [elem] into [nodes] at [index], noting that this is
+/// a flow list.
 ///
 /// [index] should be non-negative and less than or equal to [length].
 SourceEdit _insertInFlowList(
@@ -206,8 +206,9 @@ SourceEdit _insertInFlowList(
   return SourceEdit(start, 0, formattedValue);
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of removing [nodeToRemove] from [nodes], noting that this is a block list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of removing [nodeToRemove] from [nodes], noting that this is a
+/// block list.
 ///
 /// [index] should be non-negative and less than or equal to [length].
 SourceEdit _removeFromBlockList(
@@ -216,8 +217,8 @@ SourceEdit _removeFromBlockList(
   ArgumentError.checkNotNull(list, 'list');
   RangeError.checkValueInInterval(index, 0, list.length - 1);
 
-  /// If we are removing the last element in a block list, convert it into a flow
-  /// empty list.
+  /// If we are removing the last element in a block list, convert it into a
+  /// flow empty list.
   if (list.length == 1) {
     final start = list.span.start.offset;
     final end = getContentSensitiveEnd(removedNode);
@@ -238,8 +239,9 @@ SourceEdit _removeFromBlockList(
   return SourceEdit(start, end - start, '');
 }
 
-/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve the
-/// effect of removing [nodeToRemove] from [nodes], noting that this is a flow list.
+/// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
+/// the effect of removing [nodeToRemove] from [nodes], noting that this is a
+/// flow list.
 ///
 /// [index] should be non-negative and less than or equal to [length].
 SourceEdit _removeFromFlowList(

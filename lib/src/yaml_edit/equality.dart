@@ -13,8 +13,8 @@ Map<K, V> deepEqualsMap<K, V>() =>
     LinkedHashMap(equals: deepEquals, hashCode: deepHashCode);
 
 /// Compares two [Object]s for deep equality. This implementation differs from
-/// `package:yaml`'s deep equality notation by allowing for comparison of non-scalar
-/// map keys.
+/// `package:yaml`'s deep equality notation by allowing for comparison of
+/// non-scalar map keys.
 bool deepEquals(dynamic obj1, dynamic obj2) {
   if (obj1 is YamlNode) obj1 = obj1.value;
   if (obj2 is YamlNode) obj2 = obj2.value;
@@ -72,8 +72,8 @@ bool mapDeepEquals(Map map1, Map map2) {
   return true;
 }
 
-/// Returns a hashcode for [value] such that structures that are equal by [deepEquals]
-/// will have the same hash code.
+/// Returns a hashcode for [value] such that structures that are equal by
+/// [deepEquals] will have the same hash code.
 int deepHashCode(Object value) {
   if (value is Map) {
     var equality = const UnorderedIterableEquality();

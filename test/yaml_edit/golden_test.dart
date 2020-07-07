@@ -12,10 +12,12 @@ import './test_case.dart';
 /// be in `test/test_cases_golden`.
 ///
 /// For more information on the expected input and output, refer to the README
+/// in the testdata folder
 Future<void> main() async {
   final packageUri =
       await Isolate.resolvePackageUri(Uri.parse('package:pub/yaml_edit.dart'));
-  final testdataPath = packageUri.resolve('../test/yaml_edit/testdata').path;
+  final testdataPath =
+      packageUri.resolve('../test/yaml_edit/testdata').toFilePath();
   final inputDirectory = Directory('$testdataPath/input');
   final goldDirectory = Directory('$testdataPath/output');
 
