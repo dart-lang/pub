@@ -16,9 +16,8 @@ class TestCases {
 
   /// Creates a [TestCases] object based on test directory and golden directory
   /// path.
-  static Future<TestCases> getTestCases(
-      String testDirPath, String goldDirPath) async {
-    var testDir = Directory(testDirPath);
+  static Future<TestCases> getTestCases(Uri testDirUri, Uri goldDirUri) async {
+    var testDir = Directory.fromUri(testDirUri);
     var testCaseList = [];
 
     if (testDir.existsSync()) {
@@ -27,15 +26,15 @@ class TestCases {
       entityStream =
           entityStream.where((entity) => entity.path.endsWith('.test'));
 
-      var testCasesPathStream = entityStream.map((entity) => entity.path);
+      var testCasesPathStream = entityStream.map((entity) => entity.uri);
       var testCasePaths = await testCasesPathStream.toList();
 
-      testCaseList = testCasePaths.map((inputPath) {
-        var inputName = inputPath.split('/').last;
+      testCaseList = testCasePaths.map((inputUri) {
+        var inputName = inputUri.toFilePath(windows: false).split('/').last;
         var inputNameWithoutExt = inputName.substring(0, inputName.length - 5);
-        var goldenPath = '$goldDirPath/$inputNameWithoutExt.golden';
+        var goldenUri = goldDirUri.resolve('./$inputNameWithoutExt.golden');
 
-        return TestCase(inputPath, goldenPath);
+        return TestCase(inputUri, goldenUri);
       }).toList();
     }
 
@@ -72,8 +71,8 @@ enum TestCaseStates { initialized, createdGoldenFile, testedGoldenFile }
 /// Interface for a golden test case. Handles the logic for test conduct/golden
 /// test update accordingly.
 class TestCase {
-  final String inputPath;
-  final String goldenPath;
+  final Uri inputUri;
+  final Uri goldenUri;
   final List<String> states = [];
 
   String info;
@@ -82,23 +81,27 @@ class TestCase {
 
   TestCaseStates state = TestCaseStates.initialized;
 
-  TestCase(this.inputPath, this.goldenPath) {
-    var inputFile = File(inputPath);
+  TestCase(this.inputUri, this.goldenUri) {
+    var inputFile = File.fromUri(inputUri);
     if (!inputFile.existsSync()) {
       throw Exception('Input File does not exist!');
     }
 
-    initialize(inputFile);
+    _initialize(inputFile);
   }
 
-  /// Initializes the [TestCase] by reading the corresponding [inputFile] and parsing
-  /// the different portions, and then running the input yaml against the specified
-  /// modifications.
+  /// Initializes the [TestCase] by reading the corresponding [inputFile] and
+  /// parsing the different portions, and then running the input yaml against
+  /// the specified modifications.
   ///
-  /// Precondition: [inputFile] must exist.
-  void initialize(File inputFile) {
+  /// Precondition: [inputFile] must exist, and inputs must be well-formatted.
+  void _initialize(File inputFile) {
     var input = inputFile.readAsStringSync();
     var inputElements = input.split('\n---\n');
+
+    if (inputElements.length != 3) {
+      throw AssertionError('File ${inputFile.path} is not properly formatted.');
+    }
 
     info = inputElements[0];
     yamlBuilder = YamlEditor(inputElements[1]);
@@ -143,18 +146,17 @@ class TestCase {
   }
 
   void testOrCreate() {
-    var goldenFile = File(goldenPath);
+    var goldenFile = File.fromUri(goldenUri);
     if (!goldenFile.existsSync()) {
-      createGoldenFile();
+      createGoldenFile(goldenFile);
     } else {
       testGoldenFile(goldenFile);
     }
   }
 
-  void createGoldenFile() {
+  void createGoldenFile(File goldenFile) {
     var goldenOutput = states.join('\n---\n');
 
-    var goldenFile = File(goldenPath);
     goldenFile.writeAsStringSync(goldenOutput);
     state = TestCaseStates.createdGoldenFile;
   }
@@ -162,7 +164,7 @@ class TestCase {
   /// Tests the golden file. Ensures that the number of states are the same, and
   /// that the individual states are the same.
   void testGoldenFile(File goldenFile) {
-    var inputFileName = inputPath.split('/').last;
+    var inputFileName = inputUri.toFilePath(windows: false).split('/').last;
     var goldenStates = goldenFile.readAsStringSync().split('\n---\n');
 
     group('testing $inputFileName - input and golden files have', () {
@@ -212,7 +214,8 @@ dynamic getValueFromYamlNode(YamlNode node) {
   }
 }
 
-/// Converts the list of modifications from the raw input to [YamlModification] objects.
+/// Converts the list of modifications from the raw input to [YamlModification]
+/// objects.
 List<YamlModification> parseModifications(List<dynamic> modifications) {
   return modifications.map((mod) {
     Object value;

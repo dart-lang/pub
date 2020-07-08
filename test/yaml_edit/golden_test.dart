@@ -22,8 +22,8 @@ Future<void> main() async {
       await Isolate.resolvePackageUri(Uri.parse('package:pub/yaml_edit.dart'));
 
   final testdataUri = packageUri.resolve('../test/yaml_edit/testdata/');
-  final inputDirectory = Directory.fromUri(testdataUri.resolve('input'));
-  final goldDirectory = Directory.fromUri(testdataUri.resolve('output'));
+  final inputDirectory = Directory.fromUri(testdataUri.resolve('input/'));
+  final goldDirectoryUri = testdataUri.resolve('output/');
 
   if (!inputDirectory.existsSync()) {
     throw FileException(
@@ -31,7 +31,7 @@ Future<void> main() async {
   }
 
   final testCases =
-      await TestCases.getTestCases(inputDirectory.path, goldDirectory.path);
+      await TestCases.getTestCases(inputDirectory.uri, goldDirectoryUri);
 
   testCases.test();
 }
