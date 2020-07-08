@@ -97,7 +97,7 @@ class TestCase {
   /// Precondition: [inputFile] must exist, and inputs must be well-formatted.
   void _initialize(File inputFile) {
     var input = inputFile.readAsStringSync();
-    var inputElements;
+    List<String> inputElements;
 
     if (Platform.isWindows) {
       inputElements = input.split('\r\n---\r\n');
@@ -171,7 +171,14 @@ class TestCase {
   /// that the individual states are the same.
   void testGoldenFile(File goldenFile) {
     var inputFileName = inputUri.toFilePath(windows: false).split('/').last;
-    var goldenStates = goldenFile.readAsStringSync().split('\n---\n');
+    List<String> goldenStates;
+    var golden = goldenFile.readAsStringSync();
+
+    if (Platform.isWindows) {
+      goldenStates = golden.split('\r\n---\r\n');
+    } else {
+      goldenStates = golden.split('\n---\n');
+    }
 
     group('testing $inputFileName - input and golden files have', () {
       test('same number of states', () {
