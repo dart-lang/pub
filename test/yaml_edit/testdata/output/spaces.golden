@@ -9,7 +9,6 @@ a: ' space around me '
 b: " also spaced "
 c: 'hello world'
 d: " "
-
 ---
 "\ne": with newline
 a: ' space around me '

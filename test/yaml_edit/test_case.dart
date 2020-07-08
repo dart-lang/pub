@@ -79,6 +79,8 @@ class TestCase {
   YamlEditor yamlBuilder;
   List<YamlModification> modifications;
 
+  String inputLineEndings = '\n';
+
   TestCaseStates state = TestCaseStates.initialized;
 
   TestCase(this.inputUri, this.goldenUri) {
@@ -97,13 +99,9 @@ class TestCase {
   /// Precondition: [inputFile] must exist, and inputs must be well-formatted.
   void _initialize(File inputFile) {
     var input = inputFile.readAsStringSync();
-    List<String> inputElements;
 
-    if (Platform.isWindows) {
-      inputElements = input.split('\r\n---\r\n');
-    } else {
-      inputElements = input.split('\n---\n');
-    }
+    inputLineEndings = detectWindowsLineEndings(input) ? '\r\n' : '\n';
+    var inputElements = input.split('---$inputLineEndings');
 
     if (inputElements.length != 3) {
       throw AssertionError('File ${inputFile.path} is not properly formatted.');
@@ -161,7 +159,9 @@ class TestCase {
   }
 
   void createGoldenFile(File goldenFile) {
-    var goldenOutput = states.join('\n---\n');
+    /// Assumes user wants the golden file to have the same line endings as
+    /// the input file.
+    final goldenOutput = states.join('---$inputLineEndings');
 
     goldenFile.writeAsStringSync(goldenOutput);
     state = TestCaseStates.createdGoldenFile;
@@ -174,10 +174,10 @@ class TestCase {
     List<String> goldenStates;
     var golden = goldenFile.readAsStringSync();
 
-    if (Platform.isWindows) {
-      goldenStates = golden.split('\r\n---\r\n');
+    if (detectWindowsLineEndings(golden)) {
+      goldenStates = golden.split('---\r\n');
     } else {
-      goldenStates = golden.split('\n---\n');
+      goldenStates = golden.split('---\n');
     }
 
     group('testing $inputFileName - input and golden files have', () {
@@ -297,4 +297,22 @@ class YamlModification {
   @override
   String toString() =>
       'method: $method, path: $path, index: $index, value: $value, deleteCount: $deleteCount';
+}
+
+/// Returns `true` if the [text] looks like it uses windows line endings.
+///
+/// The heuristic used is to count all `\n` in the text and if stricly more than
+/// half of them are preceded by `\r` we report `true`.
+bool detectWindowsLineEndings(String text) {
+  var index = -1;
+  var unixNewlines = 0;
+  var windowsNewlines = 0;
+  while ((index = text.indexOf('\n', index + 1)) != -1) {
+    if (index != 0 && text[index - 1] == '\r') {
+      windowsNewlines++;
+    } else {
+      unixNewlines++;
+    }
+  }
+  return windowsNewlines > unixNewlines;
 }
