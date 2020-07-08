@@ -97,7 +97,13 @@ class TestCase {
   /// Precondition: [inputFile] must exist, and inputs must be well-formatted.
   void _initialize(File inputFile) {
     var input = inputFile.readAsStringSync();
-    var inputElements = input.split('\n---\n');
+    var inputElements;
+
+    if (Platform.isWindows) {
+      inputElements = input.split('\r\n---\r\n');
+    } else {
+      inputElements = input.split('\n---\n');
+    }
 
     if (inputElements.length != 3) {
       throw AssertionError('File ${inputFile.path} is not properly formatted.');
@@ -112,17 +118,17 @@ class TestCase {
     /// parse -> immediately dump does not affect the string.
     states.add(yamlBuilder.toString());
 
-    performModifications();
+    _performModifications();
   }
 
-  void performModifications() {
+  void _performModifications() {
     for (var mod in modifications) {
-      performModification(mod);
+      _performModification(mod);
       states.add(yamlBuilder.toString());
     }
   }
 
-  void performModification(YamlModification mod) {
+  void _performModification(YamlModification mod) {
     switch (mod.method) {
       case YamlModificationMethod.update:
         yamlBuilder.update(mod.path, mod.value);
