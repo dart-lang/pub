@@ -7,6 +7,6 @@ BASIC LIST TEST - Ensures that the basic list operations work.
 ---
 - [remove, [1]]
 - [append, [], 4]
-- [assign, [2], 5]
+- [update, [2], 5]
 - [prepend, [], 6]
 - [splice, [], 2, 3, [7, 8]]

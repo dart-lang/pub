@@ -1,3 +1,7 @@
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'package:pub/src/yaml_edit.dart';
 import 'package:test/test.dart';
 
@@ -11,10 +15,10 @@ false: false
 No: No
 true: true
 ''');
-    doc.assign([null], 'tilde');
-    doc.assign([false], false);
-    doc.assign(['No'], 'no');
-    doc.assign([true], 'true');
+    doc.update([null], 'tilde');
+    doc.update([false], false);
+    doc.update(['No'], 'no');
+    doc.update([true], 'true');
 
     expect(doc.toString(), equals('''
 ~: tilde
@@ -29,7 +33,7 @@ true: "true"
 
   test('array keys are recognized', () {
     final doc = YamlEditor('{[1,2,3]: a}');
-    doc.assign([
+    doc.update([
       [1, 2, 3]
     ], 'sums to 6');
 
@@ -41,7 +45,7 @@ true: "true"
 
   test('map keys are recognized', () {
     final doc = YamlEditor('{{a: 1}: a}');
-    doc.assign([
+    doc.update([
       {'a': 1}
     ], 'sums to 6');
 
@@ -54,7 +58,7 @@ true: "true"
   test('documents can have directives', () {
     final doc = YamlEditor('''%YAML 1.2
 --- text''');
-    doc.assign([], 'test');
+    doc.update([], 'test');
 
     expect(doc.toString(), equals('%YAML 1.2\n--- test'));
     expectYamlBuilderValue(doc, 'test');
@@ -67,7 +71,7 @@ true: "true"
  - !!int 42
  - d
 ''');
-    doc.assign([2], 'test');
+    doc.update([2], 'test');
 
     expect(doc.toString(), equals('''
  - !!str a

@@ -1,3 +1,7 @@
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'package:pub/src/yaml_edit.dart';
 import 'package:test/test.dart';
 
@@ -81,7 +85,7 @@ c:
 
     test('after one change', () {
       final yamlEditor = YamlEditor('YAML: YAML');
-      yamlEditor.assign(['YAML'], "YAML Ain't Markup Language");
+      yamlEditor.update(['YAML'], "YAML Ain't Markup Language");
 
       expect(
           yamlEditor.edits, [SourceEdit(5, 5, " YAML Ain't Markup Language")]);
@@ -89,8 +93,8 @@ c:
 
     test('after multiple changes', () {
       final yamlEditor = YamlEditor('YAML: YAML');
-      yamlEditor.assign(['YAML'], "YAML Ain't Markup Language");
-      yamlEditor.assign(['XML'], 'Extensible Markup Language');
+      yamlEditor.update(['YAML'], "YAML Ain't Markup Language");
+      yamlEditor.update(['XML'], 'Extensible Markup Language');
       yamlEditor.remove(['YAML']);
 
       expect(yamlEditor.edits, [
@@ -102,13 +106,13 @@ c:
 
     test('that do not automatically update with internal list', () {
       final yamlEditor = YamlEditor('YAML: YAML');
-      yamlEditor.assign(['YAML'], "YAML Ain't Markup Language");
+      yamlEditor.update(['YAML'], "YAML Ain't Markup Language");
 
       final firstEdits = yamlEditor.edits;
 
       expect(firstEdits, [SourceEdit(5, 5, " YAML Ain't Markup Language")]);
 
-      yamlEditor.assign(['XML'], 'Extensible Markup Language');
+      yamlEditor.update(['XML'], 'Extensible Markup Language');
       yamlEditor.remove(['YAML']);
 
       expect(firstEdits, [SourceEdit(5, 5, " YAML Ain't Markup Language")]);

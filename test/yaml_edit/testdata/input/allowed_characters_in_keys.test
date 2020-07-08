@@ -2,8 +2,8 @@ ALLOWED CHARACTERS IN KEYS
 ---
 test: test
 ---
-- [assign, ["a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"], safe]
-- [assign, ['?foo'], safe question mark]
-- [assign, [':foo'], safe colon]
-- [assign, ['-foo'], safe dash]
-- [assign, ['this is#not'], a comment]
+- [update, ["a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"], safe]
+- [update, ['?foo'], safe question mark]
+- [update, [':foo'], safe colon]
+- [update, ['-foo'], safe dash]
+- [update, ['this is#not'], a comment]

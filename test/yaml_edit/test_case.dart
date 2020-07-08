@@ -1,3 +1,7 @@
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'dart:io';
 
 import 'package:pub/src/yaml_edit.dart';
@@ -117,8 +121,8 @@ class TestCase {
 
   void performModification(YamlModification mod) {
     switch (mod.method) {
-      case YamlModificationMethod.assign:
-        yamlBuilder.assign(mod.path, mod.value);
+      case YamlModificationMethod.update:
+        yamlBuilder.update(mod.path, mod.value);
         return;
       case YamlModificationMethod.remove:
         yamlBuilder.remove(mod.path);
@@ -219,7 +223,7 @@ List<YamlModification> parseModifications(List<dynamic> modifications) {
     final path = mod[1] as List;
 
     if (method == YamlModificationMethod.appendTo ||
-        method == YamlModificationMethod.assign ||
+        method == YamlModificationMethod.update ||
         method == YamlModificationMethod.prependTo) {
       value = mod[2];
     } else if (method == YamlModificationMethod.insert) {
@@ -243,8 +247,8 @@ List<YamlModification> parseModifications(List<dynamic> modifications) {
 /// Gets the YAML modification method corresponding to [method]
 YamlModificationMethod getModificationMethod(String method) {
   switch (method) {
-    case 'assign':
-      return YamlModificationMethod.assign;
+    case 'update':
+      return YamlModificationMethod.update;
     case 'remove':
       return YamlModificationMethod.remove;
     case 'append':

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -12,7 +12,7 @@
 ///
 /// void main() {
 ///  final yamlEditor = YamlEditor('{YAML: YAML}');
-///  yamlEditor.assign(['YAML'], "YAML Ain't Markup Language");
+///  yamlEditor.update(['YAML'], "YAML Ain't Markup Language");
 ///  print(yamlEditor);
 ///  // Expected Output:
 ///  // {YAML: YAML Ain't Markup Language}

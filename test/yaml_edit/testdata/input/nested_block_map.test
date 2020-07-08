@@ -6,6 +6,6 @@ b:
   e: 5
 c: 3
 ---
-- [assign, ['b', 'e'], 6]
-- [assign, ['b', 'e'], [1,2,3]]
-- [assign, ['b', 'f'], 6]
+- [update, ['b', 'e'], 6]
+- [update, ['b', 'e'], [1,2,3]]
+- [update, ['b', 'f'], 6]

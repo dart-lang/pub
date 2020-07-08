@@ -1,10 +1,14 @@
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'dart:math';
 
 import 'package:pub/src/yaml_edit.dart';
 import 'package:pub/src/yaml_edit/wrap.dart';
 import 'package:yaml/yaml.dart';
 
-import 'blns/blns.dart';
+import 'problem_strings.dart';
 import 'test_utils.dart';
 
 /// Performs naive fuzzing on an initial YAML file based on an initial seed.
@@ -48,23 +52,6 @@ class Generator {
   /// 2^32
   static const int maxInt = 4294967296;
 
-  static const List<String> naughtyYAMLStrings = [
-    '',
-    ' ',
-    '~',
-    'null',
-    'Null',
-    'NULL',
-    'true',
-    'True',
-    'TRUE',
-    'false',
-    'False',
-    'FALSE',
-    '[]',
-    '{}'
-  ];
-
   Generator([int seed]) : r = Random(seed ?? 42);
 
   int nextInt([int max = maxInt]) => r.nextInt(max);
@@ -78,11 +65,7 @@ class Generator {
   /// ascii 32 - 127.
   String nextString() {
     if (nextBool()) {
-      return naughtyStrings[nextInt(naughtyStrings.length)];
-    }
-
-    if (nextBool()) {
-      return naughtyYAMLStrings[nextInt(naughtyYAMLStrings.length)];
+      return problemStrings[nextInt(problemStrings.length)];
     }
 
     final length = nextInt(100);
@@ -174,12 +157,12 @@ class Generator {
           case YamlModificationMethod.remove:
             editor.remove(path);
             break;
-          case YamlModificationMethod.assign:
+          case YamlModificationMethod.update:
             if (node.isEmpty) break;
             final index = nextInt(node.length);
             args.add(nextYamlNode());
             path.add(index);
-            editor.assign(path, args[0]);
+            editor.update(path, args[0]);
             break;
           case YamlModificationMethod.appendTo:
             args.add(nextYamlNode());
@@ -229,11 +212,11 @@ ${error.message}
       }
       final value = nextYamlNode();
       try {
-        editor.assign(path, value);
+        editor.update(path, value);
         return;
       } catch (error) {
         print('''
-Failed to call assign on:
+Failed to call update on:
 $editor
 with the following arguments:
 $value

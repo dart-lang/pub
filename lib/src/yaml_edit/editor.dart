@@ -1,4 +1,4 @@
-// Copyright (c) 2015, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -137,29 +137,29 @@ class YamlEditor {
 
   YamlEditor._(this._yaml) {
     ArgumentError.checkNotNull(_yaml);
-    initialize();
+    _initialize();
   }
 
-  void initialize() {
+  void _initialize() {
     _contents = loadYamlNode(_yaml);
     _aliases = {};
 
     var stack = [_contents];
-    var map = <YamlNode, bool>{};
+    var encounteredNodes = <YamlNode>{};
 
     while (stack.isNotEmpty) {
-      var nextElem = stack.removeLast();
+      var nextElement = stack.removeLast();
 
-      if (map[nextElem] == null) {
-        map[nextElem] = true;
+      if (!encounteredNodes.contains(nextElement)) {
+        encounteredNodes.add(nextElement);
       } else {
-        _aliases.add(nextElem);
+        _aliases.add(nextElement);
       }
 
-      if (nextElem is YamlMap) {
-        stack.addAll(nextElem.nodes.values);
-      } else if (nextElem is YamlList) {
-        stack.addAll(nextElem.nodes);
+      if (nextElement is YamlMap) {
+        stack.addAll(nextElement.nodes.values);
+      } else if (nextElement is YamlList) {
+        stack.addAll(nextElement.nodes);
       }
     }
 
@@ -200,7 +200,7 @@ class YamlEditor {
   ///
   /// print(node.value); // Expected output: "YAML Ain't Markup Language"
   ///
-  /// doc.assign(['YAML'], 'YAML');
+  /// doc.update(['YAML'], 'YAML');
   ///
   /// final newNode = doc.parseAt(['YAML']);
   ///
@@ -216,11 +216,10 @@ class YamlEditor {
 
   /// Sets [value] in the [path].
   ///
-  /// Note that [assign] provides a different result as compared to a [remove]
-  /// followed by an [insertIntoList], because it preserves comments at the same
-  /// level.
+  /// Note that [update] provides a different result than a [remove] followed by
+  /// an [insertIntoList], because it preserves comments at the same level.
   ///
-  /// Throws if [path] is invalid.
+  /// Throws a [PathError] if [path] is invalid.
   ///
   /// ```dart
   /// final doc = YamlEditor('''
@@ -228,7 +227,7 @@ class YamlEditor {
   ///   - 1 # comment
   ///   - 2
   /// ''');
-  /// doc.assign([1], 'test');
+  /// doc.update([1], 'test');
   /// ```
   ///
   /// Expected Output:
@@ -254,7 +253,7 @@ class YamlEditor {
   ///   - test
   ///   - 2
   /// ```
-  void assign(Iterable<Object> path, Object value) {
+  void update(Iterable<Object> path, Object value) {
     ArgumentError.checkNotNull(path, 'path');
 
     if (path.isEmpty) {
@@ -278,7 +277,7 @@ class YamlEditor {
       final expectedList =
           updatedYamlList(parentNode, (nodes) => nodes[keyOrIndex] = valueNode);
 
-      _performEdit(assignInList(this, parentNode, keyOrIndex, value),
+      _performEdit(updateInList(this, parentNode, keyOrIndex, value),
           collectionPath, expectedList);
       return;
     }
@@ -288,7 +287,7 @@ class YamlEditor {
 
       final expectedMap =
           updatedYamlMap(parentNode, (nodes) => nodes[keyNode] = valueNode);
-      _performEdit(assignInMap(this, parentNode, keyOrIndex, value),
+      _performEdit(updateInMap(this, parentNode, keyOrIndex, value),
           collectionPath, expectedMap);
       return;
     }
@@ -297,10 +296,10 @@ class YamlEditor {
         path, 'Scalar $parentNode does not have key $keyOrIndex');
   }
 
-  /// Appends [value] into the list at [path].
+  /// Appends [value] to the list at [path].
   ///
-  /// Throws if the element at the given path is not a [YamlList] or if the path
-  /// is invalid.
+  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// or if the path is invalid.
   void appendToList(Iterable<Object> path, Object value) {
     ArgumentError.checkNotNull(path, 'path');
     final yamlList = _traverseToList(path);
@@ -308,23 +307,22 @@ class YamlEditor {
     insertIntoList(path, yamlList.length, value);
   }
 
-  /// Prepends [value] into the list at [path].
+  /// Prepends [value] to the list at [path].
   ///
-  /// Throws if the element at the given path is not a [YamlList] or if the path
-  /// is invalid.
+  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// or if the path is invalid.
   void prependToList(Iterable<Object> path, Object value) {
     ArgumentError.checkNotNull(path, 'path');
 
     insertIntoList(path, 0, value);
   }
 
-  /// Inserts [value] into the list at [path], only if the element at the given
-  /// path is a list.
+  /// Inserts [value] into the list at [path].
   ///
   /// [index] must be non-negative and no greater than the list's length.
   ///
-  /// Throws if the element at the given path is not a [YamlList] or if the path
-  /// is invalid.
+  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// or if the path is invalid.
   void insertIntoList(Iterable<Object> path, int index, Object value) {
     ArgumentError.checkNotNull(path, 'path');
 
@@ -340,11 +338,14 @@ class YamlEditor {
   }
 
   /// Changes the contents of the list at [path] by removing [deleteCount] items
-  /// at [index], and inserts [values] in-place.
+  /// at [index], and inserting [values] in-place. Returns the elements that
+  /// are deleted.
   ///
-  /// [index] and [deleteCount] must be non-negative and, [index] + [deleteCount]
-  /// must be no greater than the list's length. Throws otherwise or if [path]
-  /// is invalid.
+  /// [index] and [deleteCount] must be non-negative and [index] + [deleteCount]
+  /// must be no greater than the list's length.
+  ///
+  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// or if the path is invalid.
   ///
   /// ```dart
   /// final doc = YamlEditor('[Jan, March, April, June]');
@@ -382,9 +383,27 @@ class YamlEditor {
     return nodesToRemove;
   }
 
-  /// Removes the node at [path].
+  /// Removes the node at [path]. Comments "belonging" to the node will be
+  /// removed while surrounding comments will be left untouched
   ///
-  /// Throws if [path] is invalid.
+  /// ```dart
+  /// final doc = YamlEditor('''
+  /// - 0 # comment 0
+  /// # comment A
+  /// - 1 # comment 1
+  /// # comment B
+  /// - 2 # comment 2
+  /// ''');
+  /// doc.remove([1]);
+  ///
+  /// // Expected Result:
+  /// // - 0 # comment 0
+  /// // # comment A
+  /// // # comment B
+  /// // - 2 # comment 2
+  /// ```
+  ///
+  /// Throws a [PathError] if [path] is invalid.
   YamlNode remove(Iterable<Object> path) {
     ArgumentError.checkNotNull(path, 'path');
 
@@ -395,6 +414,7 @@ class YamlEditor {
     if (path.isEmpty) {
       edit = SourceEdit(0, _yaml.length, '');
 
+      /// Parsing an empty YAML document returns `null`.
       _performEdit(edit, path, expectedNode);
       return nodeToRemove;
     }
@@ -499,9 +519,9 @@ class YamlEditor {
   ///
   /// Convenience function to ensure that a [YamlList] is returned.
   ///
-  /// Throws if the element at the given path is not a [YamlList] or if the path
-  /// is invalid. If [checkAlias] is `true`, and an aliased node is encountered
-  /// along [path], an error will be similarly thrown.
+  /// Throws [PathError] if the element at the given path is not a [YamlList] or
+  /// if the path is invalid. If [checkAlias] is `true`, and an aliased node is
+  /// encountered along [path], an [AliasError] will be similarly thrown.
   YamlList _traverseToList(Iterable<Object> path, {bool checkAlias = false}) {
     ArgumentError.checkNotNull(path, 'path');
     ArgumentError.checkNotNull(checkAlias, 'checkAlias');
@@ -529,7 +549,7 @@ class YamlEditor {
 
     final expectedTree = _deepModify(_contents, path, expectedNode);
     _yaml = edit.apply(_yaml);
-    initialize();
+    _initialize();
 
     final actualTree = loadYamlNode(_yaml);
     if (!deepEquals(actualTree, expectedTree)) {
@@ -550,7 +570,7 @@ $expectedTree''');
   /// Utility method to produce an updated YAML tree equivalent to converting
   /// the [YamlNode] at [path] to be [expectedNode].
   ///
-  /// Throws if path is invalid.
+  /// Throws a [PathError] if path is invalid.
   ///
   /// When called, it creates a new [YamlNode] of the same type as [tree], and
   /// copies its children over, except for the child that is on the path. Doing

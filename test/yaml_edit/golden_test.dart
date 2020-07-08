@@ -1,3 +1,7 @@
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'dart:io';
 import 'dart:isolate';
 
@@ -16,10 +20,10 @@ import './test_case.dart';
 Future<void> main() async {
   final packageUri =
       await Isolate.resolvePackageUri(Uri.parse('package:pub/yaml_edit.dart'));
-  final testdataPath =
-      packageUri.resolve('../test/yaml_edit/testdata').toFilePath();
-  final inputDirectory = Directory('$testdataPath/input');
-  final goldDirectory = Directory('$testdataPath/output');
+
+  final testdataUri = packageUri.resolve('../test/yaml_edit/testdata/');
+  final inputDirectory = Directory.fromUri(testdataUri.resolve('input'));
+  final goldDirectory = Directory.fromUri(testdataUri.resolve('output'));
 
   if (!inputDirectory.existsSync()) {
     throw FileException(

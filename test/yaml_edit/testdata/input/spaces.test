@@ -1,8 +1,8 @@
-SPACE IN STRING - assign a string that starts and ends with space
+SPACE IN STRING - update a string that starts and ends with space
 ---
 a: ' space around me '
 c: 'hello world'
 ---
-- [assign, ['b'], ' also spaced ']
-- [assign, ['d'], ' ']
-- [assign, ["\ne"], with newline]
+- [update, ['b'], ' also spaced ']
+- [update, ['d'], ' ']
+- [update, ["\ne"], with newline]

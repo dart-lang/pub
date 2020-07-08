@@ -32,7 +32,7 @@ Modifications - parsed as YAML, must be a list.
 
 The information section is meant for a brief description of your test, and other further elaboration on what your test is targeted at (e.g. modification of complex keys). The Input section should be the YAML that you wish to parse, and the modifications section should be a list of modification operations, formatted as a YAML list. The valid list of modifications are as follows:
 
-- [assign, [ path ], newValue]
+- [update, [ path ], newValue]
 - [remove, [ path ], keyOrIndex]
 - [append, [ collectionPath ], newValue]
 

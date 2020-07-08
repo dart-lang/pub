@@ -1,4 +1,4 @@
-// Copyright (c) 2015, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -11,7 +11,7 @@ import 'utils.dart';
 
 /// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
 /// the effect of setting the element at [index] to [newValue] when re-parsed.
-SourceEdit assignInList(
+SourceEdit updateInList(
     YamlEditor yamlEdit, YamlList list, int index, Object newValue) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
