@@ -167,16 +167,18 @@ class YamlEditor {
     _indentation = null;
   }
 
-  /// Parses the document to return [YamlNode] currently present at [path]. If
-  /// no [YamlNode]s exist at [path], [parseAt] will return a [YamlNode]-wrapped
-  /// [orElse] if it is defined, or throw an [Error] otherwise. The value passed
-  /// to [orElse] has to be a valid YAML element (i.e. scalar/ list/ map).
+  /// Parses the document to return [YamlNode] currently present at [path].
+  ///
+  /// If no [YamlNode]s exist at [path], the result of invoking the [orElse]
+  /// function is returned.
+  ///
+  /// If [orElse] is omitted, it defaults to throwing a [PathError].
   ///
   /// To get `null` when [path] does not point to a value in the [YamlNode]-tree,
-  /// simply pass `orElse: null`.
+  /// simply pass `orElse: () => null`.
   /// ```dart
   /// final myYamlEditor('{"key": "value"}');
-  /// final value = myYamlEditor.valueAt(['invalid', 'path'], orElse: null);
+  /// final value = myYamlEditor.valueAt(['invalid', 'path'], orElse: () => null);
   /// print(value) // null
   /// ```
   ///
@@ -208,7 +210,7 @@ class YamlEditor {
   /// print(newNode.value); // "YAML"
   /// print(node.value); // "YAML Ain't Markup Language"
   /// ```
-  YamlNode parseAt(Iterable<Object> path, {Object orElse = #noArg}) {
+  YamlNode parseAt(Iterable<Object> path, {YamlNode Function() orElse}) {
     ArgumentError.checkNotNull(path, 'path');
 
     return _traverse(path, orElse: orElse);
@@ -440,11 +442,17 @@ class YamlEditor {
     return nodeToRemove;
   }
 
-  /// Traverses down [path] to return the [YamlNode] at [path] if successful,
-  /// throwing an error otherwise. If [checkAlias] is `true`, throw [AliasError]
-  /// if an aliased node is encountered.
+  /// Traverses down [path] to return the [YamlNode] at [path] if successful.
+  ///
+  /// If no [YamlNode]s exist at [path], the result of invoking the [orElse]
+  /// function is returned.
+  ///
+  /// If [orElse] is omitted, it defaults to throwing a [PathError].
+  ///
+  /// If [checkAlias] is `true`, throw [AliasError] if an aliased node is
+  /// encountered.
   YamlNode _traverse(Iterable<Object> path,
-      {bool checkAlias = false, Object orElse = #noArg}) {
+      {bool checkAlias = false, YamlNode Function() orElse}) {
     ArgumentError.checkNotNull(path, 'path');
     ArgumentError.checkNotNull(checkAlias, 'checkAlias');
 
@@ -482,12 +490,12 @@ class YamlEditor {
     return currentNode;
   }
 
-  /// Throws a [PathError] if [orElse] is not provided, returns a wrapped
-  /// [orElse] otherwise.
+  /// Throws a [PathError] if [orElse] is not provided, returns the result
+  /// of invoking the [orElse] function otherwise.
   YamlNode _pathErrorOrElse(Iterable<Object> path, Object invalidKeyOrIndex,
-      Object parentNode, Object orElse) {
-    if (orElse == #noArg) throw PathError(path, invalidKeyOrIndex, parentNode);
-    return wrapAsYamlNode(orElse);
+      Object parentNode, YamlNode Function() orElse) {
+    if (orElse == null) throw PathError(path, invalidKeyOrIndex, parentNode);
+    return orElse();
   }
 
   /// Asserts that none of the children of [node] are aliases
