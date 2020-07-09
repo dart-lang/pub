@@ -23,7 +23,6 @@ dependencies:
   pedantic: ^1.9.0
   pool: ^1.0.0
   pub_semver: ^1.4.4
-  retry: 3.0.0
   shelf: ^0.7.0
   source_span: ^1.4.0
   stack_trace: ^1.0.0

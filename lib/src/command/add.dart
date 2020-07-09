@@ -20,8 +20,6 @@ class AddCommand extends PubCommand {
   String get invocation => 'pub add <package> [options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
-  @override
-  bool get isOffline => argResults['offline'];
 
   bool get isDevelopment => argResults['development'];
 
@@ -37,51 +35,60 @@ class AddCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
     }
-    final packages = parsePackageRanges(argResults.rest);
+    final packages = parseVersionConstraints(argResults.rest);
 
     /// Perform version resolution in-memory.
     var updatedPubSpec =
         _addPackagesToPubspec(entrypoint.root.pubspec, packages);
     var result = await resolveVersions(
-      SolveType.GET,
-      cache,
-      Package.inMemory(updatedPubSpec),
-    );
+        SolveType.GET, cache, Package.inMemory(updatedPubSpec));
 
     /// Update the pubspec.
     _updatePubspec(result, packages);
 
-    /// Run get once we have successfully updated the pubspec
+    /// Run pub get once we have successfully updated the pubspec
     await runner.run(['get']);
   }
 
-  /// Creates a new in-memory [Pubspec] by adding [newDependencies] to
-  /// [original].
-  /// TODO(walnut): allow package:any
+  /// Creates a new in-memory [Pubspec] by adding the packages specified in
+  /// [newDependencies] to [original].
   Pubspec _addPackagesToPubspec(
-      Pubspec original, Iterable<PackageRange> newDependencies) {
-    if (isDevelopment) {
-      return _addPackagesToNormalDependencies(original, newDependencies);
-    }
+      Pubspec original, Map<String, VersionConstraint> newDependencies) {
+    ArgumentError.checkNotNull(original, 'original');
+    ArgumentError.checkNotNull(newDependencies, 'newDependencies');
 
-    return _addPackagesToDevelopmentDependencies(original, newDependencies);
+    if (isDevelopment) {
+      return _addPackagesToDevelopmentDependencies(original, newDependencies);
+    }
+    return _addPackagesToNormalDependencies(original, newDependencies);
   }
 
-  /// TODO
+  /// Creates a new in-memory [Pubspec] by adding the packages specified in
+  /// [newDependencies] to [original]'s normal dependencies.
   Pubspec _addPackagesToNormalDependencies(
-      Pubspec original, Iterable<PackageRange> newDependencies) {
+      Pubspec original, Map<String, VersionConstraint> newDependencies) {
+    ArgumentError.checkNotNull(original, 'original');
+    ArgumentError.checkNotNull(newDependencies, 'newDependencies');
+
     final dependencies = [...original.dependencies.values];
     final devDependencies = original.devDependencies.values;
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
 
-    for (var newDependency in newDependencies) {
-      if (devDependencyNames.contains(newDependency.name)) {
-        log.warning('${newDependency.name} is already in dev-dependencies. '
+    for (var entry in newDependencies.entries) {
+      final packageName = entry.key;
+
+      if (devDependencyNames.contains(packageName)) {
+        log.warning('$packageName is already in dev-dependencies. '
             'Please remove existing entry before adding it to dependencies');
 
         continue;
       }
+
+      final packageConstraint = entry.value ?? VersionConstraint.any;
+
+      final newDependency = PackageRange(
+          packageName, cache.sources['hosted'], packageConstraint, packageName);
 
       dependencies.add(newDependency);
     }
@@ -96,20 +103,31 @@ class AddCommand extends PubCommand {
     );
   }
 
-  // TODO
+  /// Creates a new in-memory [Pubspec] by adding the packages specified in
+  /// [newDependencies] to [original]'s development dependencies.
   Pubspec _addPackagesToDevelopmentDependencies(
-      Pubspec original, Iterable<PackageRange> newDevDependencies) {
+      Pubspec original, Map<String, VersionConstraint> newDevDependencies) {
+    ArgumentError.checkNotNull(original, 'original');
+    ArgumentError.checkNotNull(newDevDependencies, 'newDevDependencies');
+
     final dependencies = original.dependencies.values;
     final dependencyNames = dependencies.map((dependency) => dependency.name);
     final devDependencies = [...original.dependencies.values];
 
-    for (var newDevDependency in newDevDependencies) {
-      if (dependencyNames.contains(newDevDependency.name)) {
-        log.warning('${newDevDependency.name} is already in dependencies. '
+    for (var entry in newDevDependencies.entries) {
+      final packageName = entry.key;
+
+      if (dependencyNames.contains(packageName)) {
+        log.warning('$packageName is already in dependencies. '
             'Please remove existing entry before adding it to dev-dependencies');
 
         continue;
       }
+
+      final packageConstraint = entry.value ?? VersionConstraint.any;
+
+      final newDevDependency = PackageRange(
+          packageName, cache.sources['hosted'], packageConstraint, packageName);
 
       devDependencies.add(newDevDependency);
     }
@@ -124,7 +142,7 @@ class AddCommand extends PubCommand {
     );
   }
 
-  /// Parse [PackageRange] from [packages].
+  /// Parse package name and [VersionConstraint] from [packages].
   ///
   /// Each package in [packages] must be written in the format
   /// `<package-name>[:<version-constraint>]`, where quotations should be used
@@ -139,8 +157,13 @@ class AddCommand extends PubCommand {
   /// retry:'>2.0.0 <3.0.1'
   /// retry:any
   /// ```
-  Iterable<PackageRange> parsePackageRanges(Iterable<String> packages) {
-    final newDependencies = packages.map((package) {
+  Map<String, VersionConstraint> parseVersionConstraints(
+      Iterable<String> packages) {
+    ArgumentError.checkNotNull(packages, 'packages');
+
+    final result = <String, VersionConstraint>{};
+
+    for (var package in packages) {
       const delimiter = ':';
       final splitPackage = package.split(delimiter);
 
@@ -149,21 +172,25 @@ class AddCommand extends PubCommand {
       }
 
       var packageName = package;
-      var constraint = VersionConstraint.any;
+      VersionConstraint constraint;
 
       if (splitPackage.length == 2) {
         packageName = splitPackage[0];
         constraint = VersionConstraint.parse(splitPackage[1]);
       }
 
-      return PackageRange(
-          packageName, cache.sources['hosted'], constraint, packageName);
-    });
-    return newDependencies;
+      result[packageName] = constraint;
+    }
+
+    return result;
   }
 
   /// Writes the changes to the pubspec file
-  void _updatePubspec(SolveResult result, Iterable<PackageRange> packages) {
+  void _updatePubspec(
+      SolveResult result, Map<String, VersionConstraint> packages) {
+    ArgumentError.checkNotNull(result, 'result');
+    ArgumentError.checkNotNull(packages, 'packages');
+
     if (entrypoint.pubspecPath == null) {
       throw FileException(
           // Make the package dir absolute because for the entrypoint it'll just
@@ -182,14 +209,14 @@ class AddCommand extends PubCommand {
       finalPackages[package.name] = package.version;
     }
 
-    for (var package in packages) {
-      final packageName = package.name;
+    for (var package in packages.entries) {
+      final packageName = package.key;
       final packagePath = [dependencyKey, packageName];
 
-      if (package.constraint == VersionConstraint.any) {
+      if (package.value == null) {
         yamlEditor.assign(packagePath, '^${finalPackages[packageName]}');
       } else {
-        yamlEditor.assign(packagePath, package.constraint.toString());
+        yamlEditor.assign(packagePath, package.value.toString());
       }
     }
 
