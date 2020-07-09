@@ -250,7 +250,10 @@ class SolveReport {
       String message;
       if (newerStable) {
         message = '(${maxAll(versions, Version.prioritize)} available)';
-      } else if (newerUnstable) {
+      } else if (
+          // Only show newer prereleases for versions where a prerelease is
+          // already chosen.
+          newId.version.isPreRelease && newerUnstable) {
         message = '(${maxAll(versions)} available)';
       }
 
