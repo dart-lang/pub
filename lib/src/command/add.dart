@@ -4,6 +4,7 @@ import 'package:yaml_edit/yaml_edit.dart';
 import '../command.dart';
 import '../exceptions.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -22,23 +23,13 @@ class AddCommand extends PubCommand {
   @override
   bool get isOffline => argResults['offline'];
 
-  /// TODO(walnut): ensure that the flags are appropriately handled
-  AddCommand() {
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+  bool get isDevelopment => argResults['development'];
 
+  AddCommand() {
     argParser.addFlag('development',
         abbr: 'd',
         negatable: false,
         help: 'Adds packages to the development dependencies instead.');
-
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
-
-    argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
   }
 
   @override
@@ -46,15 +37,11 @@ class AddCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
     }
-
-    final dependencyKey =
-        argResults['development'] ? 'dev_dependencies' : 'dependencies';
-
     final packages = parsePackageRanges(argResults.rest);
 
     /// Perform version resolution in-memory.
-    var updatedPubSpec = _addPackagesToPubspec(
-        entrypoint.root.pubspec, packages, argResults['development']);
+    var updatedPubSpec =
+        _addPackagesToPubspec(entrypoint.root.pubspec, packages);
     var result = await resolveVersions(
       SolveType.GET,
       cache,
@@ -62,7 +49,7 @@ class AddCommand extends PubCommand {
     );
 
     /// Update the pubspec.
-    _updatePubspec(result, packages, dependencyKey);
+    _updatePubspec(result, packages);
 
     /// Run get once we have successfully updated the pubspec
     await runner.run(['get']);
@@ -70,14 +57,34 @@ class AddCommand extends PubCommand {
 
   /// Creates a new in-memory [Pubspec] by adding [newDependencies] to
   /// [original].
-  Pubspec _addPackagesToPubspec(Pubspec original,
-      Iterable<PackageRange> newDependencies, bool development) {
-    var dependencies = !development
-        ? [...original.dependencies.values, ...newDependencies]
-        : original.dependencies.values;
-    var devDependencies = development
-        ? [...original.dependencies.values, ...newDependencies]
-        : original.devDependencies.values;
+  /// TODO(walnut): allow package:any
+  Pubspec _addPackagesToPubspec(
+      Pubspec original, Iterable<PackageRange> newDependencies) {
+    if (isDevelopment) {
+      return _addPackagesToNormalDependencies(original, newDependencies);
+    }
+
+    return _addPackagesToDevelopmentDependencies(original, newDependencies);
+  }
+
+  /// TODO
+  Pubspec _addPackagesToNormalDependencies(
+      Pubspec original, Iterable<PackageRange> newDependencies) {
+    final dependencies = [...original.dependencies.values];
+    final devDependencies = original.devDependencies.values;
+    final devDependencyNames =
+        devDependencies.map((devDependency) => devDependency.name);
+
+    for (var newDependency in newDependencies) {
+      if (devDependencyNames.contains(newDependency.name)) {
+        log.warning('${newDependency.name} is already in dev-dependencies. '
+            'Please remove existing entry before adding it to dependencies');
+
+        continue;
+      }
+
+      dependencies.add(newDependency);
+    }
 
     return Pubspec(
       original.name,
@@ -85,7 +92,35 @@ class AddCommand extends PubCommand {
       sdkConstraints: original.sdkConstraints,
       dependencies: dependencies,
       devDependencies: devDependencies,
-      dependencyOverrides: [],
+      dependencyOverrides: original.dependencyOverrides.values,
+    );
+  }
+
+  // TODO
+  Pubspec _addPackagesToDevelopmentDependencies(
+      Pubspec original, Iterable<PackageRange> newDevDependencies) {
+    final dependencies = original.dependencies.values;
+    final dependencyNames = dependencies.map((dependency) => dependency.name);
+    final devDependencies = [...original.dependencies.values];
+
+    for (var newDevDependency in newDevDependencies) {
+      if (dependencyNames.contains(newDevDependency.name)) {
+        log.warning('${newDevDependency.name} is already in dependencies. '
+            'Please remove existing entry before adding it to dev-dependencies');
+
+        continue;
+      }
+
+      devDependencies.add(newDevDependency);
+    }
+
+    return Pubspec(
+      original.name,
+      version: original.version,
+      sdkConstraints: original.sdkConstraints,
+      dependencies: dependencies,
+      devDependencies: devDependencies,
+      dependencyOverrides: original.dependencyOverrides.values,
     );
   }
 
@@ -102,6 +137,7 @@ class AddCommand extends PubCommand {
   /// retry:^2.0.0
   /// retry:'>=2.0.0'
   /// retry:'>2.0.0 <3.0.1'
+  /// retry:any
   /// ```
   Iterable<PackageRange> parsePackageRanges(Iterable<String> packages) {
     final newDependencies = packages.map((package) {
@@ -127,8 +163,7 @@ class AddCommand extends PubCommand {
   }
 
   /// Writes the changes to the pubspec file
-  void _updatePubspec(SolveResult result, Iterable<PackageRange> packages,
-      String dependencyKey) {
+  void _updatePubspec(SolveResult result, Iterable<PackageRange> packages) {
     if (entrypoint.pubspecPath == null) {
       throw FileException(
           // Make the package dir absolute because for the entrypoint it'll just
@@ -137,6 +172,8 @@ class AddCommand extends PubCommand {
           '"${canonicalize('.')}".',
           entrypoint.pubspecPath);
     }
+
+    final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
