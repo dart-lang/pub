@@ -23,5 +23,6 @@
 library yaml_edit;
 
 export 'yaml_edit/editor.dart';
+export 'yaml_edit/equality.dart' show deepEquals;
 export 'yaml_edit/source_edit.dart';
 export 'yaml_edit/wrap.dart' show wrapAsYamlNode;
