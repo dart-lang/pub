@@ -22,17 +22,6 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).validate();
   });
 
-  test('allows empty version constraint', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
-
-    await d.appDir({}).create();
-
-    await pubAdd(args: ['foo']);
-
-    await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
-  });
-
   test('URL encodes the package name', () async {
     await serveNoPackages();
 
@@ -47,6 +36,27 @@ void main() {
           contains('), version solving failed.')
         ]),
         exitCode: exit_codes.UNAVAILABLE);
+
+    await d.appDir({}).validate();
+  });
+
+  test('--development adds packages to dev-dependencies instead', () async {
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+    ]).create();
+
+    await pubAdd(args: ['--development', 'foo:1.2.3']);
+
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dev_dependencies': {'foo': '1.2.3'}
+      })
+    ]).validate();
   });
 
   // test('gets a package from a non-default pub server', () async {
