@@ -32,7 +32,7 @@ void main() {
     await pubUpgrade(args: ['upgraded'], output: RegExp(r'''
 Resolving dependencies\.\.\..*
   not_upgraded 1\.0\.0
-. upgraded 2\.0\.0 \(was 1\.0\.0\) \(3\.0\.0-dev available\)
+. upgraded 2\.0\.0 \(was 1\.0\.0\)
 ''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });
 }
