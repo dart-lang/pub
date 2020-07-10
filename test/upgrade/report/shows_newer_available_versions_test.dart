@@ -20,9 +20,14 @@ void main() {
       builder.serve('multiple_newer_unstable', '1.0.0');
       builder.serve('multiple_newer_unstable', '1.0.1-unstable.1');
       builder.serve('multiple_newer_unstable', '1.0.1-unstable.2');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.1');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.2');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.2');
       builder.serve('no_newer', '1.0.0');
       builder.serve('one_newer_unstable', '1.0.0');
       builder.serve('one_newer_unstable', '1.0.1-unstable.1');
+      builder.serve('one_newer_unstable2', '1.0.1-unstable.1');
+      builder.serve('one_newer_unstable2', '1.0.1-unstable.2');
       builder.serve('one_newer_stable', '1.0.0');
       builder.serve('one_newer_stable', '1.0.1');
     });
@@ -32,8 +37,10 @@ void main() {
       'multiple_newer': '1.0.0',
       'multiple_newer_stable': '1.0.0',
       'multiple_newer_unstable': '1.0.0',
+      'multiple_newer_unstable2': '1.0.1-unstable.1',
       'no_newer': '1.0.0',
       'one_newer_unstable': '1.0.0',
+      'one_newer_unstable2': '1.0.1-unstable.1',
       'one_newer_stable': '1.0.0'
     }).create();
 
@@ -42,10 +49,12 @@ void main() {
 Resolving dependencies\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
 . multiple_newer_stable 1\.0\.0 \(1\.0\.2\ available\)
-. multiple_newer_unstable 1\.0\.0 \(1\.0\.1-unstable\.2 available\)
+. multiple_newer_unstable 1\.0\.0
+. multiple_newer_unstable2 1\.0\.1-unstable\.1 \(1\.0\.1-unstable\.2 available\)
 . no_newer 1\.0\.0
 . one_newer_stable 1\.0\.0 \(1\.0\.1 available\)
-. one_newer_unstable 1\.0\.0 \(1\.0\.1-unstable\.1 available\)
+. one_newer_unstable 1\.0\.0
+. one_newer_unstable2 1\.0\.1-unstable\.1 \(1\.0\.1-unstable\.2 available\)
 ''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });
 }
