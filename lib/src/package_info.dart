@@ -13,7 +13,11 @@ abstract class PackageInfo {
   dynamic get description;
 
   factory PackageInfo.from(String package,
-      {String path, String gitUrl, String gitRef, String gitPath}) {
+      {String path,
+      String gitUrl,
+      String gitRef,
+      String gitPath,
+      String pubspecPath}) {
     ArgumentError.checkNotNull(package, 'package');
 
     const delimiter = ':';
@@ -39,7 +43,7 @@ abstract class PackageInfo {
     }
 
     if (path != null) {
-      return PathPackageInfo(packageName, path);
+      return PathPackageInfo(packageName, path, pubspecPath);
     }
 
     if (gitUrl == null && gitRef == null && gitPath == null) {
@@ -111,15 +115,19 @@ class PathPackageInfo implements PackageInfo {
   /// Path to local package
   final String path;
 
+  /// Path to [pubspec.yaml] where `pub` was called.
+  final String _pubspecPath;
+
   @override
   dynamic get description => {'path': path};
 
-  PathPackageInfo(this.name, this.path);
+  PathPackageInfo(this.name, this.path, String pubspecPath)
+      : _pubspecPath = pubspecPath;
 
   @override
   PackageRange toPackageRange(SystemCache cache) {
     return cache.sources['path']
-        .parseRef(name, path)
+        .parseRef(name, path, containingPath: _pubspecPath)
         .withConstraint(VersionRange());
   }
 }

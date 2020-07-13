@@ -178,7 +178,11 @@ class AddCommand extends PubCommand {
       PackageInfo packageInfo;
       try {
         packageInfo = PackageInfo.from(package,
-            path: path, gitPath: gitPath, gitRef: gitRef, gitUrl: gitUrl);
+            path: path,
+            gitPath: gitPath,
+            gitRef: gitRef,
+            gitUrl: gitUrl,
+            pubspecPath: entrypoint.pubspecPath);
       } on PackageParseException catch (exception) {
         usageException(exception.message);
       }
@@ -219,6 +223,7 @@ class AddCommand extends PubCommand {
       if (package.description == null) {
         yamlEditor.update(packagePath, '^${finalPackages[packageName]}');
       } else {
+        print(package.description);
         yamlEditor.update(packagePath, package.description);
       }
     }
