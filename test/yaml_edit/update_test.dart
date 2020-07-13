@@ -612,6 +612,83 @@ b: 2
         expectYamlBuilderValue(doc, {'a': 1, 'b': 2});
       });
 
+      test('(3)', () {
+        final doc = YamlEditor('''
+a:
+  aa: 1
+  zz: 1
+''');
+        doc.update([
+          'a',
+          'bb'
+        ], {
+          'aaa': {'dddd': 'c'},
+          'bbb': [0, 1, 2]
+        });
+
+        expect(doc.toString(), equals('''
+a:
+  aa: 1
+  bb: 
+    aaa:
+      dddd: c
+    bbb:
+      - 0
+      - 1
+      - 2
+  zz: 1
+'''));
+        expectYamlBuilderValue(doc, {
+          'a': {
+            'aa': 1,
+            'bb': {
+              'aaa': {'dddd': 'c'},
+              'bbb': [0, 1, 2]
+            },
+            'zz': 1
+          }
+        });
+      });
+
+      test('(4)', () {
+        final doc = YamlEditor('''
+a:
+  aa: 1
+  zz: 1
+''');
+        doc.update([
+          'a',
+          'bb'
+        ], [
+          0,
+          [1, 2],
+          {'aaa': 'b', 'bbb': 'c'}
+        ]);
+
+        expect(doc.toString(), equals('''
+a:
+  aa: 1
+  bb: 
+    - 0
+    - - 1
+      - 2
+    - aaa: b
+      bbb: c
+  zz: 1
+'''));
+        expectYamlBuilderValue(doc, {
+          'a': {
+            'aa': 1,
+            'bb': [
+              0,
+              [1, 2],
+              {'aaa': 'b', 'bbb': 'c'}
+            ],
+            'zz': 1
+          }
+        });
+      });
+
       test('with complex keys', () {
         final doc = YamlEditor('''
 ? Sammy Sosa

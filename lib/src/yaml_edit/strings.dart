@@ -271,6 +271,10 @@ String getBlockString(Object value, int indentation, String lineEnding) {
       final formattedValue =
           getBlockString(entry.value, newIndentation, lineEnding);
 
+      if (isCollection(entry.value)) {
+        return formattedKey + ':\n' + formattedValue;
+      }
+
       return formattedKey + ': ' + formattedValue;
     }).join(lineEnding);
   }
