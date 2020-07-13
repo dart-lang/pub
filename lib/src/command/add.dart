@@ -53,7 +53,7 @@ class AddCommand extends PubCommand {
       usageException('Cannot pass both path and a git option.');
     }
 
-    final packages = parsePackages(argResults.rest);
+    final packages = _parsePackages(argResults.rest);
 
     /// Perform version resolution in-memory.
     var updatedPubSpec =
@@ -171,7 +171,7 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  Iterable<PackageInfo> parsePackages(Iterable<String> packages) {
+  Iterable<PackageInfo> _parsePackages(Iterable<String> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
     final parsedPackages = packages.map((package) {
@@ -216,12 +216,10 @@ class AddCommand extends PubCommand {
       final packageName = package.name;
       final packagePath = [dependencyKey, packageName];
 
-      print(package.description);
-
       if (package.description == null) {
-        yamlEditor.assign(packagePath, '^${finalPackages[packageName]}');
+        yamlEditor.update(packagePath, '^${finalPackages[packageName]}');
       } else {
-        yamlEditor.assign(packagePath, package.description);
+        yamlEditor.update(packagePath, package.description);
       }
     }
 
