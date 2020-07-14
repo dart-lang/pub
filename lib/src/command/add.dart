@@ -97,7 +97,7 @@ class AddCommand extends PubCommand {
       final packageName = package.name;
 
       if (devDependencyNames.contains(packageName)) {
-        usageException('$packageName is already in dev-dependencies. '
+        usageException('$packageName is already in dev_dependencies. '
             'Please remove existing entry before adding it to dependencies');
       }
 
@@ -130,7 +130,7 @@ class AddCommand extends PubCommand {
 
       if (dependencyNames.contains(packageName)) {
         usageException('$packageName is already in dependencies. '
-            'Please remove existing entry before adding it to dev-dependencies');
+            'Please remove existing entry before adding it to dev_dependencies');
       }
 
       devDependencies.add(package.toPackageRange(cache));

@@ -1,0 +1,37 @@
+// Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS d.file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE d.file.
+
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
+
+import '../../descriptor.dart' as d;
+import '../../test_pub.dart';
+
+void main() {
+  test('can use relative path', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: ['foo', '--path', '../foo']);
+
+    await d.appPackagesFile({'foo': '../foo'}).validate();
+
+    await d.appDir({
+      'foo': {'path': '../foo'}
+    }).validate();
+  });
+
+  test('fails if path does not exist', () async {
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', '--path', '../foo'],
+        error: contains(
+            'Because myapp depends on foo from path which doesn\'t exist '
+            '(could not find package foo at "../foo"), version solving failed.'),
+        exitCode: exit_codes.NO_INPUT);
+  });
+}
