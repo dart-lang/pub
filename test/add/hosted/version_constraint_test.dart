@@ -20,6 +20,31 @@ void main() {
     await d.appDir({'foo': '^1.2.3'}).validate();
   });
 
+  test('allows specific version constraint', () async {
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: ['foo:1.2.3']);
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appDir({'foo': '1.2.3'}).validate();
+  });
+
+  test('version constraint will override existing version constraints',
+      () async {
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+    await d.appDir({'foo': '1.2.2'}).create();
+
+    await pubAdd(args: ['foo:1.2.3']);
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appDir({'foo': '1.2.3'}).validate();
+  });
+
   test('allows the "any" version constraint', () async {
     await servePackages((builder) => builder.serve('foo', '1.2.3'));
 

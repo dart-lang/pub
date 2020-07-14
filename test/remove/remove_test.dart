@@ -52,14 +52,37 @@ void main() {
   });
 
   test('removes git dependencies', () async {
+    ensureGit();
+    final repo = d.git('foo.git', [
+      d.dir('subdir', [d.libPubspec('foo', '1.0.0'), d.libDir('foo', '1.0.0')])
+    ]);
+    await repo.create();
+
     await d.appDir({
       'foo': {
-        'git': {'url': '../foo.git', 'path': 'sub/dir', 'ref': 'development'}
+        'git': {'url': '../foo.git', 'path': 'subdir'}
       }
     }).create();
 
-    await pubRemove(args: ['foo']);
+    await pubGet();
 
+    await pubRemove(args: ['foo']);
+    await d.appPackagesFile({}).validate();
+    await d.appDir({}).validate();
+  });
+
+  test('removes path dependencies', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.appDir({
+      'foo': {'path': '../foo'}
+    }).create();
+
+    await pubGet();
+
+    await pubRemove(args: ['foo']);
+    await d.appPackagesFile({}).validate();
     await d.appDir({}).validate();
   });
 }
