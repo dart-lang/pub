@@ -28,6 +28,8 @@ class AddCommand extends PubCommand {
   String get gitUrl => argResults['git-url'];
   String get gitPath => argResults['git-path'];
   String get gitRef => argResults['git-ref'];
+  String get hostName => argResults['host-name'];
+  String get hostUrl => argResults['host-url'];
   String get path => argResults['path'];
 
   AddCommand() {
@@ -40,6 +42,8 @@ class AddCommand extends PubCommand {
     argParser.addOption('git-ref',
         help: 'Git branch or commit to be retrieved');
     argParser.addOption('git-path', help: 'Path of git package');
+    argParser.addOption('host-name', help: 'Name of host package');
+    argParser.addOption('host-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
   }
 
@@ -49,8 +53,13 @@ class AddCommand extends PubCommand {
       usageException('Must specify a package to be added.');
     }
 
-    if (path != null && (gitUrl != null || gitRef != null || gitPath != null)) {
-      usageException('Cannot pass both path and a git option.');
+    final hasGitOptions = gitUrl != null || gitRef != null || gitPath != null;
+    final hasHostOptions = hostName != null || hostUrl != null;
+
+    if ((path != null && hasGitOptions) ||
+        (hasGitOptions && hasHostOptions) ||
+        (hasHostOptions && path != null)) {
+      usageException('Packages must either be a git, hosted, or path package.');
     }
 
     final packages = _parsePackages(argResults.rest);
@@ -176,13 +185,24 @@ class AddCommand extends PubCommand {
 
     final parsedPackages = packages.map((package) {
       PackageInfo packageInfo;
+
+      var git = <String, String>{};
+      if (gitUrl != null) git['url'] = gitUrl;
+      if (gitRef != null) git['ref'] = gitRef;
+      if (gitPath != null) git['path'] = gitPath;
+      if (git.isEmpty) git = null;
+
+      var hostInfo = <String, String>{};
+      if (hostName != null) hostInfo['name'] = hostName;
+      if (hostUrl != null) hostInfo['url'] = hostUrl;
+      if (hostInfo.isEmpty) hostInfo = null;
+
       try {
         packageInfo = PackageInfo.from(package,
             path: path,
-            gitPath: gitPath,
-            gitRef: gitRef,
-            gitUrl: gitUrl,
-            pubspecPath: entrypoint.pubspecPath);
+            git: git,
+            pubspecPath: entrypoint.pubspecPath,
+            hostInfo: hostInfo);
       } on PackageParseException catch (exception) {
         usageException(exception.message);
       }
@@ -220,11 +240,10 @@ class AddCommand extends PubCommand {
       final packageName = package.name;
       final packagePath = [dependencyKey, packageName];
 
-      if (package.description == null) {
+      if (package.pubspecInfo == null) {
         yamlEditor.update(packagePath, '^${finalPackages[packageName]}');
       } else {
-        print(package.description);
-        yamlEditor.update(packagePath, package.description);
+        yamlEditor.update(packagePath, package.pubspecInfo);
       }
     }
 

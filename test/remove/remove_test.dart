@@ -85,4 +85,27 @@ void main() {
     await d.appPackagesFile({}).validate();
     await d.appDir({}).validate();
   });
+
+  test('removes path dependencies', () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    await serveErrors();
+
+    var server = await PackageServer.start((builder) {
+      builder.serve('foo', '1.2.3');
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.2.3',
+        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+      }
+    }).create();
+
+    await pubGet();
+
+    await pubRemove(args: ['foo']);
+    await d.appPackagesFile({}).validate();
+    await d.appDir({}).validate();
+  });
 }

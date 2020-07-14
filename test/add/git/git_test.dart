@@ -27,9 +27,7 @@ void main() {
     ]).validate();
 
     await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git'}
-      }
+      'foo': {'git': '../foo.git'}
     }).validate();
   });
 

@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package_name.dart';
@@ -11,12 +12,12 @@ import 'system_cache.dart';
 abstract class PackageInfo {
   final String name;
   dynamic get description;
+  dynamic get pubspecInfo;
 
   factory PackageInfo.from(String package,
       {String path,
-      String gitUrl,
-      String gitRef,
-      String gitPath,
+      Map<String, String> git,
+      Map<String, String> hostInfo,
       String pubspecPath}) {
     ArgumentError.checkNotNull(package, 'package');
 
@@ -29,33 +30,33 @@ abstract class PackageInfo {
           'Invalid package and version constraint: $package');
     }
 
-    if (splitPackage.length == 2 &&
-        (path != null || gitUrl != null || gitRef != null || gitPath != null)) {
+    if (splitPackage.length == 2 && (path != null || git != null)) {
       throw PackageParseException(
           'Cannot declare version constraint and path or git information.');
     }
 
-    var packageName = splitPackage[0];
+    final packageName = splitPackage[0];
 
     if (splitPackage.length == 2) {
-      return VersionPackageInfo(
-          packageName, VersionConstraint.parse(splitPackage[1]));
+      final constraint = VersionConstraint.parse(splitPackage[1]);
+
+      if (hostInfo == null) {
+        return HostedPackageInfo(packageName, constraint: constraint);
+      }
+
+      return HostedPackageInfo(packageName,
+          constraint: constraint, hostInfo: hostInfo);
     }
 
-    if (path != null) {
-      return PathPackageInfo(packageName, path, pubspecPath);
-    }
+    if (path != null) return PathPackageInfo(packageName, path, pubspecPath);
+    if (git == null) return HostedPackageInfo(packageName);
 
-    if (gitUrl == null && gitRef == null && gitPath == null) {
-      return VersionPackageInfo(packageName, null);
-    }
-
-    if (gitUrl == null) {
+    if (git['url'] == null) {
       throw PackageParseException(
           'Cannot declare git package without declaring git url');
     }
 
-    return GitPackageInfo(packageName, gitUrl, gitRef, gitPath);
+    return GitPackageInfo(packageName, git);
   }
 
   /// Constructs a [packageRange] using the given [cache].
@@ -71,14 +72,26 @@ class GitPackageInfo implements PackageInfo {
   Map<String, String> git;
 
   @override
-  dynamic get description => {'git': git};
+  dynamic get description {
+    return {
+      'url': git['url'],
+      'ref': git['ref'] ?? 'HEAD',
+      'path': git['path'] ?? '.'
+    };
+  }
 
-  GitPackageInfo(this.name, String gitUrl, String gitRef, String gitPath) {
+  @override
+  dynamic get pubspecInfo {
+    if (git['ref'] == null && git['path'] == null) {
+      return {'git': git['url']};
+    }
+
+    return {'git': git};
+  }
+
+  GitPackageInfo(this.name, this.git) {
     ArgumentError.checkNotNull(name, 'package name');
-    ArgumentError.checkNotNull(gitUrl, 'git url');
-    git = {'url': gitUrl};
-    if (gitRef != null) git['ref'] = gitRef;
-    if (gitPath != null) git['path'] = gitPath;
+    ArgumentError.checkNotNull(git['url'], 'git url');
   }
 
   @override
@@ -89,22 +102,41 @@ class GitPackageInfo implements PackageInfo {
   }
 }
 
-class VersionPackageInfo implements PackageInfo {
+class HostedPackageInfo implements PackageInfo {
   @override
   final String name;
 
   /// Package version constraint
   final VersionConstraint constraint;
 
-  @override
-  dynamic get description => constraint?.toString();
+  /// Information of non-pub.dev package server.
+  final Map<String, String> hostInfo;
 
-  VersionPackageInfo(this.name, this.constraint);
+  @override
+  dynamic get description {
+    if (hostInfo == null) return name;
+
+    return hostInfo;
+  }
+
+  @override
+  dynamic get pubspecInfo {
+    if (hostInfo == null) return constraint?.toString();
+    if (constraint == null) return {'hosted': hostInfo};
+
+    return {'hosted': hostInfo, 'version': constraint.toString()};
+  }
+
+  HostedPackageInfo(this.name, {this.constraint, this.hostInfo}) {
+    if (hostInfo != null) {
+      ArgumentError.checkNotNull(hostInfo['url'], 'host url');
+    }
+  }
 
   @override
   PackageRange toPackageRange(SystemCache cache) {
     return PackageRange(name, cache.sources['hosted'],
-        constraint ?? VersionConstraint.any, name);
+        constraint ?? VersionConstraint.any, description);
   }
 }
 
@@ -119,7 +151,14 @@ class PathPackageInfo implements PackageInfo {
   final String _pubspecPath;
 
   @override
-  dynamic get description => {'path': path};
+  dynamic get description {
+    final isRelative = p.isRelative(path);
+
+    return {'path': path, 'relative': isRelative};
+  }
+
+  @override
+  dynamic get pubspecInfo => {'path': path};
 
   PathPackageInfo(this.name, this.path, String pubspecPath)
       : _pubspecPath = pubspecPath;

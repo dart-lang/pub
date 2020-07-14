@@ -9,7 +9,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('cannot use both --path and --git-url flags', () async {
+  test('cannot use both --path and --git-<option> flags', () async {
     ensureGit();
 
     await d.git(
@@ -21,7 +21,62 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git', '--path', '../bar'],
-        error: contains('Cannot pass both path and a git option.'),
+        error:
+            contains('Packages must either be a git, hosted, or path package.'),
+        exitCode: exit_codes.USAGE);
+  });
+
+  test('cannot use both --path and --host-<option> flags', () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    await serveErrors();
+
+    final server = await PackageServer.start((builder) {
+      builder.serve('foo', '1.2.3');
+    });
+
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: [
+          'foo',
+          '--host-url',
+          'http://localhost:${server.port}',
+          '--path',
+          '../bar'
+        ],
+        error:
+            contains('Packages must either be a git, hosted, or path package.'),
+        exitCode: exit_codes.USAGE);
+  });
+
+  test('cannot use both --host-<option> and --git-<option> flags', () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    await serveErrors();
+
+    final server = await PackageServer.start((builder) {
+      builder.serve('foo', '1.2.3');
+    });
+
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: [
+          'foo',
+          '--host-url',
+          'http://localhost:${server.port}',
+          '--git-url',
+          '../foo.git'
+        ],
+        error:
+            contains('Packages must either be a git, hosted, or path package.'),
         exitCode: exit_codes.USAGE);
   });
 }
