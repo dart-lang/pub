@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/yaml_edit/yaml_edit.dart';
+import 'package:pub/src/yaml_edit/src/utils.dart';
 import 'package:test/test.dart';
 
 import 'test_utils.dart';
@@ -11,12 +12,12 @@ void main() {
   group('windows line ending detection', () {
     test('empty string gives not windows', () {
       final doc = YamlEditor('');
-      expect(doc.lineEnding, equals('\n'));
+      expect(getLineEnding(doc.toString()), equals('\n'));
     });
 
     test('accurately detects windows documents', () {
       final doc = YamlEditor('\r\n');
-      expect(doc.lineEnding, equals('\r\n'));
+      expect(getLineEnding(doc.toString()), equals('\r\n'));
     });
 
     test('accurately detects windows documents (2)', () {
@@ -27,7 +28,7 @@ a:\r
     - 2\r
 c: 3\r
 ''');
-      expect(doc.lineEnding, equals('\r\n'));
+      expect(getLineEnding(doc.toString()), equals('\r\n'));
     });
   });
 

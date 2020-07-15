@@ -5,6 +5,8 @@
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
+import 'editor.dart';
+
 /// Determines if [string] is dangerous by checking if parsing the plain string can
 /// return a result different from [string].
 ///
@@ -139,4 +141,116 @@ Object getStyle(Object target) {
   }
 
   return null;
+}
+
+/// Returns the detected indentation step used in [yaml], or
+/// defaults to a value of `2` if no indentation step can be detected.
+///
+/// Indentation step is determined by the difference in indentation of the
+/// first block-styled yaml collection in the second level as compared to the
+/// top-level elements. In the case where there are multiple possible
+/// candidates, we choose the candidate closest to the start of [yaml].
+int getIndentation(YamlEditor editor) {
+  final node = editor.parseAt([]);
+  Iterable<YamlNode> children;
+  var indentation = 2;
+
+  if (node is YamlMap && node.style == CollectionStyle.BLOCK) {
+    children = node.nodes.values;
+  } else if (node is YamlList && node.style == CollectionStyle.BLOCK) {
+    children = node.nodes;
+  }
+
+  if (children != null) {
+    for (var child in children) {
+      var indent = 0;
+      if (child is YamlList) {
+        indent = getListIndentation(editor.toString(), child);
+      } else if (child is YamlMap) {
+        indent = getMapIndentation(editor.toString(), child);
+      }
+
+      if (indent != 0) indentation = indent;
+    }
+  }
+  return indentation;
+}
+
+/// Gets the indentation level of [list]. This is 0 if it is a flow list,
+/// but returns the number of spaces before the hyphen of elements for
+/// block lists.
+///
+/// Throws [UnsupportedError] if an empty block map is passed in.
+int getListIndentation(String yaml, YamlList list) {
+  ArgumentError.checkNotNull(list, 'list');
+
+  if (list.style == CollectionStyle.FLOW) return 0;
+
+  /// An empty block map doesn't really exist.
+  if (list.isEmpty) {
+    throw UnsupportedError('Unable to get indentation for empty block list');
+  }
+
+  final lastSpanOffset = list.nodes.last.span.start.offset;
+  final lastNewLine = yaml.lastIndexOf('\n', lastSpanOffset - 1);
+  final lastHyphen = yaml.lastIndexOf('-', lastSpanOffset - 1);
+
+  if (lastNewLine == -1) return lastHyphen;
+
+  return lastHyphen - lastNewLine - 1;
+}
+
+/// Gets the indentation level of [map]. This is 0 if it is a flow map,
+/// but returns the number of spaces before the keys for block maps.
+int getMapIndentation(String yaml, YamlMap map) {
+  ArgumentError.checkNotNull(map, 'map');
+
+  if (map.style == CollectionStyle.FLOW) return 0;
+
+  /// An empty block map doesn't really exist.
+  if (map.isEmpty) {
+    throw UnsupportedError('Unable to get indentation for empty block map');
+  }
+
+  /// Use the number of spaces between the last key and the newline as
+  /// indentation.
+  final lastKey = map.nodes.keys.last as YamlNode;
+  final lastSpanOffset = lastKey.span.start.offset;
+  final lastNewLine = yaml.lastIndexOf('\n', lastSpanOffset);
+  final lastQuestionMark = yaml.lastIndexOf('?', lastSpanOffset);
+
+  if (lastQuestionMark == -1) {
+    if (lastNewLine == -1) return lastSpanOffset;
+    return lastSpanOffset - lastNewLine - 1;
+  }
+
+  /// If there is a question mark, it might be a complex key. Check if it
+  /// is on the same line as the key node to verify.
+  if (lastNewLine == -1) return lastQuestionMark;
+  if (lastQuestionMark > lastNewLine) {
+    return lastQuestionMark - lastNewLine - 1;
+  }
+
+  return lastSpanOffset - lastNewLine - 1;
+}
+
+/// Returns the detected line ending used in [yaml], more specifically, whether
+/// [yaml] appears to use Windows `\r\n` or Unix `\n` line endings.
+///
+/// The heuristic used is to count all `\n` in the text and if stricly more
+/// than half of them are preceded by `\r` we report that windows line endings
+/// are used.
+String getLineEnding(String yaml) {
+  var index = -1;
+  var unixNewlines = 0;
+  var windowsNewlines = 0;
+  while ((index = yaml.indexOf('\n', index + 1)) != -1) {
+    if (index != 0 && yaml[index - 1] == '\r') {
+      windowsNewlines++;
+    } else {
+      unixNewlines++;
+    }
+  }
+
+  return windowsNewlines > unixNewlines ? '\r\n' : '\n';
 }

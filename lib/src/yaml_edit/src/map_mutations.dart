@@ -58,23 +58,23 @@ SourceEdit _addToBlockMap(
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(map, 'map');
 
-  final newIndentation = yamlEdit.getMapIndentation(map) + yamlEdit.indentation;
+  final yaml = yamlEdit.toString();
+  final newIndentation =
+      getMapIndentation(yaml, map) + getIndentation(yamlEdit);
   final keyString = getFlowString(key);
+  final lineEnding = getLineEnding(yaml);
 
-  var valueString =
-      getBlockString(newValue, newIndentation, yamlEdit.lineEnding);
+  var valueString = getBlockString(newValue, newIndentation, lineEnding);
   if (isCollection(newValue) && !isFlowYamlCollectionNode(newValue)) {
-    valueString = '${yamlEdit.lineEnding}$valueString';
+    valueString = '$lineEnding$valueString';
   }
 
-  var formattedValue = ' ' * yamlEdit.getMapIndentation(map) + '$keyString: ';
+  var formattedValue = ' ' * getMapIndentation(yaml, map) + '$keyString: ';
   var offset = map.span.end.offset;
 
   final insertionIndex = getMapInsertionIndex(map, keyString);
 
   if (map.isNotEmpty) {
-    final yaml = yamlEdit.toString();
-
     /// Adjusts offset to after the trailing newline of the last entry, if it
     /// exists
     if (insertionIndex == map.length) {
@@ -84,7 +84,7 @@ SourceEdit _addToBlockMap(
       if (nextNewLineIndex != -1) {
         offset = nextNewLineIndex + 1;
       } else {
-        formattedValue = yamlEdit.lineEnding + formattedValue;
+        formattedValue = lineEnding + formattedValue;
       }
     } else {
       final keyAtIndex = map.nodes.keys.toList()[insertionIndex] as YamlNode;
@@ -95,7 +95,7 @@ SourceEdit _addToBlockMap(
     }
   }
 
-  formattedValue += valueString + yamlEdit.lineEnding;
+  formattedValue += valueString + lineEnding;
 
   return SourceEdit(offset, 0, formattedValue);
 }
@@ -136,13 +136,15 @@ SourceEdit _replaceInBlockMap(
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(map, 'map');
 
-  final newIndentation = yamlEdit.getMapIndentation(map) + yamlEdit.indentation;
+  final yaml = yamlEdit.toString();
+  final lineEnding = getLineEnding(yaml);
+  final newIndentation =
+      getMapIndentation(yaml, map) + getIndentation(yamlEdit);
   final value = map.nodes[key];
   final keyNode = getKeyNode(map, key);
-  var valueString =
-      getBlockString(newValue, newIndentation, yamlEdit.lineEnding);
+  var valueString = getBlockString(newValue, newIndentation, lineEnding);
   if (isCollection(newValue) && !isFlowYamlCollectionNode(newValue)) {
-    valueString = yamlEdit.lineEnding + valueString;
+    valueString = lineEnding + valueString;
   }
 
   /// +2 accounts for the colon

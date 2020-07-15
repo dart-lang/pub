@@ -103,74 +103,6 @@ class YamlEditor {
   @override
   String toString() => _yaml;
 
-  /// Returns the detected indentation step used for this YAML document, or
-  /// defaults to a value of `2` if no indentation step can be detected.
-  ///
-  /// Indentation step is determined by the difference in indentation of the
-  /// first block-styled yaml collection in the second level as compared to the
-  /// top-level elements. In the case where there are multiple possible
-  /// candidates, we choose the candidate closest to the start of [_yaml].
-  int get indentation {
-    if (_indentation == null) {
-      final node = _contents;
-      Iterable<YamlNode> children;
-
-      if (node is YamlMap && node.style == CollectionStyle.BLOCK) {
-        children = node.nodes.values;
-      } else if (node is YamlList && node.style == CollectionStyle.BLOCK) {
-        children = node.nodes;
-      }
-
-      if (children != null) {
-        for (var child in children) {
-          var indent = 0;
-          if (child is YamlList) {
-            indent = getListIndentation(child);
-          } else if (child is YamlMap) {
-            indent = getMapIndentation(child);
-          }
-
-          if (indent != 0) _indentation = indent;
-        }
-      }
-    }
-
-    /// If [_indentation] was not set by the above block, give it a default
-    /// value of 2.
-    _indentation ??= 2;
-
-    return _indentation;
-  }
-
-  int _indentation;
-
-  /// Returns the detected line ending used in this YAML document, more
-  /// specifically, whether the YAML document appears to use Windows `\r\n` or
-  /// Unix `\n` line endings.
-  ///
-  /// The heuristic used is to count all `\n` in the text and if stricly more
-  /// than half of them are preceded by `\r` we report that windows line endings
-  /// are used.
-  String get lineEnding {
-    if (_isWindowsEnding == null) {
-      var index = -1;
-      var unixNewlines = 0;
-      var windowsNewlines = 0;
-      while ((index = _yaml.indexOf('\n', index + 1)) != -1) {
-        if (index != 0 && _yaml[index - 1] == '\r') {
-          windowsNewlines++;
-        } else {
-          unixNewlines++;
-        }
-      }
-      _isWindowsEnding = windowsNewlines > unixNewlines;
-    }
-
-    return _isWindowsEnding ? '\r\n' : '\n';
-  }
-
-  bool _isWindowsEnding;
-
   factory YamlEditor(String yaml) => YamlEditor._(yaml);
 
   YamlEditor._(this._yaml) {
@@ -202,9 +134,6 @@ class YamlEditor {
     }
 
     collectAliases(_contents);
-
-    _isWindowsEnding = null;
-    _indentation = null;
   }
 
   /// Parses the document to return [YamlNode] currently present at [path].
@@ -306,6 +235,7 @@ class YamlEditor {
     if (path.isEmpty) {
       final start = _contents.span.start.offset;
       final end = getContentSensitiveEnd(_contents);
+      final lineEnding = getLineEnding(_yaml);
       final edit =
           SourceEdit(start, end - start, getBlockString(value, 0, lineEnding));
 
@@ -692,63 +622,5 @@ $expectedTree''');
     }
 
     throw PathError(path, path.first, tree);
-  }
-
-  /// Gets the indentation level of [map]. This is 0 if it is a flow map,
-  /// but returns the number of spaces before the keys for block maps.
-  int getMapIndentation(YamlMap map) {
-    ArgumentError.checkNotNull(map, 'map');
-
-    if (map.style == CollectionStyle.FLOW) return 0;
-
-    /// An empty block map doesn't really exist.
-    if (map.isEmpty) {
-      throw UnsupportedError('Unable to get indentation for empty block map');
-    }
-
-    /// Use the number of spaces between the last key and the newline as
-    /// indentation.
-    final lastKey = map.nodes.keys.last as YamlNode;
-    final lastSpanOffset = lastKey.span.start.offset;
-    final lastNewLine = _yaml.lastIndexOf('\n', lastSpanOffset);
-    final lastQuestionMark = _yaml.lastIndexOf('?', lastSpanOffset);
-
-    if (lastQuestionMark == -1) {
-      if (lastNewLine == -1) return lastSpanOffset;
-      return lastSpanOffset - lastNewLine - 1;
-    }
-
-    /// If there is a question mark, it might be a complex key. Check if it
-    /// is on the same line as the key node to verify.
-    if (lastNewLine == -1) return lastQuestionMark;
-    if (lastQuestionMark > lastNewLine) {
-      return lastQuestionMark - lastNewLine - 1;
-    }
-
-    return lastSpanOffset - lastNewLine - 1;
-  }
-
-  /// Gets the indentation level of [list]. This is 0 if it is a flow list,
-  /// but returns the number of spaces before the hyphen of elements for
-  /// block lists.
-  ///
-  /// Throws [UnsupportedError] if an empty block map is passed in.
-  int getListIndentation(YamlList list) {
-    ArgumentError.checkNotNull(list, 'list');
-
-    if (list.style == CollectionStyle.FLOW) return 0;
-
-    /// An empty block map doesn't really exist.
-    if (list.isEmpty) {
-      throw UnsupportedError('Unable to get indentation for empty block list');
-    }
-
-    final lastSpanOffset = list.nodes.last.span.start.offset;
-    final lastNewLine = _yaml.lastIndexOf('\n', lastSpanOffset - 1);
-    final lastHyphen = _yaml.lastIndexOf('-', lastSpanOffset - 1);
-
-    if (lastNewLine == -1) return lastHyphen;
-
-    return lastHyphen - lastNewLine - 1;
   }
 }

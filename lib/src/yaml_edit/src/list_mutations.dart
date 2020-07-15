@@ -19,15 +19,17 @@ SourceEdit updateInList(
 
   final currValue = list.nodes[index];
   final offset = currValue.span.start.offset;
+  final yaml = yamlEdit.toString();
   String valueString;
 
   /// We do not use [_formatNewBlock] since we want to only replace the contents
   /// of this node while preserving comments/whitespace, while [_formatNewBlock]
   /// produces a string represnetation of a new node.
   if (list.style == CollectionStyle.BLOCK) {
-    final listIndentation = yamlEdit.getListIndentation(list);
-    final indentation = listIndentation + yamlEdit.indentation;
-    valueString = getBlockString(newValue, indentation, yamlEdit.lineEnding);
+    final listIndentation = getListIndentation(yaml, list);
+    final indentation = listIndentation + getIndentation(yamlEdit);
+    final lineEnding = getLineEnding(yaml);
+    valueString = getBlockString(newValue, indentation, lineEnding);
 
     /// We prefer the compact nested notation for lists
     if (isCollection(newValue)) {
@@ -36,7 +38,7 @@ SourceEdit updateInList(
         getStyle(currValue) == CollectionStyle.BLOCK) {
       /// The span of a block collection in a block list extends until the
       /// next hyphen, so we need to account for this.
-      valueString += yamlEdit.lineEnding + ' ' * listIndentation;
+      valueString += lineEnding + ' ' * listIndentation;
     }
   } else {
     valueString = getFlowString(newValue);
@@ -111,14 +113,14 @@ SourceEdit _appendToBlockList(YamlEditor yamlEdit, YamlList list, Object elem) {
   ArgumentError.checkNotNull(list, 'list');
 
   var formattedValue = _formatNewBlock(yamlEdit, list, elem);
+  final yaml = yamlEdit.toString();
 
   // Adjusts offset to after the trailing newline of the last entry, if it exists
   if (list.isNotEmpty) {
     final lastValueSpanEnd = list.nodes.last.span.end.offset;
-    final nextNewLineIndex =
-        yamlEdit.toString().indexOf('\n', lastValueSpanEnd);
+    final nextNewLineIndex = yaml.indexOf('\n', lastValueSpanEnd);
     if (nextNewLineIndex == -1) {
-      formattedValue = yamlEdit.lineEnding + formattedValue;
+      formattedValue = getLineEnding(yaml) + formattedValue;
     }
   }
 
@@ -130,16 +132,18 @@ String _formatNewBlock(YamlEditor yamlEdit, YamlList list, Object elem) {
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(list, 'list');
 
-  final listIndentation = yamlEdit.getListIndentation(list);
-  final newIndentation = listIndentation + yamlEdit.indentation;
+  final yaml = yamlEdit.toString();
+  final listIndentation = getListIndentation(yaml, list);
+  final newIndentation = listIndentation + getIndentation(yamlEdit);
+  final lineEnding = getLineEnding(yaml);
 
-  var valueString = getBlockString(elem, newIndentation, yamlEdit.lineEnding);
+  var valueString = getBlockString(elem, newIndentation, lineEnding);
   if (isCollection(elem) && !isFlowYamlCollectionNode(elem)) {
     valueString = valueString.substring(newIndentation);
   }
   final indentedHyphen = ' ' * listIndentation + '- ';
 
-  return '$indentedHyphen$valueString${yamlEdit.lineEnding}';
+  return '$indentedHyphen$valueString$lineEnding';
 }
 
 /// Formats [elem] into a new node for flow lists.

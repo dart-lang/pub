@@ -12,6 +12,77 @@ import 'package:yaml/yaml.dart';
 import 'test_utils.dart';
 
 void main() {
+  group('indentation', () {
+    test('returns 2 for empty strings', () {
+      final doc = YamlEditor('');
+      expect(getIndentation(doc), equals(2));
+    });
+
+    test('returns 2 for strings consisting only scalars', () {
+      final doc = YamlEditor('foo');
+      expect(getIndentation(doc), equals(2));
+    });
+
+    test('returns 2 if only top-level elements are present', () {
+      final doc = YamlEditor('''
+- 1
+- 2
+- 3''');
+      expect(getIndentation(doc), equals(2));
+    });
+
+    test('detects the indentation used in nested list', () {
+      final doc = YamlEditor('''
+- 1
+- 2
+- 
+   - 3
+   - 4''');
+      expect(getIndentation(doc), equals(3));
+    });
+
+    test('detects the indentation used in nested map', () {
+      final doc = YamlEditor('''
+a: 1
+b: 2
+c:
+   d: 4
+   e: 5''');
+      expect(getIndentation(doc), equals(3));
+    });
+
+    test('detects the indentation used in nested map in list', () {
+      final doc = YamlEditor('''
+- 1
+- 2
+- 
+    d: 4
+    e: 5''');
+      expect(getIndentation(doc), equals(4));
+    });
+
+    test('detects the indentation used in nested map in list with complex keys',
+        () {
+      final doc = YamlEditor('''
+- 1
+- 2
+- 
+    ? d
+    : 4''');
+      expect(getIndentation(doc), equals(4));
+    });
+
+    test('detects the indentation used in nested list in map', () {
+      final doc = YamlEditor('''
+a: 1
+b: 2
+c:
+  - 4
+  - 5''');
+      expect(getIndentation(doc), equals(2));
+    });
+  });
+
   group('styling options', () {
     group('update', () {
       test('flow map with style', () {
