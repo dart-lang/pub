@@ -4,9 +4,9 @@
 
 import 'package:test/test.dart';
 
-import 'package:pub/src/yaml_edit.dart';
-import 'package:pub/src/yaml_edit/equality.dart';
-import 'package:pub/src/yaml_edit/errors.dart';
+import 'package:pub/src/yaml_edit/src/equality.dart';
+import 'package:pub/src/yaml_edit/src/errors.dart';
+import 'package:pub/src/yaml_edit/yaml_edit.dart';
 
 /// Asserts that a string containing a single YAML document is unchanged
 /// when dumped right after loading.

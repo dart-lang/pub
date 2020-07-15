@@ -4,9 +4,9 @@
 
 import 'package:test/test.dart';
 
-import 'package:pub/src/yaml_edit.dart';
-import 'package:pub/src/yaml_edit/utils.dart';
-import 'package:pub/src/yaml_edit/wrap.dart';
+import 'package:pub/src/yaml_edit/src/utils.dart';
+import 'package:pub/src/yaml_edit/src/wrap.dart';
+import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:yaml/yaml.dart';
 
 import 'test_utils.dart';

@@ -4,8 +4,8 @@
 
 import 'dart:math';
 
-import 'package:pub/src/yaml_edit.dart';
-import 'package:pub/src/yaml_edit/wrap.dart';
+import 'package:pub/src/yaml_edit/yaml_edit.dart';
+import 'package:pub/src/yaml_edit/src/wrap.dart';
 import 'package:yaml/yaml.dart';
 
 import 'problem_strings.dart';

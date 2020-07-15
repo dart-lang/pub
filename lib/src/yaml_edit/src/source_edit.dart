@@ -56,6 +56,7 @@ class SourceEdit {
 
   /// Constructs a SourceEdit from JSON.
   ///
+  /// **Example:**
   /// ```dart
   /// final edit = {
   ///   'offset': 1,
@@ -82,6 +83,7 @@ class SourceEdit {
 
   /// Encodes this object as JSON-compatible structure.
   ///
+  /// **Example:**
   /// ```dart
   /// import 'dart:convert' show jsonEncode;
   ///
@@ -101,6 +103,22 @@ class SourceEdit {
   ///
   /// [edits] should be in order i.e. the first [SourceEdit] in [edits] should
   /// be the first edit applied to [original].
+  ///
+  /// **Example:**
+  /// ```dart
+  /// const original = 'YAML: YAML';
+  /// final sourceEdits = [
+  ///        SourceEdit(6, 4, "YAML Ain't Markup Language"),
+  ///        SourceEdit(6, 4, "YAML Ain't Markup Language"),
+  ///        SourceEdit(0, 4, "YAML Ain't Markup Language")
+  ///      ];
+  /// final result = SourceEdit.applyAll(original, sourceEdits);
+  /// ```
+  /// **Expected result:**
+  /// ```dart
+  /// "YAML Ain't Markup Language: YAML Ain't Markup Language Ain't Markup
+  /// Language"
+  /// ```
   static String applyAll(String original, Iterable<SourceEdit> edits) {
     ArgumentError.checkNotNull(original, 'original');
     ArgumentError.checkNotNull(edits, 'edits');
@@ -110,6 +128,13 @@ class SourceEdit {
 
   /// Applies one [SourceEdit]s to an original string, and return the final
   /// output.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final edit = SourceEdit(4, 3, 'bar');
+  /// final originalString = 'foo: foobar';
+  /// print(edit.apply(originalString)); // 'foo: barbar'
+  /// ```
   String apply(String original) {
     ArgumentError.checkNotNull(original, 'original');
 

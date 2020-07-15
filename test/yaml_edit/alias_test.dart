@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/yaml_edit.dart';
+import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:test/test.dart';
 
 import 'test_utils.dart';
@@ -45,7 +45,7 @@ void main() {
   });
 
   group('map', () {
-    test('removing an alias anchor results in AliasError', () {
+    test('removing an alias anchor value results in AliasError', () {
       final doc = YamlEditor('''
 a: &SS Sammy Sosa
 b: *SS
@@ -54,13 +54,31 @@ b: *SS
       expect(() => doc.remove(['a']), throwsAliasError);
     });
 
-    test('removing an alias reference results in AliasError', () {
+    test('removing an alias reference value results in AliasError', () {
       final doc = YamlEditor('''
 a: &SS Sammy Sosa
 b: *SS
 ''');
 
       expect(() => doc.remove(['b']), throwsAliasError);
+    });
+
+    test('removing an alias anchor key results in AliasError', () {
+      final doc = YamlEditor('''
+&SS Sammy Sosa: a
+b: *SS
+''');
+
+      expect(() => doc.remove(['Sammy Sosa']), throwsAliasError);
+    });
+
+    test('removing an alias reference key results in AliasError', () {
+      final doc = YamlEditor('''
+a: &SS Sammy Sosa
+*SS : b
+''');
+
+      expect(() => doc.remove(['Sammy Sosa']), throwsAliasError);
     });
 
     test('it is okay to remove a non-alias node', () {

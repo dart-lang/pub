@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:pub/src/yaml_edit.dart';
+import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 

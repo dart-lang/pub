@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:test/test.dart';
-import 'package:pub/src/yaml_edit/equality.dart';
-import 'package:pub/src/yaml_edit/wrap.dart';
+import 'package:pub/src/yaml_edit/src/equality.dart';
+import 'package:pub/src/yaml_edit/src/wrap.dart';
 import 'package:yaml/yaml.dart';
 
 import 'test_utils.dart';
