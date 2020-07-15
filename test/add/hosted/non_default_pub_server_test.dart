@@ -21,7 +21,7 @@ void main() {
 
     final url = server.url;
 
-    await pubAdd(args: ['foo:1.2.3', '--host-name', 'foo', '--host-url', url]);
+    await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
     await d.appPackagesFile({'foo': '1.2.3'}).validate();

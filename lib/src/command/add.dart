@@ -28,8 +28,7 @@ class AddCommand extends PubCommand {
   String get gitUrl => argResults['git-url'];
   String get gitPath => argResults['git-path'];
   String get gitRef => argResults['git-ref'];
-  String get hostName => argResults['host-name'];
-  String get hostUrl => argResults['host-url'];
+  String get hostUrl => argResults['hosted-url'];
   String get path => argResults['path'];
 
   AddCommand() {
@@ -42,8 +41,7 @@ class AddCommand extends PubCommand {
     argParser.addOption('git-ref',
         help: 'Git branch or commit to be retrieved');
     argParser.addOption('git-path', help: 'Path of git package');
-    argParser.addOption('host-name', help: 'Name of host package');
-    argParser.addOption('host-url', help: 'URL of package host server');
+    argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
   }
 
@@ -54,7 +52,7 @@ class AddCommand extends PubCommand {
     }
 
     final hasGitOptions = gitUrl != null || gitRef != null || gitPath != null;
-    final hasHostOptions = hostName != null || hostUrl != null;
+    final hasHostOptions = hostUrl != null;
 
     if ((path != null && hasGitOptions) ||
         (hasGitOptions && hasHostOptions) ||
@@ -84,65 +82,32 @@ class AddCommand extends PubCommand {
     ArgumentError.checkNotNull(original, 'original');
     ArgumentError.checkNotNull(newDependencies, 'newDependencies');
 
-    if (isDevelopment) {
-      return _addPackagesToDevelopmentDependencies(original, newDependencies);
-    }
-    return _addPackagesToNormalDependencies(original, newDependencies);
-  }
-
-  /// Creates a new in-memory [Pubspec] by adding the packages specified in
-  /// [newDependencies] to [original]'s normal dependencies.
-  Pubspec _addPackagesToNormalDependencies(
-      Pubspec original, Iterable<PackageInfo> newDependencies) {
-    ArgumentError.checkNotNull(original, 'original');
-    ArgumentError.checkNotNull(newDependencies, 'newDependencies');
-
     final dependencies = [...original.dependencies.values];
-    final devDependencies = original.devDependencies.values;
-    final devDependencyNames =
-        devDependencies.map((devDependency) => devDependency.name);
+    final devDependencies = [...original.devDependencies.values];
 
-    for (var package in newDependencies) {
-      final packageName = package.name;
+    if (isDevelopment) {
+      final dependencyNames = dependencies.map((dependency) => dependency.name);
 
-      if (devDependencyNames.contains(packageName)) {
-        usageException('$packageName is already in dev_dependencies. '
-            'Please remove existing entry before adding it to dependencies');
+      for (var package in newDependencies) {
+        if (dependencyNames.contains(package.name)) {
+          usageException('${package.name} is already in dependencies. '
+              'Please remove existing entry before adding it to dev_dependencies');
+        }
+
+        devDependencies.add(package.toPackageRange(cache));
       }
+    } else {
+      final devDependencyNames =
+          devDependencies.map((devDependency) => devDependency.name);
 
-      dependencies.add(package.toPackageRange(cache));
-    }
+      for (var package in newDependencies) {
+        if (devDependencyNames.contains(package.name)) {
+          usageException('${package.name} is already in dev_dependencies. '
+              'Please remove existing entry before adding it to dependencies');
+        }
 
-    return Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
-      dependencies: dependencies,
-      devDependencies: devDependencies,
-      dependencyOverrides: original.dependencyOverrides.values,
-    );
-  }
-
-  /// Creates a new in-memory [Pubspec] by adding the packages specified in
-  /// [newDependencies] to [original]'s development dependencies.
-  Pubspec _addPackagesToDevelopmentDependencies(
-      Pubspec original, Iterable<PackageInfo> newDevDependencies) {
-    ArgumentError.checkNotNull(original, 'original');
-    ArgumentError.checkNotNull(newDevDependencies, 'newDevDependencies');
-
-    final dependencies = original.dependencies.values;
-    final dependencyNames = dependencies.map((dependency) => dependency.name);
-    final devDependencies = [...original.dependencies.values];
-
-    for (var package in newDevDependencies) {
-      final packageName = package.name;
-
-      if (dependencyNames.contains(packageName)) {
-        usageException('$packageName is already in dependencies. '
-            'Please remove existing entry before adding it to dev_dependencies');
+        dependencies.add(package.toPackageRange(cache));
       }
-
-      devDependencies.add(package.toPackageRange(cache));
     }
 
     return Pubspec(
@@ -192,10 +157,8 @@ class AddCommand extends PubCommand {
       if (gitPath != null) git['path'] = gitPath;
       if (git.isEmpty) git = null;
 
-      var hostInfo = <String, String>{};
-      if (hostName != null) hostInfo['name'] = hostName;
-      if (hostUrl != null) hostInfo['url'] = hostUrl;
-      if (hostInfo.isEmpty) hostInfo = null;
+      Map<String, String> hostInfo;
+      if (hostUrl != null) hostInfo = {'url': hostUrl};
 
       try {
         packageInfo = PackageInfo.from(package,

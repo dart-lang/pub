@@ -91,11 +91,13 @@ class GitPackageInfo implements PackageInfo {
 
   GitPackageInfo(this.name, this.git) {
     ArgumentError.checkNotNull(name, 'package name');
+    ArgumentError.checkNotNull(git, 'git information');
     ArgumentError.checkNotNull(git['url'], 'git url');
   }
 
   @override
   PackageRange toPackageRange(SystemCache cache) {
+    ArgumentError.checkNotNull(cache, 'cache');
     return cache.sources['git']
         .parseRef(name, git)
         .withConstraint(VersionRange());
@@ -110,31 +112,34 @@ class HostedPackageInfo implements PackageInfo {
   final VersionConstraint constraint;
 
   /// Information of non-pub.dev package server.
-  final Map<String, String> hostInfo;
+  final Map<String, String> _hostInfo;
 
   @override
   dynamic get description {
-    if (hostInfo == null) return name;
+    if (_hostInfo == null) return name;
 
-    return hostInfo;
+    return _hostInfo;
   }
 
   @override
   dynamic get pubspecInfo {
-    if (hostInfo == null) return constraint?.toString();
-    if (constraint == null) return {'hosted': hostInfo};
+    if (_hostInfo == null) return constraint?.toString();
+    if (constraint == null) return {'hosted': _hostInfo};
 
-    return {'hosted': hostInfo, 'version': constraint.toString()};
+    return {'hosted': _hostInfo, 'version': constraint.toString()};
   }
 
-  HostedPackageInfo(this.name, {this.constraint, this.hostInfo}) {
-    if (hostInfo != null) {
+  HostedPackageInfo(this.name, {this.constraint, Map<String, String> hostInfo})
+      : _hostInfo = hostInfo != null ? {...hostInfo, 'name': name} : null {
+    ArgumentError.checkNotNull(name, 'name');
+    if (_hostInfo != null) {
       ArgumentError.checkNotNull(hostInfo['url'], 'host url');
     }
   }
 
   @override
   PackageRange toPackageRange(SystemCache cache) {
+    ArgumentError.checkNotNull(cache, 'cache');
     return PackageRange(name, cache.sources['hosted'],
         constraint ?? VersionConstraint.any, description);
   }
@@ -161,10 +166,14 @@ class PathPackageInfo implements PackageInfo {
   dynamic get pubspecInfo => {'path': path};
 
   PathPackageInfo(this.name, this.path, String pubspecPath)
-      : _pubspecPath = pubspecPath;
+      : _pubspecPath = pubspecPath {
+    ArgumentError.checkNotNull(name, 'name');
+    ArgumentError.checkNotNull(path, 'path');
+  }
 
   @override
   PackageRange toPackageRange(SystemCache cache) {
+    ArgumentError.checkNotNull(cache, 'cache');
     return cache.sources['path']
         .parseRef(name, path, containingPath: _pubspecPath)
         .withConstraint(VersionRange());

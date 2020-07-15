@@ -42,7 +42,7 @@ void main() {
     await pubAdd(
         args: [
           'foo',
-          '--host-url',
+          '--hosted-url',
           'http://localhost:${server.port}',
           '--path',
           '../bar'
