@@ -38,9 +38,9 @@ import 'wrap.dart';
 /// ```
 ///
 /// To get to `7`, our path will be `['c', 2, 'f', 1]`. The path for the base
-/// object is the empty array `[]`. All modification methods will throw an
-/// [Error] if the path provided is invalid. Note also that that the order of
-/// elements in the path is important, and it should be arranged in order of
+/// object is the empty array `[]`. All modification methods will throw a
+/// [PathError] if the path provided is invalid. Note also that that the order
+/// of elements in the path is important, and it should be arranged in order of
 /// calling, with the first element being the first key or index to be called.
 ///
 /// In most modification methods, users are required to pass in a value to be
@@ -65,6 +65,13 @@ class YamlEditor {
   /// List of [SourceEdit]s that have been applied to [_yaml] since the creation
   /// of this instance, in chronological order. Intended to be compatible with
   /// `package:analysis_server`.
+  ///
+  /// The [SourceEdit] objects can be serialized to JSON using the `toJSON`
+  /// function, deserialized using [SourceEdit.fromJSON], and applied to a
+  /// string using the `apply` function. Multiple [SourceEdit]s can be applied
+  /// to a string using [SourceEdit.applyAll].
+  ///
+  /// For more information, refer to the [SourceEdit] class.
   UnmodifiableListView<SourceEdit> get edits =>
       UnmodifiableListView<SourceEdit>([..._edits]);
 
