@@ -121,5 +121,12 @@ void main() {
       expect(doc.toString(), equals('[1, 2, 3]'));
       expectYamlBuilderValue(doc, [1, 2, 3]);
     });
+
+    test('(4)', () {
+      final doc = YamlEditor('["[],", "[],"]');
+      doc.insertIntoList([], 1, 'test');
+      expect(doc.toString(), equals('["[],", test, "[],"]'));
+      expectYamlBuilderValue(doc, ['[],', 'test', '[],']);
+    });
   });
 }

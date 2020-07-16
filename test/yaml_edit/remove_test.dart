@@ -161,6 +161,13 @@ b:
       expect(doc.toString(), equals('{ b: 2}'));
     });
 
+    test('(4) ', () {
+      final doc =
+          YamlEditor('{"{}[],": {"{}[],": 1, b: "}{[]},", "}{[],": 3}}');
+      doc.remove(['{}[],', 'b']);
+      expect(doc.toString(), equals('{"{}[],": {"{}[],": 1, "}{[],": 3}}'));
+    });
+
     test('nested flow map ', () {
       final doc = YamlEditor('{a: 1, b: {d: 4, e: 5}, c: 3}');
       doc.remove(['b', 'd']);
@@ -264,6 +271,18 @@ b:
       doc.remove([1]);
       expect(doc.toString(), equals('[1, "c"]'));
       expectYamlBuilderValue(doc, [1, 'c']);
+    });
+
+    test('(4) ', () {
+      final doc = YamlEditor('["{}", b, "}{"]');
+      doc.remove([1]);
+      expect(doc.toString(), equals('["{}", "}{"]'));
+    });
+
+    test('(5) ', () {
+      final doc = YamlEditor('["{}[],", [test, "{}[],", "{}[],"], "{}[],"]');
+      doc.remove([1, 0]);
+      expect(doc.toString(), equals('["{}[],", [ "{}[],", "{}[],"], "{}[],"]'));
     });
   });
 }
