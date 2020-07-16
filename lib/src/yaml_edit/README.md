@@ -26,23 +26,7 @@ and the input/output format can be found at `/test/testdata/README.md`.
 
 These tests are automatically run with `pub run test`.
 
-## Features and bugs
+## Limitations
 
-Please file feature requests and bugs at the [issue tracker][tracker].
-
-[tracker]: https://github.com/walnutdust/yaml_edit/issues
-
-## Known issues
-
-1. If the anchor node of a repeated node is modified, the alias will not be updated.
-
-```dart
-final doc = YamlEditor('''
-- &SS Sammy Sosa
-- *SS''');
-
-doc.assign([0], 'test'); // Error in reparsing because *SS is now undefined.
-```
-
-2. Users are not allowed to define tags in the modifications.
-3. Map keys will always be added in the flow style.
+1. Users are not allowed to define tags in the modifications.
+2. Map keys will always be added in the flow style.

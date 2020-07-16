@@ -243,8 +243,8 @@ class YamlEditor {
       final start = _contents.span.start.offset;
       final end = getContentSensitiveEnd(_contents);
       final lineEnding = getLineEnding(_yaml);
-      final edit =
-          SourceEdit(start, end - start, getBlockString(value, 0, lineEnding));
+      final edit = SourceEdit(
+          start, end - start, yamlEncodeBlockString(value, 0, lineEnding));
 
       _performEdit(edit, path, wrapAsYamlNode(value));
       return;
@@ -258,11 +258,12 @@ class YamlEditor {
     final valueNode = wrapAsYamlNode(value);
 
     if (parentNode is YamlList) {
-      final expectedList =
-          updatedYamlList(parentNode, (nodes) => nodes[keyOrIndex] = valueNode);
+      final expected = wrapAsYamlNode(
+        [...parentNode.nodes]..[keyOrIndex] = valueNode,
+      );
 
       _performEdit(updateInList(this, parentNode, keyOrIndex, value),
-          collectionPath, expectedList);
+          collectionPath, expected);
       return;
     }
 
@@ -332,11 +333,11 @@ class YamlEditor {
     RangeError.checkValueInInterval(index, 0, list.length);
 
     final edit = insertInList(this, list, index, value);
+    final expected = wrapAsYamlNode(
+      [...list.nodes]..insert(index, wrapAsYamlNode(value)),
+    );
 
-    final expectedList = updatedYamlList(
-        list, (nodes) => nodes.insert(index, wrapAsYamlNode(value)));
-
-    _performEdit(edit, path, expectedList);
+    _performEdit(edit, path, expected);
   }
 
   /// Changes the contents of the list at [path] by removing [deleteCount] items
@@ -434,8 +435,9 @@ class YamlEditor {
 
     if (parentNode is YamlList) {
       edit = removeInList(this, parentNode, keyOrIndex);
-      expectedNode =
-          updatedYamlList(parentNode, (nodes) => nodes.removeAt(keyOrIndex));
+      expectedNode = wrapAsYamlNode(
+        [...parentNode.nodes]..removeAt(keyOrIndex),
+      );
     } else if (parentNode is YamlMap) {
       edit = removeInMap(this, parentNode, keyOrIndex);
 
@@ -467,8 +469,8 @@ class YamlEditor {
     var currentNode = _contents;
 
     for (var keyOrIndex in path) {
-      if (checkAlias) {
-        if (_aliases.contains(currentNode)) throw AliasError(path);
+      if (checkAlias && _aliases.contains(currentNode)) {
+        throw AliasError(path);
       }
 
       if (currentNode is YamlList) {
@@ -504,8 +506,8 @@ class YamlEditor {
   /// Throws a [PathError] if [orElse] is not provided, returns the result
   /// of invoking the [orElse] function otherwise.
   YamlNode _pathErrorOrElse(Iterable<Object> path, Object invalidKeyOrIndex,
-      Object parentNode, YamlNode Function() orElse) {
-    if (orElse == null) throw PathError(path, invalidKeyOrIndex, parentNode);
+      YamlNode parent, YamlNode Function() orElse) {
+    if (orElse == null) throw PathError(path, invalidKeyOrIndex, parent);
     return orElse();
   }
 
@@ -610,14 +612,10 @@ $expectedTree''');
     if (tree is YamlList) {
       final index = path.first;
 
-      if (!isValidIndex(index, tree.length)) {
-        throw PathError(path, index, tree);
-      }
+      if (!isValidIndex(index, tree.length)) throw PathError(path, index, tree);
 
-      return updatedYamlList(
-          tree,
-          (nodes) =>
-              nodes[index] = _deepModify(nodes[index], nextPath, expectedNode));
+      return wrapAsYamlNode([...tree.nodes]..[index] =
+          _deepModify(tree.nodes[index], nextPath, expectedNode));
     }
 
     if (tree is YamlMap) {

@@ -12,7 +12,7 @@ import 'utils.dart';
 /// an escape sequence, it can only be detected when in a double-quoted
 /// sequence. Plain strings may also be misinterpreted by the YAML parser (e.g.
 /// ' null').
-String _tryGetPlainString(Object value) {
+String _tryYamlEncodePlain(Object value) {
   if (value is YamlNode) {
     AssertionError(
         'YamlNodes should not be passed directly into getSafeString!');
@@ -28,7 +28,7 @@ String _tryGetPlainString(Object value) {
     /// See 7.3.1 Double-Quoted Style
     /// https://yaml.org/spec/1.2/spec.html#id2787109
     if (isDangerousString(value)) {
-      return _getDoubleQuotedString(value);
+      return _yamlEncodeDoubleQuoted(value);
     }
 
     return value;
@@ -39,7 +39,7 @@ String _tryGetPlainString(Object value) {
 
 /// Checks if [string] has unprintable characters according to
 /// [unprintableCharCodes].
-bool hasUnprintableCharacters(String string) {
+bool _hasUnprintableCharacters(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
   final codeUnits = string.codeUnits;
@@ -55,7 +55,7 @@ bool hasUnprintableCharacters(String string) {
 /// list of characters as defined by the YAML 1.2 spec.
 ///
 /// See 5.7 Escaped Characters https://yaml.org/spec/1.2/spec.html#id2776092
-String _getDoubleQuotedString(String string) {
+String _yamlEncodeDoubleQuoted(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
   final buffer = StringBuffer();
@@ -75,7 +75,7 @@ String _getDoubleQuotedString(String string) {
 ///
 /// It is important that we ensure that [string] is free of unprintable
 /// characters by calling [assertValidScalar] before invoking this function.
-String _getSingleQuotedString(String string) {
+String _tryYamlEncodeSingleQuoted(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
   final result = string.replaceAll('\'', '\'\'');
@@ -86,7 +86,7 @@ String _getSingleQuotedString(String string) {
 ///
 /// It is important that we ensure that [string] is free of unprintable
 /// characters by calling [assertValidScalar] before invoking this function.
-String _getFoldedString(String string, int indentation, String lineEnding) {
+String _tryYamlEncodeFolded(String string, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(string, 'string');
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
@@ -114,7 +114,8 @@ String _getFoldedString(String string, int indentation, String lineEnding) {
 ///
 /// It is important that we ensure that [string] is free of unprintable
 /// characters by calling [assertValidScalar] before invoking this function.
-String _getLiteralString(String string, int indentation, String lineEnding) {
+String _tryYamlEncodeLiteral(
+    String string, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(string, 'string');
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
@@ -133,26 +134,26 @@ String _getLiteralString(String string, int indentation, String lineEnding) {
 /// possible. Certain cases make this impossible (e.g. a plain string scalar that
 /// starts with '>'), in which case we will produce [value] with default styling
 /// options.
-String getFlowScalar(Object value) {
+String _yamlEncodeFlowScalar(Object value) {
   if (value is YamlScalar) {
     assertValidScalar(value.value);
 
     if (value.value is String) {
-      if (hasUnprintableCharacters(value.value) ||
+      if (_hasUnprintableCharacters(value.value) ||
           value.style == ScalarStyle.DOUBLE_QUOTED) {
-        return _getDoubleQuotedString(value.value);
+        return _yamlEncodeDoubleQuoted(value.value);
       }
 
       if (value.style == ScalarStyle.SINGLE_QUOTED) {
-        return _getSingleQuotedString(value.value);
+        return _tryYamlEncodeSingleQuoted(value.value);
       }
     }
 
-    return _tryGetPlainString(value.value);
+    return _tryYamlEncodePlain(value.value);
   }
 
   assertValidScalar(value);
-  return _tryGetPlainString(value);
+  return _tryYamlEncodePlain(value);
 }
 
 /// Returns [value] with the necessary formatting applied in a block context
@@ -162,7 +163,7 @@ String getFlowScalar(Object value) {
 /// possible. Certain cases make this impossible (e.g. a folded string scalar
 /// 'null'), in which case we will produce [value] with default styling
 /// options.
-String getBlockScalar(Object value, int indentation, String lineEnding) {
+String yamlEncodeBlockScalar(Object value, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
 
@@ -170,35 +171,35 @@ String getBlockScalar(Object value, int indentation, String lineEnding) {
     assertValidScalar(value.value);
 
     if (value.value is String) {
-      if (hasUnprintableCharacters(value.value)) {
-        return _getDoubleQuotedString(value.value);
+      if (_hasUnprintableCharacters(value.value)) {
+        return _yamlEncodeDoubleQuoted(value.value);
       }
 
       if (value.style == ScalarStyle.SINGLE_QUOTED) {
-        return _getSingleQuotedString(value.value);
+        return _tryYamlEncodeSingleQuoted(value.value);
       }
 
       // Strings with only white spaces will cause a misparsing
       if (value.value.trim().length == value.value.length &&
           value.value.length != 0) {
         if (value.style == ScalarStyle.FOLDED) {
-          return _getFoldedString(value.value, indentation, lineEnding);
+          return _tryYamlEncodeFolded(value.value, indentation, lineEnding);
         }
 
         if (value.style == ScalarStyle.LITERAL) {
-          return _getLiteralString(value.value, indentation, lineEnding);
+          return _tryYamlEncodeLiteral(value.value, indentation, lineEnding);
         }
       }
     }
 
-    return _tryGetPlainString(value.value);
+    return _tryYamlEncodePlain(value.value);
   }
 
   assertValidScalar(value);
 
   /// The remainder of the possibilities are similar to how [getFlowScalar]
   /// treats [value].
-  return getFlowScalar(value);
+  return _yamlEncodeFlowScalar(value);
 }
 
 /// Returns [value] with the necessary formatting applied in a flow context.
@@ -207,38 +208,38 @@ String getBlockScalar(Object value, int indentation, String lineEnding) {
 /// possible. Certain cases make this impossible (e.g. a plain string scalar
 /// that starts with '>', a child having a block style parameters), in which
 /// case we will produce [value] with default styling options.
-String getFlowString(Object value) {
+String yamlEncodeFlowString(Object value) {
   if (value is List) {
     var list = value;
 
     if (value is YamlList) list = value.nodes;
 
-    final safeValues = list.map(getFlowString);
+    final safeValues = list.map(yamlEncodeFlowString);
     return '[' + safeValues.join(', ') + ']';
   } else if (value is Map) {
     final safeEntries = value.entries.map((e) {
-      final safeKey = getFlowString(e.key);
-      final safeValue = getFlowString(e.value);
+      final safeKey = yamlEncodeFlowString(e.key);
+      final safeValue = yamlEncodeFlowString(e.value);
       return '$safeKey: $safeValue';
     });
 
     return '{' + safeEntries.join(', ') + '}';
   }
 
-  return getFlowScalar(value);
+  return _yamlEncodeFlowScalar(value);
 }
 
 /// Returns [value] with the necessary formatting applied in a block context.
 ///
 /// If [value] is a [YamlNode], we respect its [style] parameter.
-String getBlockString(Object value, int indentation, String lineEnding) {
+String yamlEncodeBlockString(Object value, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
 
   var additionalIndentation = 2;
 
   if (value is YamlNode && !isBlockNode(value)) {
-    return getFlowString(value);
+    return yamlEncodeFlowString(value);
   }
 
   final newIndentation = indentation + additionalIndentation;
@@ -251,7 +252,8 @@ String getBlockString(Object value, int indentation, String lineEnding) {
     var children = value is YamlList ? value.nodes : value;
 
     safeValues = children.map((child) {
-      var valueString = getBlockString(child, newIndentation, lineEnding);
+      var valueString =
+          yamlEncodeBlockString(child, newIndentation, lineEnding);
       if (isCollection(child) && !isFlowYamlCollectionNode(child)) {
         valueString = valueString.substring(newIndentation);
       }
@@ -266,10 +268,10 @@ String getBlockString(Object value, int indentation, String lineEnding) {
     var children = value is YamlMap ? value.nodes : value;
 
     return children.entries.map((entry) {
-      final safeKey = getFlowString(entry.key);
+      final safeKey = yamlEncodeFlowString(entry.key);
       final formattedKey = ' ' * indentation + safeKey;
       final formattedValue =
-          getBlockString(entry.value, newIndentation, lineEnding);
+          yamlEncodeBlockString(entry.value, newIndentation, lineEnding);
 
       if (isCollection(entry.value)) {
         return formattedKey + ':\n' + formattedValue;
@@ -279,7 +281,7 @@ String getBlockString(Object value, int indentation, String lineEnding) {
     }).join(lineEnding);
   }
 
-  return getBlockScalar(value, newIndentation, lineEnding);
+  return yamlEncodeBlockScalar(value, newIndentation, lineEnding);
 }
 
 /// List of unprintable characters.

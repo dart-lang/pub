@@ -27,6 +27,8 @@ class SourceEdit {
   /// The replacement string to be used.
   final String replacement;
 
+  /// Creates a new [SourceEdit] instance. [offset], [length] and [replacement]
+  /// must be non-null, and [offset] and [length] must be non-negative.
   factory SourceEdit(int offset, int length, String replacement) =>
       SourceEdit._(offset, length, replacement);
 

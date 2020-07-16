@@ -61,10 +61,10 @@ SourceEdit _addToBlockMap(
   final yaml = yamlEdit.toString();
   final newIndentation =
       getMapIndentation(yaml, map) + getIndentation(yamlEdit);
-  final keyString = getFlowString(key);
+  final keyString = yamlEncodeFlowString(key);
   final lineEnding = getLineEnding(yaml);
 
-  var valueString = getBlockString(newValue, newIndentation, lineEnding);
+  var valueString = yamlEncodeBlockString(newValue, newIndentation, lineEnding);
   if (isCollection(newValue) && !isFlowYamlCollectionNode(newValue)) {
     valueString = '$lineEnding$valueString';
   }
@@ -108,8 +108,8 @@ SourceEdit _addToFlowMap(
   ArgumentError.checkNotNull(yamlEdit, 'yamlEdit');
   ArgumentError.checkNotNull(map, 'map');
 
-  final keyString = getFlowString(key);
-  final valueString = getFlowString(newValue);
+  final keyString = yamlEncodeFlowString(key);
+  final valueString = yamlEncodeFlowString(newValue);
 
   // The -1 accounts for the closing bracket.
   if (map.isEmpty) {
@@ -142,7 +142,7 @@ SourceEdit _replaceInBlockMap(
       getMapIndentation(yaml, map) + getIndentation(yamlEdit);
   final value = map.nodes[key];
   final keyNode = getKeyNode(map, key);
-  var valueString = getBlockString(newValue, newIndentation, lineEnding);
+  var valueString = yamlEncodeBlockString(newValue, newIndentation, lineEnding);
   if (isCollection(newValue) && !isFlowYamlCollectionNode(newValue)) {
     valueString = lineEnding + valueString;
   }
@@ -163,7 +163,7 @@ SourceEdit _replaceInFlowMap(
   ArgumentError.checkNotNull(map, 'map');
 
   final valueSpan = map.nodes[key].span;
-  final valueString = getFlowString(newValue);
+  final valueString = yamlEncodeFlowString(newValue);
 
   return SourceEdit(valueSpan.start.offset, valueSpan.length, valueString);
 }

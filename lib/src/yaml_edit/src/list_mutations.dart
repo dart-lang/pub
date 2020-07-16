@@ -29,7 +29,7 @@ SourceEdit updateInList(
     final listIndentation = getListIndentation(yaml, list);
     final indentation = listIndentation + getIndentation(yamlEdit);
     final lineEnding = getLineEnding(yaml);
-    valueString = getBlockString(newValue, indentation, lineEnding);
+    valueString = yamlEncodeBlockString(newValue, indentation, lineEnding);
 
     /// We prefer the compact nested notation for lists
     if (isCollection(newValue)) {
@@ -41,7 +41,7 @@ SourceEdit updateInList(
       valueString += lineEnding + ' ' * listIndentation;
     }
   } else {
-    valueString = getFlowString(newValue);
+    valueString = yamlEncodeFlowString(newValue);
   }
 
   return SourceEdit(offset, currValue.span.length, valueString);
@@ -137,7 +137,7 @@ String _formatNewBlock(YamlEditor yamlEdit, YamlList list, Object elem) {
   final newIndentation = listIndentation + getIndentation(yamlEdit);
   final lineEnding = getLineEnding(yaml);
 
-  var valueString = getBlockString(elem, newIndentation, lineEnding);
+  var valueString = yamlEncodeBlockString(elem, newIndentation, lineEnding);
   if (isCollection(elem) && !isFlowYamlCollectionNode(elem)) {
     valueString = valueString.substring(newIndentation);
   }
@@ -151,7 +151,7 @@ String _formatNewFlow(YamlList list, Object elem, [bool isLast = false]) {
   ArgumentError.checkNotNull(list, 'list');
   ArgumentError.checkNotNull(isLast, 'isLast');
 
-  var valueString = getFlowString(elem);
+  var valueString = yamlEncodeFlowString(elem);
   if (list.isNotEmpty) {
     if (isLast) {
       valueString = ', $valueString';

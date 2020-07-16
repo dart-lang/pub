@@ -54,10 +54,8 @@ bool mapDeepEquals(Map map1, Map map2) {
   if (map1 is YamlList) map1 = (map1 as YamlMap).nodes;
   if (map2 is YamlList) map2 = (map2 as YamlMap).nodes;
 
-  for (var key in map1.keys) {
-    if (!containsKey(map2, key)) {
-      return false;
-    }
+  return map1.keys.every((key) {
+    if (!containsKey(map2, key)) return false;
 
     /// Because two keys may be equal by deep equality but using one key on the
     /// other map might not get a hit since they may not be both using our
@@ -67,9 +65,9 @@ bool mapDeepEquals(Map map1, Map map2) {
     if (!deepEquals(map1[key], map2[key2])) {
       return false;
     }
-  }
 
-  return true;
+    return true;
+  });
 }
 
 /// Returns a hashcode for [value] such that structures that are equal by

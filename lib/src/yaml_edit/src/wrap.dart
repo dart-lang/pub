@@ -10,16 +10,6 @@ import 'package:yaml/yaml.dart';
 import 'equality.dart';
 import 'utils.dart';
 
-/// Returns a new [YamlList] constructed by applying [update] onto the [nodes]
-/// of this [YamlList].
-YamlList updatedYamlList(YamlList list, Function(List<YamlNode>) update) {
-  ArgumentError.checkNotNull(list, 'list');
-
-  final newNodes = [...list.nodes];
-  update(newNodes);
-  return wrapAsYamlNode(newNodes);
-}
-
 /// Returns a new [YamlMap] constructed by applying [update] onto the [nodes]
 /// of this [YamlMap].
 YamlMap updatedYamlMap(YamlMap map, Function(Map) update) {
@@ -29,15 +19,8 @@ YamlMap updatedYamlMap(YamlMap map, Function(Map) update) {
   dummyMap.addAll(map.nodes);
 
   update(dummyMap);
-  final updatedMap = {};
 
-  /// This workaround is necessary since [yamlNodeFrom] will re-wrap
-  /// [YamlNode]s, so we need to unwrap them before passing them in.
-  for (var key in dummyMap.keys) {
-    updatedMap[key.value] = dummyMap[key];
-  }
-
-  return wrapAsYamlNode(updatedMap);
+  return wrapAsYamlNode(dummyMap);
 }
 
 /// Wraps [value] into a [YamlNode].
