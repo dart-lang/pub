@@ -93,6 +93,16 @@ bool isValidIndex(Object index, int length) {
   return index is int && index >= 0 && index < length;
 }
 
+/// Checks if the item is empty, if it is a List or a Map.
+///
+/// Returns `false` if [item] is not a List or Map.
+bool isEmpty(Object item) {
+  if (item is Map) return item.isEmpty;
+  if (item is List) return item.isEmpty;
+
+  return false;
+}
+
 /// Creates a [SourceSpan] from [sourceUrl] with no meaningful location
 /// information.
 ///

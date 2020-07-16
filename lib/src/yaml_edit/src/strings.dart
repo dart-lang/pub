@@ -102,7 +102,7 @@ String _tryYamlEncodeFolded(String string, int indentation, String lineEnding) {
     result = '>-\n' + ' ' * indentation;
   }
 
-  /// Duplicating the newline preserves it in YAML.
+  /// Duplicating the newline for folded strings preserves it in YAML.
   /// Assumes the user did not try to account for windows documents by using
   /// `\r\n` already
   return result +
@@ -134,7 +134,7 @@ String _tryYamlEncodeLiteral(
 /// possible. Certain cases make this impossible (e.g. a plain string scalar that
 /// starts with '>'), in which case we will produce [value] with default styling
 /// options.
-String _yamlEncodeFlowScalar(Object value) {
+String _yamlEncodeFlowScalar(YamlNode value) {
   if (value is YamlScalar) {
     assertValidScalar(value.value);
 
@@ -163,7 +163,8 @@ String _yamlEncodeFlowScalar(Object value) {
 /// possible. Certain cases make this impossible (e.g. a folded string scalar
 /// 'null'), in which case we will produce [value] with default styling
 /// options.
-String yamlEncodeBlockScalar(Object value, int indentation, String lineEnding) {
+String yamlEncodeBlockScalar(
+    YamlNode value, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
 
@@ -208,18 +209,16 @@ String yamlEncodeBlockScalar(Object value, int indentation, String lineEnding) {
 /// possible. Certain cases make this impossible (e.g. a plain string scalar
 /// that starts with '>', a child having a block style parameters), in which
 /// case we will produce [value] with default styling options.
-String yamlEncodeFlowString(Object value) {
-  if (value is List) {
-    var list = value;
-
-    if (value is YamlList) list = value.nodes;
+String yamlEncodeFlowString(YamlNode value) {
+  if (value is YamlList) {
+    var list = value.nodes;
 
     final safeValues = list.map(yamlEncodeFlowString);
     return '[' + safeValues.join(', ') + ']';
-  } else if (value is Map) {
-    final safeEntries = value.entries.map((e) {
-      final safeKey = yamlEncodeFlowString(e.key);
-      final safeValue = yamlEncodeFlowString(e.value);
+  } else if (value is YamlMap) {
+    final safeEntries = value.nodes.entries.map((entry) {
+      final safeKey = yamlEncodeFlowString(entry.key);
+      final safeValue = yamlEncodeFlowString(entry.value);
       return '$safeKey: $safeValue';
     });
 
@@ -232,24 +231,23 @@ String yamlEncodeFlowString(Object value) {
 /// Returns [value] with the necessary formatting applied in a block context.
 ///
 /// If [value] is a [YamlNode], we respect its [style] parameter.
-String yamlEncodeBlockString(Object value, int indentation, String lineEnding) {
+String yamlEncodeBlockString(
+    YamlNode value, int indentation, String lineEnding) {
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
 
   var additionalIndentation = 2;
 
-  if (value is YamlNode && !isBlockNode(value)) {
-    return yamlEncodeFlowString(value);
-  }
+  if (!isBlockNode(value)) return yamlEncodeFlowString(value);
 
   final newIndentation = indentation + additionalIndentation;
 
-  if (value is List) {
+  if (value is YamlList) {
     if (value.isEmpty) return ' ' * indentation + '[]';
 
     Iterable<String> safeValues;
 
-    var children = value is YamlList ? value.nodes : value;
+    var children = value.nodes;
 
     safeValues = children.map((child) {
       var valueString =
@@ -262,12 +260,10 @@ String yamlEncodeBlockString(Object value, int indentation, String lineEnding) {
     });
 
     return safeValues.join(lineEnding);
-  } else if (value is Map) {
+  } else if (value is YamlMap) {
     if (value.isEmpty) return ' ' * indentation + '{}';
 
-    var children = value is YamlMap ? value.nodes : value;
-
-    return children.entries.map((entry) {
+    return value.nodes.entries.map((entry) {
       final safeKey = yamlEncodeFlowString(entry.key);
       final formattedKey = ' ' * indentation + safeKey;
       final formattedValue =

@@ -85,6 +85,14 @@ void main() {
         expectYamlBuilderValue(doc, {'YAML': 'test'});
       });
 
+      test('(2)', () {
+        final doc = YamlEditor('test: test');
+        doc.update(['test'], []);
+
+        expect(doc.toString(), equals('test: []'));
+        expectYamlBuilderValue(doc, {'test': []});
+      });
+
       test('with comment', () {
         final doc = YamlEditor("YAML: YAML Ain't Markup Language # comment");
         doc.update(['YAML'], 'test');
@@ -392,14 +400,6 @@ c: 3
           'HTML': 'Hypertext Markup Language'
         });
       });
-    });
-
-    test('empty block list to map', () {
-      final doc = YamlEditor('test: test');
-      doc.update(['test'], []);
-
-      expect(doc.toString(), equals('test: \n  []'));
-      expectYamlBuilderValue(doc, {'test': []});
     });
 
     group('block list', () {

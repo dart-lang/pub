@@ -239,15 +239,16 @@ class YamlEditor {
   void update(Iterable<Object> path, Object value) {
     ArgumentError.checkNotNull(path, 'path');
 
+    final valueNode = wrapAsYamlNode(value);
+
     if (path.isEmpty) {
       final start = _contents.span.start.offset;
       final end = getContentSensitiveEnd(_contents);
       final lineEnding = getLineEnding(_yaml);
       final edit = SourceEdit(
-          start, end - start, yamlEncodeBlockString(value, 0, lineEnding));
+          start, end - start, yamlEncodeBlockString(valueNode, 0, lineEnding));
 
-      _performEdit(edit, path, wrapAsYamlNode(value));
-      return;
+      return _performEdit(edit, path, valueNode);
     }
 
     final pathAsList = path.toList();
@@ -255,26 +256,20 @@ class YamlEditor {
     final keyOrIndex = pathAsList.last;
     final parentNode = _traverse(collectionPath, checkAlias: true);
 
-    final valueNode = wrapAsYamlNode(value);
-
     if (parentNode is YamlList) {
       final expected = wrapAsYamlNode(
         [...parentNode.nodes]..[keyOrIndex] = valueNode,
       );
 
-      _performEdit(updateInList(this, parentNode, keyOrIndex, value),
+      return _performEdit(updateInList(this, parentNode, keyOrIndex, valueNode),
           collectionPath, expected);
-      return;
     }
 
     if (parentNode is YamlMap) {
-      final keyNode = wrapAsYamlNode(keyOrIndex);
-
       final expectedMap =
-          updatedYamlMap(parentNode, (nodes) => nodes[keyNode] = valueNode);
-      _performEdit(updateInMap(this, parentNode, keyOrIndex, value),
+          updatedYamlMap(parentNode, (nodes) => nodes[keyOrIndex] = valueNode);
+      return _performEdit(updateInMap(this, parentNode, keyOrIndex, valueNode),
           collectionPath, expectedMap);
-      return;
     }
 
     throw PathError.unexpected(
@@ -328,13 +323,14 @@ class YamlEditor {
   /// ```
   void insertIntoList(Iterable<Object> path, int index, Object value) {
     ArgumentError.checkNotNull(path, 'path');
+    final valueNode = wrapAsYamlNode(value);
 
     final list = _traverseToList(path, checkAlias: true);
     RangeError.checkValueInInterval(index, 0, list.length);
 
-    final edit = insertInList(this, list, index, value);
+    final edit = insertInList(this, list, index, valueNode);
     final expected = wrapAsYamlNode(
-      [...list.nodes]..insert(index, wrapAsYamlNode(value)),
+      [...list.nodes]..insert(index, valueNode),
     );
 
     _performEdit(edit, path, expected);
