@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:test/test.dart';
 import 'package:pub/src/yaml_edit/src/equality.dart';
 import 'package:pub/src/yaml_edit/src/wrap.dart';
@@ -10,16 +12,58 @@ import 'package:yaml/yaml.dart';
 import 'test_utils.dart';
 
 void main() {
-  group('yamlNodeFrom', () {
+  group('wrapAsYamlNode', () {
+    group('checks for invalid scalars', () {
+      test('fails to wrap an invalid scalar', () {
+        expect(() => wrapAsYamlNode(File('test.dart')), throwsArgumentError);
+      });
+
+      test('fails to wrap an invalid map', () {
+        expect(() => wrapAsYamlNode({'a': File('test.dart')}),
+            throwsArgumentError);
+      });
+
+      test('fails to wrap an invalid list', () {
+        expect(
+            () => wrapAsYamlNode([
+                  'a',
+                  [File('test.dart')]
+                ]),
+            throwsArgumentError);
+      });
+
+      test('checks YamlScalar for invalid scalar value', () {
+        expect(() => wrapAsYamlNode(YamlScalar.wrap(File('test.dart'))),
+            throwsArgumentError);
+      });
+
+      test('checks YamlMap for deep invalid scalar value', () {
+        expect(
+            () => wrapAsYamlNode(YamlMap.wrap({
+                  'a': {'b': File('test.dart')}
+                })),
+            throwsArgumentError);
+      });
+
+      test('checks YamlList for deep invalid scalar value', () {
+        expect(
+            () => wrapAsYamlNode(YamlList.wrap([
+                  'a',
+                  [File('test.dart')]
+                ])),
+            throwsArgumentError);
+      });
+    });
+
     test('wraps scalars', () {
-      var scalar = wrapAsYamlNode('foo');
+      final scalar = wrapAsYamlNode('foo');
 
       expect((scalar as YamlScalar).style, equals(ScalarStyle.ANY));
       expect(scalar.value, equals('foo'));
     });
 
     test('wraps scalars with style', () {
-      var scalar =
+      final scalar =
           wrapAsYamlNode('foo', scalarStyle: ScalarStyle.DOUBLE_QUOTED);
 
       expect((scalar as YamlScalar).style, equals(ScalarStyle.DOUBLE_QUOTED));
@@ -27,7 +71,7 @@ void main() {
     });
 
     test('wraps lists', () {
-      var list = wrapAsYamlNode([
+      final list = wrapAsYamlNode([
         [1, 2, 3],
         {
           'foo': 'bar',
@@ -52,7 +96,7 @@ void main() {
     });
 
     test('wraps lists with collectionStyle', () {
-      var list = wrapAsYamlNode([
+      final list = wrapAsYamlNode([
         [1, 2, 3],
         {
           'foo': 'bar',
@@ -67,7 +111,7 @@ void main() {
     });
 
     test('wraps nested lists while preserving style', () {
-      var list = wrapAsYamlNode([
+      final list = wrapAsYamlNode([
         wrapAsYamlNode([1, 2, 3], collectionStyle: CollectionStyle.FLOW),
         wrapAsYamlNode({
           'foo': 'bar',
@@ -82,7 +126,7 @@ void main() {
     });
 
     test('wraps maps', () {
-      var map = wrapAsYamlNode({
+      final map = wrapAsYamlNode({
         'list': [1, 2, 3],
         'map': {
           'foo': 'bar',
@@ -106,7 +150,7 @@ void main() {
     });
 
     test('wraps maps with collectionStyle', () {
-      var map = wrapAsYamlNode({
+      final map = wrapAsYamlNode({
         'list': [1, 2, 3],
         'map': {
           'foo': 'bar',
@@ -119,7 +163,7 @@ void main() {
     });
 
     test('wraps nested maps while preserving style', () {
-      var map = wrapAsYamlNode({
+      final map = wrapAsYamlNode({
         'list':
             wrapAsYamlNode([1, 2, 3], collectionStyle: CollectionStyle.FLOW),
         'map': wrapAsYamlNode({
@@ -135,7 +179,7 @@ void main() {
     });
 
     test('works with YamlMap.wrap', () {
-      var map = wrapAsYamlNode({
+      final map = wrapAsYamlNode({
         'list':
             wrapAsYamlNode([1, 2, 3], collectionStyle: CollectionStyle.FLOW),
         'map': YamlMap.wrap({
@@ -152,22 +196,22 @@ void main() {
 
   group('deepHashCode', () {
     test('returns the same result for scalar and its value', () {
-      var hashCode1 = deepHashCode('foo');
-      var hashCode2 = deepHashCode(wrapAsYamlNode('foo'));
+      final hashCode1 = deepHashCode('foo');
+      final hashCode2 = deepHashCode(wrapAsYamlNode('foo'));
 
       expect(hashCode1, equals(hashCode2));
     });
 
     test('returns different results for different values', () {
-      var hashCode1 = deepHashCode('foo');
-      var hashCode2 = deepHashCode(wrapAsYamlNode('bar'));
+      final hashCode1 = deepHashCode('foo');
+      final hashCode2 = deepHashCode(wrapAsYamlNode('bar'));
 
       expect(hashCode1, notEquals(hashCode2));
     });
 
     test('returns the same result for YamlScalar with style and its value', () {
-      var hashCode1 = deepHashCode('foo');
-      var hashCode2 =
+      final hashCode1 = deepHashCode('foo');
+      final hashCode2 =
           deepHashCode(wrapAsYamlNode('foo', scalarStyle: ScalarStyle.LITERAL));
 
       expect(hashCode1, equals(hashCode2));
@@ -176,28 +220,28 @@ void main() {
     test(
         'returns the same result for two YamlScalars with same value but different styles',
         () {
-      var hashCode1 =
+      final hashCode1 =
           deepHashCode(wrapAsYamlNode('foo', scalarStyle: ScalarStyle.PLAIN));
-      var hashCode2 =
+      final hashCode2 =
           deepHashCode(wrapAsYamlNode('foo', scalarStyle: ScalarStyle.LITERAL));
 
       expect(hashCode1, equals(hashCode2));
     });
 
     test('returns the same result for list and its value', () {
-      var hashCode1 = deepHashCode([1, 2, 3]);
-      var hashCode2 = deepHashCode(wrapAsYamlNode([1, 2, 3]));
+      final hashCode1 = deepHashCode([1, 2, 3]);
+      final hashCode2 = deepHashCode(wrapAsYamlNode([1, 2, 3]));
 
       expect(hashCode1, equals(hashCode2));
     });
 
     test('returns the same result for list and the YamlList.wrap() value', () {
-      var hashCode1 = deepHashCode([
+      final hashCode1 = deepHashCode([
         1,
         [1, 2],
         3
       ]);
-      var hashCode2 = deepHashCode(YamlList.wrap([
+      final hashCode2 = deepHashCode(YamlList.wrap([
         1,
         YamlList.wrap([1, 2]),
         3
@@ -207,9 +251,9 @@ void main() {
     });
 
     test('returns the different results for different lists', () {
-      var hashCode1 = deepHashCode([1, 2, 3]);
-      var hashCode2 = deepHashCode([1, 2, 4]);
-      var hashCode3 = deepHashCode([1, 2, 3, 4]);
+      final hashCode1 = deepHashCode([1, 2, 3]);
+      final hashCode2 = deepHashCode([1, 2, 4]);
+      final hashCode3 = deepHashCode([1, 2, 3, 4]);
 
       expect(hashCode1, notEquals(hashCode2));
       expect(hashCode2, notEquals(hashCode3));
@@ -217,8 +261,8 @@ void main() {
     });
 
     test('returns the same result for YamlList with style and its value', () {
-      var hashCode1 = deepHashCode([1, 2, 3]);
-      var hashCode2 = deepHashCode(
+      final hashCode1 = deepHashCode([1, 2, 3]);
+      final hashCode2 = deepHashCode(
           wrapAsYamlNode([1, 2, 3], collectionStyle: CollectionStyle.FLOW));
 
       expect(hashCode1, equals(hashCode2));
@@ -227,27 +271,27 @@ void main() {
     test(
         'returns the same result for two YamlLists with same value but different styles',
         () {
-      var hashCode1 = deepHashCode(
+      final hashCode1 = deepHashCode(
           wrapAsYamlNode([1, 2, 3], collectionStyle: CollectionStyle.BLOCK));
-      var hashCode2 = deepHashCode(wrapAsYamlNode([1, 2, 3]));
+      final hashCode2 = deepHashCode(wrapAsYamlNode([1, 2, 3]));
 
       expect(hashCode1, equals(hashCode2));
     });
 
     test('returns the same result for a map and its value', () {
-      var hashCode1 = deepHashCode({'a': 1, 'b': 2});
-      var hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2}));
+      final hashCode1 = deepHashCode({'a': 1, 'b': 2});
+      final hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2}));
 
       expect(hashCode1, equals(hashCode2));
     });
 
     test('returns the same result for list and the YamlList.wrap() value', () {
-      var hashCode1 = deepHashCode({
+      final hashCode1 = deepHashCode({
         'a': 1,
         'b': 2,
         'c': {'d': 4, 'e': 5}
       });
-      var hashCode2 = deepHashCode(YamlMap.wrap({
+      final hashCode2 = deepHashCode(YamlMap.wrap({
         'a': 1,
         'b': 2,
         'c': YamlMap.wrap({'d': 4, 'e': 5})
@@ -257,9 +301,9 @@ void main() {
     });
 
     test('returns the different results for different maps', () {
-      var hashCode1 = deepHashCode({'a': 1, 'b': 2});
-      var hashCode2 = deepHashCode({'a': 1, 'b': 3});
-      var hashCode3 = deepHashCode({'a': 1, 'b': 2, 'c': 3});
+      final hashCode1 = deepHashCode({'a': 1, 'b': 2});
+      final hashCode2 = deepHashCode({'a': 1, 'b': 3});
+      final hashCode3 = deepHashCode({'a': 1, 'b': 2, 'c': 3});
 
       expect(hashCode1, notEquals(hashCode2));
       expect(hashCode2, notEquals(hashCode3));
@@ -267,8 +311,8 @@ void main() {
     });
 
     test('returns the same result for YamlMap with style and its value', () {
-      var hashCode1 = deepHashCode({'a': 1, 'b': 2});
-      var hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
+      final hashCode1 = deepHashCode({'a': 1, 'b': 2});
+      final hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
           collectionStyle: CollectionStyle.FLOW));
 
       expect(hashCode1, equals(hashCode2));
@@ -277,9 +321,9 @@ void main() {
     test(
         'returns the same result for two YamlMaps with same value but different styles',
         () {
-      var hashCode1 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
+      final hashCode1 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
           collectionStyle: CollectionStyle.BLOCK));
-      var hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
+      final hashCode2 = deepHashCode(wrapAsYamlNode({'a': 1, 'b': 2},
           collectionStyle: CollectionStyle.FLOW));
 
       expect(hashCode1, equals(hashCode2));

@@ -35,7 +35,23 @@ YamlMap updatedYamlMap(YamlMap map, Function(Map) update) {
 YamlNode wrapAsYamlNode(Object value,
     {CollectionStyle collectionStyle = CollectionStyle.ANY,
     ScalarStyle scalarStyle = ScalarStyle.ANY}) {
-  if (value is YamlNode) {
+  if (value is YamlScalar) {
+    assertValidScalar(value.value);
+    return value;
+  } else if (value is YamlList) {
+    for (var item in value.nodes) {
+      wrapAsYamlNode(item);
+    }
+
+    return value;
+  } else if (value is YamlMap) {
+    /// Both [entry.key] and [entry.values] are guaranteed to be [YamlNode]s,
+    /// so running this will just assert that they are valid scalars.
+    for (var entry in value.nodes.entries) {
+      wrapAsYamlNode(entry.key);
+      wrapAsYamlNode(entry.value);
+    }
+
     return value;
   } else if (value is Map) {
     ArgumentError.checkNotNull(collectionStyle, 'collectionStyle');
