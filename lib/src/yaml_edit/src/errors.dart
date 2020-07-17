@@ -8,21 +8,33 @@ import 'package:yaml/yaml.dart';
 /// Error thrown when a function is passed an invalid path.
 @sealed
 class PathError extends ArgumentError {
-  /// The path that caused the error
+  /// The full path that caused the error
   final Iterable<Object> path;
+
+  /// The subpath that caused the error
+  final Iterable<Object> subPath;
 
   /// The last element of [path] that could be traversed.
   YamlNode parent;
 
-  PathError(this.path, Object invalidKeyOrIndex, this.parent, [String message])
-      : super.value(invalidKeyOrIndex, 'path', message);
+  PathError(this.path, this.subPath, this.parent, [String message])
+      : super.value(subPath, 'path', message);
 
-  PathError.unexpected(this.path, String message) : super(message);
+  PathError.unexpected(this.path, String message)
+      : subPath = path,
+        super(message);
 
   @override
   String toString() {
     if (message == null) {
-      return 'Invalid path: $path. Missing key or index $invalidValue in parent $parent.';
+      var errorMessage = 'Failed to traverse to subpath $subPath!';
+
+      if (subPath.isNotEmpty) {
+        errorMessage +=
+            ' Parent $parent does not contain key or index ${subPath.last}';
+      }
+
+      return 'Invalid path: $path. $errorMessage.';
     }
 
     return 'Invalid path: $path. $message';

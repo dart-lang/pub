@@ -39,7 +39,7 @@ import 'wrap.dart';
 ///
 /// To get to `7`, our path will be `['c', 2, 'f', 1]`. The path for the base
 /// object is the empty array `[]`. All modification methods will throw a
-/// [PathError] if the path provided is invalid. Note also that that the order
+/// [Argu,emtError] if the path provided is invalid. Note also that that the order
 /// of elements in the path is important, and it should be arranged in order of
 /// calling, with the first element being the first key or index to be called.
 ///
@@ -148,7 +148,7 @@ class YamlEditor {
   /// If no [YamlNode]s exist at [path], the result of invoking the [orElse]
   /// function is returned.
   ///
-  /// If [orElse] is omitted, it defaults to throwing a [PathError].
+  /// If [orElse] is omitted, it defaults to throwing a [ArgumentError].
   ///
   /// To get `null` when [path] does not point to a value in the [YamlNode]-tree,
   /// simply pass `orElse: () => null`.
@@ -200,7 +200,7 @@ class YamlEditor {
   /// There is a subtle difference between [update] and [remove] followed by
   /// an [insertIntoList], because [update] preserves comments at the same level.
   ///
-  /// Throws a [PathError] if [path] is invalid.
+  /// Throws a [ArgumentError] if [path] is invalid.
   ///
   /// **Example:** (using [update])
   /// ```dart
@@ -278,7 +278,7 @@ class YamlEditor {
 
   /// Appends [value] to the list at [path].
   ///
-  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// Throws a [ArgumentError] if the element at the given path is not a [YamlList]
   /// or if the path is invalid.
   ///
   /// **Example:**
@@ -295,7 +295,7 @@ class YamlEditor {
 
   /// Prepends [value] to the list at [path].
   ///
-  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// Throws a [ArgumentError] if the element at the given path is not a [YamlList]
   /// or if the path is invalid.
   ///
   /// **Example:**
@@ -313,7 +313,7 @@ class YamlEditor {
   ///
   /// [index] must be non-negative and no greater than the list's length.
   ///
-  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// Throws a [ArgumentError] if the element at the given path is not a [YamlList]
   /// or if the path is invalid.
   ///
   /// **Example:**
@@ -343,7 +343,7 @@ class YamlEditor {
   /// [index] and [deleteCount] must be non-negative and [index] + [deleteCount]
   /// must be no greater than the list's length.
   ///
-  /// Throws a [PathError] if the element at the given path is not a [YamlList]
+  /// Throws a [ArgumentError] if the element at the given path is not a [YamlList]
   /// or if the path is invalid.
   ///
   /// **Example:**
@@ -386,7 +386,7 @@ class YamlEditor {
   /// Removes the node at [path]. Comments "belonging" to the node will be
   /// removed while surrounding comments will be left untouched.
   ///
-  /// Throws a [PathError] if [path] is invalid.
+  /// Throws a [ArgumentError] if [path] is invalid.
   ///
   /// **Example:**
   /// ```dart
@@ -463,8 +463,11 @@ class YamlEditor {
     if (path.isEmpty) return _contents;
 
     var currentNode = _contents;
+    final pathList = path.toList();
 
-    for (var keyOrIndex in path) {
+    for (var i = 0; i < pathList.length; i++) {
+      final keyOrIndex = pathList[i];
+
       if (checkAlias && _aliases.contains(currentNode)) {
         throw AliasError(path);
       }
@@ -472,7 +475,7 @@ class YamlEditor {
       if (currentNode is YamlList) {
         final list = currentNode as YamlList;
         if (!isValidIndex(keyOrIndex, list.length)) {
-          return _pathErrorOrElse(path, keyOrIndex, list, orElse);
+          return _pathErrorOrElse(path, path.take(i + 1), list, orElse);
         }
 
         currentNode = list.nodes[keyOrIndex];
@@ -480,7 +483,7 @@ class YamlEditor {
         final map = currentNode as YamlMap;
 
         if (!containsKey(map, keyOrIndex)) {
-          return _pathErrorOrElse(path, keyOrIndex, map, orElse);
+          return _pathErrorOrElse(path, path.take(i + 1), map, orElse);
         }
         final keyNode = getKeyNode(map, keyOrIndex);
 
@@ -490,7 +493,7 @@ class YamlEditor {
 
         currentNode = map.nodes[keyNode];
       } else {
-        return _pathErrorOrElse(path, keyOrIndex, currentNode, orElse);
+        return _pathErrorOrElse(path, path.take(i + 1), currentNode, orElse);
       }
     }
 
@@ -501,9 +504,9 @@ class YamlEditor {
 
   /// Throws a [PathError] if [orElse] is not provided, returns the result
   /// of invoking the [orElse] function otherwise.
-  YamlNode _pathErrorOrElse(Iterable<Object> path, Object invalidKeyOrIndex,
+  YamlNode _pathErrorOrElse(Iterable<Object> path, Iterable<Object> subPath,
       YamlNode parent, YamlNode Function() orElse) {
-    if (orElse == null) throw PathError(path, invalidKeyOrIndex, parent);
+    if (orElse == null) throw PathError(path, subPath, parent);
     return orElse();
   }
 
@@ -537,9 +540,9 @@ class YamlEditor {
   ///
   /// Convenience function to ensure that a [YamlList] is returned.
   ///
-  /// Throws [PathError] if the element at the given path is not a [YamlList] or
-  /// if the path is invalid. If [checkAlias] is `true`, and an aliased node is
-  /// encountered along [path], an [AliasError] will be similarly thrown.
+  /// Throws [ArgumentError] if the element at the given path is not a [YamlList]
+  /// or if the path is invalid. If [checkAlias] is `true`, and an aliased node
+  /// is encountered along [path], an [AliasError] will be thrown.
   YamlList _traverseToList(Iterable<Object> path, {bool checkAlias = false}) {
     ArgumentError.checkNotNull(path, 'path');
     ArgumentError.checkNotNull(checkAlias, 'checkAlias');
@@ -565,7 +568,7 @@ class YamlEditor {
     ArgumentError.checkNotNull(edit, 'edit');
     ArgumentError.checkNotNull(path, 'path');
 
-    final expectedTree = _deepModify(_contents, path, expectedNode);
+    final expectedTree = _deepModify(_contents, path, [], expectedNode);
     _yaml = edit.apply(_yaml);
     _initialize();
 
@@ -586,7 +589,8 @@ $expectedTree''');
   }
 
   /// Utility method to produce an updated YAML tree equivalent to converting
-  /// the [YamlNode] at [path] to be [expectedNode].
+  /// the [YamlNode] at [path] to be [expectedNode]. [subPath] holds the portion
+  /// of [path] that has been traversed thus far.
   ///
   /// Throws a [PathError] if path is invalid.
   ///
@@ -596,32 +600,36 @@ $expectedTree''');
   /// the whole tree.
   ///
   /// [SourceSpan]s in this new tree are not guaranteed to be accurate.
-  YamlNode _deepModify(
-      YamlNode tree, Iterable<Object> path, YamlNode expectedNode) {
+  YamlNode _deepModify(YamlNode tree, Iterable<Object> path,
+      Iterable<Object> subPath, YamlNode expectedNode) {
     ArgumentError.checkNotNull(path, 'path');
     ArgumentError.checkNotNull(tree, 'tree');
+    RangeError.checkValueInInterval(subPath.length, 0, path.length);
 
-    if (path.isEmpty) return expectedNode;
+    if (path.length == subPath.length) return expectedNode;
 
-    final nextPath = path.skip(1);
+    final keyOrIndex = path.elementAt(subPath.length);
 
     if (tree is YamlList) {
-      final index = path.first;
+      if (!isValidIndex(keyOrIndex, tree.length)) {
+        throw PathError(path, subPath, tree);
+      }
 
-      if (!isValidIndex(index, tree.length)) throw PathError(path, index, tree);
-
-      return wrapAsYamlNode([...tree.nodes]..[index] =
-          _deepModify(tree.nodes[index], nextPath, expectedNode));
+      return wrapAsYamlNode([...tree.nodes]..[keyOrIndex] = _deepModify(
+          tree.nodes[keyOrIndex],
+          path,
+          path.take(subPath.length + 1),
+          expectedNode));
     }
 
     if (tree is YamlMap) {
-      final keyNode = wrapAsYamlNode(path.first);
       return updatedYamlMap(
           tree,
-          (nodes) => nodes[keyNode] =
-              _deepModify(nodes[keyNode], nextPath, expectedNode));
+          (nodes) => nodes[keyOrIndex] = _deepModify(nodes[keyOrIndex], path,
+              path.take(subPath.length + 1), expectedNode));
     }
 
-    throw PathError(path, path.first, tree);
+    /// Should not ever reach here.
+    throw PathError(path, subPath, tree);
   }
 }

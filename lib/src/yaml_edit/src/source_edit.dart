@@ -32,8 +32,6 @@ class SourceEdit {
   factory SourceEdit(int offset, int length, String replacement) =>
       SourceEdit._(offset, length, replacement);
 
-  /// Creates a new [SourceEdit] instance. [offset], [length] and [replacement]
-  /// must be non-null, and [offset] and [length] must be non-negative.
   SourceEdit._(this.offset, this.length, this.replacement) {
     ArgumentError.checkNotNull(offset, 'offset');
     ArgumentError.checkNotNull(length, 'length');
