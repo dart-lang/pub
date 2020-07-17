@@ -10,18 +10,6 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('adds a package from a pub server', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
-
-    await d.appDir({}).create();
-
-    await pubAdd(args: ['foo:1.2.3']);
-
-    await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
-    await d.appDir({'foo': '1.2.3'}).validate();
-  });
-
   test('URL encodes the package name', () async {
     await serveNoPackages();
 
@@ -40,22 +28,310 @@ void main() {
     await d.appDir({}).validate();
   });
 
-  test('--dev adds packages to dev_dependencies instead', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+  group('normally', () {
+    test('adds a package from a pub server', () async {
+      await servePackages((builder) => builder.serve('foo', '1.2.3'));
 
-    await d.dir(appPath, [
-      d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
-    ]).create();
+      await d.appDir({}).create();
 
-    await pubAdd(args: ['--dev', 'foo:1.2.3']);
+      await pubAdd(args: ['foo:1.2.3']);
 
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appDir({'foo': '1.2.3'}).validate();
+    });
 
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dev_dependencies': {'foo': '1.2.3'}
-      })
-    ]).validate();
+    group('overrides existing version constraint if package exists', () {
+      test('if package is added without a version constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.appDir({'foo': '1.2.2'}).create();
+
+        await pubAdd(args: ['foo']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.appDir({'foo': '^1.2.3'}).validate();
+      });
+
+      test('if package is added with a specific version constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.appDir({'foo': '1.2.2'}).create();
+
+        await pubAdd(args: ['foo:1.2.3']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.appDir({'foo': '1.2.3'}).validate();
+      });
+
+      test('if package is added with a version constraint range', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.appDir({'foo': '1.2.2'}).create();
+
+        await pubAdd(args: ['foo:>=1.2.2']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.appDir({'foo': '>=1.2.2'}).validate();
+      });
+    });
+
+    test('removes dev_dependency and add to normal dependency', () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.3');
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {},
+          'dev_dependencies': {'foo': '1.2.2'}
+        })
+      ]).create();
+
+      await pubAdd(
+          args: ['foo:1.2.3'],
+          output:
+              contains('foo was found in dev_dependencies. Removing foo and '
+                  'adding it to dependencies instead.'));
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.3'},
+          'dev_dependencies': {}
+        })
+      ]).validate();
+    });
+
+    group('retains dependency override', () {
+      test('if package does not specify a range', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo']);
+
+        await d.cacheDir({'foo': '1.2.2'}).validate();
+        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.2.3'},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+      });
+
+      test('if package is specified with a constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.3']);
+
+        await d.cacheDir({'foo': '1.2.2'}).validate();
+        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '1.2.3'},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+      });
+    });
+  });
+
+  group('--dev', () {
+    test('--dev adds packages to dev_dependencies instead', () async {
+      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['--dev', 'foo:1.2.3']);
+
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dev_dependencies': {'foo': '1.2.3'}
+        })
+      ]).validate();
+    });
+
+    group('overrides existing version constraint if package exists', () {
+      test('if package is added without a version constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo', '--dev']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '^1.2.3'}
+          })
+        ]).validate();
+      });
+
+      test('if package is added with a specific version constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.3', '--dev']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.3'}
+          })
+        ]).validate();
+      });
+
+      test('if package is added with a version constraint range', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:>=1.2.2', '--dev']);
+
+        await d.cacheDir({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.appPackagesFile({'foo': '1.2.3'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '>=1.2.2'}
+          })
+        ]).validate();
+      });
+    });
+
+    group('retains dependency override', () {
+      test('if package does not specify a range', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo', '--dev']);
+
+        await d.cacheDir({'foo': '1.2.2'}).validate();
+        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '^1.2.3'},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).create();
+      });
+    });
+
+    test(
+        'prints information saying that package is already a dependency if it '
+        'already exists and exits normally', () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.3');
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.2'},
+          'dev_dependencies': {}
+        })
+      ]).create();
+
+      await pubAdd(
+          args: ['foo:1.2.3', '--dev'],
+          output: contains('foo is already in dependencies. Please remove '
+              'existing entry before adding it to dev_dependencies'),
+          exitCode: exit_codes.SUCCESS);
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.2'},
+          'dev_dependencies': {}
+        })
+      ]).validate();
+    });
   });
 }

@@ -7,7 +7,9 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../exceptions.dart';
+import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_info.dart';
 import '../pubspec.dart';
@@ -60,54 +62,52 @@ class AddCommand extends PubCommand {
       usageException('Packages must either be a git, hosted, or path package.');
     }
 
-    final packages = _parsePackages(argResults.rest);
+    final package = _parsePackage(argResults.rest.first);
 
     /// Perform version resolution in-memory.
     var updatedPubSpec =
-        _addPackagesToPubspec(entrypoint.root.pubspec, packages);
+        await _addPackagesToPubspec(entrypoint.root.pubspec, package);
     var result = await resolveVersions(
         SolveType.GET, cache, Package.inMemory(updatedPubSpec));
 
     /// Update the pubspec.
-    _updatePubspec(result, packages);
+    _updatePubspec(result, package);
 
     /// Run pub get once we have successfully updated the pubspec
     await runner.run(['get']);
   }
 
-  /// Creates a new in-memory [Pubspec] by adding the packages specified in
-  /// [newDependencies] to [original].
-  Pubspec _addPackagesToPubspec(
-      Pubspec original, Iterable<PackageInfo> newDependencies) {
+  /// Creates a new in-memory [Pubspec] by adding [package] to [original].
+  Future<Pubspec> _addPackagesToPubspec(
+      Pubspec original, PackageInfo package) async {
     ArgumentError.checkNotNull(original, 'original');
-    ArgumentError.checkNotNull(newDependencies, 'newDependencies');
+    ArgumentError.checkNotNull(package, 'package');
 
     final dependencies = [...original.dependencies.values];
-    final devDependencies = [...original.devDependencies.values];
+    var devDependencies = [...original.devDependencies.values];
 
     if (isDevelopment) {
       final dependencyNames = dependencies.map((dependency) => dependency.name);
 
-      for (var package in newDependencies) {
-        if (dependencyNames.contains(package.name)) {
-          usageException('${package.name} is already in dependencies. '
-              'Please remove existing entry before adding it to dev_dependencies');
-        }
-
-        devDependencies.add(package.toPackageRange(cache));
+      if (dependencyNames.contains(package.name)) {
+        log.message('${package.name} is already in dependencies. '
+            'Please remove existing entry before adding it to dev_dependencies');
+        await flushThenExit(exit_codes.SUCCESS);
       }
+
+      devDependencies.add(package.toPackageRange(cache));
     } else {
       final devDependencyNames =
           devDependencies.map((devDependency) => devDependency.name);
 
-      for (var package in newDependencies) {
-        if (devDependencyNames.contains(package.name)) {
-          usageException('${package.name} is already in dev_dependencies. '
-              'Please remove existing entry before adding it to dependencies');
-        }
-
-        dependencies.add(package.toPackageRange(cache));
+      if (devDependencyNames.contains(package.name)) {
+        log.message('${package.name} was found in dev_dependencies. '
+            'Removing ${package.name} and adding it to dependencies instead.');
+        devDependencies =
+            devDependencies.takeWhile((d) => d.name != package.name).toList();
       }
+
+      dependencies.add(package.toPackageRange(cache));
     }
 
     return Pubspec(
@@ -120,9 +120,9 @@ class AddCommand extends PubCommand {
     );
   }
 
-  /// Parse [PackageInfo] from [packages].
+  /// Parse [PackageInfo] from [package].
   ///
-  /// Each package in [packages] must be written in the format
+  /// [package] must be written in the format
   /// `<package-name>[:<version-constraint>]`, where quotations should be used
   /// if necessary.
   ///
@@ -145,41 +145,37 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  Iterable<PackageInfo> _parsePackages(Iterable<String> packages) {
-    ArgumentError.checkNotNull(packages, 'packages');
+  PackageInfo _parsePackage(String package) {
+    ArgumentError.checkNotNull(package, 'packages');
 
-    final parsedPackages = packages.map((package) {
-      PackageInfo packageInfo;
+    var git = <String, String>{};
+    if (gitUrl != null) git['url'] = gitUrl;
+    if (gitRef != null) git['ref'] = gitRef;
+    if (gitPath != null) git['path'] = gitPath;
+    if (git.isEmpty) git = null;
 
-      var git = <String, String>{};
-      if (gitUrl != null) git['url'] = gitUrl;
-      if (gitRef != null) git['ref'] = gitRef;
-      if (gitPath != null) git['path'] = gitPath;
-      if (git.isEmpty) git = null;
+    Map<String, String> hostInfo;
+    if (hostUrl != null) hostInfo = {'url': hostUrl};
 
-      Map<String, String> hostInfo;
-      if (hostUrl != null) hostInfo = {'url': hostUrl};
+    PackageInfo parsedPackage;
 
-      try {
-        packageInfo = PackageInfo.from(package,
-            path: path,
-            git: git,
-            pubspecPath: entrypoint.pubspecPath,
-            hostInfo: hostInfo);
-      } on PackageParseException catch (exception) {
-        usageException(exception.message);
-      }
+    try {
+      parsedPackage = PackageInfo.from(package,
+          path: path,
+          git: git,
+          pubspecPath: entrypoint.pubspecPath,
+          hostInfo: hostInfo);
+    } on PackageParseException catch (exception) {
+      usageException(exception.message);
+    }
 
-      return packageInfo;
-    });
-
-    return parsedPackages;
+    return parsedPackage;
   }
 
   /// Writes the changes to the pubspec file
-  void _updatePubspec(SolveResult result, Iterable<PackageInfo> packages) {
+  void _updatePubspec(SolveResult result, PackageInfo package) {
     ArgumentError.checkNotNull(result, 'result');
-    ArgumentError.checkNotNull(packages, 'packages');
+    ArgumentError.checkNotNull(package, 'package');
 
     if (entrypoint.pubspecPath == null) {
       throw FileException(
@@ -199,15 +195,19 @@ class AddCommand extends PubCommand {
       finalPackages[package.name] = package.version;
     }
 
-    for (var package in packages) {
-      final packageName = package.name;
-      final packagePath = [dependencyKey, packageName];
+    final packagePath = [dependencyKey, package.name];
 
-      if (package.pubspecInfo == null) {
-        yamlEditor.update(packagePath, '^${finalPackages[packageName]}');
-      } else {
-        yamlEditor.update(packagePath, package.pubspecInfo);
-      }
+    if (package.pubspecInfo == null) {
+      yamlEditor.update(packagePath, '^${finalPackages[package.name]}');
+    } else {
+      yamlEditor.update(packagePath, package.pubspecInfo);
+    }
+
+    if (!isDevelopment &&
+        yamlEditor.parseAt(['dev_dependencies', package.name],
+                orElse: () => null) !=
+            null) {
+      yamlEditor.remove(['dev_dependencies', package.name]);
     }
 
     /// Windows line endings are already handled by [yamlEditor]
