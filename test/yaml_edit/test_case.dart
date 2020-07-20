@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/yaml_edit/src/utils.dart';
 import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:test/test.dart';
@@ -19,28 +20,21 @@ class TestCases {
   /// path.
   static Future<TestCases> getTestCases(Uri testDirUri, Uri goldDirUri) async {
     final testDir = Directory.fromUri(testDirUri);
-    var testCaseList = [];
 
-    if (testDir.existsSync()) {
-      /// Recursively grab all the files in the testing directory.
-      var entityStream = testDir.list(recursive: true, followLinks: false);
-      entityStream =
-          entityStream.where((entity) => entity.path.endsWith('.test'));
+    if (!testDir.existsSync()) return TestCases([]);
 
-      final testCasesPathStream = entityStream.map((entity) => entity.uri);
-      final testCasePaths = await testCasesPathStream.toList();
+    /// Recursively grab all the files in the testing directory.
+    return TestCases(await testDir
+        .list(recursive: true, followLinks: false)
+        .where((entity) => entity.path.endsWith('.test'))
+        .map((entity) => entity.uri)
+        .map((inputUri) {
+      final inputWithoutExtension =
+          p.basenameWithoutExtension(inputUri.toFilePath());
+      final goldenUri = goldDirUri.resolve('./$inputWithoutExtension.golden');
 
-      testCaseList = testCasePaths.map((inputUri) {
-        final inputName = inputUri.toFilePath(windows: false).split('/').last;
-        final inputNameWithoutExt =
-            inputName.substring(0, inputName.length - 5);
-        final goldenUri = goldDirUri.resolve('./$inputNameWithoutExt.golden');
-
-        return _TestCase(inputUri, goldenUri);
-      }).toList();
-    }
-
-    return TestCases(testCaseList);
+      return _TestCase(inputUri, goldenUri);
+    }).toList());
   }
 
   /// Tests all the [_TestCase]s if the golden files exist, create the golden
@@ -172,11 +166,9 @@ class _TestCase {
   /// Tests the golden file. Ensures that the number of states are the same, and
   /// that the individual states are the same.
   void testGoldenFile(File goldenFile) {
-    final inputFileName = inputUri.toFilePath(windows: false).split('/').last;
-    List<String> goldenStates;
+    final inputFileName = p.basename(inputUri.toFilePath());
     final golden = goldenFile.readAsStringSync();
-
-    goldenStates = golden.split('---${getLineEnding(golden)}');
+    final goldenStates = golden.split('---${getLineEnding(golden)}');
 
     group('testing $inputFileName - input and golden files have', () {
       test('same number of states', () {

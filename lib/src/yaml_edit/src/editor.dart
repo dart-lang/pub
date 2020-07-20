@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection' show UnmodifiableListView;
-
 import 'package:meta/meta.dart';
 import 'package:yaml/yaml.dart';
 
@@ -72,8 +70,7 @@ class YamlEditor {
   /// to a string using [SourceEdit.applyAll].
   ///
   /// For more information, refer to the [SourceEdit] class.
-  UnmodifiableListView<SourceEdit> get edits =>
-      UnmodifiableListView<SourceEdit>([..._edits]);
+  List<SourceEdit> get edits => [..._edits];
 
   /// Current YAML string.
   String _yaml;
