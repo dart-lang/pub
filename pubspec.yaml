@@ -10,6 +10,7 @@ dependencies:
   analyzer: ^0.39.4
   args: ^1.4.1
   async: ^2.0.0
+  cli_util: ^0.2.0
   collection: ^1.8.0
   crypto: ^2.0.0
   http: ^0.12.0
