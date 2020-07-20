@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:pub/src/yaml_edit/src/utils.dart';
 import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -12,12 +13,12 @@ import 'test_utils.dart';
 
 /// Interface for creating golden Test cases
 class TestCases {
-  final List<TestCase> testCases;
+  final List<_TestCase> testCases;
 
   /// Creates a [TestCases] object based on test directory and golden directory
   /// path.
   static Future<TestCases> getTestCases(Uri testDirUri, Uri goldDirUri) async {
-    var testDir = Directory.fromUri(testDirUri);
+    final testDir = Directory.fromUri(testDirUri);
     var testCaseList = [];
 
     if (testDir.existsSync()) {
@@ -26,32 +27,33 @@ class TestCases {
       entityStream =
           entityStream.where((entity) => entity.path.endsWith('.test'));
 
-      var testCasesPathStream = entityStream.map((entity) => entity.uri);
-      var testCasePaths = await testCasesPathStream.toList();
+      final testCasesPathStream = entityStream.map((entity) => entity.uri);
+      final testCasePaths = await testCasesPathStream.toList();
 
       testCaseList = testCasePaths.map((inputUri) {
-        var inputName = inputUri.toFilePath(windows: false).split('/').last;
-        var inputNameWithoutExt = inputName.substring(0, inputName.length - 5);
-        var goldenUri = goldDirUri.resolve('./$inputNameWithoutExt.golden');
+        final inputName = inputUri.toFilePath(windows: false).split('/').last;
+        final inputNameWithoutExt =
+            inputName.substring(0, inputName.length - 5);
+        final goldenUri = goldDirUri.resolve('./$inputNameWithoutExt.golden');
 
-        return TestCase(inputUri, goldenUri);
+        return _TestCase(inputUri, goldenUri);
       }).toList();
     }
 
     return TestCases(testCaseList);
   }
 
-  /// Tests all the [TestCase]s if the golden files exist, create the golden
+  /// Tests all the [_TestCase]s if the golden files exist, create the golden
   /// files otherwise.
   void test() {
     var tested = 0;
     var created = 0;
 
-    for (var testCase in testCases) {
+    for (final testCase in testCases) {
       testCase.testOrCreate();
-      if (testCase.state == TestCaseStates.testedGoldenFile) {
+      if (testCase.state == _TestCaseStates.testedGoldenFile) {
         tested++;
-      } else if (testCase.state == TestCaseStates.createdGoldenFile) {
+      } else if (testCase.state == _TestCaseStates.createdGoldenFile) {
         created++;
       }
     }
@@ -65,26 +67,26 @@ class TestCases {
   int get length => testCases.length;
 }
 
-/// Enum representing the different states of [TestCase]s.
-enum TestCaseStates { initialized, createdGoldenFile, testedGoldenFile }
+/// Enum representing the different states of [_TestCase]s.
+enum _TestCaseStates { initialized, createdGoldenFile, testedGoldenFile }
 
 /// Interface for a golden test case. Handles the logic for test conduct/golden
 /// test update accordingly.
-class TestCase {
+class _TestCase {
   final Uri inputUri;
   final Uri goldenUri;
   final List<String> states = [];
 
   String info;
   YamlEditor yamlBuilder;
-  List<YamlModification> modifications;
+  List<_YamlModification> modifications;
 
   String inputLineEndings = '\n';
 
-  TestCaseStates state = TestCaseStates.initialized;
+  _TestCaseStates state = _TestCaseStates.initialized;
 
-  TestCase(this.inputUri, this.goldenUri) {
-    var inputFile = File.fromUri(inputUri);
+  _TestCase(this.inputUri, this.goldenUri) {
+    final inputFile = File.fromUri(inputUri);
     if (!inputFile.existsSync()) {
       throw Exception('Input File does not exist!');
     }
@@ -92,16 +94,16 @@ class TestCase {
     _initialize(inputFile);
   }
 
-  /// Initializes the [TestCase] by reading the corresponding [inputFile] and
+  /// Initializes the [_TestCase] by reading the corresponding [inputFile] and
   /// parsing the different portions, and then running the input yaml against
   /// the specified modifications.
   ///
   /// Precondition: [inputFile] must exist, and inputs must be well-formatted.
   void _initialize(File inputFile) {
-    var input = inputFile.readAsStringSync();
+    final input = inputFile.readAsStringSync();
 
-    inputLineEndings = detectWindowsLineEndings(input) ? '\r\n' : '\n';
-    var inputElements = input.split('---$inputLineEndings');
+    final inputLineEndings = getLineEnding(input);
+    final inputElements = input.split('---$inputLineEndings');
 
     if (inputElements.length != 3) {
       throw AssertionError('File ${inputFile.path} is not properly formatted.');
@@ -109,8 +111,8 @@ class TestCase {
 
     info = inputElements[0];
     yamlBuilder = YamlEditor(inputElements[1]);
-    var rawModifications = getValueFromYamlNode(loadYaml(inputElements[2]));
-    modifications = parseModifications(rawModifications);
+    final rawModifications = _getValueFromYamlNode(loadYaml(inputElements[2]));
+    modifications = _parseModifications(rawModifications);
 
     /// Adds the initial state as well, so we can check that the simplest
     /// parse -> immediately dump does not affect the string.
@@ -120,13 +122,13 @@ class TestCase {
   }
 
   void _performModifications() {
-    for (var mod in modifications) {
+    for (final mod in modifications) {
       _performModification(mod);
       states.add(yamlBuilder.toString());
     }
   }
 
-  void _performModification(YamlModification mod) {
+  void _performModification(_YamlModification mod) {
     switch (mod.method) {
       case YamlModificationMethod.update:
         yamlBuilder.update(mod.path, mod.value);
@@ -150,7 +152,7 @@ class TestCase {
   }
 
   void testOrCreate() {
-    var goldenFile = File.fromUri(goldenUri);
+    final goldenFile = File.fromUri(goldenUri);
     if (!goldenFile.existsSync()) {
       createGoldenFile(goldenFile);
     } else {
@@ -164,21 +166,17 @@ class TestCase {
     final goldenOutput = states.join('---$inputLineEndings');
 
     goldenFile.writeAsStringSync(goldenOutput);
-    state = TestCaseStates.createdGoldenFile;
+    state = _TestCaseStates.createdGoldenFile;
   }
 
   /// Tests the golden file. Ensures that the number of states are the same, and
   /// that the individual states are the same.
   void testGoldenFile(File goldenFile) {
-    var inputFileName = inputUri.toFilePath(windows: false).split('/').last;
+    final inputFileName = inputUri.toFilePath(windows: false).split('/').last;
     List<String> goldenStates;
-    var golden = goldenFile.readAsStringSync();
+    final golden = goldenFile.readAsStringSync();
 
-    if (detectWindowsLineEndings(golden)) {
-      goldenStates = golden.split('---\r\n');
-    } else {
-      goldenStates = golden.split('---\n');
-    }
+    goldenStates = golden.split('---${getLineEnding(golden)}');
 
     group('testing $inputFileName - input and golden files have', () {
       test('same number of states', () {
@@ -192,23 +190,23 @@ class TestCase {
       }
     });
 
-    state = TestCaseStates.testedGoldenFile;
+    state = _TestCaseStates.testedGoldenFile;
   }
 }
 
 /// Converts a [YamlList] into a Dart list.
-List getValueFromYamlList(YamlList node) {
+List _getValueFromYamlList(YamlList node) {
   return node.value.map((n) {
-    if (n is YamlNode) return getValueFromYamlNode(n);
+    if (n is YamlNode) return _getValueFromYamlNode(n);
     return n;
   }).toList();
 }
 
 /// Converts a [YamlMap] into a Dart Map.
-Map getValueFromYamlMap(YamlMap node) {
-  var keys = node.keys;
-  var result = {};
-  for (var key in keys) {
+Map _getValueFromYamlMap(YamlMap node) {
+  final keys = node.keys;
+  final result = {};
+  for (final key in keys) {
     result[key.value] = result[key].value;
   }
 
@@ -216,25 +214,25 @@ Map getValueFromYamlMap(YamlMap node) {
 }
 
 /// Converts a [YamlNode] into a Dart object.
-dynamic getValueFromYamlNode(YamlNode node) {
+dynamic _getValueFromYamlNode(YamlNode node) {
   switch (node.runtimeType) {
     case YamlList:
-      return getValueFromYamlList(node);
+      return _getValueFromYamlList(node);
     case YamlMap:
-      return getValueFromYamlMap(node);
+      return _getValueFromYamlMap(node);
     default:
       return node.value;
   }
 }
 
-/// Converts the list of modifications from the raw input to [YamlModification]
+/// Converts the list of modifications from the raw input to [_YamlModification]
 /// objects.
-List<YamlModification> parseModifications(List<dynamic> modifications) {
+List<_YamlModification> _parseModifications(List<dynamic> modifications) {
   return modifications.map((mod) {
     Object value;
     int index;
     int deleteCount;
-    final method = getModificationMethod(mod[0] as String);
+    final method = _getModificationMethod(mod[0] as String);
 
     final path = mod[1] as List;
 
@@ -256,12 +254,12 @@ List<YamlModification> parseModifications(List<dynamic> modifications) {
       value = mod[4];
     }
 
-    return YamlModification(method, path, index, value, deleteCount);
+    return _YamlModification(method, path, index, value, deleteCount);
   }).toList();
 }
 
 /// Gets the YAML modification method corresponding to [method]
-YamlModificationMethod getModificationMethod(String method) {
+YamlModificationMethod _getModificationMethod(String method) {
   switch (method) {
     case 'update':
       return YamlModificationMethod.update;
@@ -284,35 +282,17 @@ YamlModificationMethod getModificationMethod(String method) {
 }
 
 /// Class representing an abstract YAML modification to be performed
-class YamlModification {
+class _YamlModification {
   final YamlModificationMethod method;
   final List<dynamic> path;
   final int index;
   final dynamic value;
   final int deleteCount;
 
-  YamlModification(
+  _YamlModification(
       this.method, this.path, this.index, this.value, this.deleteCount);
 
   @override
   String toString() =>
       'method: $method, path: $path, index: $index, value: $value, deleteCount: $deleteCount';
-}
-
-/// Returns `true` if the [text] looks like it uses windows line endings.
-///
-/// The heuristic used is to count all `\n` in the text and if stricly more than
-/// half of them are preceded by `\r` we report `true`.
-bool detectWindowsLineEndings(String text) {
-  var index = -1;
-  var unixNewlines = 0;
-  var windowsNewlines = 0;
-  while ((index = text.indexOf('\n', index + 1)) != -1) {
-    if (index != 0 && text[index - 1] == '\r') {
-      windowsNewlines++;
-    } else {
-      unixNewlines++;
-    }
-  }
-  return windowsNewlines > unixNewlines;
 }

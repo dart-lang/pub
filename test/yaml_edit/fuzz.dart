@@ -14,7 +14,7 @@ import 'test_utils.dart';
 /// Performs naive fuzzing on an initial YAML file based on an initial seed.
 void main(List<String> args) {
   final seed = args.isEmpty ? 0 : int.tryParse(args[0]);
-  final generator = Generator(seed);
+  final generator = _Generator(seed);
 
   const roundsOfTesting = 10;
   const modificationsPerRound = 100;
@@ -46,13 +46,13 @@ dev_dependencies:
 }
 
 /// Generates the random variables we need for fuzzing.
-class Generator {
+class _Generator {
   final Random r;
 
   /// 2^32
   static const int maxInt = 4294967296;
 
-  Generator([int seed]) : r = Random(seed ?? 42);
+  _Generator([int seed]) : r = Random(seed ?? 42);
 
   int nextInt([int max = maxInt]) => r.nextInt(max);
 
@@ -72,7 +72,7 @@ class Generator {
     final buffer = StringBuffer();
 
     for (var i = 0; i < length; i++) {
-      var charCode = nextInt(95) + 32;
+      final charCode = nextInt(95) + 32;
       buffer.writeCharCode(charCode);
     }
 

@@ -372,7 +372,7 @@ class YamlEditor {
 
     /// Reverse [values] and insert them.
     final reversedValues = values.toList().reversed;
-    for (var value in reversedValues) {
+    for (final value in reversedValues) {
       insertIntoList(path, index, value);
     }
 

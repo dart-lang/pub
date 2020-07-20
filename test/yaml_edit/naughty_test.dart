@@ -8,7 +8,7 @@ import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'problem_strings.dart';
 
 void main() {
-  for (var string in problemStrings) {
+  for (final string in problemStrings) {
     test('expect string $string', () {
       final doc = YamlEditor('');
 

@@ -42,14 +42,15 @@ void main() {
   group('orElse provides a default value', () {
     test('simple example with null return ', () {
       final doc = YamlEditor('{a: {d: 4}, c: ~}');
-      var result = doc.parseAt(['b'], orElse: () => null);
+      final result = doc.parseAt(['b'], orElse: () => null);
 
       expect(result, equals(null));
     });
 
     test('simple example with map return', () {
       final doc = YamlEditor('{a: {d: 4}, c: ~}');
-      var result = doc.parseAt(['b'], orElse: () => wrapAsYamlNode({'a': 42}));
+      final result =
+          doc.parseAt(['b'], orElse: () => wrapAsYamlNode({'a': 42}));
 
       expect(result, isA<YamlMap>());
       expect(result.value, equals({'a': 42}));
@@ -57,7 +58,7 @@ void main() {
 
     test('simple example with scalar return', () {
       final doc = YamlEditor('{a: {d: 4}, c: ~}');
-      var result = doc.parseAt(['b'], orElse: () => wrapAsYamlNode(42));
+      final result = doc.parseAt(['b'], orElse: () => wrapAsYamlNode(42));
 
       expect(result, isA<YamlScalar>());
       expect(result.value, equals(42));
@@ -65,7 +66,7 @@ void main() {
 
     test('simple example with list return', () {
       final doc = YamlEditor('{a: {d: 4}, c: ~}');
-      var result = doc.parseAt(['b'], orElse: () => wrapAsYamlNode([42]));
+      final result = doc.parseAt(['b'], orElse: () => wrapAsYamlNode([42]));
 
       expect(result, isA<YamlList>());
       expect(result.value, equals([42]));

@@ -74,7 +74,7 @@ bool mapDeepEquals(Map map1, Map map2) {
 /// [deepEquals] will have the same hash code.
 int deepHashCode(Object value) {
   if (value is Map) {
-    var equality = const UnorderedIterableEquality();
+    const equality = UnorderedIterableEquality();
     return equality.hash(value.keys.map(deepHashCode)) ^
         equality.hash(value.values.map(deepHashCode));
   } else if (value is Iterable) {

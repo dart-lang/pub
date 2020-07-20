@@ -109,7 +109,7 @@ bool isEmpty(Object item) {
 /// Mainly used with [wrapAsYamlNode] to allow for a reasonable
 /// implementation of [SourceSpan.message].
 SourceSpan shellSpan(Object sourceUrl) {
-  var shellSourceLocation = SourceLocation(0, sourceUrl: sourceUrl);
+  final shellSourceLocation = SourceLocation(0, sourceUrl: sourceUrl);
   return SourceSpanBase(shellSourceLocation, shellSourceLocation, '');
 }
 
@@ -172,7 +172,7 @@ int getIndentation(YamlEditor editor) {
   }
 
   if (children != null) {
-    for (var child in children) {
+    for (final child in children) {
       var indent = 0;
       if (child is YamlList) {
         indent = getListIndentation(editor.toString(), child);

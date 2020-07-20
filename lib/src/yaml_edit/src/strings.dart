@@ -44,7 +44,7 @@ bool _hasUnprintableCharacters(String string) {
 
   final codeUnits = string.codeUnits;
 
-  for (var key in unprintableCharCodes.keys) {
+  for (final key in unprintableCharCodes.keys) {
     if (codeUnits.contains(key)) return true;
   }
 
@@ -59,7 +59,7 @@ String _yamlEncodeDoubleQuoted(String string) {
   ArgumentError.checkNotNull(string, 'string');
 
   final buffer = StringBuffer();
-  for (var codeUnit in string.codeUnits) {
+  for (final codeUnit in string.codeUnits) {
     if (doubleQuoteEscapeChars[codeUnit] != null) {
       buffer.write(doubleQuoteEscapeChars[codeUnit]);
     } else {
@@ -211,7 +211,7 @@ String yamlEncodeBlockScalar(
 /// case we will produce [value] with default styling options.
 String yamlEncodeFlowString(YamlNode value) {
   if (value is YamlList) {
-    var list = value.nodes;
+    final list = value.nodes;
 
     final safeValues = list.map(yamlEncodeFlowString);
     return '[' + safeValues.join(', ') + ']';
@@ -236,7 +236,7 @@ String yamlEncodeBlockString(
   ArgumentError.checkNotNull(indentation, 'indentation');
   ArgumentError.checkNotNull(lineEnding, 'lineEnding');
 
-  var additionalIndentation = 2;
+  const additionalIndentation = 2;
 
   if (!isBlockNode(value)) return yamlEncodeFlowString(value);
 
@@ -247,7 +247,7 @@ String yamlEncodeBlockString(
 
     Iterable<String> safeValues;
 
-    var children = value.nodes;
+    final children = value.nodes;
 
     safeValues = children.map((child) {
       var valueString =

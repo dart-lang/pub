@@ -39,7 +39,7 @@ YamlNode wrapAsYamlNode(Object value,
     assertValidScalar(value.value);
     return value;
   } else if (value is YamlList) {
-    for (var item in value.nodes) {
+    for (final item in value.nodes) {
       wrapAsYamlNode(item);
     }
 
@@ -47,7 +47,7 @@ YamlNode wrapAsYamlNode(Object value,
   } else if (value is YamlMap) {
     /// Both [entry.key] and [entry.values] are guaranteed to be [YamlNode]s,
     /// so running this will just assert that they are valid scalars.
-    for (var entry in value.nodes.entries) {
+    for (final entry in value.nodes.entries) {
       wrapAsYamlNode(entry.key);
       wrapAsYamlNode(entry.value);
     }
@@ -109,11 +109,11 @@ class YamlMapWrap
       Object sourceUrl}) {
     ArgumentError.checkNotNull(collectionStyle, 'collectionStyle');
 
-    var wrappedMap = deepEqualsMap<dynamic, YamlNode>();
+    final wrappedMap = deepEqualsMap<dynamic, YamlNode>();
 
-    for (var entry in dartMap.entries) {
-      var wrappedKey = wrapAsYamlNode(entry.key);
-      var wrappedValue = wrapAsYamlNode(entry.value);
+    for (final entry in dartMap.entries) {
+      final wrappedKey = wrapAsYamlNode(entry.key);
+      final wrappedValue = wrapAsYamlNode(entry.value);
       wrappedMap[wrappedKey] = wrappedValue;
     }
 
