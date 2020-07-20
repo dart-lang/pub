@@ -469,7 +469,7 @@ class YamlEditor {
       final keyOrIndex = pathList[i];
 
       if (checkAlias && _aliases.contains(currentNode)) {
-        throw AliasError(path);
+        throw AliasError(path, currentNode);
       }
 
       if (currentNode is YamlList) {
@@ -488,7 +488,7 @@ class YamlEditor {
         final keyNode = getKeyNode(map, keyOrIndex);
 
         if (checkAlias) {
-          if (_aliases.contains(keyNode)) throw AliasError(path);
+          if (_aliases.contains(keyNode)) throw AliasError(path, keyNode);
         }
 
         currentNode = map.nodes[keyNode];
@@ -515,7 +515,7 @@ class YamlEditor {
     ArgumentError.checkNotNull(path, 'path');
 
     if (node == null) return _assertNoChildAlias(path, _traverse(path));
-    if (_aliases.contains(node)) throw AliasError(path);
+    if (_aliases.contains(node)) throw AliasError(path, node);
 
     if (node is YamlScalar) return;
 
@@ -530,7 +530,7 @@ class YamlEditor {
       final keyList = node.keys.toList();
       for (var i = 0; i < node.length; i++) {
         final updatedPath = [...path, keyList[i]];
-        if (_aliases.contains(keyList[i])) throw AliasError(path);
+        if (_aliases.contains(keyList[i])) throw AliasError(path, keyList[i]);
         _assertNoChildAlias(updatedPath, node.nodes[keyList[i]]);
       }
     }

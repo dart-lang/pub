@@ -16,7 +16,6 @@ void main() {
 - &SS Sammy Sosa
 - *SS
 ''');
-
       expect(() => doc.remove([0]), throwsAliasError);
     });
 
