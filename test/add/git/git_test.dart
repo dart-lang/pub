@@ -41,4 +41,35 @@ void main() {
         error: contains('repository \'../foo.git\' does not exist'),
         exitCode: exit_codes.UNAVAILABLE);
   });
+
+  test('can be overriden by dependency override', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.2');
+    });
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {},
+        'dependency_overrides': {'foo': '1.2.2'}
+      })
+    ]).create();
+
+    await pubAdd(args: ['foo', '--git-url', '../foo.git']);
+
+    await d.cacheDir({'foo': '1.2.2'}).validate();
+    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'git': '../foo.git'}
+        },
+        'dependency_overrides': {'foo': '1.2.2'}
+      })
+    ]).validate();
+  });
 }

@@ -40,4 +40,35 @@ void main() {
             'failed.'),
         exitCode: exit_codes.NO_INPUT);
   });
+
+  test('can be overriden by dependency override', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.2');
+    });
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {},
+        'dependency_overrides': {'foo': '1.2.2'}
+      })
+    ]).create();
+
+    final absolutePath = path.join(d.sandbox, 'foo');
+    await pubAdd(args: ['foo', '--path', absolutePath]);
+
+    await d.cacheDir({'foo': '1.2.2'}).validate();
+    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': absolutePath}
+        },
+        'dependency_overrides': {'foo': '1.2.2'}
+      })
+    ]).validate();
+  });
 }

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
@@ -12,8 +11,10 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_info.dart';
+import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
+import '../utils.dart';
 
 /// Handles the `add` pub command.
 class AddCommand extends PubCommand {
@@ -65,13 +66,16 @@ class AddCommand extends PubCommand {
     final package = _parsePackage(argResults.rest.first);
 
     /// Perform version resolution in-memory.
-    var updatedPubSpec =
+    final updatedPubSpec =
         await _addPackagesToPubspec(entrypoint.root.pubspec, package);
-    var result = await resolveVersions(
+    final solveResult = await resolveVersions(
         SolveType.GET, cache, Package.inMemory(updatedPubSpec));
 
+    final resultPackage =
+        await _getAndAssertResultPackage(solveResult, package);
+
     /// Update the pubspec.
-    _updatePubspec(result, package);
+    _updatePubspec(resultPackage, package);
 
     /// Run pub get once we have successfully updated the pubspec
     await runner.run(['get']);
@@ -172,9 +176,32 @@ class AddCommand extends PubCommand {
     return parsedPackage;
   }
 
-  /// Writes the changes to the pubspec file
-  void _updatePubspec(SolveResult result, PackageInfo package) {
+  /// Retrieves the result of version resolution on [package], and assert that
+  /// it is within the original user's expectations, throwing a [DataError]
+  /// otherwise.
+  Future<PackageId> _getAndAssertResultPackage(
+      SolveResult result, PackageInfo package) async {
     ArgumentError.checkNotNull(result, 'result');
+    ArgumentError.checkNotNull(package, 'package');
+
+    /// The `orElse` scenario should not happen because it would have been
+    /// discovered in the version resolution process.
+    final resultPackage = result.packages
+        .firstWhere((packageId) => packageId.name == package.name);
+
+    if (package is HostedPackageInfo &&
+        package.constraint != null &&
+        !package.constraint.allows(resultPackage.version)) {
+      dataError('${package.name} resolved to ${resultPackage.version} which '
+          'does not match the input ${package.constraint}! Exiting.');
+    }
+
+    return resultPackage;
+  }
+
+  /// Writes the changes to the pubspec file
+  void _updatePubspec(PackageId resultPackage, PackageInfo package) {
+    ArgumentError.checkNotNull(resultPackage, 'resultPackage');
     ArgumentError.checkNotNull(package, 'package');
 
     if (entrypoint.pubspecPath == null) {
@@ -187,18 +214,12 @@ class AddCommand extends PubCommand {
     }
 
     final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
+    final packagePath = [dependencyKey, package.name];
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
-    final finalPackages = <String, Version>{};
-    for (var package in result.packages) {
-      finalPackages[package.name] = package.version;
-    }
-
-    final packagePath = [dependencyKey, package.name];
-
     if (package.pubspecInfo == null) {
-      yamlEditor.update(packagePath, '^${finalPackages[package.name]}');
+      yamlEditor.update(packagePath, '^${resultPackage.version}');
     } else {
       yamlEditor.update(packagePath, package.pubspecInfo);
     }

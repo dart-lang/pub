@@ -119,8 +119,8 @@ void main() {
       ]).validate();
     });
 
-    group('retains dependency override', () {
-      test('if package does not specify a range', () async {
+    group('dependency override', () {
+      test('passes if package does not specify a range', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
           builder.serve('foo', '1.2.2');
@@ -141,13 +141,74 @@ void main() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dependencies': {'foo': '^1.2.3'},
+            'dependencies': {'foo': '^1.2.2'},
             'dependency_overrides': {'foo': '1.2.2'}
           })
-        ]).create();
+        ]).validate();
       });
 
-      test('if package is specified with a constraint', () async {
+      test('passes if constraint matches git dependency override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+        });
+
+        await d.git('foo.git',
+            [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.3']);
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '1.2.3'},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          })
+        ]).validate();
+      });
+
+      test('passes if constraint matches path dependency override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.2');
+        });
+        await d.dir(
+            'foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.2')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.2']);
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '1.2.2'},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).validate();
+      });
+
+      test('fails if constraint does not match override', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
           builder.serve('foo', '1.2.2');
@@ -161,17 +222,61 @@ void main() {
           })
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.3']);
+        await pubAdd(
+            args: ['foo:1.2.3'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.2.2 which does not match the input 1.2.3'));
+      });
 
-        await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+      test('fails if constraint matches git dependency override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+        });
+
+        await d.git('foo.git',
+            [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dependencies': {'foo': '1.2.3'},
-            'dependency_overrides': {'foo': '1.2.2'}
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
           })
         ]).create();
+
+        await pubAdd(
+            args: ['foo:1.2.3'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.0.0 which does not match the input 1.2.3'));
+      });
+
+      test('fails if constraint does not match path dependency override',
+          () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.2');
+        });
+        await d.dir(
+            'foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(
+            args: ['foo:1.2.2'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.0.0 which does not match the input 1.2.2'));
       });
     });
   });
@@ -274,8 +379,8 @@ void main() {
       });
     });
 
-    group('retains dependency override', () {
-      test('if package does not specify a range', () async {
+    group('dependency override', () {
+      test('passes if package does not specify a range', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
           builder.serve('foo', '1.2.2');
@@ -296,10 +401,142 @@ void main() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '^1.2.3'},
+            'dev_dependencies': {'foo': '^1.2.2'},
+            'dependency_overrides': {'foo': '1.2.2'}
+          })
+        ]).validate();
+      });
+
+      test('passes if constraint is git dependency', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+        });
+
+        await d.git('foo.git',
+            [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.3', '--dev']);
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.3'},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          })
+        ]).validate();
+      });
+
+      test('passes if constraint matches path dependency override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.2');
+        });
+        await d.dir(
+            'foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.2')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(args: ['foo:1.2.2', '--dev']);
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {'foo': '1.2.2'},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).validate();
+      });
+
+      test('fails if constraint does not match override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+          builder.serve('foo', '1.2.2');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
             'dependency_overrides': {'foo': '1.2.2'}
           })
         ]).create();
+
+        await pubAdd(
+            args: ['foo:1.2.3', '--dev'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.2.2 which does not match the input 1.2.3'));
+      });
+
+      test('fails if constraint matches git dependency override', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+        });
+
+        await d.git('foo.git',
+            [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(
+            args: ['foo:1.2.3'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.0.0 which does not match the input 1.2.3'));
+      });
+
+      test('fails if constraint does not match path dependency override',
+          () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.2');
+        });
+        await d.dir(
+            'foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          })
+        ]).create();
+
+        await pubAdd(
+            args: ['foo:1.2.2', '--dev'],
+            exitCode: exit_codes.DATA,
+            error: contains(
+                'foo resolved to 1.0.0 which does not match the input 1.2.2'));
       });
     });
 
