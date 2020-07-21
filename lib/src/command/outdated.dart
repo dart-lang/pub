@@ -208,10 +208,13 @@ class OutdatedCommand extends PubCommand {
     if (argResults['json']) {
       await _outputJson(rows, mode, showAll: showAll);
     } else {
-      if (argResults.wasParsed('color') && argResults['color']) {
-        forceColors = true;
+      if (argResults.wasParsed('color')) {
+        forceColors = argResults['color'];
       }
-      final useColors = argResults['color'] || canUseSpecialChars;
+      final useColors = argResults.wasParsed('color')
+          ? argResults['color']
+          : canUseSpecialChars;
+
       await _outputHuman(rows, mode,
           useColors: useColors,
           showAll: showAll,
