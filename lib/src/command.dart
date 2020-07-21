@@ -81,16 +81,4 @@ abstract class PubCommand extends Command {
   void printUsage() {
     log.message(usage);
   }
-
-  /// Parses a user-supplied integer [intString] named [name].
-  ///
-  /// If the parsing fails, prints a usage message and exits.
-  int parseInt(String intString, String name) {
-    try {
-      return int.parse(intString);
-    } on FormatException catch (_) {
-      usageException('Could not parse $name "$intString".');
-      return null;
-    }
-  }
 }
