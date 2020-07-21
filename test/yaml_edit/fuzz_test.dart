@@ -6,21 +6,27 @@ import 'dart:math';
 
 import 'package:pub/src/yaml_edit/yaml_edit.dart';
 import 'package:pub/src/yaml_edit/src/wrap.dart';
+import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import 'problem_strings.dart';
 import 'test_utils.dart';
 
 /// Performs naive fuzzing on an initial YAML file based on an initial seed.
-void main(List<String> args) {
-  final seed = args.isEmpty ? 0 : int.tryParse(args[0]);
+///
+/// Starting with a template YAML, we randomly generate modifications and their
+/// inputs (boolean, null, strings, or numbers) to modify the YAML and assert
+/// that the change produced was expected.
+void main() {
+  const seed = 0;
   final generator = _Generator(seed);
 
   const roundsOfTesting = 10;
-  const modificationsPerRound = 100;
+  const modificationsPerRound = 50;
 
   for (var i = 0; i < roundsOfTesting; i++) {
-    final editor = YamlEditor('''
+    group('fuzz test $i', () {
+      final editor = YamlEditor('''
 name: yaml_edit
 description: A library for YAML manipulation with comment and whitespace preservation.
 version: 0.0.1-dev
@@ -37,11 +43,13 @@ dev_dependencies:
   test: ^1.14.4
 ''');
 
-    for (var i = 0; i < modificationsPerRound; i++) {
-      generator.performNextModification(editor);
-    }
-
-    print(editor);
+      for (var j = 0; j < modificationsPerRound; j++) {
+        test('modification $j', () {
+          expect(
+              () => generator.performNextModification(editor), returnsNormally);
+        });
+      }
+    });
   }
 }
 
