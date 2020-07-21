@@ -11,6 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
+import 'dice.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
@@ -62,6 +63,26 @@ Using a default value of `true`.
 
 /// Whether or not to warn about pre-release SDK overrides.
 bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
+
+/// List of keys in `pubspec.yaml` that will be recognized by pub.
+///
+/// Retrieved from https://dart.dev/tools/pub/pubspec
+const validPubspecKeys = [
+  'name',
+  'version',
+  'description',
+  'homepage',
+  'repository',
+  'issue_tracker',
+  'documentation',
+  'dependencies',
+  'dev_dependencies',
+  'dependency_overrides',
+  'environment',
+  'executables',
+  'publish_to',
+  'flutter'
+];
 
 /// The parsed contents of a pubspec file.
 ///
@@ -547,6 +568,25 @@ class Pubspec {
     } else {
       throw PubspecException(
           'The pubspec must be a YAML mapping.', pubspecNode.span);
+    }
+
+    for (final key in pubspecMap.keys) {
+      var bestDiceCoefficient = 0.0;
+      var closestKey = '';
+
+      for (final validKey in validPubspecKeys) {
+        final dice = diceCoefficient(key, validKey);
+        if (dice > bestDiceCoefficient) {
+          bestDiceCoefficient = dice;
+          closestKey = validKey;
+        }
+      }
+
+      // 0.8 is a magic value determined based on the most common typos.
+      if (bestDiceCoefficient >= 0.8 && bestDiceCoefficient < 1.0) {
+        message(
+            '$key appears to be an invalid key - did you mean $closestKey?');
+      }
     }
 
     return Pubspec.fromMap(pubspecMap, sources,
