@@ -570,7 +570,20 @@ class Pubspec {
           'The pubspec must be a YAML mapping.', pubspecNode.span);
     }
 
-    for (final key in pubspecMap.keys) {
+    return Pubspec.fromMap(pubspecMap, sources,
+        expectedName: expectedName,
+        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
+        location: location);
+  }
+
+  /// Returns a map containing entries of possible typo key found in the
+  /// pubspec mapped to the suggested valid key it might be.
+  Map<String, String> get typoWarnings {
+    if (fields == null) return <String, String>{};
+
+    final result = <String, String>{};
+
+    for (final key in fields.keys) {
       var bestDiceCoefficient = 0.0;
       var closestKey = '';
 
@@ -582,17 +595,22 @@ class Pubspec {
         }
       }
 
-      // 0.8 is a magic value determined based on the most common typos.
-      if (bestDiceCoefficient >= 0.8 && bestDiceCoefficient < 1.0) {
-        message(
-            '$key appears to be an invalid key - did you mean $closestKey?');
+      // 0.33 is a magic value determined based on the dice coefficient of a
+      // one letter typo on the key 'name'.
+      if (bestDiceCoefficient >= 0.33 && bestDiceCoefficient < 1.0) {
+        result[key] = closestKey;
       }
     }
 
-    return Pubspec.fromMap(pubspecMap, sources,
-        expectedName: expectedName,
-        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
-        location: location);
+    return result;
+  }
+
+  /// Prints [typoWarnings] in a human-readable format.
+  void printTypoWarnings() {
+    for (final entry in typoWarnings.entries) {
+      message('${entry.key} appears to be an invalid key - '
+          'did you mean ${entry.value}?');
+    }
   }
 
   /// Returns a list of most errors in this pubspec.
