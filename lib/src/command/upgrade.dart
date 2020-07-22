@@ -63,8 +63,11 @@ class UpgradeCommand extends PubCommand {
     }
 
     if (argResults.wasParsed('breaking')) {
+      final useLatest = argResults.rest;
+
       final rootPubspec = entrypoint.root.pubspec;
-      final resolvablePubspec = _stripVersionConstraints(rootPubspec);
+      final resolvablePubspec =
+          _stripVersionConstraints(rootPubspec, useLatest: useLatest);
 
       Map<String, PackageId> resolvablePackages;
       await log.spinner('Resolving', () async {
@@ -72,8 +75,12 @@ class UpgradeCommand extends PubCommand {
       }, condition: _shouldShowSpinner);
 
       final dependencyChanges = <PackageRange, PackageId>{};
+      final allDependencies = [
+        ...rootPubspec.dependencies.values,
+        ...rootPubspec.devDependencies.values
+      ];
 
-      for (var package in entrypoint.root.pubspec.dependencies.values) {
+      for (var package in allDependencies) {
         final resolvedPackage = resolvablePackages[package.name];
 
         if (resolvedPackage != null &&
@@ -82,6 +89,7 @@ class UpgradeCommand extends PubCommand {
           dependencyChanges[package] = resolvedPackage;
         }
       }
+
       if (!argResults['dry-run']) {
         await _writeToPubspec(dependencyChanges);
         await Entrypoint.current(cache).acquireDependencies(SolveType.UPGRADE);
@@ -110,11 +118,17 @@ class UpgradeCommand extends PubCommand {
     if (dependencyChanges.isEmpty) return;
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final initialDependencies = entrypoint.root.pubspec.dependencies.keys;
+    final initialDevDependencies = entrypoint.root.pubspec.devDependencies.keys;
 
     for (final finalPackage in dependencyChanges.values) {
-      // TODO(walnut): handle changes in dev dependencies too
-      yamlEditor.update(
-          ['dependencies', finalPackage.name], '^${finalPackage.version}');
+      if (initialDependencies.contains(finalPackage.name)) {
+        yamlEditor.update(
+            ['dependencies', finalPackage.name], '^${finalPackage.version}');
+      } else if (initialDevDependencies.contains(finalPackage.name)) {
+        yamlEditor.update(['dev_dependencies', finalPackage.name],
+            '^${finalPackage.version}');
+      }
     }
 
     /// Windows line endings are already handled by [yamlEditor]
@@ -172,13 +186,18 @@ void _outputHuman(
 
 /// Returns new pubspec with the same dependencies as [original] but with no
 /// version constraints on hosted packages.
-Pubspec _stripVersionConstraints(Pubspec original) {
-  List<PackageRange> _unconstrained(Map<String, PackageRange> constrained) {
+Pubspec _stripVersionConstraints(Pubspec original, {List<String> useLatest}) {
+  useLatest ??= [];
+
+  List<PackageRange> _unconstrained(Map<String, PackageRange> constrained,
+      {List<String> useLatest}) {
     final result = <PackageRange>[];
+
     for (final name in constrained.keys) {
       final packageRange = constrained[name];
       var unconstrainedRange = packageRange;
-      if (packageRange.source is HostedSource) {
+      if (packageRange.source is HostedSource &&
+          (useLatest.isEmpty || useLatest.contains(packageRange.name))) {
         unconstrainedRange = PackageRange(
             packageRange.name,
             packageRange.source,
@@ -188,6 +207,7 @@ Pubspec _stripVersionConstraints(Pubspec original) {
       }
       result.add(unconstrainedRange);
     }
+
     return result;
   }
 
@@ -195,8 +215,9 @@ Pubspec _stripVersionConstraints(Pubspec original) {
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: _unconstrained(original.dependencies),
-    devDependencies: _unconstrained(original.devDependencies),
+    dependencies: _unconstrained(original.dependencies, useLatest: useLatest),
+    devDependencies:
+        _unconstrained(original.devDependencies, useLatest: useLatest),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }
