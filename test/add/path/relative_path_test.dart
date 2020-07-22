@@ -29,9 +29,12 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--path', '../foo'],
-        error: contains(
-            'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "../foo"), version solving failed.'),
+        error: allOf([
+          contains(
+              'Because myapp depends on foo from path which doesn\'t exist '
+              '(could not find package foo at '),
+          contains('version solving failed.')
+        ]),
         exitCode: exit_codes.NO_INPUT);
   });
 

@@ -173,9 +173,6 @@ class Entrypoint {
       : root = Package.load(null, '.', cache.sources, isRootPackage: true),
         isGlobal = false;
 
-  /// Loads the entrypoint for [root].
-  Entrypoint.fromRoot(this.root, this.cache) : isGlobal = false;
-
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
