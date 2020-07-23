@@ -10,6 +10,7 @@ import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
+import 'command.dart' show pubCommandAliases, lineLength;
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
@@ -19,6 +20,7 @@ import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
 import 'command/logout.dart';
+import 'command/outdated.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';
@@ -44,6 +46,9 @@ class PubCommandRunner extends CommandRunner {
   /// Returns an empty string if no command is being run. (This is only
   /// expected to happen when unit tests invoke code inside pub without going
   /// through a command.)
+  ///
+  /// For top-level commands, if an alias is used, the primary command name is
+  /// returned. For instance `install` becomes `get`.
   static String get command {
     if (_options == null) return '';
 
@@ -51,7 +56,18 @@ class PubCommandRunner extends CommandRunner {
     for (var command = _options.command;
         command != null;
         command = command.command) {
-      list.add(command.name);
+      var commandName = command.name;
+
+      if (list.isEmpty) {
+        // this is a top-level command
+        final rootCommand = pubCommandAliases.entries.singleWhere(
+            (element) => element.value.contains(command.name),
+            orElse: () => null);
+        if (rootCommand != null) {
+          commandName = rootCommand.key;
+        }
+      }
+      list.add(commandName);
     }
     return list.join(' ');
   }
@@ -63,7 +79,9 @@ class PubCommandRunner extends CommandRunner {
   String get usageFooter =>
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
-  PubCommandRunner() : super('pub', 'Pub is a package manager for Dart.') {
+  PubCommandRunner()
+      : super('pub', 'Pub is a package manager for Dart.',
+            usageLineLength: lineLength) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
@@ -94,6 +112,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(GetCommand());
     addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
+    addCommand(OutdatedCommand());
     addCommand(RunCommand());
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());

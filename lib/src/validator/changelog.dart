@@ -5,6 +5,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:path/path.dart' as p;
+
 import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
@@ -19,8 +21,14 @@ class ChangelogValidator extends Validator {
       final changelog = entrypoint.root.changelogPath;
 
       if (changelog == null) {
-        // No changelog was found, which is fine. Return with no warnings.
+        warnings.add('Please add a`CHANGELOG.md` to your package. '
+            'See https://dart.dev/tools/pub/publishing#important-files.');
         return;
+      }
+
+      if (p.basename(changelog) != 'CHANGELOG.md') {
+        warnings.add('Please consider renaming $changelog to `CHANGELOG.md`. '
+            'See https://dart.dev/tools/pub/publishing#important-files.');
       }
 
       var bytes = readBinaryFile(changelog);

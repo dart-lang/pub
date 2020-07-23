@@ -132,6 +132,6 @@ class GlobalActivateCommand extends PubCommand {
             overwriteBinStubs: overwrite);
     }
 
-    throw 'unreachable';
+    throw StateError('unreachable');
   }
 }

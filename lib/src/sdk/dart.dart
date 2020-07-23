@@ -31,7 +31,7 @@ class DartSdk extends Sdk {
   static final String _rootDirectory = () {
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
-    // The Dart exectuable is in "/path/to/sdk/bin/dart", so two levels up is
+    // The Dart executable is in "/path/to/sdk/bin/dart", so two levels up is
     // "/path/to/sdk".
     var aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
     assert(fileExists(p.join(aboveExecutable, 'version')));

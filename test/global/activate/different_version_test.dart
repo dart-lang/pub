@@ -4,6 +4,7 @@
 
 import 'package:test/test.dart';
 
+import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
@@ -11,8 +12,12 @@ void main() {
       "discards the previous active version if it doesn't match the "
       'constraint', () async {
     await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+      ]);
+      builder.serve('foo', '2.0.0', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi2"); ')])
+      ]);
     });
 
     // Activate 1.0.0.
@@ -25,6 +30,7 @@ void main() {
         + foo 2.0.0
         Downloading foo 2.0.0...
         Precompiling executables...
+        Precompiled foo:foo.
         Activated foo 2.0.0.''');
   });
 }

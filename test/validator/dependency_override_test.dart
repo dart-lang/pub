@@ -27,7 +27,7 @@ void main() {
       })
     ]).create();
 
-    expectNoValidationError(dependencyOverride);
+    await expectValidation(dependencyOverride);
   });
 
   group('should consider a package invalid if', () {
@@ -39,7 +39,7 @@ void main() {
         })
       ]).create();
 
-      expectValidationError(dependencyOverride);
+      await expectValidation(dependencyOverride, errors: isNotEmpty);
     });
 
     test('it has any non-dev dependency overrides', () async {
@@ -54,7 +54,7 @@ void main() {
         })
       ]).create();
 
-      expectValidationError(dependencyOverride);
+      await expectValidation(dependencyOverride, errors: isNotEmpty);
     });
   });
 }

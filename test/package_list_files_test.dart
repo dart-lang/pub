@@ -265,7 +265,7 @@ void commonTests() {
           ]));
     });
 
-    test("doesn't care if the root is blacklisted", () async {
+    test("doesn't care if the root is disallowed", () async {
       await d.dir(appPath, [
         d.file('file1.txt', 'contents'),
         d.file('file2.txt', 'contents'),

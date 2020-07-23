@@ -22,8 +22,12 @@ void main() {
 Cannot run an executable in a subdirectory of a global package.
 
 Usage: pub global run <package>:<executable> [args...]
--h, --help                   Print this usage information.
-    --[no-]enable-asserts    Enable assert statements.
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled. (Will disable
+                                        snapshotting, resulting in slower
+                                        startup)
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);

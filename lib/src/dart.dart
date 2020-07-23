@@ -14,6 +14,7 @@ import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -34,7 +35,7 @@ bool isEntrypoint(CompilationUnit dart) {
   });
 }
 
-/// Snapshots the Dart executable at [executableUrl] to a snapshot at
+/// Snapshots the Dart executable at [executablePath] to a snapshot at
 /// [snapshotPath].
 ///
 /// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
@@ -43,11 +44,15 @@ bool isEntrypoint(CompilationUnit dart) {
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
-Future snapshot(Uri executableUrl, String snapshotPath,
-    {Uri packagesFile, String name}) async {
-  name = log.bold(name ?? executableUrl.toString());
+Future snapshot(
+  String executablePath,
+  String snapshotPath, {
+  Uri packagesFile,
+  String name,
+}) async {
+  name = log.bold(name ?? executablePath.toString());
 
-  var args = ['--snapshot=$snapshotPath', executableUrl.toString()];
+  var args = ['--snapshot=$snapshotPath', p.toUri(executablePath).toString()];
 
   if (packagesFile != null) {
     // Resolve [packagesFile] in case it's relative to work around sdk#33177.
@@ -78,7 +83,7 @@ class AnalysisContextManager {
   /// the given [path]. It is expected that the client knows analysis roots
   /// in advance. Pub does know, it is the packages it works with.
   void createContextsForDirectory(String path) {
-    _throwIfNotAbsolutePath(path);
+    path = p.normalize(p.absolute(path));
 
     // We add all contexts below the given directory.
     // So, children contexts must also have been added.
@@ -108,7 +113,8 @@ class AnalysisContextManager {
       }
 
       var contextBuilder = ContextBuilder();
-      var context = contextBuilder.createContext(contextRoot: root);
+      var context = contextBuilder.createContext(
+          contextRoot: root, sdkPath: getSdkPath());
       _contexts[contextRootPath] = context;
     }
   }
@@ -121,6 +127,7 @@ class AnalysisContextManager {
   ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
+    path = p.normalize(p.absolute(path));
     var parseResult = _getExistingSession(path).getParsedUnit(path);
     if (parseResult.errors.isNotEmpty) {
       throw AnalyzerErrorGroup(parseResult.errors);
@@ -147,8 +154,6 @@ class AnalysisContextManager {
   }
 
   AnalysisSession _getExistingSession(String path) {
-    _throwIfNotAbsolutePath(path);
-
     for (var context in _contexts.values) {
       if (context.contextRoot.isAnalyzed(path)) {
         return context.currentSession;
@@ -156,14 +161,6 @@ class AnalysisContextManager {
     }
 
     throw StateError('Unable to find the context to $path');
-  }
-
-  /// The driver supports only absolute paths, this method is used to validate
-  /// any input paths to prevent errors later.
-  void _throwIfNotAbsolutePath(String path) {
-    if (!p.isAbsolute(path)) {
-      throw ArgumentError('Only absolute paths are supported: $path');
-    }
   }
 }
 

@@ -5,13 +5,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
-import 'dart.dart' as dart;
 import 'entrypoint.dart';
 import 'exceptions.dart';
-import 'executable.dart' as exe;
+import 'executable.dart';
 import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
@@ -104,8 +104,6 @@ class GlobalPackages {
   /// Finds the latest version of the hosted package with [name] that matches
   /// [constraint] and makes it the active global version.
   ///
-  /// The [features] map controls which features of the package to activate.
-  ///
   /// [executables] is the names of the executables that should have binstubs.
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
@@ -145,7 +143,7 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.GET, precompile: true);
+    await entrypoint.acquireDependencies(SolveType.GET);
     var name = entrypoint.root.name;
 
     // Call this just to log what the current active package is, if any.
@@ -162,7 +160,7 @@ class GlobalPackages {
     var binDir = p.join(_directory, name, 'bin');
     if (dirExists(binDir)) deleteEntry(binDir);
 
-    _updateBinStubs(entrypoint.root, executables,
+    _updateBinStubs(entrypoint, entrypoint.root, executables,
         overwriteBinStubs: overwriteBinStubs);
     log.message('Activated ${_formatPackage(id)}.');
   }
@@ -180,7 +178,8 @@ class GlobalPackages {
     // being available, report that as a [dataError].
     SolveResult result;
     try {
-      result = await resolveVersions(SolveType.GET, cache, root);
+      result = await log.progress('Resolving dependencies',
+          () => resolveVersions(SolveType.GET, cache, root));
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {
@@ -205,69 +204,41 @@ class GlobalPackages {
 
     var lockFile = result.lockFile;
     _writeLockFile(dep.name, lockFile);
+    await _writePackageConfigFiles(dep.name, lockFile);
+
+    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+    result.packages.removeWhere((id) => id.name == 'pub global activate');
+
+    var id = lockFile.packages[dep.name];
+    // Load the package graph from [result] so we don't need to re-parse all
+    // the pubspecs.
+    final entrypoint = Entrypoint.global(
+        Package(result.pubspecs[dep.name],
+            cache.source(dep.source).getDirectory(id)),
+        result.lockFile,
+        cache,
+        solveResult: result);
+    await entrypoint.precompileExecutables();
+
+    _updateBinStubs(
+      entrypoint,
+      cache.load(entrypoint.lockFile.packages[dep.name]),
+      executables,
+      overwriteBinStubs: overwriteBinStubs,
+    );
+
+    log.message('Activated ${_formatPackage(id)}.');
+  }
+
+  Future<void> _writePackageConfigFiles(
+      String package, LockFile lockFile) async {
     // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
-    final packagesFilePath = _getPackagesFilePath(dep.name);
-    final packageConfigFilePath = _getPackageConfigFilePath(dep.name);
+    final packagesFilePath = _getPackagesFilePath(package);
+    final packageConfigFilePath = _getPackageConfigFilePath(package);
     writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
     ensureDir(p.dirname(packageConfigFilePath));
     writeTextFile(
         packageConfigFilePath, await lockFile.packageConfigFile(cache));
-
-    // Load the package graph from [result] so we don't need to re-parse all
-    // the pubspecs.
-    var entrypoint = Entrypoint.fromSolveResult(root, cache, result);
-    var snapshots = await _precompileExecutables(entrypoint, dep.name);
-
-    _updateBinStubs(entrypoint.packageGraph.packages[dep.name], executables,
-        overwriteBinStubs: overwriteBinStubs, snapshots: snapshots);
-
-    var id = lockFile.packages[dep.name];
-    log.message('Activated ${_formatPackage(id)}.');
-  }
-
-  /// Precompiles the executables for [packageName] and saves them in the global
-  /// cache.
-  ///
-  /// Returns a map from executable name to path for the snapshots that were
-  /// successfully precompiled.
-  Future<Map<String, String>> _precompileExecutables(
-      Entrypoint entrypoint, String packageName) {
-    return log.progress('Precompiling executables', () async {
-      var binDir = p.join(_directory, packageName, 'bin');
-      cleanDir(binDir);
-
-      final packagesFilePath = _getPackagesFilePath(packageName);
-      final packageConfigFilePath = _getPackageConfigFilePath(packageName);
-      if (!fileExists(packagesFilePath) || !fileExists(packageConfigFilePath)) {
-        // TODO(sigurdm): Use [entrypoint.writePackagesFiles] instead.
-        // The `.packages` file may not already exist if the global executable
-        // has a 1.6-style lock file instead.
-        // Similarly, the `.dart_tool/package_config.json` may not exist if the
-        // global executable was activated before 2.6
-        writeTextFile(
-            packagesFilePath, entrypoint.lockFile.packagesFile(cache));
-        ensureDir(p.dirname(packageConfigFilePath));
-        writeTextFile(
-          packageConfigFilePath,
-          await entrypoint.lockFile.packageConfigFile(cache),
-        );
-      }
-
-      // Try to avoid starting up an asset server to precompile packages if
-      // possible. This is faster and produces better error messages.
-      var package = entrypoint.packageGraph.packages[packageName];
-      var precompiled = <String, String>{};
-      await waitAndPrintErrors(package.executablePaths.map((path) async {
-        var url = p.toUri(p.join(package.dir, path));
-        var basename = p.basename(path);
-        var snapshotPath = p.join(binDir, '$basename.snapshot.dart2');
-        await dart.snapshot(url, snapshotPath,
-            packagesFile: p.toUri(_getPackagesFilePath(package.name)),
-            name: '${package.name}:${p.basenameWithoutExtension(path)}');
-        precompiled[p.withoutExtension(basename)] = snapshotPath;
-      }));
-      return precompiled;
-    });
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -304,7 +275,7 @@ class GlobalPackages {
       }
     } on IOException {
       // If we couldn't read the lock file, it's not activated.
-      return null;
+      return;
     }
   }
 
@@ -329,7 +300,7 @@ class GlobalPackages {
   /// Finds the active package with [name].
   ///
   /// Returns an [Entrypoint] loaded with the active package if found.
-  Entrypoint find(String name) {
+  Future<Entrypoint> find(String name) async {
     var lockFilePath = _getLockFilePath(name);
     LockFile lockFile;
     try {
@@ -349,6 +320,8 @@ class GlobalPackages {
       // Move the old lockfile to its new location.
       ensureDir(p.dirname(lockFilePath));
       File(oldLockFilePath).renameSync(lockFilePath);
+      // Just make sure these files are created as well.
+      await _writePackageConfigFiles(name, lockFile);
     }
 
     // Remove the package itself from the lockfile. We put it in there so we
@@ -362,7 +335,7 @@ class GlobalPackages {
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.inMemory(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.global(cache.load(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -394,24 +367,20 @@ class GlobalPackages {
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
-  /// If [checked] is true, the program is run with assertions enabled.
+  /// If [enableAsserts] is true, the program is run with assertions enabled.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
-      String package, String executable, Iterable<String> args,
-      {bool checked = false}) {
-    var entrypoint = find(package);
-    return exe.runExecutable(
-        entrypoint, package, p.join('bin', '$executable.dart'), args,
-        checked: checked,
-        packagesFile:
-            entrypoint.isCached ? _getPackagesFilePath(package) : null,
-        // Don't use snapshots for executables activated from paths.
-        snapshotPath: entrypoint.isCached
-            ? p.join(
-                _directory, package, 'bin', '$executable.dart.snapshot.dart2')
-            : null,
-        recompile: () => _precompileExecutables(entrypoint, package));
+      Entrypoint entrypoint, Executable executable, Iterable<String> args,
+      {bool enableAsserts = false,
+      String packagesFile,
+      Future<void> Function(Executable) recompile,
+      List<String> vmArgs = const []}) async {
+    return await runExecutable(entrypoint, executable, args,
+        enableAsserts: enableAsserts,
+        packagesFile: packagesFile,
+        recompile: recompile,
+        vmArgs: vmArgs);
   }
 
   /// Gets the path to the lock file for an activated cached package with
@@ -514,14 +483,13 @@ class GlobalPackages {
           id = _loadPackageId(entry);
           log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
 
-          var entrypoint = find(id.name);
-          var snapshots = await _precompileExecutables(entrypoint, id.name);
+          var entrypoint = await find(id.name);
+
+          await _writePackageConfigFiles(id.name, entrypoint.lockFile);
+          await entrypoint.precompileExecutables();
           var packageExecutables = executables.remove(id.name) ?? [];
-          _updateBinStubs(
-              entrypoint.packageGraph.packages[id.name], packageExecutables,
-              overwriteBinStubs: true,
-              snapshots: snapshots,
-              suggestIfNotOnPath: false);
+          _updateBinStubs(entrypoint, cache.load(id), packageExecutables,
+              overwriteBinStubs: true, suggestIfNotOnPath: false);
           successes.add(id.name);
         } catch (error, stackTrace) {
           var message = 'Failed to reactivate '
@@ -572,18 +540,11 @@ class GlobalPackages {
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   ///
-  /// If [snapshots] is given, it is a map of the names of executables whose
-  /// snapshots were precompiled to the paths of those snapshots. Binstubs for
-  /// those will run the snapshot directly and skip pub entirely.
-  ///
   /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
   /// the bin directory isn't on their path.
-  void _updateBinStubs(Package package, List<String> executables,
-      {bool overwriteBinStubs,
-      Map<String, String> snapshots,
-      bool suggestIfNotOnPath = true}) {
-    snapshots ??= const {};
-
+  void _updateBinStubs(
+      Entrypoint entrypoint, Package package, List<String> executables,
+      {bool overwriteBinStubs, bool suggestIfNotOnPath = true}) {
     // Remove any previously activated binstubs for this package, in case the
     // list of executables has changed.
     _deleteBinStubs(package.name);
@@ -603,8 +564,15 @@ class GlobalPackages {
 
       var script = package.pubspec.executables[executable];
 
-      var previousPackage = _createBinStub(package, executable, script,
-          overwrite: overwriteBinStubs, snapshot: snapshots[script]);
+      var previousPackage = _createBinStub(
+        package,
+        executable,
+        script,
+        overwrite: overwriteBinStubs,
+        snapshot: entrypoint.snapshotPathOfExecutable(
+          Executable.adaptProgramName(package.name, script),
+        ),
+      );
       if (previousPackage != null) {
         collided[executable] = previousPackage;
 
@@ -651,7 +619,7 @@ class GlobalPackages {
     // produced by a transformer. Do something better.
     var binFiles = package
         .listFiles(beneath: 'bin', recursive: false)
-        .map((path) => package.relative(path))
+        .map(package.relative)
         .toList();
     for (var executable in installed) {
       var script = package.pubspec.executables[executable];
@@ -672,13 +640,19 @@ class GlobalPackages {
   /// If [overwrite] is `true`, this will replace an existing binstub with that
   /// name for another package.
   ///
-  /// If [snapshot] is non-null, it is a path to a snapshot file. The binstub
-  /// will invoke that directly. Otherwise, it will run `pub global run`.
+  /// [snapshot] is a path to a snapshot file. If that snapshot exists the
+  /// binstub will invoke that directly. Otherwise, it will run
+  /// `pub global run`.
   ///
   /// If a collision occurs, returns the name of the package that owns the
   /// existing binstub. Otherwise returns `null`.
-  String _createBinStub(Package package, String executable, String script,
-      {bool overwrite, String snapshot}) {
+  String _createBinStub(
+    Package package,
+    String executable,
+    String script, {
+    @required bool overwrite,
+    @required String snapshot,
+  }) {
     var binStubPath = p.join(_binStubDir, executable);
     if (Platform.isWindows) binStubPath += '.bat';
 
@@ -695,19 +669,29 @@ class GlobalPackages {
       }
     }
 
-    // If the script was precompiled to a snapshot, just invoke that directly
-    // and skip pub global run entirely.
+    // If the script was precompiled to a snapshot, just try to invoke that
+    // directly and skip pub global run entirely.
     String invocation;
-    if (snapshot != null) {
-      // We expect absolute paths from the precompiler since relative ones
-      // won't be relative to the right directory when the user runs this.
-      assert(p.isAbsolute(snapshot));
-      invocation = 'dart "$snapshot"';
-    } else {
-      invocation = 'pub global run ${package.name}:$script';
-    }
-
     if (Platform.isWindows) {
+      if (snapshot != null && fileExists(snapshot)) {
+        // We expect absolute paths from the precompiler since relative ones
+        // won't be relative to the right directory when the user runs this.
+        assert(p.isAbsolute(snapshot));
+        invocation = '''
+if exist "$snapshot" (
+  dart "$snapshot" %*
+  rem The VM exits with code 253 if the snapshot version is out-of-date.	
+  rem If it is, we need to delete it and run "pub global" manually.	
+  if not errorlevel 253 (	
+    exit /b %errorlevel%	
+  )
+  pub global run ${package.name}:$script %*
+) else (
+  pub global run ${package.name}:$script %*
+)''';
+      } else {
+        invocation = 'pub global run ${package.name}:$script %*';
+      }
       var batch = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
@@ -715,24 +699,31 @@ rem Package: ${package.name}
 rem Version: ${package.version}
 rem Executable: $executable
 rem Script: $script
-$invocation %*
+$invocation
 ''';
-
-      if (snapshot != null) {
-        batch += '''
-
-rem The VM exits with code 253 if the snapshot version is out-of-date.
-rem If it is, we need to delete it and run "pub global" manually.
-if not errorlevel 253 (
-  exit /b %errorlevel%
-)
-
-pub global run ${package.name}:$script %*
-''';
-      }
-
       writeTextFile(binStubPath, batch);
     } else {
+      if (snapshot != null && fileExists(snapshot)) {
+        // We expect absolute paths from the precompiler since relative ones
+        // won't be relative to the right directory when the user runs this.
+        assert(p.isAbsolute(snapshot));
+        invocation = '''
+if [ -f $snapshot ]; then
+  dart "$snapshot" "\$@"
+  # The VM exits with code 253 if the snapshot version is out-of-date.	
+  # If it is, we need to delete it and run "pub global" manually.	
+  exit_code=\$?	
+  if [ \$exit_code != 253 ]; then	
+    exit \$exit_code	
+  fi	
+  pub global run ${package.name}:$script "\$@"
+else
+  pub global run ${package.name}:$script "\$@"
+fi
+''';
+      } else {
+        invocation = 'pub global run ${package.name}:$script "\$@"';
+      }
       var bash = '''
 #!/usr/bin/env sh
 # This file was created by pub v${sdk.version}.
@@ -740,25 +731,11 @@ pub global run ${package.name}:$script %*
 # Version: ${package.version}
 # Executable: $executable
 # Script: $script
-$invocation "\$@"
+$invocation
 ''';
-
-      if (snapshot != null) {
-        bash += '''
-
-# The VM exits with code 253 if the snapshot version is out-of-date.
-# If it is, we need to delete it and run "pub global" manually.
-exit_code=\$?
-if [ \$exit_code != 253 ]; then
-  exit \$exit_code
-fi
-
-pub global run ${package.name}:$script "\$@"
-''';
-      }
 
       // Write this as the system encoding since the system is going to execute
-      // it and it might contain non-ASCII caharacters in the pathnames.
+      // it and it might contain non-ASCII characters in the pathnames.
       writeTextFile(binStubPath, bash, encoding: const SystemEncoding());
 
       // Make it executable.
@@ -844,7 +821,7 @@ pub global run ${package.name}:$script "\$@"
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
   String _binStubProperty(String source, String name) {
-    var pattern = RegExp(quoteRegExp(name) + r': ([a-zA-Z0-9_-]+)');
+    var pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];
   }

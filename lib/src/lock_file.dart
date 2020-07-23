@@ -5,7 +5,8 @@
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' hide mapMap;
+// ignore: deprecated_member_use
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -240,7 +241,7 @@ class LockFile {
   /// This file is planned to eventually replace the `.packages` file.
   ///
   /// If [entrypoint] is passed, an accompanying [entrypointSdkConstraint]
-  /// should be given, these identifiy the current package in which this file is
+  /// should be given, these identify the current package in which this file is
   /// written. Passing `null` as [entrypointSdkConstraint] is correct if the
   /// current package has no SDK constraint.
   Future<String> packageConfigFile(

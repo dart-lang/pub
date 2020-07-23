@@ -16,14 +16,14 @@ import 'dart:isolate';
 /// If [buffered] is `true`, this uses [spawnBufferedUri] to spawn the isolate.
 Future runUri(Uri url, List<String> args, Object message,
     {bool buffered = false,
-    bool checked,
+    bool enableAsserts,
     bool automaticPackageResolution = false,
     Uri packageConfig}) async {
   var errorPort = ReceivePort();
   var exitPort = ReceivePort();
 
   await Isolate.spawnUri(url, args, message,
-      checked: checked,
+      checked: enableAsserts,
       automaticPackageResolution: automaticPackageResolution,
       packageConfig: packageConfig,
       onError: errorPort.sendPort,

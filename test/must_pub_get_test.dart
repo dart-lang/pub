@@ -54,7 +54,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No .dart_tool/package_config.json file found, please run "pub get" first.');
+          'No .dart_tool/package_config.json file found, please run "pub get".');
     });
 
     group('the pubspec has a new dependency', () {

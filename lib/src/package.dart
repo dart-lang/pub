@@ -34,6 +34,10 @@ class Package {
   /// The path to the directory containing the package.
   final String dir;
 
+  /// An in-memory package can be created for doing a resolution without having
+  /// a package on disk. Paths should not be resolved for these.
+  bool get _isInMemory => dir == null;
+
   /// The name of the package.
   String get name {
     if (pubspec.name != null) return pubspec.name;
@@ -156,7 +160,7 @@ class Package {
       String part5,
       String part6,
       String part7]) {
-    if (dir == null) {
+    if (_isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }
@@ -185,13 +189,13 @@ class Package {
   }
 
   /// The basenames of files that are included in [list] despite being hidden.
-  static final _whitelistedFiles = const ['.htaccess'];
+  static const _allowedFiles = ['.htaccess'];
 
-  /// A set of patterns that match paths to blacklisted files.
-  static final _blacklistedFiles = createFileFilter(['pubspec.lock']);
+  /// A set of patterns that match paths to disallowed files.
+  static final _disallowedFiles = createFileFilter(['pubspec.lock']);
 
-  /// A set of patterns that match paths to blacklisted directories.
-  static final _blacklistedDirs = createDirectoryFilter(['packages']);
+  /// A set of patterns that match paths to disallowed directories.
+  static final _disallowedDirs = createDirectoryFilter(['packages']);
 
   /// Returns a list of files that are considered to be part of this package.
   ///
@@ -220,7 +224,7 @@ class Package {
     if (!dirExists(beneath)) return [];
 
     // This is used in some performance-sensitive paths and can list many, many
-    // files. As such, it leans more havily towards optimization as opposed to
+    // files. As such, it leans more heavily towards optimization as opposed to
     // readability than most code in pub. In particular, it avoids using the
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
@@ -260,9 +264,7 @@ class Package {
       });
     } else {
       files = listDir(beneath,
-          recursive: recursive,
-          includeDirs: false,
-          whitelist: _whitelistedFiles);
+          recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
 
     return files.where((file) {
@@ -278,8 +280,8 @@ class Package {
       // contains() on, the leading separator is harmless.
       assert(file.startsWith(beneath));
       file = file.substring(beneath.length);
-      return !_blacklistedFiles.any(file.endsWith) &&
-          !_blacklistedDirs.any(file.contains);
+      return !_disallowedFiles.any(file.endsWith) &&
+          !_disallowedDirs.any(file.contains);
     }).toList();
   }
 
@@ -299,15 +301,13 @@ class Package {
     if (p.isWithin(dir, target)) {
       // If the link points within this repo, use git to list the target
       // location so we respect .gitignore.
-      targetFiles = listFiles(
-          beneath: p.relative(target, from: dir),
-          recursive: true,
-          useGitIgnore: true);
+      targetFiles =
+          listFiles(beneath: p.relative(target, from: dir), useGitIgnore: true);
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.
       targetFiles = listDir(target,
-          recursive: true, includeDirs: false, whitelist: _whitelistedFiles);
+          recursive: true, includeDirs: false, allowed: _allowedFiles);
     }
 
     // Re-write the paths so they're underneath the symlink.

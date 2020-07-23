@@ -73,7 +73,7 @@ class CacheAddCommand extends PubCommand {
         // TODO(rnystrom): Include source and description if not hosted.
         // See solve_report.dart for code to harvest.
         log.message('Already cached ${id.name} ${id.version}.');
-        return null;
+        return;
       }
 
       // Download it.

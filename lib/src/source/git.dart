@@ -73,7 +73,7 @@ class GitSource extends Source {
       } else if (!p.url.isRelative(path)) {
         throw FormatException(
             "The 'path' field of the description must be relative.");
-      } else if (!p.url.isWithin('.', path)) {
+      } else if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
         throw FormatException(
             "The 'path' field of the description must not reach outside the "
             'repository.');
@@ -336,11 +336,10 @@ class BoundGitSource extends CachedSource {
   /// Resets all cached packages back to the pristine state of the Git
   /// repository at the revision they are pinned to.
   @override
-  Future<Pair<List<PackageId>, List<PackageId>>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return Pair([], []);
+  Future<Iterable<RepairResult>> repairCachedPackages() async {
+    if (!dirExists(systemCacheRoot)) return [];
 
-    var successes = <PackageId>[];
-    var failures = <PackageId>[];
+    final result = <RepairResult>[];
 
     var packages = listDir(systemCacheRoot)
         .where((entry) => dirExists(p.join(entry, '.git')))
@@ -356,7 +355,9 @@ class BoundGitSource extends CachedSource {
             } catch (error, stackTrace) {
               log.error('Failed to load package', error, stackTrace);
               var name = p.basename(revisionCachePath).split('-').first;
-              failures.add(PackageId(name, source, Version.none, '???'));
+              result.add(RepairResult(
+                  PackageId(name, source, Version.none, '???'),
+                  success: false));
               tryDeleteEntry(revisionCachePath);
               return null;
             }
@@ -387,19 +388,19 @@ class BoundGitSource extends CachedSource {
         // Discard all changes to tracked files.
         await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
-        successes.add(id);
+        result.add(RepairResult(id, success: true));
       } on git.GitException catch (error, stackTrace) {
         log.error('Failed to reset ${log.bold(package.name)} '
             '${package.version}. Error:\n$error');
         log.fine(stackTrace);
-        failures.add(id);
+        result.add(RepairResult(id, success: false));
 
         // Delete the revision cache path, not the subdirectory that contains the package.
         tryDeleteEntry(getDirectory(id));
       }
     }
 
-    return Pair(successes, failures);
+    return result;
   }
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
@@ -578,6 +579,11 @@ class BoundGitSource extends CachedSource {
     var name = p.url.basename(packageName.description['url']);
     if (name.endsWith('.git')) {
       name = name.substring(0, name.length - '.git'.length);
+    }
+    name = name.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
+    // Shorten name to 50 chars for sanity.
+    if (name.length > 50) {
+      name = name.substring(0, 50);
     }
     return name;
   }

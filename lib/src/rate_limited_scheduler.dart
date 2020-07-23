@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:meta/meta.dart';
 import 'package:pool/pool.dart';
 import 'package:pedantic/pedantic.dart';
 
@@ -59,7 +60,7 @@ class RateLimitedScheduler<J, V> {
   final Set<J> _started = {};
 
   RateLimitedScheduler(Future<V> Function(J) runJob,
-      {maxConcurrentOperations = 10})
+      {@required int maxConcurrentOperations})
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
@@ -95,7 +96,7 @@ class RateLimitedScheduler<J, V> {
   ///
   /// When [callback] returns, all jobs that where prescheduled by [callback]
   /// that have not started running will be removed from the work queue
-  /// (if they have been added seperately by [schedule] they will still be
+  /// (if they have been added separately by [schedule] they will still be
   /// executed).
   Future<R> withPrescheduling<R>(
     FutureOr<R> Function(void Function(J) preschedule) callback,

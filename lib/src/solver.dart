@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import 'lock_file.dart';
-import 'log.dart' as log;
 import 'package.dart';
 import 'solver/result.dart';
 import 'solver/type.dart';
@@ -29,9 +28,11 @@ export 'solver/type.dart';
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile lockFile, Iterable<String> useLatest}) {
-  return log.progress('Resolving dependencies', () {
-    return VersionSolver(type, cache, root, lockFile ?? LockFile.empty(),
-            useLatest ?? const [])
-        .solve();
-  });
+  return VersionSolver(
+    type,
+    cache,
+    root,
+    lockFile ?? LockFile.empty(),
+    useLatest ?? const [],
+  ).solve();
 }

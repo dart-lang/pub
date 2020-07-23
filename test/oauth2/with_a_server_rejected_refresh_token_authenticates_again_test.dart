@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -20,16 +19,16 @@ void main() {
       'saves credentials.json', () async {
     await d.validPackage.create();
 
-    var server = await ShelfTestServer.create();
+    await servePackages();
     await d
-        .credentialsFile(server, 'access token',
+        .credentialsFile(globalPackageServer, 'access token',
             refreshToken: 'bad refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(server);
+    var pub = await startPublish(globalPackageServer);
 
-    server.handler.expect('POST', '/token', (request) {
+    globalPackageServer.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
         return shelf.Response(400,
             body: jsonEncode({'error': 'invalid_request'}),
@@ -40,10 +39,11 @@ void main() {
     await confirmPublish(pub);
 
     await expectLater(pub.stdout, emits(startsWith('Uploading...')));
-    await authorizePub(pub, server, 'new access token');
+    await authorizePub(pub, globalPackageServer, 'new access token');
 
     var done = Completer();
-    server.handler.expect('GET', '/api/packages/versions/new', (request) async {
+    globalPackageServer.expect('GET', '/api/packages/versions/new',
+        (request) async {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -55,6 +55,5 @@ void main() {
     });
 
     await done.future;
-    await server.close();
   });
 }

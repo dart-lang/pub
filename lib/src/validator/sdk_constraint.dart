@@ -10,8 +10,13 @@ import '../entrypoint.dart';
 import '../sdk.dart';
 import '../validator.dart';
 
-/// A validator that validates that a package's SDK constraint doesn't use the
-/// "^" syntax.
+/// A validator of the SDK constraint.
+///
+/// Validates that a package's SDK constraint:
+/// * doesn't use the "^" syntax.
+/// * has an upper bound.
+/// * is not depending on a prerelease, unless the package itself is a
+/// prerelease.
 class SdkConstraintValidator extends Validator {
   SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
 
@@ -41,6 +46,21 @@ class SdkConstraintValidator extends Validator {
             'major version to guard against breaking changes).\n'
             'See https://dart.dev/tools/pub/pubspec#sdk-constraints for '
             'instructions on setting an sdk version constraint.');
+      }
+
+      final constraintMin = dartConstraint.min;
+      final packageVersion = entrypoint.root.version;
+
+      if (constraintMin != null &&
+          constraintMin.isPreRelease &&
+          !packageVersion.isPreRelease) {
+        warnings.add(
+            'Packages with an SDK constraint on a pre-release of the Dart SDK '
+            'should themselves be published as a pre-release version. '
+            'If this package needs Dart version $constraintMin, consider '
+            'publishing the package as a pre-release instead.\n'
+            'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
+            'For more information on pre-releases.');
       }
     }
 

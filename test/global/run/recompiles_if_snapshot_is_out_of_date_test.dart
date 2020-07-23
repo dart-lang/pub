@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
+import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -20,22 +22,27 @@ void main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot.dart2')])
+          d.dir('bin', [
+            d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1'),
+          ])
         ])
       ])
     ]).create();
 
+    deleteEntry(p.join(d.dir(cachePath).io.path, 'global_packages', 'foo',
+        'bin', 'script.dart-$versionSuffix.snapshot'));
     var pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
-    expect(pub.stdout, emits('Precompiling executables...'));
+    expect(pub.stdout, emits('Precompiling executable...'));
     expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.file('script.dart.snapshot.dart2', contains('ok'))])
+          d.dir('bin',
+              [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))])
         ])
       ])
     ]).validate();

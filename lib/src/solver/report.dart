@@ -104,6 +104,7 @@ class SolveReport {
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
+    removed.remove(_root.name); // Never consider root.
     if (removed.isNotEmpty) {
       _output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
@@ -126,6 +127,32 @@ class SolveReport {
       }
 
       log.warning(_output);
+    }
+  }
+
+  /// Displays a two-line message, number of outdated packages and an
+  /// instruction to run `pub outdated` if outdated packages are detected.
+  void reportOutdated() {
+    final outdatedPackagesCount = _result.packages.where((id) {
+      final versions = _result.availableVersions[id.name];
+      // A version is counted:
+      // - if there is a newer version which is not a pre-release and current
+      // version is also not a pre-release or,
+      // - if the current version is pre-release then any upgraded version is
+      // considered.
+      return versions.any((v) =>
+          v > id.version && (id.version.isPreRelease || !v.isPreRelease));
+    }).length;
+
+    if (outdatedPackagesCount > 0) {
+      String packageCountString;
+      if (outdatedPackagesCount == 1) {
+        packageCountString = '1 package has';
+      } else {
+        packageCountString = '$outdatedPackagesCount packages have';
+      }
+      log.message('$packageCountString newer versions incompatible with '
+          'dependency constraints.\nTry `pub outdated` for more information.');
     }
   }
 
@@ -223,7 +250,10 @@ class SolveReport {
       String message;
       if (newerStable) {
         message = '(${maxAll(versions, Version.prioritize)} available)';
-      } else if (newerUnstable) {
+      } else if (
+          // Only show newer prereleases for versions where a prerelease is
+          // already chosen.
+          newId.version.isPreRelease && newerUnstable) {
         message = '(${maxAll(versions)} available)';
       }
 

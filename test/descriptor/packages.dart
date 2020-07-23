@@ -6,6 +6,7 @@ import 'dart:async' show Future;
 import 'dart:convert' show JsonEncoder, json, utf8;
 import 'dart:io' show File;
 
+// ignore: deprecated_member_use
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/package_config.dart';
@@ -18,7 +19,7 @@ import '../test_pub.dart';
 // Resolve against a dummy URL so that we can test whether the URLs in
 // the package file are themselves relative. We can't resolve against just
 // "." due to sdk#23809.
-final _base = '/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p';
+const _base = '/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p';
 
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {

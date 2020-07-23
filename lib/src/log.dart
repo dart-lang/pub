@@ -49,7 +49,8 @@ final _magenta = getSpecial('\u001b[35m');
 final _red = getSpecial('\u001b[31m');
 final _yellow = getSpecial('\u001b[33m');
 //final _blue = getSpecial('\u001b[34m');
-final _gray = getSpecial('\u001b[1;30m');
+final _gray = getSpecial('\u001b[38;5;245m');
+
 final _none = getSpecial('\u001b[0m');
 final _noColor = getSpecial('\u001b[39m');
 final _bold = getSpecial('\u001b[1m');
@@ -87,13 +88,12 @@ class Level {
   static const FINE = Level._('FINE');
 
   const Level._(this.name);
+
   final String name;
 
   @override
   String toString() => name;
 }
-
-typedef _LogFn = Function(_Entry entry);
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
@@ -169,8 +169,9 @@ class Verbosity {
   });
 
   const Verbosity._(this.name, this._loggers);
+
   final String name;
-  final Map<Level, _LogFn> _loggers;
+  final Map<Level, void Function(_Entry entry)> _loggers;
 
   /// Returns whether or not logs at [level] will be printed.
   bool isLevelVisible(Level level) => _loggers[level] != null;
@@ -331,6 +332,21 @@ void dumpTranscript() {
   stderr.writeln('---- End log transcript ----');
 }
 
+/// Filter out normal pub output when not attached to a terminal
+///
+/// Unless the user has overriden the verbosity,
+///
+/// This is useful to not pollute stdout when the output is piped somewhere.
+Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
+  final oldVerbosity = verbosity;
+  if (verbosity == Verbosity.NORMAL && !stdout.hasTerminal) {
+    verbosity = Verbosity.WARNING;
+  }
+  final result = await callback();
+  verbosity = oldVerbosity;
+  return result;
+}
+
 /// Prints [message] then displays an updated elapsed time until the future
 /// returned by [callback] completes.
 ///
@@ -338,13 +354,27 @@ void dumpTranscript() {
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.FINE].
-Future<T> progress<T>(String message, Future<T> Function() callback,
-    {bool fine = false}) {
+Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
-  var progress = Progress(message, fine: fine);
+  var progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
+}
+
+/// Like [progress] but erases the message once done.
+Future<T> spinner<T>(String message, Future<T> Function() callback,
+    {bool condition = true}) {
+  if (condition) {
+    _stopProgress();
+
+    var progress = Progress(message);
+    _animatedProgress = progress;
+    return callback().whenComplete(() {
+      progress.stopAndClear();
+    });
+  }
+  return callback();
 }
 
 /// Stops animating the running progress indicator, if currently running.

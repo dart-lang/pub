@@ -109,7 +109,7 @@ class Pair<E, F> {
 Future<T> captureErrors<T>(Future<T> Function() callback,
     {bool captureStackChains = false}) {
   var completer = Completer<T>();
-  var wrappedCallback = () {
+  void wrappedCallback() {
     Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
@@ -120,7 +120,7 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
       }
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
-  };
+  }
 
   if (captureStackChains) {
     Chain.capture(wrappedCallback, onError: (error, stackTrace) {
@@ -212,21 +212,6 @@ String pluralize(String name, int number, {String plural}) {
 String capitalize(String text) =>
     text.substring(0, 1).toUpperCase() + text.substring(1);
 
-/// Escapes any regex metacharacters in [string] so that using as a [RegExp]
-/// pattern will match the string literally.
-// TODO(rnystrom): Remove when #4706 is fixed.
-String quoteRegExp(String string) {
-  // Note: make sure "\" is done first so that we don't escape the other
-  // escaped characters. We could do all of the replaces at once with a regexp
-  // but string literal for regex that matches all regex metacharacters would
-  // be a bit hard to read.
-  for (var metacharacter in r'\^$.*+?()[]{}|'.split('')) {
-    string = string.replaceAll(metacharacter, '\\$metacharacter');
-  }
-
-  return string;
-}
-
 /// Returns whether [host] is a host for a localhost or loopback URL.
 ///
 /// Unlike [InternetAddress.isLoopback], this hostnames from URLs as well as
@@ -241,7 +226,8 @@ bool isLoopback(String host) {
 
   try {
     return InternetAddress(host).isLoopback;
-  } on ArgumentError catch (_) {
+  } on ArgumentError catch (_) // ignore: avoid_catching_errors
+  {
     // The host isn't an IP address and isn't "localhost', so it's almost
     // certainly not a loopback host.
     return false;
@@ -268,7 +254,7 @@ Set<String> createFileFilter(Iterable<String> files) {
   }).toSet();
 }
 
-/// Given a blacklist of directory names, returns a set of patterns that can
+/// Given a of unwanted directory names, returns a set of patterns that can
 /// be used to filter for those directory names.
 ///
 /// For a given path, that path contains some string in the returned set if
@@ -350,30 +336,6 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
 
-/// Configures [future] so that its result (success or exception) is passed on
-/// to [completer].
-void chainToCompleter(Future future, Completer completer) {
-  future.then(completer.complete, onError: completer.completeError);
-}
-
-// TODO(nweiz): remove this when issue 7964 is fixed.
-/// Returns a [Future] that will complete to the first element of [stream].
-///
-/// Unlike [Stream.first], this is safe to use with single-subscription streams.
-Future<T> streamFirst<T>(Stream<T> stream) {
-  var completer = Completer<T>();
-  StreamSubscription<T> subscription;
-  subscription = stream.listen((value) {
-    subscription.cancel();
-    completer.complete(value);
-  }, onError: (e, [StackTrace stackTrace]) {
-    completer.completeError(e, stackTrace);
-  }, onDone: () {
-    completer.completeError(StateError('No elements'), Chain.current());
-  }, cancelOnError: true);
-  return completer.future;
-}
-
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
 
@@ -382,35 +344,6 @@ final _trailingCR = RegExp(r'\r$');
 /// Splits [text] on its line breaks in a Windows-line-break-friendly way.
 List<String> splitLines(String text) =>
     text.split('\n').map((line) => line.replaceFirst(_trailingCR, '')).toList();
-
-/// Converts a stream of arbitrarily chunked strings into a line-by-line stream.
-///
-/// The lines don't include line termination characters. A single trailing
-/// newline is ignored.
-Stream<String> streamToLines(Stream<String> stream) {
-  var buffer = StringBuffer();
-  return stream
-      .transform(StreamTransformer.fromHandlers(handleData: (chunk, sink) {
-    var lines = splitLines(chunk);
-    var leftover = lines.removeLast();
-    for (var line in lines) {
-      if (buffer.isNotEmpty) {
-        buffer.write(line);
-        line = buffer.toString();
-        buffer = StringBuffer();
-      }
-
-      sink.add(line);
-    }
-    buffer.write(leftover);
-  }, handleDone: (sink) {
-    if (buffer.isNotEmpty) sink.add(buffer.toString());
-    sink.close();
-  }));
-}
-
-// TODO(nweiz): unify the following functions with the utility functions in
-// pkg/http.
 
 /// Like [String.split], but only splits on the first occurrence of the pattern.
 ///
@@ -464,16 +397,20 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
+/// Set to `true` if ANSI colors should be output regardless of terminalD
+bool forceColors = false;
+
 /// Whether "special" strings such as Unicode characters or color escapes are
 /// safe to use.
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
 bool get canUseSpecialChars =>
-    !runningFromTest &&
-    !runningAsTest &&
-    !Platform.isWindows &&
-    stdioType(stdout) == StdioType.terminal;
+    forceColors ||
+    (!runningFromTest &&
+        !runningAsTest &&
+        stdioType(stdout) == StdioType.terminal &&
+        stdout.supportsAnsiEscapes);
 
 /// Gets a "special" string (ANSI escape or Unicode).
 ///
@@ -664,3 +601,21 @@ bool equalsIgnoringPreRelease(Version version1, Version version2) =>
     version1.major == version2.major &&
     version1.minor == version2.minor &&
     version1.patch == version2.patch;
+
+/// Creates a new map from [map] with new keys and values.
+///
+/// The return values of [key] are used as the keys and the return values of
+/// [value] are used as the values for the new map.
+Map<K2, V2> mapMap<K1, V1, K2, V2>(
+  Map<K1, V1> map, {
+  K2 Function(K1, V1) key,
+  V2 Function(K1, V1) value,
+}) {
+  key ??= (mapKey, _) => mapKey as K2;
+  value ??= (_, mapValue) => mapValue as V2;
+
+  return <K2, V2>{
+    for (var entry in map.entries)
+      key(entry.key, entry.value): value(entry.key, entry.value),
+  };
+}

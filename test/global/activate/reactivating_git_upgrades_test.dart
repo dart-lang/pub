@@ -11,7 +11,10 @@ void main() {
   test('ignores previously activated git commit', () async {
     ensureGit();
 
-    await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
+    await d.git('foo.git', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+    ]).create();
 
     await runPub(
         args: ['global', 'activate', '-sgit', '../foo.git'],
@@ -20,6 +23,7 @@ void main() {
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
             endsWith('Precompiling executables...\n'
+                'Precompiled foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).commit();
@@ -34,6 +38,7 @@ void main() {
                 '+ foo 1.0.1 from git ../foo.git at '),
             // Specific revision number goes here.
             endsWith('Precompiling executables...\n'
+                'Precompiled foo:foo.\n'
                 'Activated foo 1.0.1 from Git repository "../foo.git".')));
   });
 }

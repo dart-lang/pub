@@ -17,13 +17,13 @@ import 'system_cache.dart';
 import 'utils.dart';
 
 /// The pub client's OAuth2 identifier.
-final _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
+const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
     'googleusercontent.com';
 
 /// The pub client's OAuth2 secret.
 ///
 /// This isn't actually meant to be kept a secret.
-final _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
+const _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
 
 /// The URL to which the user will be directed to authorize the pub client to
 /// get an OAuth2 access token.
@@ -180,7 +180,7 @@ String _credentialsFile(SystemCache cache) =>
 /// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
-Future<Client> _authorize() {
+Future<Client> _authorize() async {
   var grant =
       AuthorizationCodeGrant(_identifier, _authorizationEndpoint, tokenEndpoint,
           secret: _secret,
@@ -192,38 +192,35 @@ Future<Client> _authorize() {
   // Google OAuth2 server via redirect. This server will close itself as soon as
   // the code is received.
   var completer = Completer();
-  bindServer('localhost', 0).then((server) {
-    shelf_io.serveRequests(server, (request) {
-      if (request.url.path.isNotEmpty) {
-        return shelf.Response.notFound('Invalid URI.');
-      }
+  var server = await bindServer('localhost', 0);
+  shelf_io.serveRequests(server, (request) {
+    if (request.url.path.isNotEmpty) {
+      return shelf.Response.notFound('Invalid URI.');
+    }
 
-      log.message('Authorization received, processing...');
-      var queryString = request.url.query ?? '';
+    log.message('Authorization received, processing...');
+    var queryString = request.url.query ?? '';
 
-      // Closing the server here is safe, since it will wait until the response
-      // is sent to actually shut down.
-      server.close();
-      chainToCompleter(
-          grant.handleAuthorizationResponse(queryToMap(queryString)),
-          completer);
+    // Closing the server here is safe, since it will wait until the response
+    // is sent to actually shut down.
+    server.close();
+    completer
+        .complete(grant.handleAuthorizationResponse(queryToMap(queryString)));
 
-      return shelf.Response.found('https://pub.dartlang.org/authorized');
-    });
-
-    var authUrl = grant.getAuthorizationUrl(
-        Uri.parse('http://localhost:${server.port}'),
-        scopes: _scopes);
-
-    log.message(
-        'Pub needs your authorization to upload packages on your behalf.\n'
-        'In a web browser, go to $authUrl\n'
-        'Then click "Allow access".\n\n'
-        'Waiting for your authorization...');
+    return shelf.Response.found('https://pub.dartlang.org/authorized');
   });
 
-  return completer.future.then((client) {
-    log.message('Successfully authorized.\n');
-    return client;
-  });
+  var authUrl = grant.getAuthorizationUrl(
+      Uri.parse('http://localhost:${server.port}'),
+      scopes: _scopes);
+
+  log.message(
+      'Pub needs your authorization to upload packages on your behalf.\n'
+      'In a web browser, go to $authUrl\n'
+      'Then click "Allow access".\n\n'
+      'Waiting for your authorization...');
+
+  var client = await completer.future;
+  log.message('Successfully authorized.\n');
+  return client;
 }

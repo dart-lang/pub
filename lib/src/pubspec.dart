@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' hide mapMap;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
@@ -474,7 +474,8 @@ class Pubspec {
       Iterable<PackageRange> devDependencies,
       Iterable<PackageRange> dependencyOverrides,
       Map fields,
-      SourceRegistry sources})
+      SourceRegistry sources,
+      Map<String, VersionConstraint> sdkConstraints})
       : _version = version,
         _dependencies = dependencies == null
             ? null
@@ -485,7 +486,8 @@ class Pubspec {
         _dependencyOverrides = dependencyOverrides == null
             ? null
             : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
-        _sdkConstraints = UnmodifiableMapView({'dart': VersionConstraint.any}),
+        _sdkConstraints = sdkConstraints ??
+            UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
         fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
         _sources = sources;
@@ -633,7 +635,7 @@ class Pubspec {
         if (sourceNames.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
         } else if (sourceNames.isEmpty) {
-          // Default to a hosted dependency if no source is specifid.
+          // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
           descriptionNode = nameNode;
         }

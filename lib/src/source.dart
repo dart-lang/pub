@@ -52,7 +52,7 @@ import 'system_cache.dart';
 abstract class Source {
   /// The name of the source.
   ///
-  /// Should be lower-case, suitable for use in a filename, and unique accross
+  /// Should be lower-case, suitable for use in a filename, and unique across
   /// all sources.
   String get name;
 

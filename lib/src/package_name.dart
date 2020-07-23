@@ -13,7 +13,7 @@ import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
-final _featureEquality = const MapEquality<String, FeatureDependency>();
+const _featureEquality = MapEquality<String, FeatureDependency>();
 
 /// The base class of [PackageRef], [PackageId], and [PackageRange].
 abstract class PackageName {
@@ -32,29 +32,14 @@ abstract class PackageName {
   /// by the URL "git://github.com/dart/uilib.git".
   final dynamic description;
 
-  /// Whether this is a name for a magic package.
-  ///
-  /// Magic packages are unversioned pub constructs that have special semantics.
-  /// For example, a magic package named "pub itself" is inserted into the
-  /// dependency graph when any package depends on barback. This packages has
-  /// dependencies that represent the versions of barback and related packages
-  /// that pub is compatible with.
-  final bool isMagic;
-
   /// Whether this package is the root package.
-  bool get isRoot => source == null && !isMagic;
+  bool get isRoot => source == null;
 
-  PackageName._(this.name, this.source, this.description) : isMagic = false;
-
-  PackageName._magic(this.name)
-      : source = null,
-        description = null,
-        isMagic = true;
+  PackageName._(this.name, this.source, this.description);
 
   /// Returns a [PackageRef] with this one's [name], [source], and
   /// [description].
-  PackageRef toRef() =>
-      isMagic ? PackageRef.magic(name) : PackageRef(name, source, description);
+  PackageRef toRef() => PackageRef(name, source, description);
 
   /// Returns a [PackageRange] for this package with the given version constraint.
   PackageRange withConstraint(VersionConstraint constraint) =>
@@ -101,13 +86,10 @@ class PackageRef extends PackageName {
   /// Creates a reference to the given root package.
   PackageRef.root(Package package) : super._(package.name, null, package.name);
 
-  /// Creates a reference to a magic package (see [isMagic]).
-  PackageRef.magic(String name) : super._magic(name);
-
   @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
-    if (isMagic || isRoot) return name;
+    if (isRoot) return name;
 
     var buffer = StringBuffer(name);
     if (detail.showSource ?? source is! HostedSource) {
@@ -149,11 +131,6 @@ class PackageId extends PackageName {
   PackageId(String name, Source source, this.version, description)
       : super._(name, source, description);
 
-  /// Creates an ID for a magic package (see [isMagic]).
-  PackageId.magic(String name)
-      : version = Version.none,
-        super._magic(name);
-
   /// Creates an ID for the given root package.
   PackageId.root(Package package)
       : version = package.version,
@@ -172,7 +149,6 @@ class PackageId extends PackageName {
   @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
-    if (isMagic) return name;
 
     var buffer = StringBuffer(name);
     if (detail.showVersion ?? !isRoot) buffer.write(' $version');
@@ -207,11 +183,6 @@ class PackageRange extends PackageName {
             ? const {}
             : UnmodifiableMapView(Map.from(features)),
         super._(name, source, description);
-
-  PackageRange.magic(String name)
-      : constraint = Version.none,
-        features = const {},
-        super._magic(name);
 
   /// Creates a range that selects the root package.
   PackageRange.root(Package package)
@@ -249,7 +220,6 @@ class PackageRange extends PackageName {
   @override
   String toString([PackageDetail detail]) {
     detail ??= PackageDetail.defaults;
-    if (isMagic) return name;
 
     var buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {

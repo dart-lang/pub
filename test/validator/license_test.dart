@@ -18,32 +18,45 @@ Validator license(Entrypoint entrypoint) => LicenseValidator(entrypoint);
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    test('looks normal', () async {
+      await d.validPackage.create();
+      await expectValidation(license);
+    });
 
-    test('looks normal', () => expectNoValidationError(license));
+    test('has both LICENSE and UNLICENSE file', () async {
+      await d.validPackage.create();
+      await d.file(path.join(appPath, 'UNLICENSE'), '').create();
+      await expectValidation(license);
+    });
+  });
 
-    test('has a COPYING file', () async {
+  group('should warn if it', () {
+    test('has only a COPYING file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'COPYING'), '').create();
-      expectNoValidationError(license);
+      await expectValidation(license, warnings: isNotEmpty);
     });
 
-    test('has an UNLICENSE file', () async {
+    test('has only an UNLICENSE file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'UNLICENSE'), '').create();
-      expectNoValidationError(license);
+      await expectValidation(license, warnings: isNotEmpty);
     });
 
-    test('has a prefixed LICENSE file', () async {
+    test('has only a prefixed LICENSE file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
-      expectNoValidationError(license);
+      await expectValidation(license, warnings: isNotEmpty);
     });
 
-    test('has a suffixed LICENSE file', () async {
+    test('has only a suffixed LICENSE file', () async {
+      await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'LICENSE.md'), '').create();
-      expectNoValidationError(license);
+      await expectValidation(license, warnings: isNotEmpty);
     });
   });
 
@@ -51,21 +64,21 @@ void main() {
     test('has no LICENSE file', () async {
       await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      expectValidationError(license);
+      await expectValidation(license, errors: isNotEmpty);
     });
 
     test('has a prefixed UNLICENSE file', () async {
       await d.validPackage.create();
       deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
       await d.file(path.join(appPath, 'MIT_UNLICENSE'), '').create();
-      expectValidationError(license);
+      await expectValidation(license, errors: isNotEmpty);
     });
 
     test('has a .gitignored LICENSE file', () async {
       var repo = d.git(appPath, [d.file('.gitignore', 'LICENSE')]);
       await d.validPackage.create();
       await repo.create();
-      expectValidationError(license);
+      await expectValidation(license, errors: isNotEmpty);
     });
   });
 }

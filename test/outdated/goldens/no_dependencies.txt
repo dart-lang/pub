@@ -1,0 +1,31 @@
+$ pub outdated --json
+{
+  "packages": []
+}
+
+$ pub outdated --no-color
+Found no outdated packages
+
+$ pub outdated --no-color --up-to-date
+Found no outdated packages
+
+$ pub outdated --no-color --prereleases
+Found no outdated packages
+
+$ pub outdated --no-color --no-dev-dependencies
+Found no outdated packages
+
+$ pub outdated --no-color --no-dependency-overrides
+Found no outdated packages
+
+$ pub outdated --no-color --mode=null-safety
+Running in 'null safety' mode.
+Showing packages where the current version doesn't fully support null safety.
+
+Found no packages not fully supporting null safety.
+
+$ pub outdated --json --mode=null-safety
+{
+  "packages": []
+}
+

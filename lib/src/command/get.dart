@@ -19,8 +19,6 @@ class GetCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
-  List<String> get aliases => const ['install'];
-  @override
   bool get isOffline => argResults['offline'];
 
   GetCommand() {
@@ -33,10 +31,9 @@ class GetCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        defaultsTo: false,
         help: 'Precompile executables in immediate dependencies.');
 
-    argParser.addFlag('packages-dir', negatable: true, hide: true);
+    argParser.addFlag('packages-dir', hide: true);
   }
 
   @override

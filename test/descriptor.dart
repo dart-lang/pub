@@ -6,7 +6,6 @@
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/package_config.dart';
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -34,6 +33,7 @@ Descriptor get validPackage => dir(appPath, [
       libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
+      file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
       dir('lib', [file('test_pkg.dart', 'int i = 1;')])
     ]);
 
@@ -82,12 +82,20 @@ Descriptor libDir(String name, [String code]) {
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
     RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
 
-/// Describes a directory for a Git package. This directory is of the form
-/// found in the revision cache of the global package cache.
-Descriptor gitPackageRevisionCacheDir(String name, [int modifier]) {
-  var value = name;
-  if (modifier != null) value = '$name $modifier';
-  return hashDir(name, [libDir(name, value)]);
+/// Describes a directory for a Git repo with a dart package.
+/// This directory is of the form found in the revision cache of the global
+/// package cache.
+///
+/// If [repoName] is not given it is assumed to be equal to [packageName].
+Descriptor gitPackageRevisionCacheDir(
+  String packageName, {
+  int modifier,
+  String repoName,
+}) {
+  repoName = repoName ?? packageName;
+  var value = packageName;
+  if (modifier != null) value = '$packageName $modifier';
+  return hashDir(repoName, [libDir(packageName, value)]);
 }
 
 /// Describes a directory for a Git package. This directory is of the form
@@ -140,14 +148,14 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int port}) {
 /// Describes the file in the system cache that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
-Descriptor credentialsFile(ShelfTestServer server, String accessToken,
+Descriptor credentialsFile(PackageServer server, String accessToken,
     {String refreshToken, DateTime expiration}) {
   return dir(cachePath, [
     file(
         'credentials.json',
         oauth2.Credentials(accessToken,
                 refreshToken: refreshToken,
-                tokenEndpoint: server.url.resolve('/token'),
+                tokenEndpoint: Uri.parse(server.url).resolve('/token'),
                 scopes: [
                   'openid',
                   'https://www.googleapis.com/auth/userinfo.email',

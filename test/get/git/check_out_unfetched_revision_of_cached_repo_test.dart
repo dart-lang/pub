@@ -52,7 +52,7 @@ void main() {
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
-        d.gitPackageRevisionCacheDir('foo', 2)
+        d.gitPackageRevisionCacheDir('foo', modifier: 2)
       ])
     ]).validate();
 

@@ -243,7 +243,6 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: null,
           ),
         ]),
       ]).validate();

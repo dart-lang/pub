@@ -205,7 +205,7 @@ of the derivation graph.
 A derivation graph represents a proof that the terms in its root incompatibility
 are in fact incompatible. Because all derived incompatibilities track their
 causes, we can find a derivation graph for any of them and thereby prove it. In
-particular, when Pubgrub determines that no solution can be found, uses the
+particular, when Pubgrub determines that no solution can be found, it uses the
 derivation graph for the incompatibility `{root any}` to
 [explain to the user](#error-reporting) why no versions of the root package can
 be selected and thus why version solving failed.

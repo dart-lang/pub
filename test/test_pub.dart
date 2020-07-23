@@ -10,15 +10,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
-import 'package:package_resolver/package_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart' hide fail;
+import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
 
 import 'package:pub/src/entrypoint.dart';
@@ -31,6 +31,7 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -38,6 +39,7 @@ import 'package:pub/src/validator.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
+import 'package_server.dart';
 
 export 'descriptor_server.dart';
 export 'package_server.dart';
@@ -60,28 +62,33 @@ String yaml(value) => jsonEncode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
-final String cachePath = 'cache';
+const String cachePath = 'cache';
 
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
-final String appPath = 'myapp';
+const String appPath = 'myapp';
 
 /// The path of the ".packages" file in the mock app used for tests, relative
 /// to the sandbox directory.
-final String packagesFilePath = '$appPath/.packages';
+const String packagesFilePath = '$appPath/.packages';
 
 /// The line from the `.packages` file for [packageName].
 String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .readAsLinesSync()
     .firstWhere((l) => l.startsWith('$packageName:'));
 
+/// The suffix appended to a precompiled snapshot.
+final versionSuffix = testVersion ?? sdk.version;
+
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = RunCommand('upgrade',
-      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final upgrade = RunCommand('upgrade', RegExp(r'''
+(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
 
@@ -197,10 +204,32 @@ Future pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun({bool global = false, Iterable<String> args}) async {
+Future<PubProcess> pubRun(
+    {bool global = false,
+    Iterable<String> args,
+    Map<String, String> environment,
+    bool verbose = true}) async {
   var pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(args: pubArgs);
+  var pub = await startPub(
+    args: pubArgs,
+    environment: environment,
+    verbose: verbose,
+  );
+
+  // Loading sources and transformers isn't normally printed, but the pub test
+  // infrastructure runs pub in verbose mode, which enables this.
+  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
+
+  return pub;
+}
+
+/// Schedules starting the "pub run --v2" process and validates the
+/// expected startup output.
+///
+/// Returns the `pub run` process.
+Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
+  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -264,7 +293,7 @@ Future runPub(
     _validateOutput(failures, 'stderr', error, actualError);
     _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) throw TestFailure(failures.join('\n'));
+    if (failures.isNotEmpty) test.fail(failures.join('\n'));
   }(), completes);
 }
 
@@ -273,10 +302,10 @@ Future runPub(
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(ShelfTestServer server,
+Future<PubProcess> startPublish(PackageServer server,
     {List<String> args}) async {
-  var tokenEndpoint = server.url.resolve('/token').toString();
-  args = ['lish', '--server', tokenEndpoint, ...?args];
+  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  args = ['lish', '--server', server.url, ...?args];
   return await startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
@@ -292,7 +321,7 @@ Future confirmPublish(TestProcess pub) async {
   await expectLater(
       pub.stdout,
       emitsThrough(matches(
-        r'^Do you want to publish [^ ]+ [^ ]+ (y/n)?',
+        r'^Do you want to publish [^ ]+ [^ ]+ (y/N)?',
       )));
   pub.stdin.writeln('y');
 }
@@ -304,6 +333,8 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
+String testVersion = '0.1.2+3';
+
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
@@ -312,7 +343,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
     'PUB_ENVIRONMENT': 'test-environment',
 
     // Ensure a known SDK version is set for the tests that rely on that.
-    '_PUB_TEST_SDK_VERSION': '0.1.2+3'
+    '_PUB_TEST_SDK_VERSION': testVersion
   };
 
   if (tokenEndpoint != null) {
@@ -337,7 +368,8 @@ Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    bool verbose = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -366,8 +398,10 @@ Future<PubProcess> startPub(
     pubPath = snapshotPath;
   }
 
-  var dartArgs = [await PackageResolver.current.processArgument];
-  dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
+  final dotPackagesPath = (await Isolate.packageConfig).toString();
+
+  var dartArgs = ['--packages=$dotPackagesPath'];
+  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
@@ -611,17 +645,13 @@ String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
 /// this returns the complete map, including metadata that's only included when
 /// requesting the package version directly.
-Map packageVersionApiMap(Map pubspec, {bool full = false}) {
+Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
   var name = pubspec['name'];
   var version = pubspec['version'];
   var map = {
     'pubspec': pubspec,
     'version': version,
-    'url': '/api/packages/$name/versions/$version',
-    'archive_url': '/packages/$name/versions/$version.tar.gz',
-    'new_dartdoc_url': '/api/packages/$name/versions/$version'
-        '/new_dartdoc',
-    'package_url': '/api/packages/$name'
+    'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
   };
 
   if (full) {
@@ -738,14 +768,12 @@ typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
 
 /// Schedules a single [Validator] to run on the [appPath].
 ///
-/// Returns a scheduled Future that contains the errors and warnings produced
-/// by that validator.
-Future<Pair<List<String>, List<String>>> validatePackage(
-    ValidatorCreator fn) async {
+/// Returns a scheduled Future that contains the validator after validation.
+Future<Validator> validatePackage(ValidatorCreator fn) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var validator = fn(Entrypoint(_pathInSandbox(appPath), cache));
   await validator.validate();
-  return Pair(validator.errors, validator.warnings);
+  return validator;
 }
 
 /// A matcher that matches a Pair.

@@ -28,11 +28,21 @@ class RunCommand extends PubCommand {
   RunCommand() {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
+    argParser.addMultiOption('enable-experiment',
+        help:
+            'Runs the executable in a VM with the given experiments enabled.\n'
+            '(Will disable snapshotting, resulting in slower startup)',
+        valueHelp: 'experiment');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
+    // mode exposed for `dartdev run` to use as subprocess.
+    argParser.addFlag('dart-dev-run', hide: true);
   }
 
   @override
   Future run() async {
+    if (argResults['dart-dev-run']) {
+      return await _runFromDartDev();
+    }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -62,28 +72,63 @@ class RunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    // The user may pass in an executable without an extension, but the file
-    // to actually execute will always have one.
-    if (p.extension(executable) != '.dart') executable += '.dart';
+    final experiments = argResults['enable-experiment'] as List;
+    final vmArgs = vmArgFromExperiments(experiments);
 
-    var snapshotPath = p.join(
-        entrypoint.cachePath, 'bin', package, '$executable.snapshot.dart2');
-
-    // Don't ever compile snapshots for mutable packages, since their code may
-    // change later on.
-    var useSnapshot = fileExists(snapshotPath) ||
-        (package != entrypoint.root.name &&
-            !entrypoint.packageGraph.isPackageMutable(package));
-
-    var exitCode = await runExecutable(entrypoint, package, executable, args,
-        checked: argResults['enable-asserts'] || argResults['checked'],
-        snapshotPath: useSnapshot ? snapshotPath : null, recompile: () {
-      final pkg = entrypoint.packageGraph.packages[package];
-      // The recompile function will only be called when [package] exists.
-      assert(pkg != null);
-      final executablePath = pkg.path(p.join('bin', executable));
-      return entrypoint.precompileExecutable(package, executablePath);
-    });
+    var exitCode = await runExecutable(
+      entrypoint,
+      Executable.adaptProgramName(package, executable),
+      args,
+      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      recompile: (executable) => log.warningsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(executable)),
+      vmArgs: vmArgs,
+    );
     await flushThenExit(exitCode);
+  }
+
+  /// Implement a mode for use in `dartdev run`.
+  ///
+  /// Usage: `dartdev run [package[:command]]`
+  ///
+  /// If `package` is not given, defaults to current root package.
+  /// If `command` is not given, defaults to name of `package`.
+  ///
+  /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
+  /// mutable (local root package or path-dependency) a source snapshot will be
+  /// cached in
+  /// `.dart_tool/pub/bin/<package>/<command>.dart-<sdkVersion>.snapshot`.
+  Future _runFromDartDev() async {
+    var package = entrypoint.root.name;
+    var command = package;
+    var args = <String>[];
+
+    if (argResults.rest.isNotEmpty) {
+      if (argResults.rest[0].contains(RegExp(r'[/\\]'))) {
+        usageException('[<package>[:command]] cannot contain "/" or "\\"');
+      }
+
+      package = argResults.rest[0];
+      if (package.contains(':')) {
+        final parts = package.split(':');
+        if (parts.length > 2) {
+          usageException('[<package>[:command]] cannot contain multiple ":"');
+        }
+        package = parts[0];
+        command = parts[1];
+      } else {
+        command = package;
+      }
+      args = argResults.rest.skip(1).toList();
+    }
+
+    final experiments = argResults['enable-experiment'] as List;
+    final vmArgs = vmArgFromExperiments(experiments);
+
+    return await flushThenExit(await runExecutable(
+        entrypoint, Executable(package, 'bin/$command.dart'), args,
+        vmArgs: vmArgs,
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+        recompile: entrypoint.precompileExecutable));
   }
 }
