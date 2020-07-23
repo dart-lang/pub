@@ -167,6 +167,17 @@ abstract class Validator {
         }
         log.warning('');
       }
+
+      if (warnings.isNotEmpty) {
+        final s = warnings.length > 1 ? 's' : '';
+        log.warning(
+          'Package validation found the following potential issue$s:',
+        );
+        for (var hint in hints) {
+          log.warning("* ${hint.split('\n').join('\n  ')}");
+        }
+        log.warning('');
+      }
     });
   }
 }
