@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:cli_util/cli_util.dart';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:path/path.dart' as path;
@@ -120,6 +121,7 @@ class NullSafetyAnalysis {
         if (dirExists(libDir)) {
           final analysisSession = ContextBuilder()
               .createContext(
+                sdkPath: getSdkPath(),
                 contextRoot: ContextLocator().locateRoots(
                   includedPaths: [packageDir],
                 ).first,
