@@ -425,7 +425,7 @@ class Incompatibility {
       buffer.write("which doesn't exist "
           '(${(cause as PackageNotFoundCause).exception.message})');
     } else {
-      buffer.write('which is forbidden');
+      buffer.write('which is forbidden ${latter.cause}');
     }
 
     if (latterLine != null) buffer.write(' ($latterLine)');
