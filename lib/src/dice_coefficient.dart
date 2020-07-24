@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection';
+import 'dart:math' as math;
 
 /// Calculates the [Sørensen–Dice coefficient][1] for two strings.
 ///
@@ -31,7 +31,7 @@ import 'dart:collection';
 /// diceCoefficient('dependency', 'dependencies')           /// 0.8
 /// ```
 ///
-/// [1]: https://www.aclweb.org/anthology/N03-2016.pdf
+/// [1]: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
 double diceCoefficient(String string1, String string2) {
   if (string1.isEmpty && string2.isEmpty) return 1.0;
 
@@ -54,8 +54,8 @@ double diceCoefficient(String string1, String string2) {
 /// entry: ([string]: 1)
 ///
 /// If [string] is empty, the resulting map will likewise be empty.
-HashMap<String, int> _createBigrams(String string) {
-  final result = HashMap<String, int>();
+Map<String, int> _createBigrams(String string) {
+  final result = <String, int>{};
 
   for (var i = 0; i < string.length - 1; i++) {
     final substring = string.substring(i, i + 2);
@@ -76,23 +76,13 @@ HashMap<String, int> _createBigrams(String string) {
 
 /// Counts the number of elements that are common to both [bigrams1] and
 /// [bigrams2].
-int _countMatches(
-    HashMap<String, int> bigrams1, HashMap<String, int> bigrams2) {
+int _countMatches(Map<String, int> bigrams1, Map<String, int> bigrams2) {
   var matchCount = 0;
 
   for (final entry in bigrams1.entries) {
     final key = entry.key;
 
-    for (var i = 0; i < entry.value; i++) {
-      if (bigrams2[key] == null) break;
-
-      matchCount++;
-      if (bigrams2[key] == 1) {
-        bigrams2.remove(key);
-      } else {
-        bigrams2[key]--;
-      }
-    }
+    matchCount += math.min(entry.value, bigrams2[key] ?? 0);
   }
 
   return matchCount;

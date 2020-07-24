@@ -11,7 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
-import 'dice.dart';
+import 'dice_coefficient.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
