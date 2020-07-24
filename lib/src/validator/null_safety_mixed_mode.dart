@@ -10,7 +10,6 @@ import '../entrypoint.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
 import '../validator.dart';
-import 'relative_version_numbering.dart';
 
 /// Gives a warning when publishing a new version, if this package opts into
 /// null safety, but any of the dependencies do not.
@@ -33,12 +32,11 @@ class NullSafetyMixedModeValidator extends Validator {
             entrypoint.root.version,
             {'relative': false, 'path': p.absolute(entrypoint.root.dir)}));
 
-    print('result: ${analysisResult.compliance} ${analysisResult.reason}');
     if (analysisResult.compliance == NullSafetyCompliance.mixed) {
       warnings.add('''
 This package is opting into null-safety, but a dependency or file is not.
 
-${analysisResult.reason}.
+${analysisResult.reason}
 
 Note that by publishing with non-migrated dependencies your package may be
 broken at any time if one of your dependencies migrates without a breaking 
@@ -50,7 +48,7 @@ migrated before publishing.
 Run `pub outdated --mode=null-safety` for more information about the state of
 dependencies.
 
-See ${RelativeVersionNumberingValidator.guideUrl}
+See $guideUrl
 for more information about migrating.
 ''');
     }

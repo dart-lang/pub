@@ -90,7 +90,8 @@ void main() {
           sdkConstraint: '>=2.10.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
       await expectValidation(
           allOf(
-            contains('package:foo is not opted into null safety.'),
+            contains(
+                'package:foo is not opted into null safety in its pubspec.yaml:'),
             contains('Package has 1 warning.'),
           ),
           65);
@@ -102,7 +103,7 @@ void main() {
       ]);
       await expectValidation(
           allOf(
-            contains('package:test_pkg/a.dart is opting out of null safety.'),
+            contains('package:test_pkg/a.dart is opting out of null safety:'),
             contains('Package has 1 warning.'),
           ),
           65);
@@ -127,7 +128,7 @@ void main() {
           sdkConstraint: '>=2.10.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
       await expectValidation(
           allOf(
-            contains('package:foo/foo.dart is opting out of null safety.'),
+            contains('package:foo/foo.dart is opting out of null safety:'),
             contains('Package has 1 warning.'),
           ),
           65);

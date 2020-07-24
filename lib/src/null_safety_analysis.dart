@@ -6,9 +6,12 @@ import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:cli_util/cli_util.dart';
+import 'package:source_span/source_span.dart';
 
 import 'package:path/path.dart' as path;
+import 'package:yaml/yaml.dart';
 
 import 'io.dart';
 import 'language_version.dart';
@@ -85,12 +88,19 @@ class NullSafetyAnalysis {
         },
         sources: _systemCache.sources));
 
-    final rootLanguageVersion =
-        (await packageId.source.bind(_systemCache).describe(packageId))
-            .languageVersion;
+    final rootPubspec =
+        await packageId.source.bind(_systemCache).describe(packageId);
+    final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {
+      final span =
+          _tryGetSpanFromYamlMap(rootPubspec.fields['environment'], 'sdk');
+      final where = span == null
+          ? 'in the sdk constraint in the enviroment key in pubspec.yaml.'
+          : 'in pubspec.yaml: \n${span.highlight()}';
       return NullSafetyAnalysisResult(
-          NullSafetyCompliance.notCompliant, 'Is not opting in to null safety');
+        NullSafetyCompliance.notCompliant,
+        'Is not opting in to null safety $where',
+      );
     }
 
     SolveResult result;
@@ -115,8 +125,15 @@ class NullSafetyAnalysis {
         final pubspec = await boundSource.describe(dependencyId);
         final languageVersion = pubspec.languageVersion;
         if (languageVersion == null || !languageVersion.supportsNullSafety) {
-          return NullSafetyAnalysisResult(NullSafetyCompliance.notCompliant,
-              'package:${dependencyId.name} is not opted into null safety');
+          final span =
+              _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
+          final where = span == null
+              ? 'in the sdk constraint in the enviroment key in its pubspec.yaml.'
+              : 'in its pubspec.yaml:\n${span.highlight()}';
+          return NullSafetyAnalysisResult(
+            NullSafetyCompliance.notCompliant,
+            'package:${dependencyId.name} is not opted into null safety $where',
+          );
         }
 
         if (boundSource is CachedSource) {
@@ -146,7 +163,7 @@ class NullSafetyAnalysis {
               if (unitResult == null || unitResult.errors.isNotEmpty) {
                 return NullSafetyAnalysisResult(
                     NullSafetyCompliance.analysisFailed,
-                    'Could not analyze $fileUrl');
+                    'Could not analyze $fileUrl.');
               }
               if (unitResult.isPart) continue;
               final languageVersionToken = unitResult.unit.languageVersionToken;
@@ -154,9 +171,13 @@ class NullSafetyAnalysis {
               final languageVersion = LanguageVersion.fromLanguageVersionToken(
                   languageVersionToken);
               if (!languageVersion.supportsNullSafety) {
+                final sourceFile =
+                    SourceFile.fromString(readTextFile(file), url: fileUrl);
+                final span = sourceFile.span(languageVersionToken.offset,
+                    languageVersionToken.offset + languageVersionToken.length);
                 return NullSafetyAnalysisResult(
                     NullSafetyCompliance.notCompliant,
-                    '$fileUrl is opting out of null safety');
+                    '$fileUrl is opting out of null safety:\n${span.highlight()}');
               }
             }
           }
@@ -191,8 +212,12 @@ class NullSafetyAnalysisResult {
   /// `null` if compliance == [NullSafetyCompliance.compliant].
   final String reason;
 
-  NullSafetyAnalysisResult(
-    this.compliance,
-    this.reason,
-  );
+  NullSafetyAnalysisResult(this.compliance, this.reason);
+}
+
+SourceSpan _tryGetSpanFromYamlMap(Object map, String key) {
+  if (map is YamlMap) {
+    return map.nodes[key]?.span;
+  }
+  return null;
 }
