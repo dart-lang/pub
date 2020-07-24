@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
 import '../exceptions.dart';
+import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../validator.dart';
@@ -76,11 +77,6 @@ class RelativeVersionNumberingValidator extends Validator {
 
     if (constraintMin == null) return false;
 
-    final languageVersion =
-        Version(constraintMin.major, constraintMin.minor, 0);
-
-    return languageVersion >= _firstVersionSupportingNullSafety;
+    return LanguageVersion.fromVersionRange(sdkConstraint).supportsNullSafety;
   }
-
-  static final _firstVersionSupportingNullSafety = Version.parse('2.10.0');
 }
