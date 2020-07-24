@@ -18,6 +18,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
       LanguageVersion(version.major, version.minor);
 
   /// The language version implied by a Dart sdk version range.
+  ///
+  /// Throws if the versionRange has no lower bound.
   factory LanguageVersion.fromVersionRange(VersionRange range) {
     final min = range.min;
     if (min == null) {
