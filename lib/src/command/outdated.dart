@@ -92,7 +92,7 @@ class OutdatedCommand extends PubCommand {
 
     final rootPubspec = includeDependencyOverrides
         ? entrypoint.root.pubspec
-        : stripDependencyOverrides(entrypoint.root.pubspec);
+        : _stripDependencyOverrides(entrypoint.root.pubspec);
 
     final upgradablePubspec = includeDevDependencies
         ? rootPubspec
@@ -104,8 +104,8 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> resolvablePackages;
 
     await log.spinner('Resolving', () async {
-      upgradablePackages = await tryResolve(upgradablePubspec, cache);
-      resolvablePackages = await tryResolve(resolvablePubspec, cache);
+      upgradablePackages = await _tryResolve(upgradablePubspec, cache);
+      resolvablePackages = await _tryResolve(resolvablePubspec, cache);
     }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
@@ -316,7 +316,7 @@ class OutdatedCommand extends PubCommand {
 }
 
 /// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
-Future<List<PackageId>> tryResolve(Pubspec pubspec, SystemCache cache) async {
+Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   try {
     return (await resolveVersions(
       SolveType.UPGRADE,
@@ -340,7 +340,7 @@ Pubspec stripDevDependencies(Pubspec original) {
   );
 }
 
-Pubspec stripDependencyOverrides(Pubspec original) {
+Pubspec _stripDependencyOverrides(Pubspec original) {
   return Pubspec(
     original.name,
     version: original.version,
