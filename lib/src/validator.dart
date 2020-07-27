@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/validator/null_safety_mixed_mode.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
@@ -141,7 +142,8 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
-      RelativeVersionNumberingValidator(entrypoint, serverUrl, apiKey),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl),
+      NullSafetyMixedModeValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
@@ -170,6 +172,17 @@ abstract class Validator {
         );
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");
+        }
+        log.warning('');
+      }
+
+      if (hints.isNotEmpty) {
+        final s = hints.length > 1 ? 's' : '';
+        log.warning(
+          'Package validation found the following hint$s:',
+        );
+        for (var hint in hints) {
+          log.warning("* ${hint.split('\n').join('\n  ')}");
         }
         log.warning('');
       }

@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../entrypoint.dart';
 import '../exceptions.dart';
+import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../validator.dart';
@@ -20,10 +21,8 @@ class RelativeVersionNumberingValidator extends Validator {
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
   final String _server;
-  final String _apiKey;
 
-  RelativeVersionNumberingValidator(
-      Entrypoint entrypoint, this._server, this._apiKey)
+  RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
 
   @override
@@ -36,7 +35,6 @@ class RelativeVersionNumberingValidator extends Validator {
           .getVersions(hostedSource.refFor(
             entrypoint.root.name,
             url: _server,
-            apiKey: _apiKey,
           ));
     } on PackageNotFoundException {
       existingVersions = [];
@@ -82,11 +80,6 @@ class RelativeVersionNumberingValidator extends Validator {
 
     if (constraintMin == null) return false;
 
-    final languageVersion =
-        Version(constraintMin.major, constraintMin.minor, 0);
-
-    return languageVersion >= _firstVersionSupportingNullSafety;
+    return LanguageVersion.fromVersionRange(sdkConstraint).supportsNullSafety;
   }
-
-  static final _firstVersionSupportingNullSafety = Version.parse('2.10.0');
 }
