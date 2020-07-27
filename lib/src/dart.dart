@@ -14,6 +14,7 @@ import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -112,7 +113,8 @@ class AnalysisContextManager {
       }
 
       var contextBuilder = ContextBuilder();
-      var context = contextBuilder.createContext(contextRoot: root);
+      var context = contextBuilder.createContext(
+          contextRoot: root, sdkPath: getSdkPath());
       _contexts[contextRootPath] = context;
     }
   }

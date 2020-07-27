@@ -6,11 +6,11 @@ import 'dart:async';
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
 import '../entrypoint.dart';
+import '../language_version.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 import '../validator.dart';
@@ -28,17 +28,8 @@ class LanguageVersionValidator extends Validator {
 
   @override
   Future validate() async {
-    final sdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint;
+    final declaredLanguageVersion = entrypoint.root.pubspec.languageVersion;
 
-    /// If the sdk constraint is not a `VersionRange` something is wrong, and
-    /// we cannot deduce the language version.
-    ///
-    /// This will hopefully be detected elsewhere.
-    ///
-    /// A single `Version` is also a `VersionRange`.
-    if (sdkConstraint is! VersionRange) return;
-
-    final packageSdkMinVersion = (sdkConstraint as VersionRange).min;
     for (final path in ['lib', 'bin']
         .map((path) => entrypoint.root.listFiles(beneath: path))
         .expand((files) => files)
@@ -53,18 +44,15 @@ class LanguageVersionValidator extends Validator {
         continue;
       }
 
-      final unitLanguageVersion = unit.languageVersionToken;
-      if (unitLanguageVersion != null) {
-        if (Version(unitLanguageVersion.major, unitLanguageVersion.minor, 0) >
-            packageSdkMinVersion) {
-          final packageLanguageVersionString =
-              '${packageSdkMinVersion.major}.${packageSdkMinVersion.minor}';
-          final unitLanguageVersionString =
-              '${unitLanguageVersion.major}.${unitLanguageVersion.minor}';
+      final unitLanguageVersionToken = unit.languageVersionToken;
+      if (unitLanguageVersionToken != null) {
+        final unitLanguageVersion =
+            LanguageVersion.fromLanguageVersionToken(unitLanguageVersionToken);
+        if (unitLanguageVersion > declaredLanguageVersion) {
           final relativePath = p.relative(path);
           errors.add('$relativePath is declaring language version '
-              '$unitLanguageVersionString that is newer than the SDK '
-              'constraint $packageLanguageVersionString declared in '
+              '$unitLanguageVersion that is newer than the SDK '
+              'constraint $declaredLanguageVersion declared in '
               '`pubspec.yaml`.');
         }
       }

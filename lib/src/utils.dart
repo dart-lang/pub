@@ -234,9 +234,6 @@ bool isLoopback(String host) {
   }
 }
 
-/// Randomly chooses a single element in [elements].
-T choose<T>(List<T> elements) => elements[random.nextInt(elements.length)];
-
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
   var list = iter.toList();
@@ -435,15 +432,6 @@ String prefixLines(String text, {String prefix = '| ', String firstPrefix}) {
   lines = lines.skip(1).map((line) => '$prefix$line').toList();
   lines.insert(0, firstLine);
   return lines.join('\n');
-}
-
-/// Whether today is April Fools' day.
-bool get isAprilFools {
-  // Tests should never see April Fools' output.
-  if (runningFromTest) return false;
-
-  var date = DateTime.now();
-  return date.month == 4 && date.day == 1;
 }
 
 /// The subset of strings that don't need quoting in YAML.
