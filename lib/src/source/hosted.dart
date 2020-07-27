@@ -74,26 +74,29 @@ class HostedSource extends Source {
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageRef refFor(String name, {url}) =>
-      PackageRef(name, this, _descriptionFor(name, url));
+  PackageRef refFor(String name, {url, String apiKey}) {
+    return PackageRef(name, this, _descriptionFor(name, url, apiKey));
+  }
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageId idFor(String name, Version version, {url}) =>
-      PackageId(name, this, version, _descriptionFor(name, url));
+  PackageId idFor(String name, Version version, {url, String apiKey}) {
+    return PackageId(name, this, version, _descriptionFor(name, url, apiKey));
+  }
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _descriptionFor(String name, [url]) {
+  dynamic _descriptionFor(String name, [url, String apiKey]) {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
       throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
-
-    return {'name': name, 'url': url.toString()};
+    return apiKey != null
+        ? {'name': name, 'url': url.toString(), 'apiKey': apiKey}
+        : {'name': name, 'url': url.toString()};
   }
 
   @override
@@ -179,12 +182,16 @@ class BoundHostedSource extends CachedSource {
     var url = _makeUrl(
         ref.description, (server, package) => '$server/api/packages/$package');
     log.io('Get versions from $url.');
-
+    var _pubApiHeaders = <String, String>{};
+    _pubApiHeaders.addEntries(pubApiHeaders.entries);
+    if (ref.description['apiKey'] != null) {
+      _pubApiHeaders['X-API-Key'] = ref.description['apiKey'];
+    }
     String body;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      body = await httpClient.read(url, headers: pubApiHeaders);
+      body = await httpClient.read(url, headers: _pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
@@ -195,7 +202,8 @@ class BoundHostedSource extends CachedSource {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
-          url: _serverFor(ref.description));
+          url: _serverFor(ref.description),
+          apiKey: _pubApiHeaders['X-API-Key']);
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
           archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;

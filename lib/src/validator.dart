@@ -116,8 +116,14 @@ abstract class Validator {
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
   static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, String serverUrl,
-      {List<String> hints, List<String> warnings, List<String> errors}) {
+    Entrypoint entrypoint,
+    Future<int> packageSize,
+    String serverUrl, {
+    List<String> hints,
+    List<String> warnings,
+    List<String> errors,
+    String apiKey,
+  }) {
     var validators = [
       PubspecValidator(entrypoint),
       LicenseValidator(entrypoint),
@@ -135,7 +141,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
-      RelativeVersionNumberingValidator(entrypoint, serverUrl),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl, apiKey),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
