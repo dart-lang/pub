@@ -20,6 +20,6 @@ class LogoutCommand extends PubCommand {
 
   @override
   Future run() async {
-    oauth2.logout(cache);
+    oauth2.logout(cache, null);
   }
 }

@@ -52,7 +52,10 @@ class LishCommand extends PubCommand {
   bool get force => argResults['force'];
 
   /// Optional API key for package server to which to upload this package.
-  String get apiKey => argResults['apiKey'];
+  bool get isHosted => argResults['server'] != null;
+
+  /// Optional override to use  Identity Token in Authorization Header
+  bool get useIdToken => argResults['useIdToken'] != null;
 
   LishCommand() {
     argParser.addFlag('dry-run',
@@ -64,10 +67,11 @@ class LishCommand extends PubCommand {
         negatable: false,
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
-        help: 'The package server to which to upload this package.');
-    argParser.addOption('apiKey',
-        help:
-            'Optional API key for package server to which to upload this package.');
+        abbr: 's', help: 'The package server to which to upload this package.');
+    argParser.addFlag('useIdToken',
+        negatable: false,
+        abbr: 'u',
+        help: 'Use Identity Token in Authorization Header');
   }
 
   Future _publish(List<int> packageBytes) async {
@@ -78,20 +82,15 @@ class LishCommand extends PubCommand {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
           var newUri = server.resolve('/api/packages/versions/new');
-          var _pubApiHeaders = <String, String>{};
-          _pubApiHeaders.addEntries(pubApiHeaders.entries);
-          if (apiKey != null) {
-            _pubApiHeaders['X-API-Key'] = apiKey;
-          }
 
-          var response = await client.get(newUri, headers: _pubApiHeaders);
+          var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
-          print('1');
+
           var url = _expectField(parameters, 'url', response);
           if (url is! String) invalidServerResponse(response);
           cloudStorageUrl = Uri.parse(url);
           var request = http.MultipartRequest('POST', cloudStorageUrl);
-          print('2');
+
           var fields = _expectField(parameters, 'fields', response);
           if (fields is! Map) invalidServerResponse(response);
           fields.forEach((key, value) {
@@ -99,26 +98,18 @@ class LishCommand extends PubCommand {
             request.fields[key] = value;
           });
 
-          print('3');
           request.followRedirects = false;
           request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
               filename: 'package.tar.gz'));
-          if (apiKey != null) {
-            request.headers.addAll(_pubApiHeaders);
-          }
-          print('3.75 ${request.url}');
-          request.files.forEach((element) {
-            print(
-                '${element.contentType.toString()} ${element.filename} ${element.field} ${element.length}');
-          });
+
           var postResponse =
               await http.Response.fromStream(await client.send(request));
-          print('4');
+
           var location = postResponse.headers['location'];
           if (location == null) throw PubHttpException(postResponse);
           handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
         });
-      });
+      }, hostedURLName: isHosted ? server.host : null, useIdToken: useIdToken);
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
       if (url == cloudStorageUrl) {
@@ -190,7 +181,8 @@ class LishCommand extends PubCommand {
       hints: hints,
       warnings: warnings,
       errors: errors,
-      apiKey: apiKey,
+      isHosted: isHosted,
+      serverHost: isHosted ? server.host : null,
     );
 
     if (errors.isNotEmpty) {

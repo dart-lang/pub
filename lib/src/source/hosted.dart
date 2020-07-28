@@ -17,6 +17,7 @@ import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../oauth2.dart' as oauth2 show getClient;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -74,28 +75,37 @@ class HostedSource extends Source {
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageRef refFor(String name, {url, String apiKey}) {
-    return PackageRef(name, this, _descriptionFor(name, url, apiKey));
+  PackageRef refFor(String name, {url, bool isHosted, String serverHost}) {
+    return PackageRef(
+        name, this, _descriptionFor(name, url, isHosted, serverHost));
   }
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageId idFor(String name, Version version, {url, String apiKey}) {
-    return PackageId(name, this, version, _descriptionFor(name, url, apiKey));
+  PackageId idFor(String name, Version version,
+      {url, bool isHosted, String serverHost}) {
+    return PackageId(
+        name, this, version, _descriptionFor(name, url, isHosted, serverHost));
   }
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _descriptionFor(String name, [url, String apiKey]) {
+  dynamic _descriptionFor(String name,
+      [url, bool isHosted, String serverHost]) {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
       throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
-    return apiKey != null
-        ? {'name': name, 'url': url.toString(), 'apiKey': apiKey}
+    return isHosted != null
+        ? {
+            'name': name,
+            'url': url.toString(),
+            'isHosted': isHosted,
+            'serverHost': serverHost
+          }
         : {'name': name, 'url': url.toString()};
   }
 
@@ -184,9 +194,12 @@ class BoundHostedSource extends CachedSource {
     log.io('Get versions from $url.');
     var _pubApiHeaders = <String, String>{};
     _pubApiHeaders.addEntries(pubApiHeaders.entries);
-    if (ref.description['apiKey'] != null) {
-      _pubApiHeaders['X-API-Key'] = ref.description['apiKey'];
+    if (ref.description['serverHost'] != null) {
+      final client = await oauth2.getClient(
+          cache: systemCache, hostedURLName: ref.description['serverHost']);
+      _pubApiHeaders['Authorization'] = 'Bearer ${client.credentials.idToken}';
     }
+
     String body;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
@@ -203,7 +216,8 @@ class BoundHostedSource extends CachedSource {
           expectedName: ref.name, location: url);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description),
-          apiKey: _pubApiHeaders['X-API-Key']);
+          isHosted: ref.description['isHosted'],
+          serverHost: ref.description['serverHost']);
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
           archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;
