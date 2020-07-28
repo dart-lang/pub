@@ -123,6 +123,8 @@ class NullSafetyAnalysis {
   /// opting in to null safety, and no files in lib/ of these packages opt out
   /// to a pre-null-safety language version.
   ///
+  /// This will download all dependencies into [cache].
+  ///
   /// Assumes [mainPackage] is opted in.
   Future<NullSafetyAnalysisResult> nullSafetyComplianceOfResolution(
       SolveResult result) async {
@@ -136,12 +138,12 @@ class NullSafetyAnalysis {
 
       final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
-        final boundSource = dependencyId.source.bind(_systemCache);
-        final pubspec = await boundSource.describe(dependencyId);
+        final pubspec = result.pubspecs[dependencyId.name];
         final languageVersion = pubspec.languageVersion;
         if (languageVersion == null || !languageVersion.supportsNullSafety) {
           final span =
               _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
+          print('span: $span');
           final where = span == null
               ? 'in the sdk constraint in the enviroment key in its pubspec.yaml.'
               : 'in its pubspec.yaml:\n${span.highlight()}';
@@ -151,11 +153,14 @@ class NullSafetyAnalysis {
           );
         }
 
+        final boundSource = dependencyId.source?.bind(_systemCache);
         if (boundSource is CachedSource) {
           // TODO(sigurdm): Consider using withDependencyType here.
           await boundSource.downloadToSystemCache(dependencyId);
         }
-        final packageDir = boundSource.getDirectory(dependencyId);
+
+        final packageDir =
+            boundSource?.getDirectory(dependencyId) ?? result.root.dir;
         final libDir =
             path.absolute(path.normalize(path.join(packageDir, 'lib')));
         if (dirExists(libDir)) {

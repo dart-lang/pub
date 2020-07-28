@@ -220,10 +220,12 @@ class Entrypoint {
   /// executables.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
-  Future acquireDependencies(SolveType type,
-      {List<String> useLatest,
-      bool dryRun = false,
-      bool precompile = false}) async {
+  Future acquireDependencies(
+    SolveType type, {
+    List<String> useLatest,
+    bool dryRun = false,
+    bool precompile = false,
+  }) async {
     var result = await log.progress(
       'Resolving dependencies',
       () => resolveVersions(
@@ -255,32 +257,35 @@ class Entrypoint {
 
     result.showReport(type);
 
-    if (dryRun) {
-      result.summarizeChanges(type, dryRun: dryRun);
-      return;
+    if (!dryRun) {
+      await Future.wait(result.packages.map(_get));
+      _saveLockFile(result);
     }
-
-    await Future.wait(result.packages.map(_get));
-    _saveLockFile(result);
 
     result.summarizeChanges(type, dryRun: dryRun);
 
-    /// Build a package graph from the version solver results so we don't
-    /// have to reload and reparse all the pubspecs.
-    _packageGraph = PackageGraph.fromSolveResult(this, result);
+    if (!dryRun) {
+      // We only compute this warning outside of dry-run because it requires
+      // the packages to be actually downloaded.
+      await result.warnAboutMixedMode(cache, dryRun: dryRun);
 
-    await writePackagesFiles();
+      /// Build a package graph from the version solver results so we don't
+      /// have to reload and reparse all the pubspecs.
+      _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-    try {
-      if (precompile) {
-        await precompileExecutables(changed: result.changedPackages);
-      } else {
-        _deleteExecutableSnapshots(changed: result.changedPackages);
+      await writePackagesFiles();
+
+      try {
+        if (precompile) {
+          await precompileExecutables(changed: result.changedPackages);
+        } else {
+          _deleteExecutableSnapshots(changed: result.changedPackages);
+        }
+      } catch (error, stackTrace) {
+        // Just log exceptions here. Since the method is just about acquiring
+        // dependencies, it shouldn't fail unless that fails.
+        log.exception(error, stackTrace);
       }
-    } catch (error, stackTrace) {
-      // Just log exceptions here. Since the method is just about acquiring
-      // dependencies, it shouldn't fail unless that fails.
-      log.exception(error, stackTrace);
     }
   }
 

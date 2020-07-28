@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:pub/src/null_safety_analysis.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -111,7 +112,11 @@ class SolveResult {
     }
   }
 
-  Future<void> warnAboutMixedMode(SystemCache cache) async {
+  /// Displays a warning if this is not a fully null-safe resolution.
+  Future<void> warnAboutMixedMode(
+    SystemCache cache, {
+    @required bool dryRun,
+  }) async {
     if (pubspecs[root.name].languageVersion.supportsNullSafety) {
       final analysis = await NullSafetyAnalysis(cache)
           .nullSafetyComplianceOfResolution(this);
@@ -127,7 +132,7 @@ Either downgrade your sdk constraint, or invoke dart/flutter with
 To learn more about available versions of your dependencies try running
 `pub outdated --mode=null-safety`.
 
-See more at $guideUrl.
+See more at ${NullSafetyAnalysis.guideUrl}.
 ''');
       } else if (analysis.compliance == NullSafetyCompliance.analysisFailed) {
         log.warning('''
