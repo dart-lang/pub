@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/validator/null_safety_mixed_mode.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
@@ -136,6 +137,7 @@ abstract class Validator {
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
       RelativeVersionNumberingValidator(entrypoint, serverUrl),
+      NullSafetyMixedModeValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));

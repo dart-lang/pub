@@ -585,7 +585,7 @@ Future<bool> confirm(String message) {
   if (runningFromTest) {
     log.message('$message (y/N)?');
   } else {
-    stdout.write(log.format('$message (y/N)? '));
+    stdout.write('$message (y/N)? ');
   }
   return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }

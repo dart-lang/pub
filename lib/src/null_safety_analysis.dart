@@ -6,12 +6,15 @@ import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:cli_util/cli_util.dart';
+import 'package:source_span/source_span.dart';
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:path/path.dart' as path;
+import 'package:yaml/yaml.dart';
 
 import 'io.dart';
+import 'language_version.dart';
 import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
@@ -26,7 +29,7 @@ enum NullSafetyCompliance {
 
   /// This package opted into null safety, but some file or dependency is not
   /// opted in.
-  apiOnly,
+  mixed,
 
   /// This package did not opt-in to null safety yet.
   notCompliant,
@@ -48,9 +51,8 @@ class NullSafetyAnalysis {
   /// Furthermore by awaiting the Future stored here, we avoid race-conditions
   /// from downloading the same package-version into [_systemCache]
   /// simultaneously when doing concurrent analyses.
-  final Map<PackageId, Future<NullSafetyCompliance>>
+  final Map<PackageId, Future<NullSafetyAnalysisResult>>
       _packageInternallyGoodCache = {};
-  static final _firstVersionWithNullSafety = Version.parse('2.10.0');
 
   NullSafetyAnalysis(SystemCache systemCache) : _systemCache = systemCache;
 
@@ -67,7 +69,7 @@ class NullSafetyAnalysis {
   ///
   /// If [packageId] is a relative path dependency [containingPath] must be
   /// provided with an absolute path to resolve it against.
-  Future<NullSafetyCompliance> nullSafetyCompliance(PackageId packageId,
+  Future<NullSafetyAnalysisResult> nullSafetyCompliance(PackageId packageId,
       {String containingPath}) async {
     // A space in the name prevents clashes with other package names.
     final rootName = '${packageId.name} importer';
@@ -86,6 +88,21 @@ class NullSafetyAnalysis {
         },
         sources: _systemCache.sources));
 
+    final rootPubspec =
+        await packageId.source.bind(_systemCache).describe(packageId);
+    final rootLanguageVersion = rootPubspec.languageVersion;
+    if (!rootLanguageVersion.supportsNullSafety) {
+      final span =
+          _tryGetSpanFromYamlMap(rootPubspec.fields['environment'], 'sdk');
+      final where = span == null
+          ? 'in the sdk constraint in the enviroment key in pubspec.yaml.'
+          : 'in pubspec.yaml: \n${span.highlight()}';
+      return NullSafetyAnalysisResult(
+        NullSafetyCompliance.notCompliant,
+        'Is not opting in to null safety $where',
+      );
+    }
+
     SolveResult result;
     try {
       result = await resolveVersions(
@@ -93,22 +110,30 @@ class NullSafetyAnalysis {
         _systemCache,
         root,
       );
-    } on SolveFailure {
-      return NullSafetyCompliance.analysisFailed;
+    } on SolveFailure catch (e) {
+      return NullSafetyAnalysisResult(NullSafetyCompliance.analysisFailed,
+          'Could not resolve constraints: $e');
     }
 
-    var allPackagesGood = true;
+    NullSafetyAnalysisResult firstBadPackage;
     for (final dependencyId in result.packages) {
       if (dependencyId.name == root.name) continue;
 
-      final packageInternallyGood =
+      final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
         final boundSource = dependencyId.source.bind(_systemCache);
         final pubspec = await boundSource.describe(dependencyId);
-        final languageVersion = _languageVersion(pubspec);
-        if (languageVersion == null ||
-            languageVersion < _firstVersionWithNullSafety) {
-          return NullSafetyCompliance.notCompliant;
+        final languageVersion = pubspec.languageVersion;
+        if (languageVersion == null || !languageVersion.supportsNullSafety) {
+          final span =
+              _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
+          final where = span == null
+              ? 'in the sdk constraint in the enviroment key in its pubspec.yaml.'
+              : 'in its pubspec.yaml:\n${span.highlight()}';
+          return NullSafetyAnalysisResult(
+            NullSafetyCompliance.notCompliant,
+            'package:${dependencyId.name} is not opted into null safety $where',
+          );
         }
 
         if (boundSource is CachedSource) {
@@ -131,50 +156,68 @@ class NullSafetyAnalysis {
           for (final file in listDir(libDir,
               recursive: true, includeDirs: false, includeHidden: true)) {
             if (file.endsWith('.dart')) {
+              final fileUrl =
+                  'package:${dependencyId.name}/${path.relative(file, from: libDir)}';
               final unitResult =
                   analysisSession.getParsedUnit(path.normalize(file));
               if (unitResult == null || unitResult.errors.isNotEmpty) {
-                return NullSafetyCompliance.analysisFailed;
+                return NullSafetyAnalysisResult(
+                    NullSafetyCompliance.analysisFailed,
+                    'Could not analyze $fileUrl.');
               }
               if (unitResult.isPart) continue;
               final languageVersionToken = unitResult.unit.languageVersionToken;
               if (languageVersionToken == null) continue;
-              if (Version(languageVersionToken.major,
-                      languageVersionToken.minor, 0) <
-                  _firstVersionWithNullSafety) {
-                return NullSafetyCompliance.notCompliant;
+              final languageVersion = LanguageVersion.fromLanguageVersionToken(
+                  languageVersionToken);
+              if (!languageVersion.supportsNullSafety) {
+                final sourceFile =
+                    SourceFile.fromString(readTextFile(file), url: fileUrl);
+                final span = sourceFile.span(languageVersionToken.offset,
+                    languageVersionToken.offset + languageVersionToken.length);
+                return NullSafetyAnalysisResult(
+                    NullSafetyCompliance.notCompliant,
+                    '$fileUrl is opting out of null safety:\n${span.highlight()}');
               }
             }
           }
         }
-        return NullSafetyCompliance.compliant;
+        return NullSafetyAnalysisResult(NullSafetyCompliance.compliant, null);
       });
-      assert(packageInternallyGood != null);
-      if (packageInternallyGood == NullSafetyCompliance.analysisFailed) {
-        return NullSafetyCompliance.analysisFailed;
+      assert(packageInternalAnalysis != null);
+      if (packageInternalAnalysis.compliance ==
+          NullSafetyCompliance.analysisFailed) {
+        return packageInternalAnalysis;
       }
-      if (packageInternallyGood == NullSafetyCompliance.notCompliant) {
-        allPackagesGood = false;
+      if (packageInternalAnalysis.compliance ==
+          NullSafetyCompliance.notCompliant) {
+        firstBadPackage ??= packageInternalAnalysis;
       }
     }
-    if (allPackagesGood) return NullSafetyCompliance.compliant;
-    final rootLanguageVersion = _languageVersion(
-        await packageId.source.bind(_systemCache).describe(packageId));
-    if (rootLanguageVersion != null &&
-        rootLanguageVersion >= _firstVersionWithNullSafety) {
-      return NullSafetyCompliance.apiOnly;
-    }
-    return NullSafetyCompliance.notCompliant;
-  }
 
-  /// Returns the language version specified by the dart sdk
-  Version _languageVersion(Pubspec pubspec) {
-    final sdkConstraint = pubspec.sdkConstraints['dart'];
-    if (sdkConstraint is VersionRange) {
-      final rangeMin = sdkConstraint.min;
-      if (rangeMin == null) return null;
-      return Version(rangeMin.major, rangeMin.minor, 0);
+    if (firstBadPackage == null) {
+      return NullSafetyAnalysisResult(NullSafetyCompliance.compliant, null);
     }
-    return null;
+    if (firstBadPackage.compliance == NullSafetyCompliance.analysisFailed) {
+      return firstBadPackage;
+    }
+    return NullSafetyAnalysisResult(
+        NullSafetyCompliance.mixed, firstBadPackage.reason);
   }
+}
+
+class NullSafetyAnalysisResult {
+  final NullSafetyCompliance compliance;
+
+  /// `null` if compliance == [NullSafetyCompliance.compliant].
+  final String reason;
+
+  NullSafetyAnalysisResult(this.compliance, this.reason);
+}
+
+SourceSpan _tryGetSpanFromYamlMap(Object map, String key) {
+  if (map is YamlMap) {
+    return map.nodes[key]?.span;
+  }
+  return null;
 }
