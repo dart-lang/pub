@@ -613,3 +613,21 @@ bool equalsIgnoringPreRelease(Version version1, Version version2) =>
     version1.major == version2.major &&
     version1.minor == version2.minor &&
     version1.patch == version2.patch;
+
+/// Creates a new map from [map] with new keys and values.
+///
+/// The return values of [key] are used as the keys and the return values of
+/// [value] are used as the values for the new map.
+Map<K2, V2> mapMap<K1, V1, K2, V2>(
+  Map<K1, V1> map, {
+  K2 Function(K1, V1) key,
+  V2 Function(K1, V1) value,
+}) {
+  key ??= (mapKey, _) => mapKey as K2;
+  value ??= (_, mapValue) => mapValue as V2;
+
+  return <K2, V2>{
+    for (var entry in map.entries)
+      key(entry.key, entry.value): value(entry.key, entry.value),
+  };
+}
