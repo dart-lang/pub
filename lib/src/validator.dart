@@ -123,8 +123,7 @@ abstract class Validator {
     List<String> hints,
     List<String> warnings,
     List<String> errors,
-    String serverHost,
-    bool isHosted,
+    bool useIdToken,
   }) {
     var validators = [
       PubspecValidator(entrypoint),
@@ -143,8 +142,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
-      RelativeVersionNumberingValidator(
-          entrypoint, serverUrl, serverHost, isHosted),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl, useIdToken),
       NullSafetyMixedModeValidator(entrypoint),
     ];
     if (packageSize != null) {

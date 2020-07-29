@@ -181,8 +181,7 @@ class LishCommand extends PubCommand {
       hints: hints,
       warnings: warnings,
       errors: errors,
-      isHosted: isHosted,
-      serverHost: isHosted ? server.host : null,
+      useIdToken: useIdToken,
     );
 
     if (errors.isNotEmpty) {

@@ -75,38 +75,32 @@ class HostedSource extends Source {
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageRef refFor(String name, {url, bool isHosted, String serverHost}) {
-    return PackageRef(
-        name, this, _descriptionFor(name, url, isHosted, serverHost));
+  PackageRef refFor(String name, {url, bool useIdToken}) {
+    return PackageRef(name, this, _descriptionFor(name, url, useIdToken));
   }
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageId idFor(String name, Version version,
-      {url, bool isHosted, String serverHost}) {
+  PackageId idFor(String name, Version version, {url, bool useIdToken}) {
     return PackageId(
-        name, this, version, _descriptionFor(name, url, isHosted, serverHost));
+        name, this, version, _descriptionFor(name, url, useIdToken));
   }
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _descriptionFor(String name,
-      [url, bool isHosted, String serverHost]) {
+  dynamic _descriptionFor(String name, [url, bool useIdToken]) {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
       throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
-    return isHosted != null
-        ? {
-            'name': name,
-            'url': url.toString(),
-            'isHosted': isHosted,
-            'serverHost': serverHost
-          }
-        : {'name': name, 'url': url.toString()};
+    return {
+      'name': name,
+      'url': url.toString(),
+      'useIdToken': useIdToken ?? false
+    };
   }
 
   @override
@@ -194,10 +188,14 @@ class BoundHostedSource extends CachedSource {
     log.io('Get versions from $url.');
     var _pubApiHeaders = <String, String>{};
     _pubApiHeaders.addEntries(pubApiHeaders.entries);
-    if (ref.description['serverHost'] != null) {
-      final client = await oauth2.getClient(
-          cache: systemCache, hostedURLName: ref.description['serverHost']);
-      _pubApiHeaders['Authorization'] = 'Bearer ${client.credentials.idToken}';
+    if (url.host != 'pub.dartlang.org') {
+      final client =
+          await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
+      _pubApiHeaders['Authorization'] = ref.description['useIdToken'] == null
+          ? 'Bearer ${client.credentials.accessToken}'
+          : ref.description['useIdToken'] == true
+              ? 'Bearer ${client.credentials.idToken}'
+              : 'Bearer ${client.credentials.accessToken}';
     }
 
     String body;
@@ -214,10 +212,12 @@ class BoundHostedSource extends CachedSource {
     final result = Map.fromEntries(versions.map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
-      var id = source.idFor(ref.name, pubspec.version,
-          url: _serverFor(ref.description),
-          isHosted: ref.description['isHosted'],
-          serverHost: ref.description['serverHost']);
+      var id = source.idFor(
+        ref.name,
+        pubspec.version,
+        url: _serverFor(ref.description),
+        useIdToken: ref.description['useIdToken'],
+      );
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
           archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;
@@ -418,8 +418,21 @@ class BoundHostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
-    var response = await httpClient.send(http.Request('GET', url));
-    await extractTarGz(response.stream, tempDir);
+
+    if (url.host != 'pub.dartlang.org') {
+      final client =
+          await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
+      await io.HttpClient().getUrl(url).then((io.HttpClientRequest request) {
+        request.headers
+            .add('Authorization', 'Bearer ${client.credentials.idToken}');
+        return request.close();
+      }).then((io.HttpClientResponse response) async {
+        await extractTarGz(response.asBroadcastStream(), tempDir);
+      });
+    } else {
+      var response = await httpClient.send(http.Request('GET', url));
+      await extractTarGz(response.stream, tempDir);
+    }
 
     // Remove the existing directory if it exists. This will happen if
     // we're forcing a download to repair the cache.
