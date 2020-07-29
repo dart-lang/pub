@@ -117,8 +117,13 @@ abstract class Validator {
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
   static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, String serverUrl,
-      {List<String> hints, List<String> warnings, List<String> errors}) {
+    Entrypoint entrypoint,
+    Future<int> packageSize,
+    String serverUrl, {
+    List<String> hints,
+    List<String> warnings,
+    List<String> errors,
+  }) {
     var validators = [
       PubspecValidator(entrypoint),
       LicenseValidator(entrypoint),

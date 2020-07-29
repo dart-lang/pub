@@ -32,7 +32,10 @@ class RelativeVersionNumberingValidator extends Validator {
     try {
       existingVersions = await hostedSource
           .bind(entrypoint.cache)
-          .getVersions(hostedSource.refFor(entrypoint.root.name, url: _server));
+          .getVersions(hostedSource.refFor(
+            entrypoint.root.name,
+            url: _server,
+          ));
     } on PackageNotFoundException {
       existingVersions = [];
     }

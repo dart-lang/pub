@@ -17,6 +17,7 @@ import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../oauth2.dart' as oauth2 show getClient;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -92,7 +93,6 @@ class HostedSource extends Source {
     if (url is! String && url is! Uri) {
       throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
-
     return {'name': name, 'url': url.toString()};
   }
 
@@ -179,12 +179,21 @@ class BoundHostedSource extends CachedSource {
     var url = _makeUrl(
         ref.description, (server, package) => '$server/api/packages/$package');
     log.io('Get versions from $url.');
+    var _pubApiHeaders = <String, String>{};
+    _pubApiHeaders.addEntries(pubApiHeaders.entries);
+    if (url.host != 'pub.dartlang.org') {
+      final client =
+          await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
+      _pubApiHeaders['Authorization'] = client.useIdToken == true
+          ? 'Bearer ${client.credentials.idToken}'
+          : 'Bearer ${client.credentials.accessToken}';
+    }
 
     String body;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      body = await httpClient.read(url, headers: pubApiHeaders);
+      body = await httpClient.read(url, headers: _pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
@@ -194,8 +203,11 @@ class BoundHostedSource extends CachedSource {
     final result = Map.fromEntries(versions.map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
           expectedName: ref.name, location: url);
-      var id = source.idFor(ref.name, pubspec.version,
-          url: _serverFor(ref.description));
+      var id = source.idFor(
+        ref.name,
+        pubspec.version,
+        url: _serverFor(ref.description),
+      );
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
           archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;
@@ -396,8 +408,24 @@ class BoundHostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
-    var response = await httpClient.send(http.Request('GET', url));
-    await extractTarGz(response.stream, tempDir);
+
+    if (url.host != 'pub.dartlang.org') {
+      final client =
+          await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
+      await io.HttpClient().getUrl(url).then((io.HttpClientRequest request) {
+        request.headers.add(
+            'Authorization',
+            client.useIdToken == true
+                ? 'Bearer ${client.credentials.idToken}'
+                : 'Bearer ${client.credentials.accessToken}');
+        return request.close();
+      }).then((io.HttpClientResponse response) async {
+        await extractTarGz(response.asBroadcastStream(), tempDir);
+      });
+    } else {
+      var response = await httpClient.send(http.Request('GET', url));
+      await extractTarGz(response.stream, tempDir);
+    }
 
     // Remove the existing directory if it exists. This will happen if
     // we're forcing a download to repair the cache.

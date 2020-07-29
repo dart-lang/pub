@@ -51,6 +51,9 @@ class LishCommand extends PubCommand {
   /// Whether the publish requires confirmation.
   bool get force => argResults['force'];
 
+  /// Optional API key for package server to which to upload this package.
+  bool get isHosted => argResults['server'] != null;
+
   LishCommand() {
     argParser.addFlag('dry-run',
         abbr: 'n',
@@ -61,7 +64,7 @@ class LishCommand extends PubCommand {
         negatable: false,
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
-        help: 'The package server to which to upload this package.');
+        abbr: 's', help: 'The package server to which to upload this package.');
   }
 
   Future _publish(List<int> packageBytes) async {
@@ -72,6 +75,7 @@ class LishCommand extends PubCommand {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
           var newUri = server.resolve('/api/packages/versions/new');
+
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
 
@@ -90,6 +94,7 @@ class LishCommand extends PubCommand {
           request.followRedirects = false;
           request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
               filename: 'package.tar.gz'));
+
           var postResponse =
               await http.Response.fromStream(await client.send(request));
 
@@ -97,7 +102,7 @@ class LishCommand extends PubCommand {
           if (location == null) throw PubHttpException(postResponse);
           handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
         });
-      });
+      }, hostedURLName: isHosted ? server.host : null);
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
       if (url == cloudStorageUrl) {
@@ -162,8 +167,14 @@ class LishCommand extends PubCommand {
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(entrypoint, packageSize, server.toString(),
-        hints: hints, warnings: warnings, errors: errors);
+    await Validator.runAll(
+      entrypoint,
+      packageSize,
+      server.toString(),
+      hints: hints,
+      warnings: warnings,
+      errors: errors,
+    );
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '
