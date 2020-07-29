@@ -41,6 +41,22 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
+    test(
+        'adds a package from a pub server even when dependencies key does not exist',
+        () async {
+      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'})
+      ]).create();
+
+      await pubAdd(args: ['foo:1.2.3']);
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appDir({'foo': '1.2.3'}).validate();
+    });
+
     group('overrides existing version constraint if package exists', () {
       test('if package is added without a version constraint', () async {
         await servePackages((builder) {

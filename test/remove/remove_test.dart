@@ -23,6 +23,30 @@ void main() {
     await d.appDir({}).validate();
   });
 
+  test('prints a warning if package does not exist', () async {
+    await d.appDir().create();
+    await pubRemove(
+        args: ['foo'],
+        warning: allOf(
+            contains('Package foo was not found in the pubspec!'),
+            contains(
+                'Please ensure that you spelled the package name correctly!')));
+  });
+
+  test('prints a warning if the dependencies map does not exist', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+      })
+    ]).create();
+    await pubRemove(
+        args: ['foo'],
+        warning: allOf(
+            contains('Package foo was not found in the pubspec!'),
+            contains(
+                'Please ensure that you spelled the package name correctly!')));
+  });
+
   test('removes a package from dev_dependencies', () async {
     await servePackages((builder) => builder.serve('foo', '1.2.3'));
 

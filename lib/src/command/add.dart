@@ -257,10 +257,12 @@ class AddCommand extends PubCommand {
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
-    if (pubspecInformation == null) {
-      yamlEditor.update(packagePath, '^${resultPackage.version}');
+    if (yamlEditor.parseAt([dependencyKey], orElse: () => null) == null) {
+      yamlEditor.update([dependencyKey],
+          {package.name: pubspecInformation ?? '^${resultPackage.version}'});
     } else {
-      yamlEditor.update(packagePath, pubspecInformation);
+      yamlEditor.update(
+          packagePath, pubspecInformation ?? '^${resultPackage.version}');
     }
 
     if (!isDevelopment &&
