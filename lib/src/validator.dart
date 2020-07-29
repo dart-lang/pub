@@ -123,7 +123,6 @@ abstract class Validator {
     List<String> hints,
     List<String> warnings,
     List<String> errors,
-    bool useIdToken,
   }) {
     var validators = [
       PubspecValidator(entrypoint),
@@ -142,7 +141,7 @@ abstract class Validator {
       StrictDependenciesValidator(entrypoint),
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
-      RelativeVersionNumberingValidator(entrypoint, serverUrl, useIdToken),
+      RelativeVersionNumberingValidator(entrypoint, serverUrl),
       NullSafetyMixedModeValidator(entrypoint),
     ];
     if (packageSize != null) {

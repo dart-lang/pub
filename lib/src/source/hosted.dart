@@ -75,32 +75,25 @@ class HostedSource extends Source {
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageRef refFor(String name, {url, bool useIdToken}) {
-    return PackageRef(name, this, _descriptionFor(name, url, useIdToken));
-  }
+  PackageRef refFor(String name, {url}) =>
+      PackageRef(name, this, _descriptionFor(name, url));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. It can be a [Uri] or a [String].
-  PackageId idFor(String name, Version version, {url, bool useIdToken}) {
-    return PackageId(
-        name, this, version, _descriptionFor(name, url, useIdToken));
-  }
+  PackageId idFor(String name, Version version, {url}) =>
+      PackageId(name, this, version, _descriptionFor(name, url));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _descriptionFor(String name, [url, bool useIdToken]) {
+  dynamic _descriptionFor(String name, [url]) {
     if (url == null) return name;
 
     if (url is! String && url is! Uri) {
       throw ArgumentError.value(url, 'url', 'must be a Uri or a String.');
     }
-    return {
-      'name': name,
-      'url': url.toString(),
-      'useIdToken': useIdToken ?? false
-    };
+    return {'name': name, 'url': url.toString()};
   }
 
   @override
@@ -191,11 +184,9 @@ class BoundHostedSource extends CachedSource {
     if (url.host != 'pub.dartlang.org') {
       final client =
           await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
-      _pubApiHeaders['Authorization'] = ref.description['useIdToken'] == null
-          ? 'Bearer ${client.credentials.accessToken}'
-          : ref.description['useIdToken'] == true
-              ? 'Bearer ${client.credentials.idToken}'
-              : 'Bearer ${client.credentials.accessToken}';
+      _pubApiHeaders['Authorization'] = client.useIdToken == true
+          ? 'Bearer ${client.credentials.idToken}'
+          : 'Bearer ${client.credentials.accessToken}';
     }
 
     String body;
@@ -216,7 +207,6 @@ class BoundHostedSource extends CachedSource {
         ref.name,
         pubspec.version,
         url: _serverFor(ref.description),
-        useIdToken: ref.description['useIdToken'],
       );
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
@@ -423,8 +413,11 @@ class BoundHostedSource extends CachedSource {
       final client =
           await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
       await io.HttpClient().getUrl(url).then((io.HttpClientRequest request) {
-        request.headers
-            .add('Authorization', 'Bearer ${client.credentials.idToken}');
+        request.headers.add(
+            'Authorization',
+            client.useIdToken == true
+                ? 'Bearer ${client.credentials.idToken}'
+                : 'Bearer ${client.credentials.accessToken}');
         return request.close();
       }).then((io.HttpClientResponse response) async {
         await extractTarGz(response.asBroadcastStream(), tempDir);

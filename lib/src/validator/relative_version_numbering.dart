@@ -21,10 +21,8 @@ class RelativeVersionNumberingValidator extends Validator {
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
   final String _server;
-  final bool _useIdToken;
 
-  RelativeVersionNumberingValidator(
-      Entrypoint entrypoint, this._server, this._useIdToken)
+  RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
 
   @override
@@ -37,7 +35,6 @@ class RelativeVersionNumberingValidator extends Validator {
           .getVersions(hostedSource.refFor(
             entrypoint.root.name,
             url: _server,
-            useIdToken: _useIdToken,
           ));
     } on PackageNotFoundException {
       existingVersions = [];

@@ -54,9 +54,6 @@ class LishCommand extends PubCommand {
   /// Optional API key for package server to which to upload this package.
   bool get isHosted => argResults['server'] != null;
 
-  /// Optional override to use  Identity Token in Authorization Header
-  bool get useIdToken => argResults['useIdToken'] != null;
-
   LishCommand() {
     argParser.addFlag('dry-run',
         abbr: 'n',
@@ -68,10 +65,6 @@ class LishCommand extends PubCommand {
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
         abbr: 's', help: 'The package server to which to upload this package.');
-    argParser.addFlag('useIdToken',
-        negatable: false,
-        abbr: 'u',
-        help: 'Use Identity Token in Authorization Header');
   }
 
   Future _publish(List<int> packageBytes) async {
@@ -109,7 +102,7 @@ class LishCommand extends PubCommand {
           if (location == null) throw PubHttpException(postResponse);
           handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
         });
-      }, hostedURLName: isHosted ? server.host : null, useIdToken: useIdToken);
+      }, hostedURLName: isHosted ? server.host : null);
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
       if (url == cloudStorageUrl) {
@@ -181,7 +174,6 @@ class LishCommand extends PubCommand {
       hints: hints,
       warnings: warnings,
       errors: errors,
-      useIdToken: useIdToken,
     );
 
     if (errors.isNotEmpty) {
