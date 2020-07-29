@@ -542,7 +542,7 @@ void main() {
 
     test(
         'prints information saying that package is already a dependency if it '
-        'already exists and exits normally', () async {
+        'already exists and exits with a usage exception', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.2.3');
         builder.serve('foo', '1.2.2');
@@ -558,17 +558,9 @@ void main() {
 
       await pubAdd(
           args: ['foo:1.2.3', '--dev'],
-          output: contains('foo is already in dependencies. Please remove '
-              'existing entry before adding it to dev_dependencies'),
-          exitCode: exit_codes.SUCCESS);
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {'foo': '1.2.2'},
-          'dev_dependencies': {}
-        })
-      ]).validate();
+          error: contains('foo is already in dependencies. Please remove '
+              'existing entry before adding it'),
+          exitCode: exit_codes.USAGE);
     });
   });
 }

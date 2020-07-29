@@ -5,10 +5,12 @@
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../exceptions.dart';
+import '../entrypoint.dart';
 import '../io.dart';
+import '../log.dart' as log;
+import '../solver.dart';
 
-/// Handles the `remove` pub command.
+/// Handles the `remove` pub command. Removes depedencies from `pubspec.yaml`.
 class RemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
@@ -18,8 +20,21 @@ class RemoveCommand extends PubCommand {
   String get invocation => 'pub remove <package>';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
+  @override
+  bool get isOffline => argResults['offline'];
 
-  RemoveCommand();
+  RemoveCommand() {
+    argParser.addFlag('offline',
+        help: 'Use cached packages instead of accessing the network.');
+
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
+        help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('precompile',
+        help: 'Precompile executables in immediate dependencies.');
+  }
 
   @override
   Future run() async {
@@ -28,37 +43,34 @@ class RemoveCommand extends PubCommand {
     }
 
     /// Update the pubspec.
-    _removePackagesFromPubspec(argResults.rest);
+    _removePackagesFromPubspec(Set<String>.from(argResults.rest).toList());
 
-    /// Run pub get once we have successfully updated the pubspec
-    await runner.run(['get']);
+    await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
   }
 
   /// Writes the changes to the pubspec file
   void _removePackagesFromPubspec(List<String> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
-    if (entrypoint.pubspecPath == null) {
-      throw FileException(
-          // Make the package dir absolute because for the entrypoint it'll just
-          // be ".", which may be confusing.
-          'Could not find a file named "pubspec.yaml" in '
-          '"${canonicalize('.')}".',
-          entrypoint.pubspecPath);
-    }
-
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
     for (var package in packages) {
-      if (yamlEditor.parseAt(['dependencies', package], orElse: () => null) !=
-          null) {
-        yamlEditor.remove(['dependencies', package]);
+      var found = false;
+
+      /// There may be packages where the package is declared both in
+      /// dependencies and dev_dependencies.
+      for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
+        if (yamlEditor.parseAt([dependencyKey, package], orElse: () => null) !=
+            null) {
+          yamlEditor.remove([dependencyKey, package]);
+          found = true;
+        }
       }
 
-      if (yamlEditor
-              .parseAt(['dev_dependencies', package], orElse: () => null) !=
-          null) {
-        yamlEditor.remove(['dev_dependencies', package]);
+      if (!found) {
+        log.warning('Package $package was not found in the pubspec! '
+            'Please ensure that you spelled the package name correctly!');
       }
 
       /// Windows line endings are already handled by [yamlEditor]

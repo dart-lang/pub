@@ -2,21 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../exceptions.dart';
-import '../exit_codes.dart' as exit_codes;
+import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
-import '../package_info.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 import '../utils.dart';
 
-/// Handles the `add` pub command.
+/// Handles the `add` pub command. Adds dependencies to `pubspec.yaml`.
 class AddCommand extends PubCommand {
   @override
   String get name => 'add';
@@ -46,7 +45,21 @@ class AddCommand extends PubCommand {
     argParser.addOption('git-path', help: 'Path of git package');
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
+
+    argParser.addFlag('offline',
+        help: 'Use cached packages instead of accessing the network.');
+
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
+        help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('precompile',
+        help: 'Precompile executables in immediate dependencies.');
   }
+
+  bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
+  bool get hasHostOptions => hostUrl != null;
 
   @override
   Future run() async {
@@ -54,36 +67,46 @@ class AddCommand extends PubCommand {
       usageException('Must specify a package to be added.');
     }
 
-    final hasGitOptions = gitUrl != null || gitRef != null || gitPath != null;
-    final hasHostOptions = hostUrl != null;
-
     if ((path != null && hasGitOptions) ||
         (hasGitOptions && hasHostOptions) ||
         (hasHostOptions && path != null)) {
       usageException('Packages must either be a git, hosted, or path package.');
     }
 
-    final package = _parsePackage(argResults.rest.first);
+    final packageInformation = _parsePackage(argResults.rest.first);
+    final package = packageInformation.first;
 
     /// Perform version resolution in-memory.
     final updatedPubSpec =
-        await _addPackagesToPubspec(entrypoint.root.pubspec, package);
+        await _addPackageToPubspec(entrypoint.root.pubspec, package);
     final solveResult = await resolveVersions(
         SolveType.GET, cache, Package.inMemory(updatedPubSpec));
 
-    final resultPackage =
-        await _getAndAssertResultPackage(solveResult, package);
+    final resultPackage = solveResult.packages
+        .firstWhere((packageId) => packageId.name == package.name);
+
+    /// Assert that [resultPackage] is within the original user's expectations.
+    if (package.constraint != null &&
+        !package.constraint.allows(resultPackage.version)) {
+      dataError('${package.name} resolved to ${resultPackage.version} which '
+          'does not match the input ${package.constraint}! Exiting.');
+    }
 
     /// Update the pubspec.
-    _updatePubspec(resultPackage, package);
+    _updatePubspec(resultPackage, packageInformation);
 
-    /// Run pub get once we have successfully updated the pubspec
-    await runner.run(['get']);
+    await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+
+    if (isOffline) {
+      log.warning('Warning: Packages added when offline may not resolve to '
+          'the latest versions of your dependencies.');
+    }
   }
 
   /// Creates a new in-memory [Pubspec] by adding [package] to [original].
-  Future<Pubspec> _addPackagesToPubspec(
-      Pubspec original, PackageInfo package) async {
+  Future<Pubspec> _addPackageToPubspec(
+      Pubspec original, PackageRange package) async {
     ArgumentError.checkNotNull(original, 'original');
     ArgumentError.checkNotNull(package, 'package');
 
@@ -93,25 +116,31 @@ class AddCommand extends PubCommand {
     if (isDevelopment) {
       final dependencyNames = dependencies.map((dependency) => dependency.name);
 
+      /// If package is originally in dependencies and we wish to add it to
+      /// dev_dependencies, this is a redundant change, and we should not
+      /// remove the package from dependencies, since it might cause the user's
+      /// code to break.
       if (dependencyNames.contains(package.name)) {
-        log.message('${package.name} is already in dependencies. '
+        usageException('${package.name} is already in dependencies. '
             'Please remove existing entry before adding it to dev_dependencies');
-        await flushThenExit(exit_codes.SUCCESS);
       }
 
-      devDependencies.add(package.toPackageRange(cache));
+      devDependencies.add(package);
     } else {
       final devDependencyNames =
           devDependencies.map((devDependency) => devDependency.name);
 
+      /// If package is originally in dev_dependencies and we wish to add it to
+      /// dependencies, we remove the package from dev_dependencies, since it is
+      /// now redundant.
       if (devDependencyNames.contains(package.name)) {
         log.message('${package.name} was found in dev_dependencies. '
             'Removing ${package.name} and adding it to dependencies instead.');
         devDependencies =
-            devDependencies.takeWhile((d) => d.name != package.name).toList();
+            devDependencies.where((d) => d.name != package.name).toList();
       }
 
-      dependencies.add(package.toPackageRange(cache));
+      dependencies.add(package);
     }
 
     return Pubspec(
@@ -124,7 +153,8 @@ class AddCommand extends PubCommand {
     );
   }
 
-  /// Parse [PackageInfo] from [package].
+  /// Parse [pacakge] to return the corresponding [PackageRange], as well as its
+  /// representation in `pubspec.yaml`.
   ///
   /// [package] must be written in the format
   /// `<package-name>[:<version-constraint>]`, where quotations should be used
@@ -149,79 +179,88 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  PackageInfo _parsePackage(String package) {
-    ArgumentError.checkNotNull(package, 'packages');
-
-    var git = <String, String>{};
-    if (gitUrl != null) git['url'] = gitUrl;
-    if (gitRef != null) git['ref'] = gitRef;
-    if (gitPath != null) git['path'] = gitPath;
-    if (git.isEmpty) git = null;
-
-    Map<String, String> hostInfo;
-    if (hostUrl != null) hostInfo = {'url': hostUrl};
-
-    PackageInfo parsedPackage;
-
-    try {
-      parsedPackage = PackageInfo.from(package,
-          path: path,
-          git: git,
-          pubspecPath: entrypoint.pubspecPath,
-          hostInfo: hostInfo);
-    } on PackageParseException catch (exception) {
-      usageException(exception.message);
-    }
-
-    return parsedPackage;
-  }
-
-  /// Retrieves the result of version resolution on [package], and assert that
-  /// it is within the original user's expectations, throwing a [DataError]
-  /// otherwise.
-  Future<PackageId> _getAndAssertResultPackage(
-      SolveResult result, PackageInfo package) async {
-    ArgumentError.checkNotNull(result, 'result');
+  Pair<PackageRange, dynamic> _parsePackage(String package) {
     ArgumentError.checkNotNull(package, 'package');
 
-    /// The `orElse` scenario should not happen because it would have been
-    /// discovered in the version resolution process.
-    final resultPackage = result.packages
-        .firstWhere((packageId) => packageId.name == package.name);
+    PackageRange packageRange;
+    dynamic pubspecInformation;
 
-    if (package is HostedPackageInfo &&
-        package.constraint != null &&
-        !package.constraint.allows(resultPackage.version)) {
-      dataError('${package.name} resolved to ${resultPackage.version} which '
-          'does not match the input ${package.constraint}! Exiting.');
+    if (hasGitOptions) {
+      dynamic git;
+
+      /// Process the git options to return the simplest representation to be
+      /// added to the pubspec.
+      if (gitRef == null && gitPath == null) {
+        git = gitUrl;
+      } else {
+        git = {'url': gitUrl, 'ref': gitRef, 'path': gitPath};
+        git.removeWhere((key, value) => value == null);
+      }
+
+      packageRange = cache.sources['git']
+          .parseRef(package, git)
+          .withConstraint(VersionRange());
+      pubspecInformation = {'git': git};
+    } else if (path != null) {
+      packageRange = cache.sources['path']
+          .parseRef(package, path, containingPath: entrypoint.pubspecPath)
+          .withConstraint(VersionRange());
+      pubspecInformation = {'path': path};
+    } else {
+      const delimiter = ':';
+      final splitPackage = package.split(delimiter);
+      final packageName = splitPackage[0];
+      final hostInfo =
+          hasHostOptions ? {'url': hostUrl, 'name': packageName} : null;
+
+      /// There shouldn't be more than one `:` in the package information
+      if (splitPackage.length > 2) {
+        throw FormatException(
+            'Invalid package and version constraint: $package');
+      }
+
+      /// We want to allow for [constraint] to take on a `null` value here to
+      /// preserve the fact that the user did not specify a constraint.
+      final constraint = splitPackage.length == 2
+          ? VersionConstraint.parse(splitPackage[1])
+          : null;
+
+      if (hostInfo == null) {
+        pubspecInformation = constraint?.toString();
+      } else if (constraint == null) {
+        pubspecInformation = {'hosted': hostInfo};
+      } else {
+        pubspecInformation = {
+          'hosted': hostInfo,
+          'version': constraint.toString()
+        };
+      }
+
+      packageRange = PackageRange(packageName, cache.sources['hosted'],
+          constraint ?? VersionConstraint.any, hostInfo ?? packageName);
     }
 
-    return resultPackage;
+    return Pair(packageRange, pubspecInformation);
   }
 
-  /// Writes the changes to the pubspec file
-  void _updatePubspec(PackageId resultPackage, PackageInfo package) {
+  /// Writes the changes to the pubspec file.
+  void _updatePubspec(
+      PackageId resultPackage, Pair<PackageRange, dynamic> packageInformation) {
     ArgumentError.checkNotNull(resultPackage, 'resultPackage');
-    ArgumentError.checkNotNull(package, 'package');
+    ArgumentError.checkNotNull(packageInformation, 'pubspecInformation');
 
-    if (entrypoint.pubspecPath == null) {
-      throw FileException(
-          // Make the package dir absolute because for the entrypoint it'll just
-          // be ".", which may be confusing.
-          'Could not find a file named "pubspec.yaml" in '
-          '"${canonicalize('.')}".',
-          entrypoint.pubspecPath);
-    }
+    final package = packageInformation.first;
+    final pubspecInformation = packageInformation.last;
 
     final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
     final packagePath = [dependencyKey, package.name];
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
-    if (package.pubspecInfo == null) {
+    if (pubspecInformation == null) {
       yamlEditor.update(packagePath, '^${resultPackage.version}');
     } else {
-      yamlEditor.update(packagePath, package.pubspecInfo);
+      yamlEditor.update(packagePath, pubspecInformation);
     }
 
     if (!isDevelopment &&
