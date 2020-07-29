@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+// ignore: unused_import
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:source_span/source_span.dart';
