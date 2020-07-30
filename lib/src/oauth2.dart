@@ -107,9 +107,11 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn,
     {String hostedURLName}) {
   return _getClient(cache, hostedURLName).then((client) {
     return fn(client).whenComplete(() {
-      client.close();
-      // Be sure to save the credentials even when an error happens.
-      _saveCredentials(cache, client.credentials, hostedURLName);
+      if (client != null) {
+        client.close();
+        // Be sure to save the credentials even when an error happens.
+        _saveCredentials(cache, client.credentials, hostedURLName);
+      }
     });
   }).catchError((error) {
     if (error is ExpirationException) {
@@ -155,7 +157,9 @@ Future<Client> _getClient(SystemCache cache, String hostedURLName) async {
       useIdToken = globalAuthConfig[hostedURLName].useIdToken;
     } else {
       _loadHostedAuthConfigFile(cache, hostedURLName);
-      useIdToken = globalAuthConfig[hostedURLName].useIdToken;
+      if (globalAuthConfig.containsKey(hostedURLName)) {
+        useIdToken = globalAuthConfig[hostedURLName].useIdToken;
+      }
     }
   }
 
@@ -223,20 +227,14 @@ void _saveCredentials(
     globalCredentials['default'] = credentials;
   }
 
+  String credentialsPath;
   if (hostedURLName != null) {
-    var credentialsPath =
-        path.join(Directory.current.path, '${hostedURLName}_credentials.json');
-    ensureDir(path.dirname(credentialsPath));
-    writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
-    credentialsPath =
-        path.join(cache.rootDir, '${hostedURLName}_credentials.json');
-    ensureDir(path.dirname(credentialsPath));
-    writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+    credentialsPath = _hostedURLNameCredentialsFile(cache, hostedURLName);
   } else {
-    var credentialsPath = _credentialsFile(cache);
-    ensureDir(path.dirname(credentialsPath));
-    writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+    credentialsPath = _credentialsFile(cache);
   }
+  ensureDir(path.dirname(credentialsPath));
+  writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
 }
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
@@ -244,19 +242,13 @@ String _credentialsFile(SystemCache cache) =>
     path.join(cache.rootDir, 'credentials.json');
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
-String _hostedURLNameCredentialsFile(SystemCache cache, String hostedURLName) {
-  var p =
-      path.join(Directory.current.path, '${hostedURLName}_credentials.json');
-  if (!fileExists(p)) {
-    p = path.join(cache.rootDir, '${hostedURLName}_credentials.json');
-  }
-  return p;
-}
+String _hostedURLNameCredentialsFile(SystemCache cache, String hostedURLName) =>
+    path.join(cache.rootDir, '${hostedURLName}_credentials.json');
 
 /// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
-Future<Client> _authorize() async {
+Future<Client> _authorize({String hostedURLName}) async {
   var grant =
       AuthorizationCodeGrant(_identifier, _authorizationEndpoint, tokenEndpoint,
           secret: _secret,
@@ -297,7 +289,7 @@ Future<Client> _authorize() async {
       'Waiting for your authorization...');
 
   var client = await completer.future;
-  globalCredentials['default'] = client.credentials;
+  globalCredentials[hostedURLName ?? 'default'] = client.credentials;
   log.message('Successfully authorized.\n');
   return client;
 }
@@ -309,6 +301,11 @@ Future<Client> _authorizeHostedUrl(
     String hostedURLName, SystemCache cache) async {
 //
   final authConfig = _loadHostedAuthConfigFile(cache, hostedURLName);
+  if (authConfig == null) {
+    return _authorize(
+        hostedURLName:
+            hostedURLName); // if there is no auth configuration, then fallback to default
+  }
   var grant = AuthorizationCodeGrant(authConfig.identifier,
       authConfig.authorizationEndpoint, authConfig.tokenEndpoint,
       secret: authConfig.secret,

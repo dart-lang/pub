@@ -184,9 +184,11 @@ class BoundHostedSource extends CachedSource {
     if (url.host != 'pub.dartlang.org') {
       final client =
           await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
-      _pubApiHeaders['Authorization'] = client.useIdToken == true
-          ? 'Bearer ${client.credentials.idToken}'
-          : 'Bearer ${client.credentials.accessToken}';
+      if (client != null) {
+        _pubApiHeaders['Authorization'] = client.useIdToken == true
+            ? 'Bearer ${client.credentials.idToken}'
+            : 'Bearer ${client.credentials.accessToken}';
+      }
     }
 
     String body;
@@ -412,16 +414,21 @@ class BoundHostedSource extends CachedSource {
     if (url.host != 'pub.dartlang.org') {
       final client =
           await oauth2.getClient(cache: systemCache, hostedURLName: url.host);
-      await io.HttpClient().getUrl(url).then((io.HttpClientRequest request) {
-        request.headers.add(
-            'Authorization',
-            client.useIdToken == true
-                ? 'Bearer ${client.credentials.idToken}'
-                : 'Bearer ${client.credentials.accessToken}');
-        return request.close();
-      }).then((io.HttpClientResponse response) async {
-        await extractTarGz(response.asBroadcastStream(), tempDir);
-      });
+      if (client != null) {
+        await io.HttpClient().getUrl(url).then((io.HttpClientRequest request) {
+          request.headers.add(
+              'Authorization',
+              client.useIdToken == true
+                  ? 'Bearer ${client.credentials.idToken}'
+                  : 'Bearer ${client.credentials.accessToken}');
+          return request.close();
+        }).then((io.HttpClientResponse response) async {
+          await extractTarGz(response.asBroadcastStream(), tempDir);
+        });
+      } else {
+        var response = await httpClient.send(http.Request('GET', url));
+        await extractTarGz(response.stream, tempDir);
+      }
     } else {
       var response = await httpClient.send(http.Request('GET', url));
       await extractTarGz(response.stream, tempDir);
