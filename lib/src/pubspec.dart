@@ -14,6 +14,7 @@ import 'package:yaml/yaml.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
+import 'language_version.dart';
 import 'log.dart';
 import 'package_name.dart';
 import 'sdk.dart';
@@ -444,6 +445,17 @@ class Pubspec {
   /// Whether or not the pubspec has no contents.
   bool get isEmpty =>
       name == null && version == Version.none && dependencies.isEmpty;
+
+  /// The language version implied by the sdk constraint.
+  ///
+  /// Given no or unbounded constraint we assume language version 1.0.
+  LanguageVersion get languageVersion {
+    final constraint = originalDartSdkConstraint;
+    if (constraint is VersionRange && constraint.min != null) {
+      return LanguageVersion.fromVersionRange(constraint);
+    }
+    return LanguageVersion(1, 0);
+  }
 
   /// Loads the pubspec for a package located in [packageDir].
   ///
