@@ -21,6 +21,7 @@ import 'validator/flutter_plugin_format.dart';
 import 'validator/language_version.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
+import 'validator/null_safety_mixed_mode.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/readme.dart';
@@ -136,6 +137,7 @@ abstract class Validator {
       FlutterPluginFormatValidator(entrypoint),
       LanguageVersionValidator(entrypoint),
       RelativeVersionNumberingValidator(entrypoint, serverUrl),
+      NullSafetyMixedModeValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
@@ -164,6 +166,17 @@ abstract class Validator {
         );
         for (var warning in warnings) {
           log.warning("* ${warning.split('\n').join('\n  ')}");
+        }
+        log.warning('');
+      }
+
+      if (hints.isNotEmpty) {
+        final s = hints.length > 1 ? 's' : '';
+        log.warning(
+          'Package validation found the following hint$s:',
+        );
+        for (var hint in hints) {
+          log.warning("* ${hint.split('\n').join('\n  ')}");
         }
         log.warning('');
       }

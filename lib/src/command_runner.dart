@@ -105,14 +105,6 @@ class PubCommandRunner extends CommandRunner {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
-    argParser.addFlag('with-prejudice',
-        hide: !isAprilFools,
-        negatable: false,
-        help: 'Execute commands with prejudice.');
-    argParser.addFlag('sparkle',
-        hide: !isAprilFools,
-        negatable: false,
-        help: 'A more sparkly experience.');
 
     addCommand(AddCommand());
     addCommand(BuildCommand());
@@ -146,9 +138,6 @@ class PubCommandRunner extends CommandRunner {
 
   @override
   Future runCommand(ArgResults topLevelResults) async {
-    log.withPrejudice = topLevelResults['with-prejudice'];
-    log.sparkle = topLevelResults['sparkle'];
-
     _checkDepsSynced();
 
     if (topLevelResults['version']) {

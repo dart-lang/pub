@@ -96,7 +96,7 @@ class OutdatedCommand extends PubCommand {
 
     final upgradablePubspec = includeDevDependencies
         ? rootPubspec
-        : _stripDevDependencies(rootPubspec);
+        : stripDevDependencies(rootPubspec);
 
     final resolvablePubspec = _stripVersionConstraints(upgradablePubspec);
 
@@ -104,8 +104,8 @@ class OutdatedCommand extends PubCommand {
     List<PackageId> resolvablePackages;
 
     await log.spinner('Resolving', () async {
-      upgradablePackages = await _tryResolve(upgradablePubspec);
-      resolvablePackages = await _tryResolve(resolvablePubspec);
+      upgradablePackages = await _tryResolve(upgradablePubspec, cache);
+      resolvablePackages = await _tryResolve(resolvablePubspec, cache);
     }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
@@ -208,10 +208,13 @@ class OutdatedCommand extends PubCommand {
     if (argResults['json']) {
       await _outputJson(rows, mode, showAll: showAll);
     } else {
-      if (argResults.wasParsed('color') && argResults['color']) {
-        forceColors = true;
+      if (argResults.wasParsed('color')) {
+        forceColors = argResults['color'];
       }
-      final useColors = argResults['color'] || canUseSpecialChars;
+      final useColors = argResults.wasParsed('color')
+          ? argResults['color']
+          : canUseSpecialChars;
+
       await _outputHuman(rows, mode,
           useColors: useColors,
           showAll: showAll,
@@ -310,23 +313,23 @@ class OutdatedCommand extends PubCommand {
 
     return nonDevDependencies;
   }
+}
 
-  /// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
-  Future<List<PackageId>> _tryResolve(Pubspec pubspec) async {
-    try {
-      return (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(pubspec),
-      ))
-          .packages;
-    } on SolveFailure {
-      return [];
-    }
+/// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
+Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+  try {
+    return (await resolveVersions(
+      SolveType.UPGRADE,
+      cache,
+      Package.inMemory(pubspec),
+    ))
+        .packages;
+  } on SolveFailure {
+    return [];
   }
 }
 
-Pubspec _stripDevDependencies(Pubspec original) {
+Pubspec stripDevDependencies(Pubspec original) {
   return Pubspec(
     original.name,
     version: original.version,
@@ -682,7 +685,7 @@ Showing packages where the current version doesn't fully support null safety.
             if (versionDetails != null) {
               final nullSafety = nullSafetyMap[versionDetails._id];
 
-              switch (nullSafety) {
+              switch (nullSafety.compliance) {
                 case NullSafetyCompliance.analysisFailed:
                   color = color = log.gray;
                   prefix = '?';
@@ -695,7 +698,7 @@ Showing packages where the current version doesn't fully support null safety.
                   asDesired = true;
                   break;
                 case NullSafetyCompliance.notCompliant:
-                case NullSafetyCompliance.apiOnly:
+                case NullSafetyCompliance.mixed:
                   color = log.red;
                   prefix = '✗';
                   nullSafetyJson = false;

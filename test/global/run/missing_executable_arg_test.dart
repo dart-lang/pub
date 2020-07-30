@@ -19,7 +19,9 @@ Usage: pub global run <package>:<executable> [args...]
     --enable-experiment=<experiment>    Runs the executable in a VM with the
                                         given experiments enabled. (Will disable
                                         snapshotting, resulting in slower
-                                        startup)
+                                        startup).
+    --[no-]sound-null-safety            Override the default null safety
+                                        execution mode.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);

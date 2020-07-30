@@ -30,8 +30,10 @@ class GlobalRunCommand extends PubCommand {
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',
         help: 'Runs the executable in a VM with the given experiments enabled. '
-            '(Will disable snapshotting, resulting in slower startup)',
+            '(Will disable snapshotting, resulting in slower startup).',
         valueHelp: 'experiment');
+    argParser.addFlag('sound-null-safety',
+        help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -62,8 +64,7 @@ class GlobalRunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    final experiments = argResults['enable-experiment'] as List;
-    final vmArgs = vmArgFromExperiments(experiments);
+    final vmArgs = vmArgsFromArgResults(argResults);
     final globalEntrypoint = await globals.find(package);
     final exitCode = await runExecutable(globalEntrypoint,
         Executable.adaptProgramName(package, executable), args,
