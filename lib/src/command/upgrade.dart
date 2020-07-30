@@ -71,7 +71,7 @@ class UpgradeCommand extends PubCommand {
       ];
 
       final resolvablePubspec =
-          stripVersionConstraints(rootPubspec, upgradeOnly: upgradeOnly);
+          removeVersionUpperBounds(rootPubspec, upgradeOnly: upgradeOnly);
 
       /// Solve [resolvablePubspec] and consolidate the resolved versions of the
       /// packages into a map for quick searching.

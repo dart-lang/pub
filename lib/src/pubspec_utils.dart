@@ -36,7 +36,7 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 ///
 /// If [upgradeOnly] is provided, only the packages whose names are in
 /// [upgradeOnly] will have their upper bounds removed.
-Pubspec stripVersionConstraints(Pubspec original, {List<String> upgradeOnly}) {
+Pubspec removeVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
   upgradeOnly ??= [];
 
   List<PackageRange> _unconstrained(

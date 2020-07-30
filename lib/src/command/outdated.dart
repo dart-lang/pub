@@ -98,7 +98,7 @@ class OutdatedCommand extends PubCommand {
         ? rootPubspec
         : stripDevDependencies(rootPubspec);
 
-    final resolvablePubspec = stripVersionConstraints(upgradablePubspec);
+    final resolvablePubspec = removeVersionUpperBounds(upgradablePubspec);
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
