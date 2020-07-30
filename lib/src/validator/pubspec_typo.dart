@@ -31,7 +31,7 @@ class PubspecTypoValidator extends Validator {
       // 0.73 is a magic value determined by looking at the most common typos
       // in all the pubspecs on pub.dev.
       if (bestDiceCoefficient >= 0.73 && bestDiceCoefficient < 1.0) {
-        errors.add('$key appears to not be a key recognizable by pub - '
+        errors.add('$key is not a key recognizable by pub - '
             'did you mean $closestKey?');
       }
     }
