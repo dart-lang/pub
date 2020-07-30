@@ -96,6 +96,12 @@ class UpgradeCommand extends PubCommand {
       for (final package in allDependencies) {
         final resolvedPackage = resolvablePackages[package.name];
 
+        /// If packages were specified on the command line, [dependencyChanges]
+        /// will only contain the changes made to those packages since we do
+        /// not modify the package constraints of other packages, so there is
+        /// never a case where
+        /// `!package.constraint.allows(resolvedPackage.version)` evaluates to
+        /// true.
         if (resolvedPackage != null &&
             !package.constraint.allows(resolvedPackage.version) &&
             package.source is HostedSource) {
