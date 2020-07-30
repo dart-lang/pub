@@ -2,11 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub_semver/pub_semver.dart';
-
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/hosted.dart';
+import 'utils.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
@@ -32,8 +31,11 @@ Pubspec stripDependencyOverrides(Pubspec original) {
   );
 }
 
-/// Returns new pubspec with the same dependencies as [original] but with no
-/// version constraints on hosted packages.
+/// Returns new pubspec with the same dependencies as [original] but with the
+/// upper bounds of the constraints removed.
+///
+/// If [upgradeOnly] is provided, only the packages whose names are in
+/// [upgradeOnly] will have their upper bounds removed.
 Pubspec stripVersionConstraints(Pubspec original, {List<String> upgradeOnly}) {
   upgradeOnly ??= [];
 
@@ -50,7 +52,7 @@ Pubspec stripVersionConstraints(Pubspec original, {List<String> upgradeOnly}) {
         unconstrainedRange = PackageRange(
             packageRange.name,
             packageRange.source,
-            VersionConstraint.any,
+            removeUpperBound(packageRange.constraint),
             packageRange.description,
             features: packageRange.features);
       }

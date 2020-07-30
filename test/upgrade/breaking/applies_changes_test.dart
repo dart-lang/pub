@@ -246,5 +246,38 @@ void main() {
 
       await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
     });
+
+    test('upgrade should not downgrade any versions', () async {
+      /// The version solver solves the packages with the least number of
+      /// versions remaining, so we add more 'bar' packages to force 'foo' to be
+      /// resolved first
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+        builder.serve('foo', '2.0.0', pubspec: {
+          'dependencies': {'bar': '1.0.0'}
+        });
+        builder.serve('bar', '1.0.0');
+        builder.serve('bar', '2.0.0');
+        builder.serve('bar', '3.0.0');
+        builder.serve('bar', '4.0.0');
+      });
+
+      // Create the lockfile.
+      await d.appDir({'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+
+      await pubGet();
+
+      // Recreating the appdir because the previous one only lasts for one
+      // command.
+      await d.appDir({'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+
+      // Only two breaking changes should be detected.
+      await pubUpgrade(
+          args: ['--breaking'], output: contains('No breaking changes deasda'));
+
+      await d.appDir({'foo': '^1.0.0', 'bar': '^2.0.0'}).validate();
+
+      await d.appPackagesFile({'foo': '^1.0.0', 'bar': '^2.0.0'}).validate();
+    });
   });
 }

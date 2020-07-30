@@ -619,3 +619,20 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
 }
+
+/// Removes the upper bound of [constraint]. [constraint] must not be the
+/// empty version constraint.
+VersionRange removeUpperBound(VersionConstraint constraint) {
+  /// A [VersionConstraint] has to either be a [VersionRange], [VersionUnion],
+  /// or the empty [VersionConstraint].
+  if (constraint is VersionRange) {
+    return VersionRange(min: constraint.min, includeMin: constraint.includeMin);
+  }
+
+  if (constraint is VersionUnion && constraint.ranges.isNotEmpty) {
+    final firstRange = constraint.ranges.first;
+    return VersionRange(min: firstRange.min, includeMin: firstRange.includeMin);
+  }
+
+  throw UnsupportedError('Unable to remove upper bound of empty constraint!');
+}
