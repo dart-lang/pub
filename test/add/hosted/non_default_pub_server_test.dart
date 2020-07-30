@@ -32,4 +32,31 @@ void main() {
       }
     }).validate();
   });
+
+  test(
+      'adds a package from a non-default pub server with no version constraint',
+      () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    await serveErrors();
+
+    var server = await PackageServer.start((builder) {
+      builder.serve('foo', '1.2.3');
+    });
+
+    await d.appDir({}).create();
+
+    final url = server.url;
+
+    await pubAdd(args: ['foo', '--hosted-url', url]);
+
+    await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appDir({
+      'foo': {
+        'version': '^1.2.3',
+        'hosted': {'name': 'foo', 'url': url}
+      }
+    }).validate();
+  });
 }

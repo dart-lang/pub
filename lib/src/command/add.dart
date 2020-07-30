@@ -32,12 +32,16 @@ class AddCommand extends PubCommand {
   String get gitRef => argResults['git-ref'];
   String get hostUrl => argResults['hosted-url'];
   String get path => argResults['path'];
+  String get sdk => argResults['sdk'];
+
+  bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
+  bool get hasHostOptions => hostUrl != null;
 
   AddCommand() {
     argParser.addFlag('dev',
         abbr: 'd',
         negatable: false,
-        help: 'Adds packages to the development dependencies instead.');
+        help: 'Adds package to the development dependencies instead.');
 
     argParser.addOption('git-url', help: 'Git URL of the package');
     argParser.addOption('git-ref',
@@ -45,6 +49,7 @@ class AddCommand extends PubCommand {
     argParser.addOption('git-path', help: 'Path of git package');
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
+    argParser.addOption('sdk', help: 'SDK source for package');
 
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -58,19 +63,10 @@ class AddCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
   }
 
-  bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
-  bool get hasHostOptions => hostUrl != null;
-
   @override
   Future run() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
-    }
-
-    if ((path != null && hasGitOptions) ||
-        (hasGitOptions && hasHostOptions) ||
-        (hasHostOptions && path != null)) {
-      usageException('Packages must either be a git, hosted, or path package.');
     }
 
     final packageInformation = _parsePackage(argResults.rest.first);
@@ -182,8 +178,30 @@ class AddCommand extends PubCommand {
   Pair<PackageRange, dynamic> _parsePackage(String package) {
     ArgumentError.checkNotNull(package, 'package');
 
+    if ([path != null, hasGitOptions, hasHostOptions, sdk != null]
+            .where((element) => element == true)
+            .length >=
+        2) {
+      usageException(
+          'Packages must either be a git, hosted, sdk, or path package.');
+    }
+
     PackageRange packageRange;
     dynamic pubspecInformation;
+
+    final splitPackage = package.split(':');
+    final packageName = splitPackage[0];
+
+    /// There shouldn't be more than one `:` in the package information
+    if (splitPackage.length > 2) {
+      throw FormatException('Invalid package and version constraint: $package');
+    }
+
+    /// We want to allow for [constraint] to take on a `null` value here to
+    /// preserve the fact that the user did not specify a constraint.
+    final constraint = splitPackage.length == 2
+        ? VersionConstraint.parse(splitPackage[1])
+        : null;
 
     if (hasGitOptions) {
       dynamic git;
@@ -198,32 +216,25 @@ class AddCommand extends PubCommand {
       }
 
       packageRange = cache.sources['git']
-          .parseRef(package, git)
-          .withConstraint(VersionRange());
+          .parseRef(packageName, git)
+          .withConstraint(VersionConstraint.any);
       pubspecInformation = {'git': git};
     } else if (path != null) {
       packageRange = cache.sources['path']
-          .parseRef(package, path, containingPath: entrypoint.pubspecPath)
-          .withConstraint(VersionRange());
+          .parseRef(packageName, path, containingPath: entrypoint.pubspecPath)
+          .withConstraint(VersionConstraint.any);
       pubspecInformation = {'path': path};
+    } else if (sdk != null) {
+      packageRange = cache.sources['sdk']
+          .parseRef(packageName, sdk)
+          .withConstraint(constraint ?? VersionConstraint.any);
+      pubspecInformation = {'sdk': sdk};
+      if (constraint != null) {
+        pubspecInformation['version'] = constraint.toString();
+      }
     } else {
-      const delimiter = ':';
-      final splitPackage = package.split(delimiter);
-      final packageName = splitPackage[0];
       final hostInfo =
           hasHostOptions ? {'url': hostUrl, 'name': packageName} : null;
-
-      /// There shouldn't be more than one `:` in the package information
-      if (splitPackage.length > 2) {
-        throw FormatException(
-            'Invalid package and version constraint: $package');
-      }
-
-      /// We want to allow for [constraint] to take on a `null` value here to
-      /// preserve the fact that the user did not specify a constraint.
-      final constraint = splitPackage.length == 2
-          ? VersionConstraint.parse(splitPackage[1])
-          : null;
 
       if (hostInfo == null) {
         pubspecInformation = constraint?.toString();
@@ -250,7 +261,19 @@ class AddCommand extends PubCommand {
     ArgumentError.checkNotNull(packageInformation, 'pubspecInformation');
 
     final package = packageInformation.first;
-    final pubspecInformation = packageInformation.last;
+    var pubspecInformation = packageInformation.last;
+
+    if ((sdk != null || hasHostOptions) &&
+        pubspecInformation is Map &&
+        pubspecInformation['version'] == null) {
+      /// We cannot simply assign the value of version since it is likely that
+      /// [pubspecInformation] takes on the type
+      /// [Map<String, Map<String, String>>]
+      pubspecInformation = {
+        ...pubspecInformation,
+        'version': '^${resultPackage.version}'
+      };
+    }
 
     final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
     final packagePath = [dependencyKey, package.name];
