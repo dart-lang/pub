@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
@@ -14,7 +13,7 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
-import '../pubspec.dart';
+import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
 
@@ -52,7 +51,8 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('breaking',
         help: 'Upgrades packages to their latest resolvable version, '
-            'and updates pubspec.yaml');
+            'and updates pubspec.yaml.',
+        negatable: false);
   }
 
   @override
@@ -62,25 +62,38 @@ class UpgradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
 
-    if (argResults.wasParsed('breaking')) {
-      final useLatest = argResults.rest;
-
+    if (argResults['breaking']) {
+      final upgradeOnly = argResults.rest;
       final rootPubspec = entrypoint.root.pubspec;
-      final resolvablePubspec =
-          _stripVersionConstraints(rootPubspec, useLatest: useLatest);
-
-      Map<String, PackageId> resolvablePackages;
-      await log.spinner('Resolving', () async {
-        resolvablePackages = await _tryResolve(resolvablePubspec);
-      }, condition: _shouldShowSpinner);
-
-      final dependencyChanges = <PackageRange, PackageId>{};
       final allDependencies = [
         ...rootPubspec.dependencies.values,
         ...rootPubspec.devDependencies.values
       ];
 
-      for (var package in allDependencies) {
+      final resolvablePubspec =
+          stripVersionConstraints(rootPubspec, upgradeOnly: upgradeOnly);
+
+      /// Solve [resolvablePubspec] and consolidate the resolved versions of the
+      /// packages into a map for quick searching.
+      final resolvablePackages = <String, PackageId>{};
+      await log.spinner('Resolving', () async {
+        final solveResult = await tryResolveVersions(
+          SolveType.UPGRADE,
+          cache,
+          Package.inMemory(resolvablePubspec),
+        );
+
+        final resolvedPackages = solveResult?.packages ?? [];
+
+        for (final resolvedPackage in resolvedPackages) {
+          resolvablePackages[resolvedPackage.name] = resolvedPackage;
+        }
+      }, condition: _shouldShowSpinner);
+
+      /// Consolidate the changes that will be made to `pubspec.yaml`.
+      final dependencyChanges = <PackageRange, PackageId>{};
+
+      for (final package in allDependencies) {
         final resolvedPackage = resolvablePackages[package.name];
 
         if (resolvedPackage != null &&
@@ -91,17 +104,16 @@ class UpgradeCommand extends PubCommand {
       }
 
       if (!argResults['dry-run']) {
-        await _writeToPubspec(dependencyChanges);
-        await Entrypoint.current(cache).acquireDependencies(SolveType.UPGRADE);
+        await _updatePubspec(dependencyChanges);
       }
 
-      _outputHuman(dependencyChanges, argResults['dry-run']);
-    } else {
-      await entrypoint.acquireDependencies(SolveType.UPGRADE,
-          useLatest: argResults.rest,
-          dryRun: argResults['dry-run'],
-          precompile: argResults['precompile']);
+      _outputBreakingChangeSummary(dependencyChanges);
     }
+
+    await Entrypoint.current(cache).acquireDependencies(SolveType.UPGRADE,
+        useLatest: argResults.rest,
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile']);
 
     if (isOffline) {
       log.warning('Warning: Upgrading when offline may not update you to the '
@@ -111,7 +123,7 @@ class UpgradeCommand extends PubCommand {
 
   /// Writes the differences between [resolvedPackages] and the current
   /// dependencies to the pubspec file.
-  Future<void> _writeToPubspec(
+  Future<void> _updatePubspec(
       Map<PackageRange, PackageId> dependencyChanges) async {
     ArgumentError.checkNotNull(dependencyChanges, 'dependencyChanges');
 
@@ -134,45 +146,20 @@ class UpgradeCommand extends PubCommand {
     /// Windows line endings are already handled by [yamlEditor]
     writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
   }
-
-  /// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
-  Future<Map<String, PackageId>> _tryResolve(Pubspec pubspec) async {
-    try {
-      final resolvedPackages = (await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(pubspec),
-      ))
-          .packages;
-
-      final result = <String, PackageId>{};
-
-      for (final resolvedPackage in resolvedPackages) {
-        result[resolvedPackage.name] = resolvedPackage;
-      }
-
-      return result;
-    } on SolveFailure {
-      return <String, PackageId>{};
-    }
-  }
 }
 
-/// Outputs a summary of changes that will be made
-void _outputHuman(
-    Map<PackageRange, PackageId> dependencyChanges, bool isDryRun) {
+/// Outputs a summary of breaking changes that will be made.
+void _outputBreakingChangeSummary(
+    Map<PackageRange, PackageId> dependencyChanges) {
   ArgumentError.checkNotNull(dependencyChanges, 'dependencyChanges');
 
   if (dependencyChanges.isEmpty) {
     log.message('No breaking changes detected!');
   } else {
-    if (isDryRun) {
-      log.message(
-          '${dependencyChanges.length} breaking change(s) would have been made:');
-    } else {
-      log.message(
-          '${dependencyChanges.length} breaking change(s) have been made:');
-    }
+    final s = dependencyChanges.length == 1 ? '' : 's';
+
+    log.message(
+        'Detected ${dependencyChanges.length} potential breaking change$s:');
 
     for (final change in dependencyChanges.entries) {
       final initialPackage = change.key;
@@ -182,42 +169,4 @@ void _outputHuman(
           '^${finalPackage.version}');
     }
   }
-}
-
-/// Returns new pubspec with the same dependencies as [original] but with no
-/// version constraints on hosted packages.
-Pubspec _stripVersionConstraints(Pubspec original, {List<String> useLatest}) {
-  useLatest ??= [];
-
-  List<PackageRange> _unconstrained(Map<String, PackageRange> constrained,
-      {List<String> useLatest}) {
-    final result = <PackageRange>[];
-
-    for (final name in constrained.keys) {
-      final packageRange = constrained[name];
-      var unconstrainedRange = packageRange;
-      if (packageRange.source is HostedSource &&
-          (useLatest.isEmpty || useLatest.contains(packageRange.name))) {
-        unconstrainedRange = PackageRange(
-            packageRange.name,
-            packageRange.source,
-            VersionConstraint.any,
-            packageRange.description,
-            features: packageRange.features);
-      }
-      result.add(unconstrainedRange);
-    }
-
-    return result;
-  }
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: _unconstrained(original.dependencies, useLatest: useLatest),
-    devDependencies:
-        _unconstrained(original.devDependencies, useLatest: useLatest),
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
 }

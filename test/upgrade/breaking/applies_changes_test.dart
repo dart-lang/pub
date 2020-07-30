@@ -34,7 +34,7 @@ void main() {
       await pubUpgrade(
           args: ['--breaking'],
           output: allOf([
-            contains('2 breaking change(s) have been made:'),
+            contains('Detected 2 potential breaking changes:'),
             contains('foo: ^1.0.0 -> ^2.0.0'),
             contains('bar: ^0.1.0 -> ^0.2.0')
           ]));
@@ -88,7 +88,7 @@ void main() {
       await pubUpgrade(
           args: ['--breaking'],
           output: allOf([
-            contains('2 breaking change(s) have been made:'),
+            contains('Detected 2 potential breaking changes:'),
             contains('foo: ^1.0.0 -> ^2.0.0'),
             contains('bar: ^0.1.0 -> ^0.2.0')
           ]));
@@ -126,11 +126,11 @@ void main() {
       // command.
       await d.appDir({'foo': '^1.0.0', 'bar': '^0.1.0'}).create();
 
-      // Only two breaking changes should be detected.
+      // Only one breaking changes should be detected.
       await pubUpgrade(
           args: ['--breaking', 'foo'],
           output: allOf([
-            contains('1 breaking change(s) have been made:'),
+            contains('Detected 1 potential breaking change:'),
             contains('foo: ^1.0.0 -> ^2.0.0'),
           ]));
 
@@ -164,7 +164,7 @@ void main() {
       await pubUpgrade(
           args: ['--breaking'],
           output: allOf([
-            contains('1 breaking change(s) have been made:'),
+            contains('Detected 1 potential breaking change:'),
             contains('foo: 1.0.0 -> ^3.0.0')
           ]));
 

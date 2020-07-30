@@ -19,8 +19,8 @@ import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../pubspec_utils.dart';
 import '../solver.dart';
-import '../source/hosted.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -92,13 +92,13 @@ class OutdatedCommand extends PubCommand {
 
     final rootPubspec = includeDependencyOverrides
         ? entrypoint.root.pubspec
-        : _stripDependencyOverrides(entrypoint.root.pubspec);
+        : stripDependencyOverrides(entrypoint.root.pubspec);
 
     final upgradablePubspec = includeDevDependencies
         ? rootPubspec
         : stripDevDependencies(rootPubspec);
 
-    final resolvablePubspec = _stripVersionConstraints(upgradablePubspec);
+    final resolvablePubspec = stripVersionConstraints(upgradablePubspec);
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
@@ -315,71 +315,16 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
-/// Try to solve [pubspec] return [PackageId]'s in the resolution or `null`.
+/// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
 Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
-  try {
-    return (await resolveVersions(
-      SolveType.UPGRADE,
-      cache,
-      Package.inMemory(pubspec),
-    ))
-        .packages;
-  } on SolveFailure {
+  final solveResult = await tryResolveVersions(
+      SolveType.UPGRADE, cache, Package.inMemory(pubspec));
+
+  if (solveResult == null) {
     return [];
   }
-}
 
-Pubspec stripDevDependencies(Pubspec original) {
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
-}
-
-Pubspec _stripDependencyOverrides(Pubspec original) {
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: original.devDependencies.values,
-    dependencyOverrides: [],
-  );
-}
-
-/// Returns new pubspec with the same dependencies as [original] but with no
-/// version constraints on hosted packages.
-Pubspec _stripVersionConstraints(Pubspec original) {
-  List<PackageRange> _unconstrained(Map<String, PackageRange> constrained) {
-    final result = <PackageRange>[];
-    for (final name in constrained.keys) {
-      final packageRange = constrained[name];
-      var unconstrainedRange = packageRange;
-      if (packageRange.source is HostedSource) {
-        unconstrainedRange = PackageRange(
-            packageRange.name,
-            packageRange.source,
-            VersionConstraint.any,
-            packageRange.description,
-            features: packageRange.features);
-      }
-      result.add(unconstrainedRange);
-    }
-    return result;
-  }
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: _unconstrained(original.dependencies),
-    devDependencies: _unconstrained(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
+  return solveResult.packages;
 }
 
 Future<void> _outputJson(

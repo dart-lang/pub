@@ -68,7 +68,7 @@ void main() {
     await pubUpgrade(
         args: ['--dry-run', '--breaking'],
         output: allOf([
-          contains('1 breaking change(s) would have been made:'),
+          contains('Detected 1 potential breaking change:'),
           contains('foo: 1.0.0 -> ^2.0.0')
         ]));
 
