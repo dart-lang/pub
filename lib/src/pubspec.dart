@@ -11,7 +11,6 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
-import 'dice_coefficient.dart';
 import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
@@ -64,26 +63,6 @@ Using a default value of `true`.
 
 /// Whether or not to warn about pre-release SDK overrides.
 bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
-
-/// List of keys in `pubspec.yaml` that will be recognized by pub.
-///
-/// Retrieved from https://dart.dev/tools/pub/pubspec
-const validPubspecKeys = [
-  'name',
-  'version',
-  'description',
-  'homepage',
-  'repository',
-  'issue_tracker',
-  'documentation',
-  'dependencies',
-  'dev_dependencies',
-  'dependency_overrides',
-  'environment',
-  'executables',
-  'publish_to',
-  'flutter'
-];
 
 /// The parsed contents of a pubspec file.
 ///
@@ -586,43 +565,6 @@ class Pubspec {
         expectedName: expectedName,
         includeDefaultSdkConstraint: includeDefaultSdkConstraint,
         location: location);
-  }
-
-  /// Returns a map containing entries of possible typo key found in the
-  /// pubspec mapped to the suggested valid key it might be.
-  Map<String, String> get typoWarnings {
-    if (fields == null) return <String, String>{};
-
-    final result = <String, String>{};
-
-    for (final key in fields.keys) {
-      var bestDiceCoefficient = 0.0;
-      var closestKey = '';
-
-      for (final validKey in validPubspecKeys) {
-        final dice = diceCoefficient(key, validKey);
-        if (dice > bestDiceCoefficient) {
-          bestDiceCoefficient = dice;
-          closestKey = validKey;
-        }
-      }
-
-      // 0.33 is a magic value determined based on the dice coefficient of a
-      // one letter typo on the key 'name'.
-      if (bestDiceCoefficient >= 0.33 && bestDiceCoefficient < 1.0) {
-        result[key] = closestKey;
-      }
-    }
-
-    return result;
-  }
-
-  /// Prints [typoWarnings] in a human-readable format.
-  void printTypoWarnings() {
-    for (final entry in typoWarnings.entries) {
-      message('${entry.key} appears to be an invalid key - '
-          'did you mean ${entry.value}?');
-    }
   }
 
   /// Returns a list of most errors in this pubspec.
