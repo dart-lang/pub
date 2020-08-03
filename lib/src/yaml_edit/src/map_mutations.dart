@@ -186,21 +186,36 @@ SourceEdit _removeFromBlockMap(
   ArgumentError.checkNotNull(valueNode, 'valueNode');
 
   final keySpan = keyNode.span;
-  final end = getContentSensitiveEnd(valueNode);
+  var end = getContentSensitiveEnd(valueNode);
+  final yaml = yamlEdit.toString();
 
   if (map.length == 1) {
     final start = map.span.start.offset;
-
     return SourceEdit(start, end - start, '{}');
   }
 
-  var yaml = yamlEdit.toString();
-  var start = yaml.lastIndexOf('\n', keySpan.start.offset);
-  if (start == -1) {
-    start = 0;
-  } else if (start > 0 && yaml[start - 1] == '\r') {
-    start--;
+  var start = keySpan.start.offset;
+
+  final nextNode = getNextKeyNode(map, keyNode);
+  if (nextNode == null) {
+    /// If there is a possibility that there is a `-` or `\n` before the node
+    if (start > 0) {
+      final lastHyphen = yaml.lastIndexOf('-', start - 1);
+      final lastNewLine = yaml.lastIndexOf('\n', start - 1);
+      if (lastHyphen > lastNewLine) {
+        start = lastHyphen + 2;
+      } else if (lastNewLine > lastHyphen) {
+        start = lastNewLine + 1;
+      }
+    }
+    final nextNewLine = yaml.indexOf('\n', end);
+    if (nextNewLine != -1) {
+      end = nextNewLine + 1;
+    }
+  } else {
+    end = nextNode.span.start.offset;
   }
+
   return SourceEdit(start, end - start, '');
 }
 

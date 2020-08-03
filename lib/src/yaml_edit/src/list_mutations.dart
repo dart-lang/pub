@@ -34,19 +34,23 @@ SourceEdit updateInList(
         wrapAsYamlNode(newValue), indentation, lineEnding);
 
     /// We prefer the compact nested notation for lists
-    if (isCollection(newValue)) {
+    if ((newValue is List && (newValue as List).isNotEmpty) ||
+        (newValue is Map && (newValue as Map).isNotEmpty)) {
       valueString = valueString.substring(indentation);
     } else if (isCollection(currValue) &&
         getStyle(currValue) == CollectionStyle.BLOCK) {
+      valueString += lineEnding;
+
       /// The span of a block collection in a block list extends until the
       /// next hyphen, so we need to account for this.
-      valueString += lineEnding + ' ' * listIndentation;
+      if (index != list.length - 1) valueString += ' ' * listIndentation;
     }
+
+    return SourceEdit(offset, currValue.span.length, valueString);
   } else {
     valueString = yamlEncodeFlowString(newValue);
+    return SourceEdit(offset, currValue.span.length, valueString);
   }
-
-  return SourceEdit(offset, currValue.span.length, valueString);
 }
 
 /// Returns a [SourceEdit] describing the change to be made on [yaml] to achieve
@@ -234,13 +238,31 @@ SourceEdit _removeFromBlockList(
     return SourceEdit(start, end - start, '[]');
   }
 
-  final span = nodeToRemove.span;
   final yaml = yamlEdit.toString();
-  var start = yaml.lastIndexOf('\n', span.start.offset);
-  var end = yaml.indexOf('\n', span.end.offset);
+  final span = nodeToRemove.span;
 
-  if (start == -1) start = 0;
-  if (end == -1) end = yaml.length;
+  /// The general removal strategy is to remove everything that starts from
+  /// [nodeToRemove]'s dash to the next node's dash.
+  ///
+  /// -1 accounts for the fact that the content can start with a dash
+  var start = yaml.lastIndexOf('-', span.start.offset - 1);
+  var end = list.span.end.offset;
+
+  if (index < list.length - 1) {
+    final nextNode = list.nodes[index + 1];
+    end = yaml.lastIndexOf('-', nextNode.span.start.offset - 1);
+  } else {
+    /// If there is a possibility that there is a `-` or `\n` before the node
+    if (start > 0) {
+      final lastHyphen = yaml.lastIndexOf('-', start - 1);
+      final lastNewLine = yaml.lastIndexOf('\n', start - 1);
+      if (lastHyphen > lastNewLine) {
+        start = lastHyphen + 2;
+      } else if (lastNewLine > lastHyphen) {
+        start = lastNewLine + 1;
+      }
+    }
+  }
 
   return SourceEdit(start, end - start, '');
 }

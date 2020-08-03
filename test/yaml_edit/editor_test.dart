@@ -30,7 +30,7 @@ void main() {
       expect(yamlEditor.edits, [
         SourceEdit(5, 5, " YAML Ain't Markup Language"),
         SourceEdit(0, 0, 'XML: Extensible Markup Language\n'),
-        SourceEdit(31, 33, '')
+        SourceEdit(32, 32, '')
       ]);
     });
 
@@ -49,7 +49,7 @@ void main() {
       expect(yamlEditor.edits, [
         SourceEdit(5, 5, " YAML Ain't Markup Language"),
         SourceEdit(0, 0, 'XML: Extensible Markup Language\n'),
-        SourceEdit(31, 33, '')
+        SourceEdit(32, 32, '')
       ]);
     });
   });

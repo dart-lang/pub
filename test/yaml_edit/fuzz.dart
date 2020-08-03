@@ -22,7 +22,7 @@ void main() {
   final generator = _Generator(seed);
 
   const roundsOfTesting = 10;
-  const modificationsPerRound = 50;
+  const modificationsPerRound = 100;
 
   for (var i = 0; i < roundsOfTesting; i++) {
     group('fuzz test $i', () {
@@ -149,9 +149,23 @@ class _Generator {
   void performNextModification(YamlEditor editor) {
     final path = findPath(editor);
     final node = editor.parseAt(path);
+    final initialString = editor.toString();
 
     if (node is YamlScalar) {
-      editor.remove(path);
+      try {
+        editor.remove(path);
+      } catch (error) {
+        print('''
+Failed to call remove on:
+$initialString
+with the path:
+$path
+
+Error Details:
+${error.message}
+''');
+        rethrow;
+      }
       return;
     }
 
@@ -196,7 +210,7 @@ class _Generator {
       } catch (error) {
         print('''
 Failed to call $method on:
-$editor
+$initialString
 with the following arguments:
 $args
 and path:
@@ -225,7 +239,7 @@ ${error.message}
       } catch (error) {
         print('''
 Failed to call update on:
-$editor
+$initialString
 with the following arguments:
 $value
 and path:

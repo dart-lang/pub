@@ -213,6 +213,22 @@ a:
         });
       });
 
+      test('nested (7)', () {
+        final doc = YamlEditor('''
+a:
+  - - 0
+
+b: false
+''');
+        doc.update(['a', 0], true);
+
+        expect(doc.toString(), equals('''
+a:
+  - true
+b: false
+'''));
+      });
+
       test('nested scalar -> flow list', () {
         final doc = YamlEditor('''
 a: 1

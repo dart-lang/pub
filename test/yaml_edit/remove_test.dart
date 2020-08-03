@@ -62,6 +62,32 @@ c: 3
 '''));
     });
 
+    test('final element in map', () {
+      final doc = YamlEditor('''
+a: 1
+b: 2
+''');
+      doc.remove(['b']);
+      expect(doc.toString(), equals('''
+a: 1
+'''));
+    });
+
+    test('final element in nested map', () {
+      final doc = YamlEditor('''
+a: 
+  aa: 11
+  bb: 22
+b: 2
+''');
+      doc.remove(['a', 'bb']);
+      expect(doc.toString(), equals('''
+a: 
+  aa: 11
+b: 2
+'''));
+    });
+
     test('last element should return flow empty map', () {
       final doc = YamlEditor('''
 a: 1
@@ -234,6 +260,19 @@ b:
 '''));
       expectYamlBuilderValue(doc, [0, 2, 3]);
     });
+
+    test('last element', () {
+      final doc = YamlEditor('''
+- 0
+- 1
+''');
+      doc.remove([1]);
+      expect(doc.toString(), equals('''
+- 0
+'''));
+      expectYamlBuilderValue(doc, [0]);
+    });
+
     test('with comments', () {
       final doc = YamlEditor('''
 - 0
@@ -248,6 +287,68 @@ b:
 - 3
 '''));
       expectYamlBuilderValue(doc, [0, 2, 3]);
+    });
+
+    test('nested', () {
+      final doc = YamlEditor('''
+- - - 0
+    - 1
+''');
+      doc.remove([0, 0, 0]);
+      expect(doc.toString(), equals('''
+- - - 1
+'''));
+      expectYamlBuilderValue(doc, [
+        [
+          [1]
+        ]
+      ]);
+    });
+
+    test('nested list', () {
+      final doc = YamlEditor('''
+- - 0
+  - 1
+- 2
+''');
+      doc.remove([0]);
+      expect(doc.toString(), equals('''
+- 2
+'''));
+      expectYamlBuilderValue(doc, [2]);
+    });
+
+    test('nested list (2)', () {
+      final doc = YamlEditor('''
+- - 0
+  - 1
+- 2
+''');
+      doc.remove([0, 1]);
+      expect(doc.toString(), equals('''
+- - 0
+- 2
+'''));
+      expectYamlBuilderValue(doc, [
+        [0],
+        2
+      ]);
+    });
+
+    test('nested map', () {
+      final doc = YamlEditor('''
+- - a: b
+    c: d
+''');
+      doc.remove([0, 0, 'a']);
+      expect(doc.toString(), equals('''
+- - c: d
+'''));
+      expectYamlBuilderValue(doc, [
+        [
+          {'c': 'd'}
+        ]
+      ]);
     });
   });
 
