@@ -335,6 +335,26 @@ b:
       ]);
     });
 
+    test('nested list (3)', () {
+      final doc = YamlEditor('''
+-
+  - - 0
+    - 1
+  - 2
+''');
+      doc.remove([0, 0, 1]);
+      expect(doc.toString(), equals('''
+-
+  - - 0
+  - 2
+'''));
+      expectYamlBuilderValue(doc, [
+        [
+          [0],
+          2
+        ]
+      ]);
+    });
     test('nested map', () {
       final doc = YamlEditor('''
 - - a: b
@@ -348,6 +368,27 @@ b:
         [
           {'c': 'd'}
         ]
+      ]);
+    });
+
+    test('nested map (2)', () {
+      final doc = YamlEditor('''
+- a: 
+    - 0
+    - 1
+  c: d
+''');
+      doc.remove([0, 'a', 1]);
+      expect(doc.toString(), equals('''
+- a: 
+    - 0
+  c: d
+'''));
+      expectYamlBuilderValue(doc, [
+        {
+          'a': [0],
+          'c': 'd'
+        }
       ]);
     });
   });

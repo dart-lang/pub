@@ -33,20 +33,21 @@ SourceEdit updateInList(
     valueString = yamlEncodeBlockString(
         wrapAsYamlNode(newValue), indentation, lineEnding);
 
-    /// We prefer the compact nested notation for lists
+    /// We prefer the compact nested notation for collections.
+    ///
+    /// By virtue of [yamlEncodeBlockString], collections automatically
+    /// have the necessary line endings.
     if ((newValue is List && (newValue as List).isNotEmpty) ||
         (newValue is Map && (newValue as Map).isNotEmpty)) {
       valueString = valueString.substring(indentation);
     } else if (isCollection(currValue) &&
         getStyle(currValue) == CollectionStyle.BLOCK) {
       valueString += lineEnding;
-
-      /// The span of a block collection in a block list extends until the
-      /// next hyphen, so we need to account for this.
-      if (index != list.length - 1) valueString += ' ' * listIndentation;
     }
 
-    return SourceEdit(offset, currValue.span.length, valueString);
+    final end = getContentSensitiveEnd(currValue);
+
+    return SourceEdit(offset, end - offset, valueString);
   } else {
     valueString = yamlEncodeFlowString(newValue);
     return SourceEdit(offset, currValue.span.length, valueString);
@@ -246,7 +247,7 @@ SourceEdit _removeFromBlockList(
   ///
   /// -1 accounts for the fact that the content can start with a dash
   var start = yaml.lastIndexOf('-', span.start.offset - 1);
-  var end = list.span.end.offset;
+  var end = yaml.lastIndexOf('\n', list.span.end.offset) + 1;
 
   if (index < list.length - 1) {
     final nextNode = list.nodes[index + 1];

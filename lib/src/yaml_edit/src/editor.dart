@@ -567,8 +567,6 @@ class YamlEditor {
 
     final expectedTree = _deepModify(_contents, path, [], expectedNode);
     _yaml = edit.apply(_yaml);
-
-    //print(_yaml);
     _initialize();
 
     final actualTree = loadYamlNode(_yaml);

@@ -188,6 +188,7 @@ a:
         expect(doc.toString(), equals('''
 a: 
   - false
+
   - null
 '''));
         expectYamlBuilderValue(doc, {
@@ -206,6 +207,7 @@ a:
         expect(doc.toString(), equals('''
 a: 
   - false
+
   - null
 '''));
         expectYamlBuilderValue(doc, {
@@ -217,7 +219,6 @@ a:
         final doc = YamlEditor('''
 a:
   - - 0
-
 b: false
 ''');
         doc.update(['a', 0], true);
@@ -225,6 +226,7 @@ b: false
         expect(doc.toString(), equals('''
 a:
   - true
+
 b: false
 '''));
       });
