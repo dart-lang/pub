@@ -19,10 +19,10 @@ import 'test_utils.dart';
 /// that the change produced was expected.
 void main() {
   const seed = 0;
-  final generator = _Generator(seed);
+  final generator = _Generator(seed: seed);
 
   const roundsOfTesting = 10;
-  const modificationsPerRound = 100;
+  const modificationsPerRound = 150;
 
   for (var i = 0; i < roundsOfTesting; i++) {
     group('fuzz test $i', () {
@@ -60,7 +60,10 @@ class _Generator {
   /// 2^32
   static const int maxInt = 4294967296;
 
-  _Generator([int seed]) : r = Random(seed ?? 42);
+  /// Maximum depth of random YAML collection generated.
+  final int maxDepth;
+
+  _Generator({int seed, this.maxDepth = 5}) : r = Random(seed ?? 42);
 
   int nextInt([int max = maxInt]) => r.nextInt(max);
 
@@ -109,23 +112,25 @@ class _Generator {
     return wrapAsYamlNode(nextScalar(), scalarStyle: nextScalarStyle());
   }
 
-  YamlList nextYamlList() {
+  /// Generates the next [YamlList], with the current [depth].
+  YamlList nextYamlList(int depth) {
     final length = nextInt(9);
     final list = [];
 
     for (var i = 0; i < length; i++) {
-      list.add(nextYamlNode());
+      list.add(nextYamlNode(depth + 1));
     }
 
     return wrapAsYamlNode(list, collectionStyle: nextCollectionStyle());
   }
 
-  YamlMap nextYamlMap() {
+  /// Generates the next [YamlList], with the current [depth].
+  YamlMap nextYamlMap(int depth) {
     final length = nextInt(9);
     final nodes = {};
 
     for (var i = 0; i < length; i++) {
-      nodes[nextYamlNode()] = nextYamlScalar();
+      nodes[nextYamlNode(depth + 1)] = nextYamlScalar();
     }
 
     return wrapAsYamlNode(nodes, collectionStyle: nextCollectionStyle());
@@ -133,15 +138,22 @@ class _Generator {
 
   /// Returns a [YamlNode], with it being a [YamlScalar] 80% of the time, a
   /// [YamlList] 10% of the time, and a [YamlMap] 10% of the time.
-  YamlNode nextYamlNode() {
+  ///
+  /// If [depth] is greater than [maxDepth], we instantly return a [YamlScalar]
+  /// to prevent the parent from growing any further, to improve our speeds.
+  YamlNode nextYamlNode([int depth = 0]) {
+    if (depth >= maxDepth) {
+      return nextYamlScalar();
+    }
+
     final roll = nextInt(10);
 
     if (roll < 8) {
       return nextYamlScalar();
     } else if (roll == 8) {
-      return nextYamlList();
+      return nextYamlList(depth);
     } else {
-      return nextYamlMap();
+      return nextYamlMap(depth);
     }
   }
 
@@ -150,31 +162,18 @@ class _Generator {
     final path = findPath(editor);
     final node = editor.parseAt(path);
     final initialString = editor.toString();
+    final args = [];
 
-    if (node is YamlScalar) {
-      try {
+    try {
+      if (node is YamlScalar) {
         editor.remove(path);
-      } catch (error) {
-        print('''
-Failed to call remove on:
-$initialString
-with the path:
-$path
-
-Error Details:
-${error.message}
-''');
-        rethrow;
+        return;
       }
-      return;
-    }
 
-    if (node is YamlList) {
-      final methodIndex = nextInt(YamlModificationMethod.values.length);
-      final method = YamlModificationMethod.values[methodIndex];
-      final args = [];
+      if (node is YamlList) {
+        final methodIndex = nextInt(YamlModificationMethod.values.length);
+        final method = YamlModificationMethod.values[methodIndex];
 
-      try {
         switch (method) {
           case YamlModificationMethod.remove:
             editor.remove(path);
@@ -202,14 +201,30 @@ ${error.message}
           case YamlModificationMethod.splice:
             args.add(nextInt(node.length + 1));
             args.add(nextInt(node.length + 1 - args[0]));
-            args.add(nextYamlList());
+            args.add(nextYamlList(0));
             editor.spliceList(path, args[0], args[1], args[2]);
             break;
         }
         return;
-      } catch (error) {
-        print('''
-Failed to call $method on:
+      }
+
+      if (node is YamlMap) {
+        final replace = nextBool();
+
+        if (replace && node.isNotEmpty) {
+          final keyList = node.keys.toList();
+          path.add(keyList[nextInt(keyList.length)]);
+        } else {
+          path.add(nextScalar());
+        }
+        final value = nextYamlNode();
+        args.add(value);
+        editor.update(path, value);
+        return;
+      }
+    } catch (error) {
+      print('''
+Failed to call update on:
 $initialString
 with the following arguments:
 $args
@@ -219,37 +234,7 @@ $path
 Error Details:
 ${error.message}
 ''');
-        rethrow;
-      }
-    }
-
-    if (node is YamlMap) {
-      final replace = nextBool();
-
-      if (replace && node.isNotEmpty) {
-        final keyList = node.keys.toList();
-        path.add(keyList[nextInt(keyList.length)]);
-      } else {
-        path.add(nextScalar());
-      }
-      final value = nextYamlNode();
-      try {
-        editor.update(path, value);
-        return;
-      } catch (error) {
-        print('''
-Failed to call update on:
-$initialString
-with the following arguments:
-$value
-and path:
-$path
-
-Error Details:
-${error.message}
-''');
-        rethrow;
-      }
+      rethrow;
     }
 
     throw AssertionError('Got invalid node');

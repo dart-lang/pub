@@ -588,6 +588,24 @@ c: 3
         expectYamlBuilderValue(doc, {'a': 1});
       });
 
+      test('that is empty (2)', () {
+        final doc = YamlEditor('''
+- {}
+- []
+''');
+        doc.update([0, 'a'], [1]);
+        expect(doc.toString(), equals('''
+- {a: [1]}
+- []
+'''));
+        expectYamlBuilderValue(doc, [
+          {
+            'a': [1]
+          },
+          []
+        ]);
+      });
+
       test('(1)', () {
         final doc = YamlEditor("{YAML: YAML Ain't Markup Language}");
         doc.update(['XML'], 'Extensible Markup Language');
