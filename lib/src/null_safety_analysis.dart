@@ -142,7 +142,6 @@ class NullSafetyAnalysis {
         if (languageVersion == null || !languageVersion.supportsNullSafety) {
           final span =
               _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
-          print('span: $span');
           final where = span == null
               ? 'in the sdk constraint in the enviroment key in its pubspec.yaml.'
               : 'in its pubspec.yaml:\n${span.highlight()}';
