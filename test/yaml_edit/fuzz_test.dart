@@ -21,11 +21,11 @@ void main() {
   const seed = 0;
   final generator = _Generator(seed: seed);
 
-  const roundsOfTesting = 10;
-  const modificationsPerRound = 150;
+  const roundsOfTesting = 40;
+  const modificationsPerRound = 1000;
 
   for (var i = 0; i < roundsOfTesting; i++) {
-    group('fuzz test $i', () {
+    test('fuzz test $i', () {
       final editor = YamlEditor('''
 name: yaml_edit
 description: A library for YAML manipulation with comment and whitespace preservation.
@@ -44,10 +44,8 @@ dev_dependencies:
 ''');
 
       for (var j = 0; j < modificationsPerRound; j++) {
-        test('modification $j', () {
-          expect(
-              () => generator.performNextModification(editor), returnsNormally);
-        });
+        expect(
+            () => generator.performNextModification(editor), returnsNormally);
       }
     });
   }
@@ -163,6 +161,7 @@ class _Generator {
     final node = editor.parseAt(path);
     final initialString = editor.toString();
     final args = [];
+    var method = YamlModificationMethod.remove;
 
     try {
       if (node is YamlScalar) {
@@ -172,7 +171,7 @@ class _Generator {
 
       if (node is YamlList) {
         final methodIndex = nextInt(YamlModificationMethod.values.length);
-        final method = YamlModificationMethod.values[methodIndex];
+        method = YamlModificationMethod.values[methodIndex];
 
         switch (method) {
           case YamlModificationMethod.remove:
@@ -210,6 +209,7 @@ class _Generator {
 
       if (node is YamlMap) {
         final replace = nextBool();
+        method = YamlModificationMethod.update;
 
         if (replace && node.isNotEmpty) {
           final keyList = node.keys.toList();
@@ -224,7 +224,7 @@ class _Generator {
       }
     } catch (error) {
       print('''
-Failed to call update on:
+Failed to call $method on:
 $initialString
 with the following arguments:
 $args

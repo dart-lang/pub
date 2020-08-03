@@ -109,6 +109,24 @@ void main() {
         ]
       ]);
     });
+
+    test('nested', () {
+      final yamlEditor = YamlEditor('''
+a:
+  1: 
+    - null
+  2: null
+''');
+      yamlEditor.appendToList(['a', 1], false);
+
+      expect(yamlEditor.toString(), equals('''
+a:
+  1: 
+    - null
+    - false
+  2: null
+'''));
+    });
   });
 
   group('flow list', () {

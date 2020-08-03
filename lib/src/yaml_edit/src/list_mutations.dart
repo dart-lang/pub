@@ -123,6 +123,7 @@ SourceEdit _appendToBlockList(
 
   var formattedValue = _formatNewBlock(yamlEdit, list, item);
   final yaml = yamlEdit.toString();
+  var offset = list.span.end.offset;
 
   // Adjusts offset to after the trailing newline of the last entry, if it exists
   if (list.isNotEmpty) {
@@ -130,10 +131,12 @@ SourceEdit _appendToBlockList(
     final nextNewLineIndex = yaml.indexOf('\n', lastValueSpanEnd);
     if (nextNewLineIndex == -1) {
       formattedValue = getLineEnding(yaml) + formattedValue;
+    } else {
+      offset = nextNewLineIndex + 1;
     }
   }
 
-  return SourceEdit(list.span.end.offset, 0, formattedValue);
+  return SourceEdit(offset, 0, formattedValue);
 }
 
 /// Formats [item] into a new node for block lists.

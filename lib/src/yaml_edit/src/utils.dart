@@ -22,7 +22,10 @@ bool isDangerousString(String string) {
 
     /// [string] should also not contain the `[`, `]`, `,`, `{` and `}` indicator characters.
     return string.contains(RegExp(r'\{|\[|\]|\}|,'));
-  } on YamlException {
+  } catch (e) {
+    /// This catch statement catches [ArgumentError] in `loadYamlNode` when
+    /// a string can be interpreted as a URI tag, but catches for other
+    /// [YamlException]s
     return true;
   }
 }
