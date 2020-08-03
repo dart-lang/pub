@@ -4,11 +4,11 @@
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:pub/src/null_safety_analysis.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
 import '../log.dart' as log;
+import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
