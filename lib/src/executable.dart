@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 
@@ -16,11 +17,16 @@ import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'utils.dart';
 
-/// Take a list of experiments to enable and turn them into a list with a single
-/// argument to pass to the VM enabling the same experiments.
-List<String> vmArgFromExperiments(List<String> experiments) {
+/// Code shared between `run` `global run` and `run --dartdev` for extracting
+/// vm arguments from arguments.
+List<String> vmArgsFromArgResults(ArgResults argResults) {
+  final experiments = argResults['enable-experiment'] as List;
   return [
-    if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}"
+    if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}",
+    if (argResults.wasParsed('sound-null-safety'))
+      argResults['sound-null-safety']
+          ? '--sound-null-safety'
+          : '--no-sound-null-safety',
   ];
 }
 
