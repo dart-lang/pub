@@ -183,3 +183,39 @@ $ pub outdated --json --mode=null-safety
   ]
 }
 
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": [
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0-dev.1"
+      },
+      "upgradable": {
+        "version": "1.0.0-dev.1"
+      },
+      "resolvable": {
+        "version": "0.9.0"
+      },
+      "latest": {
+        "version": "0.9.0"
+      }
+    },
+    {
+      "package": "mop",
+      "current": {
+        "version": "0.10.0-dev"
+      },
+      "upgradable": {
+        "version": "0.10.0-dev"
+      },
+      "resolvable": {
+        "version": "0.10.0"
+      },
+      "latest": {
+        "version": "1.0.0-dev"
+      }
+    }
+  ]
+}
+
