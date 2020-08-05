@@ -31,17 +31,26 @@ class PubspecTypoValidator extends Validator {
       // 0.73 is a magic value determined by looking at the most common typos
       // in all the pubspecs on pub.dev.
       if (bestDiceCoefficient >= 0.73 && bestDiceCoefficient < 1.0) {
-        errors.add('$key is not a key recognizable by pub - '
+        warnings.add('$key is not a key recognizable by pub - '
             'did you mean $closestKey?');
+      }
+
+      if (closestKey == 'author' || closestKey == 'authors') {
+        warnings.add('The "$closestKey" key is deprecated - Use a verified '
+            'publisher (https://dart.dev/tools/pub/verified-publishers) '
+            'instead.');
       }
     }
   }
 }
 
-/// List of keys in `pubspec.yaml` that will be recognized by pub.
+/// List of keys in `pubspec.yaml` that will be recognized by pub, as well as
+/// the depreciated `author` key.
 ///
 /// Retrieved from https://dart.dev/tools/pub/pubspec
 const _validPubspecKeys = [
+  'author',
+  'authors',
   'name',
   'version',
   'description',

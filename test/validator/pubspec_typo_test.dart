@@ -59,7 +59,7 @@ void main() {
     });
   });
 
-  group('should consider a package invalid if it', () {
+  group('should has warnings if it', () {
     setUp(d.validPackage.create);
 
     test('contains typos', () async {
@@ -70,7 +70,21 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(pubspecTypo, errors: isNotEmpty);
+      await expectValidation(pubspecTypo, warnings: isNotEmpty);
+    });
+
+    test('contains the "author" key', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'author': 'Garett Tok',
+        })
+      ]).create();
+
+      await expectValidation(pubspecTypo,
+          warnings: contains(
+              'The "author" key is deprecated - Use a verified publisher '
+              '(https://dart.dev/tools/pub/verified-publishers) instead.'));
     });
   });
 }
