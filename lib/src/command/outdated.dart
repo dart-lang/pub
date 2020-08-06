@@ -256,14 +256,11 @@ class OutdatedCommand extends PubCommand {
         ? argResults['prereleases']
         : argResults['pre-releases'];
 
-    available.sort(prereleases
-        ? (x, y) => x.version.compareTo(y.version)
-        : (x, y) => Version.prioritize(x.version, y.version));
-    if (package is PackageId &&
-        package.version.isPreRelease &&
-        package.version < available.last.version) {
-      available.sort((x, y) => x.version.compareTo(y.version));
-    }
+    available.sort(
+      prereleases || (package is PackageId && package.version.isPreRelease)
+          ? (x, y) => x.version.compareTo(y.version)
+          : (x, y) => Version.prioritize(x.version, y.version),
+    );
     return available.last;
   }
 
