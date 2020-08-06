@@ -6,6 +6,9 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
+// TODO(sigurdm) consider rewriting all validator tests as integration tests.
+// That would make them more robust, and test actual end2end behaviour.
+
 Future<void> expectValidation(ValidatorCreator fn,
     {hints, warnings, errors}) async {
   final validator = await validatePackage(fn);
