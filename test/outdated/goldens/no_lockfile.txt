@@ -169,3 +169,35 @@ $ pub outdated --json --mode=null-safety
   ]
 }
 
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": null,
+      "upgradable": {
+        "version": "1.2.3"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "foo",
+      "current": null,
+      "upgradable": {
+        "version": "1.2.3"
+      },
+      "resolvable": {
+        "version": "1.2.3"
+      },
+      "latest": {
+        "version": "1.2.3"
+      }
+    }
+  ]
+}
+

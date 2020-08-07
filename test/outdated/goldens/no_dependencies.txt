@@ -29,3 +29,8 @@ $ pub outdated --json --mode=null-safety
   "packages": []
 }
 
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": []
+}
+

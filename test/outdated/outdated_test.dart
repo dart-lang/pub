@@ -42,6 +42,7 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
     ['--no-color', '--no-dependency-overrides'],
     ['--no-color', '--mode=null-safety'],
     ['--json', '--mode=null-safety'],
+    ['--json', '--no-dev-dependencies'],
   ]) {
     await runPubOutdated(args, buffer, environment: environment);
   }
