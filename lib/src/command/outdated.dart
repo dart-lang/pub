@@ -206,7 +206,12 @@ class OutdatedCommand extends PubCommand {
     }[argResults['mode']];
     final showAll = argResults['show-all'] || argResults['up-to-date'];
     if (argResults['json']) {
-      await _outputJson(rows, mode, showAll: showAll);
+      await _outputJson(
+        rows,
+        mode,
+        showAll: showAll,
+        includeDevDependencies: includeDevDependencies,
+      );
     } else {
       if (argResults.wasParsed('color')) {
         forceColors = argResults['color'];
@@ -331,11 +336,19 @@ Future<void> _outputJson(
   List<_PackageDetails> rows,
   Mode mode, {
   @required bool showAll,
+  @required bool includeDevDependencies,
 }) async {
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
   if (!showAll) {
     rows.removeWhere((row) => markedRows[row][0].asDesired);
+  }
+  if (!includeDevDependencies) {
+    rows.removeWhere(
+      (element) =>
+          element.kind == _DependencyKind.dev ||
+          element.kind == _DependencyKind.devTransitive,
+    );
   }
   log.message(
     JsonEncoder.withIndent('  ').convert(

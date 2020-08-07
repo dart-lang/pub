@@ -173,3 +173,45 @@ $ pub outdated --json --mode=null-safety
   ]
 }
 
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "overridden": true
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    }
+  ]
+}
+

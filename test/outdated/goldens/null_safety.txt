@@ -321,3 +321,99 @@ $ pub outdated --json --mode=null-safety
   ]
 }
 
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "fails_analysis",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "fails_analysis_in_dependency",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "file_in_dependency_opts_out",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "file_opts_out",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    },
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    }
+  ]
+}
+
