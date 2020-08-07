@@ -53,7 +53,7 @@ class HostedSource extends Source {
     //
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
-    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dartlang.org';
+    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.flutter-io.cn';
   }
 
   String _defaultUrl;
