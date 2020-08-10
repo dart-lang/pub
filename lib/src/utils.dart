@@ -415,7 +415,7 @@ bool get canUseAnsiCodes =>
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
 
-/// Gets a emoji special character as unicode, or the [alternative] if unicode 
+/// Gets a emoji special character as unicode, or the [alternative] if unicode
 /// charactors are not supported by stdout.
 String emoji(String unicode, String alternative) =>
     canUseUnicode ? unicode : alternative;
@@ -425,7 +425,13 @@ String emoji(String unicode, String alternative) =>
 // which sets the WT_SESSION environment variable. See:
 // https://github.com/microsoft/terminal/blob/master/doc/user-docs/index.md#tips-and-tricks
 bool get canUseUnicode =>
-    !Platform.isWindows || Platform.environment.containsKey('WT_SESSION');
+    // The tests support unicode also on windows.
+    runningFromTest ||
+    runningAsTest ||
+    // When not outputting to terminal we can also use unicode.
+    stdioType(stdout) != StdioType.terminal ||
+    !Platform.isWindows ||
+    Platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///
