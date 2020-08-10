@@ -405,19 +405,27 @@ bool forceColors = false;
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
-bool get canUseSpecialChars =>
+bool get canUseAnsiCodes =>
     forceColors ||
     (!runningFromTest &&
         !runningAsTest &&
         stdioType(stdout) == StdioType.terminal &&
         stdout.supportsAnsiEscapes);
 
-/// Gets a "special" string (ANSI escape or Unicode).
-///
-/// On Windows or when not printing to a terminal, returns something else since
-/// those aren't supported.
-String getSpecial(String special, [String onWindows = '']) =>
-    canUseSpecialChars ? special : onWindows;
+/// Gets an ANSI escape if those are supported by stdout (or nothing).
+String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
+
+/// Gets a emoji special character as unicode, or the [alternative] if unicode 
+/// charactors are not supported by stdout.
+String emoji(String unicode, String alternative) =>
+    canUseUnicode ? unicode : alternative;
+
+// Assume unicode emojis are supported when not on Windows.
+// If we are on Windows, unicode emojis are supported in Windows Terminal,
+// which sets the WT_SESSION environment variable. See:
+// https://github.com/microsoft/terminal/blob/master/doc/user-docs/index.md#tips-and-tricks
+bool get canUseUnicode =>
+    !Platform.isWindows || Platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///

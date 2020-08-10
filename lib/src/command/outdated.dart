@@ -218,9 +218,8 @@ class OutdatedCommand extends PubCommand {
       if (argResults.wasParsed('color')) {
         forceColors = argResults['color'];
       }
-      final useColors = argResults.wasParsed('color')
-          ? argResults['color']
-          : canUseSpecialChars;
+      final useColors =
+          argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
       await _outputHuman(rows, mode,
           useColors: useColors,
@@ -709,14 +708,14 @@ Showing packages where the current version doesn't fully support null safety.
                   break;
                 case NullSafetyCompliance.compliant:
                   color = log.green;
-                  prefix = '✓';
+                  prefix = emoji('✓', '+');
                   nullSafetyJson = true;
                   asDesired = true;
                   break;
                 case NullSafetyCompliance.notCompliant:
                 case NullSafetyCompliance.mixed:
                   color = log.red;
-                  prefix = '✗';
+                  prefix = emoji('✗', 'x');
                   nullSafetyJson = false;
                   break;
               }
