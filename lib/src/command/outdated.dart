@@ -66,7 +66,9 @@ class OutdatedCommand extends PubCommand {
             '--show-all.',
         valueHelp: 'PROPERTY',
         allowed: ['outdated', 'null-safety'],
-        defaultsTo: 'outdated');
+        defaultsTo: 'outdated',
+        hide: true // TODO(sigurdm): Unhide when null-safety is launched.
+        );
 
     argParser.addFlag('prereleases',
         help: 'Include prereleases in latest version.');
