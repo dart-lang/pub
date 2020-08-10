@@ -66,7 +66,7 @@ class GlobalRunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
     final globalEntrypoint = await globals.find(package);
-    final exitCode = await runExecutable(globalEntrypoint,
+    final exitCode = await globals.runExecutable(globalEntrypoint,
         Executable.adaptProgramName(package, executable), args,
         vmArgs: vmArgs,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
