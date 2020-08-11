@@ -12,7 +12,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import 'utils.dart';
 
-/// The contents of binstub for executable, or null if it doesn't exist.
+/// The contents of the binstub for [executable], or `null` if it doesn't exist.
 String binStub(String executable) {
   final f = File(p.join(d.sandbox, cachePath, 'bin', binStubName(executable)));
   if (f.existsSync()) {
