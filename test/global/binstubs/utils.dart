@@ -12,12 +12,12 @@ import '../../test_pub.dart';
 /// their PATH, so we need to spawn the binstub process with a PATH that
 /// explicitly includes it.
 ///
-/// The `pub`/`pub.bat` command on the PATH will be the one in bin/ not the one
-/// from the sdk.
+/// The `pub`/`pub.bat` command on the PATH will be the one in tool/test-bin not
+/// the one from the sdk.
 Map getEnvironment() {
   var binDir = p.dirname(Platform.executable);
   var separator = Platform.isWindows ? ';' : ':';
-  var pubBin = p.absolute('bin');
+  var pubBin = p.absolute('tool', 'test-bin');
   var path =
       "$pubBin$separator${Platform.environment["PATH"]}$separator$binDir";
 

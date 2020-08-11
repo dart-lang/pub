@@ -3,6 +3,10 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-# Runs ./pub.dart with dart from PATH
+# Runs ./pub.dart with dart from PATH (or the snapshot if present).
 
-dart `dirname "$0"`/pub.dart $*
+if [ -n "$PUB_SNAPSHOT_FILE" ]; then
+    dart $PUB_SNAPSHOT_FILE $*
+else
+    dart `dirname "$0"`/../../bin/pub.dart $*
+fi
