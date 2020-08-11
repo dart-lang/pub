@@ -43,17 +43,17 @@ Transcript<_Entry> _transcript;
 /// This will also be in [_progresses].
 Progress _animatedProgress;
 
-final _cyan = getSpecial('\u001b[36m');
-final _green = getSpecial('\u001b[32m');
-final _magenta = getSpecial('\u001b[35m');
-final _red = getSpecial('\u001b[31m');
-final _yellow = getSpecial('\u001b[33m');
+final _cyan = getAnsi('\u001b[36m');
+final _green = getAnsi('\u001b[32m');
+final _magenta = getAnsi('\u001b[35m');
+final _red = getAnsi('\u001b[31m');
+final _yellow = getAnsi('\u001b[33m');
 //final _blue = getSpecial('\u001b[34m');
-final _gray = getSpecial('\u001b[38;5;245m');
+final _gray = getAnsi('\u001b[38;5;245m');
 
-final _none = getSpecial('\u001b[0m');
-final _noColor = getSpecial('\u001b[39m');
-final _bold = getSpecial('\u001b[1m');
+final _none = getAnsi('\u001b[0m');
+final _noColor = getAnsi('\u001b[39m');
+final _bold = getAnsi('\u001b[1m');
 
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
@@ -283,7 +283,7 @@ void exception(exception, [StackTrace trace]) {
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
   if (exception is SourceSpanException) {
-    error(exception.toString(color: canUseSpecialChars));
+    error(exception.toString(color: canUseAnsiCodes));
   } else {
     error(getErrorMessage(exception));
   }
