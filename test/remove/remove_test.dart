@@ -68,6 +68,38 @@ void main() {
     ]).validate();
   });
 
+  test('removes multiple packages from dependencies and dev_dependencies',
+      () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.3');
+      builder.serve('bar', '2.3.4');
+      builder.serve('baz', '3.2.1');
+      builder.serve('jfj', '0.2.1');
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'bar': '>=2.3.4', 'jfj': '0.2.1'},
+        'dev_dependencies': {'foo': '^1.2.3', 'baz': '3.2.1'}
+      })
+    ]).create();
+    await pubGet();
+
+    await pubRemove(args: ['foo', 'bar', 'baz']);
+
+    await d.cacheDir({'jfj': '0.2.1'}).validate();
+    await d.appPackagesFile({'jfj': '0.2.1'}).validate();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'jfj': '0.2.1'},
+        'dev_dependencies': {}
+      })
+    ]).validate();
+  });
+
   test('no-op if package does not exist', () async {
     await d.appDir({}).create();
     await pubRemove(args: ['bar']);
@@ -110,7 +142,7 @@ void main() {
     await d.appDir({}).validate();
   });
 
-  test('removes path dependencies', () async {
+  test('removes hosted dependencies', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveErrors();

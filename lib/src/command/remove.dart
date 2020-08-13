@@ -10,7 +10,9 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../solver.dart';
 
-/// Handles the `remove` pub command. Removes depedencies from `pubspec.yaml`.
+/// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
+/// and performs an operation similar to `pub get`. Unlike `pub add`, this
+/// command supports the removal of multiple dependencies.
 class RemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
@@ -58,7 +60,7 @@ class RemoveCommand extends PubCommand {
     for (var package in packages) {
       var found = false;
 
-      /// There may be packages where the package is declared both in
+      /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies.
       for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
         if (yamlEditor.parseAt([dependencyKey, package], orElse: () => null) !=

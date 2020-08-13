@@ -15,14 +15,21 @@ import '../pubspec.dart';
 import '../solver.dart';
 import '../utils.dart';
 
-/// Handles the `add` pub command. Adds dependencies to `pubspec.yaml`.
+/// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
+/// the package. The user may pass in a git constraint, host url, or path as
+/// requirements. If no such options are passed in, this command will do a
+/// resolution to find the latest version of the package that is compatible with
+/// the other dependencies in `pubpsec.yaml`, and then enter that as the lower
+/// bound in a ^x.y.z constraint.
+///
+/// Currently supports only adding one dependency at a time.
 class AddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
   String get description => 'Add a dependency to the current package.';
   @override
-  String get invocation => 'pub add <package> [options]';
+  String get invocation => 'pub add <package>[:<constraint>] [options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
@@ -46,7 +53,7 @@ class AddCommand extends PubCommand {
     argParser.addOption('git-url', help: 'Git URL of the package');
     argParser.addOption('git-ref',
         help: 'Git branch or commit to be retrieved');
-    argParser.addOption('git-path', help: 'Path of git package');
+    argParser.addOption('git-path', help: 'Path of git package in repository');
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
     argParser.addOption('sdk', help: 'SDK source for package');
@@ -88,9 +95,15 @@ class AddCommand extends PubCommand {
           'does not match the input ${package.constraint}! Exiting.');
     }
 
-    /// Update the pubspec.
+    /// Update the pubspec. It is necessary to do this before calling
+    /// [acquireDependencies] (as opposed to calling [acquireDependencies] on
+    /// the in-memory pubspec and writing it later) because there will be
+    /// conflicts in other parts of [pub] if the pubspec is newer than
+    /// `pubspec.lock`.
     _updatePubspec(resultPackage, packageInformation);
 
+    /// Create a new [Entrypoint] since we have to reprocess the updated
+    /// pubspec file.
     await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'], precompile: argResults['precompile']);
 
@@ -149,7 +162,7 @@ class AddCommand extends PubCommand {
     );
   }
 
-  /// Parse [pacakge] to return the corresponding [PackageRange], as well as its
+  /// Parse [package] to return the corresponding [PackageRange], as well as its
   /// representation in `pubspec.yaml`.
   ///
   /// [package] must be written in the format
@@ -170,8 +183,8 @@ class AddCommand extends PubCommand {
   /// If a version constraint is provided when the `--path` or any of the
   /// `--git-<option>` options are used, a [PackageParseError] will be thrown.
   ///
-  /// If both `--path` and any of the `--git-<option>` options are defined,
-  /// a [PackageParseError] will be thrown.
+  /// Packages must either be a git, hosted, sdk, or path package. Mixing of
+  /// options is not allowed and will cause a [PackageParseError] to be thrown.
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
@@ -186,7 +199,13 @@ class AddCommand extends PubCommand {
           'Packages must either be a git, hosted, sdk, or path package.');
     }
 
+    /// The package to be added, along with the user-defined package constraints
+    /// if present.
     PackageRange packageRange;
+
+    /// The entry to be added to the pubspec. Assigned dynamic because it can
+    /// take on either a string for simple version constraints or a map for
+    /// more complicated hosted/git options.
     dynamic pubspecInformation;
 
     final splitPackage = package.split(':');
@@ -203,6 +222,8 @@ class AddCommand extends PubCommand {
         ? VersionConstraint.parse(splitPackage[1])
         : null;
 
+    /// Determine the relevant [packageRange] and [pubspecInformation] depending
+    /// on the type of package.
     if (hasGitOptions) {
       dynamic git;
 
@@ -280,6 +301,8 @@ class AddCommand extends PubCommand {
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
+    /// Handle situations where the user might not have the dependencies or
+    /// dev_dependencies map.
     if (yamlEditor.parseAt([dependencyKey], orElse: () => null) == null) {
       yamlEditor.update([dependencyKey],
           {package.name: pubspecInformation ?? '^${resultPackage.version}'});
@@ -288,6 +311,8 @@ class AddCommand extends PubCommand {
           packagePath, pubspecInformation ?? '^${resultPackage.version}');
     }
 
+    /// Remove the package from dev_dependencies if we are adding it to
+    /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
     if (!isDevelopment &&
         yamlEditor.parseAt(['dev_dependencies', package.name],
                 orElse: () => null) !=
