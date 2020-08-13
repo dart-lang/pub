@@ -16,7 +16,9 @@ import 'dart:math' as math;
 /// The effect of doing so increases the meaingfulness of the coefficient
 /// produced.
 ///
-/// Our implementation also works with empty strings and one-character strigns.
+/// Our implementation also works with empty strings and one-character strings.
+/// Empty strings and one-character strings return 1.0 if and only if the other
+/// string is the same, and 0.0 otherwise.
 ///
 /// **Example**
 /// ```dart
