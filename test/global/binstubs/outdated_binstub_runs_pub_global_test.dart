@@ -113,21 +113,21 @@ void main() {
     expect(
       binStub('foo-script-not-installed'),
       null,
-      reason: 'global run remcompile should not install new binstubs',
+      reason: 'global run recompile should not install new binstubs',
     );
 
     expect(
       binStub('foo-another-script'),
       contains('another-script.dart-0.0.1.snapshot'),
       reason:
-          'global run remcompile should not refresh binstubs for other scripts',
+          'global run recompile should not refresh binstubs for other scripts',
     );
 
     expect(
       binStub('foo-another-script-not-installed'),
       null,
       reason:
-          'global run remcompile should not install binstubs for other scripts',
+          'global run recompile should not install binstubs for other scripts',
     );
 
     await process.shouldExit();
