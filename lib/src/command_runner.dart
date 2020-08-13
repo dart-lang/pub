@@ -21,6 +21,7 @@ import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
+import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';
@@ -113,6 +114,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
     addCommand(OutdatedCommand());
+    addCommand(RemoveCommand());
     addCommand(RunCommand());
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
