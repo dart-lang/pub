@@ -8,6 +8,8 @@ import '../command.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../package.dart';
+import '../pubspec.dart';
 import '../solver.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
@@ -24,6 +26,8 @@ class RemoveCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
   bool get isOffline => argResults['offline'];
+
+  bool get isDryRun => argResults['dry-run'];
 
   RemoveCommand() {
     argParser.addFlag('offline',
@@ -44,15 +48,46 @@ class RemoveCommand extends PubCommand {
       usageException('Must specify a package to be removed.');
     }
 
-    /// Update the pubspec.
-    _removePackagesFromPubspec(Set<String>.from(argResults.rest).toList());
+    final packages = Set<String>.from(argResults.rest);
 
-    await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+    if (isDryRun) {
+      final rootPubspec = entrypoint.root.pubspec;
+      final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
+      final newRoot = Package.inMemory(newPubspec);
+
+      await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
+          .acquireDependencies(SolveType.GET,
+              precompile: argResults['precompile']);
+    } else {
+      /// Update the pubspec.
+      _writeRemovalToPubspec(packages);
+
+      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+          precompile: argResults['precompile']);
+    }
+  }
+
+  Pubspec _removePackagesFromPubspec(Pubspec original, Set<String> packages) {
+    final originalDependencies = original.dependencies.values;
+    final originalDevDependencies = original.devDependencies.values;
+
+    final newDependencies = originalDependencies
+        .where((dependency) => !packages.contains(dependency.name));
+    final newDevDependencies = originalDevDependencies
+        .where((dependency) => !packages.contains(dependency.name));
+
+    return Pubspec(
+      original.name,
+      version: original.version,
+      sdkConstraints: original.sdkConstraints,
+      dependencies: newDependencies,
+      devDependencies: newDevDependencies,
+      dependencyOverrides: original.dependencyOverrides.values,
+    );
   }
 
   /// Writes the changes to the pubspec file
-  void _removePackagesFromPubspec(List<String> packages) {
+  void _writeRemovalToPubspec(Set<String> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));

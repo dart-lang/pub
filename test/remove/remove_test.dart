@@ -21,6 +21,22 @@ void main() {
     await d.appDir({}).validate();
   });
 
+  test('dry-run does not actually remove dependency', () async {
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+    await d.appDir({'foo': '1.2.3'}).create();
+    await pubGet();
+
+    await pubRemove(
+        args: ['foo', '--dry-run'],
+        output: allOf([
+          contains('These packages are no longer being depended on:'),
+          contains('- foo 1.2.3')
+        ]));
+
+    await d.appDir({'foo': '1.2.3'}).validate();
+  });
+
   test('prints a warning if package does not exist', () async {
     await d.appDir().create();
     await pubRemove(
