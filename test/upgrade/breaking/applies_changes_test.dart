@@ -263,21 +263,24 @@ void main() {
       });
 
       // Create the lockfile.
-      await d.appDir({'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+      await d.appDir({'foo': '^1.0.0', 'bar': '^2.0.0'}).create();
 
       await pubGet();
 
       // Recreating the appdir because the previous one only lasts for one
       // command.
-      await d.appDir({'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+      await d.appDir({'foo': '^1.0.0', 'bar': '^2.0.0'}).create();
 
-      // Only two breaking changes should be detected.
+      // Only one breaking change should be detected.
       await pubUpgrade(
-          args: ['--breaking'], output: contains('No breaking changes deasda'));
+          args: ['--breaking'],
+          output: allOf([
+            contains('Detected 1 potential breaking change:'),
+            contains('bar: ^2.0.0 -> ^4.0.0')
+          ]));
 
-      await d.appDir({'foo': '^1.0.0', 'bar': '^2.0.0'}).validate();
-
-      await d.appPackagesFile({'foo': '^1.0.0', 'bar': '^2.0.0'}).validate();
+      await d.appDir({'foo': '^1.0.0', 'bar': '^4.0.0'}).validate();
+      await d.appPackagesFile({'foo': '1.0.0', 'bar': '4.0.0'}).validate();
     });
   });
 }

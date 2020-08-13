@@ -42,7 +42,7 @@ class PubspecDescriptor extends FileDescriptor {
     final actual = actualYaml.parseAt([]);
     final expected = expectedYaml.parseAt([]);
 
-    if (!MapEquality().equals(expected.value, actual.value)) {
+    if (!DeepCollectionEquality().equals(expected.value, actual.value)) {
       fail('Expected $expected, found: $actual');
     }
   }
