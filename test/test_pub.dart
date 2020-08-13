@@ -93,8 +93,6 @@ class RunCommand {
 Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
-  static final remove = RunCommand(
-      'remove', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
 
   final String name;
   final RegExp success;
@@ -209,21 +207,6 @@ Future pubDowngrade(
         int exitCode,
         Map<String, String> environment}) =>
     pubCommand(RunCommand.downgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
-
-Future pubRemove(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.remove,
         args: args,
         output: output,
         error: error,
