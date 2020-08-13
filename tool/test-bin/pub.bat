@@ -5,7 +5,7 @@ rem BSD-style license that can be found in the LICENSE file.
 rem Runs the pub snapshot with dart from PATH (or the snapshot if present).
 
 if "%PUB_SNAPSHOT_FILE%"=="" (
-    dart %0\..\..\..\bin\pub.dart %*
+    dart %~p0\..\..\bin\pub.dart %*
 ) else (
-    dart %PUB_SNAPSHOT_FILE %*
+    dart %PUB_SNAPSHOT_FILE% %*
 )
