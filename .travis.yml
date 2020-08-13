@@ -16,7 +16,7 @@ addons:
 env:
   global:
     - SPLIT=`which gsplit || which split`
-    - _PUB_TEST_SNAPSHOT="`pwd`/.dart_tool//pub.dart.snapshot.dart2"
+    - _PUB_TEST_SNAPSHOT="`pwd`/.dart_tool/pub.dart.snapshot.dart2"
 
 dart_task:
   - test: --preset travis `$SPLIT -n l/1/7 .dart_tool/test_files`
