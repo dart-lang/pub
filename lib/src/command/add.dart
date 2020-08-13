@@ -33,7 +33,8 @@ class AddCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
-  bool get isDevelopment => argResults['dev'];
+  bool get isDev => argResults['dev'];
+  bool get isDryRun => argResults['dry-run'];
   String get gitUrl => argResults['git-url'];
   String get gitPath => argResults['git-path'];
   String get gitRef => argResults['git-ref'];
@@ -95,17 +96,28 @@ class AddCommand extends PubCommand {
           'does not match the input ${package.constraint}! Exiting.');
     }
 
-    /// Update the pubspec. It is necessary to do this before calling
-    /// [acquireDependencies] (as opposed to calling [acquireDependencies] on
-    /// the in-memory pubspec and writing it later) because there will be
-    /// conflicts in other parts of [pub] if the pubspec is newer than
-    /// `pubspec.lock`.
-    _updatePubspec(resultPackage, packageInformation);
+    if (isDryRun) {
+      /// Even if it is a dry run, run `acquireDependencies` so that the user
+      /// gets a report on the other packages that might change version due
+      /// to this new dependency.
+      final newRoot = Package.inMemory(updatedPubSpec);
 
-    /// Create a new [Entrypoint] since we have to reprocess the updated
-    /// pubspec file.
-    await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+      await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
+          .acquireDependencies(SolveType.GET,
+              dryRun: true, precompile: argResults['precompile']);
+    } else {
+      /// Update the pubspec. It is necessary to do this before calling
+      /// [acquireDependencies] (as opposed to calling [acquireDependencies] on
+      /// the in-memory pubspec and writing it later) because there will be
+      /// conflicts in other parts of [pub] if the pubspec is newer than
+      /// `pubspec.lock`.
+      _updatePubspec(resultPackage, packageInformation, isDev);
+
+      /// Create a new [Entrypoint] since we have to reprocess the updated
+      /// pubspec file.
+      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+          precompile: argResults['precompile']);
+    }
 
     if (isOffline) {
       log.warning('Warning: Packages added when offline may not resolve to '
@@ -113,7 +125,8 @@ class AddCommand extends PubCommand {
     }
   }
 
-  /// Creates a new in-memory [Pubspec] by adding [package] to [original].
+  /// Creates a new in-memory [Pubspec] by adding [package] to the
+  /// dependencies of [original].
   Future<Pubspec> _addPackageToPubspec(
       Pubspec original, PackageRange package) async {
     ArgumentError.checkNotNull(original, 'original');
@@ -122,7 +135,7 @@ class AddCommand extends PubCommand {
     final dependencies = [...original.dependencies.values];
     var devDependencies = [...original.devDependencies.values];
 
-    if (isDevelopment) {
+    if (isDev) {
       final dependencyNames = dependencies.map((dependency) => dependency.name);
 
       /// If package is originally in dependencies and we wish to add it to
@@ -170,7 +183,7 @@ class AddCommand extends PubCommand {
   /// if necessary.
   ///
   /// Examples:
-  /// ```bash
+  /// ```
   /// retry
   /// retry:2.0.0
   /// retry:^2.0.0
@@ -276,8 +289,8 @@ class AddCommand extends PubCommand {
   }
 
   /// Writes the changes to the pubspec file.
-  void _updatePubspec(
-      PackageId resultPackage, Pair<PackageRange, dynamic> packageInformation) {
+  void _updatePubspec(PackageId resultPackage,
+      Pair<PackageRange, dynamic> packageInformation, bool isDevelopment) {
     ArgumentError.checkNotNull(resultPackage, 'resultPackage');
     ArgumentError.checkNotNull(packageInformation, 'pubspecInformation');
 
@@ -313,7 +326,7 @@ class AddCommand extends PubCommand {
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-    if (!isDevelopment &&
+    if (!isDev &&
         yamlEditor.parseAt(['dev_dependencies', package.name],
                 orElse: () => null) !=
             null) {

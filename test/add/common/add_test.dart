@@ -41,6 +41,22 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
+    test('dry run does not actually add the package or modify the pubspec',
+        () async {
+      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+      await d.appDir({}).create();
+
+      await pubAdd(
+          args: ['foo:1.2.3', '--dry-run'],
+          output: allOf([
+            contains('Would change 1 dependency'),
+            contains('+ foo 1.2.3')
+          ]));
+
+      await d.appDir({}).validate();
+    });
+
     test(
         'adds a package from a pub server even when dependencies key does not exist',
         () async {
