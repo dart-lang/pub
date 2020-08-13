@@ -637,6 +637,8 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
 /// Removes the upper bound of [constraint]. [constraint] must not be the
 /// empty version constraint.
 VersionRange removeUpperBound(VersionConstraint constraint) {
+  ArgumentError.checkNotNull(constraint, 'constraint');
+
   /// A [VersionConstraint] has to either be a [VersionRange], [VersionUnion],
   /// or the empty [VersionConstraint].
   if (constraint is VersionRange) {

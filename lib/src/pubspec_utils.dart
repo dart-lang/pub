@@ -9,6 +9,8 @@ import 'utils.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
+  ArgumentError.checkNotNull(original, 'original pubspec');
+
   return Pubspec(
     original.name,
     version: original.version,
@@ -21,6 +23,8 @@ Pubspec stripDevDependencies(Pubspec original) {
 
 /// Returns a new [Pubspec] without [original]'s dependency_overrides.
 Pubspec stripDependencyOverrides(Pubspec original) {
+  ArgumentError.checkNotNull(original, 'original pubspec');
+
   return Pubspec(
     original.name,
     version: original.version,
@@ -37,9 +41,10 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 /// If [upgradeOnly] is provided, only the packages whose names are in
 /// [upgradeOnly] will have their upper bounds removed.
 Pubspec removeVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
+  ArgumentError.checkNotNull(original, 'original pubspec');
   upgradeOnly ??= [];
 
-  List<PackageRange> _unconstrained(
+  List<PackageRange> _removeUpperConstraints(
     Map<String, PackageRange> constrained,
   ) {
     final result = <PackageRange>[];
@@ -47,6 +52,8 @@ Pubspec removeVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
     for (final name in constrained.keys) {
       final packageRange = constrained[name];
       var unconstrainedRange = packageRange;
+
+      /// We only need to remove the upper bound if it is a hosted package.
       if (packageRange.source is HostedSource &&
           (upgradeOnly.isEmpty || upgradeOnly.contains(packageRange.name))) {
         unconstrainedRange = PackageRange(
@@ -66,8 +73,8 @@ Pubspec removeVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: _unconstrained(original.dependencies),
-    devDependencies: _unconstrained(original.devDependencies),
+    dependencies: _removeUpperConstraints(original.dependencies),
+    devDependencies: _removeUpperConstraints(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }

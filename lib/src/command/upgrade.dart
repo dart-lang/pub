@@ -50,9 +50,12 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('packages-dir', hide: true);
 
     argParser.addFlag('breaking',
-        help: 'Upgrades packages to their latest resolvable version, '
+        help: 'Upgrades packages to their latest resolvable versions, '
             'and updates pubspec.yaml.',
-        negatable: false);
+        negatable: false,
+
+        /// TODO(walnut): unhide when the naming of the command has been settled.
+        hide: true);
   }
 
   @override
@@ -65,16 +68,12 @@ class UpgradeCommand extends PubCommand {
     if (argResults['breaking']) {
       final upgradeOnly = argResults.rest;
       final rootPubspec = entrypoint.root.pubspec;
-      final allDependencies = [
-        ...rootPubspec.dependencies.values,
-        ...rootPubspec.devDependencies.values
-      ];
 
       final resolvablePubspec =
           removeVersionUpperBounds(rootPubspec, upgradeOnly: upgradeOnly);
 
-      /// Solve [resolvablePubspec] and consolidate the resolved versions of the
-      /// packages into a map for quick searching.
+      /// Solve [resolvablePubspec] in-memory and consolidate the resolved
+      /// versions of the packages into a map for quick searching.
       final resolvablePackages = <String, PackageId>{};
       await log.spinner('Resolving', () async {
         final solveResult = await tryResolveVersions(
@@ -92,8 +91,12 @@ class UpgradeCommand extends PubCommand {
 
       /// Consolidate the changes that will be made to `pubspec.yaml`.
       final dependencyChanges = <PackageRange, PackageId>{};
+      final allDeclaredDependencies = [
+        ...rootPubspec.dependencies.values,
+        ...rootPubspec.devDependencies.values
+      ];
 
-      for (final package in allDependencies) {
+      for (final package in allDeclaredDependencies) {
         final resolvedPackage = resolvablePackages[package.name];
 
         /// If packages were specified on the command line, [dependencyChanges]
