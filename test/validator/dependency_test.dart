@@ -84,6 +84,8 @@ void main() {
 
     test('has a git path dependency with an appropriate SDK constraint',
         () async {
+      // Ensure we don't report anything from the real pub.dev.
+      await setUpDependency({});
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0',
             deps: {
@@ -503,6 +505,8 @@ void main() {
 
     group('has a git path dependency', () {
       test('without an SDK constraint', () async {
+        // Ensure we don't report anything from the real pub.dev.
+        await setUpDependency({});
         await d.dir(appPath, [
           d.libPubspec('integration_pkg', '1.0.0', deps: {
             'foo': {
@@ -517,6 +521,8 @@ void main() {
       });
 
       test('with a too-broad SDK constraint', () async {
+        // Ensure we don't report anything from the real pub.dev.
+        await setUpDependency({});
         await d.dir(appPath, [
           d.libPubspec('integration_pkg', '1.0.0',
               deps: {

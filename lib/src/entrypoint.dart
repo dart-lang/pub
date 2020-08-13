@@ -331,7 +331,7 @@ class Entrypoint {
       return waitAndPrintErrors(executables.map((executable) {
         var dir = p.dirname(snapshotPathOfExecutable(executable));
         cleanDir(dir);
-        return waitAndPrintErrors(executables.map(_precompileExecutable));
+        return _precompileExecutable(executable);
       }));
     });
   }

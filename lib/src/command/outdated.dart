@@ -66,7 +66,9 @@ class OutdatedCommand extends PubCommand {
             '--show-all.',
         valueHelp: 'PROPERTY',
         allowed: ['outdated', 'null-safety'],
-        defaultsTo: 'outdated');
+        defaultsTo: 'outdated',
+        hide: true // TODO(sigurdm): Unhide when null-safety is launched.
+        );
 
     argParser.addFlag('prereleases',
         help: 'Include prereleases in latest version.');
@@ -216,9 +218,8 @@ class OutdatedCommand extends PubCommand {
       if (argResults.wasParsed('color')) {
         forceColors = argResults['color'];
       }
-      final useColors = argResults.wasParsed('color')
-          ? argResults['color']
-          : canUseSpecialChars;
+      final useColors =
+          argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
       await _outputHuman(rows, mode,
           useColors: useColors,
@@ -247,6 +248,7 @@ class OutdatedCommand extends PubCommand {
       return null;
     }
 
+    // TODO(sigurdm): Refactor this to share logic with report.dart.
     // First check if 'prereleases' was passed as an argument.
     // If that was not the case, use result of the legacy spelling
     // 'pre-releases'.
@@ -261,7 +263,7 @@ class OutdatedCommand extends PubCommand {
         : (x, y) => Version.prioritize(x.version, y.version));
     if (package is PackageId &&
         package.version.isPreRelease &&
-        package.version < available.last.version) {
+        package.version > available.last.version) {
       available.sort((x, y) => x.version.compareTo(y.version));
     }
     return available.last;
@@ -706,14 +708,14 @@ Showing packages where the current version doesn't fully support null safety.
                   break;
                 case NullSafetyCompliance.compliant:
                   color = log.green;
-                  prefix = '✓';
+                  prefix = emoji('✓', '+');
                   nullSafetyJson = true;
                   asDesired = true;
                   break;
                 case NullSafetyCompliance.notCompliant:
                 case NullSafetyCompliance.mixed:
                   color = log.red;
-                  prefix = '✗';
+                  prefix = emoji('✗', 'x');
                   nullSafetyJson = false;
                   break;
               }
