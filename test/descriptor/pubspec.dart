@@ -6,6 +6,7 @@ import 'dart:async' show Future;
 import 'dart:convert' show utf8;
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
@@ -41,7 +42,7 @@ class PubspecDescriptor extends FileDescriptor {
     final actual = actualYaml.parseAt([]);
     final expected = expectedYaml.parseAt([]);
 
-    if (!deepEquals(expected, actual)) {
+    if (MapEquality().equals(expected.value, actual.value)) {
       fail('Expected $expected, found: $actual');
     }
   }
