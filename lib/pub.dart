@@ -1,3 +1,6 @@
-// This makes build_modules give a single module for the package
-// ignore: unused_import
-import 'src/command_runner.dart';
+import 'package:args/command_runner.dart';
+import 'src/pub_embeddable_command.dart';
+
+/// Returns a [Command] for pub functionality that can be used by an embedding
+/// CommandRunner.
+Command pubCommand() => PubEmbeddableCommand();

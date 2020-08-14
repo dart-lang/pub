@@ -31,7 +31,7 @@ class OutdatedCommand extends PubCommand {
   String get description =>
       'Analyze your dependencies to find which ones can be upgraded.';
   @override
-  String get invocation => 'pub outdated [options]';
+  String get argumentsDescription => '[options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
@@ -88,7 +88,7 @@ class OutdatedCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
 

@@ -15,14 +15,12 @@ class CacheListCommand extends PubCommand {
   @override
   String get description => 'List packages in the system cache.';
   @override
-  String get invocation => 'pub cache list';
-  @override
   bool get hidden => true;
   @override
   bool get takesArguments => false;
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     // TODO(keertip): Add flag to list packages from non default sources.
     var packagesObj = <String, Map>{};
 

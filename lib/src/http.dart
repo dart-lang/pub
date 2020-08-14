@@ -13,7 +13,7 @@ import 'package:http_retry/http_retry.dart';
 import 'package:http_throttle/http_throttle.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import 'command_runner.dart';
+import 'command.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
@@ -47,7 +47,7 @@ class _PubHttpClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_shouldAddMetadata(request)) {
       request.headers['X-Pub-OS'] = Platform.operatingSystem;
-      request.headers['X-Pub-Command'] = PubCommandRunner.command;
+      request.headers['X-Pub-Command'] = PubCommand.command;
       request.headers['X-Pub-Session-ID'] = _sessionId;
 
       var environment = Platform.environment['PUB_ENVIRONMENT'];

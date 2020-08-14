@@ -4,6 +4,6 @@
 
 import 'package:pub/src/command_runner.dart';
 
-void main(List<String> arguments) {
-  PubCommandRunner().run(arguments);
+Future<void> main(List<String> arguments) async {
+  await PubCommandRunner().run(arguments);
 }

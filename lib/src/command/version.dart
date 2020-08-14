@@ -13,10 +13,10 @@ class VersionCommand extends PubCommand {
   @override
   String get description => 'Print pub version.';
   @override
-  String get invocation => 'pub version';
+  String get argumentsDescription => '';
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     log.message('Pub ${sdk.version}');
   }
 }
