@@ -31,6 +31,51 @@ void main() {
     }).validate();
   });
 
+  test('adds a package from git with version constraint', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: ['foo:1.0.0', '--git-url', '../foo.git']);
+
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+        d.gitPackageRevisionCacheDir('foo')
+      ])
+    ]).validate();
+
+    await d.appDir({
+      'foo': {'git': '../foo.git', 'version': '1.0.0'}
+    }).validate();
+  });
+
+  test('fails when adding with an invalid version constraint', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo:2.0.0', '--git-url', '../foo.git'],
+        error: equalsIgnoringWhitespace(
+            'Because myapp depends on foo 2.0.0 from git which doesn\'t match '
+            'any versions, version solving failed.'),
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
+  });
+
   test('fails when adding from an invalid url', () async {
     ensureGit();
 

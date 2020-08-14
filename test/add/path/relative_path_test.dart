@@ -42,6 +42,43 @@ void main() {
     ]).validate();
   });
 
+  test('adds a package from absolute path with version constraint', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: ['foo:0.0.1', '--path', '../foo']);
+
+    await d.appDir({
+      'foo': {'path': '../foo', 'version': '0.0.1'}
+    }).validate();
+  });
+
+  test('fails when adding with an invalid version constraint', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo:2.0.0', '--path', '../foo'],
+        error: equalsIgnoringWhitespace(
+            'Because myapp depends on foo from path which doesn\'t exist '
+            '(could not find package foo at "../foo"), version solving '
+            'failed.'),
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
+  });
+
   test('can be overriden by dependency override', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.2.2');

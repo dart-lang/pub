@@ -294,38 +294,40 @@ class AddCommand extends PubCommand {
 
       packageRange = cache.sources['git']
           .parseRef(packageName, git)
-          .withConstraint(VersionConstraint.any);
+          .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
     } else if (path != null) {
       packageRange = cache.sources['path']
           .parseRef(packageName, path, containingPath: entrypoint.pubspecPath)
-          .withConstraint(VersionConstraint.any);
+          .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'path': path};
     } else if (sdk != null) {
       packageRange = cache.sources['sdk']
           .parseRef(packageName, sdk)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'sdk': sdk};
-      if (constraint != null) {
-        pubspecInformation['version'] = constraint.toString();
-      }
     } else {
       final hostInfo =
           hasHostOptions ? {'url': hostUrl, 'name': packageName} : null;
 
       if (hostInfo == null) {
         pubspecInformation = constraint?.toString();
-      } else if (constraint == null) {
-        pubspecInformation = {'hosted': hostInfo};
       } else {
-        pubspecInformation = {
-          'hosted': hostInfo,
-          'version': constraint.toString()
-        };
+        pubspecInformation = {'hosted': hostInfo};
       }
 
       packageRange = PackageRange(packageName, cache.sources['hosted'],
           constraint ?? VersionConstraint.any, hostInfo ?? packageName);
+    }
+
+    if (pubspecInformation is Map && constraint != null) {
+      /// We cannot simply assign the value of version since it is likely that
+      /// [pubspecInformation] takes on the type
+      /// [Map<String, Map<String, String>>]
+      pubspecInformation = {
+        ...pubspecInformation,
+        'version': constraint.toString()
+      };
     }
 
     return Pair(packageRange, pubspecInformation);
