@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -30,7 +30,7 @@ void main() {
     ]).create();
   });
 
-  test("gets an SDK dependency's dependencies", () async {
+  test("adds an SDK dependency's dependencies", () async {
     await d.appDir({}).create();
     await pubAdd(
         args: ['foo', '--sdk', 'flutter'],
@@ -52,7 +52,7 @@ void main() {
   });
 
   test(
-      "gets an SDK dependency's dependencies with version constraint specified",
+      "adds an SDK dependency's dependencies with version constraint specified",
       () async {
     await d.appDir({}).create();
     await pubAdd(
@@ -74,7 +74,7 @@ void main() {
     ]).validate();
   });
 
-  test('gets an SDK dependency from bin/cache/pkg', () async {
+  test('adds an SDK dependency from bin/cache/pkg', () async {
     await d.appDir({}).create();
     await pubAdd(
         args: ['baz', '--sdk', 'flutter'],
@@ -96,6 +96,14 @@ void main() {
         error: equalsIgnoringWhitespace("""
               Because myapp depends on foo ^1.0.0 from sdk which doesn't match
                 any versions, version solving failed.
-            """));
+            """),
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 }

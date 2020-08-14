@@ -23,9 +23,15 @@ void main() {
               'not find package bad name! at http://localhost:'),
           contains('), version solving failed.')
         ]),
-        exitCode: exit_codes.UNAVAILABLE);
+        exitCode: exit_codes.DATA);
 
     await d.appDir({}).validate();
+
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 
   group('normally', () {
@@ -55,6 +61,11 @@ void main() {
           ]));
 
       await d.appDir({}).validate();
+      await d.dir(appPath, [
+        d.nothing('.dart_tool/package_config.json'),
+        d.nothing('pubspec.lock'),
+        d.nothing('.packages'),
+      ]).validate();
     });
 
     test(
@@ -136,9 +147,9 @@ void main() {
 
       await pubAdd(
           args: ['foo:1.2.3'],
-          output:
-              contains('foo was found in dev_dependencies. Removing foo and '
-                  'adding it to dependencies instead.'));
+          output: contains(
+              '"foo" was found in dev_dependencies. Removing "foo" and '
+              'adding it to dependencies instead.'));
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackagesFile({'foo': '1.2.3'}).validate();
@@ -240,6 +251,29 @@ void main() {
         ]).validate();
       });
 
+      test('fails with bad version constraint', () async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.2.3');
+        });
+
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp', 'dependencies': {}})
+        ]).create();
+
+        await pubAdd(
+            args: ['foo:one-two-three'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                'Could not parse version "one-two-three". Unknown text at "one-two-three"'));
+
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp', 'dependencies': {}}),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
+      });
+
       test('fails if constraint does not match override', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
@@ -258,7 +292,19 @@ void main() {
             args: ['foo:1.2.3'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.2.2 which does not match the input 1.2.3'));
+                '"foo" resolved to "1.2.2" which does not satisfy constraint '
+                '"1.2.3". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {'foo': '1.2.2'}
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
 
       test('fails if constraint matches git dependency override', () async {
@@ -283,7 +329,21 @@ void main() {
             args: ['foo:1.2.3'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.0.0 which does not match the input 1.2.3'));
+                '"foo" resolved to "1.0.0" which does not satisfy constraint '
+                '"1.2.3". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
 
       test('fails if constraint does not match path dependency override',
@@ -308,7 +368,21 @@ void main() {
             args: ['foo:1.2.2'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.0.0 which does not match the input 1.2.2'));
+                '"foo" resolved to "1.0.0" which does not satisfy constraint '
+                '"1.2.2". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
     });
   });
@@ -518,7 +592,19 @@ void main() {
             args: ['foo:1.2.3', '--dev'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.2.2 which does not match the input 1.2.3'));
+                '"foo" resolved to "1.2.2" which does not satisfy constraint '
+                '"1.2.3". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {'foo': '1.2.2'}
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
 
       test('fails if constraint matches git dependency override', () async {
@@ -543,7 +629,21 @@ void main() {
             args: ['foo:1.2.3'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.0.0 which does not match the input 1.2.3'));
+                '"foo" resolved to "1.0.0" which does not satisfy constraint '
+                '"1.2.3". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'git': '../foo.git'}
+            }
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
 
       test('fails if constraint does not match path dependency override',
@@ -568,7 +668,21 @@ void main() {
             args: ['foo:1.2.2', '--dev'],
             exitCode: exit_codes.DATA,
             error: contains(
-                'foo resolved to 1.0.0 which does not match the input 1.2.2'));
+                '"foo" resolved to "1.0.0" which does not satisfy constraint '
+                '"1.2.2". This could be caused by "dependency_overrides".'));
+
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dev_dependencies': {},
+            'dependency_overrides': {
+              'foo': {'path': '../foo'}
+            }
+          }),
+          d.nothing('.dart_tool/package_config.json'),
+          d.nothing('pubspec.lock'),
+          d.nothing('.packages'),
+        ]).validate();
       });
     });
 
@@ -590,9 +704,23 @@ void main() {
 
       await pubAdd(
           args: ['foo:1.2.3', '--dev'],
-          error: contains('foo is already in dependencies. Please remove '
-              'existing entry before adding it'),
+          error: allOf([
+            contains('"foo" is already in "dependencies". Please use '
+                '"pub remove foo" to remove it'),
+            contains('before adding it to "dev_dependencies"')
+          ]),
           exitCode: exit_codes.USAGE);
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.2'},
+          'dev_dependencies': {}
+        }),
+        d.nothing('.dart_tool/package_config.json'),
+        d.nothing('pubspec.lock'),
+        d.nothing('.packages'),
+      ]).validate();
     });
   });
 }

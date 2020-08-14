@@ -7,6 +7,7 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
+import '../git.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -27,7 +28,7 @@ class AddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description => 'Add a dependency to the current package.';
+  String get description => 'Add a dependency to pubspec.yaml.';
   @override
   String get invocation => 'pub add <package>[:<constraint>] [options]';
   @override
@@ -83,8 +84,19 @@ class AddCommand extends PubCommand {
     /// Perform version resolution in-memory.
     final updatedPubSpec =
         await _addPackageToPubspec(entrypoint.root.pubspec, package);
-    final solveResult = await resolveVersions(
-        SolveType.GET, cache, Package.inMemory(updatedPubSpec));
+
+    SolveResult solveResult;
+
+    try {
+      solveResult = await resolveVersions(
+          SolveType.GET, cache, Package.inMemory(updatedPubSpec));
+    } on GitException {
+      dataError('Unable to resolve package "${package.name}" with the given '
+          'git parameters.');
+    } catch (e) {
+      /// [SolveFailure]s and [SocketException] (for hosted packages)
+      dataError(e.message);
+    }
 
     final resultPackage = solveResult.packages
         .firstWhere((packageId) => packageId.name == package.name);
@@ -92,8 +104,16 @@ class AddCommand extends PubCommand {
     /// Assert that [resultPackage] is within the original user's expectations.
     if (package.constraint != null &&
         !package.constraint.allows(resultPackage.version)) {
-      dataError('${package.name} resolved to ${resultPackage.version} which '
-          'does not match the input ${package.constraint}! Exiting.');
+      if (updatedPubSpec.dependencyOverrides != null &&
+          updatedPubSpec.dependencyOverrides.isNotEmpty) {
+        dataError(
+            '"${package.name}" resolved to "${resultPackage.version}" which '
+            'does not satisfy constraint "${package.constraint}". This could be '
+            'caused by "dependency_overrides".');
+      }
+      dataError(
+          '"${package.name}" resolved to "${resultPackage.version}" which '
+          'does not satisfy constraint "${package.constraint}".');
     }
 
     if (isDryRun) {
@@ -102,7 +122,8 @@ class AddCommand extends PubCommand {
       /// to this new dependency.
       final newRoot = Package.inMemory(updatedPubSpec);
 
-      await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
+      await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
+              solveResult: solveResult)
           .acquireDependencies(SolveType.GET,
               dryRun: true, precompile: argResults['precompile']);
     } else {
@@ -121,7 +142,7 @@ class AddCommand extends PubCommand {
 
     if (isOffline) {
       log.warning('Warning: Packages added when offline may not resolve to '
-          'the latest versions of your dependencies.');
+          'the latest compatible version available.');
     }
   }
 
@@ -134,30 +155,29 @@ class AddCommand extends PubCommand {
 
     final dependencies = [...original.dependencies.values];
     var devDependencies = [...original.devDependencies.values];
+    final dependencyNames = dependencies.map((dependency) => dependency.name);
+    final devDependencyNames =
+        devDependencies.map((devDependency) => devDependency.name);
 
     if (isDev) {
-      final dependencyNames = dependencies.map((dependency) => dependency.name);
-
       /// If package is originally in dependencies and we wish to add it to
       /// dev_dependencies, this is a redundant change, and we should not
       /// remove the package from dependencies, since it might cause the user's
       /// code to break.
       if (dependencyNames.contains(package.name)) {
-        usageException('${package.name} is already in dependencies. '
-            'Please remove existing entry before adding it to dev_dependencies');
+        usageException('"${package.name}" is already in "dependencies". '
+            'Please use "pub remove ${package.name}" to remove it before adding '
+            'it to "dev_dependencies"');
       }
 
       devDependencies.add(package);
     } else {
-      final devDependencyNames =
-          devDependencies.map((devDependency) => devDependency.name);
-
       /// If package is originally in dev_dependencies and we wish to add it to
       /// dependencies, we remove the package from dev_dependencies, since it is
       /// now redundant.
       if (devDependencyNames.contains(package.name)) {
-        log.message('${package.name} was found in dev_dependencies. '
-            'Removing ${package.name} and adding it to dependencies instead.');
+        log.message('"${package.name}" was found in dev_dependencies. '
+            'Removing "${package.name}" and adding it to dependencies instead.');
         devDependencies =
             devDependencies.where((d) => d.name != package.name).toList();
       }
@@ -204,12 +224,24 @@ class AddCommand extends PubCommand {
   Pair<PackageRange, dynamic> _parsePackage(String package) {
     ArgumentError.checkNotNull(package, 'package');
 
-    if ([path != null, hasGitOptions, hasHostOptions, sdk != null]
-            .where((element) => element == true)
-            .length >=
-        2) {
-      usageException(
-          'Packages must either be a git, hosted, sdk, or path package.');
+    final _conflictingFlagSets = [
+      ['git-url', 'git-ref', 'git-path'],
+      ['hosted-url'],
+      ['path'],
+      ['sdk'],
+    ];
+
+    for (final flag
+        in _conflictingFlagSets.expand((s) => s).where(argResults.wasParsed)) {
+      final conflictingFlag = _conflictingFlagSets
+          .where((s) => !s.contains(flag))
+          .expand((s) => s)
+          .firstWhere(argResults.wasParsed, orElse: () => null);
+      if (conflictingFlag != null) {
+        usageException(
+            'Packages can only have one source, pub add flags "--$flag" and '
+            '"--$conflictingFlag" are conflicting.');
+      }
     }
 
     /// The package to be added, along with the user-defined package constraints
@@ -231,14 +263,25 @@ class AddCommand extends PubCommand {
 
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
-    final constraint = splitPackage.length == 2
-        ? VersionConstraint.parse(splitPackage[1])
-        : null;
+    VersionConstraint constraint;
+
+    try {
+      constraint = splitPackage.length == 2
+          ? VersionConstraint.parse(splitPackage[1])
+          : null;
+    } on FormatException catch (e) {
+      usageException('${e.message} Ensure that your version constraint '
+          'satisfies pub semver requirements.');
+    }
 
     /// Determine the relevant [packageRange] and [pubspecInformation] depending
     /// on the type of package.
     if (hasGitOptions) {
       dynamic git;
+
+      if (gitUrl == null) {
+        usageException('Git packages must have the --git-url option declared!');
+      }
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.

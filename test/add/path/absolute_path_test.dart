@@ -34,11 +34,18 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--path', absolutePath],
-        error: contains(
+        error: equalsIgnoringWhitespace(
             'Because myapp depends on foo from path which doesn\'t exist '
             '(could not find package foo at "$absolutePath"), version solving '
             'failed.'),
-        exitCode: exit_codes.NO_INPUT);
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 
   test('can be overriden by dependency override', () async {

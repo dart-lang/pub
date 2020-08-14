@@ -55,8 +55,15 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old'],
-        error: contains('ambiguous argument \'old\': unknown revision or path '
-            'not in the working tree.'),
-        exitCode: exit_codes.UNAVAILABLE);
+        error: contains('Unable to resolve package "foo" with the given '
+            'git parameters'),
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 }

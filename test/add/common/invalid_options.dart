@@ -21,9 +21,19 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git', '--path', '../bar'],
-        error:
-            contains('Packages must either be a git, hosted, or path package.'),
+        error: allOf([
+          contains('Packages can only have one source, pub add flags '
+              '"--git-url" and "--path" are'),
+          contains('conflicting.')
+        ]),
         exitCode: exit_codes.USAGE);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 
   test('cannot use both --path and --host-<option> flags', () async {
@@ -47,12 +57,22 @@ void main() {
           '--path',
           '../bar'
         ],
-        error:
-            contains('Packages must either be a git, hosted, or path package.'),
+        error: allOf([
+          contains('Packages can only have one source, pub add flags '
+              '"--hosted-url" and "--path" are'),
+          contains('conflicting.')
+        ]),
         exitCode: exit_codes.USAGE);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 
-  test('cannot use both --host-<option> and --git-<option> flags', () async {
+  test('cannot use both --hosted-url and --git-<option> flags', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveErrors();
@@ -70,13 +90,23 @@ void main() {
     await pubAdd(
         args: [
           'foo',
-          '--host-url',
+          '--hosted-url',
           'http://localhost:${server.port}',
           '--git-url',
           '../foo.git'
         ],
-        error:
-            contains('Packages must either be a git, hosted, or path package.'),
+        error: allOf([
+          contains('Packages can only have one source, pub add flags '
+              '"--git-url" and "--hosted-url"'),
+          contains('are conflicting.')
+        ]),
         exitCode: exit_codes.USAGE);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 }

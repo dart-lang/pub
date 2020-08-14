@@ -38,8 +38,35 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git'],
-        error: contains('repository \'../foo.git\' does not exist'),
-        exitCode: exit_codes.UNAVAILABLE);
+        error: contains('Unable to resolve package "foo" with the given '
+            'git parameters'),
+        exitCode: exit_codes.DATA);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
+  });
+
+  test('fails if git-url is not declared', () async {
+    ensureGit();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', '--git-ref', 'master'],
+        error:
+            contains('Git packages must have the --git-url option declared!'),
+        exitCode: exit_codes.USAGE);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
   });
 
   test('can be overriden by dependency override', () async {
