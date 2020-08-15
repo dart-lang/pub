@@ -84,7 +84,7 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
-    group('overrides existing version constraint if package exists', () {
+    group('warns user to use pub upgrade if package exists', () {
       test('if package is added without a version constraint', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
@@ -93,11 +93,14 @@ void main() {
 
         await d.appDir({'foo': '1.2.2'}).create();
 
-        await pubAdd(args: ['foo']);
+        await pubAdd(
+            args: ['foo'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dependencies". Please use "pub upgrade '
+                'foo" if you wish to\nupgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
-        await d.appDir({'foo': '^1.2.3'}).validate();
+        await d.appDir({'foo': '1.2.2'}).validate();
       });
 
       test('if package is added with a specific version constraint', () async {
@@ -108,11 +111,14 @@ void main() {
 
         await d.appDir({'foo': '1.2.2'}).create();
 
-        await pubAdd(args: ['foo:1.2.3']);
+        await pubAdd(
+            args: ['foo:1.2.3'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dependencies". Please use "pub upgrade '
+                'foo" if you wish to\nupgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
-        await d.appDir({'foo': '1.2.3'}).validate();
+        await d.appDir({'foo': '1.2.2'}).validate();
       });
 
       test('if package is added with a version constraint range', () async {
@@ -123,11 +129,14 @@ void main() {
 
         await d.appDir({'foo': '1.2.2'}).create();
 
-        await pubAdd(args: ['foo:>=1.2.2']);
+        await pubAdd(
+            args: ['foo:>=1.2.2'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dependencies". Please use "pub upgrade '
+                'foo" if you wish to\nupgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
-        await d.appDir({'foo': '>=1.2.2'}).validate();
+        await d.appDir({'foo': '1.2.2'}).validate();
       });
     });
 
@@ -407,7 +416,7 @@ void main() {
       ]).validate();
     });
 
-    group('overrides existing version constraint if package exists', () {
+    group('warns user to use pub upgrade if package exists', () {
       test('if package is added without a version constraint', () async {
         await servePackages((builder) {
           builder.serve('foo', '1.2.3');
@@ -421,14 +430,17 @@ void main() {
           })
         ]).create();
 
-        await pubAdd(args: ['foo', '--dev']);
+        await pubAdd(
+            args: ['foo', '--dev'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
+                'foo" if you wish\nto upgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '^1.2.3'}
+            'dev_dependencies': {'foo': '1.2.2'}
           })
         ]).validate();
       });
@@ -446,14 +458,17 @@ void main() {
           })
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.3', '--dev']);
+        await pubAdd(
+            args: ['foo:1.2.3', '--dev'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
+                'foo" if you wish\nto upgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '1.2.3'}
+            'dev_dependencies': {'foo': '1.2.2'}
           })
         ]).validate();
       });
@@ -471,15 +486,17 @@ void main() {
           })
         ]).create();
 
-        await pubAdd(args: ['foo:>=1.2.2', '--dev']);
+        await pubAdd(
+            args: ['foo:>=1.2.2', '--dev'],
+            exitCode: exit_codes.USAGE,
+            error: contains(
+                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
+                'foo" if you wish\nto upgrade to a later version!'));
 
-        await d.cacheDir({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
-        await d.appPackagesFile({'foo': '1.2.3'}).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '>=1.2.2'}
+            'dev_dependencies': {'foo': '1.2.2'}
           })
         ]).validate();
       });

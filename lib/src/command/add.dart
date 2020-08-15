@@ -88,8 +88,13 @@ class AddCommand extends PubCommand {
     SolveResult solveResult;
 
     try {
+      /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
+      /// in case [package] was already a transitive dependency.
       solveResult = await resolveVersions(
-          SolveType.GET, cache, Package.inMemory(updatedPubSpec));
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(updatedPubSpec),
+      );
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
@@ -160,6 +165,14 @@ class AddCommand extends PubCommand {
         devDependencies.map((devDependency) => devDependency.name);
 
     if (isDev) {
+      /// TODO(walnut): Change the error message once pub upgrade --bump is
+      /// released
+      if (devDependencyNames.contains(package.name)) {
+        usageException('"${package.name}" is already in "dev_dependencies". '
+            'Please use "pub upgrade ${package.name}" if you wish to upgrade '
+            'to a later version!');
+      }
+
       /// If package is originally in dependencies and we wish to add it to
       /// dev_dependencies, this is a redundant change, and we should not
       /// remove the package from dependencies, since it might cause the user's
@@ -172,6 +185,14 @@ class AddCommand extends PubCommand {
 
       devDependencies.add(package);
     } else {
+      /// TODO(walnut): Change the error message once pub upgrade --bump is
+      /// released
+      if (dependencyNames.contains(package.name)) {
+        usageException('"${package.name}" is already in "dependencies". '
+            'Please use "pub upgrade ${package.name}" if you wish to upgrade '
+            'to a later version!');
+      }
+
       /// If package is originally in dev_dependencies and we wish to add it to
       /// dependencies, we remove the package from dev_dependencies, since it is
       /// now redundant.
@@ -258,7 +279,7 @@ class AddCommand extends PubCommand {
 
     /// There shouldn't be more than one `:` in the package information
     if (splitPackage.length > 2) {
-      throw FormatException('Invalid package and version constraint: $package');
+      usageException('Invalid package and version constraint: $package');
     }
 
     /// We want to allow for [constraint] to take on a `null` value here to
