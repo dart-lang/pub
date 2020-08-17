@@ -7,14 +7,18 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
+import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
+import 'log.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 
 /// Code shared between `run` `global run` and `run --dartdev` for extracting
@@ -210,6 +214,97 @@ Future<int> _runDartProgram(
     );
 
     return process.exitCode;
+  }
+}
+
+/// Returns the path to dart program/snapshot to invoke for running [descriptor]
+/// resolved according to the package configuration of the package at [root]
+/// (defaulting to the current working directory).
+///
+/// ## Resolution:
+///
+/// [descriptor] is resolved as follows:
+/// * If `<descriptor>` is an existing file (resolved relative to root):
+///   return that (without snapshotting).
+/// * Otherwise if [root] contains no `pubspec.yaml`, or a `pub get` needs to be
+///   run: throws an [Exception].
+///
+/// * Otherwise let  `<current>` be the name of the package at [root], and
+///   interpret [descriptor] as `[<package>][:<command>]`.
+///
+///   * If `<package>` is empty: default to the package at [root].
+///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
+///     `bin/main.dart` to the first that exists.
+///
+/// For example:
+/// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
+/// * `:foo` will resolve to `<current>:bin/foo.dart`.
+/// * `` and `:` both resolves to `<current>:bin/<current>.dart` or
+///   `bin/<current>:main.dart`.
+///
+/// If that doesn't resolve as an existing file throw an exception.
+///
+/// ## Snapshotting
+///
+/// The returned executable will be a snapshot if [allowSnapshot] is true and
+/// the package is an immutable (non-path) dependency of [root].
+///
+/// If returning the path to a snapshot that doesn't already exist, the script
+/// Will be precompiled. And a message will be printed only if a terminal is
+/// attached to stdout.
+///
+/// Throws an [Exception] if the command is not found or if the entrypoint is
+/// not up to date (requires `pub get`).
+Future<String> getExecutableForCommand(
+  String descriptor, {
+  @required bool allowSnapshot,
+  String root,
+}) async {
+  root ??= p.current;
+  final asDirectFile = p.join(root, descriptor);
+  if (fileExists(asDirectFile)) return asDirectFile;
+  try {
+    final entrypoint = Entrypoint(root, SystemCache(rootDir: root));
+    entrypoint.assertUpToDate();
+    String command;
+    String package;
+    if (descriptor.contains(':')) {
+      final parts = descriptor.split(':');
+      if (parts.length > 2) {
+        throw Exception('[<package>[:command]] cannot contain multiple ":"');
+      }
+      package = parts[0];
+      if (package.isEmpty) package = entrypoint.root.name;
+      command = parts[1];
+    } else {
+      package = descriptor;
+      command = '';
+    }
+    final candidates = command.isEmpty
+        ? [
+            Executable(package, 'bin/$package.dart'),
+            Executable(package, 'bin/main.dart')
+          ]
+        : [Executable(package, 'bin/$command.dart')];
+    final chosen = candidates.firstWhere(
+        (executable) => fileExists(entrypoint.resolveExecutable(executable)),
+        orElse: () => null);
+    if (chosen == null) {
+      throw Exception('Could not resolve $descriptor.');
+    }
+    if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
+      return entrypoint.resolveExecutable(chosen);
+    } else {
+      final snapshotPath = entrypoint.snapshotPathOfExecutable(chosen);
+      if (fileExists(snapshotPath)) {
+        await warningsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(chosen),
+        );
+      }
+      return snapshotPath;
+    }
+  } on ApplicationException catch (e) {
+    throw Exception(e.message);
   }
 }
 
