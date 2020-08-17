@@ -30,6 +30,21 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
   ];
 }
 
+Future<int> runExecutable(
+    Entrypoint entrypoint, Executable executable, Iterable<String> args,
+    {bool enableAsserts = false,
+    String packagesFile,
+    Future<void> Function(Executable) recompile,
+    List<String> vmArgs = const []}) async {
+  final r = await _runExecutable(entrypoint, executable, args,
+      enableAsserts: enableAsserts,
+      packagesFile: packagesFile,
+      recompile: recompile,
+      vmArgs: vmArgs);
+  print('Returned $r');
+  return r;
+}
+
 /// Runs [executable] from [package] reachable from [entrypoint].
 ///
 /// The [executable] is a relative path to a Dart file within [package], which
@@ -46,7 +61,7 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 /// run from snapshot (and precompiled if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
-Future<int> runExecutable(
+Future<int> _runExecutable(
     Entrypoint entrypoint, Executable executable, Iterable<String> args,
     {bool enableAsserts = false,
     String packagesFile,
