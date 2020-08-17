@@ -188,7 +188,7 @@ class LishCommand extends PubCommand {
     }
 
     log.message('\nPublishing is forever; packages cannot be unpublished.'
-      '\nPolicy details are available at https://pub.dev/policy');
+        '\nPolicy details are available at https://pub.dev/policy');
 
     final package = entrypoint.root;
     var message = 'Do you want to publish ${package.name} ${package.version}';
