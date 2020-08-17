@@ -13,7 +13,6 @@ import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
-import 'command/run.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
@@ -49,7 +48,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(GetCommand());
     addSubcommand(LishCommand());
     addSubcommand(OutdatedCommand());
-    addSubcommand(RunCommand());
     addSubcommand(UpgradeCommand());
     addSubcommand(
         UploaderCommand()); // TODO(sigurdm): should we leave this out?

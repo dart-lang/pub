@@ -41,7 +41,6 @@ $ tool/test-bin/pub_command_runner.dart pub
 [E]   logout      Log out of pub.dartlang.org.
 [E]   outdated    Analyze your dependencies to find which ones can be upgraded.
 [E]   publish     Publish the current package to pub.dartlang.org.
-[E]   run         Run an executable from a package.
 [E]   upgrade     Upgrade the current package's dependencies to latest versions.
 [E]   uploader    Manage uploaders for a package on pub.dartlang.org.
 [E] 
