@@ -1,6 +1,8 @@
-// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS d.file
+// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+
+import 'dart:io';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
@@ -31,7 +33,8 @@ void main() {
         args: ['foo', '--path', '../foo'],
         error: equalsIgnoringWhitespace(
             'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "../foo"), version solving failed.'),
+            '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+            'version solving failed.'),
         exitCode: exit_codes.DATA);
 
     await d.appDir({}).validate();
