@@ -70,8 +70,8 @@ void main() {
         args: ['foo:2.0.0', '--path', '../foo'],
         error: equalsIgnoringWhitespace(
             'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "../foo"), version solving '
-            'failed.'),
+            '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+            'version solving failed.'),
         exitCode: exit_codes.DATA);
 
     await d.appDir({}).validate();
