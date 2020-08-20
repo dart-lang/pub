@@ -10,7 +10,7 @@ void main() {
   group('stripUpperBound', () {
     test('works on version range', () {
       final constraint = VersionConstraint.parse('>=1.0.0 <3.0.0');
-      final removedUpperBound = stripUpperBound(constraint);
+      final removedUpperBound = stripUpperBound(constraint) as VersionRange;
 
       expect(removedUpperBound.min, equals(Version(1, 0, 0)));
       expect(removedUpperBound.includeMin, isTrue);
@@ -19,7 +19,7 @@ void main() {
 
     test('works on version range exclude min', () {
       final constraint = VersionConstraint.parse('>0.0.1 <5.0.0');
-      final removedUpperBound = stripUpperBound(constraint);
+      final removedUpperBound = stripUpperBound(constraint) as VersionRange;
 
       expect(removedUpperBound.min, equals(Version(0, 0, 1)));
       expect(removedUpperBound.includeMin, isFalse);
@@ -28,7 +28,7 @@ void main() {
 
     test('works on specific version constraint', () {
       final constraint = VersionConstraint.parse('1.2.3');
-      final removedUpperBound = stripUpperBound(constraint);
+      final removedUpperBound = stripUpperBound(constraint) as VersionRange;
 
       expect(removedUpperBound.min, equals(Version(1, 2, 3)));
       expect(removedUpperBound.includeMin, isTrue);
@@ -37,7 +37,7 @@ void main() {
 
     test('works on compatible version constraint', () {
       final constraint = VersionConstraint.parse('^1.2.3');
-      final removedUpperBound = stripUpperBound(constraint);
+      final removedUpperBound = stripUpperBound(constraint) as VersionRange;
 
       expect(removedUpperBound.min, equals(Version(1, 2, 3)));
       expect(removedUpperBound.includeMin, isTrue);
@@ -49,7 +49,7 @@ void main() {
       final constraint2 = VersionConstraint.parse('>2.2.3 <=4.0.0');
       final constraint = VersionUnion.fromRanges([constraint1, constraint2]);
 
-      final removedUpperBound = stripUpperBound(constraint);
+      final removedUpperBound = stripUpperBound(constraint) as VersionRange;
 
       expect(removedUpperBound.min, equals(Version(1, 2, 3)));
       expect(removedUpperBound.includeMin, isTrue);
@@ -61,14 +61,12 @@ void main() {
         'is provided', () {
       final constraint = VersionConstraint.empty;
 
-      expect(stripUpperBound(constraint),
-          VersionRange(min: Version.none, max: Version.none));
+      expect(stripUpperBound(constraint), VersionConstraint.empty);
     });
 
-    test('returns empty version union on empty version union', () {
+    test('returns Version.none on empty version union', () {
       final constraint = VersionUnion.fromRanges([]);
-      expect(stripUpperBound(constraint),
-          VersionRange(min: Version.none, max: Version.none));
+      expect(stripUpperBound(constraint), VersionConstraint.empty);
     });
   });
 }

@@ -11,7 +11,7 @@ import 'source/hosted.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original pubspec');
+  ArgumentError.checkNotNull(original, 'original');
 
   return Pubspec(
     original.name,
@@ -25,7 +25,7 @@ Pubspec stripDevDependencies(Pubspec original) {
 
 /// Returns a new [Pubspec] without [original]'s dependency_overrides.
 Pubspec stripDependencyOverrides(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original pubspec');
+  ArgumentError.checkNotNull(original, 'original');
 
   return Pubspec(
     original.name,
@@ -41,9 +41,12 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 /// upper bounds of the constraints removed.
 ///
 /// If [upgradeOnly] is provided, only the packages whose names are in
-/// [upgradeOnly] will have their upper bounds removed.
-Pubspec stripVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
-  ArgumentError.checkNotNull(original, 'original pubspec');
+/// [upgradeOnly] will have their upper bounds removed. If [upgradeOnly] is
+/// not specified or empty, then all packages will have their upper bounds
+/// removed.
+Pubspec stripVersionUpperBounds(Pubspec original,
+    {Iterable<String> upgradeOnly}) {
+  ArgumentError.checkNotNull(original, 'original');
   upgradeOnly ??= [];
 
   List<PackageRange> _stripUpperBounds(
@@ -82,9 +85,9 @@ Pubspec stripVersionUpperBounds(Pubspec original, {List<String> upgradeOnly}) {
 }
 
 /// Removes the upper bound of [constraint]. If [constraint] is the
-/// empty version constraint, an empty version range will be returned.
+/// empty version constraint, [VersionRange.none] will be returned.
 @visibleForTesting
-VersionRange stripUpperBound(VersionConstraint constraint) {
+VersionConstraint stripUpperBound(VersionConstraint constraint) {
   ArgumentError.checkNotNull(constraint, 'constraint');
 
   /// A [VersionConstraint] has to either be a [VersionRange], [VersionUnion],
@@ -93,12 +96,16 @@ VersionRange stripUpperBound(VersionConstraint constraint) {
     return VersionRange(min: constraint.min, includeMin: constraint.includeMin);
   }
 
-  if (constraint is VersionUnion && constraint.ranges.isNotEmpty) {
+  if (constraint is VersionUnion) {
+    if (constraint.ranges.isEmpty) return VersionConstraint.empty;
+
     final firstRange = constraint.ranges.first;
     return VersionRange(min: firstRange.min, includeMin: firstRange.includeMin);
   }
 
+  assert(constraint == VersionConstraint.empty, 'unknown constraint type');
+
   /// If it gets here, [constraint] is the empty version constraint, so we
-  /// just return an empty version range
-  return VersionRange(min: Version.none, max: Version.none);
+  /// just return an empty version constraint.
+  return VersionConstraint.empty;
 }
