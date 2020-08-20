@@ -12,11 +12,13 @@ import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
+import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
+import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -227,6 +229,9 @@ Future<int> _runDartProgram(
 /// [descriptor] is resolved as follows:
 /// * If `<descriptor>` is an existing file (resolved relative to root):
 ///   return that (without snapshotting).
+///
+/// * If `<descriptor>` contains '.' or '/' throw an [Exception]
+///
 /// * Otherwise if [root] contains no `pubspec.yaml`, or a `pub get` needs to be
 ///   run: throws an [Exception].
 ///
@@ -264,9 +269,18 @@ Future<String> getExecutableForCommand(
   root ??= p.current;
   final asDirectFile = p.join(root, descriptor);
   if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
+  if (descriptor.contains('.') || descriptor.contains('/')) {
+    throw Exception('Could not find file `$descriptor');
+  }
   try {
     final entrypoint = Entrypoint(root, SystemCache(rootDir: root));
-    entrypoint.assertUpToDate();
+    try {
+      // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
+      entrypoint.assertUpToDate();
+    } on DataException {
+      await entrypoint.acquireDependencies(SolveType.GET);
+    }
+
     String command;
     String package;
     if (descriptor.contains(':')) {
@@ -282,6 +296,9 @@ Future<String> getExecutableForCommand(
       command = package;
     }
     final executable = Executable(package, 'bin/$command.dart');
+    if (!entrypoint.packageGraph.packages.containsKey(package)) {
+      throw Exception('Could not find package $package or file $descriptor');
+    }
     final path = entrypoint.resolveExecutable(executable);
     if (!fileExists(path)) {
       throw Exception('Could not find $command.dart in $package.');
