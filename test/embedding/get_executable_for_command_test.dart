@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:pub/pub.dart';
-import 'package:path/path.dart' show separator;
+import 'package:path/path.dart' show separator, toUri;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -47,6 +47,9 @@ Future<void> main() async {
     ]);
     await dir.create();
     await testGetExecutable('bar/bar.dart', dir.io.path,
+        result: 'bar/bar.dart');
+
+    await testGetExecutable('${toUri(dir.io.path)}/bar/bar.dart', dir.io.path,
         result: 'bar/bar.dart');
   });
 

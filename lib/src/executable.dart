@@ -227,7 +227,8 @@ Future<int> _runDartProgram(
 /// ## Resolution:
 ///
 /// [descriptor] is resolved as follows:
-/// * If `<descriptor>` is an existing file (resolved relative to root):
+/// * If `<descriptor>` is an existing file (resolved relative to root, either
+///   as a path or a file uri):
 ///   return that (without snapshotting).
 ///
 /// * Otherwise if [root] contains no `pubspec.yaml`, throws a
@@ -269,7 +270,18 @@ Future<String> getExecutableForCommand(
   String pubCacheDir,
 }) async {
   root ??= p.current;
-  final asDirectFile = p.join(root, descriptor);
+  var asPath = descriptor;
+  try {
+    asPath = Uri.parse(descriptor).toFilePath();
+  } catch (_) {
+    // Consume input path will either be a valid path or a file uri
+    // (e.g /directory/file.dart or file:///directory/file.dart). We will try
+    // parsing it as a Uri, but if parsing failed for any reason (likely
+    // because path is not a file Uri), `path` will be passed without
+    // modification to the VM.
+  }
+
+  final asDirectFile = p.join(root, asPath);
   if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
     throw CommandResolutionFailedException('Could not find file `$descriptor`');
