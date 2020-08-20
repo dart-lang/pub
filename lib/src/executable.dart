@@ -221,7 +221,8 @@ Future<int> _runDartProgram(
 
 /// Returns the path to dart program/snapshot to invoke for running [descriptor]
 /// resolved according to the package configuration of the package at [root]
-/// (defaulting to the current working directory).
+/// (defaulting to the current working directory). Using the pub-cache at
+/// [pubCacheDir] (defaulting to the default pub cache).
 ///
 /// The returned path will be relative to [root].
 ///
@@ -266,6 +267,7 @@ Future<String> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
   String root,
+  String pubCacheDir,
 }) async {
   root ??= p.current;
   final asDirectFile = p.join(root, descriptor);
@@ -274,7 +276,7 @@ Future<String> getExecutableForCommand(
     throw Exception('Could not find file `$descriptor`');
   }
   try {
-    final entrypoint = Entrypoint(root, SystemCache(rootDir: root));
+    final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
     try {
       // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
       entrypoint.assertUpToDate();
