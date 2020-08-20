@@ -7,14 +7,12 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
-import 'io.dart';
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
@@ -222,6 +220,8 @@ Future<int> _runDartProgram(
 /// resolved according to the package configuration of the package at [root]
 /// (defaulting to the current working directory).
 ///
+/// The returned path will be relative to [root].
+///
 /// ## Resolution:
 ///
 /// [descriptor] is resolved as follows:
@@ -258,12 +258,12 @@ Future<int> _runDartProgram(
 /// not up to date (requires `pub get`).
 Future<String> getExecutableForCommand(
   String descriptor, {
-  @required bool allowSnapshot,
+  bool allowSnapshot = true,
   String root,
 }) async {
   root ??= p.current;
   final asDirectFile = p.join(root, descriptor);
-  if (fileExists(asDirectFile)) return asDirectFile;
+  if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
   try {
     final entrypoint = Entrypoint(root, SystemCache(rootDir: root));
     entrypoint.assertUpToDate();
@@ -287,7 +287,7 @@ Future<String> getExecutableForCommand(
       throw Exception('Could not find $command.dart in $package.');
     }
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
-      return path;
+      return p.relative(path, from: root);
     } else {
       final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
       if (fileExists(snapshotPath)) {
@@ -295,7 +295,7 @@ Future<String> getExecutableForCommand(
           () => entrypoint.precompileExecutable(executable),
         );
       }
-      return snapshotPath;
+      return p.relative(snapshotPath, from: root);
     }
   } on ApplicationException catch (e) {
     throw Exception(e.message);
