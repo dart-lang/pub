@@ -309,17 +309,19 @@ Future<String> getExecutableForCommand(
       command = parts[1];
     } else {
       package = descriptor;
+      if (package.isEmpty) package = entrypoint.root.name;
       command = package;
     }
+
     final executable = Executable(package, 'bin/$command.dart');
     if (!entrypoint.packageGraph.packages.containsKey(package)) {
       throw CommandResolutionFailedException(
-          'Could not find package $package or file $descriptor');
+          'Could not find package `$package` or file `$descriptor`');
     }
     final path = entrypoint.resolveExecutable(executable);
     if (!fileExists(path)) {
       throw CommandResolutionFailedException(
-          'Could not find bin/$command.dart in package $package.');
+          'Could not find `bin/$command.dart` in package `$package`.');
     }
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
       return p.relative(path, from: root);

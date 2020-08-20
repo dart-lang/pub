@@ -123,17 +123,18 @@ Future<void> main() async {
     await testGetExecutable(
       'unknown:tool',
       dir.io.path,
-      errorMessage: 'Could not find package unknown or file unknown:tool',
+      errorMessage: 'Could not find package `unknown` or file `unknown:tool`',
     );
     await testGetExecutable(
       'foo:unknown',
       dir.io.path,
-      errorMessage: 'Could not find bin/unknown.dart in package foo.',
+      errorMessage: 'Could not find `bin/unknown.dart` in package `foo`.',
     );
     await testGetExecutable(
       'unknownTool',
       dir.io.path,
-      errorMessage: 'Could not find package unknownTool or file unknownTool',
+      errorMessage:
+          'Could not find package `unknownTool` or file `unknownTool`',
     );
   });
 }
