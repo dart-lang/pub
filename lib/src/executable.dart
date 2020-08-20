@@ -15,6 +15,7 @@ import 'exceptions.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
+import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
@@ -269,7 +270,7 @@ Future<String> getExecutableForCommand(
   root ??= p.current;
   final asDirectFile = p.join(root, descriptor);
   if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
-  if (descriptor.contains('.') || descriptor.contains('/')) {
+  if (!fileExists(p.join(root, 'pubspec.yaml'))) {
     throw Exception('Could not find file `$descriptor');
   }
   try {
