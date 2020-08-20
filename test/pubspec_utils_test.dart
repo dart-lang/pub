@@ -64,7 +64,7 @@ void main() {
       expect(stripUpperBound(constraint), VersionConstraint.empty);
     });
 
-    test('returns Version.none on empty version union', () {
+    test('returns the empty version constraint on empty version union', () {
       final constraint = VersionUnion.fromRanges([]);
       expect(stripUpperBound(constraint), VersionConstraint.empty);
     });
