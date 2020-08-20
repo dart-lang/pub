@@ -325,7 +325,7 @@ Future<String> getExecutableForCommand(
       return p.relative(path, from: root);
     } else {
       final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
-      if (fileExists(snapshotPath)) {
+      if (!fileExists(snapshotPath)) {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
         );

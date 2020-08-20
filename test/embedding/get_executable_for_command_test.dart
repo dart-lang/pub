@@ -6,7 +6,8 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:pub/pub.dart';
-import 'package:path/path.dart' show separator, toUri;
+import 'package:path/path.dart' show separator;
+import 'package:path/path.dart' as p;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -28,15 +29,14 @@ Future<void> testGetExecutable(String command, String root,
       ),
     );
   } else {
-    expect(
-      await getExecutableForCommand(
-        command,
-        root: root,
-        pubCacheDir: _cachePath,
-        allowSnapshot: allowSnapshot,
-      ),
-      result,
+    final path = await getExecutableForCommand(
+      command,
+      root: root,
+      pubCacheDir: _cachePath,
+      allowSnapshot: allowSnapshot,
     );
+    expect(path, result);
+    expect(File(p.join(root, path)).existsSync(), true);
   }
 }
 
@@ -49,7 +49,7 @@ Future<void> main() async {
     await testGetExecutable('bar/bar.dart', dir.io.path,
         result: 'bar/bar.dart');
 
-    await testGetExecutable('${toUri(dir.io.path)}/bar/bar.dart', dir.io.path,
+    await testGetExecutable('${p.toUri(dir.io.path)}/bar/bar.dart', dir.io.path,
         result: 'bar/bar.dart');
   });
 
@@ -114,8 +114,12 @@ Future<void> main() async {
     await testGetExecutable(':tool', dir.io.path, result: 'bin/tool.dart');
     await testGetExecutable('foo', dir.io.path,
         allowSnapshot: false, result: endsWith('foo-1.0.0/bin/foo.dart'));
+    await testGetExecutable('foo', dir.io.path,
+        result: '.dart_tool/pub/bin/foo/foo.dart-$_currentVersion.snapshot');
     await testGetExecutable('foo:tool', dir.io.path,
         allowSnapshot: false, result: endsWith('foo-1.0.0/bin/tool.dart'));
+    await testGetExecutable('foo:tool', dir.io.path,
+        result: '.dart_tool/pub/bin/foo/tool.dart-$_currentVersion.snapshot');
     await testGetExecutable(
       'unknown:tool',
       dir.io.path,
