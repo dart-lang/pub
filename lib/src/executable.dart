@@ -271,7 +271,7 @@ Future<String> getExecutableForCommand(
   final asDirectFile = p.join(root, descriptor);
   if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
-    throw Exception('Could not find file `$descriptor');
+    throw Exception('Could not find file `$descriptor`');
   }
   try {
     final entrypoint = Entrypoint(root, SystemCache(rootDir: root));
