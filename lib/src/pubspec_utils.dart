@@ -85,7 +85,7 @@ Pubspec stripVersionUpperBounds(Pubspec original,
 }
 
 /// Removes the upper bound of [constraint]. If [constraint] is the
-/// empty version constraint, [VersionRange.none] will be returned.
+/// empty version constraint, [VersionConstraint.empty] will be returned.
 @visibleForTesting
 VersionConstraint stripUpperBound(VersionConstraint constraint) {
   ArgumentError.checkNotNull(constraint, 'constraint');
