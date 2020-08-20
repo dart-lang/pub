@@ -15,6 +15,7 @@ import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
+import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
@@ -278,27 +279,20 @@ Future<String> getExecutableForCommand(
       command = parts[1];
     } else {
       package = descriptor;
-      command = '';
+      command = package;
     }
-    final candidates = command.isEmpty
-        ? [
-            Executable(package, 'bin/$package.dart'),
-            Executable(package, 'bin/main.dart')
-          ]
-        : [Executable(package, 'bin/$command.dart')];
-    final chosen = candidates.firstWhere(
-        (executable) => fileExists(entrypoint.resolveExecutable(executable)),
-        orElse: () => null);
-    if (chosen == null) {
-      throw Exception('Could not resolve $descriptor.');
+    final executable = Executable(package, 'bin/$command.dart');
+    final path = entrypoint.resolveExecutable(executable);
+    if (!fileExists(path)) {
+      throw Exception('Could not find $command.dart in $package.');
     }
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
-      return entrypoint.resolveExecutable(chosen);
+      return path;
     } else {
-      final snapshotPath = entrypoint.snapshotPathOfExecutable(chosen);
+      final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
       if (fileExists(snapshotPath)) {
         await warningsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(chosen),
+          () => entrypoint.precompileExecutable(executable),
         );
       }
       return snapshotPath;
