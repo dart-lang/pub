@@ -136,7 +136,6 @@ abstract class PubCommand extends Command {
   @override
   @nonVirtual
   FutureOr<void> run() async {
-    print('Hej');
     computeCommand(_pubTopLevel.argResults);
     if (_pubTopLevel.trace) {
       log.recordTranscript();
