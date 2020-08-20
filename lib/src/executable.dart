@@ -12,9 +12,7 @@ import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
-import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
-import 'io.dart';
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
@@ -232,10 +230,11 @@ Future<int> _runDartProgram(
 /// * If `<descriptor>` is an existing file (resolved relative to root):
 ///   return that (without snapshotting).
 ///
-/// * If `<descriptor>` contains '.' or '/' throw an [Exception]
+/// * Otherwise if [root] contains no `pubspec.yaml`, throws a
+///  [CommandResolutionFailedException].
 ///
-/// * Otherwise if [root] contains no `pubspec.yaml`, or a `pub get` needs to be
-///   run: throws an [Exception].
+/// * Otherwise if the current package resolution is outdated do an implicit
+/// `pub get`, if that fails, throw a [CommandResolutionFailedException].
 ///
 /// * Otherwise let  `<current>` be the name of the package at [root], and
 ///   interpret [descriptor] as `[<package>][:<command>]`.
@@ -261,8 +260,8 @@ Future<int> _runDartProgram(
 /// Will be precompiled. And a message will be printed only if a terminal is
 /// attached to stdout.
 ///
-/// Throws an [Exception] if the command is not found or if the entrypoint is
-/// not up to date (requires `pub get`).
+/// Throws an [CommandResolutionFailedException] if the command is not found or
+/// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
 Future<String> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
@@ -273,7 +272,7 @@ Future<String> getExecutableForCommand(
   final asDirectFile = p.join(root, descriptor);
   if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
-    throw Exception('Could not find file `$descriptor`');
+    throw CommandResolutionFailedException('Could not find file `$descriptor`');
   }
   try {
     final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
@@ -281,7 +280,8 @@ Future<String> getExecutableForCommand(
       // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
       entrypoint.assertUpToDate();
     } on DataException {
-      await entrypoint.acquireDependencies(SolveType.GET);
+      await warningsOnlyUnlessTerminal(
+          () => entrypoint.acquireDependencies(SolveType.GET));
     }
 
     String command;
@@ -289,7 +289,8 @@ Future<String> getExecutableForCommand(
     if (descriptor.contains(':')) {
       final parts = descriptor.split(':');
       if (parts.length > 2) {
-        throw Exception('[<package>[:command]] cannot contain multiple ":"');
+        throw CommandResolutionFailedException(
+            '[<package>[:command]] cannot contain multiple ":"');
       }
       package = parts[0];
       if (package.isEmpty) package = entrypoint.root.name;
@@ -300,11 +301,13 @@ Future<String> getExecutableForCommand(
     }
     final executable = Executable(package, 'bin/$command.dart');
     if (!entrypoint.packageGraph.packages.containsKey(package)) {
-      throw Exception('Could not find package $package or file $descriptor');
+      throw CommandResolutionFailedException(
+          'Could not find package $package or file $descriptor');
     }
     final path = entrypoint.resolveExecutable(executable);
     if (!fileExists(path)) {
-      throw Exception('Could not find $command.dart in $package.');
+      throw CommandResolutionFailedException(
+          'Could not find bin/$command.dart in package $package.');
     }
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
       return p.relative(path, from: root);
@@ -318,7 +321,17 @@ Future<String> getExecutableForCommand(
       return p.relative(snapshotPath, from: root);
     }
   } on ApplicationException catch (e) {
-    throw Exception(e.message);
+    throw CommandResolutionFailedException(e.message);
+  }
+}
+
+class CommandResolutionFailedException implements Exception {
+  final String message;
+  CommandResolutionFailedException(this.message);
+
+  @override
+  String toString() {
+    return 'CommandResolutionFailedException: $message';
   }
 }
 
