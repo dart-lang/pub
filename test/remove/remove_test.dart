@@ -189,8 +189,8 @@ void main() {
       dependencies: # comment A
           # comment B
           bar: 1.0.0 
-          foo: 1.0.0 # comment D
-        # comment E
+          foo: 1.0.0 # comment C
+        # comment D
     ''');
     await d.dir(appPath, [initialPubspec]).create();
 
@@ -202,8 +202,8 @@ void main() {
       name: myapp
       dependencies: # comment A
           # comment B
-          foo: 1.0.0 # comment D
-        # comment E
+          foo: 1.0.0 # comment C
+        # comment D
     ''');
     await d.dir(appPath, [finalPubspec]).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
