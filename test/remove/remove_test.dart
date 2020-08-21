@@ -2,9 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io' show File;
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
+import '../descriptor/yaml.dart';
 import '../test_pub.dart';
 
 void main() {
@@ -113,6 +117,8 @@ void main() {
   });
 
   test('removes git dependencies', () async {
+    await servePackages((builder) => builder.serve('bar', '1.2.3'));
+
     ensureGit();
     final repo = d.git('foo.git', [
       d.dir('subdir', [d.libPubspec('foo', '1.0.0'), d.libDir('foo', '1.0.0')])
@@ -122,35 +128,36 @@ void main() {
     await d.appDir({
       'foo': {
         'git': {'url': '../foo.git', 'path': 'subdir'}
-      }
+      },
+      'bar': '1.2.3'
     }).create();
 
     await pubGet();
 
     await pubRemove(args: ['foo']);
-    await d.appPackagesFile({}).validate();
-    await d.appDir({}).validate();
+    await d.appPackagesFile({'bar': '1.2.3'}).validate();
+    await d.appDir({'bar': '1.2.3'}).validate();
   });
 
   test('removes path dependencies', () async {
+    await servePackages((builder) => builder.serve('bar', '1.2.3'));
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.appDir({
-      'foo': {'path': '../foo'}
+      'foo': {'path': '../foo'},
+      'bar': '1.2.3'
     }).create();
 
     await pubGet();
 
     await pubRemove(args: ['foo']);
-    await d.appPackagesFile({}).validate();
-    await d.appDir({}).validate();
+    await d.appPackagesFile({'bar': '1.2.3'}).validate();
+    await d.appDir({'bar': '1.2.3'}).validate();
   });
 
   test('removes hosted dependencies', () async {
-    // Make the default server serve errors. Only the custom server should
-    // be accessed.
-    await serveErrors();
+    await servePackages((builder) => builder.serve('bar', '2.0.1'));
 
     var server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');
@@ -160,13 +167,50 @@ void main() {
       'foo': {
         'version': '1.2.3',
         'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-      }
+      },
+      'bar': '2.0.1'
     }).create();
 
     await pubGet();
 
     await pubRemove(args: ['foo']);
-    await d.appPackagesFile({}).validate();
-    await d.appDir({}).validate();
+    await d.appPackagesFile({'bar': '2.0.1'}).validate();
+    await d.appDir({'bar': '2.0.1'}).validate();
+  });
+
+  test('preserves comments', () async {
+    await servePackages((builder) {
+      builder.serve('bar', '1.0.0');
+      builder.serve('foo', '1.0.0');
+    });
+
+    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies: # comment A
+          # comment B
+          bar: 1.0.0 
+          foo: 1.0.0 # comment D
+        # comment E
+    ''');
+    await d.dir(appPath, [initialPubspec]).create();
+
+    await pubGet();
+
+    await pubRemove(args: ['bar']);
+
+    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies: # comment A
+          # comment B
+          foo: 1.0.0 # comment D
+        # comment E
+    ''');
+    await d.dir(appPath, [finalPubspec]).validate();
+    final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
+
+    expect(File(fullPath).existsSync(), true);
+
+    final contents = File(fullPath).readAsStringSync();
+    expect(contents, await finalPubspec.read());
   });
 }

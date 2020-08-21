@@ -14,10 +14,10 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../descriptor.dart';
 
-class PubspecDescriptor extends FileDescriptor {
+class YamlDescriptor extends FileDescriptor {
   final String _contents;
 
-  PubspecDescriptor(String name, this._contents) : super.protected(name);
+  YamlDescriptor(String name, this._contents) : super.protected(name);
 
   @override
   Future<String> read() async => _contents;
