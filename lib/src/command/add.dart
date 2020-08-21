@@ -92,10 +92,7 @@ class AddCommand extends PubCommand {
       /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
       /// in case [package] was already a transitive dependency.
       solveResult = await resolveVersions(
-        SolveType.UPGRADE,
-        cache,
-        Package.inMemory(updatedPubSpec),
-      );
+          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');

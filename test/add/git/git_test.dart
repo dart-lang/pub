@@ -102,8 +102,7 @@ void main() {
 
     await pubAdd(
         args: ['foo', '--git-ref', 'master'],
-        error:
-            contains('Git packages must have the --git-url option declared!'),
+        error: contains('The `--git-url` is required for git dependencies.'),
         exitCode: exit_codes.USAGE);
 
     await d.appDir({}).validate();

@@ -96,9 +96,9 @@ void main() {
         await pubAdd(
             args: ['foo'],
             exitCode: exit_codes.USAGE,
-            error: contains(
-                '"foo" is already in "dependencies". Please use "pub upgrade '
-                'foo" if you wish to\nupgrade to a later version!'));
+            error:
+                contains('"foo" is already in "dependencies". Use "pub upgrade '
+                    'foo" to upgrade to a later\nversion!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -114,9 +114,9 @@ void main() {
         await pubAdd(
             args: ['foo:1.2.3'],
             exitCode: exit_codes.USAGE,
-            error: contains(
-                '"foo" is already in "dependencies". Please use "pub upgrade '
-                'foo" if you wish to\nupgrade to a later version!'));
+            error:
+                contains('"foo" is already in "dependencies". Use "pub upgrade '
+                    'foo" to upgrade to a later\nversion!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -132,9 +132,9 @@ void main() {
         await pubAdd(
             args: ['foo:>=1.2.2'],
             exitCode: exit_codes.USAGE,
-            error: contains(
-                '"foo" is already in "dependencies". Please use "pub upgrade '
-                'foo" if you wish to\nupgrade to a later version!'));
+            error:
+                contains('"foo" is already in "dependencies". Use "pub upgrade '
+                    'foo" to upgrade to a later\nversion!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -434,8 +434,8 @@ void main() {
             args: ['foo', '--dev'],
             exitCode: exit_codes.USAGE,
             error: contains(
-                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
-                'foo" if you wish\nto upgrade to a later version!'));
+                '"foo" is already in "dev_dependencies". Use "pub upgrade '
+                'foo" to upgrade to a\nlater version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -462,8 +462,8 @@ void main() {
             args: ['foo:1.2.3', '--dev'],
             exitCode: exit_codes.USAGE,
             error: contains(
-                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
-                'foo" if you wish\nto upgrade to a later version!'));
+                '"foo" is already in "dev_dependencies". Use "pub upgrade '
+                'foo" to upgrade to a\nlater version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -490,8 +490,8 @@ void main() {
             args: ['foo:>=1.2.2', '--dev'],
             exitCode: exit_codes.USAGE,
             error: contains(
-                '"foo" is already in "dev_dependencies". Please use "pub upgrade '
-                'foo" if you wish\nto upgrade to a later version!'));
+                '"foo" is already in "dev_dependencies". Use "pub upgrade '
+                'foo" to upgrade to a\nlater version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -721,11 +721,9 @@ void main() {
 
       await pubAdd(
           args: ['foo:1.2.3', '--dev'],
-          error: allOf([
-            contains('"foo" is already in "dependencies". Please use '
-                '"pub remove foo" to remove it'),
-            contains('before adding it to "dev_dependencies"')
-          ]),
+          error: contains('"foo" is already in "dependencies". Use '
+              '"pub remove foo" to remove it before\nadding it to '
+              '"dev_dependencies"'),
           exitCode: exit_codes.USAGE);
 
       await d.dir(appPath, [
