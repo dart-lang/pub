@@ -40,14 +40,14 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 /// Returns new pubspec with the same dependencies as [original] but with the
 /// upper bounds of the constraints removed.
 ///
-/// If [upgradeOnly] is provided, only the packages whose names are in
-/// [upgradeOnly] will have their upper bounds removed. If [upgradeOnly] is
+/// If [stripOnly] is provided, only the packages whose names are in
+/// [stripOnly] will have their upper bounds removed. If [stripOnly] is
 /// not specified or empty, then all packages will have their upper bounds
 /// removed.
 Pubspec stripVersionUpperBounds(Pubspec original,
-    {Iterable<String> upgradeOnly}) {
+    {Iterable<String> stripOnly}) {
   ArgumentError.checkNotNull(original, 'original');
-  upgradeOnly ??= [];
+  stripOnly ??= [];
 
   List<PackageRange> _stripUpperBounds(
     Map<String, PackageRange> constrained,
@@ -60,7 +60,7 @@ Pubspec stripVersionUpperBounds(Pubspec original,
 
       /// We only need to remove the upper bound if it is a hosted package.
       if (packageRange.source is HostedSource &&
-          (upgradeOnly.isEmpty || upgradeOnly.contains(packageRange.name))) {
+          (stripOnly.isEmpty || stripOnly.contains(packageRange.name))) {
         unconstrainedRange = PackageRange(
             packageRange.name,
             packageRange.source,
