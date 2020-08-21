@@ -106,8 +106,7 @@ class RemoveCommand extends PubCommand {
       }
 
       if (!found) {
-        log.warning('Package $package was not found in the pubspec! '
-            'Please ensure that you spelled the package name correctly!');
+        log.warning('Package "$package" was not found in pubspec.yaml!');
       }
 
       /// Windows line endings are already handled by [yamlEditor]
