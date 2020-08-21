@@ -7,6 +7,7 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
+import '../exceptions.dart';
 import '../git.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -98,8 +99,10 @@ class AddCommand extends PubCommand {
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
-    } catch (e) {
-      /// [SolveFailure]s and [SocketException] (for hosted packages)
+    } on SolveFailure catch (e) {
+      dataError(e.message);
+    } on WrappedException catch (e) {
+      /// [WrappedException]s may appear if an invalid [hostUrl] is passed in.
       dataError(e.message);
     }
 
@@ -132,11 +135,10 @@ class AddCommand extends PubCommand {
           .acquireDependencies(SolveType.GET,
               dryRun: true, precompile: argResults['precompile']);
     } else {
-      /// Update the pubspec. It is necessary to do this before calling
-      /// [acquireDependencies] (as opposed to calling [acquireDependencies] on
-      /// the in-memory pubspec and writing it later) because there will be
-      /// conflicts in other parts of [pub] if the pubspec is newer than
-      /// `pubspec.lock`.
+      /// Update the `pubspec.yaml` before calling [acquireDependencies] to
+      /// ensure that the modification timestamp on `pubspec.lock` and
+      /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
+      /// ensuring that [entrypoint.assertUptoDate] will pass.
       _updatePubspec(resultPackage, packageInformation, isDev);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
@@ -169,8 +171,7 @@ class AddCommand extends PubCommand {
       /// released
       if (devDependencyNames.contains(package.name)) {
         usageException('"${package.name}" is already in "dev_dependencies". '
-            'Please use "pub upgrade ${package.name}" if you wish to upgrade '
-            'to a later version!');
+            'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
       /// If package is originally in dependencies and we wish to add it to
@@ -179,8 +180,8 @@ class AddCommand extends PubCommand {
       /// code to break.
       if (dependencyNames.contains(package.name)) {
         usageException('"${package.name}" is already in "dependencies". '
-            'Please use "pub remove ${package.name}" to remove it before adding '
-            'it to "dev_dependencies"');
+            'Use "pub remove ${package.name}" to remove it before adding it '
+            'to "dev_dependencies"');
       }
 
       devDependencies.add(package);
@@ -189,8 +190,7 @@ class AddCommand extends PubCommand {
       /// released
       if (dependencyNames.contains(package.name)) {
         usageException('"${package.name}" is already in "dependencies". '
-            'Please use "pub upgrade ${package.name}" if you wish to upgrade '
-            'to a later version!');
+            'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
       /// If package is originally in dev_dependencies and we wish to add it to
@@ -260,7 +260,7 @@ class AddCommand extends PubCommand {
           .firstWhere(argResults.wasParsed, orElse: () => null);
       if (conflictingFlag != null) {
         usageException(
-            'Packages can only have one source, pub add flags "--$flag" and '
+            'Packages can only have one source, "pub add" flags "--$flag" and '
             '"--$conflictingFlag" are conflicting.');
       }
     }
@@ -291,8 +291,7 @@ class AddCommand extends PubCommand {
           ? VersionConstraint.parse(splitPackage[1])
           : null;
     } on FormatException catch (e) {
-      usageException('${e.message} Ensure that your version constraint '
-          'satisfies pub semver requirements.');
+      usageException('Invalid version constraint: ${e.message}');
     }
 
     /// Determine the relevant [packageRange] and [pubspecInformation] depending
@@ -301,7 +300,7 @@ class AddCommand extends PubCommand {
       dynamic git;
 
       if (gitUrl == null) {
-        usageException('Git packages must have the --git-url option declared!');
+        usageException('The `--git-url` is required for git dependencies.');
       }
 
       /// Process the git options to return the simplest representation to be
@@ -392,7 +391,7 @@ class AddCommand extends PubCommand {
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-    if (!isDev &&
+    if (!isDevelopment &&
         yamlEditor.parseAt(['dev_dependencies', package.name],
                 orElse: () => null) !=
             null) {

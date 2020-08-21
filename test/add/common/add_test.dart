@@ -272,8 +272,8 @@ void main() {
         await pubAdd(
             args: ['foo:one-two-three'],
             exitCode: exit_codes.USAGE,
-            error: contains(
-                'Could not parse version "one-two-three". Unknown text at "one-two-three"'));
+            error: contains('Invalid version constraint: Could '
+                'not parse version "one-two-three".'));
 
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp', 'dependencies': {}}),
