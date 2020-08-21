@@ -90,7 +90,9 @@ class AddCommand extends PubCommand {
 
     try {
       /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
-      /// in case [package] was already a transitive dependency.
+      /// in case [package] was already a transitive dependency. In the case
+      /// where the user specifies a version constraint, this serves to ensure
+      /// that a resolution exists before we update pubspec.yaml.
       solveResult = await resolveVersions(
           SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
     } on GitException {

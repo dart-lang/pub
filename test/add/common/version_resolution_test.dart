@@ -74,6 +74,7 @@ void main() {
     await pubGet();
 
     globalPackageServer.add((builder) {
+      builder.serve('foo', '5.0.0');
       builder.serve('foo', '4.0.0');
       builder.serve('foo', '2.0.0');
       builder.serve('bar', '1.5.0', deps: {'foo': '^4.0.0'});

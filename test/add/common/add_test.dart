@@ -1,12 +1,15 @@
 // Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import 'dart:io' show File;
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../descriptor.dart' as d;
+import '../../descriptor/yaml.dart';
 import '../../test_pub.dart';
 
 void main() {
@@ -737,5 +740,41 @@ void main() {
         d.nothing('.packages'),
       ]).validate();
     });
+  });
+
+  test('preserves comments', () async {
+    await servePackages((builder) {
+      builder.serve('bar', '1.0.0');
+      builder.serve('foo', '1.0.0');
+    });
+
+    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies: # comment A
+          # comment B
+          foo: 1.0.0 # comment C
+        # comment D
+    ''');
+    await d.dir(appPath, [initialPubspec]).create();
+
+    await pubGet();
+
+    await pubAdd(args: ['bar']);
+
+    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies: # comment A
+          # comment B
+          bar: ^1.0.0
+          foo: 1.0.0 # comment C
+        # comment D
+    ''');
+    await d.dir(appPath, [finalPubspec]).validate();
+    final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
+
+    expect(File(fullPath).existsSync(), true);
+
+    final contents = File(fullPath).readAsStringSync();
+    expect(contents, await finalPubspec.read());
   });
 }
