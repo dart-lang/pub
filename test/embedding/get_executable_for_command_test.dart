@@ -75,8 +75,10 @@ Future<void> main() async {
     await dir.create();
 
     await serveNoPackages();
+    // The solver uses word-wrapping in its error message, so we use \s to
+    // accomodate.
     await testGetExecutable('bar/m.dart', dir.io.path,
-        errorMessage: contains('version solving failed'));
+        errorMessage: matches('version\ssolving\sfailed'));
   });
 
   test('Finds files', () async {
