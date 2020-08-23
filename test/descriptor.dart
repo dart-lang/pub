@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 
 import 'descriptor/git.dart';
 import 'descriptor/packages.dart';
+import 'descriptor/pubspec.dart';
 import 'descriptor/tar.dart';
 import 'test_pub.dart';
 
@@ -48,8 +49,8 @@ FileDescriptor outOfDateSnapshot(String name) =>
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object> contents) =>
-    file('pubspec.yaml', yaml(contents));
+PubspecDescriptor pubspec(Map<String, Object> contents) =>
+    PubspecDescriptor('pubspec.yaml', yaml(contents));
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].

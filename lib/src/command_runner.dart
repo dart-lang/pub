@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 
 import 'command.dart' show pubCommandAliases, lineLength;
 import 'command/build.dart';
+import 'command/bump.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
@@ -105,6 +106,7 @@ class PubCommandRunner extends CommandRunner {
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
 
     addCommand(BuildCommand());
+    addCommand(BumpCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
