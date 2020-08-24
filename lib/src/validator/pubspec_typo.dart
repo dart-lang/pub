@@ -2,8 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import '../dice_coefficient.dart';
 import '../entrypoint.dart';
+import '../levenshtein.dart';
 import '../validator.dart';
 
 /// Validates that a package's pubspec does not contain any typos in its keys.
@@ -17,25 +17,30 @@ class PubspecTypoValidator extends Validator {
     if (fields == null) return;
 
     for (final key in fields.keys) {
-      var bestDiceCoefficient = 0.0;
+      var bestLevenshteinRatio = 100.0;
       var closestKey = '';
 
       for (final validKey in _validPubspecKeys) {
-        final dice = diceCoefficient(key, validKey);
-        if (dice > bestDiceCoefficient) {
-          bestDiceCoefficient = dice;
+        /// Use a ratio to account allow more more typos in strings with
+        /// longer lengths.
+        final ratio =
+            levenshteinDistance(key, validKey) / (validKey.length + key.length);
+        if (ratio < bestLevenshteinRatio) {
+          bestLevenshteinRatio = ratio;
           closestKey = validKey;
         }
       }
 
-      // 0.73 is a magic value determined by looking at the most common typos
-      // in all the pubspecs on pub.dev.
-      if (bestDiceCoefficient >= 0.73 && bestDiceCoefficient < 1.0) {
+      /// 0.21 is a magic value determined by looking at the most common typos
+      /// in all the pubspecs on pub.dev.
+      if (bestLevenshteinRatio > 0 && bestLevenshteinRatio < 0.21) {
         warnings.add('"$key" is not a key recognized by pub - '
             'did you mean "$closestKey"?');
       }
 
-      if (closestKey == 'author' || closestKey == 'authors') {
+      /// Differs from the above because we allow exact matches here too.
+      if (bestLevenshteinRatio < 0.21 &&
+          (closestKey == 'author' || closestKey == 'authors')) {
         warnings.add('The "$closestKey" key is deprecated - Use a verified '
             'publisher (https://dart.dev/tools/pub/verified-publishers) '
             'instead.');
