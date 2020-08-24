@@ -380,7 +380,8 @@ class AddCommand extends PubCommand {
 
     /// Handle situations where the user might not have the dependencies or
     /// dev_dependencies map.
-    if (yamlEditor.parseAt([dependencyKey], orElse: () => null) == null) {
+    if (yamlEditor.parseAt([dependencyKey], orElse: () => null)?.value ==
+        null) {
       yamlEditor.update([dependencyKey],
           {package.name: pubspecInformation ?? '^${resultPackage.version}'});
     } else {

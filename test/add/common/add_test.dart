@@ -742,6 +742,37 @@ void main() {
     });
   });
 
+  /// Differs from the previous test because this tests YAML in flow format.
+  test('adds to empty ', () async {
+    await servePackages((builder) {
+      builder.serve('bar', '1.0.0');
+    });
+
+    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies:
+    ''');
+    await d.dir(appPath, [initialPubspec]).create();
+
+    await pubGet();
+
+    await pubAdd(args: ['bar']);
+
+    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
+      name: myapp
+      dependencies:
+          bar: ^1.0.0
+          foo: 1.0.0
+    ''');
+    await d.dir(appPath, [finalPubspec]).validate();
+    final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
+
+    expect(File(fullPath).existsSync(), true);
+
+    final contents = File(fullPath).readAsStringSync();
+    expect(contents, await finalPubspec.read());
+  });
+
   test('preserves comments', () async {
     await servePackages((builder) {
       builder.serve('bar', '1.0.0');
