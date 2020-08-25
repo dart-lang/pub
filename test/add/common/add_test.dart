@@ -751,7 +751,7 @@ void main() {
     final initialPubspec = YamlDescriptor('pubspec.yaml', '''
       name: myapp
       dependencies:
-    ''');
+''');
     await d.dir(appPath, [initialPubspec]).create();
 
     await pubGet();
@@ -760,10 +760,8 @@ void main() {
 
     final finalPubspec = YamlDescriptor('pubspec.yaml', '''
       name: myapp
-      dependencies:
-          bar: ^1.0.0
-          foo: 1.0.0
-    ''');
+      dependencies: 
+        bar: ^1.0.0''');
     await d.dir(appPath, [finalPubspec]).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
 
