@@ -31,7 +31,7 @@ class BumpCommand extends PubCommand {
   String get description =>
       'Updates the version of the current package in pubspec.yaml.';
   @override
-  String get invocation => 'pub bump [--major|--minor|--patch]';
+  String get invocation => 'pub bump [version|--major|--minor|--patch]';
 
   bool get isMajor => argResults['major'];
   bool get isMinor => argResults['minor'];
