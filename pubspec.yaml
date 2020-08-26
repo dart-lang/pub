@@ -28,6 +28,7 @@ dependencies:
   source_span: ^1.4.0
   stack_trace: ^1.0.0
   yaml: ^2.2.0
+  yaml_edit: ^1.0.1
 
 dev_dependencies:
   shelf_test_handler: ^1.0.0

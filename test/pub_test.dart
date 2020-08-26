@@ -29,6 +29,7 @@ void main() {
         -v, --verbose          Shortcut for "--verbosity=all".
 
         Available commands:
+          add         Add a dependency to pubspec.yaml.
           cache       Work with the system cache.
           deps        Print package dependencies.
           downgrade   Downgrade the current package's dependencies to oldest versions.
