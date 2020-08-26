@@ -199,20 +199,17 @@ void main() {
 
     await pubRemove(args: ['bar']);
 
-    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: # comment A
-          # comment B
-          # comment C
-          foo: 1.0.0 # comment D
-        # comment E
-    ''');
-    await d.dir(appPath, [finalPubspec]).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
-
     expect(File(fullPath).existsSync(), true);
-
     final contents = File(fullPath).readAsStringSync();
-    expect(contents, await finalPubspec.read());
+    expect(
+        contents,
+        allOf([
+          contains('# comment A'),
+          contains('# comment B'),
+          contains('# comment C'),
+          contains('# comment D'),
+          contains('# comment E')
+        ]));
   });
 }
