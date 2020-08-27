@@ -83,6 +83,8 @@ final versionSuffix = testVersion ?? sdk.version;
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
+  static final add = RunCommand(
+      'add', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final upgrade = RunCommand('upgrade', RegExp(r'''
@@ -153,6 +155,21 @@ Future pubCommand(RunCommand command,
       exitCode: exitCode,
       environment: environment);
 }
+
+Future pubAdd(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.add,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
 
 Future pubGet(
         {Iterable<String> args,

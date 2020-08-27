@@ -10,7 +10,7 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
-import 'package:yaml_edit/yaml_edit.dart';
+import 'package:yaml/yaml.dart';
 
 import '../descriptor.dart';
 
@@ -36,13 +36,10 @@ class YamlDescriptor extends FileDescriptor {
     var bytes = await File(fullPath).readAsBytes();
 
     final actualContentsText = utf8.decode(bytes);
-    final actualYaml = YamlEditor(actualContentsText);
-    final expectedYaml = YamlEditor(_contents);
+    final actual = loadYaml(actualContentsText);
+    final expected = loadYaml(_contents);
 
-    final actual = actualYaml.parseAt([]);
-    final expected = expectedYaml.parseAt([]);
-
-    if (!DeepCollectionEquality().equals(expected.value, actual.value)) {
+    if (!DeepCollectionEquality().equals(expected, actual)) {
       fail('Expected $expected, found: $actual');
     }
   }
