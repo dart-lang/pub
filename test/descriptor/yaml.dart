@@ -14,9 +14,7 @@ import 'package:yaml/yaml.dart';
 
 import '../descriptor.dart';
 
-/// Describes a YAML file and its contents.
 class YamlDescriptor extends FileDescriptor {
-  /// Contents of the YAML file. Must be valid YAML.
   final String _contents;
 
   YamlDescriptor(String name, this._contents) : super.protected(name);
