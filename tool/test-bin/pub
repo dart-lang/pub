@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+# for details. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
+# Runs bin/pub.dart with dart from PATH (or the snapshot if present).
+
+if [ -n "$_PUB_TEST_SNAPSHOT" ]; then
+    dart $_PUB_TEST_SNAPSHOT $*
+else
+    dart `dirname "$0"`/../../bin/pub.dart $*
+fi

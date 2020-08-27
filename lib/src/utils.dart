@@ -224,14 +224,7 @@ bool isLoopback(String host) {
     host = host.substring(1, host.length - 1);
   }
 
-  try {
-    return InternetAddress(host).isLoopback;
-  } on ArgumentError catch (_) // ignore: avoid_catching_errors
-  {
-    // The host isn't an IP address and isn't "localhost', so it's almost
-    // certainly not a loopback host.
-    return false;
-  }
+  return InternetAddress.tryParse(host)?.isLoopback ?? false;
 }
 
 /// Returns a list containing the sorted elements of [iter].
