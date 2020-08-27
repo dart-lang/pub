@@ -52,8 +52,5 @@ int levenshteinDistance(String s, String t) {
 
 /// Utility function to calculate the minimum of [a], [b], and [c].
 T _min3<T extends num>(T a, T b, T c) {
-  ArgumentError.checkNotNull(a, 'a');
-  ArgumentError.checkNotNull(b, 'b');
-  ArgumentError.checkNotNull(c, 'c');
   return min(min(a, b), c);
 }

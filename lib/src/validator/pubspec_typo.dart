@@ -46,26 +46,16 @@ class PubspecTypoValidator extends Validator {
             'did you mean "$closestKey"?');
         warningCount++;
 
-        if (closestKey == 'author' || closestKey == 'authors') {
-          warnings.add('The "$closestKey" key is deprecated - Use a verified '
-              'publisher (https://dart.dev/tools/pub/verified-publishers) '
-              'instead.');
-          warningCount++;
-        }
-
-        if (warningCount >= 3) break;
+        if (warningCount == 3) break;
       }
     }
   }
 }
 
-/// List of keys in `pubspec.yaml` that will be recognized by pub, as well as
-/// the depreciated `author` key.
+/// List of keys in `pubspec.yaml` that will be recognized by pub.
 ///
 /// Retrieved from https://dart.dev/tools/pub/pubspec
 const _validPubspecKeys = [
-  'author',
-  'authors',
   'name',
   'version',
   'description',
