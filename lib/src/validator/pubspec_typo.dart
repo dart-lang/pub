@@ -16,7 +16,15 @@ class PubspecTypoValidator extends Validator {
 
     if (fields == null) return;
 
+    /// Limit the number of typo warnings so as not to drown out the other
+    /// warnings
+    var warningCount = 0;
+
     for (final key in fields.keys) {
+      if (_validPubspecKeys.contains(key)) {
+        continue;
+      }
+
       var bestLevenshteinRatio = 100.0;
       var closestKey = '';
 
@@ -36,14 +44,16 @@ class PubspecTypoValidator extends Validator {
       if (bestLevenshteinRatio > 0 && bestLevenshteinRatio < 0.21) {
         warnings.add('"$key" is not a key recognized by pub - '
             'did you mean "$closestKey"?');
-      }
+        warningCount++;
 
-      /// Differs from the above because we allow exact matches here too.
-      if (bestLevenshteinRatio < 0.21 &&
-          (closestKey == 'author' || closestKey == 'authors')) {
-        warnings.add('The "$closestKey" key is deprecated - Use a verified '
-            'publisher (https://dart.dev/tools/pub/verified-publishers) '
-            'instead.');
+        if (closestKey == 'author' || closestKey == 'authors') {
+          warnings.add('The "$closestKey" key is deprecated - Use a verified '
+              'publisher (https://dart.dev/tools/pub/verified-publishers) '
+              'instead.');
+          warningCount++;
+        }
+
+        if (warningCount >= 3) break;
       }
     }
   }

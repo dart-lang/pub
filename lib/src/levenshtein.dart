@@ -11,8 +11,8 @@ import 'dart:math';
 ///
 /// This implementation is case-sensitive.
 int levenshteinDistance(String s, String t) {
-  ArgumentError.checkNotNull(s);
-  ArgumentError.checkNotNull(t);
+  ArgumentError.checkNotNull(s, 's');
+  ArgumentError.checkNotNull(t, 't');
 
   /// Swap the strings if necessary so we can reduce the space requirement.
   final a = s.length > t.length ? s : t;

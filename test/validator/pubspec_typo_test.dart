@@ -73,11 +73,11 @@ void main() {
       await expectValidation(pubspecTypo, warnings: isNotEmpty);
     });
 
-    test('contains the "author" key', () async {
+    test('contains a typo on the "author" key', () async {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'author': 'Garett Tok',
+          'avthor': 'Garett Tok',
         })
       ]).create();
 
@@ -85,6 +85,22 @@ void main() {
           warnings: contains(
               'The "author" key is deprecated - Use a verified publisher '
               '(https://dart.dev/tools/pub/verified-publishers) instead.'));
+    });
+
+    test('contains typos but does not issue too many warnings', () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependecies': {},
+          'avthor': 'Garett Tok',
+          'descripton': 'This is a package',
+          'homepagd': 'https://pub.dev/packages/myapp',
+          'documentat1on': 'here'
+        })
+      ]).create();
+
+      await expectValidation(pubspecTypo,
+          warnings: hasLength(lessThanOrEqualTo(4)));
     });
   });
 }
