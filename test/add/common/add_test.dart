@@ -50,6 +50,44 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
+    test('does not modify dev_dependencies while normal dependencies',
+        () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.3');
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        YamlDescriptor('pubspec.yaml', '''
+          name: myapp
+          dependencies: 
+
+          dev_dependencies:
+        ''')
+      ]).create();
+
+      await pubAdd(args: ['foo:1.2.3']);
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
+      final finalPubspec = YamlDescriptor('pubspec.yaml', '''
+          name: myapp
+          dependencies: 
+            foo: 1.2.3
+
+          dev_dependencies:
+        ''');
+
+      await d.dir(appPath, [finalPubspec]).validate();
+      final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
+
+      expect(File(fullPath).existsSync(), true);
+
+      final contents = File(fullPath).readAsStringSync();
+      expect(contents, await finalPubspec.read());
+    });
+
     test('dry run does not actually add the package or modify the pubspec',
         () async {
       await servePackages((builder) => builder.serve('foo', '1.2.3'));
@@ -150,11 +188,13 @@ void main() {
       });
 
       await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {},
-          'dev_dependencies': {'foo': '1.2.2'}
-        })
+        YamlDescriptor('pubspec.yaml', '''
+name: myapp
+dependencies: 
+
+dev_dependencies:
+  foo: 1.2.2
+''')
       ]).create();
 
       await pubAdd(
@@ -165,13 +205,21 @@ void main() {
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackagesFile({'foo': '1.2.3'}).validate();
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {'foo': '1.2.3'},
-          'dev_dependencies': {}
-        })
-      ]).validate();
+
+      final finalPubspec = YamlDescriptor('pubspec.yaml', '''
+name: myapp
+dependencies: 
+  foo: 1.2.3
+
+''');
+
+      await d.dir(appPath, [finalPubspec]).validate();
+      final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
+
+      expect(File(fullPath).existsSync(), true);
+
+      final contents = File(fullPath).readAsStringSync();
+      expect(contents, await finalPubspec.read());
     });
 
     group('dependency override', () {

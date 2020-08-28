@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -391,11 +392,18 @@ class AddCommand extends PubCommand {
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-    if (!isDevelopment &&
-        yamlEditor.parseAt(['dev_dependencies', package.name],
-                orElse: () => null) !=
-            null) {
-      yamlEditor.remove(['dev_dependencies', package.name]);
+    if (!isDevelopment) {
+      final devDependenciesNode =
+          yamlEditor.parseAt(['dev_dependencies'], orElse: () => null);
+
+      if (devDependenciesNode is YamlMap &&
+          devDependenciesNode.containsKey(package.name)) {
+        if (devDependenciesNode.length == 1) {
+          yamlEditor.remove(['dev_dependencies']);
+        } else {
+          yamlEditor.remove(['dev_dependencies', package.name]);
+        }
+      }
     }
 
     /// Windows line endings are already handled by [yamlEditor]
