@@ -327,20 +327,15 @@ class VersionSolver {
       return candidate.name;
     }
 
-    /// Prefer packages with as few remaining versions as possible, so that if a
-    /// conflict is necessary it's forced quickly.
-    var package = await minByAsync(unsatisfied, (package) async {
-      /// Artifically set the packages in [_solveFirst] to have a low
-      /// version count to solve them first. This enables them to not be
-      /// constrained by other packages.
-      if (_solveFirst.contains(package.name)) {
-        return math.max(
-            0.5,
-            await _packageLister(package).countVersions(package.constraint) *
-                0.005);
-      }
-      return await _packageLister(package).countVersions(package.constraint);
-    });
+    /// Prefer packages that are listed in [_solveFirst], then prefer packages
+    /// with as few remaining versions as possible, so that if a conflict is
+    /// necessary it's forced quickly.
+    var candidates = unsatisfied.where((p) => _solveFirst.contains(p.name));
+    if (candidates.isEmpty) {
+      candidates = unsatisfied;
+    }
+    var package = await minByAsync(
+        candidates, (p) => _packageLister(p).countVersions(p.constraint));
 
     PackageId version;
     try {
