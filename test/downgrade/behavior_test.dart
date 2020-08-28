@@ -86,8 +86,9 @@ void main() {
     await d.appDir({'foo': '^2.0.0'}).validate();
   });
 
-  test('downgrade with package specified does not downgrade other packages',
-      () async {
+  test(
+      'downgrade with package specified does not downgrade other packages if'
+      ' possible', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.5.0');
       builder.serve('foo', '1.0.0');

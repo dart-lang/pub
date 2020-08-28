@@ -94,7 +94,8 @@ void main() {
     await d.appDir({'foo': '^1.0.0'}).validate();
   });
 
-  test('upgrade with package specified does not upgrade other packages',
+  test(
+      'upgrade with package specified does not upgrade other packages if possible',
       () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');
@@ -108,12 +109,13 @@ void main() {
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
     globalPackageServer.add((builder) {
+      builder.serve('foo', '1.5.0');
       builder.serve('bar', '1.5.0');
     });
 
     await pubUpgrade(args: ['foo']);
-    await d.cacheDir({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
-    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
+    await d.cacheDir({'foo': '1.5.0', 'bar': '1.0.0'}).validate();
+    await d.appPackagesFile({'foo': '1.5.0', 'bar': '1.0.0'}).validate();
     await d.appDir({'foo': '^1.0.0', 'bar': '^1.0.0'}).validate();
   });
 }
