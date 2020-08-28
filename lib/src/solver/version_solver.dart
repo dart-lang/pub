@@ -332,8 +332,13 @@ class VersionSolver {
     var package = await minByAsync(unsatisfied, (package) async {
       /// Artifically set the packages in [_solveFirst] to have a low
       /// version count to solve them first. This enables them to not be
-      /// artificially constrained by other packages.
-      if (_solveFirst.contains(package.name)) return 1;
+      /// constrained by other packages.
+      if (_solveFirst.contains(package.name)) {
+        return math.max(
+            0.5,
+            await _packageLister(package).countVersions(package.constraint) *
+                0.005);
+      }
       return await _packageLister(package).countVersions(package.constraint);
     });
 

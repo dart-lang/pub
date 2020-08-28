@@ -21,11 +21,13 @@ export 'solver/type.dart';
 /// that those dependencies place on each other and the requirements imposed by
 /// [lockFile].
 ///
-/// If [solveFirst] is given, then the referenced packages will be unlocked
-/// and given priority in the solving process. This is for upgrading or
-/// downgrading one or more packages.
+/// Packages referenced in [solveFirst], if any, will be given priority in the
+/// solving process.
 ///
-/// If [upgradeAll] is true, the contents of [lockFile] are ignored.
+/// If [solveFirst] is given and [type] is [SolveType.UPGRADE], then the
+/// referenced packages will be additionally unlocked. Otherwise, if [type] is
+/// [SolveType.UPGRADE] and [solveFirst] is not given, all the packages will
+/// be unlocked.
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile lockFile, Iterable<String> solveFirst}) {
@@ -46,11 +48,13 @@ Future<SolveResult> resolveVersions(
 /// Like [resolveVersions] except that this function returns `null` where a
 /// similar call to [resolveVersions] would throw a [SolveFailure].
 ///
-/// If [solveFirst] is given, then the referenced packages will be unlocked
-/// and given priority in the solving process. This is for upgrading or
-/// downgrading one or more packages.
+/// Packages referenced in [solveFirst], if any, will be given priority in the
+/// solving process.
 ///
-/// If [upgradeAll] is true, the contents of [lockFile] are ignored.
+/// If [solveFirst] is given and [type] is [SolveType.UPGRADE], then the
+/// referenced packages will be additionally unlocked. Otherwise, if [type] is
+/// [SolveType.UPGRADE] and [solveFirst] is not given, all the packages will
+/// be unlocked.
 Future<SolveResult> tryResolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile lockFile, Iterable<String> solveFirst}) async {
