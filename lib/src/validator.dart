@@ -24,6 +24,7 @@ import 'validator/name.dart';
 import 'validator/null_safety_mixed_mode.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
+import 'validator/pubspec_typo.dart';
 import 'validator/readme.dart';
 import 'validator/relative_version_numbering.dart';
 import 'validator/sdk_constraint.dart';
@@ -138,6 +139,7 @@ abstract class Validator {
       LanguageVersionValidator(entrypoint),
       RelativeVersionNumberingValidator(entrypoint, serverUrl),
       NullSafetyMixedModeValidator(entrypoint),
+      PubspecTypoValidator(entrypoint)
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
