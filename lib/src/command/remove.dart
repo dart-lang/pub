@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:yaml_edit/yaml_edit.dart';
-
 import '../command.dart';
 import '../entrypoint.dart';
 import '../io.dart';
@@ -11,6 +9,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
+import '../yaml_edit/editor.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
