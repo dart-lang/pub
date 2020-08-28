@@ -45,7 +45,7 @@ class UpgradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest,
+        solveFirst: argResults.rest,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile']);
 

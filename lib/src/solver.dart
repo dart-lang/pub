@@ -21,20 +21,20 @@ export 'solver/type.dart';
 /// that those dependencies place on each other and the requirements imposed by
 /// [lockFile].
 ///
-/// If [useLatest] is given, then only the latest versions of the referenced
-/// packages will be used. This is for forcing an upgrade to one or more
-/// packages.
+/// If [solveFirst] is given, then the referenced packages will be unlocked
+/// and given priority in the solving process. This is for upgrading or
+/// downgrading one or more packages.
 ///
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) {
+    {LockFile lockFile, Iterable<String> solveFirst}) {
   return VersionSolver(
     type,
     cache,
     root,
     lockFile ?? LockFile.empty(),
-    useLatest ?? const [],
+    solveFirst ?? const [],
   ).solve();
 }
 
@@ -46,17 +46,17 @@ Future<SolveResult> resolveVersions(
 /// Like [resolveVersions] except that this function returns `null` where a
 /// similar call to [resolveVersions] would throw a [SolveFailure].
 ///
-/// If [useLatest] is given, then only the latest versions of the referenced
-/// packages will be used. This is for forcing an upgrade to one or more
-/// packages.
+/// If [solveFirst] is given, then the referenced packages will be unlocked
+/// and given priority in the solving process. This is for upgrading or
+/// downgrading one or more packages.
 ///
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> tryResolveVersions(
     SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) async {
+    {LockFile lockFile, Iterable<String> solveFirst}) async {
   try {
     return await resolveVersions(type, cache, root,
-        lockFile: lockFile, useLatest: useLatest);
+        lockFile: lockFile, solveFirst: solveFirst);
   } on SolveFailure {
     return null;
   }

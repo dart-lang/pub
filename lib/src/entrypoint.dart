@@ -205,11 +205,11 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// [useLatest], if provided, defines a list of packages that will be
-  /// unlocked and forced to their latest versions. If [upgradeAll] is
-  /// true, the previous lockfile is ignored and all packages are re-resolved
-  /// from scratch. Otherwise, it will attempt to preserve the versions of all
-  /// previously locked packages.
+  /// [solveFirst], if provided, defines a list of packages that will be
+  /// unlocked and given priority in the version resolution process. If [type]
+  /// is [SolveType.GET], it will attempt to preserve the versions of all
+  /// previously locked packages. Otherwise, the previous lockfile is ignored
+  /// and all packages are re-resolved from scratch.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
@@ -221,7 +221,7 @@ class Entrypoint {
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future acquireDependencies(SolveType type,
-      {List<String> useLatest,
+      {List<String> solveFirst,
       bool dryRun = false,
       bool precompile = false}) async {
     var result = await log.progress(
@@ -231,7 +231,7 @@ class Entrypoint {
         cache,
         root,
         lockFile: lockFile,
-        useLatest: useLatest,
+        solveFirst: solveFirst,
       ),
     );
 
