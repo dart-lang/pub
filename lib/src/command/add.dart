@@ -169,7 +169,7 @@ class AddCommand extends PubCommand {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (devDependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dev_dependencies". '
+        dataError('"${package.name}" is already in "dev_dependencies". '
             'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
@@ -178,7 +178,7 @@ class AddCommand extends PubCommand {
       /// remove the package from dependencies, since it might cause the user's
       /// code to break.
       if (dependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dependencies". '
+        dataError('"${package.name}" is already in "dependencies". '
             'Use "pub remove ${package.name}" to remove it before adding it '
             'to "dev_dependencies"');
       }
@@ -188,7 +188,7 @@ class AddCommand extends PubCommand {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (dependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dependencies". '
+        dataError('"${package.name}" is already in "dependencies". '
             'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
