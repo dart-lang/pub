@@ -544,7 +544,7 @@ class Entrypoint {
           continue;
         }
       } on FileException {
-        // If we can't load the pubpsec, the user needs to re-run "pub get".
+        // If we can't load the pubspec, the user needs to re-run "pub get".
       }
 
       dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '

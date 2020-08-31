@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -169,7 +170,7 @@ class AddCommand extends PubCommand {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (devDependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dev_dependencies". '
+        dataError('"${package.name}" is already in "dev_dependencies". '
             'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
@@ -178,7 +179,7 @@ class AddCommand extends PubCommand {
       /// remove the package from dependencies, since it might cause the user's
       /// code to break.
       if (dependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dependencies". '
+        dataError('"${package.name}" is already in "dependencies". '
             'Use "pub remove ${package.name}" to remove it before adding it '
             'to "dev_dependencies"');
       }
@@ -188,7 +189,7 @@ class AddCommand extends PubCommand {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (dependencyNames.contains(package.name)) {
-        usageException('"${package.name}" is already in "dependencies". '
+        dataError('"${package.name}" is already in "dependencies". '
             'Use "pub upgrade ${package.name}" to upgrade to a later version!');
       }
 
@@ -395,13 +396,20 @@ class AddCommand extends PubCommand {
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-    if (!isDevelopment &&
-        yamlEditor.parseAt(['dev_dependencies', package.name],
-                orElse: () => null) !=
-            null) {
-      yamlEditor.remove(['dev_dependencies', package.name]);
+    if (!isDevelopment) {
+      final devDependenciesNode =
+          yamlEditor.parseAt(['dev_dependencies'], orElse: () => null);
 
-      log.fine('Removed ${package.name} from "dev_dependencies".');
+      if (devDependenciesNode is YamlMap &&
+          devDependenciesNode.containsKey(package.name)) {
+        if (devDependenciesNode.length == 1) {
+          yamlEditor.remove(['dev_dependencies']);
+        } else {
+          yamlEditor.remove(['dev_dependencies', package.name]);
+        }
+
+        log.fine('Removed ${package.name} from "dev_dependencies".');
+      }
     }
 
     /// Windows line endings are already handled by [yamlEditor]

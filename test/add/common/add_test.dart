@@ -50,6 +50,37 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
+    test(
+        'does not remove empty dev_dependencies while adding to normal dependencies',
+        () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.3');
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        YamlDescriptor('pubspec.yaml', '''
+          name: myapp
+          dependencies: 
+
+          dev_dependencies:
+        ''')
+      ]).create();
+
+      await pubAdd(args: ['foo:1.2.3']);
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.3'},
+          'dev_dependencies': null
+        })
+      ]).validate();
+    });
+
     test('dry run does not actually add the package or modify the pubspec',
         () async {
       await servePackages((builder) => builder.serve('foo', '1.2.3'));
@@ -98,10 +129,10 @@ void main() {
 
         await pubAdd(
             args: ['foo'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error:
                 contains('"foo" is already in "dependencies". Use "pub upgrade '
-                    'foo" to upgrade to a later\nversion!'));
+                    'foo" to upgrade to a later version!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -116,10 +147,10 @@ void main() {
 
         await pubAdd(
             args: ['foo:1.2.3'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error:
                 contains('"foo" is already in "dependencies". Use "pub upgrade '
-                    'foo" to upgrade to a later\nversion!'));
+                    'foo" to upgrade to a later version!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -134,10 +165,10 @@ void main() {
 
         await pubAdd(
             args: ['foo:>=1.2.2'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error:
                 contains('"foo" is already in "dependencies". Use "pub upgrade '
-                    'foo" to upgrade to a later\nversion!'));
+                    'foo" to upgrade to a later version!'));
 
         await d.appDir({'foo': '1.2.2'}).validate();
       });
@@ -150,11 +181,13 @@ void main() {
       });
 
       await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {},
-          'dev_dependencies': {'foo': '1.2.2'}
-        })
+        YamlDescriptor('pubspec.yaml', '''
+name: myapp
+dependencies: 
+
+dev_dependencies:
+  foo: 1.2.2
+''')
       ]).create();
 
       await pubAdd(
@@ -165,11 +198,11 @@ void main() {
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependencies': {'foo': '1.2.3'},
-          'dev_dependencies': {}
+          'dependencies': {'foo': '1.2.3'}
         })
       ]).validate();
     });
@@ -435,10 +468,10 @@ void main() {
 
         await pubAdd(
             args: ['foo', '--dev'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error: contains(
                 '"foo" is already in "dev_dependencies". Use "pub upgrade '
-                'foo" to upgrade to a\nlater version!'));
+                'foo" to upgrade to a later version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -463,10 +496,10 @@ void main() {
 
         await pubAdd(
             args: ['foo:1.2.3', '--dev'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error: contains(
                 '"foo" is already in "dev_dependencies". Use "pub upgrade '
-                'foo" to upgrade to a\nlater version!'));
+                'foo" to upgrade to a later version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -491,10 +524,10 @@ void main() {
 
         await pubAdd(
             args: ['foo:>=1.2.2', '--dev'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error: contains(
                 '"foo" is already in "dev_dependencies". Use "pub upgrade '
-                'foo" to upgrade to a\nlater version!'));
+                'foo" to upgrade to a later version!'));
 
         await d.dir(appPath, [
           d.pubspec({
@@ -725,9 +758,9 @@ void main() {
       await pubAdd(
           args: ['foo:1.2.3', '--dev'],
           error: contains('"foo" is already in "dependencies". Use '
-              '"pub remove foo" to remove it before\nadding it to '
+              '"pub remove foo" to remove it before adding it to '
               '"dev_dependencies"'),
-          exitCode: exit_codes.USAGE);
+          exitCode: exit_codes.DATA);
 
       await d.dir(appPath, [
         d.pubspec({
@@ -779,20 +812,19 @@ void main() {
 
     await pubAdd(args: ['bar']);
 
-    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: # comment A
-          # comment B
-          bar: ^1.0.0
-          foo: 1.0.0 # comment C
-        # comment D
-    ''');
-    await d.dir(appPath, [finalPubspec]).validate();
+    await d.appDir({'bar': '^1.0.0', 'foo': '1.0.0'}).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
 
     expect(File(fullPath).existsSync(), true);
 
     final contents = File(fullPath).readAsStringSync();
-    expect(contents, await finalPubspec.read());
+    expect(
+        contents,
+        allOf([
+          contains('# comment A'),
+          contains('# comment B'),
+          contains('# comment C'),
+          contains('# comment D')
+        ]));
   });
 }
