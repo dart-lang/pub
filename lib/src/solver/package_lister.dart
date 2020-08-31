@@ -386,7 +386,7 @@ class PackageLister {
     return bounds;
   }
 
-  /// Returns the pubspec for [id], or an empty pubpsec matching [id] if the
+  /// Returns the pubspec for [id], or an empty pubspec matching [id] if the
   /// real pubspec for [id] fails to load for any reason.
   ///
   /// This makes the bounds-finding logic resilient to broken pubspecs while
