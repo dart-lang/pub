@@ -378,7 +378,7 @@ class AddCommand extends PubCommand {
     final packagePath = [dependencyKey, package.name];
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
-    log.io('Reading ${entrypoint.pubspecPath}');
+    log.io('Reading ${entrypoint.pubspecPath}.');
     log.fine('Contents:\n$yamlEditor');
 
     /// Handle situations where the user might not have the dependencies or
@@ -392,7 +392,7 @@ class AddCommand extends PubCommand {
           packagePath, pubspecInformation ?? '^${resultPackage.version}');
     }
 
-    log.fine('Added ${package.name} to "$dependencyKey"');
+    log.fine('Added ${package.name} to "$dependencyKey".');
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
