@@ -566,8 +566,21 @@ class YamlEditor {
     ArgumentError.checkNotNull(path, 'path');
 
     final expectedTree = _deepModify(_contents, path, [], expectedNode);
+    final initialYaml = _yaml;
     _yaml = edit.apply(_yaml);
-    _initialize();
+    try {
+      _initialize();
+    } on YamlException {
+      throw AssertionError('''
+Failed to produce valid YAML after modification.
+
+Initial Yaml:
+$initialYaml
+
+Final Yaml:
+$_yaml
+''');
+    }
 
     final actualTree = loadYamlNode(_yaml);
     if (!deepEquals(actualTree, expectedTree)) {

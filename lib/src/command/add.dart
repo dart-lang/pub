@@ -21,7 +21,7 @@ import '../yaml_edit/editor.dart';
 /// the package. The user may pass in a git constraint, host url, or path as
 /// requirements. If no such options are passed in, this command will do a
 /// resolution to find the latest version of the package that is compatible with
-/// the other dependencies in `pubpsec.yaml`, and then enter that as the lower
+/// the other dependencies in `pubspec.yaml`, and then enter that as the lower
 /// bound in a ^x.y.z constraint.
 ///
 /// Currently supports only adding one dependency at a time.
@@ -377,6 +377,8 @@ class AddCommand extends PubCommand {
     final packagePath = [dependencyKey, package.name];
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    log.io('Reading ${entrypoint.pubspecPath}');
+    log.fine('Contents:\n$yamlEditor');
 
     /// Handle situations where the user might not have the dependencies or
     /// dev_dependencies map.
@@ -389,6 +391,8 @@ class AddCommand extends PubCommand {
           packagePath, pubspecInformation ?? '^${resultPackage.version}');
     }
 
+    log.fine('Added ^${resultPackage.version} to "$dependencyKey"');
+
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
     if (!isDevelopment &&
@@ -396,6 +400,8 @@ class AddCommand extends PubCommand {
                 orElse: () => null) !=
             null) {
       yamlEditor.remove(['dev_dependencies', package.name]);
+
+      log.fine('Removed ^${resultPackage.version} from "dev_dependencies".');
     }
 
     /// Windows line endings are already handled by [yamlEditor]
