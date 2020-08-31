@@ -391,7 +391,7 @@ class AddCommand extends PubCommand {
           packagePath, pubspecInformation ?? '^${resultPackage.version}');
     }
 
-    log.fine('Added ^${resultPackage.version} to "$dependencyKey"');
+    log.fine('Added ${package.name} to "$dependencyKey"');
 
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
@@ -401,7 +401,7 @@ class AddCommand extends PubCommand {
             null) {
       yamlEditor.remove(['dev_dependencies', package.name]);
 
-      log.fine('Removed ^${resultPackage.version} from "dev_dependencies".');
+      log.fine('Removed ${package.name} from "dev_dependencies".');
     }
 
     /// Windows line endings are already handled by [yamlEditor]
