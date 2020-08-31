@@ -21,7 +21,7 @@ import '../yaml_edit/editor.dart';
 /// the package. The user may pass in a git constraint, host url, or path as
 /// requirements. If no such options are passed in, this command will do a
 /// resolution to find the latest version of the package that is compatible with
-/// the other dependencies in `pubpsec.yaml`, and then enter that as the lower
+/// the other dependencies in `pubspec.yaml`, and then enter that as the lower
 /// bound in a ^x.y.z constraint.
 ///
 /// Currently supports only adding one dependency at a time.
