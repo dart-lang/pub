@@ -4,6 +4,7 @@
 
 import 'command.dart' show PubCommand;
 import 'command.dart';
+import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
@@ -13,6 +14,7 @@ import 'command/global.dart';
 import 'command/lish.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
+import 'command/remove.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
@@ -40,6 +42,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     // dartdev.
     //
     // New commands should (most likely) be included in both lists.
+    addSubcommand(AddCommand());
     addSubcommand(BuildCommand());
     addSubcommand(CacheCommand());
     addSubcommand(DepsCommand());
@@ -48,9 +51,9 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(GetCommand());
     addSubcommand(LishCommand());
     addSubcommand(OutdatedCommand());
+    addSubcommand(RemoveCommand());
     addSubcommand(UpgradeCommand());
-    addSubcommand(
-        UploaderCommand()); // TODO(sigurdm): should we leave this out?
+    addSubcommand(UploaderCommand());
     addSubcommand(LogoutCommand());
   }
 
