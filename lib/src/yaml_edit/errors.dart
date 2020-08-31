@@ -83,7 +83,6 @@ class _YamlAssertionError extends AssertionError {
 
 /// Throws an [AssertionError] with the given [message], and format
 /// [oldYaml] and [newYaml] for information.
-@alwaysThrows
 Error createAssertionError(String message, String oldYaml, String newYaml) {
   return _YamlAssertionError('''
 (package:yaml_edit) $message
