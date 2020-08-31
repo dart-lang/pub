@@ -25,7 +25,7 @@ void main() {
     await d.appDir().validate();
   });
 
-  test('removing a package from dependencies does not affect dev dependencies',
+  test('removing a package from dependencies does not affect dev_dependencies',
       () async {
     await servePackages((builder) {
       builder.serve('foo', '1.2.3');
@@ -49,20 +49,12 @@ dev_dependencies:
     await d.cacheDir({'bar': '2.0.0'}).validate();
     await d.appPackagesFile({'bar': '2.0.0'}).validate();
 
-    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-name: myapp
-
-dev_dependencies:
-  bar: 2.0.0
-''');
-
-    await d.dir(appPath, [finalPubspec]).validate();
-    final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
-
-    expect(File(fullPath).existsSync(), true);
-
-    final contents = File(fullPath).readAsStringSync();
-    expect(contents, await finalPubspec.read());
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dev_dependencies': {'bar': '2.0.0'}
+      })
+    ]).validate();
   });
 
   test('dry-run does not actually remove dependency', () async {
@@ -238,6 +230,7 @@ dev_dependencies:
 
     await pubRemove(args: ['bar']);
 
+    await d.appDir({'foo': '1.0.0'}).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
     expect(File(fullPath).existsSync(), true);
     final contents = File(fullPath).readAsStringSync();

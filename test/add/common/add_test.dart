@@ -50,7 +50,8 @@ void main() {
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
-    test('does not modify dev_dependencies while normal dependencies',
+    test(
+        'does not remove empty dev_dependencies while adding to normal dependencies',
         () async {
       await servePackages((builder) {
         builder.serve('foo', '1.2.3');
@@ -71,21 +72,13 @@ void main() {
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
-      final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-          name: myapp
-          dependencies: 
-            foo: 1.2.3
-
-          dev_dependencies:
-        ''');
-
-      await d.dir(appPath, [finalPubspec]).validate();
-      final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
-
-      expect(File(fullPath).existsSync(), true);
-
-      final contents = File(fullPath).readAsStringSync();
-      expect(contents, await finalPubspec.read());
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.3'},
+          'dev_dependencies': null
+        })
+      ]).validate();
     });
 
     test('dry run does not actually add the package or modify the pubspec',
@@ -206,20 +199,12 @@ dev_dependencies:
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
-      final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-name: myapp
-dependencies: 
-  foo: 1.2.3
-
-''');
-
-      await d.dir(appPath, [finalPubspec]).validate();
-      final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
-
-      expect(File(fullPath).existsSync(), true);
-
-      final contents = File(fullPath).readAsStringSync();
-      expect(contents, await finalPubspec.read());
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.3'}
+        })
+      ]).validate();
     });
 
     group('dependency override', () {
@@ -806,17 +791,9 @@ dependencies:
 
     await pubAdd(args: ['bar']);
 
-    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: 
-        bar: ^1.0.0''');
-    await d.dir(appPath, [finalPubspec]).validate();
-    final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
-
-    expect(File(fullPath).existsSync(), true);
-
-    final contents = File(fullPath).readAsStringSync();
-    expect(contents, await finalPubspec.read());
+    await d.dir(appPath, [
+      d.appPubspec({'bar': '^1.0.0'})
+    ]).validate();
   });
 
   test('preserves comments', () async {
@@ -838,20 +815,19 @@ dependencies:
 
     await pubAdd(args: ['bar']);
 
-    final finalPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: # comment A
-          # comment B
-          bar: ^1.0.0
-          foo: 1.0.0 # comment C
-        # comment D
-    ''');
-    await d.dir(appPath, [finalPubspec]).validate();
+    await d.appDir({'bar': '^1.0.0', 'foo': '1.0.0'}).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
 
     expect(File(fullPath).existsSync(), true);
 
     final contents = File(fullPath).readAsStringSync();
-    expect(contents, await finalPubspec.read());
+    expect(
+        contents,
+        allOf([
+          contains('# comment A'),
+          contains('# comment B'),
+          contains('# comment C'),
+          contains('# comment D')
+        ]));
   });
 }
