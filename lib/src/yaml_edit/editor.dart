@@ -568,32 +568,23 @@ class YamlEditor {
     final expectedTree = _deepModify(_contents, path, [], expectedNode);
     final initialYaml = _yaml;
     _yaml = edit.apply(_yaml);
+
     try {
       _initialize();
     } on YamlException {
-      throw AssertionError('''
-Failed to produce valid YAML after modification.
-
-Initial Yaml:
-$initialYaml
-
-Final Yaml:
-$_yaml
-''');
+      throw createAssertionError(
+          'Failed to produce valid YAML after modification.',
+          initialYaml,
+          _yaml);
     }
 
     final actualTree = loadYamlNode(_yaml);
     if (!deepEquals(actualTree, expectedTree)) {
-      throw AssertionError('''
-Modification did not result in expected result! 
-
-Obtained: 
-$actualTree
-
-Expected: 
-$expectedTree''');
+      throw createAssertionError(
+          'Modification did not result in expected result.',
+          initialYaml,
+          _yaml);
     }
-
     _contents = actualTree;
     _edits.add(edit);
   }
