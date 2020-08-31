@@ -75,7 +75,7 @@ class _YamlAssertionError extends AssertionError {
   @override
   String toString() {
     if (message != null) {
-      return 'Assertion failed: ${message}';
+      return 'Assertion failed: $message';
     }
     return 'Assertion failed';
   }
