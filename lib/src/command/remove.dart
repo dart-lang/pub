@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:yaml/yaml.dart';
+
 import '../command.dart';
 import '../entrypoint.dart';
 import '../io.dart';
@@ -97,9 +99,17 @@ class RemoveCommand extends PubCommand {
       /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies.
       for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
-        if (yamlEditor.parseAt([dependencyKey, package], orElse: () => null) !=
-            null) {
-          yamlEditor.remove([dependencyKey, package]);
+        final dependenciesNode =
+            yamlEditor.parseAt([dependencyKey], orElse: () => null);
+
+        if (dependenciesNode is YamlMap &&
+            dependenciesNode.containsKey(package)) {
+          if (dependenciesNode.length == 1) {
+            yamlEditor.remove([dependencyKey]);
+          } else {
+            yamlEditor.remove([dependencyKey, package]);
+          }
+
           found = true;
         }
       }
