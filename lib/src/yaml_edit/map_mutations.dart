@@ -162,7 +162,7 @@ SourceEdit _replaceInBlockMap(
   /// `package:yaml` parses empty nodes in a way where the start/end of the
   /// empty value node is the end of the key node, so we have to adjust for
   /// this.
-  if (end < start) end = start + 1;
+  if (end < start) end = start;
 
   return SourceEdit(start, end - start, ' ' + valueAsString);
 }

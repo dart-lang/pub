@@ -790,10 +790,7 @@ dev_dependencies:
     await pubGet();
 
     await pubAdd(args: ['bar']);
-
-    await d.dir(appPath, [
-      d.appPubspec({'bar': '^1.0.0'})
-    ]).validate();
+    await d.appDir({'bar': '^1.0.0'}).validate();
   });
 
   test('preserves comments', () async {

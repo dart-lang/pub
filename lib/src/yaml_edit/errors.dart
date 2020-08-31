@@ -66,3 +66,36 @@ class AliasError extends UnsupportedError {
             'by this library.\n\n'
             '${anchor.span.message('The alias was first defined here.')}');
 }
+
+/// Error thrown when an assertion about the YAML fails. Extends
+/// [AssertionError] to override the [toString] method for pretty printing.
+class _YamlAssertionError extends AssertionError {
+  _YamlAssertionError(message) : super(message);
+
+  @override
+  String toString() {
+    if (message != null) {
+      return 'Assertion failed: $message';
+    }
+    return 'Assertion failed';
+  }
+}
+
+/// Throws an [AssertionError] with the given [message], and format
+/// [oldYaml] and [newYaml] for information.
+@alwaysThrows
+Error createAssertionError(String message, String oldYaml, String newYaml) {
+  return _YamlAssertionError('''
+(package:yaml_edit) $message
+
+# YAML before edit:
+> ${oldYaml.replaceAll('\n', '\n> ')}
+
+# YAML after edit:
+> ${newYaml.replaceAll('\n', '\n> ')}
+
+Please file an issue at:
+'''
+      'https://github.com/google/dart-neats/issues/new?labels=pkg%3Ayaml_edit'
+      '%2C+pending-triage&template=yaml_edit.md\n');
+}
