@@ -49,9 +49,9 @@ Future<void> main() async {
     await runEmbedding([''], buffer, exitCode: 64);
     await runEmbedding(['--help'], buffer);
     await runEmbedding(['pub'], buffer, exitCode: 64);
-    await runEmbedding(['pub --help'], buffer, exitCode: 64);
-    await runEmbedding(['pub get --help'], buffer, exitCode: 64);
-    await runEmbedding(['pub global'], buffer, exitCode: 64);
+    await runEmbedding(['pub', '--help'], buffer);
+    await runEmbedding(['pub', 'get', '--help'], buffer);
+    await runEmbedding(['pub', 'global'], buffer, exitCode: 64);
     expectMatchesGoldenFile(
         buffer.toString(), 'test/embedding/goldens/helptext.txt');
   });
