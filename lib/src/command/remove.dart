@@ -22,7 +22,7 @@ class RemoveCommand extends PubCommand {
   @override
   String get description => 'Removes a dependency from the current package.';
   @override
-  String get invocation => 'pub remove <package>';
+  String get argumentsDescription => '<package>';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
@@ -44,7 +44,7 @@ class RemoveCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be removed.');
     }
