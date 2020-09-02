@@ -19,8 +19,8 @@ import 'global_packages.dart';
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'log.dart';
 import 'pub_embeddable_command.dart';
+import 'sdk.dart';
 import 'solver.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -140,6 +140,9 @@ abstract class PubCommand extends Command {
     if (_pubTopLevel.trace) {
       log.recordTranscript();
     }
+    log.verbosity = _pubTopLevel.verbosity;
+    log.fine('Pub ${sdk.version}');
+
     try {
       await captureErrors(runProtected,
           captureStackChains: _pubTopLevel.captureStackChains);
@@ -255,7 +258,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 
 abstract class PubTopLevel {
   bool get captureStackChains;
-  Verbosity get verbosity;
+  log.Verbosity get verbosity;
   bool get trace;
 
   /// The argResults from the level of parsing of the 'pub' command.

@@ -143,10 +143,6 @@ class PubCommandRunner extends CommandRunner implements PubTopLevel {
       return;
     }
 
-    log.verbosity = verbosity;
-
-    log.fine('Pub ${sdk.version}');
-
     await _validatePlatform();
     await super.runCommand(topLevelResults);
   }

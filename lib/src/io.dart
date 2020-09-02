@@ -461,12 +461,13 @@ void createPackageSymlink(String name, String target, String symlink,
   createSymlink(target, symlink, relative: relative);
 }
 
-/// Whether the current process is one of pub's test files.
+/// Whether the current process is one of pub's test files, or running through
+/// test runner.
 ///
 /// This works because an actual pub executable that imports this will always
 /// start with "pub".
-final bool runningAsTest =
-    !path.url.basename(Platform.script.path).startsWith('pub.');
+final bool runningAsTest = _runningAsTestRunner ||
+    path.url.basename(Platform.script.path).endsWith('_test.dart');
 
 // TODO(nweiz): Use the test API when test#48 is fixed.
 /// Whether the current process is one of pub's test files being run through the
