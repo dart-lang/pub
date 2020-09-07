@@ -17,7 +17,7 @@ class UploaderCommand extends PubCommand {
   String get name => 'uploader';
   @override
   String get description =>
-      'Manage uploaders for a package on pub.dartlang.org.';
+      'Manage uploaders for a package on pub.dev.';
   @override
   String get invocation => 'pub uploader [options] {add/remove} <email>';
   @override
