@@ -10,38 +10,118 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
 
-Map<String, String> _tokens;
+List<TokenEntry> _tokens;
 
+/// Gets the token for the given uri
 String getToken(Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
   var tokens = _loadTokens();
-  if (tokens != null && tokens.containsKey(uri.origin)) {
-    var tokenValue = tokens[uri.origin];
-    if (tokenValue != null && tokenValue.startsWith('\$')) {
-      tokenValue = Platform.environment[tokenValue.substring(1)];
-    }
+
+  var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
+      orElse: () => null);
+  if (found == null) return null;
+
+  var tokenValue = found.token;
+  if (tokenValue != null && tokenValue.startsWith('\$')) {
+    tokenValue = Platform.environment[tokenValue.substring(1)];
+  }
+
+  return null;
+}
+
+/// Adds a token for a given server
+void addToken(String server, String token) {
+  var tokens = _loadTokens();
+
+  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
+      orElse: () => null);
+  if (found != null) {
+    found.token = token;
+    log.message('Token for $server updated');
+  } else {
+    found = TokenEntry(server: server.toLowerCase(), token: token);
+    tokens.add(found);
+    log.message('Token for $server added');
+  }
+  _save(tokens);
+}
+
+/// Removes the token for the given server
+void removeToken({String server, bool all = false}) {
+  if (all) {
+    var tokensFile = _tokensFile();
+    log.message('Deleting $tokensFile');
+    if (entryExists(tokensFile)) deleteEntry(tokensFile);
+    return;
+  }
+
+  var tokens = _loadTokens();
+  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
+      orElse: () => null);
+  if (found == null) {
+    log.warning('$server not found in tokens.json');
+  } else {
+    tokens.remove(found);
+    log.message('Token for $server removed');
+  }
+  _save(tokens);
+}
+
+/// Shows the user a formatted list of tokens.
+void listTokens() {
+  var tokens = _loadTokens();
+  if (tokens.isEmpty) return;
+
+  var largest = tokens.reduce(
+      (curr, next) => curr.server.length > next.server.length ? curr : next);
+
+  tokens
+    ..sort((entry1, entry2) => entry1.server.compareTo(entry2.server))
+    ..forEach(
+        (entry) => log.message(_formatToken(entry, largest.server.length)));
+}
+
+String validateServer(String server) {
+  var uri = Uri.parse(server);
+  if (uri.scheme?.isEmpty ?? true) {
+    return '`server` must include a scheme such as "https://". '
+        '$server is invalid';
+  }
+  if (!uri.hasEmptyPath) {
+    return '`server` must not have a path defined. '
+        '$server is invalid';
+  }
+  if (uri.hasQuery) {
+    return '`server` must not have a query string defined. '
+        '$server is invalid';
   }
   return null;
 }
 
-Map<String, String> _loadTokens() {
+/// Returns formatted string representing the token.
+String _formatToken(TokenEntry item, int maxServerLength) {
+  return '${log.bold(item.server.padRight(maxServerLength))} -> ${item.token}';
+}
+
+void _save(List<TokenEntry> tokens) {
+  var path = _tokensFile();
+  writeTextFile(path, jsonEncode(tokens), dontLogContents: true);
+}
+
+List<TokenEntry> _loadTokens() {
   log.fine('Loading tokens.');
 
   try {
     if (_tokens != null) return _tokens;
-    _tokens = <String, String>{};
+    _tokens = <TokenEntry>[];
 
     var path = _tokensFile();
-    if (!fileExists(path)) return null;
+    if (!fileExists(path)) return _tokens;
 
     var response = readTextFile(path);
     if (response != null && response != '') {
-      var items = List<TokenEntry>.from(
+      _tokens = List<TokenEntry>.from(
           json.decode(response).map((entry) => TokenEntry.fromJson(entry)));
-
-      for (var item in items) {
-        _tokens.putIfAbsent(item.host, () => item.token);
-      }
     }
 
     return _tokens;
@@ -54,14 +134,18 @@ Map<String, String> _loadTokens() {
 String _tokensFile() => path.join(SystemCache.defaultDir, 'tokens.json');
 
 class TokenEntry {
-  final String host;
-  final String token;
+  String server;
+  String token;
   TokenEntry({
-    this.host,
+    this.server,
     this.token,
   });
   factory TokenEntry.fromJson(Map<String, dynamic> json) => TokenEntry(
-        host: json['host'],
+        server: json['server'],
         token: json['token'],
       );
+  Map toJson() => {
+        'server': server,
+        'token': token,
+      };
 }
