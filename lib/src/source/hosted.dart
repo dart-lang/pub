@@ -185,9 +185,7 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      var request = http.Request('GET', url)..headers.addAll(pubApiHeaders);
-      var response = await Response.fromStream(await httpClient.send(request));
-      body = response.body;
+      body = await httpClient.read(url, headers: pubApiHeaders);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
