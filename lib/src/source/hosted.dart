@@ -8,7 +8,6 @@ import 'dart:io' as io;
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
