@@ -64,7 +64,7 @@ class UploaderCommand extends PubCommand {
     })
         .then((package) {
           var uploader = rest[0];
-          return oauth2.withClient(cache, (client) {
+          return oauth2.withClient(cache, server, (client) {
             if (command == 'add') {
               var url = server.resolve('/api/packages/'
                   '${Uri.encodeComponent(package)}/uploaders');

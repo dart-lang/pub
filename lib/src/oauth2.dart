@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub/src/tokens.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
@@ -90,8 +91,9 @@ void logout(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
-  return _getClient(cache).then((client) {
+Future<T> withClient<T>(
+    SystemCache cache, Uri requestServer, Future<T> Function(Client) fn) {
+  return _getClient(cache, requestServer).then((client) {
     return fn(client).whenComplete(() {
       client.close();
       // Be sure to save the credentials even when an error happens.
@@ -101,7 +103,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
     if (error is ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
-      return withClient(cache, fn);
+      return withClient(cache, requestServer, fn);
     } else if (error is AuthorizationException) {
       var message = 'OAuth2 authorization failed';
       if (error.description != null) {
@@ -109,7 +111,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
       }
       log.error('$message.');
       _clearCredentials(cache);
-      return withClient(cache, fn);
+      return withClient(cache, requestServer, fn);
     } else {
       throw error;
     }
@@ -120,18 +122,25 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) async {
-  var credentials = _loadCredentials(cache);
-  if (credentials == null) return await _authorize();
+Future<Client> _getClient(SystemCache cache, Uri requestServer) async {
+  var isHostedServer = requestServer.host != 'https://pub.dartlang.org';
+  if (!isHostedServer) {
+    var credentials = _loadCredentials(cache);
+    if (credentials == null) return await _authorize();
 
-  var client = Client(credentials,
-      identifier: _identifier,
-      secret: _secret,
-      // Google's OAuth2 API doesn't support basic auth.
-      basicAuth: false,
-      httpClient: httpClient);
-  _saveCredentials(cache, client.credentials);
-  return client;
+    var client = Client(credentials,
+        identifier: _identifier,
+        secret: _secret,
+        // Google's OAuth2 API doesn't support basic auth.
+        basicAuth: false,
+        httpClient: httpClient);
+    _saveCredentials(cache, client.credentials);
+    return client;
+  } else {
+    var client = Client(Credentials(getToken(requestServer)),
+        basicAuth: false, httpClient: httpClient);
+    return client;
+  }
 }
 
 /// Loads the user's OAuth2 credentials from the in-memory cache or the

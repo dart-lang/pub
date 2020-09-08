@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -64,10 +65,10 @@ class LishCommand extends PubCommand {
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(List<int> packageBytes) async {
+  Future _publish(Uri requestServer, List<int> packageBytes) async {
     Uri cloudStorageUrl;
     try {
-      await oauth2.withClient(cache, (client) {
+      await oauth2.withClient(cache, requestServer, (client) {
         return log.progress('Uploading', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
@@ -144,7 +145,7 @@ class LishCommand extends PubCommand {
     } else if (dryRun) {
       await flushThenExit(exit_codes.SUCCESS);
     } else {
-      await _publish(await packageBytesFuture);
+      await _publish(server, await packageBytesFuture);
     }
   }
 

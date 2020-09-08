@@ -23,8 +23,12 @@ String getToken(Uri uri) {
     return null;
   }
   var tokenValue = found.token;
+
   if (tokenValue != null && tokenValue.startsWith('\$')) {
     tokenValue = Platform.environment[tokenValue.substring(1)];
+    if (tokenValue == null) {
+      log.warning('$tokenValue not set');
+    }
   }
   return tokenValue;
 }
