@@ -16,7 +16,9 @@ class TokenAddCommand extends PubCommand {
 
   TokenAddCommand() {
     argParser.addOption('server', abbr: 's', help: 'Url for the server.');
-    argParser.addOption('token', abbr: 't', help: 'Token.');
+    argParser.addOption('token',
+        abbr: 't', 
+        help: 'Token. Environment variable can be use with \'\$YOUR_VAR\'');
   }
 
   @override
@@ -31,7 +33,8 @@ class TokenAddCommand extends PubCommand {
     }
     String token = argResults['token'];
     if (token == null || token.isEmpty) {
-      usageException('Must specify a token.');
+      usageException(
+          'Must specify a token. If using \$ENV_TOKEN enclose token between \'\'');
     }
     addToken(server, token);
   }

@@ -19,14 +19,14 @@ String getToken(Uri uri) {
 
   var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
       orElse: () => null);
-  if (found == null) return null;
-
+  if (found == null) {
+    return null;
+  }
   var tokenValue = found.token;
   if (tokenValue != null && tokenValue.startsWith('\$')) {
     tokenValue = Platform.environment[tokenValue.substring(1)];
   }
-
-  return null;
+  return tokenValue;
 }
 
 /// Adds a token for a given server
