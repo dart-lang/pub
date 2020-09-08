@@ -5,13 +5,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:io';
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
+import 'package:pub/src/yaml_edit/editor.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:yaml/yaml.dart';
 
 import '../exceptions.dart';
 import '../http.dart';
@@ -184,7 +188,9 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      body = await httpClient.read(url, headers: pubApiHeaders);
+      var request = http.Request('GET', url)..headers.addAll(pubApiHeaders);
+      var response = await Response.fromStream(await httpClient.send(request));
+      body = response.body;
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);

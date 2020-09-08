@@ -19,6 +19,7 @@ import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
+import 'tokens.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -45,6 +46,7 @@ class _PubHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    //TODO: Ask why we should not send metadata to a foreign server like hosted server!
     if (_shouldAddMetadata(request)) {
       request.headers['X-Pub-OS'] = Platform.operatingSystem;
       request.headers['X-Pub-Command'] = PubCommandRunner.command;
@@ -57,6 +59,11 @@ class _PubHttpClient extends http.BaseClient {
 
       var type = Zone.current[#_dependencyType];
       if (type != null) request.headers['X-Pub-Reason'] = type.toString();
+    }
+
+    var token = getToken(request.url);
+    if (token != null) {
+      request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
