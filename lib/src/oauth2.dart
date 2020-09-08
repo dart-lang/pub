@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
-import 'package:pub/src/tokens.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
@@ -15,6 +14,7 @@ import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
+import 'tokens.dart';
 import 'utils.dart';
 
 /// The pub client's OAuth2 identifier.

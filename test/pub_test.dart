@@ -40,6 +40,7 @@ void main() {
           publish     Publish the current package to pub.dartlang.org.
           remove      Removes a dependency from the current package.
           run         Run an executable from a package.
+          token       Manage tokens for hosted packages.
           upgrade     Upgrade the current package's dependencies to latest versions.
           uploader    Manage uploaders for a package on pub.dartlang.org.
           version     Print pub version.
