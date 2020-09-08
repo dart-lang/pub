@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import 'io.dart';
@@ -15,7 +16,10 @@ String getToken(Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
   var tokens = _loadTokens();
   if (tokens != null && tokens.containsKey(uri.origin)) {
-    return tokens[uri.origin];
+    var tokenValue = tokens[uri.origin];
+    if (tokenValue != null && tokenValue.startsWith('\$')) {
+      tokenValue = Platform.environment[tokenValue.substring(1)];
+    }
   }
   return null;
 }
