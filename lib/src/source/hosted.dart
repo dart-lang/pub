@@ -42,7 +42,18 @@ class HostedSource extends Source {
 
   /// Gets the default URL for the package server for hosted dependencies.
   String get defaultUrl {
-    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dev';
+    // Changing this to pub.dev raises the following concerns:
+    //
+    //  1. It would blow through users caches.
+    //  2. It would cause conflicts for users checking pubspec.lock into git, if using
+    //     different versions of the dart-sdk / pub client.
+    //  3. It might cause other problems (investigation needed) for pubspec.lock across
+    //     different versions of the dart-sdk / pub client.
+    //  4. It would expand the API surface we're committed to supporting long-term.
+    //
+    // Clearly, a bit of investigation is necessary before we update this to
+    // pub.dev, it might be attractive to do next time we change the server API.
+    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dartlang.org';
   }
 
   String _defaultUrl;
