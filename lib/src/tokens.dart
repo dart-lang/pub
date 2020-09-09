@@ -88,16 +88,13 @@ void listTokens() {
 String validateServer(String server) {
   var uri = Uri.parse(server);
   if (uri.scheme?.isEmpty ?? true) {
-    return '`server` must include a scheme such as "https://". '
-        '$server is invalid';
+    return '`server` must include a scheme such as "https://".\n$server is invalid.';
   }
   if (!uri.hasEmptyPath) {
-    return '`server` must not have a path defined. '
-        '$server is invalid';
+    return '`server` must not have a path defined.\n$server is invalid.';
   }
   if (uri.hasQuery) {
-    return '`server` must not have a query string defined. '
-        '$server is invalid';
+    return '`server` must not have a query string defined.\n$server is invalid.';
   }
   return null;
 }
