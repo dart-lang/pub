@@ -2,10 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+
 /// Pub-specific test descriptors.
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/tokens.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -164,6 +167,12 @@ Descriptor credentialsFile(PackageServer server, String accessToken,
                 expiration: expiration)
             .toJson())
   ]);
+}
+
+/// Describes the file in the system cache that contains the tokens
+/// for hosted package servers.
+Descriptor tokensFile(List<TokenEntry> entries) {
+  return dir(cachePath, [file('tokens.json', jsonEncode(entries))]);
 }
 
 /// Describes the application directory, containing only a pubspec specifying
