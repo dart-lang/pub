@@ -123,7 +123,8 @@ Future<T> withClient<T>(
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
 Future<Client> _getClient(SystemCache cache, Uri requestServer) async {
-  var isHostedServer = requestServer.host != 'https://pub.dartlang.org';
+  var isHostedServer =
+      !runningFromTest && requestServer.host != 'https://pub.dartlang.org';
   if (!isHostedServer) {
     var credentials = _loadCredentials(cache);
     if (credentials == null) return await _authorize();

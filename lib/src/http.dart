@@ -63,7 +63,9 @@ class _PubHttpClient extends http.BaseClient {
 
     var token = getToken(request.url);
     if (token != null) {
-      request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+      if (!request.headers.containsKey(HttpHeaders.authorizationHeader)) {
+        request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
