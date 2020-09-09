@@ -17,7 +17,7 @@ void main() {
         .create();
 
     await runPub(
-        args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
+        args: ['logout'], output: contains('Logging out of pub.dev.'));
 
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
   });

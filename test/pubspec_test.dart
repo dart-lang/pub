@@ -449,7 +449,7 @@ publish_to: none
 
       test('throws on non-absolute URLs', () {
         expectPubspecException(
-            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
+            'publish_to: pub.dev', (pubspec) => pubspec.publishTo);
       });
     });
 

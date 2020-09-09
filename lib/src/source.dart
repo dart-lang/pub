@@ -78,7 +78,7 @@ abstract class Source {
   ///
   /// [containingPath] is the path to the pubspec where this description
   /// appears. It may be `null` if the description is coming from some in-memory
-  /// source (such as pulling down a pubspec from pub.dartlang.org).
+  /// source (such as pulling down a pubspec from pub.dev).
   ///
   /// The description in the returned [PackageRef] need bear no resemblance to
   /// the original user-provided description.
