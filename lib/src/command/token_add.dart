@@ -35,6 +35,6 @@ class TokenAddCommand extends PubCommand {
       usageException(validationMessage);
     }
 
-    addToken(server, token);
+    addToken(cache, server, token);
   }
 }

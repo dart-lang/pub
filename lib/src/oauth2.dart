@@ -138,7 +138,7 @@ Future<Client> _getClient(SystemCache cache, Uri requestServer) async {
     _saveCredentials(cache, client.credentials);
     return client;
   } else {
-    var client = Client(Credentials(getToken(requestServer)),
+    var client = Client(Credentials(getToken(cache, requestServer)),
         basicAuth: false, httpClient: httpClient);
     return client;
   }

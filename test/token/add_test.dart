@@ -2,8 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/tokens.dart';
 import 'package:test/test.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import '../descriptor.dart' as d;
 
 import '../test_pub.dart';
 
@@ -72,5 +74,16 @@ Usage: pub token add --server <url> --token <value>
 Run "pub help" to see global options.
 ''',
         exitCode: exit_codes.USAGE);
+  });
+
+  test('add token when no tokens.json exists', () async {
+    await runPub(
+        args: ['token', 'add', '-s', 'https://www.mypub.com', '-t', 'XYZ'],
+        output: '''
+Token for https://www.mypub.com added
+''');
+
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 }

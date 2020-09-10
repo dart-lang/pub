@@ -22,7 +22,7 @@ class TokenRemoveCommand extends PubCommand {
   @override
   void run() {
     if (argResults.wasParsed('all')) {
-      removeToken(all: true);
+      removeToken(cache, all: true);
     } else {
       String server = argResults['server'];
       if (server == null || server.isEmpty) {
@@ -32,7 +32,7 @@ class TokenRemoveCommand extends PubCommand {
       if (validationMessage != null) {
         usageException(validationMessage);
       }
-      removeToken(server: server);
+      removeToken(cache, server: server);
     }
   }
 }

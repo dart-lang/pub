@@ -19,6 +19,7 @@ import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
+import 'system_cache.dart';
 import 'tokens.dart';
 import 'utils.dart';
 
@@ -39,6 +40,8 @@ final _sessionId = createUuid();
 /// user-friendly error messages.
 class _PubHttpClient extends http.BaseClient {
   final _requestStopwatches = <http.BaseRequest, Stopwatch>{};
+  SystemCache get cache => _cache ??= SystemCache();
+  SystemCache _cache;
 
   http.Client _inner;
 
@@ -61,7 +64,7 @@ class _PubHttpClient extends http.BaseClient {
       if (type != null) request.headers['X-Pub-Reason'] = type.toString();
     }
 
-    var token = getToken(request.url);
+    var token = getToken(cache, request.url);
     if (token != null) {
       if (!request.headers.containsKey(HttpHeaders.authorizationHeader)) {
         request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';

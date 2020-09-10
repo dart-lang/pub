@@ -13,9 +13,9 @@ import 'system_cache.dart';
 List<TokenEntry> _tokens;
 
 /// Gets the token for the given uri
-String getToken(Uri uri) {
+String getToken(SystemCache cache, Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
-  var tokens = _loadTokens();
+  var tokens = _loadTokens(cache);
 
   var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
       orElse: () => null);
@@ -34,8 +34,8 @@ String getToken(Uri uri) {
 }
 
 /// Adds a token for a given server
-void addToken(String server, String token) {
-  var tokens = _loadTokens();
+void addToken(SystemCache cache, String server, String token) {
+  var tokens = _loadTokens(cache);
 
   var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
       orElse: () => null);
@@ -47,19 +47,19 @@ void addToken(String server, String token) {
     tokens.add(found);
     log.message('Token for $server added');
   }
-  _save(tokens);
+  _save(cache, tokens);
 }
 
 /// Removes the token for the given server
-void removeToken({String server, bool all = false}) {
+void removeToken(SystemCache cache, {String server, bool all = false}) {
   if (all) {
-    var tokensFile = _tokensFile();
+    var tokensFile = _tokensFile(cache);
     log.message('Deleting $tokensFile');
     if (entryExists(tokensFile)) deleteEntry(tokensFile);
     return;
   }
 
-  var tokens = _loadTokens();
+  var tokens = _loadTokens(cache);
   var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
       orElse: () => null);
   if (found == null) {
@@ -68,12 +68,12 @@ void removeToken({String server, bool all = false}) {
     tokens.remove(found);
     log.message('Token for $server removed');
   }
-  _save(tokens);
+  _save(cache, tokens);
 }
 
 /// Shows the user a formatted list of tokens.
-void listTokens() {
-  var tokens = _loadTokens();
+void listTokens(SystemCache cache) {
+  var tokens = _loadTokens(cache);
   if (tokens.isEmpty) return;
 
   var largest = tokens.reduce(
@@ -104,19 +104,21 @@ String _formatToken(TokenEntry item, int maxServerLength) {
   return '${log.bold(item.server.padRight(maxServerLength))} -> ${item.token}';
 }
 
-void _save(List<TokenEntry> tokens) {
-  var path = _tokensFile();
-  writeTextFile(path, jsonEncode(tokens), dontLogContents: true);
+void _save(SystemCache cache, List<TokenEntry> tokens) {
+  var tokenPath = _tokensFile(cache);
+  ensureDir(path.dirname(tokenPath));
+  writeTextFile(tokenPath, jsonEncode(tokens));
+  log.fine('Saved tokens.json');
 }
 
-List<TokenEntry> _loadTokens() {
+List<TokenEntry> _loadTokens(SystemCache cache) {
   log.fine('Loading tokens.');
 
   try {
     if (_tokens != null) return _tokens;
     _tokens = <TokenEntry>[];
 
-    var path = _tokensFile();
+    var path = _tokensFile(cache);
     if (!fileExists(path)) return _tokens;
 
     var response = readTextFile(path);
@@ -132,7 +134,8 @@ List<TokenEntry> _loadTokens() {
   }
 }
 
-String _tokensFile() => path.join(SystemCache.defaultDir, 'tokens.json');
+String _tokensFile(SystemCache cache) =>
+    path.join(cache.rootDir, 'tokens.json');
 
 class TokenEntry {
   String server;

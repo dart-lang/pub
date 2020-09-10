@@ -20,6 +20,6 @@ class TokenListCommand extends PubCommand {
 
   @override
   void run() {
-    listTokens();
+    listTokens(cache);
   }
 }
