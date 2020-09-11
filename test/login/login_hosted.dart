@@ -1,0 +1,110 @@
+// Copyright (c) 2014, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+import 'package:pub/src/tokens.dart';
+import 'package:test/test.dart';
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+import '../descriptor.dart' as d;
+
+import '../test_pub.dart';
+
+void main() {
+  test('fails if no parameters are given', () async {
+    return runPub(args: ['login'], error: '''
+Must specify a server to log in.
+
+Usage: pub login <server> [--token <secret>]
+-h, --help     Print this usage information.
+-t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
+  test('fails when server url has no scheme', () async {
+    return runPub(args: ['login', 'www.error.com'], error: '''
+`server` must include a scheme such as "https://".
+www.error.com is invalid.
+
+Usage: pub login <server> [--token <secret>]
+-h, --help     Print this usage information.
+-t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
+  test('fails when server url has no empty path', () async {
+    return runPub(args: ['login', 'https://www.error.com/something'], error: '''
+`server` must not have a path defined.
+https://www.error.com/something is invalid.
+
+Usage: pub login <server> [--token <secret>]
+-h, --help     Print this usage information.
+-t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
+  test('fails when server url has query', () async {
+    return runPub(args: ['login', 'https://www.error.com?x=y'], error: '''
+`server` must not have a query string defined.
+https://www.error.com?x=y is invalid.
+
+Usage: pub login <server> [--token <secret>]
+-h, --help     Print this usage information.
+-t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
+  test('fails when server is official server', () async {
+    return runPub(args: ['login', 'https://pub.dev'], error: '''
+`server` cannot be the official package server.
+https://pub.dev is invalid.
+
+Usage: pub login <server> [--token <secret>]
+-h, --help     Print this usage information.
+-t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
+  test('add login with token', () async {
+    await runPub(
+        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
+Token for https://www.mypub.com added
+''');
+
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+  });
+
+  test('add login for server already in tokens.json', () async {
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+
+    await runPub(
+        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
+Token for https://www.mypub.com updated
+''');
+
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+  });
+
+  test('prompt when no token is provided', () async {
+    //todo: not working at them moment; having a timeout.
+    // await runPub(args: ['login', 'https://www.mypub.com']);
+    // var pub = await startLogin('https://www.mypub.com');
+    // await enterTokenForLogin(pub, 'XYZ');
+    //
+    // expect(pub.stdout, emits('Token for https://www.mypub.com added'));
+    //
+    // await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+  });
+}

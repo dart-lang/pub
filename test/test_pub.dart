@@ -360,6 +360,25 @@ Future confirmPublish(TestProcess pub) async {
   pub.stdin.writeln('y');
 }
 
+/// Like [startPub], but runs `pub login` in particular with server
+Future<PubProcess> startLogin(String server) async {
+  var args = ['login', server];
+  return await startPub(args: args);
+}
+
+/// Handles the beginning prompt for login server.
+///
+/// Ensures that the right output is shown and then enters given token
+Future enterTokenForLogin(TestProcess pub, String token) async {
+  //await expectLater(pub.stdout, emits('Enter a token value (prefix with \$ for environment variable)'));
+  await expectLater(
+      pub.stdout,
+      emitsThrough(matches(
+        r'Enter a token value (prefix with \$ for environment variable)',
+      )));
+  pub.stdin.writeln(token);
+}
+
 /// Resolves [path] relative to the package cache in the sandbox.
 String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 
