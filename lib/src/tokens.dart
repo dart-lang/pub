@@ -84,7 +84,10 @@ String validateServer(String server) {
   if (uri.hasQuery) {
     return '`server` must not have a query string defined.\n$server is invalid.';
   }
-  if (uri.host == '') return null;
+  if (uri.host == 'pub.dartlang.org' || uri.host == 'pub.dev') {
+    return '`server` cannot be the official package server.\n$server is invalid.';
+  }
+  return null;
 }
 
 void _save(SystemCache cache, List<TokenEntry> tokens) {
