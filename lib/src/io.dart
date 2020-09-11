@@ -598,11 +598,11 @@ Future<bool> confirm(String message) {
 /// should just be a fragment like, "Enter your name".
 Future<String> prompt(String message) {
   log.fine('Showing prompt: $message');
-  if (runningFromTest) {
-    log.message('$message: ');
-  } else {
-    stdout.write('$message: ');
-  }
+  // if (runningFromTest) {
+  //   log.message('$message: ');
+  // } else {
+  stdout.write('$message: ');
+  // }
   return _stdinLines.first;
 }
 
