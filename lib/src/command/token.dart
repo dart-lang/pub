@@ -5,7 +5,6 @@
 import '../command.dart';
 import 'token_add.dart';
 import 'token_list.dart';
-import 'token_remove.dart';
 
 /// Handles the `token` pub command.
 class TokenCommand extends PubCommand {
@@ -20,7 +19,6 @@ class TokenCommand extends PubCommand {
 
   TokenCommand() {
     addSubcommand(TokenAddCommand());
-    addSubcommand(TokenRemoveCommand());
     addSubcommand(TokenListCommand());
   }
 }

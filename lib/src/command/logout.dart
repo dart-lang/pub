@@ -6,20 +6,37 @@ import 'dart:async';
 
 import '../command.dart';
 import '../oauth2.dart' as oauth2;
+import '../tokens.dart';
 
 /// Handles the `logout` pub command.
 class LogoutCommand extends PubCommand {
   @override
   String get name => 'logout';
   @override
-  String get description => 'Log out of pub.dartlang.org.';
+  String get description => 'Log out of pub.dev or any hosted server.';
   @override
-  String get invocation => 'pub logout';
+  String get invocation => 'pub logout [<server>] [--all]';
 
-  LogoutCommand();
+  /// Whether to log out of all servers, including hosted servers.
+  bool get all => argResults['all'];
+
+  LogoutCommand() {
+    argParser.addFlag('all',
+        abbr: 'a',
+        negatable: false,
+        help: 'Log out of all servers, including hosted servers.');
+  }
 
   @override
   Future run() async {
-    oauth2.logout(cache);
+    if (all) {
+      oauth2.logout(cache);
+      removeToken(cache, all: true);
+    } else if (argResults.rest.isEmpty) {
+      oauth2.logout(cache);
+    } else {
+      var server = argResults.rest.first;
+      removeToken(cache, server: server);
+    }
   }
 }
