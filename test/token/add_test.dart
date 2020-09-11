@@ -86,4 +86,18 @@ Token for https://www.mypub.com added
     await d.tokensFile(
         [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
+
+  test('add same token that is already present in token.json', () async {
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+
+    await runPub(
+        args: ['token', 'add', '-s', 'https://www.mypub.com', '-t', 'XYZ'],
+        output: '''
+Token for https://www.mypub.com updated
+''');
+
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+  });
 }
