@@ -76,7 +76,7 @@ void _clearCredentials(SystemCache cache) {
 void logout(SystemCache cache) {
   var credentialsFile = _credentialsFile(cache);
   if (entryExists(_credentialsFile(cache))) {
-    log.message('Logging out of pub.dartlang.org.');
+    log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
     _clearCredentials(cache);
   } else {

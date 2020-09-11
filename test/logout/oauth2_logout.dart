@@ -16,8 +16,7 @@ void main() {
             expiration: DateTime.now().add(Duration(hours: 1)))
         .create();
 
-    await runPub(
-        args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
+    await runPub(args: ['logout'], output: contains('Logging out of pub.dev.'));
 
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
   });
