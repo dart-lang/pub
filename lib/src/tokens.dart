@@ -17,8 +17,7 @@ String getToken(SystemCache cache, Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
   var tokens = _loadTokens(cache);
 
-  var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
-      orElse: () => null);
+  var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(), orElse: () => null);
   if (found == null) {
     return null;
   }
@@ -37,8 +36,7 @@ String getToken(SystemCache cache, Uri uri) {
 void addToken(SystemCache cache, String server, String token) {
   var tokens = _loadTokens(cache);
 
-  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
-      orElse: () => null);
+  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(), orElse: () => null);
   if (found != null) {
     found.token = token;
     log.message('Token for $server updated');
@@ -54,14 +52,13 @@ void addToken(SystemCache cache, String server, String token) {
 void removeToken(SystemCache cache, {String server, bool all = false}) {
   if (all) {
     var tokensFile = _tokensFile(cache);
-    log.message('Deleting $tokensFile');
+    log.message('All entries deleted');
     if (entryExists(tokensFile)) deleteEntry(tokensFile);
     return;
   }
 
   var tokens = _loadTokens(cache);
-  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
-      orElse: () => null);
+  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(), orElse: () => null);
   if (found == null) {
     log.warning('$server not found in tokens.json');
   } else {
@@ -76,13 +73,11 @@ void listTokens(SystemCache cache) {
   var tokens = _loadTokens(cache);
   if (tokens.isEmpty) return;
 
-  var largest = tokens.reduce(
-      (curr, next) => curr.server.length > next.server.length ? curr : next);
+  var largest = tokens.reduce((curr, next) => curr.server.length > next.server.length ? curr : next);
 
   tokens
     ..sort((entry1, entry2) => entry1.server.compareTo(entry2.server))
-    ..forEach(
-        (entry) => log.message(_formatToken(entry, largest.server.length)));
+    ..forEach((entry) => log.message(_formatToken(entry, largest.server.length)));
 }
 
 String validateServer(String server) {
@@ -123,8 +118,7 @@ List<TokenEntry> _loadTokens(SystemCache cache) {
 
     var response = readTextFile(path);
     if (response != null && response != '') {
-      _tokens = List<TokenEntry>.from(
-          json.decode(response).map((entry) => TokenEntry.fromJson(entry)));
+      _tokens = List<TokenEntry>.from(json.decode(response).map((entry) => TokenEntry.fromJson(entry)));
     }
 
     return _tokens;
@@ -134,8 +128,7 @@ List<TokenEntry> _loadTokens(SystemCache cache) {
   }
 }
 
-String _tokensFile(SystemCache cache) =>
-    path.join(cache.rootDir, 'tokens.json');
+String _tokensFile(SystemCache cache) => path.join(cache.rootDir, 'tokens.json');
 
 class TokenEntry {
   String server;
