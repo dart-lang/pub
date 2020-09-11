@@ -73,20 +73,6 @@ void removeToken(SystemCache cache, {String server, bool all = false}) {
   _save(cache, tokens);
 }
 
-/// Shows the user a formatted list of tokens.
-void listTokens(SystemCache cache) {
-  var tokens = _loadTokens(cache);
-  if (tokens.isEmpty) return;
-
-  var largest = tokens.reduce(
-      (curr, next) => curr.server.length > next.server.length ? curr : next);
-
-  tokens
-    ..sort((entry1, entry2) => entry1.server.compareTo(entry2.server))
-    ..forEach(
-        (entry) => log.message(_formatToken(entry, largest.server.length)));
-}
-
 String validateServer(String server) {
   var uri = Uri.parse(server);
   if (uri.scheme?.isEmpty ?? true) {
@@ -98,12 +84,7 @@ String validateServer(String server) {
   if (uri.hasQuery) {
     return '`server` must not have a query string defined.\n$server is invalid.';
   }
-  return null;
-}
-
-/// Returns formatted string representing the token.
-String _formatToken(TokenEntry item, int maxServerLength) {
-  return '${log.bold(item.server.padRight(maxServerLength))} -> ${item.token}';
+  if (uri.host == '') return null;
 }
 
 void _save(SystemCache cache, List<TokenEntry> tokens) {
