@@ -75,31 +75,38 @@ Run "pub help" to see global options.
   });
 
   test('add login with token', () async {
-    await runPub(args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
+    await runPub(
+        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
 Token for https://www.mypub.com added
 ''');
 
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 
   test('add login for server already in tokens.json', () async {
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
 
-    await runPub(args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
+    await runPub(
+        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
 Token for https://www.mypub.com updated
 ''');
 
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 
   test('prompt when no token is provided', () async {
-    //todo: not working at them moment; having a timeout.
-    await runPub(args: ['login', 'https://www.mypub.com']);
     var pub = await startLogin('https://www.mypub.com');
-    await enterTokenForLogin(pub, 'XYZ');
-
-    expect(pub.stdout, emits('Token for https://www.mypub.com added'));
-
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    pub.stdin.writeln('XYZ');
+    await expectLater(
+        pub.stdout,
+        emitsInOrder([
+          'Enter a token value (prefix with \$ for environment variable): ',
+          'Token for https://www.mypub.com added'
+        ]));
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 }

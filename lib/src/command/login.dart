@@ -41,11 +41,10 @@ class LoginCommand extends PubCommand {
 
     String token = argResults['token'];
     if (token == null || token.isEmpty) {
-      token = await io.prompt(
+      token = io.prompt(
           'Enter a token value (prefix with \$ for environment variable)');
       if (token == null || token.isEmpty) return;
     }
-
     addToken(cache, server, token);
   }
 }
