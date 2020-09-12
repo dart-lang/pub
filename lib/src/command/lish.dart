@@ -21,7 +21,7 @@ class LishCommand extends PubCommand {
   @override
   String get name => 'publish';
   @override
-  String get description => 'Publish the current package to pub.dartlang.org.';
+  String get description => 'Publish the current package to pub.dev.';
   @override
   String get invocation => 'pub publish [options]';
   @override
@@ -52,16 +52,9 @@ class LishCommand extends PubCommand {
   bool get force => argResults['force'];
 
   LishCommand() {
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: 'Validate but do not publish the package.');
-    argParser.addFlag('force',
-        abbr: 'f',
-        negatable: false,
-        help: 'Publish without confirmation if there are no errors.');
-    argParser.addOption('server',
-        help: 'The package server to which to upload this package.');
+    argParser.addFlag('dry-run', abbr: 'n', negatable: false, help: 'Validate but do not publish the package.');
+    argParser.addFlag('force', abbr: 'f', negatable: false, help: 'Publish without confirmation if there are no errors.');
+    argParser.addOption('server', help: 'The package server to which to upload this package.');
   }
 
   Future _publish(Uri requestServer, List<int> packageBytes) async {
@@ -88,10 +81,8 @@ class LishCommand extends PubCommand {
           });
 
           request.followRedirects = false;
-          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-              filename: 'package.tar.gz'));
-          var postResponse =
-              await http.Response.fromStream(await client.send(request));
+          request.files.add(http.MultipartFile.fromBytes('file', packageBytes, filename: 'package.tar.gz'));
+          var postResponse = await http.Response.fromStream(await client.send(request));
 
           var location = postResponse.headers['location'];
           if (location == null) throw PubHttpException(postResponse);
@@ -133,12 +124,10 @@ class LishCommand extends PubCommand {
     log.message('Publishing ${package.name} ${package.version} to $server:\n'
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
 
-    var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+    var packageBytesFuture = createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
 
     // Validate the package.
-    var isValid =
-        await _validate(packageBytesFuture.then((bytes) => bytes.length));
+    var isValid = await _validate(packageBytesFuture.then((bytes) => bytes.length));
     if (!isValid) {
       await flushThenExit(exit_codes.DATA);
     } else if (dryRun) {
@@ -162,8 +151,7 @@ class LishCommand extends PubCommand {
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(entrypoint, packageSize, server.toString(),
-        hints: hints, warnings: warnings, errors: errors);
+    await Validator.runAll(entrypoint, packageSize, server.toString(), hints: hints, warnings: warnings, errors: errors);
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '

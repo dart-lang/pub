@@ -38,11 +38,11 @@ void main() {
           login       Log in to hosted server.
           logout      Log out of pub.dev or any hosted server.
           outdated    Analyze your dependencies to find which ones can be upgraded.
-          publish     Publish the current package to pub.dartlang.org.
+          publish     Publish the current package to pub.dev.
           remove      Removes a dependency from the current package.
           run         Run an executable from a package.
           upgrade     Upgrade the current package's dependencies to latest versions.
-          uploader    Manage uploaders for a package on pub.dartlang.org.
+          uploader    Manage uploaders for a package on pub.dev.
           version     Print pub version.
 
         Run "pub help <command>" for more information about a command.
