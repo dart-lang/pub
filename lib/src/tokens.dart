@@ -15,19 +15,22 @@ List<TokenEntry> _tokens;
 /// Gets the token for the given uri
 String getToken(SystemCache cache, Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
+  log.fine('Lookup token for ${uri.origin}');
   var tokens = _loadTokens(cache);
 
   var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
       orElse: () => null);
   if (found == null) {
+    log.fine('No token found for ${uri.origin}');
     return null;
   }
   var tokenValue = found.token;
 
   if (tokenValue != null && tokenValue.startsWith('\$')) {
-    tokenValue = Platform.environment[tokenValue.substring(1)];
+    var envVar = tokenValue.substring(1);
+    tokenValue = Platform.environment[envVar];
     if (tokenValue == null) {
-      log.warning('$tokenValue not set');
+      log.warning('$envVar environment variable not set');
     }
   }
   return tokenValue;

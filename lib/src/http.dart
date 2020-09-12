@@ -148,7 +148,7 @@ class _PubHttpClient extends http.BaseClient {
   /// Returns a log-formatted string for the HTTP field or header with the given
   /// [name] and [value].
   String _logField(String name, String value) {
-    if (_censoredFields.contains(name.toLowerCase())) {
+    if (!runningFromTest && _censoredFields.contains(name.toLowerCase())) {
       return '$name: <censored>';
     } else {
       return '$name: $value';
