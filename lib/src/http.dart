@@ -49,8 +49,15 @@ class _PubHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    //TODO: Ask why we should not send metadata to a foreign server like hosted server!
-    if (_shouldAddMetadata(request)) {
+    // check for a token in case of hosted service
+    var token = getToken(cache, request.url);
+    if (token != null) {
+      if (!request.headers.containsKey(HttpHeaders.authorizationHeader)) {
+        request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+      }
+    }
+
+    if (_shouldAddMetadata(request) || token != null) {
       request.headers['X-Pub-OS'] = Platform.operatingSystem;
       request.headers['X-Pub-Command'] = PubCommandRunner.command;
       request.headers['X-Pub-Session-ID'] = _sessionId;
@@ -62,13 +69,6 @@ class _PubHttpClient extends http.BaseClient {
 
       var type = Zone.current[#_dependencyType];
       if (type != null) request.headers['X-Pub-Reason'] = type.toString();
-    }
-
-    var token = getToken(cache, request.url);
-    if (token != null) {
-      if (!request.headers.containsKey(HttpHeaders.authorizationHeader)) {
-        request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
-      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
