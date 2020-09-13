@@ -15,12 +15,12 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 const _usageString = '''
-Manage uploaders for a package on pub.dartlang.org.
+Manage uploaders for a package on pub.dev.
 
 Usage: pub uploader [options] {add/remove} <email>
 -h, --help       Print this usage information.
     --server     The package server on which the package is hosted.
-                 (defaults to "https://pub.dartlang.org")
+                 (defaults to "https://pub.dev")
     --package    The package whose uploaders will be modified.
                  (defaults to the current package)
 
