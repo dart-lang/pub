@@ -13,18 +13,18 @@ class LogoutCommand extends PubCommand {
   @override
   String get name => 'logout';
   @override
-  String get description => 'Log out of pub.dev or any hosted server.';
+  String get description => 'Log out of pub.dev or any third-party pub server.';
   @override
   String get invocation => 'pub logout [<server>] [--all]';
 
-  /// Whether to log out of all servers, including hosted servers.
+  /// Whether to log out of all servers, including third-party pub servers.
   bool get all => argResults['all'];
 
   LogoutCommand() {
     argParser.addFlag('all',
         abbr: 'a',
         negatable: false,
-        help: 'Log out of all servers, including hosted servers.');
+        help: 'Log out of all servers (pub.dev and third-party pub serves).');
   }
 
   @override

@@ -35,8 +35,8 @@ void main() {
           downgrade   Downgrade the current package's dependencies to oldest versions.
           get         Get the current package's dependencies.
           global      Work with global packages.
-          login       Log in to hosted server.
-          logout      Log out of pub.dev or any hosted server.
+          login       Log in to third-party pub server.
+          logout      Log out of pub.dev or any third-party pub server.
           outdated    Analyze your dependencies to find which ones can be upgraded.
           publish     Publish the current package to pub.dev.
           remove      Removes a dependency from the current package.

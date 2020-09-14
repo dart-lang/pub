@@ -14,7 +14,7 @@ class LoginCommand extends PubCommand {
   @override
   String get name => 'login';
   @override
-  String get description => 'Log in to hosted server.';
+  String get description => 'Log in to third-party pub server.';
   @override
   String get invocation => 'pub login <server> [--token <secret>]';
 
