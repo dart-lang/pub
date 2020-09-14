@@ -97,7 +97,7 @@ void _save(SystemCache cache, List<TokenEntry> tokens) {
   var tokenPath = _tokensFile(cache);
   ensureDir(path.dirname(tokenPath));
   writeTextFile(tokenPath, jsonEncode(tokens));
-  log.fine('Saved tokens.json');
+  log.fine('Saved secrets.json');
 }
 
 List<TokenEntry> _loadTokens(SystemCache cache) {
@@ -124,7 +124,7 @@ List<TokenEntry> _loadTokens(SystemCache cache) {
 }
 
 String _tokensFile(SystemCache cache) =>
-    path.join(cache.rootDir, 'tokens.json');
+    path.join(cache.rootDir, 'secrets.json');
 
 class TokenEntry {
   String server;

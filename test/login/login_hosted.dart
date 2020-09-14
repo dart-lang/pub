@@ -84,7 +84,7 @@ Token for https://www.mypub.com added
         [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 
-  test('add login for server already in tokens.json', () async {
+  test('add login for server already in secrets.json', () async {
     await d.tokensFile(
         [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
 

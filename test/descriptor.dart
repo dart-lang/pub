@@ -172,7 +172,7 @@ Descriptor credentialsFile(PackageServer server, String accessToken,
 /// Describes the file in the system cache that contains the tokens
 /// for hosted package servers.
 Descriptor tokensFile(List<TokenEntry> entries) {
-  return dir(cachePath, [file('tokens.json', jsonEncode(entries))]);
+  return dir(cachePath, [file('secrets.json', jsonEncode(entries))]);
 }
 
 /// Describes the application directory, containing only a pubspec specifying
