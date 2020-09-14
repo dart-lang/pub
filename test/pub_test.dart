@@ -29,6 +29,7 @@ void main() {
         -v, --verbose          Shortcut for "--verbosity=all".
 
         Available commands:
+          add         Add a dependency to pubspec.yaml.
           cache       Work with the system cache.
           deps        Print package dependencies.
           downgrade   Downgrade the current package's dependencies to oldest versions.
@@ -37,6 +38,7 @@ void main() {
           logout      Log out of pub.dartlang.org.
           outdated    Analyze your dependencies to find which ones can be upgraded.
           publish     Publish the current package to pub.dartlang.org.
+          remove      Removes a dependency from the current package.
           run         Run an executable from a package.
           upgrade     Upgrade the current package's dependencies to latest versions.
           uploader    Manage uploaders for a package on pub.dartlang.org.

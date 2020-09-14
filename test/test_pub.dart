@@ -83,6 +83,8 @@ final versionSuffix = testVersion ?? sdk.version;
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
+  static final add = RunCommand(
+      'add', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final upgrade = RunCommand('upgrade', RegExp(r'''
@@ -91,6 +93,8 @@ class RunCommand {
 Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final remove = RunCommand(
+      'remove', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
 
   final String name;
   final RegExp success;
@@ -152,6 +156,21 @@ Future pubCommand(RunCommand command,
       environment: environment);
 }
 
+Future pubAdd(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.add,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
 Future pubGet(
         {Iterable<String> args,
         output,
@@ -190,6 +209,21 @@ Future pubDowngrade(
         int exitCode,
         Map<String, String> environment}) =>
     pubCommand(RunCommand.downgrade,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
+Future pubRemove(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.remove,
         args: args,
         output: output,
         error: error,

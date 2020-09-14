@@ -205,48 +205,48 @@ Future<void> main() async {
         ..serve('foo', '2.0.0', deps: {
           'bar': '^1.0.0'
         }, pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'}
-        })
-        ..serve('bar', '2.0.0', pubspec: {
           'environment': {'sdk': '>=2.11.0 < 3.0.0'}
         })
+        ..serve('bar', '2.0.0', pubspec: {
+          'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+        })
         ..serve('file_opts_out', '1.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         }, contents: [
           d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
         ])
         ..serve('file_opts_out', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         })
         ..serve('fails_analysis', '1.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         }, contents: [
           d.dir('lib', [d.file('main.dart', 'syntax error\n')])
         ])
         ..serve('fails_analysis', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         })
         ..serve('file_in_dependency_opts_out', '1.0.0', deps: {
           'file_opts_out': '^1.0.0'
         }, pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         })
         ..serve('file_in_dependency_opts_out', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         })
         ..serve('fails_analysis_in_dependency', '1.0.0', deps: {
           'fails_analysis': '^1.0.0'
         }, pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         })
         ..serve('fails_analysis_in_dependency', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.10.0 < 3.0.0'},
+          'environment': {'sdk': '>=2.11.0 < 3.0.0'},
         }),
     );
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
 
     await variations('null_safety',
-        environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+        environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
   });
 
   test('overridden dependencies', () async {

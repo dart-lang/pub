@@ -331,7 +331,7 @@ class Entrypoint {
       return waitAndPrintErrors(executables.map((executable) {
         var dir = p.dirname(snapshotPathOfExecutable(executable));
         cleanDir(dir);
-        return waitAndPrintErrors(executables.map(_precompileExecutable));
+        return _precompileExecutable(executable);
       }));
     });
   }
@@ -544,7 +544,7 @@ class Entrypoint {
           continue;
         }
       } on FileException {
-        // If we can't load the pubpsec, the user needs to re-run "pub get".
+        // If we can't load the pubspec, the user needs to re-run "pub get".
       }
 
       dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '

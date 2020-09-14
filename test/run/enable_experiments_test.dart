@@ -31,7 +31,7 @@ void main() {
     },
     skip: Platform.version.contains('2.9') || Platform.version.contains('2.10')
         ? false
-        : 'experiement non-nullable only available for test on sdk 2.9',
+        : 'experiment non-nullable only available for test on sdk 2.9 and 2.10',
   );
 
   test(
