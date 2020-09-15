@@ -79,16 +79,13 @@ void removeToken(SystemCache cache, {String server, bool all = false}) {
 String validateServer(String server) {
   var uri = Uri.parse(server);
   if (uri.scheme?.isEmpty ?? true) {
-    return '`server` must include a scheme such as "https://".\n$server is invalid.';
-  }
-  if (!uri.hasEmptyPath) {
-    return '`server` must not have a path defined.\n$server is invalid.';
+    return '`server` must include a scheme such as "https://".\n"$server" is invalid.';
   }
   if (uri.hasQuery) {
-    return '`server` must not have a query string defined.\n$server is invalid.';
+    return '`server` must not have a query string defined.\n"$server" is invalid.';
   }
   if (uri.host == 'pub.dartlang.org' || uri.host == 'pub.dev') {
-    return '`server` cannot be the official package server.\n$server is invalid.';
+    return '`server` cannot be the official package server.\n"$server" is invalid.';
   }
   return null;
 }

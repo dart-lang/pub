@@ -24,19 +24,7 @@ Run "pub help" to see global options.
   test('fails when server url has no scheme', () async {
     return runPub(args: ['login', 'www.error.com'], error: '''
 `server` must include a scheme such as "https://".
-www.error.com is invalid.
-
-Usage: pub login <server>
--h, --help    Print this usage information.
-
-Run "pub help" to see global options.
-''', exitCode: exit_codes.USAGE);
-  });
-
-  test('fails when server url has no empty path', () async {
-    return runPub(args: ['login', 'https://www.error.com/something'], error: '''
-`server` must not have a path defined.
-https://www.error.com/something is invalid.
+"www.error.com" is invalid.
 
 Usage: pub login <server>
 -h, --help    Print this usage information.
@@ -48,7 +36,7 @@ Run "pub help" to see global options.
   test('fails when server url has query', () async {
     return runPub(args: ['login', 'https://www.error.com?x=y'], error: '''
 `server` must not have a query string defined.
-https://www.error.com?x=y is invalid.
+"https://www.error.com?x=y" is invalid.
 
 Usage: pub login <server>
 -h, --help    Print this usage information.
@@ -60,7 +48,7 @@ Run "pub help" to see global options.
   test('fails when server is official server', () async {
     return runPub(args: ['login', 'https://pub.dev'], error: '''
 `server` cannot be the official package server.
-https://pub.dev is invalid.
+"https://pub.dev" is invalid.
 
 Usage: pub login <server>
 -h, --help    Print this usage information.
