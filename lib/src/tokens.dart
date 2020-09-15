@@ -97,6 +97,7 @@ void _save(SystemCache cache, List<TokenEntry> tokens) {
   var tokenPath = _tokensFile(cache);
   ensureDir(path.dirname(tokenPath));
   writeTextFile(tokenPath, jsonEncode(tokens));
+  _tokens = tokens;
   log.fine('Saved secrets.json');
 }
 
