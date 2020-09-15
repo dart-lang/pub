@@ -43,11 +43,11 @@ void addToken(SystemCache cache, String server, String token) {
   var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
       orElse: () => null);
   if (found != null) {
-    found.token = token;
+    tokens.remove(found);
+    tokens.add(TokenEntry(server: server.toLowerCase(), token: token));
     log.message('Token for $server updated');
   } else {
-    found = TokenEntry(server: server.toLowerCase(), token: token);
-    tokens.add(found);
+    tokens.add(TokenEntry(server: server.toLowerCase(), token: token));
     log.message('Token for $server added');
   }
   _save(cache, tokens);
@@ -128,8 +128,8 @@ String _tokensFile(SystemCache cache) =>
     path.join(cache.rootDir, 'secrets.json');
 
 class TokenEntry {
-  String server;
-  String token;
+  final String server;
+  final String token;
   TokenEntry({
     this.server,
     this.token,
