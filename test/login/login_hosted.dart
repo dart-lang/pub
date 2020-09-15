@@ -72,16 +72,29 @@ Run "pub help" to see global options.
   test('prompt for token that is new', () async {
     var pub = await startLogin('https://www.mypub.com');
     pub.stdin.writeln('XYZ');
-    await expectLater(pub.stdout, emitsInOrder(['Enter a token value: ', 'Token for https://www.mypub.com added']));
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    await expectLater(
+        pub.stdout,
+        emitsInOrder([
+          'Enter a token value: ',
+          'Token for https://www.mypub.com added'
+        ]));
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 
   test('prompt for token that is already in secrets.json', () async {
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
 
     var pub = await startLogin('https://www.mypub.com');
     pub.stdin.writeln('XYZ');
-    await expectLater(pub.stdout, emitsInOrder(['Enter a token value: ', 'Token for https://www.mypub.com updated']));
-    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    await expectLater(
+        pub.stdout,
+        emitsInOrder([
+          'Enter a token value: ',
+          'Token for https://www.mypub.com updated'
+        ]));
+    await d.tokensFile(
+        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 }
