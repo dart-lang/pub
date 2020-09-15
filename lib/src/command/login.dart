@@ -16,13 +16,7 @@ class LoginCommand extends PubCommand {
   @override
   String get description => 'Log in to third-party pub server.';
   @override
-  String get invocation => 'pub login <server> [--token <secret>]';
-
-  LoginCommand() {
-    argParser.addOption('token',
-        abbr: 't',
-        help: 'Token. Environment variable can be used with \'\$YOUR_VAR\'.');
-  }
+  String get invocation => 'pub login <server>';
 
   @override
   Future run() async {
@@ -39,12 +33,12 @@ class LoginCommand extends PubCommand {
       usageException('No extra arguments are allowed.');
     }
 
-    String token = argResults['token'];
+    var token = io.prompt('Enter a token value');
+
     if (token == null || token.isEmpty) {
-      token = io.prompt(
-          'Enter a token value (prefix with \$ for environment variable)');
-      if (token == null || token.isEmpty) return;
+      usageException('No token provided.');
     }
+
     addToken(cache, server, token);
   }
 }

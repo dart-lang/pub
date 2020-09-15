@@ -14,9 +14,8 @@ void main() {
     return runPub(args: ['login'], error: '''
 Must specify a server to log in.
 
-Usage: pub login <server> [--token <secret>]
--h, --help     Print this usage information.
--t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+Usage: pub login <server>
+-h, --help    Print this usage information.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
@@ -27,9 +26,8 @@ Run "pub help" to see global options.
 `server` must include a scheme such as "https://".
 www.error.com is invalid.
 
-Usage: pub login <server> [--token <secret>]
--h, --help     Print this usage information.
--t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+Usage: pub login <server>
+-h, --help    Print this usage information.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
@@ -40,9 +38,8 @@ Run "pub help" to see global options.
 `server` must not have a path defined.
 https://www.error.com/something is invalid.
 
-Usage: pub login <server> [--token <secret>]
--h, --help     Print this usage information.
--t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+Usage: pub login <server>
+-h, --help    Print this usage information.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
@@ -53,9 +50,8 @@ Run "pub help" to see global options.
 `server` must not have a query string defined.
 https://www.error.com?x=y is invalid.
 
-Usage: pub login <server> [--token <secret>]
--h, --help     Print this usage information.
--t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+Usage: pub login <server>
+-h, --help    Print this usage information.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
@@ -66,47 +62,26 @@ Run "pub help" to see global options.
 `server` cannot be the official package server.
 https://pub.dev is invalid.
 
-Usage: pub login <server> [--token <secret>]
--h, --help     Print this usage information.
--t, --token    Token. Environment variable can be used with '\$YOUR_VAR'.
+Usage: pub login <server>
+-h, --help    Print this usage information.
 
 Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
   });
 
-  test('add login with token', () async {
-    await runPub(
-        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
-Token for https://www.mypub.com added
-''');
-
-    await d.tokensFile(
-        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
-  });
-
-  test('add login for server already in secrets.json', () async {
-    await d.tokensFile(
-        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
-
-    await runPub(
-        args: ['login', 'https://www.mypub.com', '-t', 'XYZ'], output: '''
-Token for https://www.mypub.com updated
-''');
-
-    await d.tokensFile(
-        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
-  });
-
-  test('prompt when no token is provided', () async {
+  test('prompt for token that is new', () async {
     var pub = await startLogin('https://www.mypub.com');
     pub.stdin.writeln('XYZ');
-    await expectLater(
-        pub.stdout,
-        emitsInOrder([
-          'Enter a token value (prefix with \$ for environment variable): ',
-          'Token for https://www.mypub.com added'
-        ]));
-    await d.tokensFile(
-        [TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+    await expectLater(pub.stdout, emitsInOrder(['Enter a token value: ', 'Token for https://www.mypub.com added']));
+    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
+  });
+
+  test('prompt for token that is already in secrets.json', () async {
+    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+
+    var pub = await startLogin('https://www.mypub.com');
+    pub.stdin.writeln('XYZ');
+    await expectLater(pub.stdout, emitsInOrder(['Enter a token value: ', 'Token for https://www.mypub.com updated']));
+    await d.tokensFile([TokenEntry(server: 'https://www.mypub.com', token: 'XYZ')]).validate();
   });
 }
