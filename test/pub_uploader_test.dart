@@ -19,8 +19,6 @@ Manage uploaders for a package on pub.dev.
 
 Usage: pub uploader [options] {add/remove} <email>
 -h, --help       Print this usage information.
-    --server     The package server on which the package is hosted.
-                 (defaults to "https://pub.dev")
     --package    The package whose uploaders will be modified.
                  (defaults to the current package)
 
@@ -133,6 +131,11 @@ void main() {
           headers: {'content-type': 'application/json'});
     });
 
+    expect(
+        pub.stderr,
+        emits('The --server flag is deprecated for `pub uploader`, permissions '
+            'management interface should instead be provided by the server.'));
+
     expect(pub.stderr, emits('Bad job!'));
     await pub.shouldExit(1);
   });
@@ -152,6 +155,11 @@ void main() {
           headers: {'content-type': 'application/json'});
     });
 
+    expect(
+        pub.stderr,
+        emits('The --server flag is deprecated for `pub uploader`, permissions '
+            'management interface should instead be provided by the server.'));
+
     expect(pub.stderr, emits('Bad job!'));
     await pub.shouldExit(1);
   });
@@ -164,6 +172,11 @@ void main() {
 
     globalPackageServer.expect('POST', '/api/packages/pkg/uploaders',
         (request) => shelf.Response.ok('{not json'));
+
+    expect(
+        pub.stderr,
+        emits('The --server flag is deprecated for `pub uploader`, permissions '
+            'management interface should instead be provided by the server.'));
 
     expect(
         pub.stderr,
@@ -180,6 +193,11 @@ void main() {
 
     globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/email',
         (request) => shelf.Response.ok('{not json'));
+
+    expect(
+        pub.stderr,
+        emits('The --server flag is deprecated for `pub uploader`, permissions '
+            'management interface should instead be provided by the server.'));
 
     expect(
         pub.stderr,

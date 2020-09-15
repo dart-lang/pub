@@ -56,11 +56,6 @@ class HostedSource extends Source {
     return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dartlang.org';
   }
 
-  /// only used in front-facing (help text) messages
-  String get frontFacingDefaultUrl {
-    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dev';
-  }
-
   String _defaultUrl;
 
   String _pubHostedUrlConfig() {
