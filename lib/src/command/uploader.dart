@@ -26,7 +26,10 @@ class UploaderCommand extends PubCommand {
   Uri get server => Uri.parse(argResults['server']);
 
   UploaderCommand() {
-    argParser.addOption('server', hide: true, defaultsTo: cache.sources.hosted.defaultUrl, help: 'The package server on which the package is hosted.');
+    argParser.addOption('server',
+        hide: true,
+        defaultsTo: cache.sources.hosted.defaultUrl,
+        help: 'The package server on which the package is hosted.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
@@ -72,7 +75,8 @@ class UploaderCommand extends PubCommand {
             if (command == 'add') {
               var url = server.resolve('/api/packages/'
                   '${Uri.encodeComponent(package)}/uploaders');
-              return client.post(url, headers: pubApiHeaders, body: {'email': uploader});
+              return client
+                  .post(url, headers: pubApiHeaders, body: {'email': uploader});
             } else {
               // command == 'remove'
               var url = server.resolve('/api/packages/'
@@ -83,6 +87,7 @@ class UploaderCommand extends PubCommand {
           });
         })
         .then(handleJsonSuccess)
-        .catchError((error) => handleJsonError(error.response), test: (e) => e is PubHttpException);
+        .catchError((error) => handleJsonError(error.response),
+            test: (e) => e is PubHttpException);
   }
 }
