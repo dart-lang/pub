@@ -626,3 +626,14 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
 }
+
+/// Makes sure that the given url always ends with a trailing slash
+String checkEndSlash(String url) {
+  if (url.endsWith('/')) return url;
+  return '$url/';
+}
+
+/// Makes sure that the given uri always ends with a trailing slash
+Uri checkEndSlashUri(Uri uri) {
+  return Uri.parse(checkEndSlash(uri.toString()));
+}

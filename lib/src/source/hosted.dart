@@ -176,8 +176,8 @@ class BoundHostedSource extends CachedSource {
   }
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
-    var url = _makeUrl(
-        ref.description, (server, package) => '$server/api/packages/$package');
+    var url = _makeUrl(ref.description,
+        (server, package) => '${checkEndSlash(server)}api/packages/$package');
     log.io('Get versions from $url.');
 
     String body;
@@ -251,8 +251,8 @@ class BoundHostedSource extends CachedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) async {
     final versions = await _scheduler.schedule(id.toRef());
-    final url = _makeUrl(
-        id.description, (server, package) => '$server/api/packages/$package');
+    final url = _makeUrl(id.description,
+        (server, package) => '${checkEndSlash(server)}api/packages/$package');
     return versions[id]?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }

@@ -17,10 +17,10 @@ No token found for https://www.mypub.com.
 
   test('log out for logged in server', () async {
     await d.tokensFile(
-        [TokenEntry(server: 'https://www.mypub.com', token: 'ABC')]).create();
+        [TokenEntry(server: 'https://www.mypub.com/', token: 'ABC')]).create();
 
     await runPub(args: ['logout', 'https://www.mypub.com'], output: '''
-Log out for https://www.mypub.com successful.
+Log out https://www.mypub.com successful.
 ''');
 
     await d.tokensFile([]).validate();
@@ -29,16 +29,11 @@ Log out for https://www.mypub.com successful.
   test('log out for all servers', () async {
     await d.dir(cachePath, [d.nothing('credentials.json')]).create();
     await d.tokensFile([
-      TokenEntry(server: 'https://www.server1.com', token: 'ABC'),
-      TokenEntry(server: 'https://www.server2.com', token: 'XYZ')
+      TokenEntry(server: 'https://www.server1.com/', token: 'ABC'),
     ]).create();
 
     await runPub(
         args: ['logout', '--all'],
-        output: containsAllInOrder([
-          'No existing credentials file',
-          'Log out for https://www.server1.com successful.',
-          'Log out for https://www.server2.com successful.'
-        ]));
+        output: contains('Log out https://www.server1.com/ successful.'));
   });
 }

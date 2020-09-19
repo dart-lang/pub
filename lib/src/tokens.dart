@@ -9,19 +9,21 @@ import 'package:path/path.dart' as path;
 import 'io.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
+import 'utils.dart';
 
 List<TokenEntry> _tokens;
 
 /// Gets the token for the given uri
 String getToken(SystemCache cache, Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
-  log.fine('Lookup token for ${uri.origin}');
+  log.fine('Lookup token for ${uri.toString()}');
   var tokens = _loadTokens(cache);
 
-  var found = tokens.firstWhere((e) => e.server == uri.origin.toLowerCase(),
+  var found = tokens.firstWhere(
+      (e) => e.server == checkEndSlashUri(uri).toString().toLowerCase(),
       orElse: () => null);
   if (found == null) {
-    log.fine('No token found for ${uri.origin}');
+    log.fine('No token found for ${uri.toString()}');
     return null;
   }
   var tokenValue = found.token;
@@ -39,15 +41,16 @@ String getToken(SystemCache cache, Uri uri) {
 /// Adds a token for a given server
 void addToken(SystemCache cache, String server, String token) {
   var tokens = _loadTokens(cache);
+  var normalizedServer = checkEndSlash(server).toLowerCase();
 
-  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
+  var found = tokens.firstWhere((e) => e.server == normalizedServer,
       orElse: () => null);
   if (found != null) {
     tokens.remove(found);
-    tokens.add(TokenEntry(server: server.toLowerCase(), token: token));
+    tokens.add(TokenEntry(server: normalizedServer, token: token));
     log.message('Token for $server updated');
   } else {
-    tokens.add(TokenEntry(server: server.toLowerCase(), token: token));
+    tokens.add(TokenEntry(server: normalizedServer, token: token));
     log.message('Token for $server added');
   }
   _save(cache, tokens);
@@ -65,7 +68,8 @@ void removeToken(SystemCache cache, {String server, bool all = false}) {
     if (entryExists(tokensFile)) deleteEntry(tokensFile);
     return;
   }
-  var found = tokens.firstWhere((e) => e.server == server.toLowerCase(),
+  var found = tokens.firstWhere(
+      (e) => e.server == checkEndSlash(server).toLowerCase(),
       orElse: () => null);
   if (found == null) {
     log.message('No token found for $server.');
