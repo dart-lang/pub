@@ -20,7 +20,8 @@ String getToken(SystemCache cache, Uri uri) {
   var tokens = _loadTokens(cache);
 
   var found = tokens.firstWhere(
-      (e) => e.server == checkEndSlashUri(uri).toString().toLowerCase(),
+      (e) =>
+          checkEndSlashUri(uri).toString().toLowerCase().startsWith(e.server),
       orElse: () => null);
   if (found == null) {
     log.fine('No token found for ${uri.toString()}');
