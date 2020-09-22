@@ -82,7 +82,13 @@ void removeToken(SystemCache cache, {String server, bool all = false}) {
 }
 
 String validateServer(String server) {
-  var uri = Uri.parse(server);
+  Uri uri;
+  try {
+    uri = Uri.parse(server);
+  } on FormatException catch (e) {
+    return '`server` must be a valid a URL: ${e.message}';
+  }
+
   if (uri.scheme?.isEmpty ?? true) {
     return '`server` must include a scheme such as "https://".\n"$server" is invalid.';
   }

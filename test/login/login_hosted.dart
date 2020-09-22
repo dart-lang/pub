@@ -45,6 +45,17 @@ Run "pub help" to see global options.
 ''', exitCode: exit_codes.USAGE);
   });
 
+  test('fails when server url is invalid', () async {
+    return runPub(args: ['login', '111:/111.111'], error: '''
+`server` must be a valid a URL: Scheme not starting with alphabetic character
+
+Usage: pub login <server>
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+''', exitCode: exit_codes.USAGE);
+  });
+
   test('fails when server is official server', () async {
     return runPub(args: ['login', 'https://pub.dev'], error: '''
 `server` cannot be the official package server.
