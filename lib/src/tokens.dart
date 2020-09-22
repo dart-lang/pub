@@ -27,16 +27,7 @@ String getToken(SystemCache cache, Uri uri) {
     log.fine('No token found for ${uri.toString()}');
     return null;
   }
-  var tokenValue = found.token;
-
-  if (tokenValue != null && tokenValue.startsWith('\$')) {
-    var envVar = tokenValue.substring(1);
-    tokenValue = Platform.environment[envVar];
-    if (tokenValue == null) {
-      log.warning('$envVar environment variable not set');
-    }
-  }
-  return tokenValue;
+  return found.token;
 }
 
 /// Adds a token for a given server
