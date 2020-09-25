@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import 'io.dart';
@@ -17,9 +16,9 @@ List<TokenEntry> _tokens;
 String getToken(SystemCache cache, Uri uri) {
   if (uri.host == 'pub.dartlang.org') return null;
   log.fine('Lookup token for ${uri.toString()}');
-  var tokens = _loadTokens(cache);
+  final tokens = _loadTokens(cache);
 
-  var found = tokens.firstWhere(
+  final found = tokens.firstWhere(
       (e) =>
           checkEndSlashUri(uri).toString().toLowerCase().startsWith(e.server),
       orElse: () => null);
@@ -32,10 +31,10 @@ String getToken(SystemCache cache, Uri uri) {
 
 /// Adds a token for a given server
 void addToken(SystemCache cache, String server, String token) {
-  var tokens = _loadTokens(cache);
-  var normalizedServer = checkEndSlash(server).toLowerCase();
+  final tokens = _loadTokens(cache);
+  final normalizedServer = checkEndSlash(server).toLowerCase();
 
-  var found = tokens.firstWhere((e) => e.server == normalizedServer,
+  final found = tokens.firstWhere((e) => e.server == normalizedServer,
       orElse: () => null);
   if (found != null) {
     tokens.remove(found);
@@ -50,17 +49,17 @@ void addToken(SystemCache cache, String server, String token) {
 
 /// Removes the token for the given server
 void removeToken(SystemCache cache, {String server, bool all = false}) {
-  var tokens = _loadTokens(cache);
+  final tokens = _loadTokens(cache);
   if (all) {
     if (tokens.isEmpty) return;
     for (var item in tokens) {
       log.message('Log out ${item.server} successful.');
     }
-    var tokensFile = _tokensFile(cache);
+    final tokensFile = _tokensFile(cache);
     if (entryExists(tokensFile)) deleteEntry(tokensFile);
     return;
   }
-  var found = tokens.firstWhere(
+  final found = tokens.firstWhere(
       (e) => e.server == checkEndSlash(server).toLowerCase(),
       orElse: () => null);
   if (found == null) {
@@ -93,7 +92,7 @@ String validateServer(String server) {
 }
 
 void _save(SystemCache cache, List<TokenEntry> tokens) {
-  var tokenPath = _tokensFile(cache);
+  final tokenPath = _tokensFile(cache);
   ensureDir(path.dirname(tokenPath));
   writeTextFile(tokenPath, jsonEncode(tokens));
   _tokens = tokens;
@@ -107,10 +106,10 @@ List<TokenEntry> _loadTokens(SystemCache cache) {
     if (_tokens != null) return _tokens;
     _tokens = <TokenEntry>[];
 
-    var path = _tokensFile(cache);
+    final path = _tokensFile(cache);
     if (!fileExists(path)) return _tokens;
 
-    var response = readTextFile(path);
+    final response = readTextFile(path);
     if (response != null && response != '') {
       _tokens = List<TokenEntry>.from(
           json.decode(response).map((entry) => TokenEntry.fromJson(entry)));

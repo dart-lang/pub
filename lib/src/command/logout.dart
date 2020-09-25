@@ -35,7 +35,7 @@ class LogoutCommand extends PubCommand {
     } else if (argResults.rest.isEmpty) {
       oauth2.logout(cache);
     } else {
-      var server = argResults.rest.first;
+      final server = argResults.rest.first;
       removeToken(cache, server: server);
     }
   }

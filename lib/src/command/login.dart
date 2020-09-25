@@ -23,8 +23,8 @@ class LoginCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a server to log in.');
     }
-    var server = argResults.rest.first;
-    var validationMessage = validateServer(server);
+    final server = argResults.rest.first;
+    final validationMessage = validateServer(server);
     if (validationMessage != null) {
       usageException(validationMessage);
     }
@@ -33,7 +33,7 @@ class LoginCommand extends PubCommand {
       usageException('No extra arguments are allowed.');
     }
 
-    var token = io.prompt('Enter a token value');
+    final token = io.prompt('Enter a token value');
 
     if (token == null || token.isEmpty) {
       usageException('No token provided.');
