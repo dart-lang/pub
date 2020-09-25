@@ -122,9 +122,9 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
+    addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
-    addCommand(LoginCommand());
   }
 
   @override
