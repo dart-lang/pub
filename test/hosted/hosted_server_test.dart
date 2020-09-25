@@ -27,24 +27,4 @@ void main() {
         silent: allOf(
             [contains('${HttpHeaders.authorizationHeader}: Bearer ABC')]));
   });
-
-  test('check for auth header through env var for hosted server', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-    });
-
-    // get test hosted server and add token for it
-    // use an env var that is always available HOME
-    var hostedServer = globalPackageServer.url;
-    await d.tokensFile(
-        [TokenEntry(server: hostedServer, token: '\$HOME')]).create();
-
-    await d.appDir({'foo': '1.0.0'}).create();
-
-    await pubCommand(RunCommand.get,
-        silent: allOf([
-          contains(
-              '${HttpHeaders.authorizationHeader}: Bearer ${Platform.environment['HOME']}')
-        ]));
-  });
 }
