@@ -18,7 +18,7 @@ class LogoutCommand extends PubCommand {
   String get invocation => 'pub logout [<server>] [--all]';
 
   /// Whether to log out of all servers, including third-party pub servers.
-  bool get all => argResults['all'];
+  bool get _all => argResults['all'];
 
   LogoutCommand() {
     argParser.addFlag('all',
@@ -29,7 +29,7 @@ class LogoutCommand extends PubCommand {
 
   @override
   Future run() async {
-    if (all) {
+    if (_all) {
       oauth2.logout(cache);
       removeToken(cache, all: true);
     } else if (argResults.rest.isEmpty) {
