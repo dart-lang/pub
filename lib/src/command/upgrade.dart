@@ -23,6 +23,8 @@ class UpgradeCommand extends PubCommand {
   @override
   bool get isOffline => argResults['offline'];
 
+  String get channel => argResults['channel'];
+
   UpgradeCommand() {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -34,6 +36,10 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
 
     argParser.addFlag('packages-dir', hide: true);
   }
@@ -47,7 +53,8 @@ class UpgradeCommand extends PubCommand {
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
-        precompile: argResults['precompile']);
+        precompile: argResults['precompile'],
+        channel: channel);
 
     if (isOffline) {
       log.warning('Warning: Upgrading when offline may not update you to the '

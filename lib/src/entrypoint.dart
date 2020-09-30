@@ -223,7 +223,8 @@ class Entrypoint {
   Future acquireDependencies(SolveType type,
       {List<String> useLatest,
       bool dryRun = false,
-      bool precompile = false}) async {
+      bool precompile = false,
+      @required String channel}) async {
     var result = await log.progress(
       'Resolving dependencies',
       () => resolveVersions(
@@ -232,6 +233,7 @@ class Entrypoint {
         root,
         lockFile: lockFile,
         useLatest: useLatest,
+        channel: channel,
       ),
     );
 

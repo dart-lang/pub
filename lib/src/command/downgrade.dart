@@ -24,6 +24,8 @@ class DowngradeCommand extends PubCommand {
   @override
   bool get isOffline => argResults['offline'];
 
+  String get channel => argResults['channel'];
+
   DowngradeCommand() {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -32,6 +34,10 @@ class DowngradeCommand extends PubCommand {
         abbr: 'n',
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
+
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
 
     argParser.addFlag('packages-dir', hide: true);
   }
@@ -44,7 +50,7 @@ class DowngradeCommand extends PubCommand {
     }
     var dryRun = argResults['dry-run'];
     await entrypoint.acquireDependencies(SolveType.DOWNGRADE,
-        useLatest: argResults.rest, dryRun: dryRun);
+        useLatest: argResults.rest, dryRun: dryRun, channel: channel);
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '

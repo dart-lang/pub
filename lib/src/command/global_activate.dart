@@ -19,6 +19,8 @@ class GlobalActivateCommand extends PubCommand {
   @override
   String get invocation => 'pub global activate <package> [version-constraint]';
 
+  String get channel => argResults['channel'];
+
   GlobalActivateCommand() {
     argParser.addOption('source',
         abbr: 's',
@@ -46,6 +48,10 @@ class GlobalActivateCommand extends PubCommand {
         abbr: 'u',
         help:
             'A custom pub server URL for the package. Only applies when using the `hosted` source.');
+
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
   }
 
   @override
@@ -99,7 +105,7 @@ class GlobalActivateCommand extends PubCommand {
         // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
         return globals.activateGit(repo, executables,
-            features: features, overwriteBinStubs: overwrite);
+            features: features, overwriteBinStubs: overwrite, channel: channel);
 
       case 'hosted':
         var package = readArg('No package to activate given.');
@@ -116,7 +122,10 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(package, constraint, executables,
-            features: features, overwriteBinStubs: overwrite, url: hostedUrl);
+            features: features,
+            overwriteBinStubs: overwrite,
+            url: hostedUrl,
+            channel: channel);
 
       case 'path':
         if (features.isNotEmpty) {
@@ -129,7 +138,7 @@ class GlobalActivateCommand extends PubCommand {
         var path = readArg('No package to activate given.');
         validateNoExtraArgs();
         return globals.activatePath(path, executables,
-            overwriteBinStubs: overwrite);
+            overwriteBinStubs: overwrite, channel: channel);
     }
 
     throw StateError('unreachable');

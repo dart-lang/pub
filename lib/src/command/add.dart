@@ -44,6 +44,7 @@ class AddCommand extends PubCommand {
   String get hostUrl => argResults['hosted-url'];
   String get path => argResults['path'];
   String get sdk => argResults['sdk'];
+  String get channel => argResults['channel'];
 
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
   bool get hasHostOptions => hostUrl != null;
@@ -61,6 +62,9 @@ class AddCommand extends PubCommand {
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
     argParser.addOption('sdk', help: 'SDK source for package');
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
 
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -95,7 +99,8 @@ class AddCommand extends PubCommand {
       /// where the user specifies a version constraint, this serves to ensure
       /// that a resolution exists before we update pubspec.yaml.
       solveResult = await resolveVersions(
-          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
+          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec),
+          channel: channel);
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
@@ -133,7 +138,9 @@ class AddCommand extends PubCommand {
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
           .acquireDependencies(SolveType.GET,
-              dryRun: true, precompile: argResults['precompile']);
+              dryRun: true,
+              precompile: argResults['precompile'],
+              channel: channel);
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
@@ -144,7 +151,7 @@ class AddCommand extends PubCommand {
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
       await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+          precompile: argResults['precompile'], channel: channel);
     }
 
     if (isOffline) {

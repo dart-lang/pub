@@ -20,6 +20,7 @@ class GetCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
   bool get isOffline => argResults['offline'];
+  String get channel => argResults['channel'];
 
   GetCommand() {
     argParser.addFlag('offline',
@@ -34,6 +35,10 @@ class GetCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
   }
 
   @override
@@ -43,6 +48,8 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     return entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile'],
+        channel: channel);
   }
 }

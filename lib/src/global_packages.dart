@@ -83,7 +83,9 @@ class GlobalPackages {
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future activateGit(String repo, List<String> executables,
-      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
+      {Map<String, FeatureDependency> features,
+      bool overwriteBinStubs,
+      @required String channel}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
     // Call this just to log what the current active package is, if any.
     _describeActive(name);
@@ -98,7 +100,8 @@ class GlobalPackages {
             .withConstraint(VersionConstraint.any)
             .withFeatures(features ?? const {}),
         executables,
-        overwriteBinStubs: overwriteBinStubs);
+        overwriteBinStubs: overwriteBinStubs,
+        channel: channel);
   }
 
   /// Finds the latest version of the hosted package with [name] that matches
@@ -118,7 +121,8 @@ class GlobalPackages {
       String name, VersionConstraint constraint, List<String> executables,
       {Map<String, FeatureDependency> features,
       bool overwriteBinStubs,
-      String url}) async {
+      String url,
+      @required String channel}) async {
     _describeActive(name);
     await _installInCache(
         cache.hosted.source
@@ -126,7 +130,8 @@ class GlobalPackages {
             .withConstraint(constraint)
             .withFeatures(features ?? const {}),
         executables,
-        overwriteBinStubs: overwriteBinStubs);
+        overwriteBinStubs: overwriteBinStubs,
+        channel: channel);
   }
 
   /// Makes the local package at [path] globally active.
@@ -139,11 +144,11 @@ class GlobalPackages {
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future activatePath(String path, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {bool overwriteBinStubs, @required String channel}) async {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.GET);
+    await entrypoint.acquireDependencies(SolveType.GET, channel: channel);
     var name = entrypoint.root.name;
 
     // Call this just to log what the current active package is, if any.
@@ -167,7 +172,7 @@ class GlobalPackages {
 
   /// Installs the package [dep] and its dependencies into the system cache.
   Future _installInCache(PackageRange dep, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {bool overwriteBinStubs, @required String channel}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = Package.inMemory(Pubspec('pub global activate',
         dependencies: [dep], sources: cache.sources));
@@ -179,7 +184,7 @@ class GlobalPackages {
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies',
-          () => resolveVersions(SolveType.GET, cache, root));
+          () => resolveVersions(SolveType.GET, cache, root, channel: channel));
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {

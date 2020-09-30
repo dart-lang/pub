@@ -30,6 +30,8 @@ class RemoveCommand extends PubCommand {
 
   bool get isDryRun => argResults['dry-run'];
 
+  String get channel => argResults['channel'];
+
   RemoveCommand() {
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -41,6 +43,10 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addOption('channel',
+        help: 'Pre-release channel to allow, matches the first component of '
+            'pre-release versions');
   }
 
   @override
@@ -58,13 +64,13 @@ class RemoveCommand extends PubCommand {
 
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
           .acquireDependencies(SolveType.GET,
-              precompile: argResults['precompile']);
+              precompile: argResults['precompile'], channel: channel);
     } else {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
       await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+          precompile: argResults['precompile'], channel: channel);
     }
   }
 
