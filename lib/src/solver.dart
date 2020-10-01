@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/failure.dart';
@@ -28,13 +30,14 @@ export 'solver/type.dart';
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) {
+    {LockFile lockFile, Iterable<String> useLatest, @required String channel}) {
   return VersionSolver(
     type,
     cache,
     root,
     lockFile ?? LockFile.empty(),
     useLatest ?? const [],
+    channel,
   ).solve();
 }
 
@@ -53,10 +56,10 @@ Future<SolveResult> resolveVersions(
 /// If [upgradeAll] is true, the contents of [lockFile] are ignored.
 Future<SolveResult> tryResolveVersions(
     SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) async {
+    {LockFile lockFile, Iterable<String> useLatest, String channel}) async {
   try {
     return await resolveVersions(type, cache, root,
-        lockFile: lockFile, useLatest: useLatest);
+        lockFile: lockFile, useLatest: useLatest, channel: channel);
   } on SolveFailure {
     return null;
   }

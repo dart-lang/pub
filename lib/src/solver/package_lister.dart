@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:meta/meta.dart';
 
 import '../exceptions.dart';
 import '../http.dart';
@@ -81,8 +82,11 @@ class PackageLister {
 
   /// The most recent version of this package (or the oldest, if we're
   /// downgrading).
-  Future<PackageId> get latest =>
-      _latestMemo.runOnce(() => bestVersion(VersionConstraint.any));
+  ///
+  /// If [channel] is non-null, then pre-release versions whose first component
+  /// matches [channel] will be allowed, otherwise they are not allowed.
+  Future<PackageId> latest({@required String channel}) => _latestMemo
+      .runOnce(() => bestVersion(VersionConstraint.any, channel: channel));
   final _latestMemo = AsyncMemoizer<PackageId>();
 
   /// Creates a package lister for the dependency identified by [ref].
@@ -123,9 +127,14 @@ class PackageLister {
   /// according to the solver's prioritization scheme, or `null` if no versions
   /// match.
   ///
+  /// If [channel] is provided, then pre-release versions whose first component
+  /// matches [channel] will be allowed, and otherwise no pre-release versions
+  /// are allowed.
+  ///
   /// Throws a [PackageNotFoundException] if this lister's package doesn't
   /// exist.
-  Future<PackageId> bestVersion(VersionConstraint constraint) async {
+  Future<PackageId> bestVersion(VersionConstraint constraint,
+      {@required String channel}) async {
     if (_locked != null && constraint.allows(_locked.version)) return _locked;
 
     var versions = await _versions;
@@ -143,18 +152,33 @@ class PackageLister {
       }
     }
 
-    // Return the most preferable version that matches [constraint]: the latest
-    // non-prerelease version if one exists, or the latest prerelease version
-    // otherwise.
-    PackageId bestPrerelease;
+    // Return the latest version amongst valid versions that matches
+    // `constraint`.
     for (var id in _isDowngrade ? versions : versions.reversed) {
       if (isPastLimit != null && isPastLimit(id.version)) break;
 
       if (!constraint.allows(id.version)) continue;
-      if (!id.version.isPreRelease) return id;
-      bestPrerelease ??= id;
+
+      // Stable versions and pinned versions are always valid
+      if (!id.version.isPreRelease || constraint is! VersionRange) return id;
+
+      // Pre-releases matching an explicit channel are also valid.
+      if (id.version.preRelease.first == channel) return id;
+
+      // If `constraint` is a version range, and it has a pre-release version
+      // as its min sdk constraint, then pre-releases within that same
+      // major/minor version as the min constraint are valid.
+      if (constraint is VersionRange) {
+        var min = constraint.min;
+        if (min != null &&
+            min.isPreRelease &&
+            id.version.major == min.major &&
+            id.version.minor == min.minor) {
+          return id;
+        }
+      }
     }
-    return bestPrerelease;
+    return null;
   }
 
   /// Returns incompatibilities that encapsulate [id]'s dependencies, or that

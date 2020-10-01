@@ -619,10 +619,8 @@ Showing packages where the current version doesn't fully support null safety.
           ids.map(
             (id) async => MapEntry(
               id,
-              await nullSafetyAnalyzer.nullSafetyCompliance(
-                id,
-                containingPath: path.absolute(entrypoint.root.dir),
-              ),
+              await nullSafetyAnalyzer.nullSafetyCompliance(id,
+                  containingPath: path.absolute(entrypoint.root.dir)),
             ),
           ),
         ),

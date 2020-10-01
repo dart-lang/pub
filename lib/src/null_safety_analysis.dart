@@ -104,11 +104,8 @@ class NullSafetyAnalysis {
 
     SolveResult result;
     try {
-      result = await resolveVersions(
-        SolveType.GET,
-        _systemCache,
-        root,
-      );
+      result = await resolveVersions(SolveType.GET, _systemCache, root,
+          channel: 'nullsafety');
     } on SolveFailure catch (e) {
       return NullSafetyAnalysisResult(NullSafetyCompliance.analysisFailed,
           'Could not resolve constraints: $e');

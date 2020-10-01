@@ -77,8 +77,14 @@ class VersionSolver {
   /// the latest version to be used.
   final _haveUsedLatest = <PackageRef>{};
 
+  /// The pre-release channel to allow, or `null`.
+  ///
+  /// The "channel" for a package is determined by the first component of its
+  /// pre-release version.
+  final String channel;
+
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
-      Iterable<String> useLatest)
+      Iterable<String> useLatest, this.channel)
       : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
         _useLatest = Set.from(useLatest);
 
@@ -329,7 +335,8 @@ class VersionSolver {
         var ref = candidate.toRef();
         if (_haveUsedLatest.add(ref)) {
           // All versions of [ref] other than the latest are forbidden.
-          var latestVersion = (await _packageLister(ref).latest).version;
+          var latestVersion =
+              (await _packageLister(ref).latest(channel: channel)).version;
           _addIncompatibility(Incompatibility([
             Term(
                 ref.withConstraint(
@@ -358,7 +365,8 @@ class VersionSolver {
 
     PackageId version;
     try {
-      version = await _packageLister(package).bestVersion(package.constraint);
+      version = await _packageLister(package)
+          .bestVersion(package.constraint, channel: channel);
     } on PackageNotFoundException catch (error) {
       _addIncompatibility(Incompatibility(
           [Term(package.withConstraint(VersionConstraint.any), true)],
@@ -372,8 +380,8 @@ class VersionSolver {
       // any version instead so that the lister gives us more general
       // incompatibilities. This makes error reporting much nicer.
       if (_excludesSingleVersion(package.constraint)) {
-        version =
-            await _packageLister(package).bestVersion(VersionConstraint.any);
+        version = await _packageLister(package)
+            .bestVersion(VersionConstraint.any, channel: channel);
       } else {
         // If there are no versions that satisfy [package.constraint], add an
         // incompatibility that indicates that.
