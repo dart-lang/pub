@@ -170,7 +170,8 @@ class PackageLister {
       // major/minor version as the min constraint are valid.
       if (constraint is VersionRange) {
         var min = constraint.min;
-        if (min.isPreRelease &&
+        if (min != null &&
+            min.isPreRelease &&
             id.version.major == min.major &&
             id.version.minor == min.minor) {
           return id;
