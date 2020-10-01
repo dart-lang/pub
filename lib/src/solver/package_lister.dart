@@ -152,15 +152,29 @@ class PackageLister {
       }
     }
 
-    // Return the most preferable version that matches [constraint]: the latest
-    // non-prerelease version if one exists, or the latest prerelease version
-    // otherwise.
+    // Return the latest version amongst valid versions that matches
+    // `constraint`.
     for (var id in _isDowngrade ? versions : versions.reversed) {
       if (isPastLimit != null && isPastLimit(id.version)) break;
 
       if (!constraint.allows(id.version)) continue;
-      if (!id.version.isPreRelease || id.version.preRelease.first == channel) {
-        return id;
+
+      // Stable versions and pinned versions are always valid
+      if (!id.version.isPreRelease || constraint is! VersionRange) return id;
+
+      // Pre-releases matching an explicit channel are also valid.
+      if (id.version.preRelease.first == channel) return id;
+
+      // If `constraint` is a version range, and it has a pre-release version
+      // as its min sdk constraint, then pre-releases within that same
+      // major/minor version as the min constraint are valid.
+      if (constraint is VersionRange) {
+        var min = constraint.min;
+        if (min.isPreRelease &&
+            id.version.major == min.major &&
+            id.version.minor == min.minor) {
+          return id;
+        }
       }
     }
     return null;
