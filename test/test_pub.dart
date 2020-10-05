@@ -312,23 +312,23 @@ Future runPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
-  await expectLater(() async {
-    var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-    var actualError = (await pub.stderrStream().toList()).join('\n');
-    var actualSilent = (await pub.silentStream().toList()).join('\n');
+  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  var actualError = (await pub.stderrStream().toList()).join('\n');
+  var actualSilent = (await pub.silentStream().toList()).join('\n');
 
-    var failures = <String>[];
-    if (outputJson == null) {
-      _validateOutput(failures, 'stdout', output, actualOutput);
-    } else {
-      _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
-    }
+  var failures = <String>[];
+  if (outputJson == null) {
+    _validateOutput(failures, 'stdout', output, actualOutput);
+  } else {
+    _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
+  }
 
-    _validateOutput(failures, 'stderr', error, actualError);
-    _validateOutput(failures, 'silent', silent, actualSilent);
+  _validateOutput(failures, 'stderr', error, actualError);
+  _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) test.fail(failures.join('\n'));
-  }(), completes);
+  if (failures.isNotEmpty) {
+    test.fail(failures.join('\n'));
+  }
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
