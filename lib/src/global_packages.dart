@@ -708,15 +708,20 @@ class GlobalPackages {
         invocation = '''
 if exist "$snapshot" (
   dart "$snapshot" %*
-  rem The VM exits with code 253 if the snapshot version is out-of-date.	
-  rem If it is, we need to delete it and run "pub global" manually.	
-  if not errorlevel 253 (	
-    exit /b %errorlevel%	
+  rem The VM exits with code 253 if the snapshot version is out-of-date.
+  rem If it is, we need to delete it and run "pub global" manually.
+  if not errorlevel 253 (
+    goto error
   )
   pub global run ${package.name}:$script %*
 ) else (
   pub global run ${package.name}:$script %*
-)''';
+)
+goto eof
+:error
+exit /b %errorlevel%
+:eof
+''';
       } else {
         invocation = 'pub global run ${package.name}:$script %*';
       }
