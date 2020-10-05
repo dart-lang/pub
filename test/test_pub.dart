@@ -312,7 +312,7 @@ Future runPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
-  expect(() async {
+  await expectLater(() async {
     var actualOutput = (await pub.stdoutStream().toList()).join('\n');
     var actualError = (await pub.stderrStream().toList()).join('\n');
     var actualSilent = (await pub.silentStream().toList()).join('\n');
