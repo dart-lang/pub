@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   String hostedDir(package) {
     return path.join(
-        d.sandbox, cachePath, 'hosted', 'pub.dartlang.org', package);
+        d.sandbox, cachePath, 'hosted', 'pub.dev', package);
   }
 
   test('running pub cache list when there is no cache', () async {
@@ -22,7 +22,7 @@ void main() {
   test('running pub cache list on empty cache', () async {
     // Set up a cache.
     await d.dir(cachePath, [
-      d.dir('hosted', [d.dir('pub.dartlang.org', [])])
+      d.dir('hosted', [d.dir('pub.dev', [])])
     ]).create();
 
     await runPub(args: ['cache', 'list'], outputJson: {'packages': {}});
@@ -32,7 +32,7 @@ void main() {
     // Set up a cache.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('pub.dartlang.org', [
+        d.dir('pub.dev', [
           d.dir('foo-1.2.3', [d.libPubspec('foo', '1.2.3'), d.libDir('foo')]),
           d.dir('bar-2.0.0', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')])
         ])
@@ -58,7 +58,7 @@ void main() {
     // Set up a cache.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('pub.dartlang.org', [
+        d.dir('pub.dev', [
           d.dir('foo-1.2.3', [
             d.libPubspec('foo', '1.2.3', deps: {
               'bar': {'bad': 'bar'}

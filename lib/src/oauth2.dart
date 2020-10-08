@@ -75,7 +75,7 @@ void _clearCredentials(SystemCache cache) {
 void logout(SystemCache cache) {
   var credentialsFile = _credentialsFile(cache);
   if (entryExists(_credentialsFile(cache))) {
-    log.message('Logging out of pub.dartlang.org.');
+    log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
     _clearCredentials(cache);
   } else {
@@ -177,7 +177,7 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 String _credentialsFile(SystemCache cache) =>
     path.join(cache.rootDir, 'credentials.json');
 
-/// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
+/// Gets the user to authorize pub as a client of pub.dev via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() async {
@@ -207,7 +207,7 @@ Future<Client> _authorize() async {
     completer
         .complete(grant.handleAuthorizationResponse(queryToMap(queryString)));
 
-    return shelf.Response.found('https://pub.dartlang.org/authorized');
+    return shelf.Response.found('https://pub.dev/authorized');
   });
 
   var authUrl = grant.getAuthorizationUrl(

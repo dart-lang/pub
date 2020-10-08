@@ -85,7 +85,7 @@ class Package {
   /// if no README file is found.
   ///
   /// If multiple READMEs are found, this uses the same conventions as
-  /// pub.dartlang.org for choosing the primary one: the README with the fewest
+  /// pub.dev for choosing the primary one: the README with the fewest
   /// extensions that is lexically ordered first is chosen.
   String get readmePath {
     var readmes = listFiles(recursive: false, useGitIgnore: true)

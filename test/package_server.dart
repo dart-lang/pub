@@ -18,7 +18,7 @@ import 'test_pub.dart';
 PackageServer get globalPackageServer => _globalPackageServer;
 PackageServer _globalPackageServer;
 
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
+/// Creates an HTTP server that replicates the structure of pub.dev and
 /// makes it the current [globalServer].
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
@@ -71,7 +71,7 @@ class PackageServer {
   /// Handlers for requests not easily described as packages.
   Map<Pattern, shelf.Handler> get extraHandlers => _inner.extraHandlers;
 
-  /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
+  /// Creates an HTTP server that replicates the structure of pub.dev.
   ///
   /// Calls [callback] with a [PackageServerBuilder] that's used to specify
   /// which packages to serve.

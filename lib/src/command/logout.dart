@@ -12,7 +12,7 @@ class LogoutCommand extends PubCommand {
   @override
   String get name => 'logout';
   @override
-  String get description => 'Log out of pub.dartlang.org.';
+  String get description => 'Log out of pub.dev.';
   @override
   String get invocation => 'pub logout';
 

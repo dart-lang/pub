@@ -5,7 +5,7 @@ This document specifies the REST API that a hosted pub package repository must
 implement.
 
 A hosted pub package repository is a server from which packages can be
-downloaded, the default public pub server is `'https://pub.dartlang.org'`.
+downloaded, the default public pub server is `'https://pub.dev'`.
 This can be overwritten in the `dependencies` of a `pubspec.yaml` or specified
 with the environment variable `PUB_HOSTED_URL`. In the rest of this document we
 shall refer to the base URL as `PUB_HOSTED_URL`.

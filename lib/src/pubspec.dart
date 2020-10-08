@@ -25,7 +25,7 @@ import 'utils.dart';
 ///
 /// This allows dot-separated valid Dart identifiers. The dots are there for
 /// compatibility with Google's internal Dart packages, but they may not be used
-/// when publishing a package to pub.dartlang.org.
+/// when publishing a package to pub.dev.
 final _packageName =
     RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
 

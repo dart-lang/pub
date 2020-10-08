@@ -21,7 +21,7 @@ class LishCommand extends PubCommand {
   @override
   String get name => 'publish';
   @override
-  String get description => 'Publish the current package to pub.dartlang.org.';
+  String get description => 'Publish the current package to pub.dev.';
   @override
   String get invocation => 'pub publish [options]';
   @override

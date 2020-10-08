@@ -2946,7 +2946,7 @@ Future expectResolves(
 
     if (dep.source is HostedSource && dep.description is String) {
       // If the dep uses the default hosted source, grab it from the test
-      // package server rather than pub.dartlang.org.
+      // package server rather than pub.dev.
       dep = registry.hosted
           .refFor(dep.name, url: globalPackageServer.url)
           .withConstraint(dep.constraint);

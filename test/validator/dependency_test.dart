@@ -42,7 +42,7 @@ Future setUpDependency(Map dep, {List<String> hostedVersions}) {
             'uploaders': ['nweiz@google.com'],
             'versions': hostedVersions
                 .map((version) => packageVersionApiMap(
-                    'https://pub.dartlang.org', packageMap('foo', version)))
+                    'https://pub.dev', packageMap('foo', version)))
                 .toList()
           }),
           200));
@@ -269,7 +269,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'bar',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -296,7 +296,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -320,7 +320,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -380,7 +380,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'bar',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -407,7 +407,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -429,7 +429,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }
@@ -453,7 +453,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'http://pub.dev'
                       }
                     }
                   }

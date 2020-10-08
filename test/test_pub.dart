@@ -633,7 +633,7 @@ String packagePath(String package) {
   }
 
   return p.join(
-      SystemCache.defaultDir, 'hosted/pub.dartlang.org/$package-${id.version}');
+      SystemCache.defaultDir, 'hosted/pub.dev/$package-${id.version}');
 }
 
 /// Uses [client] as the mock HTTP client for this test.
@@ -660,7 +660,7 @@ Map packageMap(
   var package = <String, dynamic>{
     'name': name,
     'version': version,
-    'homepage': 'http://pub.dartlang.org',
+    'homepage': 'http://pub.dev',
     'description': 'A package, I guess.'
   };
 
@@ -673,7 +673,7 @@ Map packageMap(
 /// Resolves [target] relative to the path to pub's `test/asset` directory.
 String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 
-/// Returns a Map in the format used by the pub.dartlang.org API to represent a
+/// Returns a Map in the format used by the pub.dev API to represent a
 /// package version.
 ///
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
