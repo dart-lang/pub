@@ -670,9 +670,6 @@ Map packageMap(
   return package;
 }
 
-/// Resolves [target] relative to the path to pub's `test/asset` directory.
-String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
-
 /// Returns a Map in the format used by the pub.dartlang.org API to represent a
 /// package version.
 ///
