@@ -464,8 +464,7 @@ void createPackageSymlink(String name, String target, String symlink,
 /// Whether the current process is one of pub's test files, or running through
 /// test runner.
 ///
-/// This works because an actual pub executable that imports this will always
-/// start with "pub".
+/// This works because all package:test tests ends with '_test.dart'.
 final bool runningAsTest = _runningAsTestRunner ||
     path.url.basename(Platform.script.path).endsWith('_test.dart');
 
