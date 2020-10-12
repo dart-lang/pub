@@ -3,8 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Pub-specific test descriptors.
-import 'package:oauth2/oauth2.dart' as oauth2;
 import 'dart:convert';
+
+import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:pub/src/package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 import 'package:meta/meta.dart';
