@@ -46,11 +46,11 @@ To run pub from the Git repository, run:
 
 Before any change is made to pub, all tests should pass. To run a pub test, run:
 
-    dart test/path/to/pub_test.dart
+    dart tool/test.dart test/path/to_test.dart
 
 To run all tests at once, run:
 
-    pub run test
+    dart tool/test.dart
 
 Changes to pub should be accompanied by one or more tests that exercise the new
 functionality. When adding a test, the best strategy is to find a similar test
