@@ -1,7 +1,5 @@
 #!/usr/bin/env dart
 
-import 'dart:async';
-
 /// Test wrapper script.
 /// Many of the integration tests runs the `pub` command, this is slow if every
 /// invocation requires the dart compiler to load all the sources. This script
