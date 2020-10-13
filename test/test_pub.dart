@@ -54,9 +54,6 @@ Matcher isMinifiedDart2JSOutput =
 Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
 
-/// The entrypoint for pub itself.
-final _entrypoint = Entrypoint(pubRoot, SystemCache(isOffline: true));
-
 /// Converts [value] into a YAML string.
 String yaml(value) => jsonEncode(value);
 
@@ -391,6 +388,23 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
+/// The test runner starts all tests from a `data:` URI.
+final bool _runningAsTestRunner = Platform.script.scheme == 'data';
+
+/// The path to the root of pub's sources in the pub repo.
+final String _pubRoot = (() {
+  // The test runner always runs from the repo directory.
+  if (_runningAsTestRunner) return p.current;
+
+  // Running from "test/../some_test.dart".
+  var script = p.fromUri(Platform.script);
+
+  var components = p.split(script);
+  var testIndex = components.indexOf('test');
+  if (testIndex == -1) throw StateError("Can't find pub's root.");
+  return p.joinAll(components.take(testIndex));
+})();
+
 /// Starts a Pub process and returns a [PubProcess] that supports interaction
 /// with that process.
 ///
@@ -418,18 +432,14 @@ Future<PubProcess> startPub(
     dartBin = p.absolute(dartBin);
   }
 
-  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
-
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
   // recommended to use a temporary file with a unique name for each test run.
-  // Note: running tests without a snapshot is significantly slower.
-  //
-  // TODO(nweiz): When the test runner supports plugins, create one to
-  // auto-generate the snapshot before each run.
-  final snapshotPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
-  if (snapshotPath.isNotEmpty && fileExists(snapshotPath)) {
-    pubPath = snapshotPath;
+  // Note: running tests without a snapshot is significantly slower, use
+  // tool/test.dart to generate the snapshot.
+  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  if (pubPath.isEmpty || !fileExists(pubPath)) {
+    pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
   }
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
@@ -616,24 +626,6 @@ LockFile _createLockFile(SourceRegistry sources,
   }
 
   return LockFile(packages);
-}
-
-/// Returns the path to the version of [package] used by pub.
-String packagePath(String package) {
-  if (runningFromDartRepo) {
-    return dirExists(p.join(dartRepoRoot, 'pkg', package))
-        ? p.join(dartRepoRoot, 'pkg', package)
-        : p.join(dartRepoRoot, 'third_party', 'pkg', package);
-  }
-
-  var id = _entrypoint.lockFile.packages[package];
-  if (id == null) {
-    throw StateError(
-        'The tests rely on "$package", but it\'s not in the lockfile.');
-  }
-
-  return p.join(
-      SystemCache.defaultDir, 'hosted/pub.dartlang.org/$package-${id.version}');
 }
 
 /// Uses [client] as the mock HTTP client for this test.

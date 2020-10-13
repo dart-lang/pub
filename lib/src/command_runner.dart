@@ -235,6 +235,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     var depsRev = match[1];
 
     String actualRev;
+    final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
     try {
       actualRev =
           git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;
