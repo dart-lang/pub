@@ -167,6 +167,7 @@ class PubCommandRunner extends CommandRunner implements PubTopLevel {
     var depsRev = match[1];
 
     String actualRev;
+    final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
     try {
       actualRev =
           git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;
