@@ -829,15 +829,18 @@ bool _computeNoUnknownKeyword() {
 }
 
 final String _pathTo7zip = (() {
-  for (final candidate in [
-    // Try finding 7zip in the sdk path.
-    path.join(sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', '7zip',
-        '7za.exe'),
-    // We might be running from dart repo.
-    path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe'),
-  ]) {
-    if (fileExists(candidate)) return candidate;
-  }
+  final candidate = runningFromDartRepo
+      ? path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe')
+      : path.join(
+          sdk.rootDirectory,
+          'lib',
+          '_internal',
+          'pub',
+          'asset',
+          '7zip',
+          '7za.exe',
+        );
+  if (fileExists(candidate)) return candidate;
   throw StateError('Could not find 7zip.');
 })();
 
