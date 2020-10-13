@@ -461,30 +461,11 @@ void createPackageSymlink(String name, String target, String symlink,
   createSymlink(target, symlink, relative: relative);
 }
 
-/// Whether the current process is one of pub's test files.
-///
-/// This works because an actual pub executable that imports this will always
-/// start with "pub".
-final bool runningAsTest =
-    !path.url.basename(Platform.script.path).startsWith('pub.');
-
-// TODO(nweiz): Use the test API when test#48 is fixed.
-/// Whether the current process is one of pub's test files being run through the
-/// test package's test runner.
-///
-/// The test runner starts all tests from a `data:` URI.
-final bool _runningAsTestRunner = Platform.script.scheme == 'data';
-
 /// Whether the current process is a pub subprocess being run from a test.
 ///
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
 /// invocations of pub.
 final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
-
-/// Whether pub is running from within the Dart SDK, as opposed to from the Dart
-/// source repository.
-final bool _runningFromSdk =
-    !runningFromTest && Platform.script.path.endsWith('.snapshot');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
@@ -498,52 +479,7 @@ final _dartRepoRegExp = RegExp(r'/third_party/pkg/pub/('
 ///
 /// This can happen when running tests against the repo, as well as when
 /// building Observatory.
-final bool runningFromDartRepo = (() {
-  if (_runningAsTestRunner) {
-    // When running from the test runner, we can't find our location via
-    // Platform.script since the runner munges that. However, it guarantees that
-    // the working directory is <repo>/third_party/pkg/pub.
-    return path.current.contains(RegExp(r'[/\\]third_party[/\\]pkg[/\\]pub$'));
-  } else {
-    return Platform.script.path.contains(_dartRepoRegExp);
-  }
-})();
-
-/// Resolves [target] relative to the Dart SDK's `asset` directory.
-///
-/// Throws a [StateError] if called from within the Dart repo.
-String _sdkAssetPath(String target) {
-  if (runningFromDartRepo) {
-    throw StateError("Can't get SDK assets from within the Dart repo.");
-  }
-
-  return path.join(
-      sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', target);
-}
-
-/// The path to the root of pub's sources in the pub repo.
-///
-/// This throws a [StateError] if it's called when running pub from the SDK.
-final String pubRoot = (() {
-  if (_runningFromSdk) {
-    throw StateError("Can't get pub's root from the SDK.");
-  }
-
-  // The test runner always runs from the working directory.
-  if (_runningAsTestRunner) return path.current;
-
-  var script = path.fromUri(Platform.script);
-  if (runningAsTest) {
-    // Running from "test/../some_test.dart".
-    var components = path.split(script);
-    var testIndex = components.indexOf('test');
-    if (testIndex == -1) throw StateError("Can't find pub's root.");
-    return path.joinAll(components.take(testIndex));
-  }
-
-  // Pub is run from "bin/pub.dart".
-  return path.dirname(path.dirname(script));
-})();
+final bool runningFromDartRepo = Platform.script.path.contains(_dartRepoRegExp);
 
 /// The path to the root of the Dart repo.
 ///
@@ -552,12 +488,6 @@ final String pubRoot = (() {
 final String dartRepoRoot = (() {
   if (!runningFromDartRepo) {
     throw StateError('Not running from source in the Dart repo.');
-  }
-
-  if (_runningAsTestRunner) {
-    // When running in test code started by the test runner, the working
-    // directory will always be <repo>/third_party/pkg/pub.
-    return path.dirname(path.dirname(path.dirname(path.current)));
   }
 
   // Get the URL of the repo root in a way that works when either both running
@@ -899,8 +829,16 @@ bool _computeNoUnknownKeyword() {
 }
 
 final String _pathTo7zip = (() {
-  if (!runningFromDartRepo) return _sdkAssetPath(path.join('7zip', '7za.exe'));
-  return path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe');
+  for (final candidate in [
+    // Try finding 7zip in the sdk path.
+    path.join(sdk.rootDirectory, 'lib', '_internal', 'pub', 'asset', '7zip',
+        '7za.exe'),
+    // We might be running from dart repo.
+    path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe'),
+  ]) {
+    if (fileExists(candidate)) return candidate;
+  }
+  throw StateError('Could not find 7zip.');
 })();
 
 /// Create a .tar.gz archive from a list of entries.
