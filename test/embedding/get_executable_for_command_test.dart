@@ -47,10 +47,13 @@ Future<void> main() async {
     ]);
     await dir.create();
     await testGetExecutable('bar/bar.dart', dir.io.path,
-        result: 'bar/bar.dart');
+        result: p.join('bar', 'bar.dart'));
+
+    await testGetExecutable(p.join('bar', 'bar.dart'), dir.io.path,
+        result: p.join('bar', 'bar.dart'));
 
     await testGetExecutable('${p.toUri(dir.io.path)}/bar/bar.dart', dir.io.path,
-        result: 'bar/bar.dart');
+        result: p.join('bar', 'bar.dart'));
   });
 
   test('Looks for file when no pubspec.yaml', () async {
@@ -78,7 +81,7 @@ Future<void> main() async {
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
     await testGetExecutable('bar/m.dart', dir.io.path,
-        errorMessage: matches(r'version\ssolving\sfailed'));
+        errorMessage: matches(r'version\s+solving\s+failed'));
   });
 
   test('Finds files', () async {
