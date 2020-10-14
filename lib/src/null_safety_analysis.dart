@@ -7,10 +7,8 @@ import 'dart:async';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:cli_util/cli_util.dart';
-import 'package:pub/src/source.dart';
-import 'package:source_span/source_span.dart';
-
 import 'package:path/path.dart' as path;
+import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
@@ -19,6 +17,7 @@ import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'solver.dart';
+import 'source.dart';
 import 'source/cached.dart';
 import 'source/path.dart';
 import 'system_cache.dart';
