@@ -62,6 +62,8 @@ Future<void> main() async {
     ]);
     await dir.create();
     await testGetExecutable('bar/m.dart', dir.io.path,
+        errorMessage: contains('Could not find file `bar/m.dart`'));
+    await testGetExecutable(p.join('bar', 'm.dart'), dir.io.path,
         errorMessage: contains('Could not find file `bar${separator}m.dart`'));
   });
 
