@@ -13,7 +13,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> testGetExecutable(String command, String root,
-    {allowSnapshot: true, result, errorMessage}) async {
+    {allowSnapshot = true, result, errorMessage}) async {
   final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
   if (result == null) {
     expect(
