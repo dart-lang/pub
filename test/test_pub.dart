@@ -54,9 +54,6 @@ Matcher isMinifiedDart2JSOutput =
 Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
 
-/// The entrypoint for pub itself.
-final _entrypoint = Entrypoint(pubRoot, SystemCache(isOffline: true));
-
 /// Converts [value] into a YAML string.
 String yaml(value) => jsonEncode(value);
 
@@ -83,6 +80,8 @@ final versionSuffix = testVersion ?? sdk.version;
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
+  static final add = RunCommand(
+      'add', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final upgrade = RunCommand('upgrade', RegExp(r'''
@@ -91,6 +90,8 @@ class RunCommand {
 Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final remove = RunCommand(
+      'remove', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
 
   final String name;
   final RegExp success;
@@ -152,6 +153,21 @@ Future pubCommand(RunCommand command,
       environment: environment);
 }
 
+Future pubAdd(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.add,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
 Future pubGet(
         {Iterable<String> args,
         output,
@@ -190,6 +206,21 @@ Future pubDowngrade(
         int exitCode,
         Map<String, String> environment}) =>
     pubCommand(RunCommand.downgrade,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
+Future pubRemove(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.remove,
         args: args,
         output: output,
         error: error,
@@ -278,23 +309,23 @@ Future runPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
-  expect(() async {
-    var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-    var actualError = (await pub.stderrStream().toList()).join('\n');
-    var actualSilent = (await pub.silentStream().toList()).join('\n');
+  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  var actualError = (await pub.stderrStream().toList()).join('\n');
+  var actualSilent = (await pub.silentStream().toList()).join('\n');
 
-    var failures = <String>[];
-    if (outputJson == null) {
-      _validateOutput(failures, 'stdout', output, actualOutput);
-    } else {
-      _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
-    }
+  var failures = <String>[];
+  if (outputJson == null) {
+    _validateOutput(failures, 'stdout', output, actualOutput);
+  } else {
+    _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
+  }
 
-    _validateOutput(failures, 'stderr', error, actualError);
-    _validateOutput(failures, 'silent', silent, actualSilent);
+  _validateOutput(failures, 'stderr', error, actualError);
+  _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) test.fail(failures.join('\n'));
-  }(), completes);
+  if (failures.isNotEmpty) {
+    test.fail(failures.join('\n'));
+  }
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
@@ -357,6 +388,23 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
+/// The test runner starts all tests from a `data:` URI.
+final bool _runningAsTestRunner = Platform.script.scheme == 'data';
+
+/// The path to the root of pub's sources in the pub repo.
+final String _pubRoot = (() {
+  // The test runner always runs from the repo directory.
+  if (_runningAsTestRunner) return p.current;
+
+  // Running from "test/../some_test.dart".
+  var script = p.fromUri(Platform.script);
+
+  var components = p.split(script);
+  var testIndex = components.indexOf('test');
+  if (testIndex == -1) throw StateError("Can't find pub's root.");
+  return p.joinAll(components.take(testIndex));
+})();
+
 /// Starts a Pub process and returns a [PubProcess] that supports interaction
 /// with that process.
 ///
@@ -384,18 +432,14 @@ Future<PubProcess> startPub(
     dartBin = p.absolute(dartBin);
   }
 
-  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
-
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
   // recommended to use a temporary file with a unique name for each test run.
-  // Note: running tests without a snapshot is significantly slower.
-  //
-  // TODO(nweiz): When the test runner supports plugins, create one to
-  // auto-generate the snapshot before each run.
-  final snapshotPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
-  if (snapshotPath.isNotEmpty && fileExists(snapshotPath)) {
-    pubPath = snapshotPath;
+  // Note: running tests without a snapshot is significantly slower, use
+  // tool/test.dart to generate the snapshot.
+  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  if (pubPath.isEmpty || !fileExists(pubPath)) {
+    pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
   }
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
@@ -584,24 +628,6 @@ LockFile _createLockFile(SourceRegistry sources,
   return LockFile(packages);
 }
 
-/// Returns the path to the version of [package] used by pub.
-String packagePath(String package) {
-  if (runningFromDartRepo) {
-    return dirExists(p.join(dartRepoRoot, 'pkg', package))
-        ? p.join(dartRepoRoot, 'pkg', package)
-        : p.join(dartRepoRoot, 'third_party', 'pkg', package);
-  }
-
-  var id = _entrypoint.lockFile.packages[package];
-  if (id == null) {
-    throw StateError(
-        'The tests rely on "$package", but it\'s not in the lockfile.');
-  }
-
-  return p.join(
-      SystemCache.defaultDir, 'hosted/pub.dartlang.org/$package-${id.version}');
-}
-
 /// Uses [client] as the mock HTTP client for this test.
 ///
 /// Note that this will only affect HTTP requests made via http.dart in the
@@ -635,9 +661,6 @@ Map packageMap(
   if (environment != null) package['environment'] = environment;
   return package;
 }
-
-/// Resolves [target] relative to the path to pub's `test/asset` directory.
-String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 
 /// Returns a Map in the format used by the pub.dartlang.org API to represent a
 /// package version.

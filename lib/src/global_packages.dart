@@ -11,7 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
-import 'executable.dart';
+import 'executable.dart' as exec;
 import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
@@ -371,16 +371,17 @@ class GlobalPackages {
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
-      Entrypoint entrypoint, Executable executable, Iterable<String> args,
+      Entrypoint entrypoint, exec.Executable executable, Iterable<String> args,
       {bool enableAsserts = false,
       String packagesFile,
-      Future<void> Function(Executable) recompile,
+      Future<void> Function(exec.Executable) recompile,
       List<String> vmArgs = const []}) async {
-    return await runExecutable(entrypoint, executable, args,
+    return await exec.runExecutable(entrypoint, executable, args,
         enableAsserts: enableAsserts,
-        packagesFile: packagesFile,
-        recompile: recompile,
-        vmArgs: vmArgs);
+        packagesFile: packagesFile, recompile: (exectuable) async {
+      await recompile(exectuable);
+      _refreshBinStubs(entrypoint, executable);
+    }, vmArgs: vmArgs);
   }
 
   /// Gets the path to the lock file for an activated cached package with
@@ -524,6 +525,33 @@ class GlobalPackages {
     return Pair(successes, failures);
   }
 
+  /// Rewrites all binstubs that refer to [executable] of [entrypoint].
+  ///
+  /// This is meant to be called after a recompile due to eg. outdated
+  /// snapshots.
+  void _refreshBinStubs(Entrypoint entrypoint, exec.Executable executable) {
+    if (!dirExists(_binStubDir)) return;
+    for (var file in listDir(_binStubDir, includeDirs: false)) {
+      var contents = readTextFile(file);
+      var binStubPackage = _binStubProperty(contents, 'Package');
+      var binStubScript = _binStubProperty(contents, 'Script');
+      if (binStubPackage == null || binStubScript == null) {
+        log.fine('Could not parse binstub $file:\n$contents');
+        continue;
+      }
+      if (binStubPackage == entrypoint.root.name &&
+          binStubScript ==
+              p.basenameWithoutExtension(executable.relativePath)) {
+        log.fine('Replacing old binstub $file');
+        deleteEntry(file);
+        _createBinStub(
+            entrypoint.root, p.basenameWithoutExtension(file), binStubScript,
+            overwrite: true,
+            snapshot: entrypoint.snapshotPathOfExecutable(executable));
+      }
+    }
+  }
+
   /// Updates the binstubs for [package].
   ///
   /// A binstub is a little shell script in `PUB_CACHE/bin` that runs an
@@ -570,7 +598,7 @@ class GlobalPackages {
         script,
         overwrite: overwriteBinStubs,
         snapshot: entrypoint.snapshotPathOfExecutable(
-          Executable.adaptProgramName(package.name, script),
+          exec.Executable.adaptProgramName(package.name, script),
         ),
       );
       if (previousPackage != null) {
@@ -680,15 +708,20 @@ class GlobalPackages {
         invocation = '''
 if exist "$snapshot" (
   dart "$snapshot" %*
-  rem The VM exits with code 253 if the snapshot version is out-of-date.	
-  rem If it is, we need to delete it and run "pub global" manually.	
-  if not errorlevel 253 (	
-    exit /b %errorlevel%	
+  rem The VM exits with code 253 if the snapshot version is out-of-date.
+  rem If it is, we need to delete it and run "pub global" manually.
+  if not errorlevel 253 (
+    goto error
   )
   pub global run ${package.name}:$script %*
 ) else (
   pub global run ${package.name}:$script %*
-)''';
+)
+goto eof
+:error
+exit /b %errorlevel%
+:eof
+''';
       } else {
         invocation = 'pub global run ${package.name}:$script %*';
       }

@@ -224,14 +224,7 @@ bool isLoopback(String host) {
     host = host.substring(1, host.length - 1);
   }
 
-  try {
-    return InternetAddress(host).isLoopback;
-  } on ArgumentError catch (_) // ignore: avoid_catching_errors
-  {
-    // The host isn't an IP address and isn't "localhost', so it's almost
-    // certainly not a loopback host.
-    return false;
-  }
+  return InternetAddress.tryParse(host)?.isLoopback ?? false;
 }
 
 /// Returns a list containing the sorted elements of [iter].
@@ -405,19 +398,32 @@ bool forceColors = false;
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
-bool get canUseSpecialChars =>
-    forceColors ||
-    (!runningFromTest &&
-        !runningAsTest &&
-        stdioType(stdout) == StdioType.terminal &&
-        stdout.supportsAnsiEscapes);
-
-/// Gets a "special" string (ANSI escape or Unicode).
 ///
-/// On Windows or when not printing to a terminal, returns something else since
-/// those aren't supported.
-String getSpecial(String special, [String onWindows = '']) =>
-    canUseSpecialChars ? special : onWindows;
+/// Tests should make sure to run the subprocess with or without an attached
+/// terminal to decide if colors will be provided.
+bool get canUseAnsiCodes =>
+    forceColors ||
+    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+
+/// Gets an ANSI escape if those are supported by stdout (or nothing).
+String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
+
+/// Gets a emoji special character as unicode, or the [alternative] if unicode
+/// charactors are not supported by stdout.
+String emoji(String unicode, String alternative) =>
+    canUseUnicode ? unicode : alternative;
+
+// Assume unicode emojis are supported when not on Windows.
+// If we are on Windows, unicode emojis are supported in Windows Terminal,
+// which sets the WT_SESSION environment variable. See:
+// https://github.com/microsoft/terminal/blob/master/doc/user-docs/index.md#tips-and-tricks
+bool get canUseUnicode =>
+    // The tests support unicode also on windows.
+    runningFromTest ||
+    // When not outputting to terminal we can also use unicode.
+    stdioType(stdout) != StdioType.terminal ||
+    !Platform.isWindows ||
+    Platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///

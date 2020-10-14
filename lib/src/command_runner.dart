@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import 'command.dart' show pubCommandAliases, lineLength;
+import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
@@ -21,6 +22,7 @@ import 'command/lish.dart';
 import 'command/list_package_dirs.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
+import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
 import 'command/upgrade.dart';
@@ -104,6 +106,7 @@ class PubCommandRunner extends CommandRunner {
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
 
+    addCommand(AddCommand());
     addCommand(BuildCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
@@ -113,6 +116,7 @@ class PubCommandRunner extends CommandRunner {
     addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
     addCommand(OutdatedCommand());
+    addCommand(RemoveCommand());
     addCommand(RunCommand());
     addCommand(ServeCommand());
     addCommand(UpgradeCommand());
@@ -231,6 +235,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     var depsRev = match[1];
 
     String actualRev;
+    final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
     try {
       actualRev =
           git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;

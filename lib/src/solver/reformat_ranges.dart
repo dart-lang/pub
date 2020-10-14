@@ -25,21 +25,16 @@ import 'term.dart';
 /// the release version (`<2.0.0`) if no pre-releases exist or with an inclusive
 /// bound on the last pre-release version that actually exists
 /// (`<=2.0.0-dev.1`).
-Incompatibility reformatRanges(Map<PackageRef, PackageLister> packageListers,
-    Incompatibility incompatibility) {
-  var cause = incompatibility.cause;
-  if (cause is ConflictCause) {
-    var conflict = cause as ConflictCause;
-    cause = ConflictCause(reformatRanges(packageListers, conflict.conflict),
-        reformatRanges(packageListers, conflict.other));
-  }
-
-  return Incompatibility(
+Incompatibility reformatRanges(
+  Map<PackageRef, PackageLister> packageListers,
+  Incompatibility incompatibility,
+) =>
+    Incompatibility(
       incompatibility.terms
           .map((term) => _reformatTerm(packageListers, term))
           .toList(),
-      _reformatCause(packageListers, cause));
-}
+      _reformatCause(packageListers, incompatibility.cause),
+    );
 
 /// Returns [term] with the upper and lower bounds of its package range
 /// reformatted if necessary.

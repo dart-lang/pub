@@ -201,10 +201,11 @@ Future<int> _runDartProgram(
 /// An executable in a package
 class Executable {
   String package;
-  // The relative path to the executable inside the root of [package].
+
+  /// The relative path to the executable inside the root of [package].
   String relativePath;
 
-  // Adapts the program-name following conventions of dart run
+  /// Adapts the program-name following conventions of dart run
   Executable.adaptProgramName(this.package, String program)
       : relativePath = _adaptProgramToPath(program);
 
