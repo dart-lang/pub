@@ -1,5 +1,7 @@
 #!/usr/bin/env dart
 
+import 'dart:convert';
+
 /// Test wrapper script.
 /// Many of the integration tests runs the `pub` command, this is slow if every
 /// invocation requires the dart compiler to load all the sources. This script
@@ -8,6 +10,7 @@
 /// `pub run test`, and ensure that the snapshot is deleted after tests have been
 /// run.
 import 'dart:io';
+import 'dart:math';
 import 'package:path/path.dart' as path;
 
 Future<void> main(List<String> args) async {
@@ -30,16 +33,42 @@ Future<void> main(List<String> args) async {
       return;
     }
     print('Took ${stopwatch.elapsedMilliseconds} milliseconds');
-    final extension = Platform.isWindows ? '.bat' : '';
-    final testProcess = await Process.start(
-        path.join(path.dirname(Platform.resolvedExecutable), 'pub$extension'),
-        ['run', 'test', ...args],
-        environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename});
-    await Future.wait([
-      testProcess.stdout.pipe(stdout),
-      testProcess.stderr.pipe(stderr),
-    ]);
-    exitCode = await testProcess.exitCode;
+    if (args.isEmpty) {
+      final tests = Directory('test')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .map((f) => f.path)
+          .where((path) => path.endsWith('_test.dart'))
+          .toList();
+      final splits = <List<String>>[];
+      final concurrency = max(1, Platform.numberOfProcessors - 2);
+      print("Running $concurrency concurrent jobs");
+      var l = tests.length ~/ concurrency;
+      if (tests.length % concurrency != 0) l++;
+      var t = 0;
+      while (t < tests.length) {
+        splits.add(tests.sublist(t, min(tests.length, t + l)));
+        t += l;
+      }
+      exitCode = (await Future.wait(Iterable.generate(splits.length, (i) async {
+        final split = splits[i];
+        final extension = Platform.isWindows ? '.bat' : '';
+        print("Testing $split");
+        final testProcess = await Process.start(
+            path.join(
+                path.dirname(Platform.resolvedExecutable), 'pub$extension'),
+            ['run', 'test', '-rexpanded', ...split],
+            environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename});
+
+        testProcess.stdout.listen((line) {
+          stdout.add(utf8.encode('$i ${utf8.decode(line)}'));
+        });
+        testProcess.stderr.pipe(stderr);
+
+        return await testProcess.exitCode;
+      })))
+          .fold(0, max);
+    }
   } finally {
     try {
       await File(pubSnapshotFilename).delete();
