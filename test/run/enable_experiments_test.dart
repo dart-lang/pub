@@ -26,7 +26,7 @@ void main() {
   });
 
   test('Passes --no-sound-null-safety to the vm', () async {
-    const nullSafeEnabledVM = '2.11.0';
+    const nullSafeEnabledVM = '2.12.0';
 
     await d.dir(appPath, [
       d.pubspec({

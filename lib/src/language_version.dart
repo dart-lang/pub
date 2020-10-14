@@ -48,9 +48,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   bool operator <=(LanguageVersion other) => compareTo(other) <= 0;
   bool operator >=(LanguageVersion other) => compareTo(other) >= 0;
 
-  // TODO(sigurdm): update this when we know the actual version with null-safety
-  // enabled by default.
-  static const firstVersionWithNullSafety = LanguageVersion(2, 11);
+  static const firstVersionWithNullSafety = LanguageVersion(2, 12);
 
   @override
   String toString() => '$major.$minor';

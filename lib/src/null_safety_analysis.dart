@@ -56,8 +56,8 @@ class NullSafetyAnalysis {
   NullSafetyAnalysis(SystemCache systemCache) : _systemCache = systemCache;
 
   /// Returns true if package version [packageId] and all its non-dev
-  /// dependencies (transitively) have a language version >= 2.11, and no files
-  /// in lib/ of  these packages opt out to a pre-2.11 language version.
+  /// dependencies (transitively) have a language version >= 2.12, and no files
+  /// in lib/ of  these packages opt out to a pre-2.12 language version.
   ///
   /// This will do a full resolution of that package's import graph, and also
   /// download the package and all dependencies into [cache].
