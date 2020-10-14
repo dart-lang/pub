@@ -24,7 +24,7 @@ class SolveResult {
   final List<PackageId> packages;
 
   /// The root package of this resolution.
-  final Package root;
+  final Package _root;
 
   /// A map from package names to the pubspecs for the versions of those
   /// packages that were installed.
@@ -49,7 +49,8 @@ class SolveResult {
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
-        .where((pubspec) => !root.dependencyOverrides.containsKey(pubspec.name))
+        .where(
+            (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
         .toList();
 
     var sdkConstraints = <String, VersionConstraint>{};
@@ -62,9 +63,9 @@ class SolveResult {
 
     return LockFile(packages,
         sdkConstraints: sdkConstraints,
-        mainDependencies: MapKeySet(root.dependencies),
-        devDependencies: MapKeySet(root.devDependencies),
-        overriddenDependencies: MapKeySet(root.dependencyOverrides));
+        mainDependencies: MapKeySet(_root.dependencies),
+        devDependencies: MapKeySet(_root.devDependencies),
+        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
   }
 
   final SourceRegistry _sources;
@@ -87,14 +88,14 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(this._sources, this.root, this._previousLockFile, this.packages,
+  SolveResult(this._sources, this._root, this._previousLockFile, this.packages,
       this.pubspecs, this.availableVersions, this.attemptedSolutions);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
   void showReport(SolveType type) {
-    SolveReport(type, _sources, root, _previousLockFile, this).show();
+    SolveReport(type, _sources, _root, _previousLockFile, this).show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -105,21 +106,22 @@ class SolveResult {
   ///
   /// [type] is the type of version resolution that was run.
   void summarizeChanges(SolveType type, {bool dryRun = false}) {
-    final report = SolveReport(type, _sources, root, _previousLockFile, this);
+    final report = SolveReport(type, _sources, _root, _previousLockFile, this);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
       report.reportOutdated();
     }
   }
 
-  /// Displays a warning if this is not a fully null-safe resolution.
+  /// Displays a warning if the root package opts in, but this is not a fully
+  /// null-safe resolution.
   Future<void> warnAboutMixedMode(
     SystemCache cache, {
     @required bool dryRun,
   }) async {
-    if (pubspecs[root.name].languageVersion.supportsNullSafety) {
+    if (pubspecs[_root.name].languageVersion.supportsNullSafety) {
       final analysis = await NullSafetyAnalysis(cache)
-          .nullSafetyComplianceOfResolution(this);
+          .nullSafetyComplianceOfPackages(packages, _root);
       if (analysis.compliance == NullSafetyCompliance.mixed) {
         log.warning('''
 The package resolution is not fully migrated to null-safety.
