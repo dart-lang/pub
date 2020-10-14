@@ -9,6 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../language_version.dart';
+import '../null_safety_analysis.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../validator.dart';
@@ -16,7 +17,6 @@ import '../validator.dart';
 /// Gives a warning when publishing a new version, if the latest published
 /// version lower to this was not opted into null-safety.
 class RelativeVersionNumberingValidator extends Validator {
-  static const String guideUrl = 'https://dart.dev/null-safety/migration-guide';
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
@@ -53,7 +53,7 @@ class RelativeVersionNumberingValidator extends Validator {
       hints.add(
           'You\'re about to publish a package that opts into null safety.\n'
           'The previous version (${previousVersion.version}) isn\'t opted in.\n'
-          'See $guideUrl for best practices.');
+          'See ${NullSafetyAnalysis.guideUrl} for best practices.');
     } else if (!currentOptedIn && previousOptedIn) {
       hints.add(
           'You\'re about to publish a package that doesn\'t opt into null safety,\n'

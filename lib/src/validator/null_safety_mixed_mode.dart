@@ -14,8 +14,6 @@ import '../validator.dart';
 /// Gives a warning when publishing a new version, if this package opts into
 /// null safety, but any of the dependencies do not.
 class NullSafetyMixedModeValidator extends Validator {
-  static const String guideUrl = 'https://dart.dev/null-safety/migration-guide';
-
   NullSafetyMixedModeValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
@@ -48,7 +46,7 @@ migrated before publishing.
 Run `pub outdated --mode=null-safety` for more information about the state of
 dependencies.
 
-See $guideUrl
+See ${NullSafetyAnalysis.guideUrl}
 for more information about migrating.
 ''');
     }
