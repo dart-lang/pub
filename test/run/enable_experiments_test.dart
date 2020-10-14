@@ -26,12 +26,12 @@ void main() {
   });
 
   test('Passes --no-sound-null-safety to the vm', () async {
-    const nullSafeEnabledVM = '2.11.0';
+    const vmWithExperiment = '2.11.0';
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'test_package',
-        'environment': {'sdk': '>=$nullSafeEnabledVM <=3.0.0'}
+        'environment': {'sdk': '>=$vmWithExperiment <=3.0.0'}
       }),
       d.dir('bin', [
         d.file('script.dart', '''
@@ -54,7 +54,7 @@ int p = 10;
       ),
     ]).create();
 
-    const environment = {'_PUB_TEST_SDK_VERSION': nullSafeEnabledVM};
+    const environment = {'_PUB_TEST_SDK_VERSION': vmWithExperiment};
 
     await pubGet(environment: environment);
     await runPub(args: [
