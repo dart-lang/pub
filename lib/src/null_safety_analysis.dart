@@ -7,9 +7,8 @@ import 'dart:async';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:cli_util/cli_util.dart';
-import 'package:source_span/source_span.dart';
-
 import 'package:path/path.dart' as path;
+import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
@@ -18,6 +17,7 @@ import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'solver.dart';
+import 'source.dart';
 import 'source/cached.dart';
 import 'source/path.dart';
 import 'system_cache.dart';
@@ -39,6 +39,7 @@ enum NullSafetyCompliance {
 }
 
 class NullSafetyAnalysis {
+  static const String guideUrl = 'https://dart.dev/null-safety/migration-guide';
   final SystemCache _systemCache;
 
   /// A cache of the analysis done for a single package-version, not taking
@@ -55,9 +56,10 @@ class NullSafetyAnalysis {
 
   NullSafetyAnalysis(SystemCache systemCache) : _systemCache = systemCache;
 
-  /// Returns true if package version [packageId] and all its non-dev
-  /// dependencies (transitively) have a language version >= 2.11, and no files
-  /// in lib/ of  these packages opt out to a pre-2.11 language version.
+  /// Decides if package version [packageId] and all its non-dev
+  /// dependencies (transitively) have a language version opting in to
+  /// null-safety and no files in lib/ of  these packages opt out to a
+  /// pre-null-safety language version.
   ///
   /// This will do a full resolution of that package's import graph, and also
   /// download the package and all dependencies into [cache].
@@ -71,8 +73,8 @@ class NullSafetyAnalysis {
   Future<NullSafetyAnalysisResult> nullSafetyCompliance(PackageId packageId,
       {String containingPath}) async {
     // A space in the name prevents clashes with other package names.
-    final rootName = '${packageId.name} importer';
-    final root = Package.inMemory(Pubspec(rootName,
+    final fakeRootName = '${packageId.name} importer';
+    final fakeRoot = Package.inMemory(Pubspec(fakeRootName,
         fields: {
           'dependencies': {
             packageId.name: {
@@ -107,27 +109,53 @@ class NullSafetyAnalysis {
       result = await resolveVersions(
         SolveType.GET,
         _systemCache,
-        root,
+        fakeRoot,
       );
     } on SolveFailure catch (e) {
       return NullSafetyAnalysisResult(NullSafetyCompliance.analysisFailed,
           'Could not resolve constraints: $e');
     }
+    return nullSafetyComplianceOfPackages(
+        result.packages.where((id) => id.name != fakeRootName),
+        Package(rootPubspec,
+            packageId.source.bind(_systemCache).getDirectory(packageId)));
+  }
 
+  /// Decides if all dependendencies (transitively) have a language version
+  /// opting in to null safety, and no files in lib/ of these packages, nor the
+  /// root package opt out to a pre-null-safety language version.
+  ///
+  /// [rootPubspec] is the pubspec of the root package.
+  // TODO(sigurdm): make a source for the root package. Then we should not need
+  // to pass this.
+  ///
+  /// This will download all dependencies into [cache].
+  ///
+  /// Assumes the root package is opted in.
+  Future<NullSafetyAnalysisResult> nullSafetyComplianceOfPackages(
+      Iterable<PackageId> packages, Package rootPackage) async {
     NullSafetyAnalysisResult firstBadPackage;
-    for (final dependencyId in result.packages) {
-      if (dependencyId.name == root.name) continue;
-
+    for (final dependencyId in packages) {
       final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
-        final boundSource = dependencyId.source.bind(_systemCache);
-        final pubspec = await boundSource.describe(dependencyId);
+        Pubspec pubspec;
+        BoundSource boundSource;
+        String packageDir;
+        if (dependencyId.source == null) {
+          pubspec = rootPackage.pubspec;
+          packageDir = rootPackage.dir;
+        } else {
+          boundSource = _systemCache.source(dependencyId.source);
+          pubspec = await boundSource.describe(dependencyId);
+          packageDir = boundSource.getDirectory(dependencyId);
+        }
+
         final languageVersion = pubspec.languageVersion;
         if (languageVersion == null || !languageVersion.supportsNullSafety) {
           final span =
               _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
           final where = span == null
-              ? 'in the sdk constraint in the enviroment key in its pubspec.yaml.'
+              ? 'in the sdk constraint in the environment key in its pubspec.yaml.'
               : 'in its pubspec.yaml:\n${span.highlight()}';
           return NullSafetyAnalysisResult(
             NullSafetyCompliance.notCompliant,
@@ -139,7 +167,7 @@ class NullSafetyAnalysis {
           // TODO(sigurdm): Consider using withDependencyType here.
           await boundSource.downloadToSystemCache(dependencyId);
         }
-        final packageDir = boundSource.getDirectory(dependencyId);
+
         final libDir =
             path.absolute(path.normalize(path.join(packageDir, 'lib')));
         if (dirExists(libDir)) {
