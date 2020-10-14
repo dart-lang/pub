@@ -114,19 +114,26 @@ Future<void> main() async {
     ]);
     await dir.create();
 
-    await testGetExecutable('myapp', dir.io.path, result: 'bin/myapp.dart');
+    await testGetExecutable('myapp', dir.io.path,
+        result: 'bin${separator}myapp.dart');
     await testGetExecutable('myapp:myapp', dir.io.path,
         result: 'bin/myapp.dart');
-    await testGetExecutable(':myapp', dir.io.path, result: 'bin/myapp.dart');
-    await testGetExecutable(':tool', dir.io.path, result: 'bin/tool.dart');
+    await testGetExecutable(':myapp', dir.io.path,
+        result: 'bin${separator}myapp.dart');
+    await testGetExecutable(':tool', dir.io.path,
+        result: 'bin${separator}tool.dart');
     await testGetExecutable('foo', dir.io.path,
-        allowSnapshot: false, result: endsWith('foo-1.0.0/bin/foo.dart'));
+        allowSnapshot: false,
+        result: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'));
     await testGetExecutable('foo', dir.io.path,
-        result: '.dart_tool/pub/bin/foo/foo.dart-$_currentVersion.snapshot');
+        result:
+            '.dart_tool${separator}pub${separator}bin${separator}foo${separator}foo.dart-$_currentVersion.snapshot');
     await testGetExecutable('foo:tool', dir.io.path,
-        allowSnapshot: false, result: endsWith('foo-1.0.0/bin/tool.dart'));
+        allowSnapshot: false,
+        result: endsWith('foo-1.0.0${separator}bin${separator}tool.dart'));
     await testGetExecutable('foo:tool', dir.io.path,
-        result: '.dart_tool/pub/bin/foo/tool.dart-$_currentVersion.snapshot');
+        result:
+            '.dart_tool${separator}pub${separator}bin${separator}foo${separator}tool.dart-$_currentVersion.snapshot');
     await testGetExecutable(
       'unknown:tool',
       dir.io.path,
@@ -135,7 +142,8 @@ Future<void> main() async {
     await testGetExecutable(
       'foo:unknown',
       dir.io.path,
-      errorMessage: 'Could not find `bin/unknown.dart` in package `foo`.',
+      errorMessage:
+          'Could not find `bin${separator}unknown.dart` in package `foo`.',
     );
     await testGetExecutable(
       'unknownTool',

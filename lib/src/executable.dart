@@ -298,7 +298,7 @@ Future<String> getExecutableForCommand(
       command = package;
     }
 
-    final executable = Executable(package, 'bin/$command.dart');
+    final executable = Executable(package, p.join('bin', '$command.dart'));
     if (!entrypoint.packageGraph.packages.containsKey(package)) {
       throw CommandResolutionFailedException(
           'Could not find package `$package` or file `$descriptor`');
@@ -306,7 +306,7 @@ Future<String> getExecutableForCommand(
     final path = entrypoint.resolveExecutable(executable);
     if (!fileExists(path)) {
       throw CommandResolutionFailedException(
-          'Could not find `bin/$command.dart` in package `$package`.');
+          'Could not find `bin${p.separator}$command.dart` in package `$package`.');
     }
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
       return p.relative(path, from: root);
