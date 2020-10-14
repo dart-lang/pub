@@ -138,7 +138,7 @@ void main() {
             'test_pkg',
             '0.0.1',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           )
           ..serve(
