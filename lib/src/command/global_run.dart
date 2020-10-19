@@ -70,7 +70,8 @@ class GlobalRunCommand extends PubCommand {
         Executable.adaptProgramName(package, executable), args,
         vmArgs: vmArgs,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: globalEntrypoint.precompileExecutable);
+        recompile: (executable) => log.warningsOnlyUnlessTerminal(
+            () => globalEntrypoint.precompileExecutable(executable)));
     await flushThenExit(exitCode);
   }
 }
