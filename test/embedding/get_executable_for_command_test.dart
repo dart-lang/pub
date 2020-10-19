@@ -117,7 +117,7 @@ Future<void> main() async {
     await testGetExecutable('myapp', dir.io.path,
         result: 'bin${separator}myapp.dart');
     await testGetExecutable('myapp:myapp', dir.io.path,
-        result: 'bin/myapp.dart');
+        result: 'bin${separator}myapp.dart');
     await testGetExecutable(':myapp', dir.io.path,
         result: 'bin${separator}myapp.dart');
     await testGetExecutable(':tool', dir.io.path,
