@@ -15,7 +15,7 @@ abstract class BarbackCommand extends PubCommand {
   }
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     // Switch to JSON output if specified. We need to do this before parsing
     // the source directories so an error will be correctly reported in JSON
     // format.

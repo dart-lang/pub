@@ -19,7 +19,7 @@ class UploaderCommand extends PubCommand {
   String get description =>
       'Manage uploaders for a package on pub.dartlang.org.';
   @override
-  String get invocation => 'pub uploader [options] {add/remove} <email>';
+  String get argumentsDescription => '[options] {add/remove} <email>';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-uploader';
 
@@ -36,7 +36,7 @@ class UploaderCommand extends PubCommand {
   }
 
   @override
-  Future run() {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
       printUsage();

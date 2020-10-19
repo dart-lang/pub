@@ -17,7 +17,7 @@ class GlobalActivateCommand extends PubCommand {
   @override
   String get description => "Make a package's executables globally available.";
   @override
-  String get invocation => 'pub global activate <package> [version-constraint]';
+  String get argumentsDescription => '<package> [version-constraint]';
 
   GlobalActivateCommand() {
     argParser.addOption('source',
@@ -49,7 +49,7 @@ class GlobalActivateCommand extends PubCommand {
   }
 
   @override
-  Future run() {
+  Future<void> runProtected() async {
     // Default to `null`, which means all executables.
     List<String> executables;
     if (argResults.wasParsed('executable')) {

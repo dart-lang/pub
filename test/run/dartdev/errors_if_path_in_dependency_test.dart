@@ -24,7 +24,7 @@ void main() {
     await runPub(args: ['run', 'foo:sub/dir'], error: '''
 Cannot run an executable in a subdirectory of a dependency.
 
-Usage: pub run <executable> [args...]
+Usage: pub run <executable> [arguments...]
 -h, --help                              Print this usage information.
     --[no-]enable-asserts               Enable assert statements.
     --enable-experiment=<experiment>    Runs the executable in a VM with the

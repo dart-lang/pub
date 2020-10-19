@@ -23,7 +23,7 @@ class LishCommand extends PubCommand {
   @override
   String get description => 'Publish the current package to pub.dartlang.org.';
   @override
-  String get invocation => 'pub publish [options]';
+  String get argumentsDescription => '[options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
@@ -114,7 +114,7 @@ class LishCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future runProtected() async {
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }

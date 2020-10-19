@@ -18,14 +18,12 @@ class CacheRepairCommand extends PubCommand {
   @override
   String get description => 'Reinstall cached packages.';
   @override
-  String get invocation => 'pub cache repair';
-  @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
   @override
   bool get takesArguments => false;
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     // Repair every cached source.
     final repairResults = (await Future.wait(
             cache.sources.all.map(cache.source).map((source) async {

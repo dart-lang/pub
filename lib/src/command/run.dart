@@ -19,7 +19,7 @@ class RunCommand extends PubCommand {
   @override
   String get description => 'Run an executable from a package.';
   @override
-  String get invocation => 'pub run <executable> [args...]';
+  String get argumentsDescription => '<executable> [arguments...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-run';
   @override
@@ -41,7 +41,7 @@ class RunCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults['dart-dev-run']) {
       return await _runFromDartDev();
     }

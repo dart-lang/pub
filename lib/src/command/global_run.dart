@@ -21,7 +21,7 @@ class GlobalRunCommand extends PubCommand {
       'Run an executable from a globally activated package.\n'
       "NOTE: We are currently optimizing this command's startup time.";
   @override
-  String get invocation => 'pub global run <package>:<executable> [args...]';
+  String get argumentsDescription => '<package>:<executable> [args...]';
   @override
   bool get allowTrailingOptions => false;
 
@@ -38,7 +38,7 @@ class GlobalRunCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }

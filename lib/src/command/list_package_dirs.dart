@@ -16,7 +16,7 @@ class ListPackageDirsCommand extends PubCommand {
   @override
   String get description => 'Print local paths to dependencies.';
   @override
-  String get invocation => 'pub list-package-dirs';
+  String get argumentsDescription => '';
   @override
   bool get takesArguments => false;
   @override
@@ -28,7 +28,7 @@ class ListPackageDirsCommand extends PubCommand {
   }
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     log.json.enabled = true;
 
     if (!fileExists(entrypoint.lockFilePath)) {

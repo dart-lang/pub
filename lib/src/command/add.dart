@@ -32,9 +32,11 @@ class AddCommand extends PubCommand {
   @override
   String get description => 'Add a dependency to pubspec.yaml.';
   @override
-  String get invocation => 'pub add <package>[:<constraint>] [options]';
+  String get argumentsDescription => '<package>[:<constraint>] [options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
+  @override
+  bool get isOffline => argResults['offline'];
 
   bool get isDev => argResults['dev'];
   bool get isDryRun => argResults['dry-run'];
@@ -75,7 +77,7 @@ class AddCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
     }

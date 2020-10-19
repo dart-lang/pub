@@ -7,10 +7,9 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
-import 'command.dart' show pubCommandAliases, lineLength;
+import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -28,54 +27,51 @@ import 'command/serve.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
-import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
-import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'log.dart';
 import 'sdk.dart';
-import 'solver.dart';
-import 'utils.dart';
 
-class PubCommandRunner extends CommandRunner {
-  /// Returns the nested name of the command that's currently being run.
-  /// Examples:
-  ///
-  ///     get
-  ///     cache repair
-  ///
-  /// Returns an empty string if no command is being run. (This is only
-  /// expected to happen when unit tests invoke code inside pub without going
-  /// through a command.)
-  ///
-  /// For top-level commands, if an alias is used, the primary command name is
-  /// returned. For instance `install` becomes `get`.
-  static String get command {
-    if (_options == null) return '';
-
-    var list = <String>[];
-    for (var command = _options.command;
-        command != null;
-        command = command.command) {
-      var commandName = command.name;
-
-      if (list.isEmpty) {
-        // this is a top-level command
-        final rootCommand = pubCommandAliases.entries.singleWhere(
-            (element) => element.value.contains(command.name),
-            orElse: () => null);
-        if (rootCommand != null) {
-          commandName = rootCommand.key;
-        }
-      }
-      list.add(commandName);
-    }
-    return list.join(' ');
+class PubCommandRunner extends CommandRunner implements PubTopLevel {
+  @override
+  bool get captureStackChains {
+    return _argResults['trace'] ||
+        _argResults['verbose'] ||
+        _argResults['verbosity'] == 'all';
   }
 
+  @override
+  Verbosity get verbosity {
+    switch (_argResults['verbosity']) {
+      case 'error':
+        return log.Verbosity.ERROR;
+      case 'warning':
+        return log.Verbosity.WARNING;
+      case 'normal':
+        return log.Verbosity.NORMAL;
+      case 'io':
+        return log.Verbosity.IO;
+      case 'solver':
+        return log.Verbosity.SOLVER;
+      case 'all':
+        return log.Verbosity.ALL;
+      default:
+        // No specific verbosity given, so check for the shortcut.
+        if (_argResults['verbose']) return log.Verbosity.ALL;
+        return log.Verbosity.NORMAL;
+    }
+  }
+
+  @override
+  bool get trace => _argResults['trace'];
+
+  ArgResults _argResults;
+
   /// The top-level options parsed by the command runner.
-  static ArgResults _options;
+  @override
+  ArgResults get argResults => _argResults;
 
   @override
   String get usageFooter =>
@@ -106,6 +102,8 @@ class PubCommandRunner extends CommandRunner {
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
 
+    // When adding new commands be sure to also add them to
+    // `pub_embeddable_command.dart`.
     addCommand(AddCommand());
     addCommand(BuildCommand());
     addCommand(CacheCommand());
@@ -128,12 +126,12 @@ class PubCommandRunner extends CommandRunner {
   @override
   Future run(Iterable<String> args) async {
     try {
-      _options = super.parse(args);
+      _argResults = parse(args);
     } on UsageException catch (error) {
       log.exception(error);
       await flushThenExit(exit_codes.USAGE);
     }
-    await runCommand(_options);
+    await runCommand(_argResults);
   }
 
   @override
@@ -145,74 +143,8 @@ class PubCommandRunner extends CommandRunner {
       return;
     }
 
-    if (topLevelResults['trace']) {
-      log.recordTranscript();
-    }
-
-    switch (topLevelResults['verbosity']) {
-      case 'error':
-        log.verbosity = log.Verbosity.ERROR;
-        break;
-      case 'warning':
-        log.verbosity = log.Verbosity.WARNING;
-        break;
-      case 'normal':
-        log.verbosity = log.Verbosity.NORMAL;
-        break;
-      case 'io':
-        log.verbosity = log.Verbosity.IO;
-        break;
-      case 'solver':
-        log.verbosity = log.Verbosity.SOLVER;
-        break;
-      case 'all':
-        log.verbosity = log.Verbosity.ALL;
-        break;
-      default:
-        // No specific verbosity given, so check for the shortcut.
-        if (topLevelResults['verbose']) log.verbosity = log.Verbosity.ALL;
-        break;
-    }
-
-    log.fine('Pub ${sdk.version}');
-
     await _validatePlatform();
-
-    var captureStackChains = topLevelResults['trace'] ||
-        topLevelResults['verbose'] ||
-        topLevelResults['verbosity'] == 'all';
-
-    try {
-      await captureErrors(() => super.runCommand(topLevelResults),
-          captureStackChains: captureStackChains);
-
-      // Explicitly exit on success to ensure that any dangling dart:io handles
-      // don't cause the process to never terminate.
-      await flushThenExit(exit_codes.SUCCESS);
-    } catch (error, chain) {
-      log.exception(error, chain);
-
-      if (topLevelResults['trace']) {
-        log.dumpTranscript();
-      } else if (!isUserFacingException(error)) {
-        // Escape the argument for users to copy-paste in bash.
-        // Wrap with single quotation, and use '\'' to insert single quote, as
-        // long as we have no spaces this doesn't create a new argument.
-        String protectArgument(String x) =>
-            RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
-                ? "'${x.replaceAll("'", r"'\''")}'"
-                : x;
-        log.error("""
-This is an unexpected error. Please run
-
-    pub --trace ${topLevelResults.arguments.map(protectArgument).join(' ')}
-
-and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
-""");
-      }
-
-      await flushThenExit(_chooseExitCode(error));
-    }
+    await super.runCommand(topLevelResults);
   }
 
   @override
@@ -249,38 +181,6 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
         '${log.bold(depsRev)},\n'
         'but ${log.bold(actualRev)} is checked out in '
         '${p.relative(pubRoot)}.\n\n');
-  }
-
-  /// Returns the appropriate exit code for [exception], falling back on 1 if no
-  /// appropriate exit code could be found.
-  int _chooseExitCode(exception) {
-    if (exception is SolveFailure) {
-      var packageNotFound = exception.packageNotFound;
-      if (packageNotFound != null) exception = packageNotFound;
-    }
-    while (exception is WrappedException && exception.innerError is Exception) {
-      exception = exception.innerError;
-    }
-
-    if (exception is HttpException ||
-        exception is http.ClientException ||
-        exception is SocketException ||
-        exception is TlsException ||
-        exception is PubHttpException ||
-        exception is git.GitException ||
-        exception is PackageNotFoundException) {
-      return exit_codes.UNAVAILABLE;
-    } else if (exception is FileSystemException || exception is FileException) {
-      return exit_codes.NO_INPUT;
-    } else if (exception is FormatException || exception is DataException) {
-      return exit_codes.DATA;
-    } else if (exception is ConfigException) {
-      return exit_codes.CONFIG;
-    } else if (exception is UsageException) {
-      return exit_codes.USAGE;
-    } else {
-      return 1;
-    }
   }
 
   /// Checks that pub is running on a supported platform.

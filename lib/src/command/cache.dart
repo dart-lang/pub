@@ -14,8 +14,6 @@ class CacheCommand extends PubCommand {
   @override
   String get description => 'Work with the system cache.';
   @override
-  String get invocation => 'pub cache <subcommand>';
-  @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
   CacheCommand() {
