@@ -520,17 +520,6 @@ Future<bool> confirm(String message) {
   return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }
 
-/// Flushes the stdout and stderr streams, then exits the program with the given
-/// status code.
-///
-/// This returns a Future that will never complete, since the program will have
-/// exited already. This is useful to prevent Future chains from proceeding
-/// after you've decided to exit.
-Future flushThenExit(int status) {
-  return Future.wait([stdout.close(), stderr.close()])
-      .then((_) => exit(status));
-}
-
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.

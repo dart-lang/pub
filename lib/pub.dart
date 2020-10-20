@@ -5,4 +5,4 @@ export 'src/executable.dart'
 
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
-Command pubCommand() => PubEmbeddableCommand();
+Command<int> pubCommand() => PubEmbeddableCommand();

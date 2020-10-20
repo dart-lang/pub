@@ -17,7 +17,6 @@ import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'global_packages.dart';
 import 'http.dart';
-import 'io.dart';
 import 'log.dart' as log;
 import 'pub_embeddable_command.dart';
 import 'sdk.dart';
@@ -43,7 +42,7 @@ final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
 /// A command may either be a "leaf" command or it may be a parent for a set
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
-abstract class PubCommand extends Command {
+abstract class PubCommand extends Command<int> {
   SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
   SystemCache _cache;
@@ -135,7 +134,7 @@ abstract class PubCommand extends Command {
 
   @override
   @nonVirtual
-  FutureOr<void> run() async {
+  FutureOr<int> run() async {
     computeCommand(_pubTopLevel.argResults);
     if (_pubTopLevel.trace) {
       log.recordTranscript();
@@ -146,10 +145,7 @@ abstract class PubCommand extends Command {
     try {
       await captureErrors(runProtected,
           captureStackChains: _pubTopLevel.captureStackChains);
-
-      // Explicitly exit on success to ensure that any dangling dart:io handles
-      // don't cause the process to never terminate.
-      await flushThenExit(exit_codes.SUCCESS);
+      return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
 
@@ -171,7 +167,7 @@ This is an unexpected error. Please run
 and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);
       }
-      await flushThenExit(_chooseExitCode(error));
+      return _chooseExitCode(error);
     }
   }
 
@@ -202,6 +198,8 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       return exit_codes.CONFIG;
     } else if (exception is UsageException) {
       return exit_codes.USAGE;
+    } else if (exception is ExitWithException) {
+      return exception.exitCode;
     } else {
       return 1;
     }
@@ -209,7 +207,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 
   /// Override this in leaf commands to run a pub command with pub error
   /// handling.
-  FutureOr runProtected() {
+  FutureOr<void> runProtected() {
     throw UnimplementedError('All leaf commands should override this');
   }
 

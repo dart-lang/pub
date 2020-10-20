@@ -34,7 +34,7 @@ import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
 
-class PubCommandRunner extends CommandRunner implements PubTopLevel {
+class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   bool get captureStackChains {
     return _argResults['trace'] ||
@@ -124,27 +124,26 @@ class PubCommandRunner extends CommandRunner implements PubTopLevel {
   }
 
   @override
-  Future run(Iterable<String> args) async {
+  Future<int> run(Iterable<String> args) async {
     try {
       _argResults = parse(args);
     } on UsageException catch (error) {
       log.exception(error);
-      await flushThenExit(exit_codes.USAGE);
+      return exit_codes.USAGE;
     }
-    await runCommand(_argResults);
+    return await runCommand(_argResults);
   }
 
   @override
-  Future runCommand(ArgResults topLevelResults) async {
+  Future<int> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
     if (topLevelResults['version']) {
       log.message('Pub ${sdk.version}');
-      return;
+      return 0;
     }
 
-    await _validatePlatform();
-    await super.runCommand(topLevelResults);
+    return await super.runCommand(topLevelResults);
   }
 
   @override
@@ -181,19 +180,5 @@ class PubCommandRunner extends CommandRunner implements PubTopLevel {
         '${log.bold(depsRev)},\n'
         'but ${log.bold(actualRev)} is checked out in '
         '${p.relative(pubRoot)}.\n\n');
-  }
-
-  /// Checks that pub is running on a supported platform.
-  ///
-  /// If it isn't, it prints an error message and exits. Completes when the
-  /// validation is done.
-  Future _validatePlatform() async {
-    if (!Platform.isWindows) return;
-
-    var result = await runProcess('ver', []);
-    if (result.stdout.join('\n').contains('XP')) {
-      log.error('Sorry, but pub is not supported on Windows XP.');
-      await flushThenExit(exit_codes.USAGE);
-    }
   }
 }

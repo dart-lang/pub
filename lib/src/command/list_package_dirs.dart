@@ -5,6 +5,7 @@
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -60,5 +61,6 @@ class ListPackageDirsCommand extends PubCommand {
     ];
 
     log.json.message(output);
+    return exit_codes.SUCCESS;
   }
 }
