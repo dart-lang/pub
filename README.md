@@ -12,11 +12,9 @@ more information, see the
 
 The first step towards contributing is to contact the pub dev team and let us
 know what you're working on, so we can be sure not to start working on the same
-thing at the same time. Just send an email to [misc@dartlang.org] letting us
-know that you're interested in contributing and what you plan on working on.
+thing at the same time. Open an [issue](http://github.com/dart-lang/pub/issues/new)
+letting us know that you're interested in contributing and what you plan on working on.
 This will also let us give you specific advice about where to start.
-
-[misc@dartlang.org]: mailto:misc@dartlang.org
 
 ## Organization
 
@@ -74,4 +72,4 @@ All patches to official Dart packages, including to pub, need to undergo code
 review before they're submitted. The full process for putting up your patch for
 review is [documented elsewhere][contributing].
 
-[contributing]: https://github.com/dart-lang/sdk/wiki/Contributing
+[contributing]: https://github.com/dart-lang/sdk/blob/master/CONTRIBUTING.md
