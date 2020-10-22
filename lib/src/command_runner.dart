@@ -131,7 +131,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       log.exception(error);
       return exit_codes.USAGE;
     }
-    return await runCommand(_argResults);
+    return await runCommand(_argResults) ?? exit_codes.SUCCESS;
   }
 
   @override
@@ -142,7 +142,6 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       log.message('Pub ${sdk.version}');
       return 0;
     }
-
     return await super.runCommand(topLevelResults);
   }
 
