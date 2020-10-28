@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../executable.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -38,7 +38,7 @@ class GlobalRunCommand extends PubCommand {
   }
 
   @override
-  Future runProtected() async {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -72,6 +72,6 @@ class GlobalRunCommand extends PubCommand {
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
         recompile: (executable) => log.warningsOnlyUnlessTerminal(
             () => globalEntrypoint.precompileExecutable(executable)));
-    await flushThenExit(exitCode);
+    throw ExitWithException(exitCode);
   }
 }

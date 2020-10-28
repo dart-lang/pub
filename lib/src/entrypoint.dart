@@ -220,7 +220,7 @@ class Entrypoint {
   /// executables.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
-  Future acquireDependencies(
+  Future<void> acquireDependencies(
     SolveType type, {
     List<String> useLatest,
     bool dryRun = false,
