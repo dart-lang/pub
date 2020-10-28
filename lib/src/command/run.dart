@@ -24,8 +24,12 @@ class RunCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-run';
   @override
   bool get allowTrailingOptions => false;
+  @override
+  bool get hidden => deprecated;
 
-  RunCommand() {
+  final bool deprecated;
+
+  RunCommand({this.deprecated = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',
@@ -42,6 +46,11 @@ class RunCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    if (deprecated) {
+      await log.warningsOnlyUnlessTerminal(() {
+        log.message('Deprecated. Use `dart run instead`');
+      });
+    }
     if (argResults['dart-dev-run']) {
       return await _runFromDartDev();
     }

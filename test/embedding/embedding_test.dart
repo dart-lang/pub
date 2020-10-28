@@ -7,7 +7,9 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
+import '../descriptor.dart';
 import '../golden_file.dart';
+import '../test_pub.dart';
 
 const _command_runner = 'tool/test-bin/pub_command_runner.dart';
 
@@ -15,10 +17,15 @@ String snapshot;
 
 /// Runs `dart tool/test-bin/pub_command_runner.dart [args]` and appends the output to [buffer].
 Future<void> runEmbedding(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment, dynamic exitCode = 0}) async {
+    {String workingDirextory,
+    Map<String, String> environment,
+    dynamic exitCode = 0}) async {
   final process = await TestProcess.start(
-      Platform.resolvedExecutable, [snapshot, ...args],
-      environment: environment);
+    Platform.resolvedExecutable,
+    [snapshot, ...args],
+    environment: environment,
+    workingDirectory: workingDirextory,
+  );
   await process.shouldExit(exitCode);
 
   buffer.writeln([
@@ -54,5 +61,31 @@ Future<void> main() async {
     await runEmbedding(['pub', 'global'], buffer, exitCode: 64);
     expectMatchesGoldenFile(
         buffer.toString(), 'test/embedding/goldens/helptext.txt');
+  });
+
+  test('run works, though hidden', () async {
+    final buffer = StringBuffer();
+    final d = dir(appPath, [
+      appPubspec(),
+      dir('bin', [
+        file('main.dart', '''
+import 'dart:io';
+main() { 
+  print("Hi");
+  exit(123);
+}
+''')
+      ])
+    ]);
+    await d.create();
+    await runEmbedding(['pub', 'get'], buffer, workingDirextory: d.io.path);
+    await runEmbedding(
+      ['pub', 'run', 'bin/main.dart'],
+      buffer,
+      exitCode: 123,
+      workingDirextory: d.io.path,
+    );
+    expectMatchesGoldenFile(
+        buffer.toString(), 'test/embedding/goldens/run.txt');
   });
 }
