@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import '../command.dart';
 import '../exit_codes.dart' as exit_codes;
@@ -28,8 +29,10 @@ class UploaderCommand extends PubCommand {
 
   UploaderCommand() {
     argParser.addOption('server',
-        defaultsTo: cache.sources.hosted.defaultUrl,
-        help: 'The package server on which the package is hosted.');
+        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ??
+            'https://pub.dartlang.org',
+        help: 'The package server on which the package is hosted.\n'
+            'DEPRECATED: use `publish_to` in your pubspec.yaml or set \$PUB_HOSTED_URL.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
