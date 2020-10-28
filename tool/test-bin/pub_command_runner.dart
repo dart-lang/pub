@@ -27,7 +27,7 @@ class Runner extends CommandRunner {
 
   @override
   Future<int> runCommand(ArgResults topLevelResults) async {
-    return await super.runCommand(topLevelResults);
+    return await super.runCommand(topLevelResults) ?? 0;
   }
 }
 
