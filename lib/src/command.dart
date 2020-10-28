@@ -146,6 +146,8 @@ abstract class PubCommand extends Command<dynamic> {
       await captureErrors(runProtected,
           captureStackChains: _pubTopLevel.captureStackChains);
       return exit_codes.SUCCESS;
+    } on ExitWithException catch (e) {
+      return e.exitCode;
     } catch (error, chain) {
       log.exception(error, chain);
 
@@ -198,8 +200,6 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       return exit_codes.CONFIG;
     } else if (exception is UsageException) {
       return exit_codes.USAGE;
-    } else if (exception is ExitWithException) {
-      return exception.exitCode;
     } else {
       return 1;
     }
