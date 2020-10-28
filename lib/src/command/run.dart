@@ -17,7 +17,9 @@ class RunCommand extends PubCommand {
   @override
   String get name => 'run';
   @override
-  String get description => 'Run an executable from a package.';
+  String get description => deprecated
+      ? 'DEPRECATED, use `dart run`'
+      : 'Run an executable from a package.';
   @override
   String get argumentsDescription => '<executable> [arguments...]';
   @override
@@ -25,7 +27,9 @@ class RunCommand extends PubCommand {
   @override
   bool get allowTrailingOptions => false;
 
-  RunCommand() {
+  final bool deprecated;
+
+  RunCommand({this.deprecated = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',

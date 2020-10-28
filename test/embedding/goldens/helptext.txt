@@ -43,6 +43,7 @@ $ tool/test-bin/pub_command_runner.dart pub
 [E]   outdated    Analyze your dependencies to find which ones can be upgraded.
 [E]   publish     Publish the current package to pub.dartlang.org.
 [E]   remove      Removes a dependency from the current package.
+[E]   run         DEPRECATED, use `dart run`
 [E]   upgrade     Upgrade the current package's dependencies to latest versions.
 [E]   uploader    Manage uploaders for a package on pub.dartlang.org.
 [E] 
@@ -68,6 +69,7 @@ Available subcommands:
   outdated    Analyze your dependencies to find which ones can be upgraded.
   publish     Publish the current package to pub.dartlang.org.
   remove      Removes a dependency from the current package.
+  run         DEPRECATED, use `dart run`
   upgrade     Upgrade the current package's dependencies to latest versions.
   uploader    Manage uploaders for a package on pub.dartlang.org.
 
