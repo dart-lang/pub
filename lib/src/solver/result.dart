@@ -3,13 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
+import '../log.dart' as log;
+import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
 
@@ -18,6 +22,9 @@ class SolveResult {
   /// The list of concrete package versions that were selected for each package
   /// reachable from the root.
   final List<PackageId> packages;
+
+  /// The root package of this resolution.
+  final Package _root;
 
   /// A map from package names to the pubspecs for the versions of those
   /// packages that were installed.
@@ -62,7 +69,7 @@ class SolveResult {
   }
 
   final SourceRegistry _sources;
-  final Package _root;
+
   final LockFile _previousLockFile;
 
   /// Returns the names of all packages that were changed.
@@ -103,6 +110,39 @@ class SolveResult {
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
       report.reportOutdated();
+    }
+  }
+
+  /// Displays a warning if the root package opts in, but this is not a fully
+  /// null-safe resolution.
+  Future<void> warnAboutMixedMode(
+    SystemCache cache, {
+    @required bool dryRun,
+  }) async {
+    if (pubspecs[_root.name].languageVersion.supportsNullSafety) {
+      final analysis = await NullSafetyAnalysis(cache)
+          .nullSafetyComplianceOfPackages(packages, _root);
+      if (analysis.compliance == NullSafetyCompliance.mixed) {
+        log.warning('''
+The package resolution is not fully migrated to null-safety.
+
+${analysis.reason}
+
+Either downgrade your sdk constraint, or invoke dart/flutter with 
+`--no-sound-null-safety`.
+
+To learn more about available versions of your dependencies try running
+`pub outdated --mode=null-safety`.
+
+See more at ${NullSafetyAnalysis.guideUrl}.
+''');
+      } else if (analysis.compliance == NullSafetyCompliance.analysisFailed) {
+        log.warning('''
+Could not decide if this package resolution is fully migrated to null-safety:
+
+${analysis.reason}
+''');
+      }
     }
   }
 

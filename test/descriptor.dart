@@ -5,8 +5,9 @@
 import 'dart:convert';
 
 /// Pub-specific test descriptors.
+import 'dart:convert';
+
 import 'package:oauth2/oauth2.dart' as oauth2;
-import 'package:pub/src/io.dart';
 import 'package:pub/src/package_config.dart';
 import 'package:pub/src/tokens.dart';
 import 'package:test_descriptor/test_descriptor.dart';
@@ -44,8 +45,21 @@ Descriptor get validPackage => dir(appPath, [
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
 ///
 /// This snapshot was generated using version 2.0.0-dev.58.0 of the VM.
-FileDescriptor outOfDateSnapshot(String name) =>
-    file(name, readBinaryFile(testAssetPath('out-of-date.snapshot.dart2')));
+FileDescriptor outOfDateSnapshot(String name) => file(
+      name,
+      base64.decode(
+        'kKvN7wAAAAYBAAEAAQAAAAAAAAABBgMBBh8AAQEAAAABA'
+        'wofAAAAAAAAAFwBShABHhAGAQABJwIAAAAAEwAAAAAAAA'
+        'AVAAAAOQAAAAEAAAACAAAAJWZpbGU6Ly8vVXNlcnMvcm5'
+        '5c3Ryb20vdGVtcC90ZW1wLmRhcnQgdm9pZCBtYWluKCkg'
+        'PT4gcHJpbnQoJ2hlbGxvIScpOwoDACABAAAAUQAAAFQGA'
+        'AMBBAIBAAUEBAUGAAAAAAcABAovN0BFbWFpbmhlbGxvIW'
+        'ZpbGU6Ly8vVXNlcnMvcm55c3Ryb20vdGVtcC90ZW1wLmR'
+        'hcnRAbWV0aG9kc2RhcnQ6Y29yZXByaW50AAAAAE0AAACn'
+        'AAAAtAAAALQAAAC4AAABBQAAAAMAAAAJAAAATQAAAAEAA'
+        'AEy',
+      ),
+    );
 
 /// Describes a file named `pubspec.yaml` with the given YAML-serialized
 /// [contents], which should be a serializable object.

@@ -11,7 +11,7 @@ Future<void> expectValidation(error, int exitCode) async {
   await runPub(
       error: error,
       args: ['publish', '--dry-run'],
-      environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
       workingDirectory: d.dir(appPath).io.path,
       exitCode: exitCode);
 }
@@ -34,7 +34,7 @@ Future<void> setup(
     ...extraFiles,
   ]).create();
 
-  await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+  await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
 }
 
 void main() {
@@ -46,7 +46,7 @@ void main() {
           'foo',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
@@ -62,13 +62,13 @@ void main() {
           'foo',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
 
       await setup(
-          sdkConstraint: '>=2.11.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
+          sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
       await expectValidation(contains('Package has 0 warnings.'), 0);
     });
   });
@@ -87,7 +87,7 @@ void main() {
       );
 
       await setup(
-          sdkConstraint: '>=2.11.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
+          sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
       await expectValidation(
           allOf(
             contains(
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('is opting in to null-safety, but has file opting out', () async {
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0', extraFiles: [
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0', extraFiles: [
         d.dir('lib', [d.file('a.dart', '// @dart = 2.9\n')])
       ]);
       await expectValidation(
@@ -114,7 +114,7 @@ void main() {
         () async {
       await servePackages(
         (server) => server.serve('foo', '0.0.1', pubspec: {
-          'environment': {'sdk': '>=2.11.0<3.0.0'}
+          'environment': {'sdk': '>=2.12.0<3.0.0'}
         }, contents: [
           d.dir('lib', [
             d.file('foo.dart', '''
@@ -125,7 +125,7 @@ void main() {
       );
 
       await setup(
-          sdkConstraint: '>=2.11.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
+          sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
       await expectValidation(
           allOf(
             contains('package:foo/foo.dart is opting out of null safety:'),

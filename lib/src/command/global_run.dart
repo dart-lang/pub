@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../executable.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -21,7 +21,7 @@ class GlobalRunCommand extends PubCommand {
       'Run an executable from a globally activated package.\n'
       "NOTE: We are currently optimizing this command's startup time.";
   @override
-  String get invocation => 'pub global run <package>:<executable> [args...]';
+  String get argumentsDescription => '<package>:<executable> [args...]';
   @override
   bool get allowTrailingOptions => false;
 
@@ -38,7 +38,7 @@ class GlobalRunCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -70,7 +70,8 @@ class GlobalRunCommand extends PubCommand {
         Executable.adaptProgramName(package, executable), args,
         vmArgs: vmArgs,
         enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: globalEntrypoint.precompileExecutable);
-    await flushThenExit(exitCode);
+        recompile: (executable) => log.warningsOnlyUnlessTerminal(
+            () => globalEntrypoint.precompileExecutable(executable)));
+    throw ExitWithException(exitCode);
   }
 }

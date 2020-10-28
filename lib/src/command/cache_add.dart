@@ -17,8 +17,8 @@ class CacheAddCommand extends PubCommand {
   @override
   String get description => 'Install a package.';
   @override
-  String get invocation =>
-      'pub cache add <package> [--version <constraint>] [--all]';
+  String get argumentsDescription =>
+      '<package> [--version <constraint>] [--all]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
@@ -30,7 +30,7 @@ class CacheAddCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     // Make sure there is a package.
     if (argResults.rest.isEmpty) {
       usageException('No package to add given.');

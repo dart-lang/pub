@@ -25,7 +25,7 @@ Future<void> setup({String sdkConstraint}) async {
     }),
   ]).create();
 
-  await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.11.0'});
+  await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
 }
 
 void main() {
@@ -62,7 +62,7 @@ void main() {
             'test_pkg',
             '2.0.0',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           ),
       );
@@ -87,7 +87,7 @@ void main() {
             'test_pkg',
             '0.0.2-dev',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           ),
       );
@@ -103,29 +103,29 @@ void main() {
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator);
     });
 
     test(
-        'is opting in to null-safety using a pre-release of 2.11.0 '
+        'is opting in to null-safety using a pre-release of 2.12.0 '
         'with previous null-safe version', () async {
       await servePackages(
         (server) => server.serve(
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0-dev <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0-dev <3.0.0');
       await expectValidation(validator);
     });
 
@@ -138,7 +138,7 @@ void main() {
             'test_pkg',
             '0.0.1',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           )
           ..serve(
@@ -150,7 +150,7 @@ void main() {
           ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator);
     });
 
@@ -163,7 +163,7 @@ void main() {
             'test_pkg',
             '0.0.1',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           )
           ..serve(
@@ -175,12 +175,12 @@ void main() {
           ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator);
     });
 
     test('is opting in to null-safety with no existing versions', () async {
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await servePackages((x) => x);
       await expectValidation(validator);
     });
@@ -188,7 +188,7 @@ void main() {
     test(
         'is opting in to null-safety with no existing versions. '
         'Even with an in-between non-null-safe prerelease', () async {
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await servePackages(
         (server) => server.serve(
           'test_pkg',
@@ -217,7 +217,7 @@ void main() {
           'test_pkg',
           '0.0.2-dev',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
@@ -239,7 +239,7 @@ void main() {
         ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator, hints: isNotEmpty);
     });
 
@@ -259,12 +259,12 @@ void main() {
             'test_pkg',
             '2.0.0',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator, hints: isNotEmpty);
     });
 
@@ -284,12 +284,12 @@ void main() {
             'test_pkg',
             '0.0.2-dev',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           ),
       );
 
-      await setup(sdkConstraint: '>=2.11.0 <3.0.0');
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await expectValidation(validator, hints: isNotEmpty);
     });
 
@@ -300,7 +300,7 @@ void main() {
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.11.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'}
           },
         ),
       );
@@ -318,7 +318,7 @@ void main() {
             'test_pkg',
             '0.0.1',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           )
           ..serve(
@@ -343,7 +343,7 @@ void main() {
             'test_pkg',
             '0.0.1',
             pubspec: {
-              'environment': {'sdk': '>=2.11.0<3.0.0'}
+              'environment': {'sdk': '>=2.12.0<3.0.0'}
             },
           )
           ..serve(

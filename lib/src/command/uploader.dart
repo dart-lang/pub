@@ -5,9 +5,9 @@
 import 'dart:async';
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 
@@ -18,7 +18,7 @@ class UploaderCommand extends PubCommand {
   @override
   String get description => 'Manage uploaders for a package on pub.dev.';
   @override
-  String get invocation => 'pub uploader [options] {add/remove} <email>';
+  String get argumentsDescription => '[options] {add/remove} <email>';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-uploader';
 
@@ -36,11 +36,11 @@ class UploaderCommand extends PubCommand {
   }
 
   @override
-  Future run() {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
       printUsage();
-      return flushThenExit(exit_codes.USAGE);
+      throw ExitWithException(exit_codes.USAGE);
     }
 
     var rest = argResults.rest.toList();
@@ -50,44 +50,33 @@ class UploaderCommand extends PubCommand {
     if (!['add', 'remove'].contains(command)) {
       log.error('Unknown uploader command "$command".');
       printUsage();
-      return flushThenExit(exit_codes.USAGE);
+      throw ExitWithException(exit_codes.USAGE);
     } else if (rest.isEmpty) {
       log.error('No uploader given for "pub uploader $command".');
       printUsage();
-      return flushThenExit(exit_codes.USAGE);
+      throw ExitWithException(exit_codes.USAGE);
     }
 
-    if (argResults.wasParsed('server')) {
-      log.warning(log.yellow(
-        'The --server flag is deprecated for `pub uploader`, permissions '
-        'management interface should instead be provided by the server.',
-      ));
+    final package = argResults['package'] ?? entrypoint.root.name;
+    final uploader = rest[0];
+    try {
+      final response = await oauth2.withClient(cache, (client) {
+        if (command == 'add') {
+          var url = server.resolve('/api/packages/'
+              '${Uri.encodeComponent(package)}/uploaders');
+          return client
+              .post(url, headers: pubApiHeaders, body: {'email': uploader});
+        } else {
+          // command == 'remove'
+          var url = server.resolve('/api/packages/'
+              '${Uri.encodeComponent(package)}/uploaders/'
+              '${Uri.encodeComponent(uploader)}');
+          return client.delete(url, headers: pubApiHeaders);
+        }
+      });
+      handleJsonSuccess(response);
+    } on PubHttpException catch (error) {
+      handleJsonError(error.response);
     }
-
-    return Future.sync(() {
-      var package = argResults['package'];
-      if (package != null) return package;
-      return entrypoint.root.name;
-    })
-        .then((package) {
-          var uploader = rest[0];
-          return oauth2.withClient(cache, server, (client) {
-            if (command == 'add') {
-              var url = server.resolve('/api/packages/'
-                  '${Uri.encodeComponent(package)}/uploaders');
-              return client
-                  .post(url, headers: pubApiHeaders, body: {'email': uploader});
-            } else {
-              // command == 'remove'
-              var url = server.resolve('/api/packages/'
-                  '${Uri.encodeComponent(package)}/uploaders/'
-                  '${Uri.encodeComponent(uploader)}');
-              return client.delete(url, headers: pubApiHeaders);
-            }
-          });
-        })
-        .then(handleJsonSuccess)
-        .catchError((error) => handleJsonError(error.response),
-            test: (e) => e is PubHttpException);
   }
 }

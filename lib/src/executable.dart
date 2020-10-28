@@ -11,10 +11,14 @@ import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
+import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
+import 'log.dart';
+import 'solver/type.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 
 /// Code shared between `run` `global run` and `run --dartdev` for extracting
@@ -195,6 +199,138 @@ Future<int> _runDartProgram(
     );
 
     return process.exitCode;
+  }
+}
+
+/// Returns the path to dart program/snapshot to invoke for running [descriptor]
+/// resolved according to the package configuration of the package at [root]
+/// (defaulting to the current working directory). Using the pub-cache at
+/// [pubCacheDir] (defaulting to the default pub cache).
+///
+/// The returned path will be relative to [root].
+///
+/// ## Resolution:
+///
+/// [descriptor] is resolved as follows:
+/// * If `<descriptor>` is an existing file (resolved relative to root, either
+///   as a path or a file uri):
+///   return that (without snapshotting).
+///
+/// * Otherwise if [root] contains no `pubspec.yaml`, throws a
+///  [CommandResolutionFailedException].
+///
+/// * Otherwise if the current package resolution is outdated do an implicit
+/// `pub get`, if that fails, throw a [CommandResolutionFailedException].
+///
+/// * Otherwise let  `<current>` be the name of the package at [root], and
+///   interpret [descriptor] as `[<package>][:<command>]`.
+///
+///   * If `<package>` is empty: default to the package at [root].
+///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
+///     `bin/main.dart` to the first that exists.
+///
+/// For example:
+/// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
+/// * `:foo` will resolve to `<current>:bin/foo.dart`.
+/// * `` and `:` both resolves to `<current>:bin/<current>.dart` or
+///   `bin/<current>:main.dart`.
+///
+/// If that doesn't resolve as an existing file throw an exception.
+///
+/// ## Snapshotting
+///
+/// The returned executable will be a snapshot if [allowSnapshot] is true and
+/// the package is an immutable (non-path) dependency of [root].
+///
+/// If returning the path to a snapshot that doesn't already exist, the script
+/// Will be precompiled. And a message will be printed only if a terminal is
+/// attached to stdout.
+///
+/// Throws an [CommandResolutionFailedException] if the command is not found or
+/// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
+Future<String> getExecutableForCommand(
+  String descriptor, {
+  bool allowSnapshot = true,
+  String root,
+  String pubCacheDir,
+}) async {
+  root ??= p.current;
+  var asPath = descriptor;
+  try {
+    asPath = Uri.parse(descriptor).toFilePath();
+  } catch (_) {
+    // Consume input path will either be a valid path or a file uri
+    // (e.g /directory/file.dart or file:///directory/file.dart). We will try
+    // parsing it as a Uri, but if parsing failed for any reason (likely
+    // because path is not a file Uri), `path` will be passed without
+    // modification to the VM.
+  }
+
+  final asDirectFile = p.join(root, asPath);
+  if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
+  if (!fileExists(p.join(root, 'pubspec.yaml'))) {
+    throw CommandResolutionFailedException('Could not find file `$descriptor`');
+  }
+  try {
+    final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
+    try {
+      // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
+      entrypoint.assertUpToDate();
+    } on DataException {
+      await warningsOnlyUnlessTerminal(
+          () => entrypoint.acquireDependencies(SolveType.GET));
+    }
+
+    String command;
+    String package;
+    if (descriptor.contains(':')) {
+      final parts = descriptor.split(':');
+      if (parts.length > 2) {
+        throw CommandResolutionFailedException(
+            '[<package>[:command]] cannot contain multiple ":"');
+      }
+      package = parts[0];
+      if (package.isEmpty) package = entrypoint.root.name;
+      command = parts[1];
+    } else {
+      package = descriptor;
+      if (package.isEmpty) package = entrypoint.root.name;
+      command = package;
+    }
+
+    final executable = Executable(package, p.join('bin', '$command.dart'));
+    if (!entrypoint.packageGraph.packages.containsKey(package)) {
+      throw CommandResolutionFailedException(
+          'Could not find package `$package` or file `$descriptor`');
+    }
+    final path = entrypoint.resolveExecutable(executable);
+    if (!fileExists(path)) {
+      throw CommandResolutionFailedException(
+          'Could not find `bin${p.separator}$command.dart` in package `$package`.');
+    }
+    if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
+      return p.relative(path, from: root);
+    } else {
+      final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
+      if (!fileExists(snapshotPath)) {
+        await warningsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(executable),
+        );
+      }
+      return p.relative(snapshotPath, from: root);
+    }
+  } on ApplicationException catch (e) {
+    throw CommandResolutionFailedException(e.message);
+  }
+}
+
+class CommandResolutionFailedException implements Exception {
+  final String message;
+  CommandResolutionFailedException(this.message);
+
+  @override
+  String toString() {
+    return 'CommandResolutionFailedException: $message';
   }
 }
 

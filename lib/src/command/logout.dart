@@ -15,7 +15,7 @@ class LogoutCommand extends PubCommand {
   @override
   String get description => 'Log out of pub.dev or any third-party pub server.';
   @override
-  String get invocation => 'pub logout [<server>] [--all]';
+  bool get takesArguments => false;
 
   /// Whether to log out of all servers, including third-party pub servers.
   bool get _all => argResults['all'];
@@ -28,15 +28,7 @@ class LogoutCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
-    if (_all) {
-      oauth2.logout(cache);
-      removeToken(cache, all: true);
-    } else if (argResults.rest.isEmpty) {
-      oauth2.logout(cache);
-    } else {
-      final server = argResults.rest.first;
-      removeToken(cache, server: server);
-    }
+  Future<void> runProtected() async {
+    oauth2.logout(cache);
   }
 }

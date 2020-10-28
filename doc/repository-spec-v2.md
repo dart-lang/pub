@@ -27,7 +27,9 @@ repository.
 * `X-Pub-Session-ID: <UUID>`
 * `X-Pub-Reason: direct | dev`
 * `X-Pub-Environment: ...`
-* `User-Agent: ...`
+* `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository)`
+
+Adding a custom `User-Agent` that allows _pub repository operators_ to identify calls from a specific client, and a URL allowing operators to reach owner of the client is always good practice.
 
 ### List all versions of a package
 

@@ -11,14 +11,12 @@ class GlobalListCommand extends PubCommand {
   @override
   String get description => 'List globally activated packages.';
   @override
-  String get invocation => 'pub global list';
-  @override
   bool get allowTrailingOptions => false;
   @override
   bool get takesArguments => false;
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     globals.listActivePackages();
   }
 }

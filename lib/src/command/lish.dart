@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
@@ -23,7 +24,7 @@ class LishCommand extends PubCommand {
   @override
   String get description => 'Publish the current package to pub.dev.';
   @override
-  String get invocation => 'pub publish [options]';
+  String get argumentsDescription => '[options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
@@ -64,7 +65,7 @@ class LishCommand extends PubCommand {
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(Uri requestServer, List<int> packageBytes) async {
+  Future<void> _publish(List<int> packageBytes) async {
     Uri cloudStorageUrl;
     try {
       await oauth2.withClient(cache, requestServer, (client) {
@@ -115,7 +116,7 @@ class LishCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future runProtected() async {
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }
@@ -141,9 +142,9 @@ class LishCommand extends PubCommand {
     var isValid =
         await _validate(packageBytesFuture.then((bytes) => bytes.length));
     if (!isValid) {
-      await flushThenExit(exit_codes.DATA);
+      throw ExitWithException(exit_codes.DATA);
     } else if (dryRun) {
-      await flushThenExit(exit_codes.SUCCESS);
+      return;
     } else {
       await _publish(server, await packageBytesFuture);
     }

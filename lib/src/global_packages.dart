@@ -82,7 +82,7 @@ class GlobalPackages {
   /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future activateGit(String repo, List<String> executables,
+  Future<void> activateGit(String repo, List<String> executables,
       {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
     // Call this just to log what the current active package is, if any.
@@ -114,7 +114,7 @@ class GlobalPackages {
   ///
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
-  Future activateHosted(
+  Future<void> activateHosted(
       String name, VersionConstraint constraint, List<String> executables,
       {Map<String, FeatureDependency> features,
       bool overwriteBinStubs,
@@ -138,7 +138,7 @@ class GlobalPackages {
   /// if [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future activatePath(String path, List<String> executables,
+  Future<void> activatePath(String path, List<String> executables,
       {bool overwriteBinStubs}) async {
     var entrypoint = Entrypoint(path, cache);
 
@@ -166,7 +166,7 @@ class GlobalPackages {
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
-  Future _installInCache(PackageRange dep, List<String> executables,
+  Future<void> _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = Package.inMemory(Pubspec('pub global activate',
@@ -708,15 +708,20 @@ class GlobalPackages {
         invocation = '''
 if exist "$snapshot" (
   dart "$snapshot" %*
-  rem The VM exits with code 253 if the snapshot version is out-of-date.	
-  rem If it is, we need to delete it and run "pub global" manually.	
-  if not errorlevel 253 (	
-    exit /b %errorlevel%	
+  rem The VM exits with code 253 if the snapshot version is out-of-date.
+  rem If it is, we need to delete it and run "pub global" manually.
+  if not errorlevel 253 (
+    goto error
   )
   pub global run ${package.name}:$script %*
 ) else (
   pub global run ${package.name}:$script %*
-)''';
+)
+goto eof
+:error
+exit /b %errorlevel%
+:eof
+''';
       } else {
         invocation = 'pub global run ${package.name}:$script %*';
       }

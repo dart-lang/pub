@@ -23,11 +23,6 @@ class DartSdk extends Sdk {
   @override
   Version get firstPubVersion => Version.none;
 
-  /// The path to the root directory of the SDK.
-  ///
-  /// Note that if pub is running from source within the Dart repo (for example
-  /// when building Observatory), this will be the repo's "sdk/" directory,
-  /// which doesn't look exactly like the built SDK.
   static final String _rootDirectory = () {
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
@@ -49,6 +44,11 @@ class DartSdk extends Sdk {
     return Version.parse(sdkVersion);
   }();
 
+  /// The path to the root directory of the SDK.
+  ///
+  /// Note that if pub is running from source within the Dart repo (for example
+  /// when building Observatory), this will be the repo's "sdk/" directory,
+  /// which doesn't look exactly like the built SDK.
   String get rootDirectory => _rootDirectory;
 
   @override

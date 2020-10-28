@@ -15,8 +15,6 @@ class GetCommand extends PubCommand {
   @override
   String get description => "Get the current package's dependencies.";
   @override
-  String get invocation => 'pub get';
-  @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
   bool get isOffline => argResults['offline'];
@@ -37,7 +35,7 @@ class GetCommand extends PubCommand {
   }
 
   @override
-  Future run() {
+  Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));

@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../executable.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -19,7 +19,7 @@ class RunCommand extends PubCommand {
   @override
   String get description => 'Run an executable from a package.';
   @override
-  String get invocation => 'pub run <executable> [args...]';
+  String get argumentsDescription => '<executable> [arguments...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-run';
   @override
@@ -41,7 +41,7 @@ class RunCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults['dart-dev-run']) {
       return await _runFromDartDev();
     }
@@ -85,7 +85,7 @@ class RunCommand extends PubCommand {
           () => entrypoint.precompileExecutable(executable)),
       vmArgs: vmArgs,
     );
-    await flushThenExit(exitCode);
+    throw ExitWithException(exitCode);
   }
 
   /// Implement a mode for use in `dartdev run`.
@@ -99,7 +99,7 @@ class RunCommand extends PubCommand {
   /// mutable (local root package or path-dependency) a source snapshot will be
   /// cached in
   /// `.dart_tool/pub/bin/<package>/<command>.dart-<sdkVersion>.snapshot`.
-  Future _runFromDartDev() async {
+  Future<void> _runFromDartDev() async {
     var package = entrypoint.root.name;
     var command = package;
     var args = <String>[];
@@ -125,10 +125,12 @@ class RunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
 
-    return await flushThenExit(await runExecutable(
-        entrypoint, Executable(package, 'bin/$command.dart'), args,
-        vmArgs: vmArgs,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: entrypoint.precompileExecutable));
+    throw ExitWithException(
+      await runExecutable(
+          entrypoint, Executable(package, 'bin/$command.dart'), args,
+          vmArgs: vmArgs,
+          enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+          recompile: entrypoint.precompileExecutable),
+    );
   }
 }

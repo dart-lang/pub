@@ -93,12 +93,7 @@ void main() {
         ['arg1', 'arg2'],
         environment: getEnvironment());
 
-    expect(
-        await process.stdout.rest.toList(),
-        allOf([
-          contains('Precompiled foo:script.'),
-          contains('ok [arg1, arg2]')
-        ]));
+    expect(await process.stdout.rest.toList(), contains('ok [arg1, arg2]'));
 
     expect(
       binStub('foo-script'),
