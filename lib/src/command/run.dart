@@ -17,7 +17,9 @@ class RunCommand extends PubCommand {
   @override
   String get name => 'run';
   @override
-  String get description => 'Run an executable from a package.';
+  String get description => deprecated
+      ? 'DEPRECATED: Use `dart run`.'
+      : 'Run an executable from a package.';
   @override
   String get argumentsDescription => '<executable> [arguments...]';
   @override
