@@ -32,7 +32,8 @@ class UploaderCommand extends PubCommand {
         defaultsTo: Platform.environment['PUB_HOSTED_URL'] ??
             'https://pub.dartlang.org',
         help: 'The package server on which the package is hosted.\n'
-            'DEPRECATED: use `publish_to` in your pubspec.yaml or set \$PUB_HOSTED_URL.');
+            'DEPRECATED: use `publish_to` in your pubspec.yaml or set the\n'
+            '\$PUB_HOSTED_URL environment variable.');
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
