@@ -25,7 +25,7 @@ class LoginCommand extends PubCommand {
   Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
-      final userInfo = retrieveUserInfo();
+      final userInfo = await retrieveUserInfo();
       log.message('You are now logged in as $userInfo');
     } else {
       final userInfo = await retrieveUserInfo();
