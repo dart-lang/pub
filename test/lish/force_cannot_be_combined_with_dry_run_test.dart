@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -14,16 +13,18 @@ void main() {
 
   test('--force cannot be combined with --dry-run', () async {
     await runPub(args: ['lish', '--force', '--dry-run'], error: '''
-          Cannot use both --force and --dry-run.
-          
-          Usage: pub publish [options]
-          -h, --help       Print this usage information.
-          -n, --dry-run    Validate but do not publish the package.
-          -f, --force      Publish without confirmation if there are no errors.
-              --server     The package server to which to upload this package.
+Cannot use both --force and --dry-run.
 
-          Run "pub help" to see global options.
-          See https://dart.dev/tools/pub/cmd/pub-lish for detailed documentation.
-          ''', exitCode: exit_codes.USAGE);
+Usage: pub publish [options]
+-h, --help       Print this usage information.
+-n, --dry-run    Validate but do not publish the package.
+-f, --force      Publish without confirmation if there are no errors.
+    --server     The package server to which to upload this package.
+                  DEPRECATED: use `publish_to` in your pubspec.yaml or set the
+                  \$PUB_HOSTED_URL environment variable.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-lish for detailed documentation.
+''', exitCode: exit_codes.USAGE);
   });
 }
