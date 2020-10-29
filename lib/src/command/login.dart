@@ -22,7 +22,7 @@ class LoginCommand extends PubCommand {
   LoginCommand();
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
       final userInfo = retrieveUserInfo();
