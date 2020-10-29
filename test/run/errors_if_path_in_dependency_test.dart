@@ -24,9 +24,15 @@ void main() {
     await runPub(args: ['run', 'foo:sub/dir'], error: '''
 Cannot run an executable in a subdirectory of a dependency.
 
-Usage: pub run <executable> [args...]
--h, --help                   Print this usage information.
-    --[no-]enable-asserts    Enable assert statements.
+Usage: pub run <executable> [arguments...]
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled.
+                                        (Will disable snapshotting, resulting in
+                                        slower startup).
+    --[no-]sound-null-safety            Override the default null safety
+                                        execution mode.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.

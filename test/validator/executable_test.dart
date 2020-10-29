@@ -30,7 +30,7 @@ void main() {
           d.file('two.dart', "main() => print('ok');")
         ])
       ]).create();
-      expectNoValidationError(executable);
+      await expectValidation(executable);
     });
   });
 
@@ -43,7 +43,7 @@ void main() {
           'executables': {'nope': 'not_there', 'nada': null}
         })
       ]).create();
-      expectValidationWarning(executable);
+      await expectValidation(executable, warnings: isNotEmpty);
     });
 
     test('has .gitignored one or more listed executables', () async {
@@ -59,7 +59,7 @@ void main() {
         ]),
         d.file('.gitignore', 'bin')
       ]).create();
-      expectValidationWarning(executable);
+      await expectValidation(executable, warnings: isNotEmpty);
     });
   });
 }

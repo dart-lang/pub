@@ -18,9 +18,8 @@ Validator deprecatedFields(Entrypoint entrypoint) =>
 void main() {
   setUp(d.validPackage.create);
 
-  test('should not warn if neither transformers or web is included', () {
-    expectNoValidationError(deprecatedFields);
-  });
+  test('should not warn if neither transformers or web is included',
+      () => expectValidation(deprecatedFields));
 
   test('should warn if pubspec has a transformers section', () async {
     await d.dir(appPath, [
@@ -29,7 +28,7 @@ void main() {
       })
     ]).create();
 
-    expectValidationWarning(deprecatedFields);
+    await expectValidation(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has a web section', () async {
@@ -39,7 +38,7 @@ void main() {
       })
     ]).create();
 
-    expectValidationWarning(deprecatedFields);
+    await expectValidation(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has an author', () async {
@@ -47,7 +46,7 @@ void main() {
       d.pubspec({'author': 'Ronald <ronald@example.com>'})
     ]).create();
 
-    expectValidationWarning(deprecatedFields);
+    await expectValidation(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has a list of authors', () async {
@@ -57,6 +56,6 @@ void main() {
       })
     ]).create();
 
-    expectValidationWarning(deprecatedFields);
+    await expectValidation(deprecatedFields, warnings: isNotEmpty);
   });
 }

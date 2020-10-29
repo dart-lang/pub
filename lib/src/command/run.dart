@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../executable.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -19,20 +19,41 @@ class RunCommand extends PubCommand {
   @override
   String get description => 'Run an executable from a package.';
   @override
-  String get invocation => 'pub run <executable> [args...]';
+  String get argumentsDescription => '<executable> [arguments...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-run';
   @override
   bool get allowTrailingOptions => false;
+  @override
+  bool get hidden => deprecated;
 
-  RunCommand() {
+  final bool deprecated;
+
+  RunCommand({this.deprecated = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
+    argParser.addMultiOption('enable-experiment',
+        help:
+            'Runs the executable in a VM with the given experiments enabled.\n'
+            '(Will disable snapshotting, resulting in slower startup).',
+        valueHelp: 'experiment');
+    argParser.addFlag('sound-null-safety',
+        help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
+    // mode exposed for `dartdev run` to use as subprocess.
+    argParser.addFlag('dart-dev-run', hide: true);
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
+    if (deprecated) {
+      await log.warningsOnlyUnlessTerminal(() {
+        log.message('Deprecated. Use `dart run instead`');
+      });
+    }
+    if (argResults['dart-dev-run']) {
+      return await _runFromDartDev();
+    }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -62,28 +83,63 @@ class RunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    // The user may pass in an executable without an extension, but the file
-    // to actually execute will always have one.
-    if (p.extension(executable) != '.dart') executable += '.dart';
+    final vmArgs = vmArgsFromArgResults(argResults);
 
-    var snapshotPath = p.join(
-        entrypoint.cachePath, 'bin', package, '$executable.snapshot.dart2');
+    var exitCode = await runExecutable(
+      entrypoint,
+      Executable.adaptProgramName(package, executable),
+      args,
+      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      recompile: (executable) => log.warningsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(executable)),
+      vmArgs: vmArgs,
+    );
+    throw ExitWithException(exitCode);
+  }
 
-    // Don't ever compile snapshots for mutable packages, since their code may
-    // change later on.
-    var useSnapshot = fileExists(snapshotPath) ||
-        (package != entrypoint.root.name &&
-            !entrypoint.packageGraph.isPackageMutable(package));
+  /// Implement a mode for use in `dartdev run`.
+  ///
+  /// Usage: `dartdev run [package[:command]]`
+  ///
+  /// If `package` is not given, defaults to current root package.
+  /// If `command` is not given, defaults to name of `package`.
+  ///
+  /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
+  /// mutable (local root package or path-dependency) a source snapshot will be
+  /// cached in
+  /// `.dart_tool/pub/bin/<package>/<command>.dart-<sdkVersion>.snapshot`.
+  Future<void> _runFromDartDev() async {
+    var package = entrypoint.root.name;
+    var command = package;
+    var args = <String>[];
 
-    var exitCode = await runExecutable(entrypoint, package, executable, args,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        snapshotPath: useSnapshot ? snapshotPath : null, recompile: () {
-      final pkg = entrypoint.packageGraph.packages[package];
-      // The recompile function will only be called when [package] exists.
-      assert(pkg != null);
-      final executablePath = pkg.path(p.join('bin', executable));
-      return entrypoint.precompileExecutable(package, executablePath);
-    });
-    await flushThenExit(exitCode);
+    if (argResults.rest.isNotEmpty) {
+      if (argResults.rest[0].contains(RegExp(r'[/\\]'))) {
+        usageException('[<package>[:command]] cannot contain "/" or "\\"');
+      }
+
+      package = argResults.rest[0];
+      if (package.contains(':')) {
+        final parts = package.split(':');
+        if (parts.length > 2) {
+          usageException('[<package>[:command]] cannot contain multiple ":"');
+        }
+        package = parts[0];
+        command = parts[1];
+      } else {
+        command = package;
+      }
+      args = argResults.rest.skip(1).toList();
+    }
+
+    final vmArgs = vmArgsFromArgResults(argResults);
+
+    throw ExitWithException(
+      await runExecutable(
+          entrypoint, Executable(package, 'bin/$command.dart'), args,
+          vmArgs: vmArgs,
+          enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+          recompile: entrypoint.precompileExecutable),
+    );
   }
 }

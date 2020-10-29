@@ -16,7 +16,7 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.";
   @override
-  String get invocation => 'pub upgrade [dependencies...]';
+  String get argumentsDescription => '[dependencies...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -33,14 +33,13 @@ class UpgradeCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        defaultsTo: false,
         help: 'Precompile executables in immediate dependencies.');
 
-    argParser.addFlag('packages-dir', negatable: true, hide: true);
+    argParser.addFlag('packages-dir', hide: true);
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));

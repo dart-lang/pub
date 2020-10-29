@@ -26,12 +26,6 @@ final json = _JsonLogger();
 /// The current logging verbosity.
 Verbosity verbosity = Verbosity.NORMAL;
 
-/// Whether or not to log entries with prejudice.
-bool withPrejudice = false;
-
-/// Whether or not to log entries sparklily.
-bool sparkle = false;
-
 /// In cases where there's a ton of log spew, make sure we don't eat infinite
 /// memory.
 ///
@@ -49,19 +43,17 @@ Transcript<_Entry> _transcript;
 /// This will also be in [_progresses].
 Progress _animatedProgress;
 
-final _cyan = getSpecial('\u001b[36m');
-final _green = getSpecial('\u001b[32m');
-final _magenta = getSpecial('\u001b[35m');
-final _red = getSpecial('\u001b[31m');
-final _yellow = getSpecial('\u001b[33m');
-final _blue = getSpecial('\u001b[34m');
-final _gray = getSpecial('\u001b[1;30m');
-final _none = getSpecial('\u001b[0m');
-final _noColor = getSpecial('\u001b[39m');
-final _bold = getSpecial('\u001b[1m');
+final _cyan = getAnsi('\u001b[36m');
+final _green = getAnsi('\u001b[32m');
+final _magenta = getAnsi('\u001b[35m');
+final _red = getAnsi('\u001b[31m');
+final _yellow = getAnsi('\u001b[33m');
+//final _blue = getSpecial('\u001b[34m');
+final _gray = getAnsi('\u001b[38;5;245m');
 
-/// All color codes.
-final _allColors = [_cyan, _green, _magenta, _red, _yellow, _blue, ''];
+final _none = getAnsi('\u001b[0m');
+final _noColor = getAnsi('\u001b[39m');
+final _bold = getAnsi('\u001b[1m');
 
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
@@ -236,36 +228,12 @@ void write(Level level, message) {
     lines.removeLast();
   }
 
-  var entry = _Entry(level, lines.map(format).toList());
+  var entry = _Entry(level, lines);
 
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
   if (_transcript != null) _transcript.add(entry);
-}
-
-final _capitalizedAnsiEscape = RegExp(r'\u001b\[\d+(;\d+)?M');
-
-/// Returns [string] formatted as it would be if it were logged.
-String format(String string) {
-  if (sparkle) {
-    string = string.replaceAllMapped(RegExp(r'.'), (match) {
-      var char = '${choose(_allColors)}${match[0]}$_noColor';
-      return (withPrejudice || random.nextBool()) ? char : '$_bold$char$_none';
-    });
-  }
-
-  if (withPrejudice) {
-    // [toUpperCase] can corrupt terminal colorings, so fix them up using
-    // [replaceAllMapped].
-    string = string.toUpperCase().replaceAllMapped(
-        _capitalizedAnsiEscape, (match) => match[0].toLowerCase());
-
-    // Don't use [bold] because it's disabled under [withPrejudice].
-    string = '$_bold$string$_none';
-  }
-
-  return string;
 }
 
 /// Logs the spawning of an [executable] process with [arguments] at [IO]
@@ -315,7 +283,7 @@ void exception(exception, [StackTrace trace]) {
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
   if (exception is SourceSpanException) {
-    error(exception.toString(color: canUseSpecialChars));
+    error(exception.toString(color: canUseAnsiCodes));
   } else {
     error(getErrorMessage(exception));
   }
@@ -395,14 +363,18 @@ Future<T> progress<T>(String message, Future<T> Function() callback) {
 }
 
 /// Like [progress] but erases the message once done.
-Future<T> spinner<T>(String message, Future<T> Function() callback) {
-  _stopProgress();
+Future<T> spinner<T>(String message, Future<T> Function() callback,
+    {bool condition = true}) {
+  if (condition) {
+    _stopProgress();
 
-  var progress = Progress(message);
-  _animatedProgress = progress;
-  return callback().whenComplete(() {
-    progress.stopAndClear();
-  });
+    var progress = Progress(message);
+    _animatedProgress = progress;
+    return callback().whenComplete(() {
+      progress.stopAndClear();
+    });
+  }
+  return callback();
 }
 
 /// Stops animating the running progress indicator, if currently running.
@@ -440,21 +412,13 @@ void unmuteProgress() {
 /// that supports that.
 ///
 /// Use this to highlight the most important piece of a long chunk of text.
-///
-/// This is disabled under [withPrejudice] since all text is bold with
-/// prejudice.
-String bold(text) => (withPrejudice || sparkle) ? '$text' : '$_bold$text$_none';
+String bold(text) => '$_bold$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to make it gray when on a platform
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-///
-/// The gray marker also enables bold, so it needs to be handled specially with
-/// [withPrejudice] to avoid disabling bolding entirely.
 String gray(text) {
-  if (sparkle) return '$text';
-  if (withPrejudice) return '$_gray$text$_noColor';
   return '$_gray$text$_none';
 }
 
@@ -494,7 +458,6 @@ String yellow(text) => _addColor(text, _yellow);
 ///
 /// This is resilient to the text containing other colors or bold text.
 String _addColor(Object text, String colorCode) {
-  if (sparkle) return text.toString();
   return colorCode +
       text
           .toString()

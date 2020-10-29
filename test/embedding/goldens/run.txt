@@ -1,0 +1,7 @@
+$ tool/test-bin/pub_command_runner.dart pub get
+Resolving dependencies...
+Got dependencies!
+
+$ tool/test-bin/pub_command_runner.dart pub run bin/main.dart
+Hi
+

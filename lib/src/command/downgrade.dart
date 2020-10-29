@@ -17,7 +17,7 @@ class DowngradeCommand extends PubCommand {
       "Downgrade the current package's dependencies to oldest versions.\n\n"
       "This doesn't modify the lockfile, so it can be reset with \"pub get\".";
   @override
-  String get invocation => 'pub downgrade [dependencies...]';
+  String get argumentsDescription => '[dependencies...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
@@ -33,11 +33,11 @@ class DowngradeCommand extends PubCommand {
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
-    argParser.addFlag('packages-dir', negatable: true, hide: true);
+    argParser.addFlag('packages-dir', hide: true);
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));

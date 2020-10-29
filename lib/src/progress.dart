@@ -54,7 +54,7 @@ class Progress {
       _update();
     });
 
-    stdout.write(log.format('$_message... '));
+    stdout.write('$_message... ');
   }
 
   /// Stops the progress indicator.

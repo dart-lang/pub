@@ -23,7 +23,7 @@ class DepsCommand extends PubCommand {
   String get description => 'Print package dependencies.';
 
   @override
-  String get invocation => 'pub deps';
+  String get argumentsDescription => '[arguments...]';
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-deps';
@@ -48,16 +48,14 @@ class DepsCommand extends PubCommand {
         defaultsTo: 'tree');
 
     argParser.addFlag('dev',
-        negatable: true,
-        help: 'Whether to include dev dependencies.',
-        defaultsTo: true);
+        help: 'Whether to include dev dependencies.', defaultsTo: true);
 
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
   }
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     // Explicitly run this in case we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
 

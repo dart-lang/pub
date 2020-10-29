@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
@@ -23,7 +24,7 @@ class LishCommand extends PubCommand {
   @override
   String get description => 'Publish the current package to pub.dartlang.org.';
   @override
-  String get invocation => 'pub publish [options]';
+  String get argumentsDescription => '[options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
@@ -64,7 +65,7 @@ class LishCommand extends PubCommand {
         help: 'The package server to which to upload this package.');
   }
 
-  Future _publish(List<int> packageBytes) async {
+  Future<void> _publish(List<int> packageBytes) async {
     Uri cloudStorageUrl;
     try {
       await oauth2.withClient(cache, (client) {
@@ -114,7 +115,7 @@ class LishCommand extends PubCommand {
   }
 
   @override
-  Future run() async {
+  Future runProtected() async {
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }
@@ -140,9 +141,9 @@ class LishCommand extends PubCommand {
     var isValid =
         await _validate(packageBytesFuture.then((bytes) => bytes.length));
     if (!isValid) {
-      await flushThenExit(exit_codes.DATA);
+      throw ExitWithException(exit_codes.DATA);
     } else if (dryRun) {
-      await flushThenExit(exit_codes.SUCCESS);
+      return;
     } else {
       await _publish(await packageBytesFuture);
     }
@@ -158,9 +159,12 @@ class LishCommand extends PubCommand {
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
   Future<bool> _validate(Future<int> packageSize) async {
-    var pair = await Validator.runAll(entrypoint, packageSize);
-    var errors = pair.first;
-    var warnings = pair.last;
+    final hints = <String>[];
+    final warnings = <String>[];
+    final errors = <String>[];
+
+    await Validator.runAll(entrypoint, packageSize, server.toString(),
+        hints: hints, warnings: warnings, errors: errors);
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '
@@ -172,23 +176,27 @@ class LishCommand extends PubCommand {
 
     if (force) return true;
 
+    String formatWarningCount() {
+      final hs = hints.length == 1 ? '' : 's';
+      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
+      final ws = warnings.length == 1 ? '' : 's';
+      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+    }
+
     if (dryRun) {
-      var s = warnings.length == 1 ? '' : 's';
-      log.warning('\nPackage has ${warnings.length} warning$s.');
+      log.warning(formatWarningCount());
       return warnings.isEmpty;
     }
 
-    log.message('\nUploads to pub.dev are subject to https://pub.dev/policy');
+    log.message('\nPublishing is forever; packages cannot be unpublished.'
+        '\nPolicy details are available at https://pub.dev/policy');
 
     final package = entrypoint.root;
     var message = 'Do you want to publish ${package.name} ${package.version}';
 
-    if (warnings.isNotEmpty) {
-      final s = warnings.length == 1 ? '' : 's';
-      final warning = log.bold(log.red(
-        'Package has ${warnings.length} warning$s',
-      ));
-      message = '$warning. $message';
+    if (warnings.isNotEmpty || hints.isNotEmpty) {
+      final warning = formatWarningCount();
+      message = '${log.bold(log.red(warning))}. $message';
     }
 
     var confirmed = await confirm('\n$message');

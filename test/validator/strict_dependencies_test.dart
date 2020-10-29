@@ -19,7 +19,7 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectNoValidationError(strictDeps));
+    test('looks normal', () => expectValidation(strictDeps));
 
     test('declares an "import" as a dependency in lib/', () async {
       await d.dir(appPath, [
@@ -32,7 +32,7 @@ void main() {
         ]),
       ]).create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('declares an "export" as a dependency in lib/', () async {
@@ -46,7 +46,7 @@ void main() {
         ]),
       ]).create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('declares an "import" as a dependency in bin/', () async {
@@ -60,7 +60,7 @@ void main() {
         ]),
       ]).create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     for (var port in ['import', 'export']) {
@@ -87,7 +87,7 @@ void main() {
               ]),
             ]).create();
 
-            expectNoValidationError(strictDeps);
+            await expectValidation(strictDeps);
           });
         }
       }
@@ -100,7 +100,7 @@ void main() {
         import 'dart:typed_data';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('imports itself', () async {
@@ -108,7 +108,7 @@ void main() {
         import 'package:test_pkg/test_pkg.dart';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has a relative import', () async {
@@ -116,7 +116,7 @@ void main() {
         import 'some/relative/path.dart';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has an absolute import', () async {
@@ -124,7 +124,7 @@ void main() {
         import 'file://shared/some/library.dart';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has a parse error preventing reading directives', () async {
@@ -132,7 +132,7 @@ void main() {
         import not_supported_keyword 'dart:async';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has a top-level Dart file with an invalid dependency', () async {
@@ -140,7 +140,7 @@ void main() {
         import 'package:';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has a Dart-like file with an invalid dependency', () async {
@@ -148,7 +148,7 @@ void main() {
         import 'package:';
       ''').create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
 
     test('has analysis_options.yaml that excludes files', () async {
@@ -178,7 +178,7 @@ linter:
 '''),
       ]).create();
 
-      expectNoValidationError(strictDeps);
+      await expectValidation(strictDeps);
     });
   });
 
@@ -190,7 +190,7 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationError(strictDeps);
+      await expectValidation(strictDeps, errors: isNotEmpty);
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -198,7 +198,7 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      expectValidationError(strictDeps);
+      await expectValidation(strictDeps, errors: isNotEmpty);
     });
 
     test('has an invalid URI', () async {
@@ -206,7 +206,7 @@ linter:
         import 'package:/';
       ''').create();
 
-      expectValidationError(strictDeps);
+      await expectValidation(strictDeps, errors: isNotEmpty);
     });
 
     for (var port in ['import', 'export']) {
@@ -222,7 +222,7 @@ linter:
             ]),
           ]).create();
 
-          expectValidationError(strictDeps);
+          await expectValidation(strictDeps, errors: isNotEmpty);
         });
       }
     }
@@ -240,7 +240,7 @@ linter:
             ]),
           ]).create();
 
-          expectValidationWarning(strictDeps);
+          await expectValidation(strictDeps, warnings: isNotEmpty);
         });
       }
     }
@@ -255,7 +255,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationError(strictDeps);
+        await expectValidation(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:silly_monkey"', () async {
@@ -269,7 +269,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationError(strictDeps);
+        await expectValidation(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:/"', () async {
@@ -281,7 +281,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationError(strictDeps);
+        await expectValidation(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:/]"', () async {
@@ -293,7 +293,7 @@ linter:
           ]),
         ]).create();
 
-        expectValidationError(strictDeps);
+        await expectValidation(strictDeps, errors: isNotEmpty);
       });
     });
   });

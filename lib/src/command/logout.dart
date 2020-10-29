@@ -14,12 +14,12 @@ class LogoutCommand extends PubCommand {
   @override
   String get description => 'Log out of pub.dev.';
   @override
-  String get invocation => 'pub logout';
+  bool get takesArguments => false;
 
   LogoutCommand();
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     oauth2.logout(cache);
   }
 }

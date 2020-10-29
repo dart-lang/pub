@@ -13,10 +13,10 @@ class GlobalDeactivateCommand extends PubCommand {
   @override
   String get description => 'Remove a previously activated package.';
   @override
-  String get invocation => 'pub global deactivate <package>';
+  String get argumentsDescription => '<package>';
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     // Make sure there is a package.
     if (argResults.rest.isEmpty) {
       usageException('No package to deactivate given.');

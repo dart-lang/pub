@@ -264,7 +264,6 @@ class PackageLister {
           min: lower[package],
           includeMin: true,
           max: upper[package],
-          includeMax: false,
           alwaysIncludeMaxPreRelease: true);
 
       _alreadyListedDependencies[package] = constraint.union(
@@ -299,7 +298,6 @@ class PackageLister {
         max: bounds.last == versions.length - 1
             ? null
             : versions[bounds.last + 1].version,
-        includeMax: false,
         alwaysIncludeMaxPreRelease: true);
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
@@ -388,7 +386,7 @@ class PackageLister {
     return bounds;
   }
 
-  /// Returns the pubspec for [id], or an empty pubpsec matching [id] if the
+  /// Returns the pubspec for [id], or an empty pubspec matching [id] if the
   /// real pubspec for [id] fails to load for any reason.
   ///
   /// This makes the bounds-finding logic resilient to broken pubspecs while

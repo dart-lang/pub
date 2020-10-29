@@ -20,7 +20,7 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectNoValidationError(name));
+    test('looks normal', () => expectValidation(name));
 
     test('has dots in potential library names', () async {
       await d.dir(appPath, [
@@ -30,7 +30,7 @@ void main() {
           d.file('test_pkg.g.dart', 'int j = 2;')
         ])
       ]).create();
-      expectNoValidationError(name);
+      await expectValidation(name);
     });
 
     test('has a name that starts with an underscore', () async {
@@ -38,7 +38,7 @@ void main() {
         d.libPubspec('_test_pkg', '1.0.0'),
         d.dir('lib', [d.file('_test_pkg.dart', 'int i = 1;')])
       ]).create();
-      expectNoValidationError(name);
+      await expectValidation(name);
     });
   });
 
@@ -47,7 +47,7 @@ void main() {
 
     test('has a package name that contains upper-case letters', () async {
       await d.dir(appPath, [d.libPubspec('TestPkg', '1.0.0')]).create();
-      expectValidationWarning(name);
+      await expectValidation(name, warnings: isNotEmpty);
     });
 
     test('has a single library named differently than the package', () async {
@@ -55,7 +55,7 @@ void main() {
       await d.dir(appPath, [
         d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')])
       ]).create();
-      expectValidationWarning(name);
+      await expectValidation(name, warnings: isNotEmpty);
     });
   });
 }

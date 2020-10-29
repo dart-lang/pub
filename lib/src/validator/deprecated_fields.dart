@@ -15,7 +15,7 @@ class DeprecatedFieldsValidator extends Validator {
   @override
   Future validate() async {
     if (entrypoint.root.pubspec.fields.containsKey('transformers')) {
-      warnings.add('Your pubpsec.yaml includes a "transformers" section which'
+      warnings.add('Your pubspec.yaml includes a "transformers" section which'
           ' is no longer used and may be removed.');
     }
     if (entrypoint.root.pubspec.fields.containsKey('web')) {

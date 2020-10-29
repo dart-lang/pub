@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -16,22 +15,22 @@ void main() {
       'authenticates again and saves credentials.json', () async {
     await d.validPackage.create();
 
-    var server = await ShelfTestServer.create();
+    await servePackages();
     await d
-        .credentialsFile(server, 'access token',
+        .credentialsFile(globalPackageServer, 'access token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(server);
+    var pub = await startPublish(globalPackageServer);
     await confirmPublish(pub);
 
     await expectLater(
         pub.stderr,
         emits("Pub's authorization to upload packages has expired and "
             "can't be automatically refreshed."));
-    await authorizePub(pub, server, 'new access token');
+    await authorizePub(pub, globalPackageServer, 'new access token');
 
-    server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -42,6 +41,6 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(server, 'new access token').validate();
+    await d.credentialsFile(globalPackageServer, 'new access token').validate();
   });
 }

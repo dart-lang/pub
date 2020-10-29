@@ -1,5 +1,4 @@
 language: dart
-sudo: false
 
 dart:
   - dev
@@ -17,7 +16,7 @@ addons:
 env:
   global:
     - SPLIT=`which gsplit || which split`
-    - _PUB_TEST_SNAPSHOT="`pwd`/.dart_tool//pub.dart.snapshot.dart2"
+    - _PUB_TEST_SNAPSHOT="`pwd`/.dart_tool/pub.dart.snapshot.dart2"
 
 dart_task:
   - test: --preset travis `$SPLIT -n l/1/7 .dart_tool/test_files`
@@ -27,14 +26,23 @@ dart_task:
   - test: --preset travis `$SPLIT -n l/5/7 .dart_tool/test_files`
   - test: --preset travis `$SPLIT -n l/6/7 .dart_tool/test_files`
   - test: --preset travis `$SPLIT -n l/7/7 .dart_tool/test_files`
-  - dartfmt
-  - dartanalyzer: --fatal-infos --fatal-warnings .
+
+jobs:
+  include:
+  - dart: dev
+    os: linux
+    dart_task: dartfmt
+  - dart: dev
+    os: linux
+    dart_task:
+      dartanalyzer: --fatal-infos --fatal-warnings .
 
 # Create a snapshot to improve startup time. Tests will automatically use this
 # snapshot if it's available.
 before_script:
   - dart --snapshot="$_PUB_TEST_SNAPSHOT" bin/pub.dart
   - find test -name "*_test\\.dart" | sort > .dart_tool/test_files
+  - dart --disable-analytics
 
 # Only building these branches means that we don't run two builds for each pull
 # request.

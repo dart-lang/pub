@@ -5,10 +5,15 @@
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:test/test.dart';
 
+/// Removes ansi color codes from [s].
+String stripColors(String s) {
+  return s.replaceAll(RegExp('\u001b\\[.*?m'), '');
+}
+
 void main() {
   group('tree.fromFiles', () {
     test('no files', () {
-      expect(tree.fromFiles([]), equals(''));
+      expect(stripColors(tree.fromFiles([])), equals(''));
     });
 
     test('up to ten files in one directory are shown', () {
@@ -24,7 +29,7 @@ void main() {
         'dir/i.dart',
         'dir/j.dart'
       ];
-      expect(tree.fromFiles(files), equals("""
+      expect(stripColors(tree.fromFiles(files)), equals("""
 '-- dir
     |-- a.dart
     |-- b.dart
@@ -53,7 +58,7 @@ void main() {
         'dir/j.dart',
         'dir/k.dart'
       ];
-      expect(tree.fromFiles(files), equals("""
+      expect(stripColors(tree.fromFiles(files)), equals("""
 '-- dir
     |-- a.dart
     |-- b.dart
@@ -79,7 +84,7 @@ void main() {
         'j.dart',
         'k.dart'
       ];
-      expect(tree.fromFiles(files), equals("""
+      expect(stripColors(tree.fromFiles(files)), equals("""
 |-- a.dart
 |-- b.dart
 |-- c.dart
@@ -119,7 +124,7 @@ void main() {
         'test/path_windows_test.dart'
       ];
 
-      expect(tree.fromFiles(files), equals("""
+      expect(stripColors(tree.fromFiles(files)), equals("""
 |-- .gitignore
 |-- README.md
 |-- TODO
@@ -145,7 +150,7 @@ void main() {
 
   group('treeFromMap', () {
     test('empty map', () {
-      expect(tree.fromMap({}), equals(''));
+      expect(stripColors(tree.fromMap({})), equals(''));
     });
 
     test('a complex example', () {
@@ -174,7 +179,7 @@ void main() {
         }
       };
 
-      expect(tree.fromMap(map), equals("""
+      expect(stripColors(tree.fromMap(map)), equals("""
 |-- .gitignore
 |-- README.md
 |-- TODO
@@ -218,7 +223,7 @@ void main() {
         'l.dart': <String, Map>{},
       }
     };
-    expect(tree.fromMap(map, showAllChildren: true), equals("""
+    expect(stripColors(tree.fromMap(map, showAllChildren: true)), equals("""
 '-- dir
     |-- a.dart
     |-- b.dart

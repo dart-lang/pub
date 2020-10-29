@@ -7,7 +7,8 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
-import '../io.dart';
+import '../exceptions.dart';
+import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
 
@@ -20,18 +21,24 @@ class GlobalRunCommand extends PubCommand {
       'Run an executable from a globally activated package.\n'
       "NOTE: We are currently optimizing this command's startup time.";
   @override
-  String get invocation => 'pub global run <package>:<executable> [args...]';
+  String get argumentsDescription => '<package>:<executable> [args...]';
   @override
   bool get allowTrailingOptions => false;
 
   GlobalRunCommand() {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
+    argParser.addMultiOption('enable-experiment',
+        help: 'Runs the executable in a VM with the given experiments enabled. '
+            '(Will disable snapshotting, resulting in slower startup).',
+        valueHelp: 'experiment');
+    argParser.addFlag('sound-null-safety',
+        help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
   @override
-  Future run() async {
+  Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -57,8 +64,14 @@ class GlobalRunCommand extends PubCommand {
       log.warning('The --mode flag is deprecated and has no effect.');
     }
 
-    var exitCode = await globals.runExecutable(package, executable, args,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked']);
-    await flushThenExit(exitCode);
+    final vmArgs = vmArgsFromArgResults(argResults);
+    final globalEntrypoint = await globals.find(package);
+    final exitCode = await globals.runExecutable(globalEntrypoint,
+        Executable.adaptProgramName(package, executable), args,
+        vmArgs: vmArgs,
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+        recompile: (executable) => log.warningsOnlyUnlessTerminal(
+            () => globalEntrypoint.precompileExecutable(executable)));
+    throw ExitWithException(exitCode);
   }
 }

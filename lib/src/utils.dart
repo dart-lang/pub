@@ -224,18 +224,8 @@ bool isLoopback(String host) {
     host = host.substring(1, host.length - 1);
   }
 
-  try {
-    return InternetAddress(host).isLoopback;
-  } on ArgumentError catch (_) // ignore: avoid_catching_errors
-  {
-    // The host isn't an IP address and isn't "localhost', so it's almost
-    // certainly not a loopback host.
-    return false;
-  }
+  return InternetAddress.tryParse(host)?.isLoopback ?? false;
 }
-
-/// Randomly chooses a single element in [elements].
-T choose<T>(List<T> elements) => elements[random.nextInt(elements.length)];
 
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
@@ -257,7 +247,7 @@ Set<String> createFileFilter(Iterable<String> files) {
   }).toSet();
 }
 
-/// Given a blacklist of directory names, returns a set of patterns that can
+/// Given a of unwanted directory names, returns a set of patterns that can
 /// be used to filter for those directory names.
 ///
 /// For a given path, that path contains some string in the returned set if
@@ -400,23 +390,40 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
+/// Set to `true` if ANSI colors should be output regardless of terminalD
+bool forceColors = false;
+
 /// Whether "special" strings such as Unicode characters or color escapes are
 /// safe to use.
 ///
 /// On Windows or when not printing to a terminal, only printable ASCII
 /// characters should be used.
-bool get canUseSpecialChars =>
-    !runningFromTest &&
-    !runningAsTest &&
-    !Platform.isWindows &&
-    stdioType(stdout) == StdioType.terminal;
-
-/// Gets a "special" string (ANSI escape or Unicode).
 ///
-/// On Windows or when not printing to a terminal, returns something else since
-/// those aren't supported.
-String getSpecial(String special, [String onWindows = '']) =>
-    canUseSpecialChars ? special : onWindows;
+/// Tests should make sure to run the subprocess with or without an attached
+/// terminal to decide if colors will be provided.
+bool get canUseAnsiCodes =>
+    forceColors ||
+    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+
+/// Gets an ANSI escape if those are supported by stdout (or nothing).
+String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
+
+/// Gets a emoji special character as unicode, or the [alternative] if unicode
+/// charactors are not supported by stdout.
+String emoji(String unicode, String alternative) =>
+    canUseUnicode ? unicode : alternative;
+
+// Assume unicode emojis are supported when not on Windows.
+// If we are on Windows, unicode emojis are supported in Windows Terminal,
+// which sets the WT_SESSION environment variable. See:
+// https://github.com/microsoft/terminal/blob/master/doc/user-docs/index.md#tips-and-tricks
+bool get canUseUnicode =>
+    // The tests support unicode also on windows.
+    runningFromTest ||
+    // When not outputting to terminal we can also use unicode.
+    stdioType(stdout) != StdioType.terminal ||
+    !Platform.isWindows ||
+    Platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///
@@ -431,15 +438,6 @@ String prefixLines(String text, {String prefix = '| ', String firstPrefix}) {
   lines = lines.skip(1).map((line) => '$prefix$line').toList();
   lines.insert(0, firstLine);
   return lines.join('\n');
-}
-
-/// Whether today is April Fools' day.
-bool get isAprilFools {
-  // Tests should never see April Fools' output.
-  if (runningFromTest) return false;
-
-  var date = DateTime.now();
-  return date.month == 4 && date.day == 1;
 }
 
 /// The subset of strings that don't need quoting in YAML.
@@ -609,3 +607,21 @@ bool equalsIgnoringPreRelease(Version version1, Version version2) =>
     version1.major == version2.major &&
     version1.minor == version2.minor &&
     version1.patch == version2.patch;
+
+/// Creates a new map from [map] with new keys and values.
+///
+/// The return values of [key] are used as the keys and the return values of
+/// [value] are used as the values for the new map.
+Map<K2, V2> mapMap<K1, V1, K2, V2>(
+  Map<K1, V1> map, {
+  K2 Function(K1, V1) key,
+  V2 Function(K1, V1) value,
+}) {
+  key ??= (mapKey, _) => mapKey as K2;
+  value ??= (_, mapValue) => mapValue as V2;
+
+  return <K2, V2>{
+    for (var entry in map.entries)
+      key(entry.key, entry.value): value(entry.key, entry.value),
+  };
+}

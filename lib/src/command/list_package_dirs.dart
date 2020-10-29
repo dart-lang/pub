@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -17,7 +17,7 @@ class ListPackageDirsCommand extends PubCommand {
   @override
   String get description => 'Print local paths to dependencies.';
   @override
-  String get invocation => 'pub list-package-dirs';
+  String get argumentsDescription => '';
   @override
   bool get takesArguments => false;
   @override
@@ -29,7 +29,7 @@ class ListPackageDirsCommand extends PubCommand {
   }
 
   @override
-  void run() {
+  Future<void> runProtected() async {
     log.json.enabled = true;
 
     if (!fileExists(entrypoint.lockFilePath)) {
@@ -61,5 +61,6 @@ class ListPackageDirsCommand extends PubCommand {
     ];
 
     log.json.message(output);
+    return exit_codes.SUCCESS;
   }
 }

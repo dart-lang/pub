@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -18,14 +17,14 @@ void main() {
   setUp(d.validPackage.create);
 
   test('--force publishes if there are no warnings or errors', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server, args: ['--force']);
+    await servePackages();
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer, args: ['--force']);
 
-    handleUploadForm(server);
-    handleUpload(server);
+    handleUploadForm(globalPackageServer);
+    handleUpload(globalPackageServer);
 
-    server.handler.expect('GET', '/create', (request) {
+    globalPackageServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

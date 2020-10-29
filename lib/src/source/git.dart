@@ -73,7 +73,7 @@ class GitSource extends Source {
       } else if (!p.url.isRelative(path)) {
         throw FormatException(
             "The 'path' field of the description must be relative.");
-      } else if (!p.url.isWithin('.', path)) {
+      } else if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
         throw FormatException(
             "The 'path' field of the description must not reach outside the "
             'repository.');
@@ -579,6 +579,11 @@ class BoundGitSource extends CachedSource {
     var name = p.url.basename(packageName.description['url']);
     if (name.endsWith('.git')) {
       name = name.substring(0, name.length - '.git'.length);
+    }
+    name = name.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
+    // Shorten name to 50 chars for sanity.
+    if (name.length > 50) {
+      name = name.substring(0, 50);
     }
     return name;
   }

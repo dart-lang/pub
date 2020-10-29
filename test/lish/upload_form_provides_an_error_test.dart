@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -15,13 +14,15 @@ void main() {
   setUp(d.validPackage.create);
 
   test('upload form provides an error', () async {
-    var server = await ShelfTestServer.create();
-    await d.credentialsFile(server, 'access token').create();
-    var pub = await startPublish(server);
+    await servePackages((_) {});
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
 
-    server.handler.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.extraHandlers['/api/packages/versions/new'] =
+        expectAsync1((request) {
+      expect(request.method, 'GET');
       return shelf.Response.notFound(jsonEncode({
         'error': {'message': 'your request sucked'}
       }));

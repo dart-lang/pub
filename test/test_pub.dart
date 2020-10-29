@@ -17,7 +17,6 @@ import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:shelf_test_handler/shelf_test_handler.dart';
 import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
@@ -32,6 +31,7 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -39,6 +39,7 @@ import 'package:pub/src/validator.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
+import 'package_server.dart';
 
 export 'descriptor_server.dart';
 export 'package_server.dart';
@@ -52,9 +53,6 @@ Matcher isMinifiedDart2JSOutput =
 /// disabled.
 Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
-
-/// The entrypoint for pub itself.
-final _entrypoint = Entrypoint(pubRoot, SystemCache(isOffline: true));
 
 /// Converts [value] into a YAML string.
 String yaml(value) => jsonEncode(value);
@@ -76,15 +74,24 @@ String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
     .readAsLinesSync()
     .firstWhere((l) => l.startsWith('$packageName:'));
 
+/// The suffix appended to a precompiled snapshot.
+final versionSuffix = testVersion ?? sdk.version;
+
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
+  static final add = RunCommand(
+      'add', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
   static final get = RunCommand(
       'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = RunCommand('upgrade',
-      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final upgrade = RunCommand('upgrade', RegExp(r'''
+(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+  static final remove = RunCommand(
+      'remove', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
 
   final String name;
   final RegExp success;
@@ -146,6 +153,21 @@ Future pubCommand(RunCommand command,
       environment: environment);
 }
 
+Future pubAdd(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.add,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
 Future pubGet(
         {Iterable<String> args,
         output,
@@ -191,6 +213,21 @@ Future pubDowngrade(
         exitCode: exitCode,
         environment: environment);
 
+Future pubRemove(
+        {Iterable<String> args,
+        output,
+        error,
+        warning,
+        int exitCode,
+        Map<String, String> environment}) =>
+    pubCommand(RunCommand.remove,
+        args: args,
+        output: output,
+        error: error,
+        warning: warning,
+        exitCode: exitCode,
+        environment: environment);
+
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
 ///
@@ -198,10 +235,32 @@ Future pubDowngrade(
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun({bool global = false, Iterable<String> args}) async {
+Future<PubProcess> pubRun(
+    {bool global = false,
+    Iterable<String> args,
+    Map<String, String> environment,
+    bool verbose = true}) async {
   var pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(args: pubArgs);
+  var pub = await startPub(
+    args: pubArgs,
+    environment: environment,
+    verbose: verbose,
+  );
+
+  // Loading sources and transformers isn't normally printed, but the pub test
+  // infrastructure runs pub in verbose mode, which enables this.
+  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
+
+  return pub;
+}
+
+/// Schedules starting the "pub run --v2" process and validates the
+/// expected startup output.
+///
+/// Returns the `pub run` process.
+Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
+  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -250,23 +309,23 @@ Future runPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
   await pub.shouldExit(exitCode);
 
-  expect(() async {
-    var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-    var actualError = (await pub.stderrStream().toList()).join('\n');
-    var actualSilent = (await pub.silentStream().toList()).join('\n');
+  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  var actualError = (await pub.stderrStream().toList()).join('\n');
+  var actualSilent = (await pub.silentStream().toList()).join('\n');
 
-    var failures = <String>[];
-    if (outputJson == null) {
-      _validateOutput(failures, 'stdout', output, actualOutput);
-    } else {
-      _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
-    }
+  var failures = <String>[];
+  if (outputJson == null) {
+    _validateOutput(failures, 'stdout', output, actualOutput);
+  } else {
+    _validateOutputJson(failures, 'stdout', outputJson, actualOutput);
+  }
 
-    _validateOutput(failures, 'stderr', error, actualError);
-    _validateOutput(failures, 'silent', silent, actualSilent);
+  _validateOutput(failures, 'stderr', error, actualError);
+  _validateOutput(failures, 'silent', silent, actualSilent);
 
-    if (failures.isNotEmpty) test.fail(failures.join('\n'));
-  }(), completes);
+  if (failures.isNotEmpty) {
+    test.fail(failures.join('\n'));
+  }
 }
 
 /// Like [startPub], but runs `pub lish` in particular with [server] used both
@@ -274,10 +333,10 @@ Future runPub(
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(ShelfTestServer server,
+Future<PubProcess> startPublish(PackageServer server,
     {List<String> args}) async {
-  var tokenEndpoint = server.url.resolve('/token').toString();
-  args = ['lish', '--server', tokenEndpoint, ...?args];
+  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  args = ['lish', '--server', server.url, ...?args];
   return await startPub(args: args, tokenEndpoint: tokenEndpoint);
 }
 
@@ -305,6 +364,8 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
+String testVersion = '0.1.2+3';
+
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
@@ -313,7 +374,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
     'PUB_ENVIRONMENT': 'test-environment',
 
     // Ensure a known SDK version is set for the tests that rely on that.
-    '_PUB_TEST_SDK_VERSION': '0.1.2+3'
+    '_PUB_TEST_SDK_VERSION': testVersion
   };
 
   if (tokenEndpoint != null) {
@@ -327,6 +388,23 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
+/// The test runner starts all tests from a `data:` URI.
+final bool _runningAsTestRunner = Platform.script.scheme == 'data';
+
+/// The path to the root of pub's sources in the pub repo.
+final String _pubRoot = (() {
+  // The test runner always runs from the repo directory.
+  if (_runningAsTestRunner) return p.current;
+
+  // Running from "test/../some_test.dart".
+  var script = p.fromUri(Platform.script);
+
+  var components = p.split(script);
+  var testIndex = components.indexOf('test');
+  if (testIndex == -1) throw StateError("Can't find pub's root.");
+  return p.joinAll(components.take(testIndex));
+})();
+
 /// Starts a Pub process and returns a [PubProcess] that supports interaction
 /// with that process.
 ///
@@ -338,7 +416,8 @@ Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    bool verbose = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -353,24 +432,20 @@ Future<PubProcess> startPub(
     dartBin = p.absolute(dartBin);
   }
 
-  var pubPath = p.absolute(p.join(pubRoot, 'bin/pub.dart'));
-
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
   // recommended to use a temporary file with a unique name for each test run.
-  // Note: running tests without a snapshot is significantly slower.
-  //
-  // TODO(nweiz): When the test runner supports plugins, create one to
-  // auto-generate the snapshot before each run.
-  final snapshotPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
-  if (snapshotPath.isNotEmpty && fileExists(snapshotPath)) {
-    pubPath = snapshotPath;
+  // Note: running tests without a snapshot is significantly slower, use
+  // tool/test.dart to generate the snapshot.
+  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  if (pubPath.isEmpty || !fileExists(pubPath)) {
+    pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
   }
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
   var dartArgs = ['--packages=$dotPackagesPath'];
-  dartArgs..addAll([pubPath, '--verbose'])..addAll(args);
+  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
@@ -553,24 +628,6 @@ LockFile _createLockFile(SourceRegistry sources,
   return LockFile(packages);
 }
 
-/// Returns the path to the version of [package] used by pub.
-String packagePath(String package) {
-  if (runningFromDartRepo) {
-    return dirExists(p.join(dartRepoRoot, 'pkg', package))
-        ? p.join(dartRepoRoot, 'pkg', package)
-        : p.join(dartRepoRoot, 'third_party', 'pkg', package);
-  }
-
-  var id = _entrypoint.lockFile.packages[package];
-  if (id == null) {
-    throw StateError(
-        'The tests rely on "$package", but it\'s not in the lockfile.');
-  }
-
-  return p.join(
-      SystemCache.defaultDir, 'hosted/pub.dartlang.org/$package-${id.version}');
-}
-
 /// Uses [client] as the mock HTTP client for this test.
 ///
 /// Note that this will only affect HTTP requests made via http.dart in the
@@ -604,9 +661,6 @@ Map packageMap(
   if (environment != null) package['environment'] = environment;
   return package;
 }
-
-/// Resolves [target] relative to the path to pub's `test/asset` directory.
-String testAssetPath(String target) => p.join(pubRoot, 'test', 'asset', target);
 
 /// Returns a Map in the format used by the pub.dartlang.org API to represent a
 /// package version.
@@ -737,14 +791,12 @@ typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
 
 /// Schedules a single [Validator] to run on the [appPath].
 ///
-/// Returns a scheduled Future that contains the errors and warnings produced
-/// by that validator.
-Future<Pair<List<String>, List<String>>> validatePackage(
-    ValidatorCreator fn) async {
+/// Returns a scheduled Future that contains the validator after validation.
+Future<Validator> validatePackage(ValidatorCreator fn) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var validator = fn(Entrypoint(_pathInSandbox(appPath), cache));
   await validator.validate();
-  return Pair(validator.errors, validator.warnings);
+  return validator;
 }
 
 /// A matcher that matches a Pair.

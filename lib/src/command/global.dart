@@ -15,8 +15,6 @@ class GlobalCommand extends PubCommand {
   @override
   String get description => 'Work with global packages.';
   @override
-  String get invocation => 'pub global <subcommand>';
-  @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   GlobalCommand() {

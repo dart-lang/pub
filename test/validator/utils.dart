@@ -6,14 +6,13 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
-void expectNoValidationError(ValidatorCreator fn) {
-  expect(validatePackage(fn), completion(pairOf(isEmpty, isEmpty)));
-}
+// TODO(sigurdm) consider rewriting all validator tests as integration tests.
+// That would make them more robust, and test actual end2end behaviour.
 
-void expectValidationError(ValidatorCreator fn) {
-  expect(validatePackage(fn), completion(pairOf(isNot(isEmpty), anything)));
-}
-
-void expectValidationWarning(ValidatorCreator fn) {
-  expect(validatePackage(fn), completion(pairOf(isEmpty, isNot(isEmpty))));
+Future<void> expectValidation(ValidatorCreator fn,
+    {hints, warnings, errors}) async {
+  final validator = await validatePackage(fn);
+  expect(validator.errors, errors ?? isEmpty);
+  expect(validator.warnings, warnings ?? isEmpty);
+  expect(validator.hints, hints ?? isEmpty);
 }
