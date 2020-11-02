@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 
@@ -55,7 +56,8 @@ Future<int> runExecutable(
     {bool enableAsserts = false,
     String packagesFile,
     Future<void> Function(Executable) recompile,
-    List<String> vmArgs = const []}) async {
+    List<String> vmArgs = const [],
+    @required bool alwaysUseSubprocess}) async {
   final package = executable.package;
   packagesFile ??= entrypoint.packagesFile;
 
@@ -124,8 +126,14 @@ Future<int> runExecutable(
   var packageConfig = p.absolute(packagesFile);
 
   try {
-    return await _runDartProgram(executablePath, args, packageConfig,
-        enableAsserts: enableAsserts, vmArgs: vmArgs);
+    return await _runDartProgram(
+      executablePath,
+      args,
+      packageConfig,
+      enableAsserts: enableAsserts,
+      vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
+    );
   } on IsolateSpawnException catch (error) {
     if (!useSnapshot ||
         !error.message.contains('Invalid kernel binary format version')) {
@@ -134,8 +142,14 @@ Future<int> runExecutable(
 
     log.fine('Precompiled executable is out of date.');
     await recompile(executable);
-    return _runDartProgram(executablePath, args, packageConfig,
-        enableAsserts: enableAsserts, vmArgs: vmArgs);
+    return await _runDartProgram(
+      executablePath,
+      args,
+      packageConfig,
+      enableAsserts: enableAsserts,
+      vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
+    );
   }
 }
 
@@ -151,19 +165,20 @@ Future<int> runExecutable(
 /// Returns the programs's exit code.
 Future<int> _runDartProgram(
     String path, List<String> args, String packageConfig,
-    {bool enableAsserts, List<String> vmArgs}) async {
+    {bool enableAsserts,
+    List<String> vmArgs,
+    @required bool alwaysUseSubprocess}) async {
   path = p.absolute(path);
   packageConfig = p.absolute(packageConfig);
 
   // We use Isolate.spawnUri when there are no extra vm-options.
   // That provides better signal handling, and possibly faster startup.
-  if (vmArgs.isEmpty) {
+  if (!alwaysUseSubprocess && vmArgs.isEmpty) {
     var argList = args.toList();
     await isolate.runUri(p.toUri(path), argList, null,
         enableAsserts: enableAsserts,
         automaticPackageResolution: packageConfig == null,
         packageConfig: p.toUri(packageConfig));
-    return exitCode;
   } else {
     // By ignoring sigint, only the child process will get it when
     // they are sent to the current process group. That is what happens when

@@ -25,7 +25,9 @@ class GlobalRunCommand extends PubCommand {
   @override
   bool get allowTrailingOptions => false;
 
-  GlobalRunCommand() {
+  final bool alwaysUseSubprocess;
+
+  GlobalRunCommand({this.alwaysUseSubprocess = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',

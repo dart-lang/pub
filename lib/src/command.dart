@@ -170,6 +170,8 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);
       }
       return _chooseExitCode(error);
+    } finally {
+      httpClient.close();
     }
   }
 

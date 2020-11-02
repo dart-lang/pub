@@ -142,6 +142,9 @@ class _PubHttpClient extends http.BaseClient {
       return '$name: $value';
     }
   }
+
+  @override
+  void close() => _inner.close();
 }
 
 /// The [_PubHttpClient] wrapped by [httpClient].
@@ -220,6 +223,9 @@ class _ThrowingClient extends http.BaseClient {
 
     throw PubHttpException(await http.Response.fromStream(streamedResponse));
   }
+
+  @override
+  void close() => _inner.close();
 }
 
 /// The HTTP client to use for all HTTP requests.

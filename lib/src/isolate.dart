@@ -14,7 +14,7 @@ import 'dart:isolate';
 /// the [exitCode] variable is set to 255.
 ///
 /// If [buffered] is `true`, this uses [spawnBufferedUri] to spawn the isolate.
-Future runUri(Uri url, List<String> args, Object message,
+Future<int> runUri(Uri url, List<String> args, Object message,
     {bool buffered = false,
     bool enableAsserts,
     bool automaticPackageResolution = false,
@@ -29,12 +29,16 @@ Future runUri(Uri url, List<String> args, Object message,
       onError: errorPort.sendPort,
       onExit: exitPort.sendPort);
 
-  errorPort.listen((list) {
+  final subscription = errorPort.listen((list) {
     stderr.writeln('Unhandled exception:');
     stderr.writeln(list[0]);
     stderr.write(list[1]);
     exitCode = 255;
   });
-
-  await exitPort.first;
+  try {
+    await exitPort.first;
+  } finally {
+    await subscription.cancel();
+  }
+  return exitCode;
 }

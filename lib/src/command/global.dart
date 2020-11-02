@@ -17,10 +17,10 @@ class GlobalCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
-  GlobalCommand() {
+  GlobalCommand({bool alwaysUseSubprocess = false}) {
     addSubcommand(GlobalActivateCommand());
     addSubcommand(GlobalDeactivateCommand());
     addSubcommand(GlobalListCommand());
-    addSubcommand(GlobalRunCommand());
+    addSubcommand(GlobalRunCommand(alwaysUseSubprocess: alwaysUseSubprocess));
   }
 }
