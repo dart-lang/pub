@@ -16,8 +16,8 @@ import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
-import 'command.dart' show PubCommand;
 import 'command.dart';
+import 'command.dart' show PubCommand;
 import 'log.dart' as log;
 import 'log.dart';
 

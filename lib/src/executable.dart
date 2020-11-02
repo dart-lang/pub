@@ -163,6 +163,10 @@ Future<int> runExecutable(
 /// Passes [vmArgs] to the vm.
 ///
 /// Returns the programs's exit code.
+///
+/// Tries to run the program as an isolate if no special [vmArgs] are given
+/// otherwise starts new vm in a subprocess. If [alwaysUseSubprocess] is `true`
+/// a new process will always be started.
 Future<int> _runDartProgram(
     String path, List<String> args, String packageConfig,
     {bool enableAsserts,
@@ -175,7 +179,7 @@ Future<int> _runDartProgram(
   // That provides better signal handling, and possibly faster startup.
   if (!alwaysUseSubprocess && vmArgs.isEmpty) {
     var argList = args.toList();
-    await isolate.runUri(p.toUri(path), argList, null,
+    return await isolate.runUri(p.toUri(path), argList, null,
         enableAsserts: enableAsserts,
         automaticPackageResolution: packageConfig == null,
         packageConfig: p.toUri(packageConfig));

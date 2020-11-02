@@ -141,10 +141,14 @@ class RunCommand extends PubCommand {
 
     throw ExitWithException(
       await runExecutable(
-          entrypoint, Executable(package, 'bin/$command.dart'), args,
-          vmArgs: vmArgs,
-          enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-          recompile: entrypoint.precompileExecutable),
+        entrypoint,
+        Executable(package, 'bin/$command.dart'),
+        args,
+        vmArgs: vmArgs,
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+        recompile: entrypoint.precompileExecutable,
+        alwaysUseSubprocess: alwaysUseSubprocess,
+      ),
     );
   }
 }
