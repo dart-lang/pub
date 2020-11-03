@@ -84,8 +84,10 @@ void logout(SystemCache cache) {
   }
 }
 
-/// Asynchronously passes an OAuth2 [Client] to [fn], and closes the client when
-/// the [Future] returned by [fn] completes.
+/// Asynchronously passes an OAuth2 [Client] to [fn].
+///
+/// Does not close the client, since that would close the shared client. It must
+/// be closed elsewhere.
 ///
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
@@ -93,7 +95,9 @@ void logout(SystemCache cache) {
 Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
   return _getClient(cache).then((client) {
     return fn(client).whenComplete(() {
-      client.close();
+      // TODO(sigurdm): refactor the http subsystem, so we can close [client]
+      // here.
+
       // Be sure to save the credentials even when an error happens.
       _saveCredentials(cache, client.credentials);
     });

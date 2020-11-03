@@ -375,13 +375,21 @@ class GlobalPackages {
       {bool enableAsserts = false,
       String packagesFile,
       Future<void> Function(exec.Executable) recompile,
-      List<String> vmArgs = const []}) async {
-    return await exec.runExecutable(entrypoint, executable, args,
-        enableAsserts: enableAsserts,
-        packagesFile: packagesFile, recompile: (exectuable) async {
-      await recompile(exectuable);
-      _refreshBinStubs(entrypoint, executable);
-    }, vmArgs: vmArgs);
+      List<String> vmArgs = const [],
+      @required bool alwaysUseSubprocess}) async {
+    return await exec.runExecutable(
+      entrypoint,
+      executable,
+      args,
+      enableAsserts: enableAsserts,
+      packagesFile: packagesFile,
+      recompile: (exectuable) async {
+        await recompile(exectuable);
+        _refreshBinStubs(entrypoint, executable);
+      },
+      vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
+    );
   }
 
   /// Gets the path to the lock file for an activated cached package with

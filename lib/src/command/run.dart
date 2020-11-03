@@ -28,8 +28,12 @@ class RunCommand extends PubCommand {
   bool get hidden => deprecated;
 
   final bool deprecated;
+  final bool alwaysUseSubprocess;
 
-  RunCommand({this.deprecated = false}) {
+  RunCommand({
+    this.deprecated = false,
+    this.alwaysUseSubprocess = false,
+  }) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption('enable-experiment',
@@ -93,6 +97,7 @@ class RunCommand extends PubCommand {
       recompile: (executable) => log.warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable)),
       vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
     );
     throw ExitWithException(exitCode);
   }
@@ -136,10 +141,14 @@ class RunCommand extends PubCommand {
 
     throw ExitWithException(
       await runExecutable(
-          entrypoint, Executable(package, 'bin/$command.dart'), args,
-          vmArgs: vmArgs,
-          enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-          recompile: entrypoint.precompileExecutable),
+        entrypoint,
+        Executable(package, 'bin/$command.dart'),
+        args,
+        vmArgs: vmArgs,
+        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+        recompile: entrypoint.precompileExecutable,
+        alwaysUseSubprocess: alwaysUseSubprocess,
+      ),
     );
   }
 }

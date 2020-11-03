@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:pub/src/pub_embeddable_command.dart';
-import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/pub_embeddable_command.dart';
 
 class Runner extends CommandRunner<int> {
   ArgResults _options;
