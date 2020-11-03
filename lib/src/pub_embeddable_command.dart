@@ -12,6 +12,7 @@ import 'command/downgrade.dart';
 import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
+import 'command/login.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
@@ -56,6 +57,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(RunCommand(deprecated: true, alwaysUseSubprocess: true));
     addSubcommand(UpgradeCommand());
     addSubcommand(UploaderCommand());
+    addSubcommand(LoginCommand());
     addSubcommand(LogoutCommand());
   }
 
