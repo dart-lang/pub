@@ -3,7 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/command_runner.dart';
+import 'package:pub/src/io.dart';
 
 Future<void> main(List<String> arguments) async {
-  await PubCommandRunner().run(arguments);
+  await flushThenExit(await PubCommandRunner().run(arguments));
 }

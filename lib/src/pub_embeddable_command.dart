@@ -15,6 +15,7 @@ import 'command/lish.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
+import 'command/run.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
@@ -52,6 +53,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(LishCommand());
     addSubcommand(OutdatedCommand());
     addSubcommand(RemoveCommand());
+    addSubcommand(RunCommand(deprecated: true));
     addSubcommand(UpgradeCommand());
     addSubcommand(UploaderCommand());
     addSubcommand(LogoutCommand());
