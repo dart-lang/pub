@@ -42,7 +42,7 @@ final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
 /// A command may either be a "leaf" command or it may be a parent for a set
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
-abstract class PubCommand extends Command<dynamic> {
+abstract class PubCommand extends Command<int> {
   SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
   SystemCache _cache;

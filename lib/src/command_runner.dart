@@ -34,7 +34,7 @@ import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
 
-class PubCommandRunner extends CommandRunner implements PubTopLevel {
+class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   bool get captureStackChains {
     return _argResults['trace'] ||
