@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'command.dart';
+import 'command.dart' show PubCommand;
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -16,8 +18,6 @@ import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
-import 'command.dart';
-import 'command.dart' show PubCommand;
 import 'log.dart' as log;
 import 'log.dart';
 
