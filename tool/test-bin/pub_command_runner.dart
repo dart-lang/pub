@@ -6,7 +6,7 @@ import 'package:pub/src/pub_embeddable_command.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
-class Runner extends CommandRunner {
+class Runner extends CommandRunner<int> {
   ArgResults _options;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
