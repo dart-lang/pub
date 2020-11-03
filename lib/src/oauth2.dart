@@ -95,6 +95,9 @@ void logout(SystemCache cache) {
 Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
   return _getClient(cache).then((client) {
     return fn(client).whenComplete(() {
+      // TODO(sigurdm): refactor the http subsystem, so we can close [client]
+      // here.
+
       // Be sure to save the credentials even when an error happens.
       _saveCredentials(cache, client.credentials);
     });
