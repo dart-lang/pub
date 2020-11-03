@@ -336,8 +336,11 @@ Future runPub(
 Future<PubProcess> startPublish(PackageServer server,
     {List<String> args}) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
-  args = ['lish', '--server', server.url, ...?args];
-  return await startPub(args: args, tokenEndpoint: tokenEndpoint);
+  args = ['lish', ...?args];
+  return await startPub(
+      args: args,
+      tokenEndpoint: tokenEndpoint,
+      environment: {'PUB_HOSTED_URL': server.url});
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
