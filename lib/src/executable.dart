@@ -9,7 +9,6 @@ import 'dart:isolate';
 import 'package:args/args.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-import 'package:pedantic/pedantic.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
