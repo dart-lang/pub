@@ -127,7 +127,7 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
       if (!completer.isCompleted) completer.completeError(error, stackTrace);
     });
   } else {
-    runZoned(wrappedCallback, onError: (e, stackTrace) {
+    runZonedGuarded(wrappedCallback, (e, stackTrace) {
       if (stackTrace == null) {
         stackTrace = Chain.current();
       } else {

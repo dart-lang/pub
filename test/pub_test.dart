@@ -35,7 +35,8 @@ void main() {
           downgrade   Downgrade the current package's dependencies to oldest versions.
           get         Get the current package's dependencies.
           global      Work with global packages.
-          logout      Log out of pub.dartlang.org.
+          login       Log into pub.dev.
+          logout      Log out of pub.dev.
           outdated    Analyze your dependencies to find which ones can be upgraded.
           publish     Publish the current package to pub.dartlang.org.
           remove      Removes a dependency from the current package.
