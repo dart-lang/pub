@@ -177,7 +177,7 @@ Future<int> _runDartProgram(
 
   // We use Isolate.spawnUri when there are no extra vm-options.
   // That provides better signal handling, and possibly faster startup.
-  if (!alwaysUseSubprocess && vmArgs.isEmpty) {
+  if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
     var argList = args.toList();
     return await isolate.runUri(p.toUri(path), argList, null,
         enableAsserts: enableAsserts,
@@ -203,8 +203,7 @@ Future<int> _runDartProgram(
     // TODO(sigurdm) To handle signals better we would ideally have `exec`
     // semantics without `fork` for starting the subprocess.
     // https://github.com/dart-lang/sdk/issues/41966.
-    unawaited(ProcessSignal.sigint.watch().drain());
-
+    final subscription = ProcessSignal.sigint.watch().listen((e) {});
     final process = await Process.start(
       Platform.resolvedExecutable,
       [
@@ -217,7 +216,9 @@ Future<int> _runDartProgram(
       mode: ProcessStartMode.inheritStdio,
     );
 
-    return process.exitCode;
+    final exitCode = await process.exitCode;
+    await subscription.cancel();
+    return exitCode;
   }
 }
 
