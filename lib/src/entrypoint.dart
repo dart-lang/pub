@@ -170,12 +170,12 @@ class Entrypoint {
 
   /// Loads the entrypoint for the package at the current directory.
   Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources, isRootPackage: true),
+      : root = Package.load(null, '.', cache.sources),
         isGlobal = false;
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources, isRootPackage: true),
+      : root = Package.load(null, rootDir, cache.sources),
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -226,6 +226,21 @@ class Entrypoint {
     bool dryRun = false,
     bool precompile = false,
   }) async {
+    // We require an SDK constraint lower-bound as of Dart 2.12.0
+    final dartSdkConstraint = root.pubspec.sdkConstraints['dart'];
+    if (dartSdkConstraint is! VersionRange ||
+        (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
+      throw DataException('''
+pubspec.yaml has no lower-bound SDK constraint.
+You should edit pubspec.yaml to contain an SDK constraint:
+
+environment:
+  sdk: '>=${sdk.version} <${sdk.version.nextBreaking}'
+
+See https://dart.dev/go/sdk-constraint
+''');
+    }
+
     var result = await log.progress(
       'Resolving dependencies',
       () => resolveVersions(

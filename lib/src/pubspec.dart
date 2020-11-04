@@ -462,7 +462,7 @@ class Pubspec {
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecException].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String expectedName, bool includeDefaultSdkConstraint}) {
+      {String expectedName}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -475,9 +475,7 @@ class Pubspec {
     }
 
     return Pubspec.parse(readTextFile(pubspecPath), sources,
-        expectedName: expectedName,
-        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
-        location: pubspecUri);
+        expectedName: expectedName, location: pubspecUri);
   }
 
   Pubspec(this._name,
@@ -522,11 +520,11 @@ class Pubspec {
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
-      {String expectedName, bool includeDefaultSdkConstraint, Uri location})
+      {String expectedName, Uri location})
       : fields = fields is YamlMap
             ? fields
             : YamlMap.wrap(fields, sourceUrl: location),
-        _includeDefaultSdkConstraint = includeDefaultSdkConstraint ?? true {
+        _includeDefaultSdkConstraint = true {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -543,7 +541,7 @@ class Pubspec {
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String expectedName, bool includeDefaultSdkConstraint, Uri location}) {
+      {String expectedName, Uri location}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -562,9 +560,7 @@ class Pubspec {
     }
 
     return Pubspec.fromMap(pubspecMap, sources,
-        expectedName: expectedName,
-        includeDefaultSdkConstraint: includeDefaultSdkConstraint,
-        location: location);
+        expectedName: expectedName, location: location);
   }
 
   /// Returns a list of most errors in this pubspec.
