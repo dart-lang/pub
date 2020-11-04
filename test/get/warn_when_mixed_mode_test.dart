@@ -33,7 +33,7 @@ void main() {
 
     await pubGet(
         warning: contains(
-            'Warning: The package resolution support only partial null-safety.\n\n'
+            'Warning: The package resolution support only partial null-safety.\n\n'),
         environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
   });
 
