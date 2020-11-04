@@ -66,8 +66,7 @@ void main() {
 
     await pubGet(
         warning: contains(
-            'The package resolution is not fully migrated to null-safety.\n\n'
-            'package:foo/foo.dart is opting out of null safety:'),
+            'Warning: The package resolution support only partial null-safety.\n\n'),
         environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
   });
 
