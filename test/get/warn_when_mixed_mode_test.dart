@@ -33,8 +33,7 @@ void main() {
 
     await pubGet(
         warning: contains(
-            'The package resolution is not fully migrated to null-safety.\n\n'
-            'package:foo is not opted into null safety in its pubspec.yaml:'),
+            'Warning: The package resolution support only partial null-safety.\n\n'
         environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'});
   });
 
