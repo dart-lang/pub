@@ -124,12 +124,7 @@ class SolveResult {
           .nullSafetyComplianceOfPackages(packages, _root);
       if (analysis.compliance == NullSafetyCompliance.mixed) {
         log.warning('''
-The package resolution is not fully migrated to null-safety.
-
-${analysis.reason}
-
-Either downgrade your sdk constraint, or invoke dart/flutter with 
-`--no-sound-null-safety`.
+Warning: The package resolution support only partial null-safety.
 
 To learn more about available versions of your dependencies try running
 `pub outdated --mode=null-safety`.
