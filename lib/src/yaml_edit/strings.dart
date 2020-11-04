@@ -269,7 +269,9 @@ String yamlEncodeBlockString(
       final formattedValue =
           yamlEncodeBlockString(entry.value, newIndentation, lineEnding);
 
-      if (isCollection(entry.value)) {
+      /// Empty collections are always encoded in flow-style, so new-line must
+      /// be avoided.
+      if (isCollection(entry.value) && !isEmpty(entry.value)) {
         return formattedKey + ':\n' + formattedValue;
       }
 
