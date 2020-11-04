@@ -40,6 +40,9 @@ dependencies:
 
 dev_dependencies:
   bar: 2.0.0
+
+environment:
+  sdk: '>=0.1.2 <1.0.0'
 ''')
     ]).create();
 
@@ -223,6 +226,8 @@ dev_dependencies:
             # comment C
             foo: 1.0.0 # comment D
           # comment E
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
     '''),
     ]).create();
 

@@ -1154,26 +1154,23 @@ void dartSdkConstraint() {
     group('for the root package', () {
       test('allow 2.0.0-dev by default', () async {
         await d.dir(appPath, [
-          d.pubspec({'name': 'myapp'})
+          d.pubspec({
+            'name': 'myapp',
+            'environment': {
+              'sdk': '>=1.0.0 <2.0.0',
+            },
+          }),
         ]).create();
 
         await expectResolves(
             environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'});
       });
 
-      test('allow 2.0.0 by default', () async {
-        await d.dir(appPath, [
-          d.pubspec({'name': 'myapp'})
-        ]).create();
-
-        await expectResolves(environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
-      });
-
       test('allow pre-release versions of the upper bound', () async {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.3'}
+            'environment': {'sdk': '>=1.0.0 <1.2.3'}
           })
         ]).create();
 
@@ -1187,7 +1184,7 @@ void dartSdkConstraint() {
     group('for a dependency', () {
       test('disallow 2.0.0 by default', () async {
         await d.dir('foo', [
-          d.pubspec({'name': 'foo'})
+          d.rawPubspec({'name': 'foo'}),
         ]).create();
 
         await d.dir(appPath, [
@@ -1195,8 +1192,11 @@ void dartSdkConstraint() {
             'name': 'myapp',
             'dependencies': {
               'foo': {'path': '../foo'}
-            }
-          })
+            },
+            'environment': {
+              'sdk': '>=2.0.0-0 <3.0.0',
+            },
+          }),
         ]).create();
 
         await expectResolves(
@@ -1211,10 +1211,10 @@ void dartSdkConstraint() {
 
       test('allow 2.0.0-dev by default', () async {
         await d.dir('foo', [
-          d.pubspec({'name': 'foo'})
+          d.rawPubspec({'name': 'foo'})
         ]).create();
         await d.dir('bar', [
-          d.pubspec({'name': 'bar'})
+          d.rawPubspec({'name': 'bar'})
         ]).create();
 
         await d.dir(appPath, [
@@ -1223,7 +1223,10 @@ void dartSdkConstraint() {
             'dependencies': {
               'foo': {'path': '../foo'},
               'bar': {'path': '../bar'},
-            }
+            },
+            'environment': {
+              'sdk': '>=1.0.0 <2.0.0',
+            },
           })
         ]).create();
 
@@ -1239,7 +1242,7 @@ void dartSdkConstraint() {
 
     test("don't log if PUB_ALLOW_PRERELEASE_SDK is quiet", () async {
       await d.dir('foo', [
-        d.pubspec({'name': 'foo'})
+        d.rawPubspec({'name': 'foo'})
       ]).create();
 
       await d.dir(appPath, [
@@ -1247,8 +1250,11 @@ void dartSdkConstraint() {
           'name': 'myapp',
           'dependencies': {
             'foo': {'path': '../foo'},
-          }
-        })
+          },
+          'environment': {
+            'sdk': '>=1.0.0 <2.0.0',
+          },
+        }),
       ]).create();
 
       await expectResolves(
@@ -1264,7 +1270,12 @@ void dartSdkConstraint() {
 
     test('are disabled if PUB_ALLOW_PRERELEASE_SDK is false', () async {
       await d.dir('foo', [
-        d.pubspec({'name': 'foo'})
+        d.pubspec({
+          'name': 'foo',
+          'environment': {
+            'sdk': '>=1.0.0 <2.0.0',
+          },
+        }),
       ]).create();
 
       await d.dir(appPath, [
@@ -1272,7 +1283,10 @@ void dartSdkConstraint() {
           'name': 'myapp',
           'dependencies': {
             'foo': {'path': '../foo'}
-          }
+          },
+          'environment': {
+            'sdk': '>=1.0.0 <3.0.0',
+          },
         })
       ]).create();
 
@@ -1283,7 +1297,7 @@ void dartSdkConstraint() {
         The current Dart SDK version is 2.0.0-dev.99.
 
         Because myapp depends on foo from path which requires SDK version
-          <2.0.0, version solving failed.
+        >=1.0.0 <2.0.0, version solving failed.
       '''));
     });
 
@@ -1292,7 +1306,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<2.2.3'}
+            'environment': {'sdk': '>=1.0.0 <2.2.3'}
           })
         ]).create();
 
@@ -1305,7 +1319,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.3.3'}
+            'environment': {'sdk': '>=1.0.0 <1.3.3'}
           })
         ]).create();
 
@@ -1318,7 +1332,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.4'}
+            'environment': {'sdk': '>=1.0.0 <1.2.4'}
           })
         ]).create();
 
@@ -1331,7 +1345,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<=1.2.3'}
+            'environment': {'sdk': '>=1.0.0 <=1.2.3'}
           })
         ]).create();
 
@@ -1344,7 +1358,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.3'}
+            'environment': {'sdk': '>=1.0.0 <1.2.3'}
           })
         ]).create();
 
@@ -1353,7 +1367,8 @@ void dartSdkConstraint() {
             error: equalsIgnoringWhitespace('''
               The current Dart SDK version is 1.2.3.
 
-              Because myapp requires SDK version <1.2.3, version solving failed.
+              Because myapp requires SDK version >=1.0.0 <1.2.3, version
+              solving failed.
             '''));
       });
 
@@ -1361,7 +1376,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.3-dev.2.0'}
+            'environment': {'sdk': '>=1.0.0 <1.2.3-dev.2.0'}
           })
         ]).create();
 
@@ -1387,7 +1402,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.3+1'}
+            'environment': {'sdk': '>=1.0.0 <1.2.3+1'}
           })
         ]).create();
 
@@ -1402,7 +1417,7 @@ void dartSdkConstraint() {
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'environment': {'sdk': '<1.2.3'}
+            'environment': {'sdk': '>=1.0.0 <1.2.3'}
           })
         ]).create();
 
@@ -1578,8 +1593,11 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '>0.1.2+3', 'flutter': '1.2.3'}
-        })
+          'environment': {
+            'sdk': '>0.1.2+3', // pub will apply a default upper bound <2.0.0
+            'flutter': '1.2.3',
+          },
+        }),
       ]).create();
 
       await expectResolves(
@@ -1587,7 +1605,8 @@ void sdkConstraint() {
           error: equalsIgnoringWhitespace('''
             The current Dart SDK version is 0.1.2+3.
 
-            Because myapp requires SDK version >0.1.2+3, version solving failed.
+            Because myapp requires SDK version >0.1.2+3 <2.0.0, version solving
+            failed.
           '''));
     });
 

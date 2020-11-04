@@ -63,6 +63,9 @@ void main() {
           dependencies: 
 
           dev_dependencies:
+
+          environment:
+            sdk: '>=0.1.2 <1.0.0'
         ''')
       ]).create();
 
@@ -186,6 +189,8 @@ dependencies:
 
 dev_dependencies:
   foo: 1.2.2
+environment:
+  sdk: '>=0.1.2 <1.0.0'
 ''')
       ]).create();
 
@@ -784,6 +789,8 @@ dev_dependencies:
       d.file('pubspec.yaml', '''
         name: myapp
         dependencies:
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
 '''),
     ]).create();
 
@@ -806,6 +813,8 @@ dev_dependencies:
             # comment B
             foo: 1.0.0 # comment C
           # comment D
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
     '''),
     ]).create();
 

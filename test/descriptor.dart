@@ -67,12 +67,16 @@ Descriptor pubspec(Map<String, Object> contents) => YamlDescriptor(
       'pubspec.yaml',
       yaml({
         ...contents,
+        // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
         'environment': {
           'sdk': '>=0.1.2 <1.0.0',
           ...contents['environment'] as Map ?? {},
         },
       }),
     );
+
+Descriptor rawPubspec(Map<String, Object> contents) =>
+    YamlDescriptor('pubspec.yaml', yaml(contents));
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].

@@ -20,9 +20,23 @@ import '../validator.dart';
 class SdkConstraintValidator extends Validator {
   SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
 
+  /// Get SDK version constraint from `pubspec.yaml` without any defaults or
+  /// overrides.
+  VersionConstraint _sdkConstraintFromPubspecYaml() {
+    final env = entrypoint.root.pubspec.fields['environment'];
+    if (env is Map && env['sdk'] is String) {
+      try {
+        return VersionConstraint.parse(env['sdk']);
+      } on FormatException {
+        // ignore
+      }
+    }
+    return VersionConstraint.any;
+  }
+
   @override
   Future validate() async {
-    var dartConstraint = entrypoint.root.pubspec.originalDartSdkConstraint;
+    final dartConstraint = _sdkConstraintFromPubspecYaml();
     if (dartConstraint is VersionRange) {
       if (dartConstraint.toString().startsWith('^')) {
         var dartConstraintWithoutCaret = VersionRange(
