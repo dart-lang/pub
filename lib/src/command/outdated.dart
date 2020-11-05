@@ -9,13 +9,11 @@ import 'dart:math';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
 
 import '../command.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -611,17 +609,15 @@ Showing packages where the current version doesn't fully support null safety.
           packageDetails.latest?._id,
         ]
       }.where((id) => id != null);
-      final nullSafetyAnalyzer = NullSafetyAnalysis(cache);
+
       return Map.fromEntries(
         await Future.wait(
           ids.map(
             (id) async => MapEntry(
-              id,
-              await nullSafetyAnalyzer.nullSafetyCompliance(
                 id,
-                containingPath: path.absolute(entrypoint.root.dir),
-              ),
-            ),
+                (await id.source.bind(cache).describe(id))
+                    .languageVersion
+                    .supportsNullSafety),
           ),
         ),
       );
@@ -640,26 +636,15 @@ Showing packages where the current version doesn't fully support null safety.
             bool nullSafetyJson;
             var asDesired = false;
             if (versionDetails != null) {
-              final nullSafety = nullSafetyMap[versionDetails._id];
-
-              switch (nullSafety.compliance) {
-                case NullSafetyCompliance.analysisFailed:
-                  color = color = log.gray;
-                  prefix = '?';
-                  nullSafetyJson = null;
-                  break;
-                case NullSafetyCompliance.compliant:
-                  color = log.green;
-                  prefix = emoji('✓', '+');
-                  nullSafetyJson = true;
-                  asDesired = true;
-                  break;
-                case NullSafetyCompliance.notCompliant:
-                case NullSafetyCompliance.mixed:
-                  color = log.red;
-                  prefix = emoji('✗', 'x');
-                  nullSafetyJson = false;
-                  break;
+              if (nullSafetyMap[versionDetails._id]) {
+                color = log.green;
+                prefix = emoji('✓', '+');
+                nullSafetyJson = true;
+                asDesired = true;
+              } else {
+                color = log.red;
+                prefix = emoji('✗', 'x');
+                nullSafetyJson = false;
               }
             }
             return _MarkedVersionDetails(
