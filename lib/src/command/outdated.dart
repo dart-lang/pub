@@ -69,7 +69,8 @@ class OutdatedCommand extends PubCommand {
         defaultsTo: 'outdated');
 
     argParser.addFlag('prereleases',
-        help: 'Include prereleases in latest version.');
+        help: 'Include prereleases in latest version.\n'
+            '(Defaults to on in --mode=null-safety).');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
@@ -227,10 +228,26 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
+  bool _prereleases;
+
+  bool get prereleases => _prereleases ??= () {
+        // First check if 'prereleases' was passed as an argument.
+        // If that was not the case, check for use of the legacy spelling
+        // 'pre-releases'.
+        // Otherwise fall back to the default implied by the mode.
+        if (argResults.wasParsed('prereleases')) {
+          return argResults['prereleases'];
+        }
+        if (argResults.wasParsed('pre-releases')) {
+          return argResults['pre-releases'];
+        }
+        return argResults['mode'] == 'null-safety';
+      }();
+
   /// Get the latest version of [package].
   ///
-  /// Will include prereleases in the comparison  '--prereleases' was provided
-  /// in arguments.
+  /// Will include prereleases in the comparison if '--prereleases' was enabled
+  /// by the arguments.
   ///
   /// If [package] is a [PackageId] with a prerelease version and there are no
   /// later stable version we return a prerelease version if it exists.
@@ -247,15 +264,6 @@ class OutdatedCommand extends PubCommand {
     }
 
     // TODO(sigurdm): Refactor this to share logic with report.dart.
-    // First check if 'prereleases' was passed as an argument.
-    // If that was not the case, use result of the legacy spelling
-    // 'pre-releases'.
-    // This implies that if none of these variants were given we fall
-    // back to the default for 'pre-releases'.
-    final prereleases = argResults.wasParsed('prereleases')
-        ? argResults['prereleases']
-        : argResults['pre-releases'];
-
     available.sort(prereleases
         ? (x, y) => x.version.compareTo(y.version)
         : (x, y) => Version.prioritize(x.version, y.version));

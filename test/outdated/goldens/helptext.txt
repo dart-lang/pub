@@ -16,6 +16,7 @@ Usage: pub outdated [options]
                                    will be included unless --show-all.
                                    [outdated (default), null-safety]
     --[no-]prereleases             Include prereleases in latest version.
+                                   (Defaults to on in --mode=null-safety).
     --[no-]show-all                Include dependencies that are already
                                    fullfilling --mode.
 
