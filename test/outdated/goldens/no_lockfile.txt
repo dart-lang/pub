@@ -36,7 +36,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
@@ -52,7 +52,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
@@ -68,7 +68,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
@@ -84,7 +84,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
@@ -100,7 +100,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
 
@@ -118,7 +118,7 @@ Showing dependencies that are currently not opted in to null-safety.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
 

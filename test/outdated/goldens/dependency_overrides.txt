@@ -64,7 +64,7 @@ Showing outdated packages.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 
-dev_dependencies
+direct dependencies
 bar           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
 baz           *2.0.0 (overridden)  *2.0.0 (overridden)  *2.0.0 (overridden)  2.0.0   
 foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
@@ -78,7 +78,7 @@ Showing outdated packages.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 
-dev_dependencies
+direct dependencies
 bar           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
 baz           *2.0.0 (overridden)  *2.0.0 (overridden)  *2.0.0 (overridden)  2.0.0   
 foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
@@ -92,7 +92,7 @@ Showing outdated packages.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 
-dev_dependencies
+direct dependencies
 bar           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
 baz           *2.0.0 (overridden)  *2.0.0 (overridden)  *2.0.0 (overridden)  2.0.0   
 foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
@@ -106,7 +106,7 @@ Showing outdated packages.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 
-dev_dependencies
+direct dependencies
 bar           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
 baz           *2.0.0 (overridden)  *2.0.0 (overridden)  *2.0.0 (overridden)  2.0.0   
 foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0.0   
@@ -120,7 +120,7 @@ Showing outdated packages.
 
 Package Name  Current              Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar           *1.0.1 (overridden)  2.0.0       2.0.0       2.0.0   
 baz           *2.0.0 (overridden)  *1.0.0      2.0.0       2.0.0   
 foo           *1.0.1 (overridden)  *1.0.0      *1.0.0      2.0.0   
@@ -139,7 +139,7 @@ Showing dependencies that are currently not opted in to null-safety.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 
-dev_dependencies
+direct dependencies
 bar           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  
 baz           ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0 (overridden)  ✗2.0.0  
 foo           ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗1.0.1 (overridden)  ✗2.0.0  

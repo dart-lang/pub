@@ -40,7 +40,7 @@ Showing outdated packages.
 
 Package Name  Current       Upgradable    Resolvable   Latest       
 
-dev_dependencies
+direct dependencies
 foo           *1.0.0-dev.1  *1.0.0-dev.1  1.0.0-dev.2  1.0.0-dev.2  
 mop           *0.10.0-dev   *0.10.0-dev   0.10.0       0.10.0       
 
@@ -53,7 +53,7 @@ Showing outdated packages.
 
 Package Name  Current       Upgradable    Resolvable   Latest       
 
-dev_dependencies
+direct dependencies
 bar           0.9.0         0.9.0         0.9.0        0.9.0        
 foo           *1.0.0-dev.1  *1.0.0-dev.1  1.0.0-dev.2  1.0.0-dev.2  
 mop           *0.10.0-dev   *0.10.0-dev   0.10.0       0.10.0       
@@ -67,7 +67,7 @@ Showing outdated packages.
 
 Package Name  Current       Upgradable    Resolvable   Latest       
 
-dev_dependencies
+direct dependencies
 bar           *0.9.0        *0.9.0        *0.9.0       1.0.0-dev.2  
 foo           *1.0.0-dev.1  *1.0.0-dev.1  1.0.0-dev.2  1.0.0-dev.2  
 mop           *0.10.0-dev   *0.10.0-dev   *0.10.0      1.0.0-dev    
@@ -81,7 +81,7 @@ Showing outdated packages.
 
 Package Name  Current       Upgradable    Resolvable   Latest       
 
-dev_dependencies
+direct dependencies
 foo           *1.0.0-dev.1  *1.0.0-dev.1  1.0.0-dev.2  1.0.0-dev.2  
 mop           *0.10.0-dev   *0.10.0-dev   0.10.0       0.10.0       
 
@@ -94,7 +94,7 @@ Showing outdated packages.
 
 Package Name  Current       Upgradable    Resolvable   Latest       
 
-dev_dependencies
+direct dependencies
 foo           *1.0.0-dev.1  *1.0.0-dev.1  1.0.0-dev.2  1.0.0-dev.2  
 mop           *0.10.0-dev   *0.10.0-dev   0.10.0       0.10.0       
 
@@ -109,7 +109,7 @@ Showing dependencies that are currently not opted in to null-safety.
 
 Package Name  Current       Upgradable    Resolvable    Latest        
 
-dev_dependencies
+direct dependencies
 bar           ✗0.9.0        ✗0.9.0        ✗0.9.0        ✗0.9.0        
 foo           ✗1.0.0-dev.1  ✗1.0.0-dev.1  ✗1.0.0-dev.2  ✗1.0.0-dev.2  
 mop           ✗0.10.0-dev   ✗0.10.0-dev   ✗0.10.0       ✗0.10.0       

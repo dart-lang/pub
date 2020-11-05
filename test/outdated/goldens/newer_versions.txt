@@ -90,7 +90,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
 
 dev_dependencies
@@ -116,7 +116,7 @@ Showing outdated packages.
 
 Package Name   Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar            1.0.0    1.0.0       1.0.0       1.0.0   
 foo            *1.2.3   *1.3.0      *2.0.0      3.0.0   
 local_package  0.0.1    0.0.1       0.0.1       0.0.1   
@@ -144,7 +144,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest       
 
-dev_dependencies
+direct dependencies
 foo           *1.2.3   *1.3.0      *2.0.0      3.0.0        
 
 dev_dependencies
@@ -170,7 +170,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 foo           *1.2.3   *1.3.0      3.0.0       3.0.0   
 
 transitive dependencies
@@ -188,7 +188,7 @@ Showing outdated packages.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
 
 dev_dependencies
@@ -216,7 +216,7 @@ Showing dependencies that are currently not opted in to null-safety.
 
 Package Name   Current  Upgradable  Resolvable  Latest  
 
-dev_dependencies
+direct dependencies
 bar            ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo            ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0  
 local_package  ✗0.0.1   ✗0.0.1      ✗0.0.1      ✗0.0.1  
