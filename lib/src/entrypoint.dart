@@ -227,36 +227,7 @@ class Entrypoint {
     bool precompile = false,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
-    final dartSdkConstraint = root.pubspec.sdkConstraints['dart'];
-    if (dartSdkConstraint is! VersionRange ||
-        (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
-      // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
-      // [CompatibleWithVersionRange] because some pub versions don't support
-      // caret syntax (e.g. '^2.10.0')
-      var suggestedConstraint = VersionRange(
-        min: Version.parse('2.10.0'),
-        max: Version.parse('2.10.0').nextBreaking,
-        includeMin: true,
-      );
-      // But if somehow that doesn't work, we fallback to safe sanity, mostly
-      // important for tests, or if we jump to 3.x without patching this code.
-      if (!suggestedConstraint.allows(sdk.version)) {
-        suggestedConstraint = VersionRange(
-          min: sdk.version,
-          max: sdk.version.nextBreaking,
-          includeMin: true,
-        );
-      }
-      throw DataException('''
-pubspec.yaml has no lower-bound SDK constraint.
-You should edit pubspec.yaml to contain an SDK constraint:
-
-environment:
-  sdk: '$suggestedConstraint'
-
-See https://dart.dev/go/sdk-constraint
-''');
-    }
+    _checkSdkConstraintIsDefined(root.pubspec);
 
     var result = await log.progress(
       'Resolving dependencies',
@@ -850,4 +821,38 @@ bool detectWindowsLineEndings(String text) {
     }
   }
   return windowsNewlines > unixNewlines;
+}
+
+/// We require an SDK constraint lower-bound as of Dart 2.12.0
+void _checkSdkConstraintIsDefined(Pubspec pubspec) {
+  final dartSdkConstraint = pubspec.sdkConstraints['dart'];
+  if (dartSdkConstraint is! VersionRange ||
+      (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
+    // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
+    // [CompatibleWithVersionRange] because some pub versions don't support
+    // caret syntax (e.g. '^2.10.0')
+    var suggestedConstraint = VersionRange(
+      min: Version.parse('2.10.0'),
+      max: Version.parse('2.10.0').nextBreaking,
+      includeMin: true,
+    );
+    // But if somehow that doesn't work, we fallback to safe sanity, mostly
+    // important for tests, or if we jump to 3.x without patching this code.
+    if (!suggestedConstraint.allows(sdk.version)) {
+      suggestedConstraint = VersionRange(
+        min: sdk.version,
+        max: sdk.version.nextBreaking,
+        includeMin: true,
+      );
+    }
+    throw DataException('''
+pubspec.yaml has no lower-bound SDK constraint.
+You should edit pubspec.yaml to contain an SDK constraint:
+
+environment:
+  sdk: '$suggestedConstraint'
+
+See https://dart.dev/go/sdk-constraint
+''');
+  }
 }
