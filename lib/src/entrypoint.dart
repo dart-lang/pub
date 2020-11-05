@@ -235,7 +235,7 @@ pubspec.yaml has no lower-bound SDK constraint.
 You should edit pubspec.yaml to contain an SDK constraint:
 
 environment:
-  sdk: '>=${sdk.version} <${sdk.version.nextBreaking}'
+  sdk: '>=2.10.0 <${sdk.version.nextBreaking}'
 
 See https://dart.dev/go/sdk-constraint
 ''');
