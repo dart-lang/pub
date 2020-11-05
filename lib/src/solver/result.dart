@@ -113,39 +113,6 @@ class SolveResult {
     }
   }
 
-  /// Displays a warning if the root package opts in, but this is not a fully
-  /// null-safe resolution.
-  Future<void> warnAboutMixedMode(
-    SystemCache cache, {
-    @required bool dryRun,
-  }) async {
-    if (pubspecs[_root.name].languageVersion.supportsNullSafety) {
-      final analysis = await NullSafetyAnalysis(cache)
-          .nullSafetyComplianceOfPackages(packages, _root);
-      if (analysis.compliance == NullSafetyCompliance.mixed) {
-        log.warning('''
-The package resolution is not fully migrated to null-safety.
-
-${analysis.reason}
-
-Either downgrade your sdk constraint, or invoke dart/flutter with 
-`--no-sound-null-safety`.
-
-To learn more about available versions of your dependencies try running
-`pub outdated --mode=null-safety`.
-
-See more at ${NullSafetyAnalysis.guideUrl}.
-''');
-      } else if (analysis.compliance == NullSafetyCompliance.analysisFailed) {
-        log.warning('''
-Could not decide if this package resolution is fully migrated to null-safety:
-
-${analysis.reason}
-''');
-      }
-    }
-  }
-
   @override
   String toString() => 'Took $attemptedSolutions tries to resolve to\n'
       '- ${packages.join("\n- ")}';
