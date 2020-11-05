@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
-import '../descriptor.dart';
+import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
@@ -65,27 +65,37 @@ Future<void> main() async {
 
   test('run works, though hidden', () async {
     final buffer = StringBuffer();
-    final d = dir(appPath, [
-      appPubspec(),
-      dir('bin', [
-        file('main.dart', '''
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {
+          'sdk': '>=2.0.0 <3.0.0',
+        },
+      }),
+      d.dir('bin', [
+        d.file('main.dart', '''
 import 'dart:io';
 main() { 
   print("Hi");
   exit(123);
 }
 ''')
-      ])
-    ]);
-    await d.create();
-    await runEmbedding(['pub', 'get'], buffer, workingDirextory: d.io.path);
+      ]),
+    ]).create();
+    await runEmbedding(
+      ['pub', 'get'],
+      buffer,
+      workingDirextory: d.path(appPath),
+    );
     await runEmbedding(
       ['pub', 'run', 'bin/main.dart'],
       buffer,
       exitCode: 123,
-      workingDirextory: d.io.path,
+      workingDirextory: d.path(appPath),
     );
     expectMatchesGoldenFile(
-        buffer.toString(), 'test/embedding/goldens/run.txt');
+      buffer.toString(),
+      'test/embedding/goldens/run.txt',
+    );
   });
 }
