@@ -409,7 +409,7 @@ Future<void> _outputHuman(
     ['Package Name', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    if (directRows.isNotEmpty) [_format('\ndev_dependencies', log.bold)],
+    if (directRows.isNotEmpty) [_format('\ndirect dependencies', log.bold)],
     ...directRows,
     if (includeDevDependencies) ...[
       if (devRows.isNotEmpty) [_format('\ndev_dependencies', log.bold)],
