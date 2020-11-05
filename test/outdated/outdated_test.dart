@@ -41,6 +41,7 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
     ['--no-color', '--mode=null-safety'],
+    ['--no-color', '--mode=null-safety', '--no-prereleases'],
     ['--json', '--mode=null-safety'],
     ['--json', '--no-dev-dependencies'],
   ]) {
