@@ -406,31 +406,21 @@ Future<void> _outputHuman(
       rows.where(hasKind(_DependencyKind.devTransitive)).map(formatted);
 
   final formattedRows = <List<_FormattedString>>[
-    ['Dependencies', 'Current', 'Upgradable', 'Resolvable', 'Latest']
+    ['Package Name', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    [if (directRows.isEmpty) _raw(mode.allGoodText)],
+    if (directRows.isNotEmpty) [_format('\ndev_dependencies', log.bold)],
     ...directRows,
     if (includeDevDependencies) ...[
-      [
-        devRows.isEmpty
-            ? _raw('\ndev_dependencies: ${mode.allGoodText}')
-            : _format('\ndev_dependencies', log.bold),
-      ],
+      if (devRows.isNotEmpty) [_format('\ndev_dependencies', log.bold)],
       ...devRows,
     ],
-    [
-      transitiveRows.isEmpty
-          ? _raw('\ntransitive dependencies: ${mode.allGoodText}')
-          : _format('\ntransitive dependencies', log.bold)
-    ],
+    if (transitiveRows.isNotEmpty)
+      [_format('\ntransitive dependencies', log.bold)],
     ...transitiveRows,
     if (includeDevDependencies) ...[
-      [
-        devTransitiveRows.isEmpty
-            ? _raw('\ntransitive dev_dependencies: ${mode.allGoodText}')
-            : _format('\ntransitive dev_dependencies', log.bold)
-      ],
+      if (devTransitiveRows.isNotEmpty)
+        [_format('\ntransitive dev_dependencies', log.bold)],
       ...devTransitiveRows,
     ],
   ];
@@ -520,16 +510,15 @@ abstract class Mode {
       List<_PackageDetails> packageDetails);
 
   String get explanation;
-  String get allGoodText;
   String get foundNoBadText;
 }
 
 class _OutdatedMode implements Mode {
   @override
-  String get explanation => null;
-
-  @override
-  String get allGoodText => 'all up-to-date';
+  String get explanation => '''
+Showing outdated packages.
+[${log.red('*')}] indicates versions that are not the latest available.
+''';
 
   @override
   String get foundNoBadText => 'Found no outdated packages';
@@ -581,21 +570,24 @@ class _NullSafetyMode implements Mode {
   final Entrypoint entrypoint;
   final bool shouldShowSpinner;
 
+  final _compliantEmoji = emoji('✓', '+');
+  final _notCompliantEmoji = emoji('✗', 'x');
+  final _analysisFailedEmoji = '?';
+
   _NullSafetyMode(this.cache, this.entrypoint,
       {@required this.shouldShowSpinner});
 
   @override
   String get explanation => '''
-Running in 'null safety' mode.
-Showing packages where the current version doesn't fully support null safety.
+Showing dependencies that are currently not opted in to null-safety.
+[${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
+[${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
+[${log.gray(_analysisFailedEmoji)}] indicates that the package failed analysis.
 ''';
 
   @override
-  String get allGoodText => 'all fully support null safety';
-
-  @override
   String get foundNoBadText =>
-      'Found no packages not fully supporting null safety.';
+      'All your dependencies declare support for null-safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -645,19 +637,19 @@ Showing packages where the current version doesn't fully support null safety.
               switch (nullSafety.compliance) {
                 case NullSafetyCompliance.analysisFailed:
                   color = color = log.gray;
-                  prefix = '?';
+                  prefix = _analysisFailedEmoji;
                   nullSafetyJson = null;
                   break;
                 case NullSafetyCompliance.compliant:
                   color = log.green;
-                  prefix = emoji('✓', '+');
+                  prefix = _compliantEmoji;
                   nullSafetyJson = true;
                   asDesired = true;
                   break;
                 case NullSafetyCompliance.notCompliant:
                 case NullSafetyCompliance.mixed:
                   color = log.red;
-                  prefix = emoji('✗', 'x');
+                  prefix = _notCompliantEmoji;
                   nullSafetyJson = false;
                   break;
               }
@@ -768,8 +760,6 @@ _FormattedString _format(String value, Function(String) format, {prefix = ''}) {
   return _FormattedString(value, format: format, prefix: prefix);
 }
 
-_FormattedString _raw(String value) => _FormattedString(value);
-
 class _MarkedVersionDetails {
   final MapEntry<String, Object> _jsonExplanation;
   final _VersionDetails _versionDetails;
@@ -822,11 +812,11 @@ class _FormattedString {
         _prefix = prefix ?? '';
 
   String formatted({@required bool useColors}) {
-    return useColors ? _format(value) : _prefix + value;
+    return useColors ? _format(_prefix + value) : _prefix + value;
   }
 
   int computeLength({@required bool useColors}) {
-    return useColors ? value.length : _prefix.length + value.length;
+    return _prefix.length + value.length;
   }
 
   static String _noFormat(String x) => x;

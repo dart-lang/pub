@@ -31,15 +31,14 @@ $ pub outdated --json
 }
 
 $ pub outdated --no-color
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
-
-dev_dependencies: all up-to-date
-
-transitive dependencies: all up-to-date
-
-transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -48,15 +47,14 @@ Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --up-to-date
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
-
-dev_dependencies: all up-to-date
-
-transitive dependencies: all up-to-date
-
-transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -65,15 +63,14 @@ Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --prereleases
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
-
-dev_dependencies: all up-to-date
-
-transitive dependencies: all up-to-date
-
-transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -82,11 +79,14 @@ Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --no-dev-dependencies
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
-
-transitive dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -95,15 +95,14 @@ Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --no-dependency-overrides
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        *1.2.3      2.0.0       2.0.0   
 foo           -        1.2.3       1.2.3       1.2.3   
-
-dev_dependencies: all up-to-date
-
-transitive dependencies: all up-to-date
-
-transitive dev_dependencies: all up-to-date
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -112,18 +111,16 @@ Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 To update it, edit pubspec.yaml.
 
 $ pub outdated --no-color --mode=null-safety
-Running in 'null safety' mode.
-Showing packages where the current version doesn't fully support null safety.
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+[?] indicates that the package failed analysis.
 
-Dependencies  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+dev_dependencies
 bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
-
-dev_dependencies: all fully support null safety
-
-transitive dependencies: all fully support null safety
-
-transitive dev_dependencies: all fully support null safety
 
 No pubspec.lock found. There are no Current versions.
 Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
