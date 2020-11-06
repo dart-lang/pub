@@ -218,11 +218,16 @@ class OutdatedCommand extends PubCommand {
       final useColors =
           argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
-      await _outputHuman(rows, mode,
-          useColors: useColors,
-          showAll: showAll,
-          includeDevDependencies: includeDevDependencies,
-          lockFileExists: fileExists(entrypoint.lockFilePath));
+      await _outputHuman(
+        rows,
+        mode,
+        useColors: useColors,
+        showAll: showAll,
+        includeDevDependencies: includeDevDependencies,
+        lockFileExists: fileExists(entrypoint.lockFilePath),
+        hasDirectDependencies: rootPubspec.dependencies.isNotEmpty,
+        hasDevDependencies: rootPubspec.devDependencies.isNotEmpty,
+      );
     }
   }
 
@@ -380,6 +385,8 @@ Future<void> _outputHuman(
   @required bool useColors,
   @required bool includeDevDependencies,
   @required bool lockFileExists,
+  @required bool hasDirectDependencies,
+  @required bool hasDevDependencies,
 }) async {
   final explanation = mode.explanation;
   if (explanation != null) {
@@ -415,18 +422,30 @@ Future<void> _outputHuman(
     ['Package Name', 'Current', 'Upgradable', 'Resolvable', 'Latest']
         .map((s) => _format(s, log.bold))
         .toList(),
-    if (directRows.isNotEmpty) [_format('\ndirect dependencies', log.bold)],
-    ...directRows,
-    if (includeDevDependencies) ...[
-      if (devRows.isNotEmpty) [_format('\ndev_dependencies', log.bold)],
+    if (hasDirectDependencies) ...[
+      [
+        if (directRows.isEmpty)
+          _format('\ndirect dependencies: ${mode.allGood}', log.bold)
+        else
+          _format('\ndirect dependencies:', log.bold)
+      ],
+      ...directRows,
+    ],
+    if (includeDevDependencies && hasDevDependencies) ...[
+      [
+        if (devRows.isEmpty)
+          _format('\ndev_dependencies: ${mode.allGood}', log.bold)
+        else
+          _format('\ndev_dependencies:', log.bold)
+      ],
       ...devRows,
     ],
     if (transitiveRows.isNotEmpty)
-      [_format('\ntransitive dependencies', log.bold)],
+      [_format('\ntransitive dependencies:', log.bold)],
     ...transitiveRows,
     if (includeDevDependencies) ...[
       if (devTransitiveRows.isNotEmpty)
-        [_format('\ntransitive dev_dependencies', log.bold)],
+        [_format('\ntransitive dev_dependencies:', log.bold)],
       ...devTransitiveRows,
     ],
   ];
@@ -517,6 +536,7 @@ abstract class Mode {
 
   String get explanation;
   String get foundNoBadText;
+  String get allGood;
 }
 
 class _OutdatedMode implements Mode {
@@ -528,6 +548,9 @@ Showing outdated packages.
 
   @override
   String get foundNoBadText => 'Found no outdated packages';
+
+  @override
+  String get allGood => 'all up-to-date.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -592,6 +615,9 @@ Showing dependencies that are currently not opted in to null-safety.
   @override
   String get foundNoBadText =>
       'All your dependencies declare support for null-safety.';
+
+  @override
+  String get allGood => 'all currently support null safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
