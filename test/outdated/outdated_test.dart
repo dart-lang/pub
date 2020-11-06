@@ -356,4 +356,50 @@ Future<void> main() async {
 
     await variations('prereleases');
   });
+
+  test('ignores SDK dependencies', () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.1.0')
+      ..serve('foo', '2.0.0'));
+
+    await d.dir('flutter-root', [
+      d.file('version', '1.2.3'),
+      d.dir('packages', [
+        d.dir('flutter', [
+          d.libPubspec('flutter', '1.0.0'),
+        ]),
+        d.dir('flutter_test', [
+          d.libPubspec('flutter_test', '1.0.0'),
+        ]),
+      ]),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'flutter': {
+            'sdk': 'flutter',
+          },
+        },
+        'dev_dependencies': {
+          'foo': '^1.0.0',
+          'flutter_test': {
+            'sdk': 'flutter',
+          },
+        },
+      })
+    ]).create();
+
+    await pubGet(environment: {
+      'FLUTTER_ROOT': d.path('flutter-root'),
+    });
+
+    await variations('ignores_sdk_dependencies', environment: {
+      'FLUTTER_ROOT': d.path('flutter-root'),
+    });
+  });
 }
