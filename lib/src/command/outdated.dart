@@ -55,6 +55,12 @@ class OutdatedCommand extends PubCommand {
       help: 'Take dev dependencies into account.',
     );
 
+    argParser.addFlag(
+      'transitive',
+      help: 'Show transitive dependencies.\n'
+          '(defaults to off in --mode=null-safety).',
+    );
+
     argParser.addFlag('json',
         help: 'Output the results using a json format.', negatable: false);
 
@@ -68,7 +74,7 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag('prereleases',
         help: 'Include prereleases in latest version.\n'
-            '(Defaults to on in --mode=null-safety).');
+            '(defaults to on in --mode=null-safety).');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
@@ -227,8 +233,17 @@ class OutdatedCommand extends PubCommand {
         lockFileExists: fileExists(entrypoint.lockFilePath),
         hasDirectDependencies: rootPubspec.dependencies.isNotEmpty,
         hasDevDependencies: rootPubspec.devDependencies.isNotEmpty,
+        showTransitiveDependencies: showTransitiveDependencies,
       );
     }
+  }
+
+  bool get showTransitiveDependencies {
+    if (argResults.wasParsed('transitive')) {
+      return argResults['transitive'];
+    }
+    // We default to hidding transitive dependencies in --mode=null-safety
+    return argResults['mode'] != 'null-safety';
   }
 
   bool _prereleases;
@@ -387,6 +402,7 @@ Future<void> _outputHuman(
   @required bool lockFileExists,
   @required bool hasDirectDependencies,
   @required bool hasDevDependencies,
+  @required bool showTransitiveDependencies,
 }) async {
   final explanation = mode.explanation;
   if (explanation != null) {
@@ -440,13 +456,15 @@ Future<void> _outputHuman(
       ],
       ...devRows,
     ],
-    if (transitiveRows.isNotEmpty)
-      [_format('\ntransitive dependencies:', log.bold)],
-    ...transitiveRows,
-    if (includeDevDependencies) ...[
-      if (devTransitiveRows.isNotEmpty)
-        [_format('\ntransitive dev_dependencies:', log.bold)],
-      ...devTransitiveRows,
+    if (showTransitiveDependencies) ...[
+      if (transitiveRows.isNotEmpty)
+        [_format('\ntransitive dependencies:', log.bold)],
+      ...transitiveRows,
+      if (includeDevDependencies) ...[
+        if (devTransitiveRows.isNotEmpty)
+          [_format('\ntransitive dev_dependencies:', log.bold)],
+        ...devTransitiveRows,
+      ],
     ],
   ];
 
@@ -476,14 +494,22 @@ Future<void> _outputHuman(
       .where((row) =>
           row.current != null &&
           row.upgradable != null &&
-          row.current != row.upgradable)
+          row.current != row.upgradable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row)))
       .length;
 
   var notAtResolvable = rows
       .where((row) =>
           (row.current != null || !lockFileExists) &&
           row.resolvable != null &&
-          row.upgradable != row.resolvable)
+          row.upgradable != row.resolvable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row)))
       .length;
 
   if (lockFileExists) {

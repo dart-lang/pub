@@ -36,11 +36,13 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
   for (final args in [
     ['--json'],
     ['--no-color'],
+    ['--no-color', '--no-transitive'],
     ['--no-color', '--up-to-date'],
     ['--no-color', '--prereleases'],
     ['--no-color', '--no-dev-dependencies'],
     ['--no-color', '--no-dependency-overrides'],
     ['--no-color', '--mode=null-safety'],
+    ['--no-color', '--mode=null-safety', '--transitive'],
     ['--no-color', '--mode=null-safety', '--no-prereleases'],
     ['--json', '--mode=null-safety'],
     ['--json', '--no-dev-dependencies'],

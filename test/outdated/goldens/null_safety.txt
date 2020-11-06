@@ -111,6 +111,23 @@ foo                           *1.0.0   *1.0.0      2.0.0       2.0.0
 5  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml.
 
+$ pub outdated --no-color --no-transitive
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name                  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:         
+bar                           *1.0.0   *1.0.0      *1.0.0      2.0.0   
+fails_analysis                *1.0.0   *1.0.0      2.0.0       2.0.0   
+fails_analysis_in_dependency  *1.0.0   *1.0.0      2.0.0       2.0.0   
+file_in_dependency_opts_out   *1.0.0   *1.0.0      2.0.0       2.0.0   
+file_opts_out                 *1.0.0   *1.0.0      2.0.0       2.0.0   
+foo                           *1.0.0   *1.0.0      2.0.0       2.0.0   
+
+5  dependencies are constrained to versions that are older than a resolvable version.
+To update these dependencies, edit pubspec.yaml.
+
 $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
@@ -180,6 +197,20 @@ foo                           *1.0.0   *1.0.0      2.0.0       2.0.0
 To update these dependencies, edit pubspec.yaml.
 
 $ pub outdated --no-color --mode=null-safety
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety --transitive
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
