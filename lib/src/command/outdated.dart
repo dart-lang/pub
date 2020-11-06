@@ -57,9 +57,8 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag(
       'transitive',
-      defaultsTo: true,
       help: 'Show transitive dependencies.\n'
-          '(Defaults to off in --mode=null-safety).',
+          '(defaults to off in --mode=null-safety).',
     );
 
     argParser.addFlag('json',
@@ -75,7 +74,7 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag('prereleases',
         help: 'Include prereleases in latest version.\n'
-            '(Defaults to on in --mode=null-safety).');
+            '(defaults to on in --mode=null-safety).');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
