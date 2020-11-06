@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import '../command.dart';
 import '../exceptions.dart';
@@ -28,8 +29,10 @@ class UploaderCommand extends PubCommand {
 
   UploaderCommand() {
     argParser.addOption('server',
-        defaultsTo: cache.sources.hosted.defaultUrl,
-        help: 'The package server on which the package is hosted.');
+        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ??
+            'https://pub.dartlang.org',
+        help: 'The package server on which the package is hosted.\n',
+        hide: true);
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
@@ -37,6 +40,15 @@ class UploaderCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    if (argResults.wasParsed('server')) {
+      await log.warningsOnlyUnlessTerminal(() {
+        log.message(
+          '''
+The --server option is deprecated. Use `publish_to` in your pubspec.yaml or set
+the \$PUB_HOSTED_URL environment variable.''',
+        );
+      });
+    }
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
       printUsage();

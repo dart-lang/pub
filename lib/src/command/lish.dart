@@ -62,7 +62,8 @@ class LishCommand extends PubCommand {
         negatable: false,
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
-        help: 'The package server to which to upload this package.');
+        help: 'The package server to which to upload this package.',
+        hide: true);
   }
 
   Future<void> _publish(List<int> packageBytes) async {
@@ -116,6 +117,16 @@ class LishCommand extends PubCommand {
 
   @override
   Future runProtected() async {
+    if (argResults.wasParsed('server')) {
+      await log.warningsOnlyUnlessTerminal(() {
+        log.message(
+          '''
+The --server option is deprecated. Use `publish_to` in your pubspec.yaml or set
+the \$PUB_HOSTED_URL environment variable.''',
+        );
+      });
+    }
+
     if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }

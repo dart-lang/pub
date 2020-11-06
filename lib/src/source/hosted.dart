@@ -62,10 +62,10 @@ class HostedSource extends Source {
     var url = io.Platform.environment['PUB_HOSTED_URL'];
     if (url == null) return null;
     var uri = Uri.parse(url);
-    if (uri.scheme?.isEmpty ?? true) {
+    if (!uri.isScheme('http') && !uri.isScheme('https')) {
       throw ConfigException(
-          '`PUB_HOSTED_URL` must include a scheme such as "https://". '
-          '$url is invalid');
+          '`PUB_HOSTED_URL` must have either the scheme "https://" or "http://". '
+          '"$url" is invalid.');
     }
     return url;
   }

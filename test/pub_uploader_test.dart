@@ -5,11 +5,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
-
-import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -19,8 +18,6 @@ Manage uploaders for a package on pub.dartlang.org.
 
 Usage: pub uploader [options] {add/remove} <email>
 -h, --help       Print this usage information.
-    --server     The package server on which the package is hosted.
-                 (defaults to "https://pub.dartlang.org")
     --package    The package whose uploaders will be modified.
                  (defaults to the current package)
 
@@ -30,8 +27,11 @@ See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
 
 Future<TestProcess> startPubUploader(PackageServer server, List<String> args) {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
-  var allArgs = ['uploader', '--server', tokenEndpoint, ...args];
-  return startPub(args: allArgs, tokenEndpoint: tokenEndpoint);
+  var allArgs = ['uploader', ...args];
+  return startPub(
+      args: allArgs,
+      tokenEndpoint: tokenEndpoint,
+      environment: {'PUB_HOSTED_URL': tokenEndpoint});
 }
 
 void main() {
