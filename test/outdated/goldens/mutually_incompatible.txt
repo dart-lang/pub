@@ -44,8 +44,9 @@ direct dependencies:
 bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --up-to-date
 Showing outdated packages.
@@ -57,8 +58,9 @@ direct dependencies:
 bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --prereleases
 Showing outdated packages.
@@ -70,8 +72,9 @@ direct dependencies:
 bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
@@ -83,8 +86,9 @@ direct dependencies:
 bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
@@ -96,8 +100,9 @@ direct dependencies:
 bar           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 foo           *1.0.0   *1.0.0      *1.0.0      2.0.0   
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
@@ -110,8 +115,9 @@ direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
 foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --mode=null-safety --no-prereleases
 Showing dependencies that are currently not opted in to null-safety.
@@ -124,8 +130,9 @@ direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
 foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --json --mode=null-safety
 {

@@ -79,7 +79,12 @@ void main() {
     });
 
     test('has no SDK constraint', () async {
-      await d.dir(appPath, [d.libPubspec('test_pkg', '1.0.0')]).create();
+      await d.dir(appPath, [
+        d.rawPubspec({
+          'name': 'test_pkg',
+          'version': '1.0.0',
+        }),
+      ]).create();
       await expectValidation(sdkConstraint,
           errors:
               anyElement(contains('should have an upper bound constraint')));
@@ -101,7 +106,7 @@ void main() {
 
     test('has a Flutter SDK constraint with no SDK constraint', () async {
       await d.dir(appPath, [
-        d.pubspec({
+        d.rawPubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
           'environment': {'flutter': '^1.2.3'}
@@ -115,7 +120,7 @@ void main() {
         'has a Fuchsia SDK constraint with a too-broad SDK '
         'constraint', () async {
       await d.dir(appPath, [
-        d.pubspec({
+        d.rawPubspec({
           'name': 'test_pkg',
           'version': '1.0.0-dev.1',
           'environment': {'sdk': '>=2.0.0-dev.50.0 <2.0.0', 'fuchsia': '^1.2.3'}
@@ -127,7 +132,7 @@ void main() {
 
     test('has a Fuchsia SDK constraint with no SDK constraint', () async {
       await d.dir(appPath, [
-        d.pubspec({
+        d.rawPubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
           'environment': {'fuchsia': '^1.2.3'}
