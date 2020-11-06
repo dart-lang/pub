@@ -63,24 +63,46 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object> contents) =>
+Descriptor pubspec(Map<String, Object> contents) => YamlDescriptor(
+      'pubspec.yaml',
+      yaml({
+        ...contents,
+        // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
+        'environment': {
+          'sdk': '>=0.1.2 <1.0.0',
+          ...contents['environment'] as Map ?? {},
+        },
+      }),
+    );
+
+Descriptor rawPubspec(Map<String, Object> contents) =>
     YamlDescriptor('pubspec.yaml', yaml(contents));
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
 Descriptor appPubspec([Map dependencies]) {
-  var map = <String, dynamic>{'name': 'myapp'};
+  var map = <String, dynamic>{
+    'name': 'myapp',
+    'environment': {
+      'sdk': '>=0.1.2 <1.0.0',
+    },
+  };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
 }
 
 /// Describes a file named `pubspec.yaml` for a library package with the given
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
-/// constraint on that version.
+/// constraint on that version, otherwise it adds an SDK constraint allowing
+/// the current SDK version.
 Descriptor libPubspec(String name, String version,
     {Map deps, Map devDeps, String sdk}) {
   var map = packageMap(name, version, deps, devDeps);
-  if (sdk != null) map['environment'] = {'sdk': sdk};
+  if (sdk != null) {
+    map['environment'] = {'sdk': sdk};
+  } else {
+    map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
+  }
   return pubspec(map);
 }
 

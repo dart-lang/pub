@@ -42,33 +42,35 @@ Future<void> testGetExecutable(String command, String root,
 
 Future<void> main() async {
   test('Finds a direct dart-file without pub get', () async {
-    final dir = d.dir('foo', [
+    await d.dir('foo', [
       d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')])
-    ]);
-    await dir.create();
-    await testGetExecutable('bar/bar.dart', dir.io.path,
+    ]).create();
+    final dir = d.path('foo');
+
+    await testGetExecutable('bar/bar.dart', dir,
         result: p.join('bar', 'bar.dart'));
 
-    await testGetExecutable(p.join('bar', 'bar.dart'), dir.io.path,
+    await testGetExecutable(p.join('bar', 'bar.dart'), dir,
         result: p.join('bar', 'bar.dart'));
 
-    await testGetExecutable('${p.toUri(dir.io.path)}/bar/bar.dart', dir.io.path,
+    await testGetExecutable('${p.toUri(dir)}/bar/bar.dart', dir,
         result: p.join('bar', 'bar.dart'));
   });
 
   test('Looks for file when no pubspec.yaml', () async {
-    final dir = d.dir('foo', [
+    await d.dir('foo', [
       d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')])
-    ]);
-    await dir.create();
-    await testGetExecutable('bar/m.dart', dir.io.path,
+    ]).create();
+    final dir = d.path('foo');
+
+    await testGetExecutable('bar/m.dart', dir,
         errorMessage: contains('Could not find file `bar/m.dart`'));
-    await testGetExecutable(p.join('bar', 'm.dart'), dir.io.path,
+    await testGetExecutable(p.join('bar', 'm.dart'), dir,
         errorMessage: contains('Could not find file `bar${separator}m.dart`'));
   });
 
   test('Does `pub get` if there is a pubspec.yaml', () async {
-    final dir = d.dir('myapp', [
+    await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '^1.0.0'}
@@ -76,13 +78,12 @@ Future<void> main() async {
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
       ])
-    ]);
-    await dir.create();
+    ]).create();
 
     await serveNoPackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
-    await testGetExecutable('bar/m.dart', dir.io.path,
+    await testGetExecutable('bar/m.dart', d.path(appPath),
         errorMessage: matches(r'version\s+solving\s+failed'));
   });
 
@@ -97,57 +98,58 @@ Future<void> main() async {
         ])
       ]));
 
-    final dir = d.dir(appPath, [
-      d.appPubspec({
-        'foo': {
-          'hosted': {
-            'name': 'foo',
-            'url': getPubTestEnvironment()['PUB_HOSTED_URL']
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=2.0.0 <3.0.0'},
+        'dependencies': {
+          'foo': {
+            'hosted': {
+              'name': 'foo',
+              'url': getPubTestEnvironment()['PUB_HOSTED_URL'],
+            },
+            'version': '^1.0.0',
           },
-          'version': '^1.0.0'
-        }
+        },
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
         d.file('tool.dart', 'main() {print(42);}')
       ])
-    ]);
-    await dir.create();
+    ]).create();
+    final dir = d.path(appPath);
 
-    await testGetExecutable('myapp', dir.io.path,
+    await testGetExecutable('myapp', dir, result: 'bin${separator}myapp.dart');
+    await testGetExecutable('myapp:myapp', dir,
         result: 'bin${separator}myapp.dart');
-    await testGetExecutable('myapp:myapp', dir.io.path,
-        result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':myapp', dir.io.path,
-        result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':tool', dir.io.path,
-        result: 'bin${separator}tool.dart');
-    await testGetExecutable('foo', dir.io.path,
+    await testGetExecutable(':myapp', dir, result: 'bin${separator}myapp.dart');
+    await testGetExecutable(':tool', dir, result: 'bin${separator}tool.dart');
+    await testGetExecutable('foo', dir,
         allowSnapshot: false,
         result: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'));
-    await testGetExecutable('foo', dir.io.path,
+    await testGetExecutable('foo', dir,
         result:
             '.dart_tool${separator}pub${separator}bin${separator}foo${separator}foo.dart-$_currentVersion.snapshot');
-    await testGetExecutable('foo:tool', dir.io.path,
+    await testGetExecutable('foo:tool', dir,
         allowSnapshot: false,
         result: endsWith('foo-1.0.0${separator}bin${separator}tool.dart'));
-    await testGetExecutable('foo:tool', dir.io.path,
+    await testGetExecutable('foo:tool', dir,
         result:
             '.dart_tool${separator}pub${separator}bin${separator}foo${separator}tool.dart-$_currentVersion.snapshot');
     await testGetExecutable(
       'unknown:tool',
-      dir.io.path,
+      dir,
       errorMessage: 'Could not find package `unknown` or file `unknown:tool`',
     );
     await testGetExecutable(
       'foo:unknown',
-      dir.io.path,
+      dir,
       errorMessage:
           'Could not find `bin${separator}unknown.dart` in package `foo`.',
     );
     await testGetExecutable(
       'unknownTool',
-      dir.io.path,
+      dir,
       errorMessage:
           'Could not find package `unknownTool` or file `unknownTool`',
     );

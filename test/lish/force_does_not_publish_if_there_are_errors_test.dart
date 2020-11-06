@@ -13,9 +13,13 @@ void main() {
   setUp(d.validPackage.create);
 
   test('--force does not publish if there are errors', () async {
-    var pkg = packageMap('test_pkg', '1.0.0');
-    pkg.remove('description');
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [
+      d.rawPubspec({
+        'name': 'test_pkg',
+        'homepage': 'http://pub.dartlang.org',
+        'version': '1.0.0',
+      }),
+    ]).create();
 
     await servePackages();
     var pub = await startPublish(globalPackageServer, args: ['--force']);

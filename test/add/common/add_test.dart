@@ -9,7 +9,6 @@ import 'package:test/test.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../../descriptor.dart' as d;
-import '../../descriptor/yaml.dart';
 import '../../test_pub.dart';
 
 void main() {
@@ -59,11 +58,14 @@ void main() {
       });
 
       await d.dir(appPath, [
-        YamlDescriptor('pubspec.yaml', '''
+        d.file('pubspec.yaml', '''
           name: myapp
           dependencies: 
 
           dev_dependencies:
+
+          environment:
+            sdk: '>=0.1.2 <1.0.0'
         ''')
       ]).create();
 
@@ -181,12 +183,14 @@ void main() {
       });
 
       await d.dir(appPath, [
-        YamlDescriptor('pubspec.yaml', '''
+        d.file('pubspec.yaml', '''
 name: myapp
 dependencies: 
 
 dev_dependencies:
   foo: 1.2.2
+environment:
+  sdk: '>=0.1.2 <1.0.0'
 ''')
       ]).create();
 
@@ -781,11 +785,14 @@ dev_dependencies:
       builder.serve('bar', '1.0.0');
     });
 
-    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies:
-''');
-    await d.dir(appPath, [initialPubspec]).create();
+    await d.dir(appPath, [
+      d.file('pubspec.yaml', '''
+        name: myapp
+        dependencies:
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
+'''),
+    ]).create();
 
     await pubGet();
 
@@ -799,14 +806,17 @@ dev_dependencies:
       builder.serve('foo', '1.0.0');
     });
 
-    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: # comment A
-          # comment B
-          foo: 1.0.0 # comment C
-        # comment D
-    ''');
-    await d.dir(appPath, [initialPubspec]).create();
+    await d.dir(appPath, [
+      d.file('pubspec.yaml', '''
+        name: myapp
+        dependencies: # comment A
+            # comment B
+            foo: 1.0.0 # comment C
+          # comment D
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
+    '''),
+    ]).create();
 
     await pubGet();
 

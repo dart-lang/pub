@@ -10,7 +10,8 @@ import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
-import 'descriptor.dart';
+import 'descriptor.dart' as d;
+import 'test_pub.dart';
 
 void main() {
   group('listDir', () {
@@ -361,7 +362,12 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
               ],
             ),
             tempDir);
-        await appDir().validate(tempDir);
+
+        await d.dir(appPath, [
+          d.rawPubspec({
+            'name': 'myapp',
+          }),
+        ]).validate(tempDir);
       });
     });
 

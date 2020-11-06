@@ -10,7 +10,10 @@ import '../test_pub.dart';
 void main() {
   test('Succeeds running experimental code.', () async {
     await d.dir(appPath, [
-      d.appPubspec(),
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=2.10.0 <=3.0.0'},
+      }),
       d.dir('bin', [
         d.file('script.dart', '''
   main() {
@@ -19,9 +22,10 @@ void main() {
 ''')
       ])
     ]).create();
-    await pubGet();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.10.0'});
     await runPub(
       args: ['run', '--enable-experiment=non-nullable', 'bin/script.dart'],
+      environment: {'_PUB_TEST_SDK_VERSION': '2.10.0'},
     );
   });
 

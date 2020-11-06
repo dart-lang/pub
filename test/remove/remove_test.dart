@@ -8,7 +8,6 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../descriptor/yaml.dart';
 import '../test_pub.dart';
 
 void main() {
@@ -34,13 +33,16 @@ void main() {
     });
 
     await d.dir(appPath, [
-      YamlDescriptor('pubspec.yaml', '''
+      d.file('pubspec.yaml', '''
 name: myapp
 dependencies: 
   foo: 1.2.3
 
 dev_dependencies:
   bar: 2.0.0
+
+environment:
+  sdk: '>=0.1.2 <1.0.0'
 ''')
     ]).create();
 
@@ -215,16 +217,19 @@ dev_dependencies:
       builder.serve('foo', '1.0.0');
     });
 
-    final initialPubspec = YamlDescriptor('pubspec.yaml', '''
-      name: myapp
-      dependencies: # comment A
-          # comment B
-          bar: 1.0.0 
-          # comment C
-          foo: 1.0.0 # comment D
-        # comment E
-    ''');
-    await d.dir(appPath, [initialPubspec]).create();
+    await d.dir(appPath, [
+      d.file('pubspec.yaml', '''
+        name: myapp
+        dependencies: # comment A
+            # comment B
+            bar: 1.0.0 
+            # comment C
+            foo: 1.0.0 # comment D
+          # comment E
+        environment:
+          sdk: '>=0.1.2 <1.0.0'
+    '''),
+    ]).create();
 
     await pubGet();
 

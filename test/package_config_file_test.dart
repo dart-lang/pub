@@ -44,6 +44,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
+            languageVersion: '0.1',
           ),
         ]),
       ]).validate();
@@ -93,6 +94,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
+            languageVersion: '0.1',
           ),
         ]),
       ]).validate();
@@ -126,7 +128,10 @@ void main() {
 
       await d.dir('local_baz', [
         d.libDir('baz', 'baz 3.2.1'),
-        d.libPubspec('baz', '3.2.1')
+        d.rawPubspec({
+          'name': 'baz',
+          'version': '3.2.1',
+        }),
       ]).create();
 
       await d.dir(appPath, [
@@ -157,6 +162,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
+            languageVersion: '0.1',
           ),
         ]),
       ]).validate();
@@ -243,6 +249,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
+            languageVersion: '0.1',
           ),
         ]),
       ]).validate();

@@ -321,7 +321,13 @@ foo:http://example.com/
         });
 
         await d.dir(appPath, [
-          d.appPubspec({'foo': '3.0.0'})
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '3.0.0'},
+            'environment': {
+              'sdk': '>=1.0.0 <2.0.0',
+            },
+          }),
         ]).create();
 
         await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.2.3+4'});

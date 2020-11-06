@@ -190,7 +190,8 @@ Future<void> main() async {
           'file_in_dependency_opts_out': '^1.0.0',
           'fails_analysis_in_dependency': '^1.0.0',
         },
-      })
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }),
     ]).create();
 
     await servePackages(
