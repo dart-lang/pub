@@ -9,17 +9,20 @@ import '../test_pub.dart';
 
 Future<void> expectValidation(error, int exitCode) async {
   await runPub(
-      error: error,
-      args: ['publish', '--dry-run'],
-      environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
-      workingDirectory: d.dir(appPath).io.path,
-      exitCode: exitCode);
+    error: error,
+    args: ['publish', '--dry-run'],
+    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
+    workingDirectory: d.path(appPath),
+    exitCode: exitCode,
+  );
 }
 
-Future<void> setup(
-    {String sdkConstraint,
-    Map dependencies = const {},
-    List<d.Descriptor> extraFiles = const []}) async {
+Future<void> setup({
+  String sdkConstraint,
+  Map dependencies = const {},
+  Map devDependencies = const {},
+  List<d.Descriptor> extraFiles = const [],
+}) async {
   await d.validPackage.create();
   await d.dir(appPath, [
     d.pubspec({
@@ -30,6 +33,7 @@ Future<void> setup(
       'version': '1.0.0',
       'environment': {'sdk': sdkConstraint},
       'dependencies': dependencies,
+      'dev_dependencies': devDependencies,
     }),
     ...extraFiles,
   ]).create();
@@ -69,6 +73,24 @@ void main() {
 
       await setup(
           sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
+      await expectValidation(contains('Package has 0 warnings.'), 0);
+    });
+
+    test('is opting in to null-safety has dev_dependency that is not',
+        () async {
+      await servePackages(
+        (server) => server.serve(
+          'foo',
+          '0.0.1',
+          pubspec: {
+            'environment': {'sdk': '>=2.9.0<3.0.0'}
+          },
+        ),
+      );
+
+      await setup(sdkConstraint: '>=2.12.0 <3.0.0', devDependencies: {
+        'foo': '^0.0.1',
+      });
       await expectValidation(contains('Package has 0 warnings.'), 0);
     });
   });
