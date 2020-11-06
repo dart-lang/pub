@@ -70,8 +70,9 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --no-color --up-to-date
 Dependencies  Current              Upgradable           Resolvable           Latest  
@@ -85,8 +86,9 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --no-color --prereleases
 Dependencies  Current              Upgradable           Resolvable           Latest  
@@ -100,8 +102,9 @@ transitive dependencies: all up-to-date
 
 transitive dev_dependencies: all up-to-date
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --no-color --no-dev-dependencies
 Dependencies  Current              Upgradable           Resolvable           Latest  
@@ -111,8 +114,9 @@ foo           *1.0.1 (overridden)  *1.0.1 (overridden)  *1.0.1 (overridden)  2.0
 
 transitive dependencies: all up-to-date
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --no-color --no-dependency-overrides
 Dependencies  Current              Upgradable  Resolvable  Latest  
@@ -147,8 +151,9 @@ transitive dependencies: all fully support null safety
 
 transitive dev_dependencies: all fully support null safety
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --no-color --mode=null-safety --no-prereleases
 Running in 'null safety' mode.
@@ -165,8 +170,9 @@ transitive dependencies: all fully support null safety
 
 transitive dev_dependencies: all fully support null safety
 
-Dependencies are all constrained to the latest resolvable versions.
-Newer versions, while available, are not mutually compatible.
+Current dependencies are constrained to versions listed in Resolveable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible with one or more of your current dependencies.
 
 $ pub outdated --json --mode=null-safety
 {
