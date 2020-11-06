@@ -19,6 +19,7 @@ Future<void> expectValidation(error, int exitCode) async {
 Future<void> setup(
     {String sdkConstraint,
     Map dependencies = const {},
+    Map devDependencies = const {},
     List<d.Descriptor> extraFiles = const []}) async {
   await d.validPackage.create();
   await d.dir(appPath, [
@@ -69,6 +70,23 @@ void main() {
 
       await setup(
           sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});
+      await expectValidation(contains('Package has 0 warnings.'), 0);
+    });
+
+    test('is opting in to null-safety, but dev_depends on a package opting out',
+        () async {
+      await servePackages(
+        (server) => server.serve(
+          'foo',
+          '0.0.1',
+          pubspec: {
+            'environment': {'sdk': '>=2.10.0<3.0.0'}
+          },
+        ),
+      );
+
+      await setup(
+          sdkConstraint: '>=2.12.0 <3.0.0', devDependencies: {'foo': '^0.0.1'});
       await expectValidation(contains('Package has 0 warnings.'), 0);
     });
   });
