@@ -19,6 +19,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -195,7 +196,7 @@ class OutdatedCommand extends PubCommand {
       ...upgradablePackages,
       ...resolvablePackages
     ]) {
-      if (!visited.add(id.name)) continue;
+      if (!visited.add(id.name) || id.source is SdkSource) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
@@ -231,8 +232,14 @@ class OutdatedCommand extends PubCommand {
         showAll: showAll,
         includeDevDependencies: includeDevDependencies,
         lockFileExists: fileExists(entrypoint.lockFilePath),
-        hasDirectDependencies: rootPubspec.dependencies.isNotEmpty,
-        hasDevDependencies: rootPubspec.devDependencies.isNotEmpty,
+        hasDirectDependencies: rootPubspec.dependencies.values.any(
+          // Test if it contains non-SDK dependencies
+          (c) => c.source is! SdkSource,
+        ),
+        hasDevDependencies: rootPubspec.devDependencies.values.any(
+          // Test if it contains non-SDK dependencies
+          (c) => c.source is! SdkSource,
+        ),
         showTransitiveDependencies: showTransitiveDependencies,
       );
     }

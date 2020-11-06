@@ -54,11 +54,9 @@ Showing outdated packages.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       1.0.0    1.0.0       1.0.0       1.0.0   
 foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
 
-dev_dependencies:
-flutter_test  1.0.0    1.0.0       1.0.0       1.0.0   
+dev_dependencies: all up-to-date.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml.
@@ -111,11 +109,9 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
 
-dev_dependencies:
-flutter_test  ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+dev_dependencies: all support null safety.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml.
@@ -128,11 +124,9 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
 
-dev_dependencies:
-flutter_test  ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+dev_dependencies: all support null safety.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml.
@@ -145,11 +139,9 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
 
-dev_dependencies:
-flutter_test  ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+dev_dependencies: all support null safety.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml.
@@ -157,44 +149,6 @@ To update it, edit pubspec.yaml.
 $ pub outdated --json --mode=null-safety
 {
   "packages": [
-    {
-      "package": "flutter",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "flutter_test",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
     {
       "package": "foo",
       "current": {
