@@ -3,17 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
-import '../log.dart' as log;
-import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
-import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
 
