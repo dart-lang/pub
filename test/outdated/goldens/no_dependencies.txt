@@ -9,6 +9,12 @@ Showing outdated packages.
 
 Found no outdated packages
 
+$ pub outdated --no-color --no-transitive
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Found no outdated packages
+
 $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
@@ -34,6 +40,13 @@ Showing outdated packages.
 Found no outdated packages
 
 $ pub outdated --no-color --mode=null-safety
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+All your dependencies declare support for null-safety.
+
+$ pub outdated --no-color --mode=null-safety --transitive
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.

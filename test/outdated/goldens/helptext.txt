@@ -10,6 +10,9 @@ Usage: pub outdated [options]
                                    (defaults to on)
     --[no-]dev-dependencies        Take dev dependencies into account.
                                    (defaults to on)
+    --[no-]transitive              Show transitive dependencies.
+                                   (Defaults to off in --mode=null-safety).
+                                   (defaults to on)
     --json                         Output the results using a json format.
     --mode=<PROPERTY>              Highlight versions with PROPERTY.
                                    Only packages currently missing that PROPERTY
