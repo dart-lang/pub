@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -501,8 +501,9 @@ Future<void> _outputHuman(
       upgradable == 0 &&
       rows.isNotEmpty) {
     log.message(
-        '\nDependencies are all constrained to the latest resolvable versions.'
-        '\nNewer versions, while available, are not mutually compatible.');
+        '\nCurrent dependencies are constrained to versions listed in Resolvable.'
+        '\nA resolution compatible with the Latest versions doesn\'t exist, as they are not'
+        '\nmutually compatible.');
   }
 
   if (notAtResolvable != 0) {
