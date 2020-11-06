@@ -56,9 +56,10 @@ class OutdatedCommand extends PubCommand {
     );
 
     argParser.addFlag(
-      'transitive-dependencies',
+      'transitive',
       defaultsTo: true,
-      help: 'Show transitive dependencies.',
+      help: 'Show transitive dependencies.\n'
+          '(Defaults to off in --mode=null-safety).',
     );
 
     argParser.addFlag('json',
@@ -94,7 +95,6 @@ class OutdatedCommand extends PubCommand {
   Future<void> runProtected() async {
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
-    final showTransitiveDependencies = argResults['transitive-dependencies'];
 
     final rootPubspec = includeDependencyOverrides
         ? entrypoint.root.pubspec
@@ -237,6 +237,14 @@ class OutdatedCommand extends PubCommand {
         showTransitiveDependencies: showTransitiveDependencies,
       );
     }
+  }
+
+  bool get showTransitiveDependencies {
+    if (argResults.wasParsed('transitive')) {
+      return argResults['transitive'];
+    }
+    // We default to hidding transitive dependencies in --mode=null-safety
+    return argResults['mode'] != 'null-safety';
   }
 
   bool _prereleases;
