@@ -114,7 +114,23 @@ $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
-[?] indicates that the package failed analysis.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies
+bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
+foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
+
+No pubspec.lock found. There are no Current versions.
+Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
 
 Package Name  Current  Upgradable  Resolvable  Latest  
 

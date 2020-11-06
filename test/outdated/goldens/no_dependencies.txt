@@ -37,7 +37,13 @@ $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
-[?] indicates that the package failed analysis.
+
+All your dependencies declare support for null-safety.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
 
 All your dependencies declare support for null-safety.
 

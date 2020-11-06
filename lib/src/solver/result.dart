@@ -3,17 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
-import '../log.dart' as log;
-import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
-import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
 
@@ -110,39 +106,6 @@ class SolveResult {
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
       report.reportOutdated();
-    }
-  }
-
-  /// Displays a warning if the root package opts in, but this is not a fully
-  /// null-safe resolution.
-  Future<void> warnAboutMixedMode(
-    SystemCache cache, {
-    @required bool dryRun,
-  }) async {
-    if (pubspecs[_root.name].languageVersion.supportsNullSafety) {
-      final analysis = await NullSafetyAnalysis(cache)
-          .nullSafetyComplianceOfPackages(packages, _root);
-      if (analysis.compliance == NullSafetyCompliance.mixed) {
-        log.warning('''
-The package resolution is not fully migrated to null-safety.
-
-${analysis.reason}
-
-Either downgrade your sdk constraint, or invoke dart/flutter with 
-`--no-sound-null-safety`.
-
-To learn more about available versions of your dependencies try running
-`pub outdated --mode=null-safety`.
-
-See more at ${NullSafetyAnalysis.guideUrl}.
-''');
-      } else if (analysis.compliance == NullSafetyCompliance.analysisFailed) {
-        log.warning('''
-Could not decide if this package resolution is fully migrated to null-safety:
-
-${analysis.reason}
-''');
-      }
     }
   }
 

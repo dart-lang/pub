@@ -183,20 +183,29 @@ $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
-[?] indicates that the package failed analysis.
 
-Package Name                  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable  Resolvable  Latest  
 
-direct dependencies          
-bar                           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
-fails_analysis                ?1.0.0   ?1.0.0      ✓2.0.0      ✓2.0.0  
-fails_analysis_in_dependency  ?1.0.0   ?1.0.0      ✓2.0.0      ✓2.0.0  
-file_in_dependency_opts_out   ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
-file_opts_out                 ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
-foo                           ✗1.0.0   ✗1.0.0      ✗2.0.0      ✗2.0.0  
+direct dependencies
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
 
-5  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
 
 $ pub outdated --json --mode=null-safety
 {
@@ -221,82 +230,6 @@ $ pub outdated --json --mode=null-safety
       }
     },
     {
-      "package": "fails_analysis",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": null
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": null
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": true
-      }
-    },
-    {
-      "package": "fails_analysis_in_dependency",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": null
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": null
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": true
-      }
-    },
-    {
-      "package": "file_in_dependency_opts_out",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": true
-      }
-    },
-    {
-      "package": "file_opts_out",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": true
-      }
-    },
-    {
       "package": "foo",
       "current": {
         "version": "1.0.0",
@@ -308,11 +241,11 @@ $ pub outdated --json --mode=null-safety
       },
       "resolvable": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       }
     }
   ]

@@ -9,13 +9,11 @@ import 'dart:math';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
 
 import '../command.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -69,7 +67,8 @@ class OutdatedCommand extends PubCommand {
         defaultsTo: 'outdated');
 
     argParser.addFlag('prereleases',
-        help: 'Include prereleases in latest version.');
+        help: 'Include prereleases in latest version.\n'
+            '(Defaults to on in --mode=null-safety).');
 
     // Preserve for backwards compatibility.
     argParser.addFlag('pre-releases',
@@ -227,10 +226,26 @@ class OutdatedCommand extends PubCommand {
     }
   }
 
+  bool _prereleases;
+
+  bool get prereleases => _prereleases ??= () {
+        // First check if 'prereleases' was passed as an argument.
+        // If that was not the case, check for use of the legacy spelling
+        // 'pre-releases'.
+        // Otherwise fall back to the default implied by the mode.
+        if (argResults.wasParsed('prereleases')) {
+          return argResults['prereleases'];
+        }
+        if (argResults.wasParsed('pre-releases')) {
+          return argResults['pre-releases'];
+        }
+        return argResults['mode'] == 'null-safety';
+      }();
+
   /// Get the latest version of [package].
   ///
-  /// Will include prereleases in the comparison  '--prereleases' was provided
-  /// in arguments.
+  /// Will include prereleases in the comparison if '--prereleases' was enabled
+  /// by the arguments.
   ///
   /// If [package] is a [PackageId] with a prerelease version and there are no
   /// later stable version we return a prerelease version if it exists.
@@ -247,15 +262,6 @@ class OutdatedCommand extends PubCommand {
     }
 
     // TODO(sigurdm): Refactor this to share logic with report.dart.
-    // First check if 'prereleases' was passed as an argument.
-    // If that was not the case, use result of the legacy spelling
-    // 'pre-releases'.
-    // This implies that if none of these variants were given we fall
-    // back to the default for 'pre-releases'.
-    final prereleases = argResults.wasParsed('prereleases')
-        ? argResults['prereleases']
-        : argResults['pre-releases'];
-
     available.sort(prereleases
         ? (x, y) => x.version.compareTo(y.version)
         : (x, y) => Version.prioritize(x.version, y.version));
@@ -572,7 +578,6 @@ class _NullSafetyMode implements Mode {
 
   final _compliantEmoji = emoji('✓', '+');
   final _notCompliantEmoji = emoji('✗', 'x');
-  final _analysisFailedEmoji = '?';
 
   _NullSafetyMode(this.cache, this.entrypoint,
       {@required this.shouldShowSpinner});
@@ -582,7 +587,6 @@ class _NullSafetyMode implements Mode {
 Showing dependencies that are currently not opted in to null-safety.
 [${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
 [${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
-[${log.gray(_analysisFailedEmoji)}] indicates that the package failed analysis.
 ''';
 
   @override
@@ -603,17 +607,15 @@ Showing dependencies that are currently not opted in to null-safety.
           packageDetails.latest?._id,
         ]
       }.where((id) => id != null);
-      final nullSafetyAnalyzer = NullSafetyAnalysis(cache);
+
       return Map.fromEntries(
         await Future.wait(
           ids.map(
             (id) async => MapEntry(
-              id,
-              await nullSafetyAnalyzer.nullSafetyCompliance(
                 id,
-                containingPath: path.absolute(entrypoint.root.dir),
-              ),
-            ),
+                (await id.source.bind(cache).describe(id))
+                    .languageVersion
+                    .supportsNullSafety),
           ),
         ),
       );
@@ -632,26 +634,15 @@ Showing dependencies that are currently not opted in to null-safety.
             bool nullSafetyJson;
             var asDesired = false;
             if (versionDetails != null) {
-              final nullSafety = nullSafetyMap[versionDetails._id];
-
-              switch (nullSafety.compliance) {
-                case NullSafetyCompliance.analysisFailed:
-                  color = color = log.gray;
-                  prefix = _analysisFailedEmoji;
-                  nullSafetyJson = null;
-                  break;
-                case NullSafetyCompliance.compliant:
-                  color = log.green;
-                  prefix = _compliantEmoji;
-                  nullSafetyJson = true;
-                  asDesired = true;
-                  break;
-                case NullSafetyCompliance.notCompliant:
-                case NullSafetyCompliance.mixed:
-                  color = log.red;
-                  prefix = _notCompliantEmoji;
-                  nullSafetyJson = false;
-                  break;
+              if (nullSafetyMap[versionDetails._id]) {
+                color = log.green;
+                prefix = _compliantEmoji;
+                nullSafetyJson = true;
+                asDesired = true;
+              } else {
+                color = log.red;
+                prefix = _notCompliantEmoji;
+                nullSafetyJson = false;
               }
             }
             return _MarkedVersionDetails(

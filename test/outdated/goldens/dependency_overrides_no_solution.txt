@@ -109,7 +109,20 @@ $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
-[?] indicates that the package failed analysis.
+
+Package Name  Current              Upgradable           Resolvable           Latest  
+
+direct dependencies
+bar           ✗1.0.0 (overridden)  ✗1.0.0 (overridden)  ✗1.0.0 (overridden)  ✗2.0.0  
+foo           ✗1.0.0 (overridden)  ✗1.0.0 (overridden)  ✗1.0.0 (overridden)  ✗2.0.0  
+
+Dependencies are all constrained to the latest resolvable versions.
+Newer versions, while available, are not mutually compatible.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
 
 Package Name  Current              Upgradable           Resolvable           Latest  
 

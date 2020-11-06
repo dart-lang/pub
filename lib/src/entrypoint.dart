@@ -265,10 +265,6 @@ class Entrypoint {
     result.summarizeChanges(type, dryRun: dryRun);
 
     if (!dryRun) {
-      // We only compute this warning outside of dry-run because it requires
-      // the packages to be actually downloaded.
-      await result.warnAboutMixedMode(cache, dryRun: dryRun);
-
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
