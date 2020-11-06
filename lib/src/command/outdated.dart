@@ -617,7 +617,7 @@ Showing dependencies that are currently not opted in to null-safety.
       'All your dependencies declare support for null-safety.';
 
   @override
-  String get allGood => 'all currently support null safety.';
+  String get allGood => 'all support null safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
