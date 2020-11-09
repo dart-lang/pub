@@ -46,7 +46,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     final ref = packageRange.toRef();
     final available = await cache.source(ref.source).getVersions(ref);
     if (available.isEmpty) {
-      return packageRange.constraint;
+      return stripUpperBound(packageRange.constraint);
     }
 
     available.sort((x, y) => x.version.compareTo(y.version));
