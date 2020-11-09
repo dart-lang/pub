@@ -57,7 +57,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
         return VersionRange(min: p.version, includeMin: true);
       }
     }
-    return packageRange.constraint;
+    return stripUpperBound(packageRange.constraint);
   }
 
   Future<List<PackageRange>> atLeastNullsafety(

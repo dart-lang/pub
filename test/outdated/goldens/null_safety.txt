@@ -204,11 +204,12 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
+bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
 
-1 dependency is constrained to a version that is older than a resolvable version.
-To update it, edit pubspec.yaml.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --mode=null-safety --transitive
 Showing dependencies that are currently not opted in to null-safety.
@@ -218,11 +219,12 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
+bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
 
-1 dependency is constrained to a version that is older than a resolvable version.
-To update it, edit pubspec.yaml.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --no-color --mode=null-safety --no-prereleases
 Showing dependencies that are currently not opted in to null-safety.
@@ -232,11 +234,12 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✓2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✓2.0.0      ✓2.0.0  
+bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0  
 
-1 dependency is constrained to a version that is older than a resolvable version.
-To update it, edit pubspec.yaml.
+Current dependencies are constrained to versions listed in Resolvable.
+A resolution compatible with the Latest versions doesn't exist, as they are not
+mutually compatible.
 
 $ pub outdated --json --mode=null-safety
 {
@@ -251,10 +254,7 @@ $ pub outdated --json --mode=null-safety
         "version": "1.0.0",
         "nullSafety": false
       },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
+      "resolvable": null,
       "latest": {
         "version": "2.0.0",
         "nullSafety": true
@@ -270,10 +270,7 @@ $ pub outdated --json --mode=null-safety
         "version": "1.0.0",
         "nullSafety": false
       },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": true
-      },
+      "resolvable": null,
       "latest": {
         "version": "2.0.0",
         "nullSafety": true
