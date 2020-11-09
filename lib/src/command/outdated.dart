@@ -93,6 +93,12 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    final mode = <String, Mode>{
+      'outdated': _OutdatedMode(),
+      'null-safety': _NullSafetyMode(cache, entrypoint,
+          shouldShowSpinner: _shouldShowSpinner),
+    }[argResults['mode']];
+
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
 
@@ -104,7 +110,7 @@ class OutdatedCommand extends PubCommand {
         ? rootPubspec
         : stripDevDependencies(rootPubspec);
 
-    final resolvablePubspec = stripVersionUpperBounds(upgradablePubspec);
+    final resolvablePubspec = await mode.resolvablePubspec(upgradablePubspec);
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
@@ -205,11 +211,7 @@ class OutdatedCommand extends PubCommand {
     }
 
     rows.sort();
-    final mode = <String, Mode>{
-      'outdated': _OutdatedMode(),
-      'null-safety': _NullSafetyMode(cache, entrypoint,
-          shouldShowSpinner: _shouldShowSpinner),
-    }[argResults['mode']];
+
     final showAll = argResults['show-all'] || argResults['up-to-date'];
     if (argResults['json']) {
       await _outputJson(
@@ -571,6 +573,8 @@ abstract class Mode {
   String get explanation;
   String get foundNoBadText;
   String get allGood;
+
+  Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
 
 class _OutdatedMode implements Mode {
@@ -625,6 +629,11 @@ Showing outdated packages.
       rows.add(cols);
     }
     return rows;
+  }
+
+  @override
+  Future<Pubspec> resolvablePubspec(Pubspec pubspec) async {
+    return stripVersionUpperBounds(pubspec);
   }
 }
 
@@ -715,6 +724,11 @@ Showing dependencies that are currently not opted in to null-safety.
           },
         ).toList()
     ];
+  }
+
+  @override
+  Future<Pubspec> resolvablePubspec(Pubspec pubspec) async {
+    return constrainedToAtLeastNullSafetyPubspec(pubspec, cache);
   }
 }
 

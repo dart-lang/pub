@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/hosted.dart';
+import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
@@ -34,6 +35,62 @@ Pubspec stripDependencyOverrides(Pubspec original) {
     dependencies: original.dependencies.values,
     devDependencies: original.devDependencies.values,
     dependencyOverrides: [],
+  );
+}
+
+Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
+    Pubspec original, SystemCache cache) async {
+  /// Get the first version of [package] opting in to null-safety.
+  Future<VersionRange> _constrainToFirstWithNullSafety(
+      PackageRange packageRange) async {
+    final ref = packageRange.toRef();
+    final available = await cache.source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return packageRange.constraint;
+    }
+
+    available.sort((x, y) => x.version.compareTo(y.version));
+
+    for (final p in available) {
+      final pubspec = await cache.source(ref.source).describe(p);
+      if (pubspec.languageVersion.supportsNullSafety) {
+        return VersionRange(min: p.version, includeMin: true);
+      }
+    }
+    return packageRange.constraint;
+  }
+
+  Future<List<PackageRange>> atLeastNullsafety(
+    Map<String, PackageRange> constrained,
+  ) async {
+    final result = <PackageRange>[];
+
+    for (final name in constrained.keys) {
+      final packageRange = constrained[name];
+      var unconstrainedRange = packageRange;
+
+      /// We only need to remove the upper bound if it is a hosted package.
+      if (packageRange.source is HostedSource) {
+        unconstrainedRange = PackageRange(
+            packageRange.name,
+            packageRange.source,
+            await _constrainToFirstWithNullSafety(packageRange),
+            packageRange.description,
+            features: packageRange.features);
+      }
+      result.add(unconstrainedRange);
+    }
+
+    return result;
+  }
+
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: await atLeastNullsafety(original.dependencies),
+    devDependencies: await atLeastNullsafety(original.devDependencies),
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
