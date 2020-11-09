@@ -140,8 +140,10 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
-    await log.warningsOnlyUnlessTerminal(() => log
-        .message('The `pub` command is deprecated. Run `dart pub` instead.'));
+    if (p.basenameWithoutExtension(Platform.executable) == 'pub') {
+      await log.warningsOnlyUnlessTerminal(() => log
+          .message('The `pub` command is deprecated. Run `dart pub` instead.'));
+    }
 
     if (topLevelResults['version']) {
       log.message('Pub ${sdk.version}');
