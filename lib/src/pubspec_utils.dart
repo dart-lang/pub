@@ -41,7 +41,7 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     Pubspec original, SystemCache cache) async {
   /// Get the first version of [package] opting in to null-safety.
-  Future<VersionRange> _constrainToFirstWithNullSafety(
+  Future<VersionRange> constrainToFirstWithNullSafety(
       PackageRange packageRange) async {
     final ref = packageRange.toRef();
     final available = await cache.source(ref.source).getVersions(ref);
@@ -60,7 +60,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     return stripUpperBound(packageRange.constraint);
   }
 
-  Future<List<PackageRange>> atLeastNullsafety(
+  Future<List<PackageRange>> allConstrainedToAtLeasNullSafety(
     Map<String, PackageRange> constrained,
   ) async {
     final result = <PackageRange>[];
@@ -74,7 +74,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
         unconstrainedRange = PackageRange(
             packageRange.name,
             packageRange.source,
-            await _constrainToFirstWithNullSafety(packageRange),
+            await constrainToFirstWithNullSafety(packageRange),
             packageRange.description,
             features: packageRange.features);
       }
@@ -88,8 +88,9 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: await atLeastNullsafety(original.dependencies),
-    devDependencies: await atLeastNullsafety(original.devDependencies),
+    dependencies: await allConstrainedToAtLeasNullSafety(original.dependencies),
+    devDependencies:
+        await allConstrainedToAtLeasNullSafety(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }
