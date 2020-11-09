@@ -50,6 +50,7 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('nullsafety',
         negatable: false,
         help: 'Upgrade constraints in pubspec.yaml to null-safety versions');
+    argParser.addFlag('null-safety', negatable: false, hide: true);
 
     argParser.addFlag('packages-dir', hide: true);
   }
@@ -66,79 +67,88 @@ class UpgradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
 
-    if (argResults['nullsafety']) {
-      final upgradeOnly = [
-        if (argResults.rest.isNotEmpty)
-          ...argResults.rest
-        else ...[
-          ...entrypoint.root.pubspec.dependencies.keys,
-          ...entrypoint.root.pubspec.devDependencies.keys
-        ],
-      ];
-
-      final nullsafetyPubspec = await _upgradeToNullSafetyConstraints(
-        entrypoint.root.pubspec,
-        upgradeOnly,
-      );
-
-      /// Solve [nullsafetyPubspec] in-memory and consolidate the resolved
-      /// versions of the packages into a map for quick searching.
-      final resolvedPackages = <String, PackageId>{};
-      await log.spinner('Resolving', () async {
-        final solveResult = await tryResolveVersions(
-          SolveType.UPGRADE,
-          cache,
-          Package.inMemory(nullsafetyPubspec),
-        );
-        for (final resolvedPackage in solveResult?.packages ?? []) {
-          resolvedPackages[resolvedPackage.name] = resolvedPackage;
-        }
-      }, condition: _shouldShowSpinner);
-
-      /// List of changes to made to `pubspec.yaml`.
-      final changes = <PackageRange, PackageRange>{};
-      final declaredHostedDependencies = [
-        ...entrypoint.root.pubspec.dependencies.values,
-        ...entrypoint.root.pubspec.devDependencies.values,
-      ].where((dep) => dep.source is HostedSource);
-      for (final dep in declaredHostedDependencies) {
-        final resolvedPackage = resolvedPackages[dep.name];
-        assert(resolvedPackage != null);
-        if (resolvedPackage == null || !upgradeOnly.contains(dep.name)) {
-          // If we're not to upgrade this package, or it wasn't in the
-          // resolution somehow, then we ignore it.
-          continue;
-        }
-
-        final constraint = VersionConstraint.compatibleWith(
-          resolvedPackage.version,
-        );
-        if (dep.constraint.allowsAll(constraint) &&
-            constraint.allowsAll(dep.constraint)) {
-          // If constraint allows the same as the existing constraint then
-          // there is no need to changes.
-          continue;
-        }
-
-        changes[dep] = dep.withConstraint(constraint);
-      }
-
-      if (!_dryRun) {
-        await _updatePubspec(changes);
-      }
-
-      _outputChangeSummary(changes);
+    if (argResults['nullsafety'] || argResults['null-safety']) {
+      return await _runUpgradeNullSafety();
     }
 
-    await Entrypoint.current(cache).acquireDependencies(SolveType.UPGRADE,
+    await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: _dryRun,
         precompile: argResults['precompile']);
 
-    if (isOffline) {
-      log.warning('Warning: Upgrading when offline may not update you to the '
-          'latest versions of your dependencies.');
+    _showOfflineWarning();
+  }
+
+  Future<void> _runUpgradeNullSafety() async {
+    final upgradeOnly = [
+      if (argResults.rest.isNotEmpty)
+        ...argResults.rest
+      else ...[
+        ...entrypoint.root.pubspec.dependencies.keys,
+        ...entrypoint.root.pubspec.devDependencies.keys
+      ],
+    ];
+
+    final nullsafetyPubspec = await _upgradeToNullSafetyConstraints(
+      entrypoint.root.pubspec,
+      upgradeOnly,
+    );
+
+    /// Solve [nullsafetyPubspec] in-memory and consolidate the resolved
+    /// versions of the packages into a map for quick searching.
+    final resolvedPackages = <String, PackageId>{};
+    await log.spinner('Resolving dependencies', () async {
+      final solveResult = await tryResolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(nullsafetyPubspec),
+      );
+      for (final resolvedPackage in solveResult?.packages ?? []) {
+        resolvedPackages[resolvedPackage.name] = resolvedPackage;
+      }
+    }, condition: _shouldShowSpinner);
+
+    /// List of changes to made to `pubspec.yaml`.
+    final changes = <PackageRange, PackageRange>{};
+    final declaredHostedDependencies = [
+      ...entrypoint.root.pubspec.dependencies.values,
+      ...entrypoint.root.pubspec.devDependencies.values,
+    ].where((dep) => dep.source is HostedSource);
+    for (final dep in declaredHostedDependencies) {
+      final resolvedPackage = resolvedPackages[dep.name];
+      assert(resolvedPackage != null);
+      if (resolvedPackage == null || !upgradeOnly.contains(dep.name)) {
+        // If we're not to upgrade this package, or it wasn't in the
+        // resolution somehow, then we ignore it.
+        continue;
+      }
+
+      final constraint = VersionConstraint.compatibleWith(
+        resolvedPackage.version,
+      );
+      if (dep.constraint.allowsAll(constraint) &&
+          constraint.allowsAll(dep.constraint)) {
+        // If constraint allows the same as the existing constraint then
+        // there is no need to changes.
+        continue;
+      }
+
+      changes[dep] = dep.withConstraint(constraint);
     }
+
+    if (!_dryRun) {
+      await _updatePubspec(changes);
+
+      // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
+      //       we can show the changes in --dry-run mode. For now we only show
+      //       the changes made to pubspec.yaml in dry-run mode.
+      await Entrypoint.current(cache).acquireDependencies(
+        SolveType.UPGRADE,
+        precompile: argResults['precompile'],
+      );
+    }
+
+    _outputChangeSummary(changes);
   }
 
   /// Updates `pubspec.yaml` with given [changes].
@@ -180,14 +190,23 @@ class UpgradeCommand extends PubCommand {
     ArgumentError.checkNotNull(changes, 'changes');
 
     if (changes.isEmpty) {
-      log.message('No changes to pubspec.yaml!');
+      final wouldBe = _dryRun ? 'would be made' : '';
+      log.message('\nNo changes $wouldBe to pubspec.yaml!');
     } else {
       final s = changes.length == 1 ? '' : 's';
 
-      log.message('${changes.length} change$s to `pubspec.yaml`:');
+      final changed = _dryRun ? 'Would change' : 'Changed';
+      log.message('\n$changed ${changes.length} constraint$s in pubspec.yaml:');
       changes.forEach((from, to) {
-        log.message('${from.name}: ${from.constraint} -> ${to.constraint}');
+        log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
       });
+    }
+  }
+
+  void _showOfflineWarning() {
+    if (isOffline) {
+      log.warning('Warning: Upgrading when offline may not update you to the '
+          'latest versions of your dependencies.');
     }
   }
 
