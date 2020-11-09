@@ -1,0 +1,194 @@
+$ pub outdated --json
+{
+  "packages": [
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.1.0"
+      },
+      "upgradable": {
+        "version": "1.1.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    }
+  ]
+}
+
+$ pub outdated --no-color
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+dev_dependencies: all up-to-date.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --no-transitive
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+dev_dependencies: all up-to-date.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --up-to-date
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+dev_dependencies: all up-to-date.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --prereleases
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+dev_dependencies: all up-to-date.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --no-dev-dependencies
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --no-dependency-overrides
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+
+dev_dependencies: all up-to-date.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+
+dev_dependencies: all support null safety.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety --transitive
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+
+dev_dependencies: all support null safety.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+
+dev_dependencies: all support null safety.
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml.
+
+$ pub outdated --json --mode=null-safety
+{
+  "packages": [
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.1.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.1.0",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "2.0.0",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "2.0.0",
+        "nullSafety": false
+      }
+    }
+  ]
+}
+
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": [
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.1.0"
+      },
+      "upgradable": {
+        "version": "1.1.0"
+      },
+      "resolvable": {
+        "version": "2.0.0"
+      },
+      "latest": {
+        "version": "2.0.0"
+      }
+    }
+  ]
+}
+
