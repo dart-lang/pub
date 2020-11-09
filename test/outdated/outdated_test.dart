@@ -206,6 +206,11 @@ Future<void> main() async {
         ..serve('bar', '1.0.0', pubspec: {
           'environment': {'sdk': '>=2.9.0 < 3.0.0'}
         })
+        ..serve('foo', '2.0.0-nullsafety.0', deps: {
+          'bar': '^2.0.0'
+        }, pubspec: {
+          'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+        })
         ..serve('foo', '2.0.0', deps: {
           'bar': '^1.0.0'
         }, pubspec: {
