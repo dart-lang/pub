@@ -60,12 +60,10 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     return stripUpperBound(packageRange.constraint);
   }
 
-  Future<List<PackageRange>> allConstrainedToAtLeasNullSafety(
+  Future<List<PackageRange>> allConstrainedToAtLeastNullSafety(
     Map<String, PackageRange> constrained,
   ) async {
-    final result = <PackageRange>[];
-
-    for (final name in constrained.keys) {
+    final result = await Future.wait(constrained.keys.map((name) async {
       final packageRange = constrained[name];
       var unconstrainedRange = packageRange;
 
@@ -78,19 +76,23 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
             packageRange.description,
             features: packageRange.features);
       }
-      result.add(unconstrainedRange);
-    }
+      return unconstrainedRange;
+    }));
 
     return result;
   }
+
+  final constrainedLists = await Future.wait([
+    allConstrainedToAtLeastNullSafety(original.dependencies),
+    allConstrainedToAtLeastNullSafety(original.devDependencies),
+  ]);
 
   return Pubspec(
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: await allConstrainedToAtLeasNullSafety(original.dependencies),
-    devDependencies:
-        await allConstrainedToAtLeasNullSafety(original.devDependencies),
+    dependencies: constrainedLists[0],
+    devDependencies: constrainedLists[1],
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }
