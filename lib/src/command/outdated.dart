@@ -39,10 +39,12 @@ class OutdatedCommand extends PubCommand {
   bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
 
   OutdatedCommand() {
-    argParser.addFlag('color',
-        help: 'Whether to color the output.\n'
-            'Defaults to color when connected to a '
-            'terminal, and no-color otherwise.');
+    argParser.addFlag(
+      'color',
+      help: 'Whether to color the output.\n'
+          'Defaults to color when connected to a '
+          'terminal, and no-color otherwise.',
+    );
 
     argParser.addFlag(
       'dependency-overrides',
@@ -56,45 +58,59 @@ class OutdatedCommand extends PubCommand {
       help: 'Take dev dependencies into account.',
     );
 
+    argParser.addFlag('json',
+        help: 'Output the results using a json format.', negatable: false);
+
+    argParser.addOption(
+      'mode',
+      help: 'Highlight versions with PROPERTY.\n'
+          'Only packages currently missing that PROPERTY will be included unless '
+          '--show-all.',
+      valueHelp: 'PROPERTY',
+      allowed: ['outdated', 'null-safety'],
+      defaultsTo: 'outdated',
+    );
+
+    argParser.addFlag(
+      'prereleases',
+      help: 'Include prereleases in latest version.\n'
+          '(defaults to on in --mode=null-safety).',
+    );
+
+    // Preserve for backwards compatibility.
+    argParser.addFlag(
+      'pre-releases',
+      help: 'Alias of prereleases.',
+      hide: true,
+    );
+
+    argParser.addFlag(
+      'show-all',
+      help: 'Include dependencies that are already fullfilling --mode.',
+    );
+
+    // Preserve for backwards compatibility.
+    argParser.addFlag(
+      'up-to-date',
+      hide: true,
+      help: 'Include dependencies that are already at the '
+          'latest version. Alias of --show-all.',
+    );
     argParser.addFlag(
       'transitive',
       help: 'Show transitive dependencies.\n'
           '(defaults to off in --mode=null-safety).',
     );
-
-    argParser.addFlag('json',
-        help: 'Output the results using a json format.', negatable: false);
-
-    argParser.addOption('mode',
-        help: 'Highlight versions with PROPERTY.\n'
-            'Only packages currently missing that PROPERTY will be included unless '
-            '--show-all.',
-        valueHelp: 'PROPERTY',
-        allowed: ['outdated', 'null-safety'],
-        defaultsTo: 'outdated');
-
-    argParser.addFlag('prereleases',
-        help: 'Include prereleases in latest version.\n'
-            '(defaults to on in --mode=null-safety).');
-
-    // Preserve for backwards compatibility.
-    argParser.addFlag('pre-releases',
-        help: 'Alias of prereleases.', hide: true);
-
-    argParser.addFlag('show-all',
-        help: 'Include dependencies that are already fullfilling --mode.');
-
-    // Preserve for backwards compatibility.
-    argParser.addFlag('up-to-date',
-        hide: true,
-        help: 'Include dependencies that are already at the '
-            'latest version. Alias of --show-all.');
   }
 
   @override
   Future<void> runProtected() async {
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
+    if (argResults['json'] && argResults.wasParsed('transitive')) {
+      usageException('Cannot specify both `--json` and `--transitive`\n'
+          'The json report always includes transitive dependencies.');
+    }
 
     final rootPubspec = includeDependencyOverrides
         ? entrypoint.root.pubspec
