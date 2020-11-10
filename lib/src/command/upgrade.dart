@@ -129,7 +129,7 @@ class UpgradeCommand extends PubCommand {
       if (dep.constraint.allowsAll(constraint) &&
           constraint.allowsAll(dep.constraint)) {
         // If constraint allows the same as the existing constraint then
-        // there is no need to changes.
+        // there is no need to make changes.
         continue;
       }
 
