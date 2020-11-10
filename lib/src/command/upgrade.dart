@@ -80,14 +80,23 @@ class UpgradeCommand extends PubCommand {
   }
 
   Future<void> _runUpgradeNullSafety() async {
-    final upgradeOnly = [
-      if (argResults.rest.isNotEmpty)
-        ...argResults.rest
-      else ...[
-        ...entrypoint.root.pubspec.dependencies.keys,
-        ...entrypoint.root.pubspec.devDependencies.keys
-      ],
+    final directDeps = [
+      ...entrypoint.root.pubspec.dependencies.keys,
+      ...entrypoint.root.pubspec.devDependencies.keys
     ];
+    final upgradeOnly = argResults.rest.isEmpty ? directDeps : argResults.rest;
+
+    // Check that all package names in upgradeOnly are direct-dependencies
+    if (upgradeOnly.any((name) => !directDeps.contains(name))) {
+      final notDirectDeps =
+          upgradeOnly.where((name) => !directDeps.contains(name)).toList();
+      usageException('''
+Dependencies specified in `dart pub upgrade --nullsafety <dependencies>` must
+be direct 'dependencies' or 'dev_dependencies', following packages are not:
+ - ${notDirectDeps.join('\n - ')}
+
+''');
+    }
 
     final nullsafetyPubspec = await _upgradeToNullSafetyConstraints(
       entrypoint.root.pubspec,
@@ -163,18 +172,18 @@ class UpgradeCommand extends PubCommand {
     final deps = entrypoint.root.pubspec.dependencies.keys;
     final devDeps = entrypoint.root.pubspec.devDependencies.keys;
 
-    for (final c in changes.values) {
-      if (deps.contains(c.name)) {
+    for (final change in changes.values) {
+      if (deps.contains(change.name)) {
         yamlEditor.update(
-          ['dependencies', c.name],
+          ['dependencies', change.name],
           // TODO(jonasfj): Fix support for third-party pub servers.
-          c.constraint.toString(),
+          change.constraint.toString(),
         );
-      } else if (devDeps.contains(c.name)) {
+      } else if (devDeps.contains(change.name)) {
         yamlEditor.update(
-          ['dev_dependencies', c.name],
+          ['dev_dependencies', change.name],
           // TODO: Fix support for third-party pub servers
-          c.constraint.toString(),
+          change.constraint.toString(),
         );
       }
     }
