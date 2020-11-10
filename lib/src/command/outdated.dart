@@ -543,9 +543,8 @@ Future<void> _outputHuman(
       upgradable == 0 &&
       rows.isNotEmpty) {
     log.message(
-        '\nCurrent dependencies are constrained to versions listed in Resolvable.'
-        '\nA resolution compatible with the Latest versions doesn\'t exist, as they are not'
-        '\nmutually compatible.');
+        "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
+        "Newer versions, listed in 'Latest', may not be mutually compatible.");
   }
 
   if (notAtResolvable != 0) {
