@@ -167,7 +167,7 @@ class UpgradeCommand extends PubCommand {
       if (deps.contains(c.name)) {
         yamlEditor.update(
           ['dependencies', c.name],
-          // TODO: Fix support for third-party pub servers
+          // TODO(jonasfj): Fix support for third-party pub servers.
           c.constraint.toString(),
         );
       } else if (devDeps.contains(c.name)) {
