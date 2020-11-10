@@ -158,6 +158,37 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     }
 
     _outputChangeSummary(changes);
+
+    // Warn if not all dependencies were migrated to a null-safety compatible
+    // version. This can happen because:
+    //  - `upgradeOnly` was given,
+    //  - root has SDK dependencies,
+    //  - root has git or path dependencies,
+    //  - root has dependency_overrides
+    final nonMigratedDirectDeps = <String>[];
+    await Future.wait(directDeps.map((name) async {
+      final resolvedPackage = resolvedPackages[name];
+      assert(resolvedPackage != null);
+
+      final boundSource = resolvedPackage.source.bind(cache);
+      final pubspec = await boundSource.describe(resolvedPackage);
+      if (!pubspec.languageVersion.supportsNullSafety) {
+        nonMigratedDirectDeps.add(name);
+      }
+    }));
+    if (nonMigratedDirectDeps.isNotEmpty) {
+      log.warning('''
+\nFollowing direct 'dependencies' and 'dev_dependencies' are not migrated to
+null-safety yet:
+ - ${nonMigratedDirectDeps.join('\n - ')}
+
+You may have to:
+ * Upgrade git and path dependencies manually,
+ * Upgrade to a newer SDK for newer SDK dependencies,
+ * Remove dependency_overrides, and/or,
+ * Find other packages to use.
+''');
+    }
   }
 
   /// Updates `pubspec.yaml` with given [changes].
