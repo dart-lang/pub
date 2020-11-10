@@ -10,8 +10,6 @@ Usage: pub outdated [options]
                                    (defaults to on)
     --[no-]dev-dependencies        Take dev dependencies into account.
                                    (defaults to on)
-    --[no-]transitive              Show transitive dependencies.
-                                   (defaults to off in --mode=null-safety).
     --json                         Output the results using a json format.
     --mode=<PROPERTY>              Highlight versions with PROPERTY.
                                    Only packages currently missing that PROPERTY
@@ -21,6 +19,8 @@ Usage: pub outdated [options]
                                    (defaults to on in --mode=null-safety).
     --[no-]show-all                Include dependencies that are already
                                    fullfilling --mode.
+    --[no-]transitive              Show transitive dependencies.
+                                   (defaults to off in --mode=null-safety).
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-outdated for detailed documentation.
