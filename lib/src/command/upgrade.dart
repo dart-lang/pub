@@ -117,7 +117,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       }
     }, condition: _shouldShowSpinner);
 
-    /// List of changes to made to `pubspec.yaml`.
+    /// Changes to be made to `pubspec.yaml`.
+    /// Mapping from original to changed value.
     final changes = <PackageRange, PackageRange>{};
     final declaredHostedDependencies = [
       ...entrypoint.root.pubspec.dependencies.values,
