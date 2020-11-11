@@ -47,10 +47,10 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
 
-    argParser.addFlag('nullsafety',
+    argParser.addFlag('null-safety',
         negatable: false,
         help: 'Upgrade constraints in pubspec.yaml to null-safety versions');
-    argParser.addFlag('null-safety', negatable: false, hide: true);
+    argParser.addFlag('nullsafety', negatable: false, hide: true);
 
     argParser.addFlag('packages-dir', hide: true);
   }
@@ -71,6 +71,10 @@ class UpgradeCommand extends PubCommand {
       return await _runUpgradeNullSafety();
     }
 
+    return await _runUpgrade();
+  }
+
+  Future<void> _runUpgrade() async {
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: _dryRun,
