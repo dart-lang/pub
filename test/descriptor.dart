@@ -6,6 +6,7 @@
 import 'dart:convert';
 
 import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 import 'package:meta/meta.dart';
@@ -257,7 +258,8 @@ PackageConfigEntry packageConfigEntry({
     name: name,
     rootUri: rootUri,
     packageUri: Uri(path: 'lib/'),
-    languageVersion: languageVersion,
+    languageVersion:
+        languageVersion != null ? LanguageVersion.parse(languageVersion) : null,
   );
 }
 

@@ -32,14 +32,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',
@@ -69,6 +72,7 @@ void main() {
           d.packageConfigEntry(
             name: 'notFoo',
             version: '9.9.9',
+            languageVersion: '2.7',
           ),
         ]),
       ]);
@@ -82,14 +86,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',
@@ -154,10 +161,12 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             path: '../local_baz',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',

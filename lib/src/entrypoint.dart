@@ -18,6 +18,7 @@ import 'exceptions.dart';
 import 'executable.dart';
 import 'http.dart' as http;
 import 'io.dart';
+import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
@@ -753,7 +754,7 @@ class Entrypoint {
       try {
         // Load `pubspec.yaml` and extract language version to compare with the
         // language version from `package_config.json`.
-        final languageVersion = extractLanguageVersion(
+        final languageVersion = LanguageVersion.fromSdkConstraint(
           cache.load(id).pubspec.sdkConstraints[sdk.identifier],
         );
         if (pkg.languageVersion != languageVersion) {
