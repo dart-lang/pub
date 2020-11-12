@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/hosted.dart';
+import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
@@ -34,6 +35,65 @@ Pubspec stripDependencyOverrides(Pubspec original) {
     dependencies: original.dependencies.values,
     devDependencies: original.devDependencies.values,
     dependencyOverrides: [],
+  );
+}
+
+Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
+    Pubspec original, SystemCache cache) async {
+  /// Get the first version of [package] opting in to null-safety.
+  Future<VersionRange> constrainToFirstWithNullSafety(
+      PackageRange packageRange) async {
+    final ref = packageRange.toRef();
+    final available = await cache.source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return stripUpperBound(packageRange.constraint);
+    }
+
+    available.sort((x, y) => x.version.compareTo(y.version));
+
+    for (final p in available) {
+      final pubspec = await cache.source(ref.source).describe(p);
+      if (pubspec.languageVersion.supportsNullSafety) {
+        return VersionRange(min: p.version, includeMin: true);
+      }
+    }
+    return stripUpperBound(packageRange.constraint);
+  }
+
+  Future<List<PackageRange>> allConstrainedToAtLeastNullSafety(
+    Map<String, PackageRange> constrained,
+  ) async {
+    final result = await Future.wait(constrained.keys.map((name) async {
+      final packageRange = constrained[name];
+      var unconstrainedRange = packageRange;
+
+      /// We only need to remove the upper bound if it is a hosted package.
+      if (packageRange.source is HostedSource) {
+        unconstrainedRange = PackageRange(
+            packageRange.name,
+            packageRange.source,
+            await constrainToFirstWithNullSafety(packageRange),
+            packageRange.description,
+            features: packageRange.features);
+      }
+      return unconstrainedRange;
+    }));
+
+    return result;
+  }
+
+  final constrainedLists = await Future.wait([
+    allConstrainedToAtLeastNullSafety(original.dependencies),
+    allConstrainedToAtLeastNullSafety(original.devDependencies),
+  ]);
+
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: constrainedLists[0],
+    devDependencies: constrainedLists[1],
+    dependencyOverrides: original.dependencyOverrides.values,
   );
 }
 
