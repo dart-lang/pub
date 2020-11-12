@@ -150,8 +150,7 @@ class NullSafetyAnalysis {
           packageDir = boundSource.getDirectory(dependencyId);
         }
 
-        final languageVersion = pubspec.languageVersion;
-        if (languageVersion == null || !languageVersion.supportsNullSafety) {
+        if (!pubspec.languageVersion.supportsNullSafety) {
           final span =
               _tryGetSpanFromYamlMap(pubspec.fields['environment'], 'sdk');
           final where = span == null
