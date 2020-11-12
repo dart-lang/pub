@@ -32,14 +32,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',
@@ -69,6 +72,7 @@ void main() {
           d.packageConfigEntry(
             name: 'notFoo',
             version: '9.9.9',
+            languageVersion: '2.7',
           ),
         ]),
       ]);
@@ -82,14 +86,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',
@@ -154,10 +161,12 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'baz',
             path: '../local_baz',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',
@@ -213,14 +222,14 @@ void main() {
       ]).validate();
     });
 
-    test('package_config.json has no default language version', () async {
+    test('package_config.json has 2.7 default language version', () async {
       await servePackages((builder) {
         builder.serve(
           'foo',
           '1.2.3',
           pubspec: {
             'environment': {
-              'sdk': '>=0.0.1 <=0.2.2+2', // tests runs with '0.1.2+3'
+              'sdk': 'any',
             },
           },
           contents: [d.dir('lib', [])],
@@ -244,7 +253,7 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '0.0',
+            languageVersion: '2.7',
           ),
           d.packageConfigEntry(
             name: 'myapp',

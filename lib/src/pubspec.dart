@@ -447,15 +447,8 @@ class Pubspec {
       name == null && version == Version.none && dependencies.isEmpty;
 
   /// The language version implied by the sdk constraint.
-  ///
-  /// Given no or unbounded constraint we assume language version 1.0.
-  LanguageVersion get languageVersion {
-    final constraint = originalDartSdkConstraint;
-    if (constraint is VersionRange && constraint.min != null) {
-      return LanguageVersion.fromVersionRange(constraint);
-    }
-    return LanguageVersion(1, 0);
-  }
+  LanguageVersion get languageVersion =>
+      LanguageVersion.fromSdkConstraint(originalDartSdkConstraint);
 
   /// Loads the pubspec for a package located in [packageDir].
   ///

@@ -6,6 +6,8 @@ import 'package:meta/meta.dart';
 
 import 'package:pub_semver/pub_semver.dart';
 
+import 'language_version.dart';
+
 /// Contents of a `.dart_tool/package_config.json` file.
 class PackageConfig {
   /// Version of the configuration in the `.dart_tool/package_config.json` file.
@@ -139,8 +141,6 @@ class PackageConfig {
       }..addAll(additionalProperties ?? {});
 }
 
-final _languageVersionPattern = RegExp(r'^\d+\.\d+$');
-
 class PackageConfigEntry {
   /// Package name.
   String name;
@@ -166,7 +166,7 @@ class PackageConfigEntry {
   /// in the `pubspec.yaml` for the given package.
   ///
   /// This property is **optional** and may be `null` if not given.
-  String languageVersion;
+  LanguageVersion languageVersion;
 
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
@@ -225,12 +225,15 @@ class PackageConfigEntry {
       }
     }
 
-    final languageVersion = root['languageVersion'];
-    if (languageVersion != null) {
-      if (languageVersion is! String) {
+    LanguageVersion languageVersion;
+    final languageVersionRaw = root['languageVersion'];
+    if (languageVersionRaw != null) {
+      if (languageVersionRaw is! String) {
         _throw('languageVersion', 'must be a string');
       }
-      if (!_languageVersionPattern.hasMatch(languageVersion)) {
+      try {
+        languageVersion = LanguageVersion.parse(languageVersionRaw);
+      } on FormatException {
         _throw('languageVersion', 'must be on the form <major>.<minor>');
       }
     }
@@ -248,29 +251,6 @@ class PackageConfigEntry {
         'name': name,
         'rootUri': rootUri.toString(),
         if (packageUri != null) 'packageUri': packageUri?.toString(),
-        if (languageVersion != null) 'languageVersion': languageVersion,
+        if (languageVersion != null) 'languageVersion': '$languageVersion',
       }..addAll(additionalProperties ?? {});
-}
-
-/// Extract the _language version_ from an SDK constraint from `pubspec.yaml`.
-///
-/// This returns `null` if there is no language version.
-String extractLanguageVersion(VersionConstraint c) {
-  Version minVersion;
-  if (c == null || c.isEmpty) {
-    return null;
-  } else if (c is Version) {
-    minVersion = c;
-  } else if (c is VersionRange) {
-    minVersion = c.min;
-  } else if (c is VersionUnion) {
-    // `ranges` is non-empty and sorted.
-    minVersion = c.ranges.first.min;
-  } else {
-    throw ArgumentError('Unknown VersionConstraint type $c.');
-  }
-  if (minVersion == null) {
-    return null;
-  }
-  return '${minVersion.major}.${minVersion.minor}';
 }

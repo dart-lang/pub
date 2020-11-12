@@ -4,14 +4,10 @@
 
 import 'dart:async';
 
-import 'package:pub_semver/pub_semver.dart';
-
 import '../entrypoint.dart';
 import '../exceptions.dart';
-import '../language_version.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
-import '../pubspec.dart';
 import '../validator.dart';
 
 /// Gives a warning when publishing a new version, if the latest published
@@ -45,8 +41,9 @@ class RelativeVersionNumberingValidator extends Validator {
     final previousPubspec =
         await hostedSource.bind(entrypoint.cache).describe(previousVersion);
 
-    final currentOptedIn = _optedIntoNullSafety(entrypoint.root.pubspec);
-    final previousOptedIn = _optedIntoNullSafety(previousPubspec);
+    final currentOptedIn =
+        entrypoint.root.pubspec.languageVersion.supportsNullSafety;
+    final previousOptedIn = previousPubspec.languageVersion.supportsNullSafety;
 
     if (currentOptedIn && !previousOptedIn) {
       hints.add(
@@ -60,22 +57,5 @@ class RelativeVersionNumberingValidator extends Validator {
           'This change is likely to be backwards incompatible.\n'
           'See $semverUrl for information about versioning.');
     }
-  }
-
-  static bool _optedIntoNullSafety(Pubspec pubspec) {
-    final sdkConstraint = pubspec.originalDartSdkConstraint;
-
-    /// If the sdk constraint is not a `VersionRange` something is wrong, and
-    /// we cannot deduce the language version.
-    ///
-    /// This will hopefully be detected elsewhere.
-    ///
-    /// A single `Version` is also a `VersionRange`.
-    if (sdkConstraint is! VersionRange) return false;
-    final constraintMin = (sdkConstraint as VersionRange).min;
-
-    if (constraintMin == null) return false;
-
-    return LanguageVersion.fromVersionRange(sdkConstraint).supportsNullSafety;
   }
 }

@@ -14,6 +14,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
+import 'language_version.dart';
 import 'package_config.dart';
 import 'package_name.dart';
 import 'sdk.dart' show sdk;
@@ -268,7 +269,7 @@ class LockFile {
         name: name,
         rootUri: rootUri,
         packageUri: p.toUri('lib/'),
-        languageVersion: extractLanguageVersion(sdkConstraint),
+        languageVersion: LanguageVersion.fromSdkConstraint(sdkConstraint),
       ));
     }
 
@@ -277,7 +278,9 @@ class LockFile {
         name: entrypoint,
         rootUri: p.toUri('../'),
         packageUri: p.toUri('lib/'),
-        languageVersion: extractLanguageVersion(entrypointSdkConstraint),
+        languageVersion: LanguageVersion.fromSdkConstraint(
+          entrypointSdkConstraint,
+        ),
       ));
     }
 
