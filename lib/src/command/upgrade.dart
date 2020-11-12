@@ -309,7 +309,7 @@ You may have to:
 
     if (hasNoNullSafetyVersions.isNotEmpty) {
       throw ApplicationException('''
-null-safety compatible versions does not exist for:
+null-safety compatible versions do not exist for:
  - ${hasNoNullSafetyVersions.join('\n - ')}
 
 You can choose to upgrade only some dependencies to null-safety using:
