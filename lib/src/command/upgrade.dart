@@ -111,7 +111,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     /// versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
     await log.spinner('Resolving dependencies', () async {
-      final solveResult = await tryResolveVersions(
+      final solveResult = await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(nullsafetyPubspec),
@@ -235,8 +235,8 @@ You may have to:
     ArgumentError.checkNotNull(changes, 'changes');
 
     if (changes.isEmpty) {
-      final wouldBe = _dryRun ? 'would be made' : '';
-      log.message('\nNo changes $wouldBe to pubspec.yaml!');
+      final wouldBe = _dryRun ? 'would be made to' : 'to';
+      log.message('\nNo changes $wouldBe pubspec.yaml!');
     } else {
       final s = changes.length == 1 ? '' : 's';
 
