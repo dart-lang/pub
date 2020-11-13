@@ -132,6 +132,24 @@ abstract class PubCommand extends Command<int> {
       ? '<subcommand> [arguments...]'
       : (takesArguments ? '[arguments...]' : '');
 
+  /// If not `null` this overrides the default exit-code [exit_codes.SUCCESS]
+  /// when exiting successfully.
+  ///
+  /// This should only be modified by [overrideExitCode].
+  int _exitCodeOverride;
+
+  /// Override the exit code that would normally be used when exiting
+  /// successfully. Intended to be used by subcommands like `run` that wishes
+  /// to control the top-level exitcode.
+  ///
+  /// This may only be called once.
+  @nonVirtual
+  @protected
+  void overrideExitCode(int exitCode) {
+    assert(_exitCodeOverride == null, 'overrideExitCode was called twice!');
+    _exitCodeOverride = exitCode;
+  }
+
   @override
   @nonVirtual
   FutureOr<int> run() async {
@@ -145,9 +163,10 @@ abstract class PubCommand extends Command<int> {
     try {
       await captureErrors(runProtected,
           captureStackChains: _pubTopLevel.captureStackChains);
+      if (_exitCodeOverride != null) {
+        return _exitCodeOverride;
+      }
       return exit_codes.SUCCESS;
-    } on ExitWithException catch (e) {
-      return e.exitCode;
     } catch (error, chain) {
       log.exception(error, chain);
 

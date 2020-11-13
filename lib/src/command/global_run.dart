@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
-import '../exceptions.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -78,6 +77,6 @@ class GlobalRunCommand extends PubCommand {
           () => globalEntrypoint.precompileExecutable(executable)),
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
-    throw ExitWithException(exitCode);
+    overrideExitCode(exitCode);
   }
 }
