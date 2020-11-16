@@ -459,13 +459,24 @@ Future<PubProcess> startPub(
   var dartArgs = ['--packages=$dotPackagesPath'];
   dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
 
-  return await PubProcess.start(dartBin, dartArgs,
-      environment: getPubTestEnvironment(
-        tokenEndpoint: tokenEndpoint,
-        pubEnvironmentOverride: pubEnvironmentOverride,
-      )..addAll(environment ?? {}),
-      workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-      description: args.isEmpty ? 'pub' : 'pub ${args.first}');
+  final processEnvironment = {
+    ...getPubTestEnvironment(
+      tokenEndpoint: tokenEndpoint,
+      pubEnvironmentOverride: pubEnvironmentOverride,
+    ),
+    if (environment != null) ...environment,
+    // Explicitly set CI to false if not provided - allows us to test this
+    // feature on CI environments with the CI environment set
+    if (environment != null && !environment.containsKey('CI')) 'CI': 'false',
+  };
+
+  return await PubProcess.start(
+    dartBin,
+    dartArgs,
+    environment: processEnvironment,
+    workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
+    description: args.isEmpty ? 'pub' : 'pub ${args.first}',
+  );
 }
 
 /// A subclass of [TestProcess] that parses pub's verbose logging output and
