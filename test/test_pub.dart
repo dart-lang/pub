@@ -467,7 +467,7 @@ Future<PubProcess> startPub(
     if (environment != null) ...environment,
     // Explicitly set CI to false if not provided - allows us to test this
     // feature on CI environments with the CI environment set
-    if (environment != null && !environment.containsKey('CI')) 'CI': 'false',
+    if (environment == null || !environment.containsKey('CI')) 'CI': 'false',
   };
 
   return await PubProcess.start(
