@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:io';
 
 import '../command.dart';
-import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../log.dart' as log;
@@ -52,7 +51,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (argResults.rest.isEmpty) {
       log.error('No uploader command given.');
       printUsage();
-      throw ExitWithException(exit_codes.USAGE);
+      overrideExitCode(exit_codes.USAGE);
+      return;
     }
 
     var rest = argResults.rest.toList();
@@ -62,11 +62,13 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (!['add', 'remove'].contains(command)) {
       log.error('Unknown uploader command "$command".');
       printUsage();
-      throw ExitWithException(exit_codes.USAGE);
+      overrideExitCode(exit_codes.USAGE);
+      return;
     } else if (rest.isEmpty) {
       log.error('No uploader given for "pub uploader $command".');
       printUsage();
-      throw ExitWithException(exit_codes.USAGE);
+      overrideExitCode(exit_codes.USAGE);
+      return;
     }
 
     final package = argResults['package'] ?? entrypoint.root.name;

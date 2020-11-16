@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import '../command.dart';
-import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../log.dart' as log;
 import '../source/cached.dart';
@@ -84,7 +83,7 @@ class CacheRepairCommand extends PubCommand {
     }
 
     if (failures.isNotEmpty || globalRepairResults.last.isNotEmpty) {
-      throw ExitWithException(exit_codes.UNAVAILABLE);
+      overrideExitCode(exit_codes.UNAVAILABLE);
     }
   }
 }

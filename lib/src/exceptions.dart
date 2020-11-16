@@ -108,9 +108,3 @@ bool isUserFacingException(error) {
       error is YamlException ||
       error is UsageException;
 }
-
-/// Used to signal a specific error code from a [PubCommand].
-class ExitWithException implements Exception {
-  final int exitCode;
-  ExitWithException(this.exitCode);
-}

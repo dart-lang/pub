@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
-import '../exceptions.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -99,7 +98,7 @@ class RunCommand extends PubCommand {
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
-    throw ExitWithException(exitCode);
+    overrideExitCode(exitCode);
   }
 
   /// Implement a mode for use in `dartdev run`.
@@ -139,7 +138,7 @@ class RunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
 
-    throw ExitWithException(
+    overrideExitCode(
       await runExecutable(
         entrypoint,
         Executable(package, 'bin/$command.dart'),
