@@ -52,7 +52,10 @@ class _PubHttpClient extends http.BaseClient {
 
       String pubEnvironment;
 
-      if (Platform.environment.containsKey('CI')) {
+      if (Platform.environment.containsKey('CI') &&
+          Platform.environment['CI'] != 'false') {
+        // Explicitly excluding the case where CI is set to 'false`
+        // This allows us to use this value for testing
         pubEnvironment = 'CI_set';
       }
 
