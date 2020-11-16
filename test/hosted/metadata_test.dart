@@ -32,6 +32,52 @@ void main() {
           ]));
     });
 
+    test('no metadata headers when PUB_ENVIRONMENT is whitespace', () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(command,
+          pubEnvironmentOverride: '   ',
+          silent: allOf([
+            contains('X-Pub-OS: ${Platform.operatingSystem}'),
+            contains('X-Pub-Command: ${command.name}'),
+            contains('X-Pub-Session-ID:'),
+            isNot(contains('X-Pub-Environment')),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple('X-Pub-Reason: direct', 2),
+            isNot(contains('X-Pub-Reason: dev')),
+          ]));
+    });
+
+    test(
+        'PUB_ENVIRONMENT w/ leading/trailing whitespace trim X-Pub-Environment',
+        () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(command,
+          pubEnvironmentOverride: ' some value  ',
+          silent: allOf([
+            contains('X-Pub-OS: ${Platform.operatingSystem}'),
+            contains('X-Pub-Command: ${command.name}'),
+            contains('X-Pub-Session-ID:'),
+            contains('X-Pub-Environment: some value'),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple('X-Pub-Reason: direct', 2),
+            isNot(contains('X-Pub-Reason: dev')),
+          ]));
+    });
+
     test('sends metadata headers for a dev dependency', () async {
       await servePackages((builder) {
         builder.serve('foo', '1.0.0');

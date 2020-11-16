@@ -56,9 +56,9 @@ class _PubHttpClient extends http.BaseClient {
         pubEnvironment = 'CI_set';
       }
 
-      var pubEnvironmentValue = Platform.environment['PUB_ENVIRONMENT'];
+      var pubEnvironmentValue = Platform.environment['PUB_ENVIRONMENT']?.trim();
 
-      if (pubEnvironmentValue != null) {
+      if (pubEnvironmentValue != null && pubEnvironmentValue.isNotEmpty) {
         while (pubEnvironmentValue.startsWith('.')) {
           pubEnvironmentValue = pubEnvironmentValue.substring(1);
         }
