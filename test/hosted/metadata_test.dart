@@ -95,5 +95,72 @@ void main() {
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
     });
+
+    group('with CI environment set', () {
+      setUp(() async {
+        await servePackages((builder) {
+          builder.serve('foo', '1.0.0');
+        });
+
+        await d.appDir({'foo': '1.0.0'}).create();
+      });
+
+      test('no PUB_ENVIRONMENT set', () async {
+        await pubCommand(
+          command,
+          pubEnvironmentOverride: '',
+          environment: {'CI': 'TRUE'},
+          silent: allOf([
+            contains('X-Pub-OS: ${Platform.operatingSystem}'),
+            contains('X-Pub-Command: ${command.name}'),
+            contains('X-Pub-Session-ID:'),
+            contains('X-Pub-Environment: CI_set'),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple('X-Pub-Reason: direct', 2),
+            isNot(contains('X-Pub-Reason: dev')),
+          ]),
+        );
+      });
+
+      test('with PUB_ENVIRONMENT set without leading period', () async {
+        await pubCommand(
+          command,
+          pubEnvironmentOverride: 'some_value',
+          environment: {'CI': 'TRUE'},
+          silent: allOf([
+            contains('X-Pub-OS: ${Platform.operatingSystem}'),
+            contains('X-Pub-Command: ${command.name}'),
+            contains('X-Pub-Session-ID:'),
+            contains('X-Pub-Environment: CI_set.some_value'),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple('X-Pub-Reason: direct', 2),
+            isNot(contains('X-Pub-Reason: dev')),
+          ]),
+        );
+      });
+
+      test('with PUB_ENVIRONMENT set with leading period', () async {
+        await pubCommand(
+          command,
+          pubEnvironmentOverride: '.some_value',
+          environment: {'CI': 'TRUE'},
+          silent: allOf([
+            contains('X-Pub-OS: ${Platform.operatingSystem}'),
+            contains('X-Pub-Command: ${command.name}'),
+            contains('X-Pub-Session-ID:'),
+            contains('X-Pub-Environment: CI_set.some_value'),
+
+            // We should send the reason when we request the pubspec and when we
+            // request the tarball.
+            matchesMultiple('X-Pub-Reason: direct', 2),
+            isNot(contains('X-Pub-Reason: dev')),
+          ]),
+        );
+      });
+    });
   });
 }

@@ -121,14 +121,17 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-Future pubCommand(RunCommand command,
-    {Iterable<String> args,
-    output,
-    error,
-    silent,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) async {
+Future pubCommand(
+  RunCommand command, {
+  Iterable<String> args,
+  output,
+  error,
+  silent,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String pubEnvironmentOverride,
+}) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -145,12 +148,14 @@ Future pubCommand(RunCommand command,
   if (warning != null) error = warning;
 
   await runPub(
-      args: allArgs,
-      output: output,
-      error: error,
-      silent: silent,
-      exitCode: exitCode,
-      environment: environment);
+    args: allArgs,
+    output: output,
+    error: error,
+    silent: silent,
+    exitCode: exitCode,
+    environment: environment,
+    pubEnvironmentOverride: pubEnvironmentOverride,
+  );
 }
 
 Future pubAdd(
@@ -293,20 +298,26 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future runPub(
-    {List<String> args,
-    output,
-    error,
-    outputJson,
-    silent,
-    int exitCode = exit_codes.SUCCESS,
-    String workingDirectory,
-    Map<String, String> environment}) async {
+Future runPub({
+  List<String> args,
+  output,
+  error,
+  outputJson,
+  silent,
+  int exitCode = exit_codes.SUCCESS,
+  String workingDirectory,
+  Map<String, String> environment,
+  String pubEnvironmentOverride,
+}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
-      args: args, workingDirectory: workingDirectory, environment: environment);
+    args: args,
+    workingDirectory: workingDirectory,
+    environment: environment,
+    pubEnvironmentOverride: pubEnvironmentOverride,
+  );
   await pub.shouldExit(exitCode);
 
   var actualOutput = (await pub.stdoutStream().toList()).join('\n');
@@ -370,26 +381,23 @@ String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 String testVersion = '0.1.2+3';
 
 /// Gets the environment variables used to run pub in a test context.
-Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
-  var environment = {
-    '_PUB_TESTING': 'true',
-    'PUB_CACHE': _pathInSandbox(cachePath),
-    'PUB_ENVIRONMENT': 'test-environment',
+Map<String, String> getPubTestEnvironment({
+  String tokenEndpoint,
+  String pubEnvironmentOverride,
+}) =>
+    {
+      '_PUB_TESTING': 'true',
+      'PUB_CACHE': _pathInSandbox(cachePath),
+      'PUB_ENVIRONMENT': pubEnvironmentOverride ?? 'test-environment',
 
-    // Ensure a known SDK version is set for the tests that rely on that.
-    '_PUB_TEST_SDK_VERSION': testVersion
-  };
+      // Ensure a known SDK version is set for the tests that rely on that.
+      '_PUB_TEST_SDK_VERSION': testVersion,
 
-  if (tokenEndpoint != null) {
-    environment['_PUB_TEST_TOKEN_ENDPOINT'] = tokenEndpoint;
-  }
+      if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
 
-  if (globalServer != null) {
-    environment['PUB_HOSTED_URL'] = 'http://localhost:${globalServer.port}';
-  }
-
-  return environment;
-}
+      if (globalServer != null)
+        'PUB_HOSTED_URL': 'http://localhost:${globalServer.port}',
+    };
 
 /// The test runner starts all tests from a `data:` URI.
 final bool _runningAsTestRunner = Platform.script.scheme == 'data';
@@ -418,6 +426,7 @@ final String _pubRoot = (() {
 Future<PubProcess> startPub(
     {Iterable<String> args,
     String tokenEndpoint,
+    String pubEnvironmentOverride,
     String workingDirectory,
     Map<String, String> environment,
     bool verbose = true}) async {
@@ -451,8 +460,10 @@ Future<PubProcess> startPub(
   dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
-      environment: getPubTestEnvironment(tokenEndpoint)
-        ..addAll(environment ?? {}),
+      environment: getPubTestEnvironment(
+        tokenEndpoint: tokenEndpoint,
+        pubEnvironmentOverride: pubEnvironmentOverride,
+      )..addAll(environment ?? {}),
       workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}');
 }

@@ -50,9 +50,28 @@ class _PubHttpClient extends http.BaseClient {
       request.headers['X-Pub-Command'] = PubCommand.command;
       request.headers['X-Pub-Session-ID'] = _sessionId;
 
-      var environment = Platform.environment['PUB_ENVIRONMENT'];
-      if (environment != null) {
-        request.headers['X-Pub-Environment'] = environment;
+      String pubEnvironment;
+
+      if (Platform.environment.containsKey('CI')) {
+        pubEnvironment = 'CI_set';
+      }
+
+      var pubEnvironmentValue = Platform.environment['PUB_ENVIRONMENT'];
+
+      if (pubEnvironmentValue != null && pubEnvironmentValue.isNotEmpty) {
+        while (pubEnvironmentValue.startsWith('.')) {
+          pubEnvironmentValue = pubEnvironmentValue.substring(1);
+        }
+
+        if (pubEnvironment == null) {
+          pubEnvironment = pubEnvironmentValue;
+        } else {
+          pubEnvironment = '$pubEnvironment.$pubEnvironmentValue';
+        }
+      }
+
+      if (pubEnvironment != null) {
+        request.headers['X-Pub-Environment'] = pubEnvironment;
       }
 
       var type = Zone.current[#_dependencyType];
