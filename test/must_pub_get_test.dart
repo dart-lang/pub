@@ -40,14 +40,6 @@ void main() {
           'No pubspec.lock file found, please run "pub get" first.');
     });
 
-    group("there's no .packages", () {
-      setUp(() {
-        deleteEntry(p.join(d.sandbox, 'myapp/.packages'));
-      });
-
-      _requiresPubGet('No .packages file found, please run "pub get" first.');
-    });
-
     group("there's no package_config.json", () {
       setUp(() {
         deleteEntry(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'));
@@ -487,8 +479,7 @@ foo:http://example.com/
       _runsSuccessfully();
     });
 
-    group(
-        "the lockfile is newer than .packages and package_config.json, but they're up-to-date",
+    group("the lockfile is newer than package_config.json, but it's up-to-date",
         () {
       setUp(() async {
         await d.dir(appPath, [
