@@ -16,20 +16,23 @@ import 'test_pub.dart';
 
 void main() {
   group('process', () {
+    final nonExisting =
+        path.join(path.dirname(Platform.resolvedExecutable), 'gone');
     test('Nice error message when failing to start process.', () {
       final throwsNiceErrorMessage = throwsA(
         predicate(
           (e) =>
               e is ApplicationException &&
               e.message.contains(
-                  'Failed to run subprocess `nonexistant`: ProcessException:'),
+                  'Failed to run subprocess `$nonExisting`: ProcessException:'),
         ),
       );
-      expect(() => runProcess('nonexistant', ['a', 'b', 'c']),
+
+      expect(() => runProcess(nonExisting, ['a', 'b', 'c']),
           throwsNiceErrorMessage);
-      expect(() => startProcess('nonexistant', ['a', 'b', 'c']),
+      expect(() => startProcess(nonExisting, ['a', 'b', 'c']),
           throwsNiceErrorMessage);
-      expect(() => runProcessSync('nonexistant', ['a', 'b', 'c']),
+      expect(() => runProcessSync(nonExisting, ['a', 'b', 'c']),
           throwsNiceErrorMessage);
     });
   });
