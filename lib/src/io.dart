@@ -344,7 +344,7 @@ void _attempt(String description, void Function() operation) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io('Failed to $description because $reason. '
+      log.io('Pub failed to $description because $reason. '
           'Retrying in 50ms.');
       sleep(Duration(milliseconds: 50));
     }
@@ -356,7 +356,7 @@ void _attempt(String description, void Function() operation) {
     var reason = getErrorReason(error);
     if (reason == null) rethrow;
 
-    fail('Failed to $description because $reason.\n'
+    fail('Pub failed to $description because $reason.\n'
         'This may be caused by a virus scanner or having a file\n'
         'in the directory open in another application.');
   }
@@ -386,7 +386,7 @@ void tryDeleteEntry(String path) {
   try {
     deleteEntry(path);
   } catch (error, stackTrace) {
-    log.fine('Failed to delete $path: $error\n'
+    log.fine('Pub failed to delete $path: $error\n'
         '${Chain.forTrace(stackTrace)}');
   }
 }
@@ -561,7 +561,8 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
           environment: environment,
           runInShell: runInShell);
     } on IOException catch (e) {
-      throw ApplicationException('Failed to run subprocess `$executable`: $e');
+      throw ApplicationException(
+          'Pub failed to run subprocess `$executable`: $e');
     }
 
     var pubResult =
@@ -590,7 +591,8 @@ Future<_PubProcess> startProcess(String executable, List<String> args,
           environment: environment,
           runInShell: runInShell);
     } on IOException catch (e) {
-      throw ApplicationException('Failed to run subprocess `$executable`: $e');
+      throw ApplicationException(
+          'Pub failed to run subprocess `$executable`: $e');
     }
 
     var process = _PubProcess(ioProcess);
@@ -612,7 +614,8 @@ PubProcessResult runProcessSync(String executable, List<String> args,
         environment: environment,
         runInShell: runInShell);
   } on IOException catch (e) {
-    throw ApplicationException('Failed to run subprocess `$executable`: $e');
+    throw ApplicationException(
+        'Pub failed to run subprocess `$executable`: $e');
   }
   var pubResult =
       PubProcessResult(result.stdout, result.stderr, result.exitCode);
@@ -834,7 +837,7 @@ bool _computeNoUnknownKeyword() {
   var result = Process.runSync(_tarPath, ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
-        'Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
+        'Pub failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
   }
 
   var match =

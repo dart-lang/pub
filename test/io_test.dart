@@ -24,7 +24,7 @@ void main() {
           (e) =>
               e is ApplicationException &&
               e.message.contains(
-                  'Failed to run subprocess `$nonExisting`: ProcessException:'),
+                  'Pub failed to run subprocess `$nonExisting`: ProcessException:'),
         ),
       );
 
