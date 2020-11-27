@@ -36,8 +36,11 @@ void main() {
     var pub = await pubRun(args: ['bin/script']);
 
     expect(pub.stdout, emits('null'));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/.packages')).toString()));
+    expect(
+        pub.stdout,
+        emits(p
+            .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
+            .toString()));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
     expect(pub.stdout,
@@ -63,8 +66,11 @@ void main() {
     expect(pub.stdout, emits('Precompiling executable...'));
     expect(pub.stdout, emits('Precompiled foo:script.'));
     expect(pub.stdout, emits('null'));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/.packages')).toString()));
+    expect(
+        pub.stdout,
+        emits(p
+            .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
+            .toString()));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
     var fooResourcePath = p.join(

@@ -103,8 +103,8 @@ class Entrypoint {
   /// The package graph for the application and all of its transitive
   /// dependencies.
   ///
-  /// Throws a [DataError] if the `.packages` file isn't up-to-date relative to
-  /// the pubspec and the lockfile.
+  /// Throws a [DataError] if the `.dart_tool/package_config.json` file isn't
+  /// up-to-date relative to the pubspec and the lockfile.
   PackageGraph get packageGraph {
     if (_packageGraph != null) return _packageGraph;
 
@@ -127,10 +127,11 @@ class Entrypoint {
   String get _configRoot =>
       isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
 
-  /// The path to the entrypoint's "packages" directory.
-  String get packagesPath => root.path('packages');
-
   /// The path to the entrypoint's ".packages" file.
+  ///
+  /// This file is being slowly deprecated in favor of
+  /// `.dart_tool/package_config.json`. Pub will still create it, but will
+  /// not require it or make use of it within pub.
   String get packagesFile => p.join(_configRoot, '.packages');
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
@@ -358,7 +359,7 @@ class Entrypoint {
     final package = executable.package;
     await dart.snapshot(
         resolveExecutable(executable), snapshotPathOfExecutable(executable),
-        packagesFile: p.toUri(packagesFile),
+        packageConfigFile: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
@@ -441,9 +442,11 @@ class Entrypoint {
     });
   }
 
-  /// Throws a [DataError] if the `.packages` file or the
-  /// `.dart_tool/package_config.json` file doesn't exist or if it's out-of-date
-  /// relative to the lockfile or the pubspec.
+  /// Throws a [DataError] if the `.dart_tool/package_config.json` file doesn't
+  /// exist or if it's out-of-date relative to the lockfile or the pubspec.
+  ///
+  /// A `.packages` file is not required. But if it exists it is checked for
+  /// consistency with the pubspec.lock.
   void assertUpToDate() {
     if (isCached) return;
 
@@ -457,9 +460,6 @@ class Entrypoint {
         'Starting with Dart 2.7, the package_config.json file configures '
         'resolution of package import URIs; run "pub get" to generate it.',
       );
-    }
-    if (!entryExists(packagesFile)) {
-      dataError('No .packages file found, please run "pub get" first.');
     }
 
     // Manually parse the lockfile because a full YAML parse is relatively slow
@@ -488,12 +488,14 @@ class Entrypoint {
       }
     }
 
-    var packagesModified = File(packagesFile).lastModifiedSync();
-    if (packagesModified.isBefore(lockFileModified)) {
-      _checkPackagesFileUpToDate();
-      touch(packagesFile);
-    } else if (touchedLockFile) {
-      touch(packagesFile);
+    if (fileExists(packagesFile)) {
+      var packagesModified = File(packagesFile).lastModifiedSync();
+      if (packagesModified.isBefore(lockFileModified)) {
+        _checkPackagesFileUpToDate();
+        touch(packagesFile);
+      } else if (touchedLockFile) {
+        touch(packagesFile);
+      }
     }
 
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();

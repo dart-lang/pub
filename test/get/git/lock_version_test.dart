@@ -33,10 +33,10 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     // Delete the package spec to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packagesFilePath));
+    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
@@ -44,6 +44,6 @@ void main() {
     // This get shouldn't upgrade the foo.git dependency due to the lockfile.
     await pubGet();
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }
