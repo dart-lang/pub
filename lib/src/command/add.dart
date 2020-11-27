@@ -132,10 +132,14 @@ class AddCommand extends PubCommand {
       /// to this new dependency.
       final newRoot = Package.inMemory(updatedPubSpec);
 
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
-          .acquireDependencies(SolveType.GET,
-              dryRun: true, precompile: argResults['precompile']);
+          .acquireDependencies(
+        SolveType.GET,
+        dryRun: true,
+        precompile: argResults['precompile'],
+      );
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
