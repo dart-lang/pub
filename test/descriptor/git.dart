@@ -21,9 +21,9 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     await _runGitCommands(parent, [
       ['init'],
       [
-        'config', 'core.excludesfile',
-        // TODO(sigurdm): This works around https://github.com/dart-lang/sdk/issues/40060
-        Platform.isWindows ? '""' : ''
+        'config',
+        'core.excludesfile',
+        '',
       ],
       ['add', '.'],
       ['commit', '-m', 'initial commit', '--allow-empty']
