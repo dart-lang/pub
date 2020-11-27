@@ -134,8 +134,11 @@ class AddCommand extends PubCommand {
 
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
-          .acquireDependencies(SolveType.GET,
-              dryRun: true, precompile: argResults['precompile']);
+          .acquireDependencies(
+        SolveType.GET,
+        dryRun: true,
+        precompile: argResults['precompile'],
+      );
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
