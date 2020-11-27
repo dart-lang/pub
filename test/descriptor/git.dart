@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:pub/src/git.dart' as git;
 import 'package:test_descriptor/test_descriptor.dart';
