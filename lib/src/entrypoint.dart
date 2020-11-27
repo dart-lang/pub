@@ -191,8 +191,12 @@ class Entrypoint {
   }
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles() async {
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+    if (generateDotPackages) {
+      writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    } else {
+      tryDeleteEntry(packagesFile);
+    }
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
@@ -227,6 +231,7 @@ class Entrypoint {
     List<String> useLatest,
     bool dryRun = false,
     bool precompile = false,
+    bool generateDotPackages = false,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
@@ -274,7 +279,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles();
+      await writePackagesFiles(generateDotPackages: generateDotPackages);
 
       try {
         if (precompile) {

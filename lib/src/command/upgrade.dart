@@ -36,6 +36,10 @@ class UpgradeCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag('packages-file',
+        defaultsTo: true,
+        help: 'Generate the legacy ".packages" file');
   }
 
   @override
@@ -47,6 +51,7 @@ class UpgradeCommand extends PubCommand {
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
         useLatest: argResults.rest,
         dryRun: argResults['dry-run'],
+        generateDotPackages: argResults['packages-file'],
         precompile: argResults['precompile']);
 
     if (isOffline) {

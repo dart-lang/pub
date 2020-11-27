@@ -32,6 +32,10 @@ class GetCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag('packages-file',
+        defaultsTo: true,
+        help: 'Generate the legacy ".packages" file');
   }
 
   @override
@@ -41,6 +45,8 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     return entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile'],
+        generateDotPackages: argResults['packages-file']);
   }
 }
