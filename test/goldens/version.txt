@@ -1,0 +1,17 @@
+[command]
+> pub --version
+[stdout]
+Pub 0.1.2+3
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub version
+[stdout]
+Pub 0.1.2+3
+[stderr]
+
+[exitCode]
+0
