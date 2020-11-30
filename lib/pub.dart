@@ -7,7 +7,7 @@ export 'src/executable.dart'
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
 ///
-/// If [analytics] is given, pub will use that analytics instanve to send
+/// If [analytics] is given, pub will use that analytics instance to send
 /// statistics about resolutions.
 Command<int> pubCommand({Analytics analytics}) =>
     PubEmbeddableCommand(analytics);
