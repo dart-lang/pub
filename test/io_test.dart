@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -14,6 +15,27 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 void main() {
+  group('process', () {
+    final nonExisting =
+        path.join(path.dirname(Platform.resolvedExecutable), 'gone');
+    test('Nice error message when failing to start process.', () {
+      final throwsNiceErrorMessage = throwsA(
+        predicate(
+          (e) =>
+              e is ApplicationException &&
+              e.message.contains(
+                  'Pub failed to run subprocess `$nonExisting`: ProcessException:'),
+        ),
+      );
+
+      expect(() => runProcess(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+      expect(() => startProcess(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+      expect(() => runProcessSync(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+    });
+  });
   group('listDir', () {
     test('ignores hidden files by default', () {
       expect(withTempDir((temp) {

@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
@@ -343,7 +344,7 @@ void _attempt(String description, void Function() operation) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io('Failed to $description because $reason. '
+      log.io('Pub failed to $description because $reason. '
           'Retrying in 50ms.');
       sleep(Duration(milliseconds: 50));
     }
@@ -355,7 +356,7 @@ void _attempt(String description, void Function() operation) {
     var reason = getErrorReason(error);
     if (reason == null) rethrow;
 
-    fail('Failed to $description because $reason.\n'
+    fail('Pub failed to $description because $reason.\n'
         'This may be caused by a virus scanner or having a file\n'
         'in the directory open in another application.');
   }
@@ -385,7 +386,7 @@ void tryDeleteEntry(String path) {
   try {
     deleteEntry(path);
   } catch (error, stackTrace) {
-    log.fine('Failed to delete $path: $error\n'
+    log.fine('Pub failed to delete $path: $error\n'
         '${Chain.forTrace(stackTrace)}');
   }
 }
@@ -553,10 +554,16 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
   ArgumentError.checkNotNull(executable, 'executable');
 
   return _descriptorPool.withResource(() async {
-    var result = await _doProcess(Process.run, executable, args,
-        workingDir: workingDir,
-        environment: environment,
-        runInShell: runInShell);
+    ProcessResult result;
+    try {
+      result = await _doProcess(Process.run, executable, args,
+          workingDir: workingDir,
+          environment: environment,
+          runInShell: runInShell);
+    } on IOException catch (e) {
+      throw ApplicationException(
+          'Pub failed to run subprocess `$executable`: $e');
+    }
 
     var pubResult =
         PubProcessResult(result.stdout, result.stderr, result.exitCode);
@@ -573,13 +580,20 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<_PubProcess> _startProcess(String executable, List<String> args,
+@visibleForTesting
+Future<_PubProcess> startProcess(String executable, List<String> args,
     {workingDir, Map<String, String> environment, bool runInShell = false}) {
   return _descriptorPool.request().then((resource) async {
-    var ioProcess = await _doProcess(Process.start, executable, args,
-        workingDir: workingDir,
-        environment: environment,
-        runInShell: runInShell);
+    Process ioProcess;
+    try {
+      ioProcess = await _doProcess(Process.start, executable, args,
+          workingDir: workingDir,
+          environment: environment,
+          runInShell: runInShell);
+    } on IOException catch (e) {
+      throw ApplicationException(
+          'Pub failed to run subprocess `$executable`: $e');
+    }
 
     var process = _PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
@@ -593,9 +607,16 @@ PubProcessResult runProcessSync(String executable, List<String> args,
     Map<String, String> environment,
     bool runInShell = false}) {
   ArgumentError.checkNotNull(executable, 'executable');
-
-  var result = _doProcess(Process.runSync, executable, args,
-      workingDir: workingDir, environment: environment, runInShell: runInShell);
+  ProcessResult result;
+  try {
+    result = _doProcess(Process.runSync, executable, args,
+        workingDir: workingDir,
+        environment: environment,
+        runInShell: runInShell);
+  } on IOException catch (e) {
+    throw ApplicationException(
+        'Pub failed to run subprocess `$executable`: $e');
+  }
   var pubResult =
       PubProcessResult(result.stdout, result.stderr, result.exitCode);
   log.processResult(executable, pubResult);
@@ -816,7 +837,7 @@ bool _computeNoUnknownKeyword() {
   var result = Process.runSync(_tarPath, ['--version']);
   if (result.exitCode != 0) {
     throw ApplicationException(
-        'Failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
+        'Pub failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
   }
 
   var match =
@@ -919,7 +940,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
       // input file, relative paths in the mtree file are interpreted as
       // relative to the current working directory, not the "--directory"
       // argument.
-      var process = await _startProcess(_tarPath, args, workingDir: baseDir);
+      var process = await startProcess(_tarPath, args, workingDir: baseDir);
       process.stdin.add(utf8.encode(stdin));
       process.stdin.close();
       return process.stdout;
@@ -948,7 +969,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
       // GZIP it. 7zip doesn't support doing both as a single operation.
       // Send the output to stdout.
       args = ['a', 'unused', '-tgzip', '-so', tarFile];
-      return (await _startProcess(_pathTo7zip, args))
+      return (await startProcess(_pathTo7zip, args))
           .stdout
           .transform(onDoneTransformer(() => deleteEntry(tempDir)));
     } catch (_) {
