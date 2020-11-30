@@ -12,17 +12,19 @@ Future<void> testCommandOutput(List<String> args, String goldenFilePath) async {
   final exitCode = await p.exitCode;
 
   final buffer = StringBuffer();
+  buffer.writeln('[command]');
+  buffer.writeln(['pub', ...args].join(' '));
   buffer.writeln('[stdout]');
-  buffer.writeln((await p.stdout.rest.toList()).join('\n'));
+  buffer.write((await p.stdout.rest.toList()).join('\n'));
   buffer.writeln('[stderr]');
-  buffer.writeln((await p.stderr.rest.toList()).join('\n'));
+  buffer.write((await p.stderr.rest.toList()).join('\n'));
   buffer.writeln('[exitCode]');
   buffer.writeln(exitCode);
   expectMatchesGoldenFile(buffer.toString(), goldenFilePath);
 }
 
 void main() {
-  test('Usage exception for missing output', () async {
+  test('Usage exception for missing subcommand', () async {
     await testCommandOutput(['global'], 'test/goldens/usage_exception.txt');
   });
 }

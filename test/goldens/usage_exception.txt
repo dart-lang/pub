@@ -1,5 +1,6 @@
+[command]
+pub global
 [stdout]
-
 [stderr]
 Missing subcommand for "pub global".
 
@@ -13,6 +14,5 @@ Available subcommands:
   run          Run an executable from a globally activated package.
 
 Run "pub help" to see global options.
-See https://dart.dev/tools/pub/cmd/pub-global for detailed documentation.
-[exitCode]
+See https://dart.dev/tools/pub/cmd/pub-global for detailed documentation.[exitCode]
 64
