@@ -9,6 +9,7 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'package:usage/usage.dart';
 
 import 'command_runner.dart';
 import 'entrypoint.dart';
@@ -109,6 +110,8 @@ abstract class PubCommand extends Command<int> {
   PubTopLevel get _pubTopLevel {
     return _pubEmbeddableCommand ?? (runner as PubCommandRunner);
   }
+
+  Analytics get analytics => _pubEmbeddableCommand?.analytics;
 
   @override
   String get invocation {

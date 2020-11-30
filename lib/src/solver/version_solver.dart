@@ -77,6 +77,8 @@ class VersionSolver {
   /// the latest version to be used.
   final _haveUsedLatest = <PackageRef>{};
 
+  final _stopwatch = Stopwatch();
+
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> useLatest)
       : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
@@ -85,8 +87,7 @@ class VersionSolver {
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
-    var stopwatch = Stopwatch()..start();
-
+    _stopwatch.start();
     _addIncompatibility(Incompatibility(
         [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
 
@@ -102,7 +103,7 @@ class VersionSolver {
       });
     } finally {
       // Gather some solving metrics.
-      log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
+      log.solver('Version solving took ${_stopwatch.elapsed} seconds.\n'
           'Tried ${_solution.attemptedSolutions} solutions.');
     }
   }
@@ -439,7 +440,8 @@ class VersionSolver {
         decisions,
         pubspecs,
         _getAvailableVersions(decisions),
-        _solution.attemptedSolutions);
+        _solution.attemptedSolutions,
+        _stopwatch.elapsed);
   }
 
   /// Generates a map containing all of the known available versions for each

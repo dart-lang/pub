@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -23,7 +24,10 @@ Future<void> runEmbedding(List<String> args, StringBuffer buffer,
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
     [snapshot, ...args],
-    environment: environment,
+    environment: {
+      ...getPubTestEnvironment(),
+      ...?environment,
+    },
     workingDirectory: workingDirextory,
   );
   await process.shouldExit(exitCode);
@@ -69,14 +73,14 @@ Future<void> main() async {
       d.pubspec({
         'name': 'myapp',
         'environment': {
-          'sdk': '>=2.0.0 <3.0.0',
+          'sdk': '0.1.2+3',
         },
       }),
       d.dir('bin', [
         d.file('main.dart', '''
 import 'dart:io';
 main() { 
-  print("Hi");
+  print('Hi');
   exit(123);
 }
 ''')
@@ -97,5 +101,69 @@ main() {
       buffer.toString(),
       'test/embedding/goldens/run.txt',
     );
+  });
+
+  test('analytics', () async {
+    await servePackages((b) =>
+        b..serve('foo', '1.0.0', deps: {'bar': 'any'})..serve('bar', '1.0.0'));
+    await d.dir('dep', [
+      d.pubspec({
+        'name': 'dep',
+        'environment': {'sdk': '>=0.0.0 <3.0.0'}
+      })
+    ]).create();
+    final app = d.dir(appPath, [
+      d.appPubspec({
+        'foo': '1.0.0',
+        // The path dependency should not go to analytics.
+        'dep': {'path': '../dep'}
+      })
+    ]);
+    await app.create();
+
+    final buffer = StringBuffer();
+
+    await runEmbedding(
+      ['pub', 'get'],
+      buffer,
+      workingDirextory: app.io.path,
+      environment: {'_PUB_LOG_ANALYTICS': 'true'},
+    );
+    final analytics = buffer
+        .toString()
+        .split('\n')
+        .where((line) => line.startsWith('[E] [analytics]: '))
+        .map((line) => json.decode(line.substring('[E] [analytics]: '.length)));
+    expect(analytics, {
+      {
+        'hitType': 'event',
+        'message': {
+          'category': 'pub-get',
+          'action': 'foo',
+          'label': '1.0.0',
+          'value': 1,
+          'kind': 'direct'
+        }
+      },
+      {
+        'hitType': 'event',
+        'message': {
+          'category': 'pub-get',
+          'action': 'bar',
+          'label': '1.0.0',
+          'value': 1,
+          'kind': 'transitive'
+        }
+      },
+      {
+        'hitType': 'timing',
+        'message': {
+          'variableName': 'pub-get',
+          'time': isA<int>(),
+          'category': null,
+          'label': null
+        }
+      },
+    });
   });
 }

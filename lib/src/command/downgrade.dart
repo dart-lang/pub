@@ -44,7 +44,7 @@ class DowngradeCommand extends PubCommand {
     }
     var dryRun = argResults['dry-run'];
     await entrypoint.acquireDependencies(SolveType.DOWNGRADE,
-        useLatest: argResults.rest, dryRun: dryRun);
+        useLatest: argResults.rest, dryRun: dryRun, analytics: analytics);
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '

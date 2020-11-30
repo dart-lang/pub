@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:usage/usage.dart';
 
 import 'dart.dart' as dart;
 import 'exceptions.dart';
@@ -227,6 +228,7 @@ class Entrypoint {
     List<String> useLatest,
     bool dryRun = false,
     bool precompile = false,
+    @required Analytics analytics,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
@@ -270,6 +272,10 @@ class Entrypoint {
     result.summarizeChanges(type, dryRun: dryRun);
 
     if (!dryRun) {
+      if (analytics != null) {
+        result.sendAnalytics(analytics);
+      }
+
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);

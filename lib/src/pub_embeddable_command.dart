@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'command.dart';
-import 'command.dart' show PubCommand;
+import 'package:usage/usage.dart';
+
+import 'command.dart' show PubCommand, PubTopLevel;
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -32,7 +33,9 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
-  PubEmbeddableCommand() : super() {
+  final Analytics analytics;
+
+  PubEmbeddableCommand(this.analytics) : super() {
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
