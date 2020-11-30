@@ -21,7 +21,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     await repo.runGit(['rm', 'pubspec.yaml']);
     await repo.runGit(['commit', '-m', 'delete']);
@@ -30,6 +30,6 @@ void main() {
         error: RegExp(r'Could not find a file named "pubspec.yaml" '
             r'in [^\n]*\.'));
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }

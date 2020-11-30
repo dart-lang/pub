@@ -36,7 +36,7 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNotNull);
-    expect(packageSpecLine('bar'), isNotNull);
+    expect(packageSpec('foo'), isNotNull);
+    expect(packageSpec('bar'), isNotNull);
   });
 }

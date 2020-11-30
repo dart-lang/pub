@@ -25,7 +25,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.
@@ -33,6 +33,6 @@ void main() {
 
     await pubGet();
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }

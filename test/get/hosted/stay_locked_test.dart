@@ -23,8 +23,8 @@ void main() {
 
     await d.appPackagesFile({'foo': '1.0.0'}).validate();
 
-    // Delete the .packages file to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packagesFilePath));
+    // Delete the .dart_tool/package_config.json file to simulate a new checkout of the application.
+    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
     globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));

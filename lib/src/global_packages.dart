@@ -373,7 +373,6 @@ class GlobalPackages {
   Future<int> runExecutable(
       Entrypoint entrypoint, exec.Executable executable, Iterable<String> args,
       {bool enableAsserts = false,
-      String packagesFile,
       Future<void> Function(exec.Executable) recompile,
       List<String> vmArgs = const [],
       @required bool alwaysUseSubprocess}) async {
@@ -382,7 +381,6 @@ class GlobalPackages {
       executable,
       args,
       enableAsserts: enableAsserts,
-      packagesFile: packagesFile,
       recompile: (exectuable) async {
         await recompile(exectuable);
         _refreshBinStubs(entrypoint, executable);

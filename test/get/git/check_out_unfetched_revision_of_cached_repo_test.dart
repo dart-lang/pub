@@ -29,7 +29,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     // Switch to a new cache.
     renameInSandbox(cachePath, '$cachePath.old');
@@ -56,6 +56,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNot(originalFooSpec));
+    expect(packageSpec('foo'), isNot(originalFooSpec));
   });
 }

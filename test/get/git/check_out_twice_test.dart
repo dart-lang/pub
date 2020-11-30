@@ -27,7 +27,7 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNotNull);
+    expect(packageSpec('foo'), isNotNull);
 
     // Verify that nothing breaks if we get a Git revision that's already
     // in the cache.

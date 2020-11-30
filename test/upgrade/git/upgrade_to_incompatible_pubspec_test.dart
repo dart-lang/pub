@@ -31,7 +31,7 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     await d.git(
         'foo.git', [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')]).commit();
@@ -40,6 +40,6 @@ void main() {
         error: contains('"name" field doesn\'t match expected name "foo".'),
         exitCode: exit_codes.DATA);
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }

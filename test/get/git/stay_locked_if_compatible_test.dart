@@ -22,7 +22,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 1.0.1'), d.libPubspec('foo', '1.0.1')]).commit();
@@ -33,6 +33,6 @@ void main() {
 
     await pubGet();
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }

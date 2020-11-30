@@ -37,9 +37,10 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('packages-file',
-        defaultsTo: true,
-        help: 'Generate the legacy ".packages" file');
+    argParser.addFlag(
+      '--generate-dot-packages',
+      help: 'Generate the legacy ".packages" file',
+    );
   }
 
   @override
@@ -48,11 +49,13 @@ class UpgradeCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest,
-        dryRun: argResults['dry-run'],
-        generateDotPackages: argResults['packages-file'],
-        precompile: argResults['precompile']);
+    await entrypoint.acquireDependencies(
+      SolveType.UPGRADE,
+      useLatest: argResults.rest,
+      dryRun: argResults['dry-run'],
+      generateDotPackages: argResults['generate-dot-packages'],
+      precompile: argResults['precompile'],
+    );
 
     if (isOffline) {
       log.warning('Warning: Upgrading when offline may not update you to the '

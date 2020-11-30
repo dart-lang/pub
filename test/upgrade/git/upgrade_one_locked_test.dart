@@ -33,7 +33,7 @@ void main() {
       ])
     ]).validate();
 
-    var originalBarSpec = packageSpecLine('bar');
+    var originalBarSpec = packageSpec('bar');
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
@@ -49,6 +49,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('bar'), originalBarSpec);
+    expect(packageSpec('bar'), originalBarSpec);
   });
 }

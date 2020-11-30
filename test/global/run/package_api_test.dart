@@ -39,8 +39,8 @@ main() async {
 
     expect(pub.stdout, emits('null'));
 
-    var packageConfigPath =
-        p.join(d.sandbox, cachePath, 'global_packages/foo/.packages');
+    var packageConfigPath = p.join(d.sandbox, cachePath,
+        'global_packages/foo/.dart_tool/package_config.json');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var fooResourcePath = p.join(
@@ -83,7 +83,8 @@ main() async {
 
     expect(pub.stdout, emits('null'));
 
-    var packageConfigPath = p.join(d.sandbox, 'myapp/.packages');
+    var packageConfigPath =
+        p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');

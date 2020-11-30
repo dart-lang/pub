@@ -33,7 +33,7 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNotNull);
+    expect(packageSpec('foo'), isNotNull);
   }, skip: true);
 
   test(
@@ -65,7 +65,7 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNotNull);
+    expect(packageSpec('foo'), isNotNull);
   });
 }
 

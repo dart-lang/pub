@@ -36,6 +36,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), contains(commit));
+    expect(packageSpec('foo')['rootUri'], contains(commit));
   });
 }

@@ -11,7 +11,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('runs a snapshotted script without a .packages file', () async {
+  test('runs a snapshotted script without a .dart_tool/package_config file',
+      () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', contents: [
         d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
@@ -22,14 +23,17 @@ void main() {
 
     // Mimic the global packages installed by pub <1.12, which didn't create a
     // .packages file for global installs.
-    deleteEntry(p.join(d.sandbox, cachePath, 'global_packages/foo/.packages'));
+    deleteEntry(p.join(d.sandbox, cachePath,
+        'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo:script']);
     expect(pub.stdout, emits('ok'));
     await pub.shouldExit();
   });
 
-  test('runs an unsnapshotted script without a .packages file', () async {
+  test(
+      'runs an unsnapshotted script without a .dart_tool/package_config.json file',
+      () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
       d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
@@ -37,7 +41,8 @@ void main() {
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    deleteEntry(p.join(d.sandbox, cachePath, 'global_packages/foo/.packages'));
+    deleteEntry(p.join(d.sandbox, cachePath,
+        'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('ok'));

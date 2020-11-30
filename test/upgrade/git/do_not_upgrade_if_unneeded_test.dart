@@ -40,7 +40,7 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooDepSpec = packageSpecLine('foo_dep');
+    var originalFooDepSpec = packageSpec('foo_dep');
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
@@ -62,6 +62,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo_dep'), originalFooDepSpec);
+    expect(packageSpec('foo_dep'), originalFooDepSpec);
   });
 }

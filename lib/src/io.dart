@@ -379,6 +379,21 @@ void deleteEntry(String path) {
   });
 }
 
+/// Delete file at [path] if it exists.
+void tryDeleteFile(String path) {
+  try {
+    _attempt('delete file', () {
+      if (fileExists(path)) {
+        log.io('Deleting file $path.');
+        File(path).deleteSync();
+      }
+    });
+  } catch (error, stackTrace) {
+    log.fine('Failed to delete $path: $error\n'
+        '${Chain.forTrace(stackTrace)}');
+  }
+}
+
 /// Attempts to delete whatever's at [path], but doesn't throw an exception if
 /// the deletion fails.
 void tryDeleteEntry(String path) {

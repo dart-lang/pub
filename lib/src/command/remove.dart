@@ -57,8 +57,11 @@ class RemoveCommand extends PubCommand {
       final newRoot = Package.inMemory(newPubspec);
 
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
-          .acquireDependencies(SolveType.GET,
-              precompile: argResults['precompile']);
+          .acquireDependencies(
+        SolveType.GET,
+        precompile: argResults['precompile'],
+        dryRun: true,
+      );
     } else {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);

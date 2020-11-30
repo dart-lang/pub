@@ -24,6 +24,6 @@ void main() {
 
     await pubGet();
 
-    expect(packageSpecLine('weirdname'), contains('foo'));
+    expect(packageSpec('weirdname')['rootUri'], contains('foo'));
   });
 }

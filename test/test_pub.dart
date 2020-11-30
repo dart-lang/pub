@@ -65,14 +65,16 @@ const String cachePath = 'cache';
 /// directory.
 const String appPath = 'myapp';
 
-/// The path of the ".packages" file in the mock app used for tests, relative
-/// to the sandbox directory.
-const String packagesFilePath = '$appPath/.packages';
+/// The path of the ".dart_tool/package_config.json" file in the mock app used
+/// for tests, relative to the sandbox directory.
+String packageConfigFilePath =
+    p.join(appPath, '.dart_tool', 'package_config.json');
 
-/// The line from the `.packages` file for [packageName].
-String packageSpecLine(String packageName) => File(d.path(packagesFilePath))
-    .readAsLinesSync()
-    .firstWhere((l) => l.startsWith('$packageName:'));
+/// The entry from the `.dart_tool/package_config.json` file for [packageName].
+Map<String, dynamic> packageSpec(String packageName) => json
+    .decode(File(d.path(packageConfigFilePath)).readAsStringSync())['packages']
+    .firstWhere((e) => e['name'] == packageName,
+        orElse: () => null) as Map<String, dynamic>;
 
 /// The suffix appended to a precompiled snapshot.
 final versionSuffix = testVersion ?? sdk.version;

@@ -38,36 +38,35 @@ bool isEntrypoint(CompilationUnit dart) {
 /// Snapshots the Dart executable at [executablePath] to a snapshot at
 /// [snapshotPath].
 ///
-/// If [packagesFile] is passed, it's used to resolve `package:` URIs in the
-/// executable. Otherwise, a `packages/` directory or a package spec is inferred
-/// from the executable's location.
+/// If [packageConfigFile] is passed, it's used to resolve `package:` URIs in
+/// the executable. Otherwise, a `packages/` directory or a package spec is
+/// inferred from the executable's location.
 ///
 /// If [name] is passed, it is used to describe the executable in logs and error
 /// messages.
 Future snapshot(
   String executablePath,
   String snapshotPath, {
-  Uri packagesFile,
+  String packageConfigFile,
   String name,
 }) async {
-  name = log.bold(name ?? executablePath.toString());
+  final args = [
+    if (packageConfigFile != null) '--packages=$packageConfigFile',
+    '--snapshot=$snapshotPath',
+    p.toUri(executablePath).toString()
+  ];
 
-  var args = ['--snapshot=$snapshotPath', p.toUri(executablePath).toString()];
-
-  if (packagesFile != null) {
-    // Resolve [packagesFile] in case it's relative to work around sdk#33177.
-    args.insert(0, '--packages=${Uri.base.resolveUri(packagesFile)}');
-  }
-
-  var result = await runProcess(Platform.executable, args);
+  final result = await runProcess(Platform.executable, args);
+  final highlightedName = name = log.bold(name ?? executablePath.toString());
   if (result.success) {
-    log.message('Precompiled $name.');
+    log.message('Precompiled $highlightedName.');
   } else {
     // Don't leave partial results.
     deleteEntry(snapshotPath);
 
     throw ApplicationException(
-        log.yellow('Failed to precompile $name:\n') + result.stderr.join('\n'));
+        log.yellow('Failed to precompile $highlightedName:\n') +
+            result.stderr.join('\n'));
   }
 }
 

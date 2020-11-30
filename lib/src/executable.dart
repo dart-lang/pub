@@ -43,9 +43,6 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
-/// If [packagesFile] is passed, it's used as the package config file path for
-/// the executable. Otherwise, `entrypoint.packagesFile` is used.
-///
 /// If the executable is in an immutable package and we pass no [vmArgs], it
 /// run from snapshot (and precompiled if the snapshot doesn't already exist).
 ///
@@ -53,12 +50,10 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 Future<int> runExecutable(
     Entrypoint entrypoint, Executable executable, Iterable<String> args,
     {bool enableAsserts = false,
-    String packagesFile,
     Future<void> Function(Executable) recompile,
     List<String> vmArgs = const [],
     @required bool alwaysUseSubprocess}) async {
   final package = executable.package;
-  packagesFile ??= entrypoint.packagesFile;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
@@ -122,13 +117,13 @@ Future<int> runExecutable(
   // helpful for the subprocess to be able to spawn Dart with
   // Platform.executableArguments and have that work regardless of the working
   // directory.
-  var packageConfig = p.absolute(packagesFile);
+  final packageConfigAbsolute = p.absolute(entrypoint.packageConfigFile);
 
   try {
     return await _runDartProgram(
       executablePath,
       args,
-      packageConfig,
+      packageConfigAbsolute,
       enableAsserts: enableAsserts,
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
@@ -144,7 +139,7 @@ Future<int> runExecutable(
     return await _runDartProgram(
       executablePath,
       args,
-      packageConfig,
+      packageConfigAbsolute,
       enableAsserts: enableAsserts,
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
