@@ -33,9 +33,10 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('packages-file',
-        defaultsTo: true,
-        help: 'Generate the legacy ".packages" file');
+    argParser.addFlag(
+      '--generate-dot-packages',
+      help: 'Generate the legacy ".packages" file',
+    );
   }
 
   @override
@@ -44,9 +45,11 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    return entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'],
-        precompile: argResults['precompile'],
-        generateDotPackages: argResults['packages-file']);
+    return entrypoint.acquireDependencies(
+      SolveType.GET,
+      dryRun: argResults['dry-run'],
+      precompile: argResults['precompile'],
+      generateDotPackages: argResults['generate-dot-packages'],
+    );
   }
 }

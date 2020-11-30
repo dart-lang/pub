@@ -191,11 +191,11 @@ class Entrypoint {
   }
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+  Future<void> writePackagesFiles({@required bool generateDotPackages}) async {
     if (generateDotPackages) {
       writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
     } else {
-      tryDeleteEntry(packagesFile);
+      tryDeleteFile(packagesFile);
     }
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
@@ -225,16 +225,21 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
+  /// If [generateDotPackages] is `null` the `.packages` file is not written if
+  /// the _default language version_ of the [root] package has opted into
+  /// null-safety.
+  ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
     SolveType type, {
     List<String> useLatest,
     bool dryRun = false,
     bool precompile = false,
-    bool generateDotPackages = false,
+    bool generateDotPackages,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
+    generateDotPackages ??= !root.pubspec.languageVersion.supportsNullSafety;
 
     var result = await log.progress(
       'Resolving dependencies',
@@ -446,7 +451,7 @@ class Entrypoint {
   /// exist or if it's out-of-date relative to the lockfile or the pubspec.
   ///
   /// A `.packages` file is not required. But if it exists it is checked for
-  /// consistency with the pubspec.lock.
+  /// consistency with `pubspec.lock`.
   void assertUpToDate() {
     if (isCached) return;
 
@@ -488,6 +493,7 @@ class Entrypoint {
       }
     }
 
+    // If `.packages exist`, it must be in sync with `pubspec.lock`
     if (fileExists(packagesFile)) {
       var packagesModified = File(packagesFile).lastModifiedSync();
       if (packagesModified.isBefore(lockFileModified)) {
@@ -659,7 +665,9 @@ class Entrypoint {
     }
 
     var packages = packages_file.parse(
-        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
+      File(packagesFile).readAsBytesSync(),
+      p.toUri(packagesFile),
+    );
 
     final packagePathsMapping = <String, String>{};
     for (final package in packages.keys) {
