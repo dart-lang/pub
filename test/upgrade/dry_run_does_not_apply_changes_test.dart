@@ -43,4 +43,40 @@ void main() {
       d.nothing('packages')
     ]).validate();
   });
+
+  test(
+      '--dry-run shows report but does not apply changes even with breaking flag',
+      () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
+    });
+
+    // Create the lockfile.
+    await d.appDir({'foo': '1.0.0'}).create();
+
+    await pubGet();
+
+    // Recreating the appdir because the previous one only lasts for one
+    // command.
+    await d.appDir({'foo': '1.0.0'}).create();
+
+    // Also delete the "packages" directory.
+    deleteEntry(path.join(d.sandbox, appPath, 'packages'));
+
+    // Do the dry run.
+    await pubUpgrade(
+        args: ['--dry-run', '--breaking'],
+        output: allOf([
+          contains('Detected 1 potential breaking change:'),
+          contains('foo: 1.0.0 -> ^2.0.0')
+        ]));
+
+    await d.dir(appPath, [
+      // The lockfile should not be modified.
+      d.file('pubspec.lock', contains('2.0.0')),
+      // The "packages" directory should not have been regenerated.
+      d.nothing('packages')
+    ]).validate();
+  });
 }
