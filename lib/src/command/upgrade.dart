@@ -68,6 +68,8 @@ class UpgradeCommand extends PubCommand {
 
   bool get _dryRun => argResults['dry-run'];
 
+  bool get _precompile => argResults['precompile'];
+
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
 
@@ -98,9 +100,7 @@ class UpgradeCommand extends PubCommand {
 
   Future<void> _runUpgrade() async {
     await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest,
-        dryRun: _dryRun,
-        precompile: argResults['precompile']);
+        useLatest: argResults.rest, dryRun: _dryRun, precompile: _precompile);
 
     _showOfflineWarning();
   }
@@ -189,7 +189,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ));
     }
 
-    if (!argResults['dry-run']) {
+    if (!_dryRun) {
       await _updatePubspec(changes);
 
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
@@ -197,7 +197,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
-        precompile: argResults['precompile'],
+        precompile: _precompile,
       );
     }
 
@@ -265,7 +265,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
-        precompile: argResults['precompile'],
+        precompile: _precompile,
       );
     }
 
