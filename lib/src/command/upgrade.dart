@@ -99,8 +99,12 @@ class UpgradeCommand extends PubCommand {
   }
 
   Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest, dryRun: _dryRun, precompile: _precompile);
+    await entrypoint.acquireDependencies(
+      SolveType.UPGRADE,
+      useLatest: argResults.rest,
+      dryRun: _dryRun,
+      precompile: _precompile,
+    );
 
     _showOfflineWarning();
   }
@@ -151,16 +155,16 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     /// Solve [resolvablePubspec] in-memory and consolidate the resolved
     /// versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
-    await log.spinner('Resolving dependencies', () async {
-      final solveResult = await resolveVersions(
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(resolvablePubspec),
       );
-      for (final resolvedPackage in solveResult?.packages ?? []) {
-        resolvedPackages[resolvedPackage.name] = resolvedPackage;
-      }
     }, condition: _shouldShowSpinner);
+    for (final resolvedPackage in solveResult?.packages ?? []) {
+      resolvedPackages[resolvedPackage.name] = resolvedPackage;
+    }
 
     /// Changes to be made to `pubspec.yaml`.
     /// Mapping from original to changed value.
@@ -189,7 +193,21 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ));
     }
 
-    if (!_dryRun) {
+    if (_dryRun) {
+      // Even if it is a dry run, run `acquireDependencies` so that the user
+      // gets a report on changes.
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
+      await Entrypoint.global(
+        Package.inMemory(resolvablePubspec),
+        entrypoint.lockFile,
+        cache,
+        solveResult: solveResult,
+      ).acquireDependencies(
+        SolveType.GET,
+        dryRun: true,
+        precompile: _precompile,
+      );
+    } else {
       await _updatePubspec(changes);
 
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
@@ -217,16 +235,16 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     /// Solve [nullsafetyPubspec] in-memory and consolidate the resolved
     /// versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
-    await log.spinner('Resolving dependencies', () async {
-      final solveResult = await resolveVersions(
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
-      for (final resolvedPackage in solveResult?.packages ?? []) {
-        resolvedPackages[resolvedPackage.name] = resolvedPackage;
-      }
     }, condition: _shouldShowSpinner);
+    for (final resolvedPackage in solveResult?.packages ?? []) {
+      resolvedPackages[resolvedPackage.name] = resolvedPackage;
+    }
 
     /// Changes to be made to `pubspec.yaml`.
     /// Mapping from original to changed value.
@@ -257,7 +275,21 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       changes[dep] = dep.withConstraint(constraint);
     }
 
-    if (!_dryRun) {
+    if (_dryRun) {
+      // Even if it is a dry run, run `acquireDependencies` so that the user
+      // gets a report on changes.
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
+      await Entrypoint.global(
+        Package.inMemory(nullsafetyPubspec),
+        entrypoint.lockFile,
+        cache,
+        solveResult: solveResult,
+      ).acquireDependencies(
+        SolveType.GET,
+        dryRun: true,
+        precompile: _precompile,
+      );
+    } else {
       await _updatePubspec(changes);
 
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
