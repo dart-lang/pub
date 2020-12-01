@@ -308,6 +308,7 @@ class BoundGitSource extends CachedSource {
         if (!entryExists(revisionCachePath)) {
           await _clone(_repoCachePath(ref), revisionCachePath);
           await _checkOut(revisionCachePath, id.description['resolved-ref']);
+          await _checkOutLFS(revisionCachePath, ref.description['url']);
           _writePackageList(revisionCachePath, [id.description['path']]);
         } else {
           _updatePackageList(revisionCachePath, id.description['path']);
@@ -560,6 +561,28 @@ class BoundGitSource extends CachedSource {
   Future _checkOut(String repoPath, String ref) {
     return git
         .run(['checkout', ref], workingDir: repoPath).then((result) => null);
+  }
+
+  /// Checks out any LFS binaries at the current ref to [repoPath].
+  /// Ignore errors if `git lfs` is not installed.
+  Future _checkOutLFS(String repoPath, String origin) async {
+    // default to whatever the origin is in the .lfsconfig file
+    var args = ['lfs', 'pull'];
+    try {
+      // if the LFS origin is not set via an .lfsconfig file then use the git origin from pubspec
+      var env = await git.run(['lfs', 'env'], workingDir: repoPath);
+      if (env.indexWhere((e) => e.contains('Endpoint=file')) > -1) {
+        args = ['lfs', 'pull', origin];
+        log.fine(
+            'No Git LFS origin found in .lfsconfig, using origin from pubspec');
+      }
+
+      return git
+          .run(args, workingDir: repoPath)
+          .then((result) => null, onError: (error) => null);
+    } catch (e) {
+      log.fine('git lfs not found, continuing');
+    }
   }
 
   String _revisionCachePath(PackageId id) => p.join(
