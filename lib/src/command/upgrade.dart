@@ -61,7 +61,6 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
-    argParser.addFlag('major-version', negatable: false, hide: true);
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -74,8 +73,7 @@ class UpgradeCommand extends PubCommand {
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
 
-  bool get _upgradeMajorVersions =>
-      argResults['major-versions'] || argResults['major-version'];
+  bool get _upgradeMajorVersions => argResults['major-versions'];
 
   @override
   Future<void> runProtected() async {
