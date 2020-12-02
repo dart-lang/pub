@@ -61,6 +61,7 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+    argParser.addFlag('major-version', negatable: false, hide: true);
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -203,7 +204,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.GET,
+        SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
       );
@@ -285,7 +286,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.GET,
+        SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
       );
