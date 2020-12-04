@@ -52,7 +52,7 @@ Future<SolveResult> resolveVersions(
 /// Like [resolveVersions] except that this function returns `null` where a
 /// similar call to [resolveVersions] would throw a [SolveFailure].
 ///
-/// If [unlock] is given, then packages listed in [unlock] will not be unlocked
+/// If [unlock] is given, only packages listed in [unlock] will be unlocked
 /// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
 /// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
