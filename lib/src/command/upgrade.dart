@@ -181,7 +181,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      // If there is a dependency_override for dependency then we ship it.
+      // Skip [dep] if it has a dependency_override.
       if (entrypoint.root.dependencyOverrides.containsKey(dep.name)) {
         continue;
       }
