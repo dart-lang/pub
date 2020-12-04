@@ -122,7 +122,7 @@ class UpgradeCommand extends PubCommand {
     final toUpgrade = argResults.rest.isEmpty ? directDeps : argResults.rest;
 
     // Check that all package names in upgradeOnly are direct-dependencies
-    final indirectDeps = toUpgrade.where((n) => !directDeps.contains(n));
+    final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
     if (toUpgrade.any(indirectDeps.contains)) {
       var modeFlag = '';
       if (_upgradeNullSafety) {
