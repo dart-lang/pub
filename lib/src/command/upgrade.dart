@@ -151,8 +151,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       stripOnly: toUpgrade,
     );
 
-    /// Solve [resolvablePubspec] in-memory and consolidate the resolved
-    /// versions of the packages into a map for quick searching.
+    // Solve [resolvablePubspec] in-memory and consolidate the resolved
+    // versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
