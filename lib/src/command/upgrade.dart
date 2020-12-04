@@ -109,7 +109,7 @@ class UpgradeCommand extends PubCommand {
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
-  /// any indirect dependencies are given.
+  /// any package names not in the direct dependencies or dev_dependencies are given.
   ///
   /// This assumes that either `--major-versions` or `--null-safety` was passed.
   List<String> _directDependenciesToUpgrade() {
