@@ -181,6 +181,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
+      // If there is a dependency_override for dependency then we ship it.
+      if (entrypoint.root.dependencyOverrides.containsKey(dep.name)) {
+        continue;
+      }
+
       if (dep.constraint.allowsAll(resolvedPackage.version)) {
         // If constraint allows the resolvable version we found, then there is
         // no need to update the `pubspec.yaml`
@@ -219,6 +224,18 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     }
 
     _outputChangeSummary(changes);
+
+    // If any of the packages to upgrade are dependency overrides, then we
+    // show a warning.
+    final toUpgradeOverrides = toUpgrade
+        .where(entrypoint.root.dependencyOverrides.containsKey)
+        .toList();
+    if (toUpgradeOverrides.isNotEmpty) {
+      log.warning(
+        'Warning: dependency_overrides prevents upgrades for: '
+        '${toUpgradeOverrides.join(', ')}',
+      );
+    }
 
     _showOfflineWarning();
   }
