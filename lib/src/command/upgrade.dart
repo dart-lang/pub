@@ -135,7 +135,7 @@ class UpgradeCommand extends PubCommand {
       usageException('''
 Dependencies specified in `dart pub upgrade $modeFlag <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
- - ${indirectDeps.join('\n - ')}
+ - ${notInDeps.join('\n - ')}
 
 ''');
     }
