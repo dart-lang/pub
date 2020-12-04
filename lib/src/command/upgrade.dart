@@ -210,7 +210,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       await _updatePubspec(changes);
 
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
-      //       we can show the changes in --dry-run mode. For now we only show
+      //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
