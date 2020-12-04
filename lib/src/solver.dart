@@ -21,7 +21,7 @@ export 'solver/type.dart';
 /// that those dependencies place on each other and the requirements imposed by
 /// [lockFile].
 ///
-/// If [unlock] is given, then packages listed in [unlock] will not be unlocked
+/// If [unlock] is given, then only packages listed in [unlock] will be unlocked
 /// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
 /// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
