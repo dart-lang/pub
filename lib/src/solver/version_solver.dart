@@ -69,18 +69,13 @@ class VersionSolver {
   /// which other packages' constraints should be ignored.
   final Set<String> _overriddenPackages;
 
-  /// The set of packages for which the lockfile should be ignored and only the
-  /// most recent versions should be used.
-  final Set<String> _useLatest;
-
-  /// The set of packages for which we've added an incompatibility that forces
-  /// the latest version to be used.
-  final _haveUsedLatest = <PackageRef>{};
+  /// The set of packages for which the lockfile should be ignored.
+  final Set<String> _unlock;
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
-      Iterable<String> useLatest)
+      Iterable<String> unlock)
       : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
-        _useLatest = Set.from(useLatest);
+        _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
@@ -324,22 +319,6 @@ class VersionSolver {
     // If we require a package from an unknown source, add an incompatibility
     // that will force a conflict for that package.
     for (var candidate in unsatisfied) {
-      if (_useLatest.contains(candidate.name) &&
-          candidate.source.hasMultipleVersions) {
-        var ref = candidate.toRef();
-        if (_haveUsedLatest.add(ref)) {
-          // All versions of [ref] other than the latest are forbidden.
-          var latestVersion = (await _packageLister(ref).latest).version;
-          _addIncompatibility(Incompatibility([
-            Term(
-                ref.withConstraint(
-                    VersionConstraint.any.difference(latestVersion)),
-                true),
-          ], IncompatibilityCause.useLatest));
-          return candidate.name;
-        }
-      }
-
       if (candidate.source is! UnknownSource) continue;
       _addIncompatibility(Incompatibility(
           [Term(candidate.withConstraint(VersionConstraint.any), true)],
@@ -350,9 +329,6 @@ class VersionSolver {
     /// Prefer packages with as few remaining versions as possible, so that if a
     /// conflict is necessary it's forced quickly.
     var package = await minByAsync(unsatisfied, (package) async {
-      // If we're forced to use the latest version of a package, it effectively
-      // only has one version to choose from.
-      if (_useLatest.contains(package.name)) return 1;
       return await _packageLister(package).countVersions(package.constraint);
     });
 
@@ -490,7 +466,12 @@ class VersionSolver {
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
   PackageId _getLocked(String package) {
-    if (_type == SolveType.GET) return _lockFile.packages[package];
+    if (_type == SolveType.GET) {
+      if (_unlock.contains(package)) {
+        return null;
+      }
+      return _lockFile.packages[package];
+    }
 
     // When downgrading, we don't want to force the latest versions of
     // non-hosted packages, since they don't support multiple versions and thus
@@ -500,7 +481,7 @@ class VersionSolver {
       if (locked != null && !locked.source.hasMultipleVersions) return locked;
     }
 
-    if (_useLatest.isEmpty || _useLatest.contains(package)) return null;
+    if (_unlock.isEmpty || _unlock.contains(package)) return null;
     return _lockFile.packages[package];
   }
 

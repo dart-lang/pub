@@ -75,10 +75,12 @@ class UpgradeCommand extends PubCommand {
   }
 
   Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(SolveType.UPGRADE,
-        useLatest: argResults.rest,
-        dryRun: _dryRun,
-        precompile: argResults['precompile']);
+    await entrypoint.acquireDependencies(
+      SolveType.UPGRADE,
+      unlock: argResults.rest,
+      dryRun: _dryRun,
+      precompile: argResults['precompile'],
+    );
 
     _showOfflineWarning();
   }
