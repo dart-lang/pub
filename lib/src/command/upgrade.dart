@@ -165,8 +165,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       resolvedPackages[resolvedPackage.name] = resolvedPackage;
     }
 
-    /// Changes to be made to `pubspec.yaml`.
-    /// Mapping from original to changed value.
+    // Changes to be made to `pubspec.yaml`.
+    // Mapping from original to changed value.
     final changes = <PackageRange, PackageRange>{};
     final declaredHostedDependencies = [
       ...entrypoint.root.pubspec.dependencies.values,
