@@ -38,4 +38,22 @@ void main() {
     await pubDowngrade();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
   });
+
+  test('will not downgrade below constraint #2629', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
+      builder.serve('foo', '2.1.0');
+    });
+
+    await d.appDir({'foo': '^2.0.0'}).create();
+
+    await pubGet();
+
+    await d.appPackagesFile({'foo': '2.1.0'}).validate();
+
+    await pubDowngrade(args: ['foo']);
+
+    await d.appPackagesFile({'foo': '2.0.0'}).validate();
+  });
 }
