@@ -374,7 +374,10 @@ class OutdatedCommand extends PubCommand {
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
 Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-      SolveType.UPGRADE, cache, Package.inMemory(pubspec));
+    SolveType.UPGRADE,
+    cache,
+    Package.inMemory(pubspec),
+  );
   if (solveResult == null) {
     return [];
   }
