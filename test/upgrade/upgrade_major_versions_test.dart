@@ -194,6 +194,11 @@ void main() {
       await pubUpgrade(
         args: ['--major-versions'],
         output: contains('No changes to pubspec.yaml!'),
+        warning: allOf([
+          contains('Warning: dependency_overrides prevents upgrades for: '),
+          contains('foo'), // ordering not ensured
+          contains('bar'),
+        ]),
       );
 
       await d.dir(appPath, [

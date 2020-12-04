@@ -227,9 +227,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
     // If any of the packages to upgrade are dependency overrides, then we
     // show a warning.
-    final toUpgradeOverrides = toUpgrade
-        .where(entrypoint.root.dependencyOverrides.containsKey)
-        .toList();
+    final toUpgradeOverrides =
+        toUpgrade.where(entrypoint.root.dependencyOverrides.containsKey);
     if (toUpgradeOverrides.isNotEmpty) {
       log.warning(
         'Warning: dependency_overrides prevents upgrades for: '
