@@ -345,7 +345,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
     expr = '$expr(?:\$|/)';
   }
   try {
-    print('pattern "$pattern" = "$expr"');
     return GitIgnoreRule(
         pattern, RegExp(expr, caseSensitive: ignoreCase), negative);
   } on FormatException catch (e) {
