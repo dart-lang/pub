@@ -306,8 +306,8 @@ void commonTests() {
       p.join(root, 'pubignore'),
       p.join(root, 'README.md'),
       p.join(root, 'pubspec.yaml'),
-      p.join(root, 'lib/test_pkg.dart'),
-      p.join(root, 'lib/not_ignored.dart'),
+      p.join(root, 'lib', 'test_pkg.dart'),
+      p.join(root, 'lib', 'not_ignored.dart'),
     });
   });
 }
