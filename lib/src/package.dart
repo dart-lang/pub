@@ -35,6 +35,8 @@ class Package {
   /// The path to the directory containing the package.
   final String dir;
 
+  String get pubIgnoreFile => p.join(dir, 'pubignore');
+
   /// An in-memory package can be created for doing a resolution without having
   /// a package on disk. Paths should not be resolved for these.
   bool get _isInMemory => dir == null;
@@ -267,8 +269,6 @@ class Package {
       files = listDir(beneath,
           recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
-
-    final pubIgnoreFile = p.join(dir, 'pubignore');
 
     if (fileExists(pubIgnoreFile)) {
       final ignore = Ignore([readTextFile(pubIgnoreFile)]);
