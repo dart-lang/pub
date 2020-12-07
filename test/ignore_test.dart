@@ -108,13 +108,13 @@ class TestData {
   final bool hasWarning;
 
   TestData(this.name, Iterable<String> patterns, Map<String, bool> paths,
-      {this.hasWarning: false, this.skip})
+      {this.hasWarning = false, this.skip})
       : patterns = UnmodifiableListView(List.from(patterns)),
         paths = UnmodifiableMapView(
           Map.from(paths),
         );
   TestData.single(String pattern, Map<String, bool> paths,
-      {this.hasWarning: false, this.skip})
+      {this.hasWarning = false, this.skip})
       : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = UnmodifiableListView([pattern]),
         paths = UnmodifiableMapView(Map.from(paths));
