@@ -134,40 +134,6 @@ class Ignore {
     }
     return ignored;
   }
-
-  /// Removes entries from [paths] that are ignored the patterns used to create
-  /// this [Ignore] instance.
-  ///
-  /// The [path] must be a relative path, not starting with `./`, `../`, and
-  /// must end in slash (`/`) if it is directory.
-  ///
-  /// **Example**:
-  /// ```dart
-  /// import 'package:ignore/ignore.dart';
-  ///
-  /// void main() {
-  ///   final ignore = Ignore([
-  ///     '*.o',
-  ///   ]);
-  ///
-  ///   print(ignore.filter([
-  ///     'main.o',
-  ///     'main.c',
-  ///     'lib/',
-  ///     'lib/helper.o',
-  ///     'lib/helper.c',
-  ///   ])); // main.c lib/ helper.c
-  /// }
-  /// ```
-  ///
-  /// This method is semantically equivalent to `paths.where(ignore.ignores)`,
-  /// however, intermediate results for paths is reused which may improve
-  /// performance.
-  Iterable<String> filter(Iterable<String> paths) {
-    ArgumentError.checkNotNull(paths, 'paths');
-    // TODO: implement a cache
-    return paths.where((p) => !ignores(p));
-  }
 }
 
 class GitIgnoreRule {

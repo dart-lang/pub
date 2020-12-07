@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'git.dart' as git;
+import 'ignore.dart';
 import 'io.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
@@ -193,6 +194,8 @@ class Package {
   static final _disallowedFiles = createFileFilter(['pubspec.lock']);
 
   /// A set of patterns that match paths to disallowed directories.
+  // TODO(sigurdm): consider removing this. `packages` folders are not used
+  // anymore.
   static final _disallowedDirs = createDirectoryFilter(['packages']);
 
   /// Returns a list of files that are considered to be part of this package.
@@ -265,6 +268,15 @@ class Package {
           recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
 
+    final pubIgnoreFile = p.join(dir, 'pubignore');
+
+    if (fileExists(pubIgnoreFile)) {
+      final ignore = Ignore([readTextFile(pubIgnoreFile)]);
+      files = files.where((file) =>
+          // Use relative uris, they always use '/' as separator.
+          // That is what Ignore expects.
+          !ignore.ignores(p.toUri(p.relative(file, from: dir)).path));
+    }
     return files.where((file) {
       // Using substring here is generally problematic in cases where dir has
       // one or more trailing slashes. If you do listDir("foo"), you'll get back

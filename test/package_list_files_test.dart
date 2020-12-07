@@ -289,4 +289,25 @@ void commonTests() {
           ]));
     });
   });
+
+  test('pubignore', () async {
+    await d.validPackage.create();
+    await d.dir(appPath, [
+      d.file('pubignore', '''
+/lib/ignored.dart
+'''),
+      d.dir('lib', [d.file('ignored.dart', 'content')]),
+      d.dir('lib', [d.file('not_ignored.dart', 'content')]),
+    ]).create();
+    createEntrypoint();
+    expect(entrypoint.root.listFiles(), {
+      p.join(root, 'LICENSE'),
+      p.join(root, 'CHANGELOG.md'),
+      p.join(root, 'pubignore'),
+      p.join(root, 'README.md'),
+      p.join(root, 'pubspec.yaml'),
+      p.join(root, 'lib/test_pkg.dart'),
+      p.join(root, 'lib/not_ignored.dart'),
+    });
+  });
 }
