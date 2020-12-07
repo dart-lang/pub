@@ -261,10 +261,10 @@ final testData = [
     TestData.single('${c}file.txt', {
       '${c}file.txt': true,
       'file.txt': false,
-      'file.txt${c}': false,
+      'file.txt$c': false,
     }),
-    TestData.single('file.txt${c}', {
-      'file.txt${c}': true,
+    TestData.single('file.txt$c', {
+      'file.txt$c': true,
       'file.txt': false,
       '${c}file.txt': false,
     }),
@@ -285,10 +285,10 @@ final testData = [
     TestData.single('\\${c}file.txt', {
       '${c}file.txt': true,
       'file.txt': false,
-      'file.txt${c}': false,
+      'file.txt$c': false,
     }),
-    TestData.single('file.txt\\${c}', {
-      'file.txt${c}': true,
+    TestData.single('file.txt\\$c', {
+      'file.txt$c': true,
       'file.txt': false,
       '${c}file.txt': false,
     }),
@@ -308,15 +308,15 @@ final testData = [
     TestData.single('\\${c}file.txt', {
       '${c}file.txt': true,
       'file.txt': false,
-      'file.txt${c}': false,
+      'file.txt$c': false,
     }),
-    TestData.single('file.txt\\${c}', {
-      'file.txt${c}': true,
+    TestData.single('file.txt\\$c', {
+      'file.txt$c': true,
       'file.txt': false,
       '${c}file.txt': false,
     }),
-    TestData.single('file\\${c}.txt', {
-      'file${c}.txt': true,
+    TestData.single('file\\$c.txt', {
+      'file$c.txt': true,
       'file.txt': false,
       '${c}file.txt': false,
     }),
@@ -417,7 +417,6 @@ final testData = [
   TestData.single('a[]c', {
     'abc': false,
     'ac': false,
-    'abc': false,
     'a': false,
     'a[]c': false,
     'c': false,
@@ -425,7 +424,6 @@ final testData = [
   TestData.single('a[]', {
     'abc': false,
     'ac': false,
-    'abc': false,
     'a': false,
     'a[]': false,
     'c': false,
@@ -434,7 +432,6 @@ final testData = [
   TestData.single(r'a[\]', {
     'abc': false,
     'ac': false,
-    'abc': false,
     'a': false,
     'a\\': false,
     'a[]': false,
@@ -445,7 +442,6 @@ final testData = [
   TestData.single(r'a[\\\]', {
     'abc': false,
     'ac': false,
-    'abc': false,
     'a': false,
     'a[]': false,
     'a[': false,
