@@ -60,18 +60,21 @@ void main() {
           () async {
             final gitIgnore = File.fromUri(tmp.uri.resolve('.gitignore'));
             await gitIgnore.writeAsString(c.patterns.join('\n') + '\n');
-            final ret = await Process.run(
+            final process = await Process.start(
               'git',
-              ['check-ignore', '--no-index', path],
+              ['check-ignore', '--no-index', '-z', '--stdin'],
               includeParentEnvironment: false,
               workingDirectory: tmp.path,
             );
+            process.stdin.write(path);
+            await process.stdin.close();
+            final exitCode = await process.exitCode;
             expect(
-              ret.exitCode,
+              exitCode,
               anyOf(0, 1),
               reason: 'Running "git check-ignore" failed',
             );
-            final ignored = ret.exitCode == 0;
+            final ignored = exitCode == 0;
             if (expected != ignored) {
               if (expected) {
                 fail('Expected "$path" to be ignored, it was NOT!');
@@ -151,8 +154,16 @@ final testData = [
   }),
   // Test ! and escaping
   TestData.single('!file.txt', {
-    'file.txt': false,
+    'file.txt': true,
     '!file.txt': false,
+  }),
+  TestData('negation', [
+    'f*',
+    '!file.txt'
+  ], {
+    'file.txt': true,
+    '!file.txt': false,
+    'filter.txt': true,
   }),
   TestData.single(r'\!file.txt', {
     '!file.txt': true,

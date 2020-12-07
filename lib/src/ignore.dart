@@ -136,11 +136,27 @@ class Ignore {
   }
 }
 
+class GitIgnoreParseResult {
+  final String pattern;
+  final GitIgnoreRule rule;
+
+  // An invalid pattern is also considered empty.
+  bool get empty => rule == null;
+  bool get valid => exception != null;
+  final FormatException exception;
+
+  GitIgnoreParseResult(this.pattern, this.rule) : exception = null;
+  GitIgnoreParseResult.invalid(this.pattern, this.exception) : rule = null;
+  GitIgnoreParseResult.empty(this.pattern)
+      : rule = null,
+        exception = null;
+}
+
 class GitIgnoreRule {
-  final String original;
   final RegExp pattern;
   final bool negative;
-  GitIgnoreRule(this.original, this.pattern, this.negative);
+
+  GitIgnoreRule(this.pattern, this.negative);
 }
 
 List<GitIgnoreRule> parseIgnorePatterns(
@@ -156,14 +172,16 @@ List<GitIgnoreRule> parseIgnorePatterns(
       .map((s) => s.split('\n'))
       .expand((e) => e)
       .map((pattern) => parseIgnorePattern(pattern, ignoreCase))
-      .where((r) => r != null)
+      .where((r) => !r.empty)
+      .map((r) => r.rule)
       .toList();
 }
 
-GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
+GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
+    {source}) {
   // Check if patterns is a comment
   if (pattern.startsWith('#')) {
-    return null;
+    return GitIgnoreParseResult.empty(pattern);
   }
   var first = 0;
   var end = pattern.length;
@@ -184,7 +202,7 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
     end--;
   }
   // Empty patterns match nothing.
-  if (first == end) return null;
+  if (first == end) return GitIgnoreParseResult.empty(pattern);
 
   var current = first;
   String peekChar() => current >= end ? null : pattern[current];
@@ -257,6 +275,7 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
             expr += '(?:(?:)|(?:.*/))';
           }
           // Handle the side effects of seeing a slash.
+          // We know it was not initial, so the return value is ignored.
           handleSlash();
         } else {
           expr += '.*';
@@ -272,14 +291,22 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
       // Character ranges
       final characterRange = parseCharacterRange();
       if (characterRange == null) {
-        return null;
+        return GitIgnoreParseResult.invalid(
+          pattern,
+          FormatException('Pattern "$pattern" had an invalid characterRange',
+              source, current),
+        );
       }
       expr += '[$characterRange]';
     } else if (nextChar == '\\') {
       // Escapes
       final escaped = peekChar();
       if (escaped == null) {
-        return null;
+        return GitIgnoreParseResult.invalid(
+          pattern,
+          FormatException('Pattern "$pattern" stopped in character escape.',
+              source, current),
+        );
       }
       expr += RegExp.escape(escaped);
       current++;
@@ -305,8 +332,8 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
     expr = '$expr(?:\$|/)';
   }
   try {
-    return GitIgnoreRule(
-        pattern, RegExp(expr, caseSensitive: ignoreCase), negative);
+    return GitIgnoreParseResult(pattern,
+        GitIgnoreRule(RegExp(expr, caseSensitive: ignoreCase), negative));
   } on FormatException catch (e) {
     throw AssertionError(
         'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
