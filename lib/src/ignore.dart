@@ -83,8 +83,12 @@ class Ignore {
   ///
   /// [1]: https://git-scm.com/docs/gitignore
   /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
-  Ignore(Iterable<String> patterns, {bool ignoreCase = false})
-      : _rules = parseIgnorePatterns(patterns, ignoreCase);
+  Ignore(
+    Iterable<String> patterns, {
+    bool ignoreCase = false,
+    void Function(String pattern, FormatException exception) onInvalidPattern,
+  }) : _rules = parseIgnorePatterns(patterns, ignoreCase,
+            onInvalidPattern: onInvalidPattern);
 
   /// Returns `true` if [path] is ignored by the patterns used to create this
   /// [Ignore] instance.
@@ -137,12 +141,17 @@ class Ignore {
 }
 
 class GitIgnoreParseResult {
+  // The parsed pattern.
   final String pattern;
+
+  // The resulting matching rule. `null` if the pattern was empty or invalid.
   final GitIgnoreRule rule;
 
   // An invalid pattern is also considered empty.
   bool get empty => rule == null;
-  bool get valid => exception != null;
+  bool get valid => exception == null;
+
+  // For invalid patterns this contains a description of the problem.
   final FormatException exception;
 
   GitIgnoreParseResult(this.pattern, this.rule) : exception = null;
@@ -159,22 +168,27 @@ class GitIgnoreRule {
   GitIgnoreRule(this.pattern, this.negative);
 }
 
+/// [onInvalidPattern] can be used to handle parse failures. If
+/// [onInvalidPattern] is `null` invalid patterns are ignored.
 List<GitIgnoreRule> parseIgnorePatterns(
-  Iterable<String> patterns,
-  bool ignoreCase,
-) {
+    Iterable<String> patterns, bool ignoreCase,
+    {void Function(String pattern, FormatException exception)
+        onInvalidPattern}) {
   ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
   if (patterns.contains(null)) {
     throw ArgumentError.value(patterns, 'patterns', 'may not contain null');
   }
-  return patterns
+  final parseResults = patterns
       .map((s) => s.split('\n'))
       .expand((e) => e)
-      .map((pattern) => parseIgnorePattern(pattern, ignoreCase))
-      .where((r) => !r.empty)
-      .map((r) => r.rule)
-      .toList();
+      .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
+  if (onInvalidPattern != null) {
+    for (final invalidResult in parseResults.where((result) => !result.valid)) {
+      onInvalidPattern(invalidResult.pattern, invalidResult.exception);
+    }
+  }
+  return parseResults.where((r) => !r.empty).map((r) => r.rule).toList();
 }
 
 GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
@@ -293,8 +307,10 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
       if (characterRange == null) {
         return GitIgnoreParseResult.invalid(
           pattern,
-          FormatException('Pattern "$pattern" had an invalid characterRange',
-              source, current),
+          FormatException(
+              'Pattern "$pattern" had an invalid `[a-b]` style character range',
+              source,
+              current),
         );
       }
       expr += '[$characterRange]';
@@ -304,8 +320,10 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
       if (escaped == null) {
         return GitIgnoreParseResult.invalid(
           pattern,
-          FormatException('Pattern "$pattern" stopped in character escape.',
-              source, current),
+          FormatException(
+              'Pattern "$pattern" end of pattern inside character escape.',
+              source,
+              current),
         );
       }
       expr += RegExp.escape(escaped);

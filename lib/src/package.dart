@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'git.dart' as git;
 import 'ignore.dart';
 import 'io.dart';
+import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source_registry.dart';
@@ -271,7 +272,12 @@ class Package {
     }
 
     if (fileExists(pubIgnorePath)) {
-      final ignore = Ignore([readTextFile(pubIgnorePath)]);
+      final ignore = Ignore(
+        [readTextFile(pubIgnorePath)],
+        onInvalidPattern: (pattern, exception) {
+          log.warning('`pubignore` had invalid pattern: ${exception.message}');
+        },
+      );
       files = files.where((file) =>
           // Use relative uris, they always use '/' as separator.
           // That is what Ignore expects.

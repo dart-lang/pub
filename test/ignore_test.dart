@@ -24,13 +24,17 @@ void main() {
         (path, expected) => test(
           '${c.name}: Ignore.ignores("$path") == $expected',
           () {
-            final ignore = Ignore(c.patterns);
+            var hasWarning = false;
+            final ignore = Ignore(c.patterns, onInvalidPattern: (a, b) {
+              hasWarning = true;
+            });
             if (expected != ignore.ignores(path)) {
               if (expected) {
                 fail('Expected "$path" to be ignored, it was NOT!');
               }
               fail('Expected "$path" to NOT be ignored, it was IGNORED!');
             }
+            expect(hasWarning, c.hasWarning);
           },
         ),
       );
@@ -101,11 +105,16 @@ class TestData {
   /// Allow skipping the git test for a pattern on certain platforms
   final dynamic skip;
 
+  final bool hasWarning;
+
   TestData(this.name, Iterable<String> patterns, Map<String, bool> paths,
-      {this.skip})
+      {this.hasWarning: false, this.skip})
       : patterns = UnmodifiableListView(List.from(patterns)),
-        paths = UnmodifiableMapView(Map.from(paths));
-  TestData.single(String pattern, Map<String, bool> paths, {this.skip})
+        paths = UnmodifiableMapView(
+          Map.from(paths),
+        );
+  TestData.single(String pattern, Map<String, bool> paths,
+      {this.hasWarning: false, this.skip})
       : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = UnmodifiableListView([pattern]),
         paths = UnmodifiableMapView(Map.from(paths));
@@ -342,30 +351,39 @@ final testData = [
     }),
   ],
   // Ending in backslash (unescaped)
-  TestData.single('file.txt\\', {
-    'file.txt\\': false,
-    'file.txt ': false,
-    'file.txt\n': false,
-    'file.txt': false,
-  }),
-  TestData.single('file.txt\\\n', {
+  TestData.single(
+      'file.txt\\',
+      {
+        'file.txt\\': false,
+        'file.txt ': false,
+        'file.txt\n': false,
+        'file.txt': false,
+      },
+      hasWarning: true),
+  TestData.single(r'file.txt\n', {
     'file.txt\\\n': false,
     'file.txt ': false,
     'file.txt\n': false,
     'file.txt': false,
   }),
-  TestData.single('**\\', {
-    'file.txt\\\n': false,
-    'file.txt ': false,
-    'file.txt\n': false,
-    'file.txt': false,
-  }),
-  TestData.single('*\\', {
-    'file.txt\\\n': false,
-    'file.txt ': false,
-    'file.txt\n': false,
-    'file.txt': false,
-  }),
+  TestData.single(
+      '**\\',
+      {
+        'file.txt\\\n': false,
+        'file.txt ': false,
+        'file.txt\n': false,
+        'file.txt': false,
+      },
+      hasWarning: true),
+  TestData.single(
+      '*\\',
+      {
+        'file.txt\\\n': false,
+        'file.txt ': false,
+        'file.txt\n': false,
+        'file.txt': false,
+      },
+      hasWarning: true),
   // ? matches anything except /
   TestData.single('?', {
     'f': true,
@@ -434,40 +452,52 @@ final testData = [
     'abc/file.txt': true,
   }),
   // Empty character classes
-  TestData.single('a[]c', {
-    'abc': false,
-    'ac': false,
-    'a': false,
-    'a[]c': false,
-    'c': false,
-  }),
-  TestData.single('a[]', {
-    'abc': false,
-    'ac': false,
-    'a': false,
-    'a[]': false,
-    'c': false,
-  }),
+  TestData.single(
+      'a[]c',
+      {
+        'abc': false,
+        'ac': false,
+        'a': false,
+        'a[]c': false,
+        'c': false,
+      },
+      hasWarning: true),
+  TestData.single(
+      'a[]',
+      {
+        'abc': false,
+        'ac': false,
+        'a': false,
+        'a[]': false,
+        'c': false,
+      },
+      hasWarning: true),
   // Invalid character classes
-  TestData.single(r'a[\]', {
-    'abc': false,
-    'ac': false,
-    'a': false,
-    'a\\': false,
-    'a[]': false,
-    'a[': false,
-    'a[\\]': false,
-    'c': false,
-  }),
-  TestData.single(r'a[\\\]', {
-    'abc': false,
-    'ac': false,
-    'a': false,
-    'a[]': false,
-    'a[': false,
-    'a[\\]': false,
-    'c': false,
-  }),
+  TestData.single(
+      r'a[\]',
+      {
+        'abc': false,
+        'ac': false,
+        'a': false,
+        'a\\': false,
+        'a[]': false,
+        'a[': false,
+        'a[\\]': false,
+        'c': false,
+      },
+      hasWarning: true),
+  TestData.single(
+      r'a[\\\]',
+      {
+        'abc': false,
+        'ac': false,
+        'a': false,
+        'a[]': false,
+        'a[': false,
+        'a[\\]': false,
+        'c': false,
+      },
+      hasWarning: true),
   // Character classes with special characters
   TestData.single(r'a[\\]', {
     'a': false,
