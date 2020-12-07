@@ -199,14 +199,12 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
     for (;;) {
       final nextChar = peekChar();
       if (nextChar == null) {
-        print('a');
         return null;
       }
       current++;
       if (nextChar == '\\') {
         final escaped = peekChar();
         if (escaped == null) {
-          print('b');
           return null;
         }
         current++;
@@ -231,7 +229,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
 
   // slashes have different significance depending on where they are in
   // the String. Handle that here.
-  // Returns the regexp to match the just parsed slash.
   void handleSlash() {
     if (current == end) {
       // A slash at the end makes us only match directories.
@@ -260,7 +257,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
             expr += '(?:(?:)|(?:.*/))';
           }
           // Handle the side effects of seeing a slash.
-          // We know it was not initial, so the return value is ignored.
           handleSlash();
         } else {
           expr += '.*';
@@ -276,7 +272,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
       // Character ranges
       final characterRange = parseCharacterRange();
       if (characterRange == null) {
-        print('c');
         return null;
       }
       expr += '[$characterRange]';
@@ -284,7 +279,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
       // Escapes
       final escaped = peekChar();
       if (escaped == null) {
-        print('d');
         return null;
       }
       expr += RegExp.escape(escaped);
@@ -314,7 +308,6 @@ GitIgnoreRule parseIgnorePattern(String pattern, bool ignoreCase) {
     return GitIgnoreRule(
         pattern, RegExp(expr, caseSensitive: ignoreCase), negative);
   } on FormatException catch (e) {
-    // TODO: Print a nicer error
     throw AssertionError(
         'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
   }

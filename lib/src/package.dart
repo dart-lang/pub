@@ -35,7 +35,7 @@ class Package {
   /// The path to the directory containing the package.
   final String dir;
 
-  String get pubIgnoreFile => p.join(dir, 'pubignore');
+  String get pubIgnorePath => p.join(dir, 'pubignore');
 
   /// An in-memory package can be created for doing a resolution without having
   /// a package on disk. Paths should not be resolved for these.
@@ -270,8 +270,8 @@ class Package {
           recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
 
-    if (fileExists(pubIgnoreFile)) {
-      final ignore = Ignore([readTextFile(pubIgnoreFile)]);
+    if (fileExists(pubIgnorePath)) {
+      final ignore = Ignore([readTextFile(pubIgnorePath)]);
       files = files.where((file) =>
           // Use relative uris, they always use '/' as separator.
           // That is what Ignore expects.
