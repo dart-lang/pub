@@ -16,6 +16,7 @@ import '../null_safety_analysis.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
 import '../yaml_edit/editor.dart';
@@ -53,12 +54,26 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('nullsafety', negatable: false, hide: true);
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag(
+      'major-versions',
+      help: 'Upgrades packages to their latest resolvable versions, '
+          'and updates pubspec.yaml.',
+      negatable: false,
+    );
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
   bool get _shouldShowSpinner => stdout.hasTerminal;
 
   bool get _dryRun => argResults['dry-run'];
+
+  bool get _precompile => argResults['precompile'];
+
+  bool get _upgradeNullSafety =>
+      argResults['nullsafety'] || argResults['null-safety'];
+
+  bool get _upgradeMajorVersions => argResults['major-versions'];
 
   @override
   Future<void> runProtected() async {
@@ -67,8 +82,16 @@ class UpgradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
 
-    if (argResults['nullsafety'] || argResults['null-safety']) {
+    if (_upgradeNullSafety && _upgradeMajorVersions) {
+      usageException('--major-versions and --null-safety cannot be combined');
+    }
+
+    if (_upgradeNullSafety) {
       return await _runUpgradeNullSafety();
+    }
+
+    if (_upgradeMajorVersions) {
+      return await _runUpgradeMajorVersions();
     }
 
     return await _runUpgrade();
@@ -79,49 +102,164 @@ class UpgradeCommand extends PubCommand {
       SolveType.UPGRADE,
       unlock: argResults.rest,
       dryRun: _dryRun,
-      precompile: argResults['precompile'],
+      precompile: _precompile,
     );
 
     _showOfflineWarning();
   }
 
-  Future<void> _runUpgradeNullSafety() async {
+  /// Return names of packages to be upgraded, and throws [UsageException] if
+  /// any package names not in the direct dependencies or dev_dependencies are given.
+  ///
+  /// This assumes that either `--major-versions` or `--null-safety` was passed.
+  List<String> _directDependenciesToUpgrade() {
+    assert(_upgradeNullSafety || _upgradeMajorVersions);
+
     final directDeps = [
       ...entrypoint.root.pubspec.dependencies.keys,
       ...entrypoint.root.pubspec.devDependencies.keys
     ];
-    final upgradeOnly = argResults.rest.isEmpty ? directDeps : argResults.rest;
+    final toUpgrade = argResults.rest.isEmpty ? directDeps : argResults.rest;
 
     // Check that all package names in upgradeOnly are direct-dependencies
-    if (upgradeOnly.any((name) => !directDeps.contains(name))) {
-      final notDirectDeps =
-          upgradeOnly.where((name) => !directDeps.contains(name)).toList();
+    final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
+    if (toUpgrade.any(notInDeps.contains)) {
+      var modeFlag = '';
+      if (_upgradeNullSafety) {
+        modeFlag = '--null-safety';
+      }
+      if (_upgradeMajorVersions) {
+        modeFlag = '--major-versions';
+      }
+
       usageException('''
-Dependencies specified in `dart pub upgrade --nullsafety <dependencies>` must
+Dependencies specified in `dart pub upgrade $modeFlag <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
- - ${notDirectDeps.join('\n - ')}
+ - ${notInDeps.join('\n - ')}
 
 ''');
     }
 
+    return toUpgrade;
+  }
+
+  Future<void> _runUpgradeMajorVersions() async {
+    final toUpgrade = _directDependenciesToUpgrade();
+
+    final resolvablePubspec = stripVersionUpperBounds(
+      entrypoint.root.pubspec,
+      stripOnly: toUpgrade,
+    );
+
+    // Solve [resolvablePubspec] in-memory and consolidate the resolved
+    // versions of the packages into a map for quick searching.
+    final resolvedPackages = <String, PackageId>{};
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
+        SolveType.UPGRADE,
+        cache,
+        Package.inMemory(resolvablePubspec),
+      );
+    }, condition: _shouldShowSpinner);
+    for (final resolvedPackage in solveResult?.packages ?? []) {
+      resolvedPackages[resolvedPackage.name] = resolvedPackage;
+    }
+
+    // Changes to be made to `pubspec.yaml`.
+    // Mapping from original to changed value.
+    final changes = <PackageRange, PackageRange>{};
+    final declaredHostedDependencies = [
+      ...entrypoint.root.pubspec.dependencies.values,
+      ...entrypoint.root.pubspec.devDependencies.values,
+    ].where((dep) => dep.source is HostedSource);
+    for (final dep in declaredHostedDependencies) {
+      final resolvedPackage = resolvedPackages[dep.name];
+      assert(resolvedPackage != null);
+      if (resolvedPackage == null || !toUpgrade.contains(dep.name)) {
+        // If we're not to upgrade this package, or it wasn't in the
+        // resolution somehow, then we ignore it.
+        continue;
+      }
+
+      // Skip [dep] if it has a dependency_override.
+      if (entrypoint.root.dependencyOverrides.containsKey(dep.name)) {
+        continue;
+      }
+
+      if (dep.constraint.allowsAll(resolvedPackage.version)) {
+        // If constraint allows the resolvable version we found, then there is
+        // no need to update the `pubspec.yaml`
+        continue;
+      }
+
+      changes[dep] = dep.withConstraint(VersionConstraint.compatibleWith(
+        resolvedPackage.version,
+      ));
+    }
+
+    if (_dryRun) {
+      // Even if it is a dry run, run `acquireDependencies` so that the user
+      // gets a report on changes.
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
+      await Entrypoint.global(
+        Package.inMemory(resolvablePubspec),
+        entrypoint.lockFile,
+        cache,
+        solveResult: solveResult,
+      ).acquireDependencies(
+        SolveType.UPGRADE,
+        dryRun: true,
+        precompile: _precompile,
+      );
+    } else {
+      await _updatePubspec(changes);
+
+      // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
+      //       we can show the changes when not in --dry-run mode. For now we only show
+      //       the changes made to pubspec.yaml in dry-run mode.
+      await Entrypoint.current(cache).acquireDependencies(
+        SolveType.UPGRADE,
+        precompile: _precompile,
+      );
+    }
+
+    _outputChangeSummary(changes);
+
+    // If any of the packages to upgrade are dependency overrides, then we
+    // show a warning.
+    final toUpgradeOverrides =
+        toUpgrade.where(entrypoint.root.dependencyOverrides.containsKey);
+    if (toUpgradeOverrides.isNotEmpty) {
+      log.warning(
+        'Warning: dependency_overrides prevents upgrades for: '
+        '${toUpgradeOverrides.join(', ')}',
+      );
+    }
+
+    _showOfflineWarning();
+  }
+
+  Future<void> _runUpgradeNullSafety() async {
+    final toUpgrade = _directDependenciesToUpgrade();
+
     final nullsafetyPubspec = await _upgradeToNullSafetyConstraints(
       entrypoint.root.pubspec,
-      upgradeOnly,
+      toUpgrade,
     );
 
     /// Solve [nullsafetyPubspec] in-memory and consolidate the resolved
     /// versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
-    await log.spinner('Resolving dependencies', () async {
-      final solveResult = await resolveVersions(
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
         SolveType.UPGRADE,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
-      for (final resolvedPackage in solveResult?.packages ?? []) {
-        resolvedPackages[resolvedPackage.name] = resolvedPackage;
-      }
     }, condition: _shouldShowSpinner);
+    for (final resolvedPackage in solveResult?.packages ?? []) {
+      resolvedPackages[resolvedPackage.name] = resolvedPackage;
+    }
 
     /// Changes to be made to `pubspec.yaml`.
     /// Mapping from original to changed value.
@@ -133,7 +271,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     for (final dep in declaredHostedDependencies) {
       final resolvedPackage = resolvedPackages[dep.name];
       assert(resolvedPackage != null);
-      if (resolvedPackage == null || !upgradeOnly.contains(dep.name)) {
+      if (resolvedPackage == null || !toUpgrade.contains(dep.name)) {
         // If we're not to upgrade this package, or it wasn't in the
         // resolution somehow, then we ignore it.
         continue;
@@ -152,7 +290,21 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       changes[dep] = dep.withConstraint(constraint);
     }
 
-    if (!_dryRun) {
+    if (_dryRun) {
+      // Even if it is a dry run, run `acquireDependencies` so that the user
+      // gets a report on changes.
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
+      await Entrypoint.global(
+        Package.inMemory(nullsafetyPubspec),
+        entrypoint.lockFile,
+        cache,
+        solveResult: solveResult,
+      ).acquireDependencies(
+        SolveType.UPGRADE,
+        dryRun: true,
+        precompile: _precompile,
+      );
+    } else {
       await _updatePubspec(changes);
 
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
@@ -160,7 +312,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
-        precompile: argResults['precompile'],
+        precompile: _precompile,
       );
     }
 
@@ -173,6 +325,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     //  - root has git or path dependencies,
     //  - root has dependency_overrides
     final nonMigratedDirectDeps = <String>[];
+    final directDeps = [
+      ...entrypoint.root.pubspec.dependencies.keys,
+      ...entrypoint.root.pubspec.devDependencies.keys
+    ];
     await Future.wait(directDeps.map((name) async {
       final resolvedPackage = resolvedPackages[name];
       assert(resolvedPackage != null);
@@ -196,6 +352,8 @@ You may have to:
  * Find other packages to use.
 ''');
     }
+
+    _showOfflineWarning();
   }
 
   /// Updates `pubspec.yaml` with given [changes].
