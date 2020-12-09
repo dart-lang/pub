@@ -93,6 +93,19 @@ dependencies:
       expect(foo.constraint.allows(Version(3, 4, 5)), isFalse);
     });
 
+    test('allows empty version constraint', () {
+      var pubspec = Pubspec.parse('''
+dependencies:
+  foo:
+    fake: ok
+    version: ">=1.2.3 <0.0.0"
+''', sources);
+
+      var foo = pubspec.dependencies['foo'];
+      expect(foo.name, equals('foo'));
+      expect(foo.constraint.isEmpty, isTrue);
+    });
+
     test('allows an empty dependencies map', () {
       var pubspec = Pubspec.parse('''
 dependencies:
