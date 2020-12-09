@@ -42,12 +42,17 @@ void main() {
   });
 
   group('git', () {
+    final executable = Platform.isWindows ? 'cmd' : 'git';
+    List<String> adaptArgs(List<String> args) =>
+        Platform.isWindows ? ['/c', executable, ...args] : args;
+
     Directory tmp;
     setUpAll(() async {
       tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
+
       final ret = await Process.run(
-        'git',
-        ['init'],
+        executable,
+        adaptArgs(['init']),
         includeParentEnvironment: false,
         workingDirectory: tmp.path,
       );
@@ -65,8 +70,8 @@ void main() {
           final gitIgnore = File.fromUri(tmp.uri.resolve('.gitignore'));
           await gitIgnore.writeAsString(c.patterns.join('\n') + '\n');
           final process = await Process.start(
-            'git',
-            ['check-ignore', '--no-index', '-z', '--stdin'],
+            executable,
+            adaptArgs(['check-ignore', '--no-index', '-z', '--stdin']),
             includeParentEnvironment: false,
             workingDirectory: tmp.path,
           );
