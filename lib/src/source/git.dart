@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -224,6 +225,7 @@ class BoundGitSource extends CachedSource {
     });
   }
 
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     return await _pool.withResource(() async {

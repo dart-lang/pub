@@ -8,6 +8,7 @@ import 'dart:io' as io;
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -228,6 +229,7 @@ class BoundHostedSource extends CachedSource {
 
   /// Downloads a list of all versions of a package that are available from the
   /// site.
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     final versions = await _scheduler.schedule(ref);
@@ -520,6 +522,7 @@ class _OfflineHostedSource extends BoundHostedSource {
       : super(source, systemCache);
 
   /// Gets the list of all versions of [ref] that are in the system cache.
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     var parsed = source._parseDescription(ref.description);

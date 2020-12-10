@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:meta/meta.dart';
 
 import 'exceptions.dart';
 import 'package_name.dart';
@@ -157,6 +158,30 @@ abstract class BoundSource {
   /// uses [describe] to get that version.
   ///
   /// Sources should not override this. Instead, they implement [doGetVersions].
+  Future<List<PackageId>> getVersions(PackageRef ref);
+
+  /// Loads the (possibly remote) pubspec for the package version identified by
+  /// [id].
+  ///
+  /// This may be called for packages that have not yet been downloaded during
+  /// the version resolution process. Its results are automatically memoized.
+  ///
+  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
+  /// version.
+  ///
+  /// Sources should not override this. Instead, they implement [doDescribe].
+  Future<Pubspec> describe(PackageId id);
+
+  /// Returns the directory where this package can (or could) be found locally.
+  ///
+  /// If the source is cached, this will be a path in the system cache.
+  String getDirectory(PackageId id);
+}
+
+/// A base class for [BoundSource] with in-memory caching of pubspecs.
+abstract class BoundSourceBase extends BoundSource {
+  @nonVirtual
+  @override
   Future<List<PackageId>> getVersions(PackageRef ref) {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
@@ -180,21 +205,14 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
+  @visibleForOverriding
   Future<List<PackageId>> doGetVersions(PackageRef ref);
 
   /// A cache of pubspecs described by [describe].
   final _pubspecs = <PackageId, Pubspec>{};
 
-  /// Loads the (possibly remote) pubspec for the package version identified by
-  /// [id].
-  ///
-  /// This may be called for packages that have not yet been downloaded during
-  /// the version resolution process. Its results are automatically memoized.
-  ///
-  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
-  /// version.
-  ///
-  /// Sources should not override this. Instead, they implement [doDescribe].
+  @nonVirtual
+  @override
   Future<Pubspec> describe(PackageId id) async {
     if (id.isRoot) throw ArgumentError('Cannot describe the root package.');
     if (id.source != source) {
@@ -227,20 +245,13 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [describe].
+  @visibleForOverriding
   Future<Pubspec> doDescribe(PackageId id);
-
-  /// Ensures [id] is available locally and creates a symlink at [symlink]
-  /// pointing it.
-  Future get(PackageId id, String symlink);
-
-  /// Returns the directory where this package can (or could) be found locally.
-  ///
-  /// If the source is cached, this will be a path in the system cache.
-  String getDirectory(PackageId id);
 
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
   /// This is notionally protected; it should only be called by subclasses.
+  @protected
   void memoizePubspec(PackageId id, Pubspec pubspec) {
     _pubspecs[id] = pubspec;
   }

@@ -440,14 +440,10 @@ class _RootSource extends BoundSource {
 
   @override
   Source get source => throw _unsupported;
+
   @override
   SystemCache get systemCache => throw _unsupported;
-  @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) => throw _unsupported;
-  @override
-  Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
-  @override
-  Future get(PackageId id, String symlink) => throw _unsupported;
+
   @override
   String getDirectory(PackageId id) => throw _unsupported;
 }
