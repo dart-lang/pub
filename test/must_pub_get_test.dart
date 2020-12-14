@@ -348,14 +348,14 @@ foo:http://example.com/
 
       await pubGet(environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
-      await d.dir('flutter', [d.file('version', '2.4.6')]).create();
+      await d.dir('flutter', [d.file('version', '0.9.0')]).create();
 
       // Run pub manually here because otherwise we don't have access to
       // d.sandbox.
       await runPub(
           args: ['run', 'script'],
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
+          error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
               'constraints. Please run "pub get" again.',
           exitCode: exit_codes.DATA);
     });

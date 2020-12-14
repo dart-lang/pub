@@ -680,7 +680,7 @@ class Pubspec {
   /// the max constraint if the original constraint doesn't have an upper
   /// bound and it is compatible with [defaultUpperBoundConstraint].
   ///
-  /// If [ignoreUpperBound
+  /// If [ignoreUpperBound] the max constraint is ignored.
   VersionConstraint _parseVersionConstraint(YamlNode node,
       {VersionConstraint defaultUpperBoundConstraint,
       bool ignoreUpperBound = false}) {
@@ -701,7 +701,8 @@ class Pubspec {
             [constraint, defaultUpperBoundConstraint]);
       }
       if (ignoreUpperBound && constraint is VersionRange) {
-        return VersionRange(min: constraint.min);
+        return VersionRange(
+            min: constraint.min, includeMin: constraint.includeMin);
       }
       return constraint;
     });
