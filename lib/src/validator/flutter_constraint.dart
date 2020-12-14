@@ -14,7 +14,7 @@ class FlutterConstraintValidator extends Validator {
   FlutterConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
   // TODO(sigurdm): Find a proper url for explaining this.
   static const explanationUrl =
-      'https://github.com/flutter/flutter/issues/68143';
+      'https://dart.dev/go/flutter-upper-bound-deprecation';
 
   @override
   Future validate() async {
