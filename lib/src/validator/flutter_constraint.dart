@@ -12,7 +12,6 @@ import '../validator.dart';
 /// Validates that a package's flutter constraint doesn't contain an upper bound
 class FlutterConstraintValidator extends Validator {
   FlutterConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
-  // TODO(sigurdm): Find a proper url for explaining this.
   static const explanationUrl =
       'https://dart.dev/go/flutter-upper-bound-deprecation';
 
