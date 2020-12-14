@@ -227,7 +227,6 @@ class Package {
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
     Iterable<String> files;
-    print('$useGitIgnore $inGitRepo');
     if (useGitIgnore && inGitRepo) {
       // List all files that aren't gitignored, including those not checked in
       // to Git. Use [beneath] as the working dir rather than passing it as a
