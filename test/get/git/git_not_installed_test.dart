@@ -39,10 +39,12 @@ echo "not git"
       'foo': {'git': '../foo.git'}
     }).create();
 
+    final separator = Platform.isWindows ? ';' : ':';
+
     await pubGet(
       environment: {
         // Override 'PATH' to ensure that we can't detect a working "git" binary
-        'PATH': '$binFolder:${Platform.environment['PATH']}',
+        'PATH': '$binFolder$separator${Platform.environment['PATH']}',
       },
       // We wish to verify that this error message is printed.
       error: contains('Cannot find a Git executable'),
