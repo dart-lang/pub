@@ -20,7 +20,7 @@ import '../source.dart';
 /// packages or the package needs to be "frozen" at the point in time that it's
 /// installed. (For example, Git packages are cached because installing from
 /// the same repo over time may yield different commits.)
-abstract class CachedSource extends BoundSource {
+abstract class CachedSource extends BoundSourceBase {
   /// The root directory of this source's cache within the system cache.
   ///
   /// This shouldn't be overridden by subclasses.
@@ -29,6 +29,7 @@ abstract class CachedSource extends BoundSource {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
+  @protected
   @override
   Future<Pubspec> doDescribe(PackageId id) async {
     var packageDir = getDirectory(id);
@@ -46,13 +47,6 @@ abstract class CachedSource extends BoundSource {
   /// This will only be called for packages that have not yet been installed in
   /// the system cache.
   Future<Pubspec> describeUncached(PackageId id);
-
-  @override
-  Future get(PackageId id, String symlink) {
-    return downloadToSystemCache(id).then((pkg) {
-      createPackageSymlink(id.name, pkg.dir, symlink);
-    });
-  }
 
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.

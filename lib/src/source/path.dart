@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -153,7 +154,7 @@ class PathSource extends Source {
 }
 
 /// The [BoundSource] for [PathSource].
-class BoundPathSource extends BoundSource {
+class BoundPathSource extends BoundSourceBase {
   @override
   final PathSource source;
 
@@ -162,6 +163,7 @@ class BoundPathSource extends BoundSource {
 
   BoundPathSource(this.source, this.systemCache);
 
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     // There's only one package ID for a given path. We just need to find the
@@ -172,21 +174,13 @@ class BoundPathSource extends BoundSource {
     return [id];
   }
 
+  @protected
   @override
   Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id.toRef());
 
   Pubspec _loadPubspec(PackageRef ref) {
     var dir = _validatePath(ref.name, ref.description);
     return Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
-  }
-
-  @override
-  Future get(PackageId id, String symlink) {
-    return Future.sync(() {
-      var dir = _validatePath(id.name, id.description);
-      createPackageSymlink(id.name, dir, symlink,
-          relative: id.description['relative']);
-    });
   }
 
   @override

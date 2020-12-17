@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../package_name.dart';
@@ -51,7 +52,7 @@ class UnknownSource extends Source {
       PackageId(name, this, version, description);
 }
 
-class _BoundUnknownSource extends BoundSource {
+class _BoundUnknownSource extends BoundSourceBase {
   @override
   final UnknownSource source;
 
@@ -60,18 +61,16 @@ class _BoundUnknownSource extends BoundSource {
 
   _BoundUnknownSource(this.source, this.systemCache);
 
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) =>
       throw UnsupportedError(
           "Cannot get package versions from unknown source '${source.name}'.");
 
+  @protected
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw UnsupportedError(
       "Cannot describe a package from unknown source '${source.name}'.");
-
-  @override
-  Future get(PackageId id, String symlink) =>
-      throw UnsupportedError("Cannot get an unknown source '${source.name}'.");
 
   /// Returns the directory where this package can be found locally.
   @override

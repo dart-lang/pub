@@ -4,10 +4,10 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
-import '../io.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
@@ -61,7 +61,7 @@ class SdkSource extends Source {
 }
 
 /// The [BoundSource] for [SdkSource].
-class BoundSdkSource extends BoundSource {
+class BoundSdkSource extends BoundSourceBase {
   @override
   final SdkSource source;
 
@@ -70,6 +70,7 @@ class BoundSdkSource extends BoundSource {
 
   BoundSdkSource(this.source, this.systemCache);
 
+  @protected
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref) async {
     var pubspec = _loadPubspec(ref);
@@ -78,6 +79,7 @@ class BoundSdkSource extends BoundSource {
     return [id];
   }
 
+  @protected
   @override
   Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id);
 
@@ -88,11 +90,6 @@ class BoundSdkSource extends BoundSource {
   Pubspec _loadPubspec(PackageName package) =>
       Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
           expectedName: package.name);
-
-  @override
-  Future get(PackageId id, String symlink) async {
-    createPackageSymlink(id.name, _verifiedPackagePath(id), symlink);
-  }
 
   /// Returns the path for the given [package].
   ///
