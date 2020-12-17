@@ -22,16 +22,6 @@ jobs:
         sdk: [dev]
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Pub hosted dependencies
-        uses: actions/cache@v2
-        with:
-          path: "~/.pub-cache/hosted"
-          key: "os:ubuntu-latest;pub-cache-hosted;dart:${{ matrix.sdk }};packages:pub"
-          restore-keys: |
-            os:ubuntu-latest;pub-cache-hosted;dart:${{ matrix.sdk }};packages:pub
-            os:ubuntu-latest;pub-cache-hosted;dart:${{ matrix.sdk }}
-            os:ubuntu-latest;pub-cache-hosted
-            os:ubuntu-latest
       - uses: dart-lang/setup-dart@v0.1
         with:
           channel: ${{ matrix.sdk }}
@@ -57,16 +47,6 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Pub hosted dependencies
-        uses: actions/cache@v2
-        with:
-          path: "~/.pub-cache/hosted"
-          key: "os:ubuntu-latest;pub-cache-hosted;dart:${{ matrix.sdk }};packages:pub"
-          restore-keys: |
-            os:${{ matrix.os }};pub-cache-hosted;dart:${{ matrix.sdk }};packages:pub
-            os:${{ matrix.os }};pub-cache-hosted;dart:${{ matrix.sdk }}
-            os:${{ matrix.os }};pub-cache-hosted
-            os:${{ matrix.os }}
       - uses: dart-lang/setup-dart@v0.1
         with:
           channel: ${{ matrix.sdk }}
