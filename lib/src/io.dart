@@ -561,7 +561,7 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
           environment: environment,
           runInShell: runInShell);
     } on IOException catch (e) {
-      throw ApplicationException(
+      throw RunProcessException(
           'Pub failed to run subprocess `$executable`: $e');
     }
 
@@ -591,7 +591,7 @@ Future<_PubProcess> startProcess(String executable, List<String> args,
           environment: environment,
           runInShell: runInShell);
     } on IOException catch (e) {
-      throw ApplicationException(
+      throw RunProcessException(
           'Pub failed to run subprocess `$executable`: $e');
     }
 
@@ -614,8 +614,7 @@ PubProcessResult runProcessSync(String executable, List<String> args,
         environment: environment,
         runInShell: runInShell);
   } on IOException catch (e) {
-    throw ApplicationException(
-        'Pub failed to run subprocess `$executable`: $e');
+    throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
   var pubResult =
       PubProcessResult(result.stdout, result.stderr, result.exitCode);
