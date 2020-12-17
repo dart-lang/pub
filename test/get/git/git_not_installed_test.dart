@@ -31,7 +31,7 @@ echo "not git"
     ]).create();
     final binFolder = p.join(sandbox, 'bin');
     // chmod the git script
-    if (Platform.isWindows) {
+    if (!Platform.isWindows) {
       await runProcess('chmod', ['+x', p.join(sandbox, 'bin', 'git')]);
     }
 
