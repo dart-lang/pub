@@ -88,11 +88,6 @@ class GlobalPackages {
   /// when needed.
   GlobalPackages(this.cache);
 
-  Future<void> activate(SourceDescriptor sourceDescriptor,
-      {List<String> executables,
-      Map<String, FeatureDependency> features,
-      bool overwriteBinStubs}) async {}
-
   /// Caches the package located in the Git repository [repo] and makes it the
   /// active global version.
   ///
