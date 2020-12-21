@@ -1,4 +1,4 @@
-name: Test
+name: Dart CI
 
 on:
   # Run CI on pushes to the main branch, and on PRs against main.
@@ -6,6 +6,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+    - cron: "0 0 * * 0"
 
 env:
   PUB_ENVIRONMENT: bot.github
@@ -18,6 +20,7 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         sdk: [dev]
     steps:
@@ -25,12 +28,15 @@ jobs:
       - uses: dart-lang/setup-dart@v0.1
         with:
           channel: ${{ matrix.sdk }}
-      - name: Install dependencies
+      - id: install
+        name: Install dependencies
         run: dart pub get
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
+        if: always() && steps.install.outcome == 'success'
       - name: Analyze code
         run: dart analyze
+        if: always() && steps.install.outcome == 'success'
 
   # Run tests on a matrix consisting of three dimensions:
   # 1. OS: mac, windows, linux
