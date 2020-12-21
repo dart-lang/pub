@@ -40,8 +40,8 @@ class LoginCommand extends PubCommand {
 
   Future<_UserInfo> retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
-      final discovery = await httpClient
-          .get('https://accounts.google.com/.well-known/openid-configuration');
+      final discovery = await httpClient.get(Uri.https(
+          'accounts.google.com', '/.well-known/openid-configuration'));
       final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
       final userInfoRequest = await client.get(userInfoEndpoint);
       if (userInfoRequest.statusCode != 200) return null;
