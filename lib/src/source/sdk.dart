@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
-import '../io.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
@@ -88,11 +87,6 @@ class BoundSdkSource extends BoundSource {
   Pubspec _loadPubspec(PackageName package) =>
       Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
           expectedName: package.name);
-
-  @override
-  Future get(PackageId id, String symlink) async {
-    createPackageSymlink(id.name, _verifiedPackagePath(id), symlink);
-  }
 
   /// Returns the path for the given [package].
   ///

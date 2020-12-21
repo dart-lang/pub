@@ -47,13 +47,6 @@ abstract class CachedSource extends BoundSource {
   /// the system cache.
   Future<Pubspec> describeUncached(PackageId id);
 
-  @override
-  Future get(PackageId id, String symlink) {
-    return downloadToSystemCache(id).then((pkg) {
-      createPackageSymlink(id.name, pkg.dir, symlink);
-    });
-  }
-
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.
   bool isInSystemCache(PackageId id) => dirExists(getDirectory(id));

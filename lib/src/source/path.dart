@@ -181,15 +181,6 @@ class BoundPathSource extends BoundSource {
   }
 
   @override
-  Future get(PackageId id, String symlink) {
-    return Future.sync(() {
-      var dir = _validatePath(id.name, id.description);
-      createPackageSymlink(id.name, dir, symlink,
-          relative: id.description['relative']);
-    });
-  }
-
-  @override
   String getDirectory(PackageId id) => id.description['path'];
 
   /// Ensures that [description] is a valid path description and returns a
