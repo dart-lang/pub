@@ -29,24 +29,6 @@ import 'source/path.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-class SourceDescriptor {}
-
-class GitSourceDescriptor implements SourceDescriptor {
-  final String repo;
-  GitSourceDescriptor(this.repo);
-}
-
-class HostedSourceDescriptor implements SourceDescriptor {
-  final String name;
-  final VersionConstraint constraint;
-  HostedSourceDescriptor(this.name, this.constraint);
-}
-
-class PathSourceDescriptor implements SourceDescriptor {
-  final String path;
-  PathSourceDescriptor(this.path);
-}
-
 /// Maintains the set of packages that have been globally activated.
 ///
 /// These have been hand-chosen by the user to make their executables in bin/
