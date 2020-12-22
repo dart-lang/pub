@@ -611,7 +611,7 @@ class Pubspec {
       YamlNode descriptionNode;
       String sourceName;
 
-      var versionConstraint = VersionRange();
+      VersionConstraint versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
         descriptionNode = nameNode;
