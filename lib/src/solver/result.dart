@@ -4,12 +4,13 @@
 
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:usage/usage.dart';
 
 import '../io.dart';
 import '../lock_file.dart';
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
 import '../source/hosted.dart';
 import '../source_registry.dart';
@@ -123,7 +124,7 @@ class SolveResult {
   }
 
   /// Send analytics about the package resolution.
-  void sendAnalytics(Analytics analytics) {
+  void sendAnalytics(PubAnalytics analytics) {
     ArgumentError.checkNotNull(analytics);
 
     for (final package in packages) {
@@ -132,22 +133,28 @@ class SolveResult {
       if (source is HostedSource &&
           (runningFromTest ||
               package.description['url'] == HostedSource.pubDevUrl)) {
-        final dependencyType = const {
+        final dependencyKind = const {
           DependencyType.dev: 'dev',
           DependencyType.direct: 'direct',
           DependencyType.none: 'transitive'
         }[_root.dependencyType(package.name)];
-
-        analytics.sendEvent(
+        analytics.analytics.sendEvent(
           'pub-get',
           package.name,
           label: package.version.toString(),
           value: 1,
-          parameters: {'kind': dependencyType},
+          parameters: {
+            'ni': '1', // We consider a pub-get a non-interactive event.
+            analytics.dependencyKindParameterName: dependencyKind
+          },
         );
+        log.fine(
+            'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
       }
     }
-    analytics.sendTiming('pub-get', resolutionTime.inMilliseconds);
+    analytics.analytics.sendTiming('pub-get', resolutionTime.inMilliseconds);
+    log.fine(
+        'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
   }
 
   @override

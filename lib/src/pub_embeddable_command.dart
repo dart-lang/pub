@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:meta/meta.dart';
 import 'package:usage/usage.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
@@ -23,6 +24,15 @@ import 'command/uploader.dart';
 import 'log.dart' as log;
 import 'log.dart';
 
+/// The information needed for the embedded pub command to send analytics.
+@sealed
+class PubAnalytics {
+  ///
+  final String dependencyKindParameterName;
+  final Analytics analytics;
+  PubAnalytics(this.analytics, {@required this.dependencyKindParameterName});
+}
+
 /// Exposes the `pub` commands as a command to be embedded in another command
 /// runner such as `dart pub`.
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
@@ -33,7 +43,8 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
-  final Analytics analytics;
+  @override
+  final PubAnalytics analytics;
 
   PubEmbeddableCommand(this.analytics) : super() {
     argParser.addFlag('trace',

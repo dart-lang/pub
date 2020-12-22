@@ -142,7 +142,8 @@ main() {
           'action': 'foo',
           'label': '1.0.0',
           'value': 1,
-          'kind': 'direct'
+          'cd1': 'direct',
+          'ni': '1',
         }
       },
       {
@@ -152,7 +153,8 @@ main() {
           'action': 'bar',
           'label': '1.0.0',
           'value': 1,
-          'kind': 'transitive'
+          'cd1': 'transitive',
+          'ni': '1',
         }
       },
       {

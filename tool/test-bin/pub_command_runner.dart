@@ -8,9 +8,9 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
+import 'package:pub/pub.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/pub_embeddable_command.dart';
 import 'package:usage/usage.dart';
 
 class Runner extends CommandRunner<int> {
@@ -18,9 +18,9 @@ class Runner extends CommandRunner<int> {
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
-        ? _LoggingAnalytics()
+        ? PubAnalytics(_LoggingAnalytics(), dependencyKindParameterName: 'cd1')
         : null;
-    addCommand(PubEmbeddableCommand(analytics));
+    addCommand(pubCommand(analytics: analytics));
   }
 
   @override

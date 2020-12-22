@@ -12,7 +12,6 @@ import 'package:meta/meta.dart';
 import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:usage/usage.dart';
 
 import 'dart.dart' as dart;
 import 'exceptions.dart';
@@ -27,6 +26,7 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -228,7 +228,7 @@ class Entrypoint {
     List<String> useLatest,
     bool dryRun = false,
     bool precompile = false,
-    @required Analytics analytics,
+    @required PubAnalytics analytics,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
