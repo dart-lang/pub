@@ -26,6 +26,7 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -227,6 +228,7 @@ class Entrypoint {
     Iterable<String> unlock,
     bool dryRun = false,
     bool precompile = false,
+    @required PubAnalytics analytics,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
@@ -270,6 +272,10 @@ class Entrypoint {
     result.summarizeChanges(type, dryRun: dryRun);
 
     if (!dryRun) {
+      if (analytics != null) {
+        result.sendAnalytics(analytics);
+      }
+
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);

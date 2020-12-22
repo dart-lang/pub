@@ -40,6 +40,8 @@ class HostedSource extends Source {
           ? _OfflineHostedSource(this, systemCache)
           : BoundHostedSource(this, systemCache);
 
+  static String pubDevUrl = 'https://pub.dartlang.org';
+
   /// Gets the default URL for the package server for hosted dependencies.
   String get defaultUrl {
     // Changing this to pub.dev raises the following concerns:
@@ -53,7 +55,7 @@ class HostedSource extends Source {
     //
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
-    return _defaultUrl ??= _pubHostedUrlConfig() ?? 'https://pub.dartlang.org';
+    return _defaultUrl ??= _pubHostedUrlConfig() ?? pubDevUrl;
   }
 
   String _defaultUrl;

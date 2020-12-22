@@ -135,11 +135,10 @@ class AddCommand extends PubCommand {
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
-          .acquireDependencies(
-        SolveType.GET,
-        dryRun: true,
-        precompile: argResults['precompile'],
-      );
+          .acquireDependencies(SolveType.GET,
+              dryRun: true,
+              precompile: argResults['precompile'],
+              analytics: analytics);
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
@@ -150,7 +149,7 @@ class AddCommand extends PubCommand {
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
       await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+          precompile: argResults['precompile'], analytics: analytics);
     }
 
     if (isOffline) {
