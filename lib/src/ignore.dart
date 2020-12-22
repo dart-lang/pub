@@ -205,10 +205,7 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
   if (negative) {
     first++;
   }
-  // Remove escape for # and !
-  if (pattern.startsWith(r'\#') || pattern.startsWith(r'\!')) {
-    first++;
-  }
+
   // Remove trailing whitespace unless escaped
   while (end != 0 &&
       pattern[end - 1] == ' ' &&
