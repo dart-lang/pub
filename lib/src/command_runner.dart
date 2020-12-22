@@ -127,12 +127,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
 
   @override
   Future<int> run(Iterable<String> args) async {
-    try {
-      _argResults = parse(args);
-    } on UsageException catch (error) {
-      log.exception(error);
-      return exit_codes.USAGE;
-    }
+    _argResults = parse(args);
     return await runCommand(_argResults) ?? exit_codes.SUCCESS;
   }
 
@@ -144,7 +139,12 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       log.message('Pub ${sdk.version}');
       return 0;
     }
-    return await super.runCommand(topLevelResults);
+    try {
+      return await super.runCommand(topLevelResults);
+    } on UsageException catch (error) {
+      log.exception(error);
+      return exit_codes.USAGE;
+    }
   }
 
   @override

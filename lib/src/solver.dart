@@ -21,20 +21,26 @@ export 'solver/type.dart';
 /// that those dependencies place on each other and the requirements imposed by
 /// [lockFile].
 ///
-/// If [useLatest] is given, then only the latest versions of the referenced
-/// packages will be used. This is for forcing an upgrade to one or more
-/// packages.
+/// If [unlock] is given, then only packages listed in [unlock] will be unlocked
+/// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
-/// If [upgradeAll] is true, the contents of [lockFile] are ignored.
+/// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
+/// while [SolveType.UPGRADE] and [SolveType.DOWNGRADE] interprets an empty
+/// [unlock] as unlock everything.
 Future<SolveResult> resolveVersions(
-    SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) {
+  SolveType type,
+  SystemCache cache,
+  Package root, {
+  LockFile lockFile,
+  Iterable<String> unlock,
+}) {
+  lockFile ??= LockFile.empty();
   return VersionSolver(
     type,
     cache,
     root,
-    lockFile ?? LockFile.empty(),
-    useLatest ?? const [],
+    lockFile,
+    unlock ?? [],
   ).solve();
 }
 
@@ -46,17 +52,27 @@ Future<SolveResult> resolveVersions(
 /// Like [resolveVersions] except that this function returns `null` where a
 /// similar call to [resolveVersions] would throw a [SolveFailure].
 ///
-/// If [useLatest] is given, then only the latest versions of the referenced
-/// packages will be used. This is for forcing an upgrade to one or more
-/// packages.
+/// If [unlock] is given, only packages listed in [unlock] will be unlocked
+/// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
-/// If [upgradeAll] is true, the contents of [lockFile] are ignored.
+/// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
+/// while [SolveType.UPGRADE] and [SolveType.DOWNGRADE] interprets an empty
+/// [unlock] as unlock everything.
 Future<SolveResult> tryResolveVersions(
-    SolveType type, SystemCache cache, Package root,
-    {LockFile lockFile, Iterable<String> useLatest}) async {
+  SolveType type,
+  SystemCache cache,
+  Package root, {
+  LockFile lockFile,
+  Iterable<String> unlock,
+}) async {
   try {
-    return await resolveVersions(type, cache, root,
-        lockFile: lockFile, useLatest: useLatest);
+    return await resolveVersions(
+      type,
+      cache,
+      root,
+      lockFile: lockFile,
+      unlock: unlock,
+    );
   } on SolveFailure {
     return null;
   }

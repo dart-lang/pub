@@ -85,8 +85,6 @@ class GlobalPackages {
   Future<void> activateGit(String repo, List<String> executables,
       {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
-    // Call this just to log what the current active package is, if any.
-    _describeActive(name);
 
     // TODO(nweiz): Add some special handling for git repos that contain path
     // dependencies. Their executables shouldn't be cached, and there should
@@ -119,7 +117,6 @@ class GlobalPackages {
       {Map<String, FeatureDependency> features,
       bool overwriteBinStubs,
       String url}) async {
-    _describeActive(name);
     await _installInCache(
         cache.hosted.source
             .refFor(name, url: url)
@@ -146,8 +143,14 @@ class GlobalPackages {
     await entrypoint.acquireDependencies(SolveType.GET);
     var name = entrypoint.root.name;
 
-    // Call this just to log what the current active package is, if any.
-    _describeActive(name);
+    try {
+      var originalLockFile =
+          LockFile.load(_getLockFilePath(name), cache.sources);
+      // Call this just to log what the current active package is, if any.
+      _describeActive(originalLockFile, name);
+    } on IOException {
+      // Couldn't read the lock file. It probably doesn't exist.
+    }
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
@@ -168,6 +171,16 @@ class GlobalPackages {
   /// Installs the package [dep] and its dependencies into the system cache.
   Future<void> _installInCache(PackageRange dep, List<String> executables,
       {bool overwriteBinStubs}) async {
+    LockFile originalLockFile;
+    try {
+      originalLockFile =
+          LockFile.load(_getLockFilePath(dep.name), cache.sources);
+      // Call this just to log what the current active package is, if any.
+      _describeActive(originalLockFile, dep.name);
+    } on IOException {
+      // Couldn't read the lock file. It probably doesn't exist.
+    }
+
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = Package.inMemory(Pubspec('pub global activate',
         dependencies: [dep], sources: cache.sources));
@@ -190,7 +203,17 @@ class GlobalPackages {
       rethrow;
     }
 
-    result.showReport(SolveType.GET);
+    final sameVersions = originalLockFile != null &&
+        originalLockFile.samePackageIds(result.lockFile);
+
+    if (sameVersions) {
+      log.message('''
+The package ${dep.name} is already activated at newest available version.
+To recompile executables, first run `global decativate ${dep.name}`.
+''');
+    } else {
+      result.showReport(SolveType.GET);
+    }
 
     // Make sure all of the dependencies are locally installed.
     await Future.wait(result.packages.map((id) {
@@ -215,10 +238,13 @@ class GlobalPackages {
     final entrypoint = Entrypoint.global(
         Package(result.pubspecs[dep.name],
             cache.source(dep.source).getDirectory(id)),
-        result.lockFile,
+        lockFile,
         cache,
         solveResult: result);
-    await entrypoint.precompileExecutables();
+    if (!sameVersions) {
+      // Only precompile binaries if we have a new resolution.
+      await entrypoint.precompileExecutables();
+    }
 
     _updateBinStubs(
       entrypoint,
@@ -255,27 +281,21 @@ class GlobalPackages {
   }
 
   /// Shows the user the currently active package with [name], if any.
-  void _describeActive(String name) {
-    try {
-      var lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
-      var id = lockFile.packages[name];
+  void _describeActive(LockFile lockFile, String name) {
+    var id = lockFile.packages[name];
 
-      var source = id.source;
-      if (source is GitSource) {
-        var url = source.urlFromDescription(id.description);
-        log.message('Package ${log.bold(name)} is currently active from Git '
-            'repository "$url".');
-      } else if (source is PathSource) {
-        var path = source.pathFromDescription(id.description);
-        log.message('Package ${log.bold(name)} is currently active at path '
-            '"$path".');
-      } else {
-        log.message('Package ${log.bold(name)} is currently active at version '
-            '${log.bold(id.version)}.');
-      }
-    } on IOException {
-      // If we couldn't read the lock file, it's not activated.
-      return;
+    var source = id.source;
+    if (source is GitSource) {
+      var url = source.urlFromDescription(id.description);
+      log.message('Package ${log.bold(name)} is currently active from Git '
+          'repository "$url".');
+    } else if (source is PathSource) {
+      var path = source.pathFromDescription(id.description);
+      log.message('Package ${log.bold(name)} is currently active at path '
+          '"$path".');
+    } else {
+      log.message('Package ${log.bold(name)} is currently active at version '
+          '${log.bold(id.version)}.');
     }
   }
 

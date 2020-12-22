@@ -25,19 +25,26 @@ void main() {
 echo "not git"
 exit 1
 '''),
+      d.file('git.bat', '''
+echo "not git"
+''')
     ]).create();
     final binFolder = p.join(sandbox, 'bin');
     // chmod the git script
-    await runProcess('chmod', ['+x', p.join(sandbox, 'bin', 'git')]);
+    if (!Platform.isWindows) {
+      await runProcess('chmod', ['+x', p.join(sandbox, 'bin', 'git')]);
+    }
 
     await d.appDir({
       'foo': {'git': '../foo.git'}
     }).create();
 
+    final separator = Platform.isWindows ? ';' : ':';
+
     await pubGet(
       environment: {
         // Override 'PATH' to ensure that we can't detect a working "git" binary
-        'PATH': '$binFolder:${Platform.environment['PATH']}',
+        'PATH': '$binFolder$separator${Platform.environment['PATH']}',
       },
       // We wish to verify that this error message is printed.
       error: contains('Cannot find a Git executable'),

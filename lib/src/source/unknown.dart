@@ -69,10 +69,6 @@ class _BoundUnknownSource extends BoundSource {
   Future<Pubspec> doDescribe(PackageId id) => throw UnsupportedError(
       "Cannot describe a package from unknown source '${source.name}'.");
 
-  @override
-  Future get(PackageId id, String symlink) =>
-      throw UnsupportedError("Cannot get an unknown source '${source.name}'.");
-
   /// Returns the directory where this package can be found locally.
   @override
   String getDirectory(PackageId id) => throw UnsupportedError(

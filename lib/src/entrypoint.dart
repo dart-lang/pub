@@ -225,7 +225,7 @@ class Entrypoint {
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
     SolveType type, {
-    List<String> useLatest,
+    Iterable<String> unlock,
     bool dryRun = false,
     bool precompile = false,
     @required PubAnalytics analytics,
@@ -240,7 +240,7 @@ class Entrypoint {
         cache,
         root,
         lockFile: lockFile,
-        useLatest: useLatest,
+        unlock: unlock,
       ),
     );
 

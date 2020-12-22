@@ -338,4 +338,17 @@ ${yamlToString(data)}
     }
     return 'transitive';
   }
+
+  /// `true` if [other] has the same packages as `this` in the same versions
+  /// from the same sources.
+  bool samePackageIds(LockFile other) {
+    if (packages.length != other.packages.length) {
+      return false;
+    }
+    for (final id in packages.values) {
+      final otherId = other.packages[id.name];
+      if (id != otherId) return false;
+    }
+    return true;
+  }
 }

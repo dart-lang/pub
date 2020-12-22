@@ -1,0 +1,386 @@
+[command]
+> pub add --help
+[stdout]
+Add a dependency to pubspec.yaml.
+
+Usage: pub add <package>[:<constraint>] [options]
+-h, --help               Print this usage information.
+-d, --dev                Adds package to the development dependencies instead.
+    --git-url            Git URL of the package
+    --git-ref            Git branch or commit to be retrieved
+    --git-path           Path of git package in repository
+    --hosted-url         URL of package host server
+    --path               Local path
+    --sdk                SDK source for package
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change
+                         any.
+    --[no-]precompile    Precompile executables in immediate dependencies.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-add for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub build --help
+[stdout]
+Deprecated command
+
+Usage: pub build <subcommand> [arguments...]
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub cache --help
+[stdout]
+Work with the system cache.
+
+Usage: pub cache [arguments...]
+-h, --help    Print this usage information.
+
+Available subcommands:
+  add      Install a package.
+  repair   Reinstall cached packages.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-cache for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub cache add --help
+[stdout]
+Install a package.
+
+Usage: pub cache add <package> [--version <constraint>] [--all]
+-h, --help       Print this usage information.
+    --all        Install all matching versions.
+-v, --version    Version constraint.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-cache for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub cache list --help
+[stdout]
+List packages in the system cache.
+
+Usage: pub cache list <subcommand> [arguments...]
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub cache repair --help
+[stdout]
+Reinstall cached packages.
+
+Usage: pub cache repair <subcommand> [arguments...]
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-cache for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub deps --help
+[stdout]
+Print package dependencies.
+
+Usage: pub deps [arguments...]
+-h, --help           Print this usage information.
+-s, --style          How output should be displayed.
+                     [compact, tree (default), list]
+    --[no-]dev       Whether to include dev dependencies.
+                     (defaults to on)
+    --executables    List all available executables.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-deps for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub downgrade --help
+[stdout]
+Downgrade the current package's dependencies to oldest versions.
+
+This doesn't modify the lockfile, so it can be reset with "pub get".
+
+Usage: pub downgrade [dependencies...]
+-h, --help            Print this usage information.
+    --[no-]offline    Use cached packages instead of accessing the network.
+-n, --dry-run         Report what dependencies would change but don't change
+                      any.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-downgrade for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub global --help
+[stdout]
+Work with global packages.
+
+Usage: pub global [arguments...]
+-h, --help    Print this usage information.
+
+Available subcommands:
+  activate     Make a package's executables globally available.
+  deactivate   Remove a previously activated package.
+  list         List globally activated packages.
+  run          Run an executable from a globally activated package.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-global for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub get --help
+[stdout]
+Get the current package's dependencies.
+
+Usage: pub get <subcommand> [arguments...]
+-h, --help               Print this usage information.
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change
+                         any.
+    --[no-]precompile    Precompile executables in immediate dependencies.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-get for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub list-package-dirs --help
+[stdout]
+Print local paths to dependencies.
+
+Usage: pub list-package-dirs
+-h, --help      Print this usage information.
+    --format    How output should be displayed.
+                [json]
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub publish --help
+[stdout]
+Publish the current package to pub.dartlang.org.
+
+Usage: pub publish [options]
+-h, --help       Print this usage information.
+-n, --dry-run    Validate but do not publish the package.
+-f, --force      Publish without confirmation if there are no errors.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-lish for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub outdated --help
+[stdout]
+Analyze your dependencies to find which ones can be upgraded.
+
+Usage: pub outdated [options]
+-h, --help                         Print this usage information.
+    --[no-]color                   Whether to color the output.
+                                   Defaults to color when connected to a
+                                   terminal, and no-color otherwise.
+    --[no-]dependency-overrides    Show resolutions with `dependency_overrides`.
+                                   (defaults to on)
+    --[no-]dev-dependencies        Take dev dependencies into account.
+                                   (defaults to on)
+    --json                         Output the results using a json format.
+    --mode=<PROPERTY>              Highlight versions with PROPERTY.
+                                   Only packages currently missing that PROPERTY
+                                   will be included unless --show-all.
+                                   [outdated (default), null-safety]
+    --[no-]prereleases             Include prereleases in latest version.
+                                   (defaults to on in --mode=null-safety).
+    --[no-]show-all                Include dependencies that are already
+                                   fullfilling --mode.
+    --[no-]transitive              Show transitive dependencies.
+                                   (defaults to off in --mode=null-safety).
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-outdated for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub remove --help
+[stdout]
+Removes a dependency from the current package.
+
+Usage: pub remove <package>
+-h, --help               Print this usage information.
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change
+                         any.
+    --[no-]precompile    Precompile executables in immediate dependencies.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-remove for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub run --help
+[stdout]
+Run an executable from a package.
+
+Usage: pub run <executable> [arguments...]
+-h, --help                              Print this usage information.
+    --[no-]enable-asserts               Enable assert statements.
+    --enable-experiment=<experiment>    Runs the executable in a VM with the
+                                        given experiments enabled.
+                                        (Will disable snapshotting, resulting in
+                                        slower startup).
+    --[no-]sound-null-safety            Override the default null safety
+                                        execution mode.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub serve --help
+[stdout]
+Deprecated command
+
+Usage: pub serve <subcommand> [arguments...]
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub upgrade --help
+[stdout]
+Upgrade the current package's dependencies to latest versions.
+
+Usage: pub upgrade [dependencies...]
+-h, --help               Print this usage information.
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change
+                         any.
+    --[no-]precompile    Precompile executables in immediate dependencies.
+    --null-safety        Upgrade constraints in pubspec.yaml to null-safety
+                         versions
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-upgrade for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub uploader --help
+[stdout]
+Manage uploaders for a package on pub.dartlang.org.
+
+Usage: pub uploader [options] {add/remove} <email>
+-h, --help       Print this usage information.
+    --package    The package whose uploaders will be modified.
+                 (defaults to the current package)
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub login --help
+[stdout]
+Log into pub.dev.
+
+Usage: pub login
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub logout --help
+[stdout]
+Log out of pub.dev.
+
+Usage: pub logout <subcommand> [arguments...]
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub version --help
+[stdout]
+Print pub version.
+
+Usage: pub version
+-h, --help    Print this usage information.
+
+Run "pub help" to see global options.
+[stderr]
+
+[exitCode]
+0
+
