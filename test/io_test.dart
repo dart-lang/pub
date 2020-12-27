@@ -415,14 +415,18 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
     test('throws on gzip error', () async {
       await withTempDir((tempDir) async {
         await expectLater(
-            () async => await extractTarGz(
-                Stream.fromIterable(
-                  [
-                    [10, 20, 30] // Not a good gz stream.
-                  ],
-                ),
-                tempDir),
-            throwsA(isA<FileSystemException>()));
+          () async => await extractTarGz(
+              Stream.fromIterable(
+                [
+                  [10, 20, 30] // Not a good gz stream.
+                ],
+              ),
+              tempDir),
+          throwsA(
+            isA<FormatException>().having((e) => e.message, 'message',
+                contains('Filter error, bad data')),
+          ),
+        );
       });
     });
   });
