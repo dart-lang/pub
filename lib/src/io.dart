@@ -824,18 +824,20 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
   baseDir = path.absolute(baseDir);
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
-    entry = path.absolute(path.normalize(entry));
+    entry = path.absolute(entry);
     if (!path.isWithin(baseDir, entry)) {
       throw ArgumentError('Entry $entry is not inside $baseDir.');
     }
 
     final relative = path.relative(entry, from: baseDir);
-    final file = File(entry);
+    // On Windows, we can't open some files without normalizing them
+    final file = File(path.normalize(entry));
     final stat = file.statSync();
 
     return tar.Entry(
       tar.Header(
-        name: relative,
+        // Ensure paths in tar files use forward slashes
+        name: path.url.joinAll(path.split(relative)),
         mode: stat.mode,
         size: stat.size,
         lastModified: stat.changed,
