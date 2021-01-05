@@ -8,8 +8,6 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -26,6 +24,7 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'packages_file.dart' as packages_file;
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
