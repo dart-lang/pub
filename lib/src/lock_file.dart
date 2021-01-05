@@ -6,8 +6,6 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:collection/collection.dart' hide mapMap;
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -17,6 +15,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'package_config.dart';
 import 'package_name.dart';
+import 'packages_file.dart' as packages_file;
 import 'sdk.dart' show sdk;
 import 'source_registry.dart';
 import 'system_cache.dart';

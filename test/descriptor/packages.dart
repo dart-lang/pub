@@ -6,10 +6,9 @@ import 'dart:async' show Future;
 import 'dart:convert' show JsonEncoder, json, utf8;
 import 'dart:io' show File;
 
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/packages_file.dart' as packages_file;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
