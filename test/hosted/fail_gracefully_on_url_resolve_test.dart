@@ -15,13 +15,13 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': 'http://pub.invalid'}
+            'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
           }
         })
       ]).create();
 
       await pubCommand(command,
-          error: 'Could not resolve URL "http://pub.invalid".',
+          error: 'Could not resolve URL "https://invalid-url.foo".',
           exitCode: exit_codes.UNAVAILABLE,
           environment: {
             'PUB_MAX_HTTP_RETRIES': '2',
