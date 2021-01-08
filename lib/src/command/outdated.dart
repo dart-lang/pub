@@ -545,12 +545,12 @@ Future<void> _outputHuman(
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
             'an older version.\n'
-            'To update it, use `pub upgrade`.');
+            'To update it, use `dart pub upgrade`.');
       } else {
         log.message(
             '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
             'to older versions.\n'
-            'To update these dependencies, use `pub upgrade`.');
+            'To update these dependencies, use `dart pub upgrade`.');
       }
     }
   } else {
