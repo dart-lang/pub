@@ -15,7 +15,7 @@ import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:tar/tar.dart' as tar;
+import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
@@ -790,18 +790,43 @@ Future<HttpServer> bindServer(String host, int port) async {
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  final entries = stream.transform(gzip.decoder).transform(tar.reader);
 
   destination = path.absolute(destination);
-  await for (final entry in entries) {
-    if (entry.type != tar.FileType.regular) continue;
+  final reader = TarReader(stream.transform(gzip.decoder));
+  while (await reader.moveNext()) {
+    final entry = reader.current;
 
-    final filePath = path.join(destination, entry.name);
+    final filePath = path.joinAll([
+      destination,
+      // Tar file names always use forward slashes
+      ...path.posix.split(entry.name),
+    ]);
     final parentDirectory = path.dirname(filePath);
 
-    deleteIfLink(filePath);
-    ensureDir(parentDirectory);
-    await _createFileFromStream(entry, filePath);
+    switch (entry.type) {
+      case TypeFlag.reg:
+        // Regular file
+        deleteIfLink(filePath);
+        ensureDir(parentDirectory);
+        await _createFileFromStream(entry, filePath);
+        break;
+      case TypeFlag.symlink:
+        // Link to another file in this tar, relative from this entry
+        ensureDir(parentDirectory);
+        createSymlink(entry.header.linkName, filePath);
+        break;
+      case TypeFlag.link:
+        // We generate hardlinks as symlinks too, but their path needs to be
+        // resolved against the root of the tar file.
+        ensureDir(parentDirectory);
+        final fromDestination = path.join(destination, entry.header.linkName);
+        final fromFile = path.relative(fromDestination, from: parentDirectory);
+        createSymlink(fromFile, filePath);
+        break;
+      default:
+        // Only extract files
+        continue;
+    }
   }
 
   log.fine('Extracted .tar.gz to $destination.');
@@ -834,13 +859,13 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
     final file = File(path.normalize(entry));
     final stat = file.statSync();
 
-    return tar.Entry(
-      tar.Header(
+    return TarEntry(
+      TarHeader(
         // Ensure paths in tar files use forward slashes
         name: path.url.joinAll(path.split(relative)),
         mode: stat.mode,
         size: stat.size,
-        lastModified: stat.changed,
+        modified: stat.changed,
         userName: 'pub',
         groupName: 'pub',
       ),
@@ -848,7 +873,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
     );
   }));
 
-  return ByteStream(tarContents.transform(tar.writer).transform(gzip.encoder));
+  return ByteStream(tarContents.transform(tarWriter).transform(gzip.encoder));
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.
