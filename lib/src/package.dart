@@ -297,7 +297,7 @@ class Package {
       files = listDir(beneath,
           recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
-    final ignores = pubignores();
+    final ignores = pubignores;
 
     files = files.where((file) => !ignores.ignores(Platform.pathSeparator == '/'
         ? file.substring(dir.length + 1)
