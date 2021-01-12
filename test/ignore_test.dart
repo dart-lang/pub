@@ -47,6 +47,7 @@ void main() {
 
   final gitVersion = Version.parse(
       (Process.runSync(executable, adaptArgs(['--version'])).stdout as String)
+          .trim()
           .split(' ')[2]
           .split('.')
           .take(3)
