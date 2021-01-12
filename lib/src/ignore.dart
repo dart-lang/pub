@@ -24,7 +24,6 @@
 /// [1]: https://git-scm.com/docs/gitignore
 
 import 'package:meta/meta.dart';
-import 'package:pub/src/yaml_edit/utils.dart';
 
 /// A set of ignore rules representing a hierrchy of ignore files.
 ///
