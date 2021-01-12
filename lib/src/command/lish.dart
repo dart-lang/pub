@@ -136,7 +136,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    var files = entrypoint.root.listFiles(useGitIgnore: true);
+    var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root}.');
 
     // Show the package contents so the user can verify they look OK.
@@ -144,10 +144,9 @@ the \$PUB_HOSTED_URL environment variable.''',
     log.message('Publishing ${package.name} ${package.version} to $server:\n'
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
     // Improve discoverability of the pubignore file.
-    if (!fileExists(entrypoint.root.pubIgnorePath)) {
+    if (!files.any((f) => f.endsWith('.pubignore'))) {
       log.message('''
-(To exclude files from being published, consider creating a `pubignore` file
-in your project root.)''');
+(To exclude files from being published, consider creating a `.pubignore`)''');
     }
 
     var packageBytesFuture =

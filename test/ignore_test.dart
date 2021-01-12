@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import 'dart:collection';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -42,9 +41,10 @@ void main() {
   });
 
   group('git', () {
-    final executable = Platform.isWindows ? 'cmd' : 'git';
+    final executable =
+        Platform.isWindows ? 'cmd' : '/Users/sigurdm/projects/git/git';
     List<String> adaptArgs(List<String> args) =>
-        Platform.isWindows ? ['/c', executable, ...args] : args;
+        Platform.isWindows ? ['/c', 'git', ...args] : args;
 
     Directory tmp;
     setUpAll(() async {
@@ -62,22 +62,39 @@ void main() {
       await tmp.delete(recursive: true);
       tmp = null;
     });
+    tearDown(() async {
+      await Process.run(
+        executable,
+        adaptArgs(['clean', '-f', '-d', '-x']),
+        includeParentEnvironment: false,
+        workingDirectory: tmp.path,
+      );
+    });
     for (final c in testData) {
       c.paths.forEach(
         (path, expected) => test(
             '${c.name}: git check-ignore "$path" is ${expected ? 'IGNORED' : 'NOT ignored'}',
             () async {
-          final gitIgnore = File.fromUri(tmp.uri.resolve('.gitignore'));
-          await gitIgnore.writeAsString(c.patterns.join('\n') + '\n');
-          final process = await Process.start(
-            executable,
-            adaptArgs(['check-ignore', '--no-index', '-z', '--stdin']),
-            includeParentEnvironment: false,
-            workingDirectory: tmp.path,
-          );
-          process.stdin.write(path);
-          await process.stdin.close();
-          final exitCode = await process.exitCode;
+          for (final directory in c.patterns.keys) {
+            final resolvedDirectory =
+                directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
+            Directory.fromUri(resolvedDirectory).createSync(recursive: true);
+            final gitIgnore =
+                File.fromUri(resolvedDirectory.resolve('.gitignore'));
+            gitIgnore
+                .writeAsStringSync(c.patterns[directory].join('\n') + '\n');
+          }
+          final process = Process.runSync(executable,
+              adaptArgs(['-C', tmp.path, 'check-ignore', '--no-index', path]),
+              includeParentEnvironment: false,
+              workingDirectory: tmp.path,
+              environment: {
+                for (final e in Platform.environment.entries.take(11))
+                  e.key: e.value
+              });
+          // process.stdin.write(path);
+          // await process.stdin.close();
+          final exitCode = process.exitCode;
           expect(
             exitCode,
             anyOf(0, 1),
@@ -101,7 +118,7 @@ class TestData {
   final String name;
 
   /// Patterns for the test case.
-  final List<String> patterns;
+  final Map<String, List<String>> patterns;
 
   /// Map from path to `true` if ignored by [patterns], and `false` if not
   /// ignored by `patterns`.
@@ -112,25 +129,24 @@ class TestData {
 
   final bool hasWarning;
 
-  TestData(this.name, Iterable<String> patterns, Map<String, bool> paths,
-      {this.hasWarning = false, this.skip})
-      : patterns = UnmodifiableListView(List.from(patterns)),
-        paths = UnmodifiableMapView(
-          Map.from(paths),
-        );
-  TestData.single(String pattern, Map<String, bool> paths,
+  TestData(this.name, this.patterns, this.paths,
+      {this.hasWarning = false, this.skip});
+  TestData.single(String pattern, this.paths,
       {this.hasWarning = false, this.skip})
       : name = '"${pattern.replaceAll('\n', '\\n')}"',
-        patterns = UnmodifiableListView([pattern]),
-        paths = UnmodifiableMapView(Map.from(paths));
+        patterns = {
+          '': [pattern]
+        };
 }
 
 final testData = [
   // Simple test case
-  TestData('simple', [
-    '/.git/',
-    '*.o',
-  ], {
+  TestData('simple', {
+    '': [
+      '/.git/',
+      '*.o',
+    ]
+  }, {
     '.git/config': true,
     '.git/': true,
     'README.md': false,
@@ -138,9 +154,9 @@ final testData = [
     'main.o': true,
   }),
   // Test empty lines
-  TestData('empty', [
-    ''
-  ], {
+  TestData('empty', {
+    '': ['']
+  }, {
     'README.md': false,
   }),
   // Test simple patterns
@@ -180,7 +196,9 @@ final testData = [
       skip: Platform.isMacOS == true),
   TestData(
       'negation',
-      ['f*', '!file.txt'],
+      {
+        '': ['f*', '!file.txt']
+      },
       {
         'file.txt': false,
         '!file.txt': false,
@@ -755,4 +773,40 @@ final testData = [
     'sub/bolder/other.paf': true,
     'subblob/file.txt': false,
   }),
+  TestData('ignores in subfolders only target those', {
+    '': ['a.txt'],
+    'folder': ['b.txt'],
+    'folder/sub': ['c.txt'],
+  }, {
+    'a.txt': true,
+    'b.txt': false,
+    'c.txt': false,
+    'folder/a.txt': true,
+    'folder/b.txt': true,
+    'folder/c.txt': false,
+    'folder/sub/a.txt': true,
+    'folder/sub/b.txt': true,
+    'folder/sub/c.txt': true,
+  }),
+  TestData('Cannot negate folders that were excluded', {
+    '': ['sub/', '!sub/foo.txt']
+  }, {
+    'sub/a.txt': true,
+    'sub/foo.txt': true,
+  }),
+  TestData('Can negate the exclusion of folders', {
+    '': ['*.txt', 'sub', '!sub', '!foo.txt'],
+  }, {
+    'sub/a.txt': true,
+    'sub/foo.txt': false,
+  }),
+  TestData('Can negate the exclusion of folders 2', {
+    '': ['sub/', '*.txt'],
+    'folder': ['!sub/', '!foo.txt']
+  }, {
+    'folder/sub/a.txt': true,
+    'folder/sub/foo.txt': false,
+    'folder/foo.txt': false,
+    'folder/a.txt': true,
+  })
 ];

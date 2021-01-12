@@ -18,7 +18,7 @@ class PubspecValidator extends Validator {
 
   @override
   Future validate() async {
-    var files = entrypoint.root.listFiles(recursive: false, useGitIgnore: true);
+    var files = entrypoint.root.listFiles(recursive: false);
     if (!files.any((file) =>
         p.canonicalize(file) == p.canonicalize(entrypoint.pubspecPath))) {
       errors.add('The pubspec is hidden, probably by .gitignore or pubignore.');

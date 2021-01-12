@@ -18,7 +18,7 @@ class CompiledDartdocValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      for (var entry in entrypoint.root.listFiles(useGitIgnore: true)) {
+      for (var entry in entrypoint.root.listFiles()) {
         if (path.basename(entry) != 'nav.json') continue;
         var dir = path.dirname(entry);
 

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:io';
+import 'dart:math';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -35,8 +36,6 @@ class Package {
 
   /// The path to the directory containing the package.
   final String dir;
-
-  String get pubIgnorePath => p.join(dir, 'pubignore');
 
   /// An in-memory package can be created for doing a resolution without having
   /// a package on disk. Paths should not be resolved for these.
@@ -92,7 +91,7 @@ class Package {
   /// pub.dartlang.org for choosing the primary one: the README with the fewest
   /// extensions that is lexically ordered first is chosen.
   String get readmePath {
-    var readmes = listFiles(recursive: false, useGitIgnore: true)
+    var readmes = listFiles(recursive: false)
         .map(p.basename)
         .where((entry) => entry.contains(_readmeRegexp));
     if (readmes.isEmpty) return null;
@@ -109,7 +108,7 @@ class Package {
   /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
   /// null if no CHANGELOG file is found.
   String get changelogPath {
-    return listFiles(recursive: false, useGitIgnore: true).firstWhere(
+    return listFiles(recursive: false).firstWhere(
         (entry) => p.basename(entry).contains(_changelogRegexp),
         orElse: () => null);
   }
@@ -194,12 +193,38 @@ class Package {
   static const _allowedFiles = ['.htaccess'];
 
   /// A set of patterns that match paths to disallowed files.
-  static final _disallowedFiles = createFileFilter(['pubspec.lock']);
+  static final _disallowedFiles =
+      createFileFilter(['pubspec.lock', '.pubignore']);
 
   /// A set of patterns that match paths to disallowed directories.
   // TODO(sigurdm): consider removing this. `packages` folders are not used
   // anymore.
   static final _disallowedDirs = createDirectoryFilter(['packages']);
+
+  static final _pubignorePathEnding = '${Platform.pathSeparator}.pubignore';
+
+  /// Computes an [Ignore] object representing all the .pubignores in this
+  /// package.
+  Ignore pubignores() {
+    var pubignores = listDir(dir, recursive: true, allowed: ['.pubignore'])
+        .where((e) => e.endsWith(_pubignorePathEnding));
+    final mapping = <String, List<String>>{};
+    for (final pubignore in pubignores) {
+      final relative = pubignore.substring(dir.length + 1);
+      if (Platform.pathSeparator != '/') {
+        relative.replaceAll(Platform.pathSeparator, '/');
+      }
+      final relativePath = relative.substring(
+          0, max(0, relative.length - _pubignorePathEnding.length));
+      mapping[relativePath] = [readTextFile(pubignore)];
+    }
+    return Ignore(
+      mapping,
+      onInvalidPattern: (pattern, exception) {
+        log.warning('`pubignore` had invalid pattern: ${exception.message}');
+      },
+    );
+  }
 
   /// Returns a list of files that are considered to be part of this package.
   ///
@@ -208,14 +233,11 @@ class Package {
   /// [recursive] is true, this will return all files beneath that path;
   /// otherwise, it will only return files one level beneath it.
   ///
-  /// If [useGitIgnore] is passed, this will take the .gitignore rules into
-  /// account if the root directory of the package is (or is contained within) a
-  /// Git repository.
+  /// This will take .gitignore and .pubignore files into account.
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
-  List<String> listFiles(
-      {String beneath, bool recursive = true, bool useGitIgnore = false}) {
+  List<String> listFiles({String beneath, bool recursive = true}) {
     // An in-memory package has no files.
     if (dir == null) return [];
 
@@ -233,7 +255,7 @@ class Package {
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
     Iterable<String> files;
-    if (useGitIgnore && inGitRepo) {
+    if (inGitRepo) {
       // List all files that aren't gitignored, including those not checked in
       // to Git. Use [beneath] as the working dir rather than passing it as a
       // parameter so that we list a submodule using its own git logic.
@@ -270,19 +292,13 @@ class Package {
       files = listDir(beneath,
           recursive: recursive, includeDirs: false, allowed: _allowedFiles);
     }
+    final ignores = pubignores();
 
-    if (fileExists(pubIgnorePath)) {
-      final ignore = Ignore(
-        [readTextFile(pubIgnorePath)],
-        onInvalidPattern: (pattern, exception) {
-          log.warning('`pubignore` had invalid pattern: ${exception.message}');
-        },
-      );
-      files = files.where((file) =>
-          // Use relative uris, they always use '/' as separator.
-          // That is what Ignore expects.
-          !ignore.ignores(p.toUri(p.relative(file, from: dir)).path));
-    }
+    files = files.where((file) => !ignores.ignores(Platform.pathSeparator == '/'
+        ? file.substring(dir.length + 1)
+        :
+        // convert '\' to '/' on windows.
+        p.toUri(file.substring(dir.length + 1)).path));
     return files.where((file) {
       // Using substring here is generally problematic in cases where dir has
       // one or more trailing slashes. If you do listDir("foo"), you'll get back
@@ -317,8 +333,7 @@ class Package {
     if (p.isWithin(dir, target)) {
       // If the link points within this repo, use git to list the target
       // location so we respect .gitignore.
-      targetFiles =
-          listFiles(beneath: p.relative(target, from: dir), useGitIgnore: true);
+      targetFiles = listFiles(beneath: p.relative(target, from: dir));
     } else {
       // If the link points outside this repo, just use the default listing
       // logic.

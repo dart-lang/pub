@@ -76,7 +76,7 @@ void main() {
           ]));
     });
 
-    test('ignores files that are gitignored if desired', () async {
+    test('ignores files that are gitignored', () async {
       await d.dir(appPath, [
         d.file('.gitignore', '*.txt'),
         d.file('file1.txt', 'contents'),
@@ -88,21 +88,11 @@ void main() {
       ]).create();
 
       expect(
-          entrypoint.root.listFiles(useGitIgnore: true),
+          entrypoint.root.listFiles(),
           unorderedEquals([
             p.join(root, 'pubspec.yaml'),
             p.join(root, '.gitignore'),
             p.join(root, 'file2.text'),
-            p.join(root, 'subdir', 'subfile2.text')
-          ]));
-
-      expect(
-          entrypoint.root.listFiles(),
-          unorderedEquals([
-            p.join(root, 'pubspec.yaml'),
-            p.join(root, 'file1.txt'),
-            p.join(root, 'file2.text'),
-            p.join(root, 'subdir', 'subfile1.txt'),
             p.join(root, 'subdir', 'subfile2.text')
           ]));
     });
@@ -126,21 +116,11 @@ void main() {
       createEntrypoint(p.join(appPath, 'sub'));
 
       expect(
-          entrypoint.root.listFiles(useGitIgnore: true),
+          entrypoint.root.listFiles(),
           unorderedEquals([
             p.join(root, 'pubspec.yaml'),
             p.join(root, '.gitignore'),
             p.join(root, 'file2.text'),
-            p.join(root, 'subdir', 'subfile2.text')
-          ]));
-
-      expect(
-          entrypoint.root.listFiles(),
-          unorderedEquals([
-            p.join(root, 'pubspec.yaml'),
-            p.join(root, 'file1.txt'),
-            p.join(root, 'file2.text'),
-            p.join(root, 'subdir', 'subfile1.txt'),
             p.join(root, 'subdir', 'subfile2.text')
           ]));
     });
@@ -159,19 +139,9 @@ void main() {
         createEntrypoint();
       });
 
-      test('ignores its .gitignore without useGitIgnore', () {
-        expect(
-            entrypoint.root.listFiles(),
-            unorderedEquals([
-              p.join(root, 'pubspec.yaml'),
-              p.join(root, 'submodule', 'file1.txt'),
-              p.join(root, 'submodule', 'file2.text'),
-            ]));
-      });
-
       test('respects its .gitignore with useGitIgnore', () {
         expect(
-            entrypoint.root.listFiles(useGitIgnore: true),
+            entrypoint.root.listFiles(),
             unorderedEquals([
               p.join(root, '.gitmodules'),
               p.join(root, 'pubspec.yaml'),
@@ -290,10 +260,10 @@ void commonTests() {
     });
   });
 
-  test('pubignore', () async {
+  test('.pubignore', () async {
     await d.validPackage.create();
     await d.dir(appPath, [
-      d.file('pubignore', '''
+      d.file('.pubignore', '''
 /lib/ignored.dart
 '''),
       d.dir('lib', [d.file('ignored.dart', 'content')]),
@@ -303,7 +273,6 @@ void commonTests() {
     expect(entrypoint.root.listFiles(), {
       p.join(root, 'LICENSE'),
       p.join(root, 'CHANGELOG.md'),
-      p.join(root, 'pubignore'),
       p.join(root, 'README.md'),
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'lib', 'test_pkg.dart'),

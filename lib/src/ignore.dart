@@ -24,11 +24,12 @@
 /// [1]: https://git-scm.com/docs/gitignore
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/yaml_edit/utils.dart';
 
-/// A set of ignore rules.
+/// A set of ignore rules representing a hierrchy of ignore files.
 ///
-/// An [Ignore] instance holds a set of [`.gitignore` rules][1], and allows
-/// testing if a given path is ignored.
+/// An [Ignore] instance holds [`.gitignore` rules][1] relative to given paths,
+/// and allows testing if a given path is ignored.
 ///
 /// **Example**:
 /// ```dart
@@ -47,13 +48,17 @@ import 'package:meta/meta.dart';
 /// [1]: https://git-scm.com/docs/gitignore
 @sealed
 class Ignore {
-  final List<GitIgnoreRule> _rules;
+  final Map<String, List<GitIgnoreRule>> _rules;
 
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]
   /// patterns.
   ///
-  /// Each pattern in [patterns] will be interpreted as one or more lines from
+  /// Each value in [patterns] will be interpreted as one or more lines from
   /// a `.gitignore` file, in compliance with the [`.gitignore` manual page][1].
+  ///
+  /// The keys of 'pattern' are the directories to intpret the rules relative
+  /// to. The root should be the empty string, and sub-directories are separated
+  /// by '/' (but no final '/').
   ///
   /// If [ignoreCase] is `true`, patterns will be case-insensitive. By default
   /// `git` is case-sensitive. But case insensitivity can be enabled when a
@@ -64,7 +69,7 @@ class Ignore {
   /// ```dart
   /// import 'package:ignore/ignore.dart';
   /// void main() {
-  ///   final ignore = Ignore([
+  ///   final ignore = Ignore({'': [
   ///     // You can pass an entire .gitignore file as a single string.
   ///     // You can also pass it as a list of lines, or both.
   ///     '''
@@ -73,7 +78,7 @@ class Ignore {
   /// *.o
   /// !main.o
   ///   '''
-  ///   ]);
+  ///   }]);
   ///
   ///   print(ignore.ignores('obj/README.md')); // true
   ///   print(ignore.ignores('lib.o')); // false
@@ -84,7 +89,7 @@ class Ignore {
   /// [1]: https://git-scm.com/docs/gitignore
   /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
   Ignore(
-    Iterable<String> patterns, {
+    Map<String, Iterable<String>> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception) onInvalidPattern,
   }) : _rules = parseIgnorePatterns(patterns, ignoreCase,
@@ -128,15 +133,47 @@ class Ignore {
         'must be relative, and not start with "./", "../"',
       );
     }
+    if (_rules.isEmpty) {
+      return false;
+    }
+    bool ignoresSubpath(String path) {
+      bool testRulesForPrefix(String prefix) {
+        final rules = _rules[prefix];
 
-    // for (final p in _parentFolders(path).followedBy([path])) {
-    var ignored = false;
-    for (final r in _rules) {
-      if (ignored == r.negative && r.pattern.hasMatch(path)) {
-        ignored = !r.negative;
+        if (rules != null) {
+          // Test the rules against the rest of the path.
+          final l = prefix == '' ? 0 : prefix.length + 1;
+          final suffix = path.substring(l);
+          // Test patterns in reverse. The negativity of the last
+          // matching pattern decides the fate of the path.
+          for (final r in rules.reversed) {
+            if (r.pattern.hasMatch(suffix)) {
+              return !r.negative;
+            }
+          }
+        }
+        return null;
+      }
+
+      // Iterate over all subpaths to find relevant rules.
+      for (var index = path.lastIndexOf('/');
+          index != -1;
+          index = path.lastIndexOf('/', index - 1)) {
+        final result = testRulesForPrefix(path.substring(0, index));
+        if (result != null) return result;
+      }
+      return testRulesForPrefix('') == true;
+    }
+
+    for (var slashIndex = path.indexOf('/');
+        slashIndex != -1;
+        slashIndex = path.indexOf('/', slashIndex + 1)) {
+      if (ignoresSubpath(path.substring(0, slashIndex + 1))) {
+        // If a folder above [path] is ignored the pattern cannot be un-ignored.
+        return true;
       }
     }
-    return ignored;
+    return ignoresSubpath(path);
   }
 }
 
@@ -162,33 +199,49 @@ class GitIgnoreParseResult {
 }
 
 class GitIgnoreRule {
+  /// A regular expression that represents this rule.
   final RegExp pattern;
   final bool negative;
 
-  GitIgnoreRule(this.pattern, this.negative);
+  /// The String this pattern was generated from.
+  final String original;
+
+  GitIgnoreRule(this.pattern, this.negative, this.original);
+
+  @override
+  String toString() {
+    // TODO: implement toString
+    return '$original -> $pattern';
+  }
 }
 
 /// [onInvalidPattern] can be used to handle parse failures. If
 /// [onInvalidPattern] is `null` invalid patterns are ignored.
-List<GitIgnoreRule> parseIgnorePatterns(
-    Iterable<String> patterns, bool ignoreCase,
+Map<String, List<GitIgnoreRule>> parseIgnorePatterns(
+    Map<String, Iterable<String>> patternsHierarchy, bool ignoreCase,
     {void Function(String pattern, FormatException exception)
         onInvalidPattern}) {
-  ArgumentError.checkNotNull(patterns, 'patterns');
+  ArgumentError.checkNotNull(patternsHierarchy, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
-  if (patterns.contains(null)) {
-    throw ArgumentError.value(patterns, 'patterns', 'may not contain null');
+  if (patternsHierarchy.values.contains(null)) {
+    throw ArgumentError.value(
+        patternsHierarchy, 'patterns', 'may not contain null');
   }
-  final parseResults = patterns
-      .map((s) => s.split('\n'))
-      .expand((e) => e)
-      .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
-  if (onInvalidPattern != null) {
-    for (final invalidResult in parseResults.where((result) => !result.valid)) {
-      onInvalidPattern(invalidResult.pattern, invalidResult.exception);
+
+  return patternsHierarchy.map((directory, patterns) {
+    final parseResults = patterns
+        .map((s) => s.split('\n'))
+        .expand((e) => e)
+        .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
+    if (onInvalidPattern != null) {
+      for (final invalidResult
+          in parseResults.where((result) => !result.valid)) {
+        onInvalidPattern(invalidResult.pattern, invalidResult.exception);
+      }
     }
-  }
-  return parseResults.where((r) => !r.empty).map((r) => r.rule).toList();
+    return MapEntry(directory,
+        parseResults.where((r) => !r.empty).map((r) => r.rule).toList());
+  });
 }
 
 GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
@@ -280,13 +333,12 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
         if (peekChar() == '/') {
           current++;
           if (current == end) {
-            expr += '.*/';
+            expr += '.*';
           } else {
             // Match nothing or a path followed by '/'
             expr += '(?:(?:)|(?:.*/))';
           }
           // Handle the side effects of seeing a slash.
-          // We know it was not initial, so the return value is ignored.
           handleSlash();
         } else {
           expr += '.*';
@@ -327,7 +379,7 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
       current++;
     } else {
       if (nextChar == '/') {
-        if (current - 1 != first) {
+        if (current - 1 != first && current != end) {
           // If slash appears in the beginning we don't want it manifest in the
           // regexp.
           expr += '/';
@@ -343,12 +395,17 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
   } else {
     expr = '(?:^|/)$expr';
   }
-  if (!matchesDirectoriesOnly) {
-    expr = '$expr(?:\$|/)';
+  if (matchesDirectoriesOnly) {
+    expr = '$expr/\$';
+  } else {
+    expr = '$expr/?\$';
+    // expr = '$expr\$';
   }
   try {
-    return GitIgnoreParseResult(pattern,
-        GitIgnoreRule(RegExp(expr, caseSensitive: ignoreCase), negative));
+    return GitIgnoreParseResult(
+        pattern,
+        GitIgnoreRule(
+            RegExp(expr, caseSensitive: ignoreCase), negative, pattern));
   } on FormatException catch (e) {
     throw AssertionError(
         'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
