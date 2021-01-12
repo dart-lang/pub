@@ -13,6 +13,7 @@
 // limitations under the License.
 import 'dart:io';
 
+import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:pub/src/ignore.dart';
 
@@ -40,12 +41,17 @@ void main() {
     }
   });
 
-  group('git', () {
-    final executable =
-        Platform.isWindows ? 'cmd' : '/Users/sigurdm/projects/git/git';
-    List<String> adaptArgs(List<String> args) =>
-        Platform.isWindows ? ['/c', 'git', ...args] : args;
+  final executable = Platform.isWindows ? 'cmd' : 'git';
+  List<String> adaptArgs(List<String> args) =>
+      Platform.isWindows ? ['/c', 'git', ...args] : args;
 
+  final gitVersion = Version.parse(
+      (Process.runSync(executable, adaptArgs(['--version'])).stdout as String)
+          .split(' ')[2]
+          .split('.')
+          .take(3)
+          .join('.'));
+  group('git', () {
     Directory tmp;
     setUpAll(() async {
       tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
@@ -110,7 +116,10 @@ void main() {
         }, skip: c.skip),
       );
     }
-  });
+  },
+      skip: gitVersion < Version(2, 9, 0)
+          ? 'Use a newer git to run these tests'
+          : false);
 }
 
 class TestData {
