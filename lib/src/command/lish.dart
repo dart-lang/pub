@@ -96,7 +96,8 @@ class LishCommand extends PubCommand {
 
           var location = postResponse.headers['location'];
           if (location == null) throw PubHttpException(postResponse);
-          handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
+          handleJsonSuccess(
+              await client.get(Uri.parse(location), headers: pubApiHeaders));
         });
       });
     } on PubHttpException catch (error) {

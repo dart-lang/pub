@@ -342,7 +342,10 @@ class Pubspec {
       }
       if (name.value == 'sdk') return;
 
-      constraints[name.value as String] = _parseVersionConstraint(constraint);
+      constraints[name.value as String] = _parseVersionConstraint(constraint,
+          // Flutter constraints get special treatment, as Flutter won't be
+          // using semantic versioning to mark breaking releases.
+          ignoreUpperBound: name.value == 'flutter');
     });
 
     return constraints;
@@ -608,7 +611,7 @@ class Pubspec {
       YamlNode descriptionNode;
       String sourceName;
 
-      var versionConstraint = VersionRange();
+      VersionConstraint versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
         descriptionNode = nameNode;
@@ -676,8 +679,11 @@ class Pubspec {
   /// If or [defaultUpperBoundConstraint] is specified then it will be set as
   /// the max constraint if the original constraint doesn't have an upper
   /// bound and it is compatible with [defaultUpperBoundConstraint].
+  ///
+  /// If [ignoreUpperBound] the max constraint is ignored.
   VersionConstraint _parseVersionConstraint(YamlNode node,
-      {VersionConstraint defaultUpperBoundConstraint}) {
+      {VersionConstraint defaultUpperBoundConstraint,
+      bool ignoreUpperBound = false}) {
     if (node?.value == null) {
       return defaultUpperBoundConstraint ?? VersionConstraint.any;
     }
@@ -693,6 +699,10 @@ class Pubspec {
           defaultUpperBoundConstraint.allowsAny(constraint)) {
         constraint = VersionConstraint.intersection(
             [constraint, defaultUpperBoundConstraint]);
+      }
+      if (ignoreUpperBound && constraint is VersionRange) {
+        return VersionRange(
+            min: constraint.min, includeMin: constraint.includeMin);
       }
       return constraint;
     });

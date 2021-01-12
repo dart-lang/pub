@@ -43,8 +43,11 @@ class DowngradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     var dryRun = argResults['dry-run'];
-    await entrypoint.acquireDependencies(SolveType.DOWNGRADE,
-        useLatest: argResults.rest, dryRun: dryRun);
+    await entrypoint.acquireDependencies(
+      SolveType.DOWNGRADE,
+      unlock: argResults.rest,
+      dryRun: dryRun,
+    );
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '

@@ -93,6 +93,19 @@ dependencies:
       expect(foo.constraint.allows(Version(3, 4, 5)), isFalse);
     });
 
+    test('allows empty version constraint', () {
+      var pubspec = Pubspec.parse('''
+dependencies:
+  foo:
+    fake: ok
+    version: ">=1.2.3 <0.0.0"
+''', sources);
+
+      var foo = pubspec.dependencies['foo'];
+      expect(foo.name, equals('foo'));
+      expect(foo.constraint.isEmpty, isTrue);
+    });
+
     test('allows an empty dependencies map', () {
       var pubspec = Pubspec.parse('''
 dependencies:
@@ -393,7 +406,7 @@ environment:
         expect(pubspec.sdkConstraints,
             containsPair('dart', VersionConstraint.parse('>=1.2.3 <2.3.4')));
         expect(pubspec.sdkConstraints,
-            containsPair('flutter', VersionConstraint.parse('^0.1.2')));
+            containsPair('flutter', VersionConstraint.parse('>=0.1.2')));
         expect(pubspec.sdkConstraints,
             containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
       });
@@ -574,7 +587,7 @@ features:
         expect(feature.sdkConstraints,
             containsPair('dart', VersionConstraint.parse('^1.0.0')));
         expect(feature.sdkConstraints,
-            containsPair('flutter', VersionConstraint.parse('^2.0.0')));
+            containsPair('flutter', VersionConstraint.parse('>=2.0.0')));
         expect(feature.sdkConstraints,
             containsPair('fuchsia', VersionConstraint.parse('^3.0.0')));
       });

@@ -374,7 +374,10 @@ class OutdatedCommand extends PubCommand {
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
 Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-      SolveType.UPGRADE, cache, Package.inMemory(pubspec));
+    SolveType.UPGRADE,
+    cache,
+    Package.inMemory(pubspec),
+  );
   if (solveResult == null) {
     return [];
   }
@@ -542,12 +545,12 @@ Future<void> _outputHuman(
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
             'an older version.\n'
-            'To update it, use `pub upgrade`.');
+            'To update it, use `dart pub upgrade`.');
       } else {
         log.message(
             '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
             'to older versions.\n'
-            'To update these dependencies, use `pub upgrade`.');
+            'To update these dependencies, use `dart pub upgrade`.');
       }
     }
   } else {

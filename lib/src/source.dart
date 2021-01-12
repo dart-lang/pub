@@ -229,10 +229,6 @@ abstract class BoundSource {
   /// external code should not call this. Instead, call [describe].
   Future<Pubspec> doDescribe(PackageId id);
 
-  /// Ensures [id] is available locally and creates a symlink at [symlink]
-  /// pointing it.
-  Future get(PackageId id, String symlink);
-
   /// Returns the directory where this package can (or could) be found locally.
   ///
   /// If the source is cached, this will be a path in the system cache.
