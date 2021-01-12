@@ -50,6 +50,9 @@ import 'package:pub/src/yaml_edit/utils.dart';
 class Ignore {
   final Map<String, List<GitIgnoreRule>> _rules;
 
+  // True if no rule-files have been added.
+  bool get isEmpty => _rules.isEmpty;
+
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]
   /// patterns.
   ///

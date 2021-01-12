@@ -203,9 +203,14 @@ class Package {
 
   static final _pubignorePathEnding = '${Platform.pathSeparator}.pubignore';
 
+  Ignore _pubignores;
+
   /// Computes an [Ignore] object representing all the .pubignores in this
   /// package.
-  Ignore pubignores() {
+  Ignore get pubignores {
+    if (_pubignores != null) {
+      return _pubignores;
+    }
     var pubignores = listDir(dir, recursive: true, allowed: ['.pubignore'])
         .where((e) => e.endsWith(_pubignorePathEnding));
     final mapping = <String, List<String>>{};
@@ -218,7 +223,7 @@ class Package {
           0, max(0, relative.length - _pubignorePathEnding.length));
       mapping[relativePath] = [readTextFile(pubignore)];
     }
-    return Ignore(
+    return _pubignores = Ignore(
       mapping,
       onInvalidPattern: (pattern, exception) {
         log.warning('`pubignore` had invalid pattern: ${exception.message}');

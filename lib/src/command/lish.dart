@@ -143,8 +143,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message('Publishing ${package.name} ${package.version} to $server:\n'
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
-    // Improve discoverability of the pubignore file.
-    if (!files.any((f) => f.endsWith('.pubignore'))) {
+    // Improve discoverability of the .pubignore file.
+    if (entrypoint.root.pubignores.isEmpty) {
       log.message('''
 (To exclude files from being published, consider creating a `.pubignore`)''');
     }
