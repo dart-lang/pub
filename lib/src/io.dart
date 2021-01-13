@@ -893,6 +893,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
         // ustar is the most recent tar format that's compatible across all
         // OSes.
         '--format=ustar',
+        '--dereference',
         '--create',
         '--gzip',
         '--directory',
