@@ -31,7 +31,7 @@ class Package {
     return a.version.compareTo(b.version);
   }
 
-  /// The path to the directory containing the package.
+  /// The (absolute) path to the directory containing the package.
   final String dir;
 
   /// An in-memory package can be created for doing a resolution without having
@@ -135,8 +135,9 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String name, this.dir, SourceRegistry sources)
-      : pubspec = Pubspec.load(dir, sources, expectedName: name);
+  Package.load(String name, String dir, SourceRegistry sources)
+      : pubspec = Pubspec.load(dir, sources, expectedName: name),
+        dir = p.absolute(dir);
 
   /// Constructs a package with the given pubspec.
   ///
@@ -144,7 +145,7 @@ class Package {
   Package.inMemory(this.pubspec) : dir = null;
 
   /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, this.dir);
+  Package(this.pubspec, String dir) : dir = p.absolute(dir);
 
   /// Given a relative path within this package, returns its absolute path.
   ///
