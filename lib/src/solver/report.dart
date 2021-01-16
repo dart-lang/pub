@@ -152,7 +152,7 @@ class SolveReport {
         packageCountString = '$outdatedPackagesCount packages have';
       }
       log.message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\nTry `pub outdated` for more information.');
+          'dependency constraints.\nTry `dart pub outdated` for more information.');
     }
   }
 
