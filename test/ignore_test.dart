@@ -41,12 +41,14 @@ void main() {
     }
   });
 
-  final executable = Platform.isWindows ? 'cmd' : 'git';
-  List<String> adaptArgs(List<String> args) =>
-      Platform.isWindows ? ['/c', 'git', ...args] : args;
+  ProcessResult runGit(List<String> args, {String workingDirectory}) {
+    final executable = Platform.isWindows ? 'cmd' : 'git';
+    args = Platform.isWindows ? ['/c', 'git', ...args] : args;
+    return Process.runSync(executable, args,
+        workingDirectory: workingDirectory);
+  }
 
-  final gitVersionStdOut =
-      Process.runSync(executable, adaptArgs(['--version'])).stdout as String;
+  final gitVersionStdOut = runGit(['--version']).stdout as String;
   final gitVersion = Version.parse(
       gitVersionStdOut.trim().split(' ')[2].split('.').take(3).join('.'));
   print('detected git version: $gitVersionStdOut');
@@ -55,25 +57,17 @@ void main() {
     setUpAll(() async {
       tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
 
-      final ret = await Process.run(
-        executable,
-        adaptArgs(['init']),
-        includeParentEnvironment: false,
-        workingDirectory: tmp.path,
-      );
-      expect(ret.exitCode, equals(0), reason: 'Running "git init" failed');
+      final ret = runGit(['init'], workingDirectory: tmp.path);
+      expect(ret.exitCode, equals(0),
+          reason:
+              'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
     });
     tearDownAll(() async {
       await tmp.delete(recursive: true);
       tmp = null;
     });
     tearDown(() async {
-      await Process.run(
-        executable,
-        adaptArgs(['clean', '-f', '-d', '-x']),
-        includeParentEnvironment: false,
-        workingDirectory: tmp.path,
-      );
+      runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
     });
     for (final c in testData) {
       c.paths.forEach(
@@ -89,16 +83,9 @@ void main() {
             gitIgnore
                 .writeAsStringSync(c.patterns[directory].join('\n') + '\n');
           }
-          final process = Process.runSync(executable,
-              adaptArgs(['-C', tmp.path, 'check-ignore', '--no-index', path]),
-              includeParentEnvironment: false,
-              workingDirectory: tmp.path,
-              environment: {
-                for (final e in Platform.environment.entries.take(11))
-                  e.key: e.value
-              });
-          // process.stdin.write(path);
-          // await process.stdin.close();
+          final process = runGit(
+              ['-C', tmp.path, 'check-ignore', '--no-index', path],
+              workingDirectory: tmp.path);
           final exitCode = process.exitCode;
           expect(
             exitCode,
@@ -112,7 +99,7 @@ void main() {
             }
             fail('Expected "$path" to NOT be ignored, it was IGNORED!');
           }
-        }, skip: c.skip),
+        }),
       );
     }
   },
@@ -132,15 +119,10 @@ class TestData {
   /// ignored by `patterns`.
   final Map<String, bool> paths;
 
-  /// Allow skipping the git test for a pattern on certain platforms
-  final dynamic skip;
-
   final bool hasWarning;
 
-  TestData(this.name, this.patterns, this.paths,
-      {this.hasWarning = false, this.skip});
-  TestData.single(String pattern, this.paths,
-      {this.hasWarning = false, this.skip})
+  TestData(this.name, this.patterns, this.paths, {this.hasWarning = false});
+  TestData.single(String pattern, this.paths, {this.hasWarning = false})
       : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = {
           '': [pattern]
@@ -195,25 +177,21 @@ final testData = [
     'sub/folder/#file.txt': true,
   }),
   // Test ! and escaping
-  TestData.single(
-      '!file.txt',
-      {
-        'file.txt': false,
-        '!file.txt': false,
-      },
-      skip: Platform.isMacOS == true),
+  TestData.single('!file.txt', {
+    'file.txt': false,
+    '!file.txt': false,
+  }),
   TestData(
-      'negation',
-      {
-        '': ['f*', '!file.txt']
-      },
-      {
-        'file.txt': false,
-        '!file.txt': false,
-        'filter.txt': true,
-      },
-      // TODO(sigurdm): Find out why we have issues here.
-      skip: Platform.isMacOS == true),
+    'negation',
+    {
+      '': ['f*', '!file.txt']
+    },
+    {
+      'file.txt': false,
+      '!file.txt': false,
+      'filter.txt': true,
+    },
+  ),
   TestData.single(r'\!file.txt', {
     '!file.txt': true,
     'other.txt': false,
