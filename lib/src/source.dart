@@ -255,5 +255,6 @@ class PackageStatus {
   /// replacement.
   final String discontinuedReplacedBy;
   final bool isDiscontinued;
-  PackageStatus({this.isDiscontinued, this.discontinuedReplacedBy});
+  PackageStatus({isDiscontinued, this.discontinuedReplacedBy})
+      : isDiscontinued = isDiscontinued ?? false;
 }

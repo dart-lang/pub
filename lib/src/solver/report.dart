@@ -144,7 +144,7 @@ class SolveReport {
       /// time for packages that were not changed.
       final status =
           await _cache.source(id.source).status(id, Duration(days: 3));
-      if (status.isDiscontinued) {
+      if (status.isDiscontinued ?? false) {
         final suffix = status.discontinuedReplacedBy == null
             ? ''
             : ' it has been replaced by package:${status.discontinuedReplacedBy}';
