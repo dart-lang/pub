@@ -49,7 +49,7 @@ void main() {
       Process.runSync(executable, adaptArgs(['--version'])).stdout as String;
   final gitVersion = Version.parse(
       gitVersionStdOut.trim().split(' ')[2].split('.').take(3).join('.'));
-  print('detected git version: $gitVersion');
+  print('detected git version: $gitVersionStdOut');
   group('git', () {
     Directory tmp;
     setUpAll(() async {
