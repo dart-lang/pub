@@ -385,13 +385,21 @@ class BoundHostedSource extends CachedSource {
         final results = <RepairResult>[];
         var packages = <Package>[];
         for (var entry in listDir(serverDir)) {
-          try {
-            packages.add(Package.load(null, entry, systemCache.sources));
-          } catch (error, stackTrace) {
-            log.error('Failed to load package', error, stackTrace);
-            results.add(RepairResult(_idForBasename(p.basename(entry)),
-                success: false));
-            tryDeleteEntry(entry);
+          if (dirExists(entry)) {
+            try {
+              packages.add(Package.load(null, entry, systemCache.sources));
+            } catch (error, stackTrace) {
+              log.error('Failed to load package', error, stackTrace);
+              results.add(RepairResult(_idForBasename(p.basename(entry)),
+                  success: false));
+              tryDeleteEntry(entry);
+            }
+          } else {
+            if (entry.endsWith('-versions.json')) {
+              // A cached version listing response.
+              // Just delete it - it will be re-retrieved.
+              tryDeleteEntry(entry);
+            }
           }
         }
 
