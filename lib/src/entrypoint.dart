@@ -716,8 +716,6 @@ class Entrypoint {
     // If the version is different from 2, then it must be a newer incompatible
     // version, hence, the user should run `pub get` with the downgraded SDK.
     if (cfg.configVersion != 2) {
-      print('b');
-
       badPackageConfig();
     }
 
@@ -725,7 +723,6 @@ class Entrypoint {
     for (final pkg in cfg.packages) {
       // Pub always sets packageUri = lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
-        print('a');
         badPackageConfig();
       }
       packagePathsMapping[pkg.name] =
