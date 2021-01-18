@@ -97,19 +97,22 @@ class PackageServer {
     _servedApiPackageDir.contents.clear();
     _servedPackageDir.contents.clear();
 
-    _builder._packages.forEach((name, versions) {
+    _builder._packages.forEach((name, package) {
       _servedApiPackageDir.contents.addAll([
         d.file(
             name,
             jsonEncode({
               'name': name,
               'uploaders': ['nweiz@google.com'],
-              'versions': versions
+              'versions': package.versions
                   .map((version) => packageVersionApiMap(url, version.pubspec))
-                  .toList()
+                  .toList(),
+              if (package.isDiscontinued) 'isDiscontinued': true,
+              if (package.discontinuedReplacementText != null)
+                'replacedBy': package.discontinuedReplacementText,
             })),
         d.dir(name, [
-          d.dir('versions', versions.map((version) {
+          d.dir('versions', package.versions.map((version) {
             return d.file(
                 version.version.toString(),
                 jsonEncode(
@@ -121,7 +124,7 @@ class PackageServer {
       _servedPackageDir.contents.add(d.dir(name, [
         d.dir(
             'versions',
-            versions.map((version) =>
+            package.versions.map((version) =>
                 d.tar('${version.version}.tar.gz', version.contents)))
       ]));
     });
@@ -150,8 +153,8 @@ class PackageServer {
 
 /// A builder for specifying which packages should be served by [servePackages].
 class PackageServerBuilder {
-  /// A map from package names to a list of concrete packages to serve.
-  final _packages = <String, List<_ServedPackage>>{};
+  /// A map from package names to the concrete packages to serve.
+  final _packages = <String, _ServedPackage>{};
 
   /// The package server that this builder is associated with.
   final PackageServer _server;
@@ -179,8 +182,16 @@ class PackageServerBuilder {
     contents ??= [d.libDir(name, '$name $version')];
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
-    var packages = _packages.putIfAbsent(name, () => []);
-    packages.add(_ServedPackage(pubspecFields, contents));
+    var package = _packages.putIfAbsent(name, () => _ServedPackage());
+    package.versions.add(_ServedPackageVersion(pubspecFields, contents));
+  }
+
+  // Mark a package discontinued.
+  void discontinue(String name,
+      {bool isDiscontinued = true, String replacementText}) {
+    _packages[name]
+      ..isDiscontinued = isDiscontinued
+      ..discontinuedReplacementText = replacementText;
   }
 
   /// Clears all existing packages from this builder.
@@ -189,12 +200,18 @@ class PackageServerBuilder {
   }
 }
 
-/// A package that's intended to be served.
 class _ServedPackage {
+  List<_ServedPackageVersion> versions = [];
+  bool isDiscontinued = false;
+  String discontinuedReplacementText;
+}
+
+/// A package that's intended to be served.
+class _ServedPackageVersion {
   final Map pubspec;
   final List<d.Descriptor> contents;
 
   Version get version => Version.parse(pubspec['version']);
 
-  _ServedPackage(this.pubspec, this.contents);
+  _ServedPackageVersion(this.pubspec, this.contents);
 }

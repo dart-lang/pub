@@ -155,8 +155,9 @@ class HostedSource extends Source {
 class _VersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
+  final PackageStatus status;
 
-  _VersionInfo(this.pubspec, this.archiveUrl);
+  _VersionInfo(this.pubspec, this.archiveUrl, this.status);
 }
 
 /// The [BoundSource] for [HostedSource].
@@ -175,32 +176,47 @@ class BoundHostedSource extends CachedSource {
     );
   }
 
-  Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
-    var url = _makeUrl(
-        ref.description, (server, package) => '$server/api/packages/$package');
-    log.io('Get versions from $url.');
-
-    String body;
-    try {
-      // TODO(sigurdm): Implement cancellation of requests. This probably
-      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      body = await httpClient.read(url, headers: pubApiHeaders);
-    } catch (error, stackTrace) {
-      var parsed = source._parseDescription(ref.description);
-      _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
-    }
-    final doc = jsonDecode(body);
-    final versions = doc['versions'] as List;
-    final result = Map.fromEntries(versions.map((map) {
+  Map<PackageId, _VersionInfo> _versionInfoFromPackageListing(
+      Map body, PackageRef ref, Uri location) {
+    final versions = body['versions'] as List;
+    return Map.fromEntries(versions.map((map) {
       var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
-          expectedName: ref.name, location: url);
+          expectedName: ref.name, location: location);
       var id = source.idFor(ref.name, pubspec.version,
           url: _serverFor(ref.description));
       final archiveUrlValue = map['archive_url'];
       final archiveUrl =
           archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;
-      return MapEntry(id, _VersionInfo(pubspec, archiveUrl));
+      final status = PackageStatus(
+          isDiscontinued: body['isDiscontinued'] as bool ?? false,
+          discontinuedReplacedBy: body['replacedBy'] as String);
+      return MapEntry(id, _VersionInfo(pubspec, archiveUrl, status));
     }));
+  }
+
+  Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
+    var url = _makeUrl(
+        ref.description, (server, package) => '$server/api/packages/$package');
+    log.io('Get versions from $url.');
+
+    String bodyText;
+    Map body;
+    try {
+      // TODO(sigurdm): Implement cancellation of requests. This probably
+      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
+      bodyText = await httpClient.read(url, headers: pubApiHeaders);
+      body = jsonDecode(bodyText);
+    } catch (error, stackTrace) {
+      var parsed = source._parseDescription(ref.description);
+      _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
+    }
+    final result = _versionInfoFromPackageListing(body, ref, url);
+
+    // Cache the response on disk.
+    // Don't cache overly big responses.
+    if (body.length < 100000) {
+      _cacheVersionListingResponse(body, ref);
+    }
 
     // Prefetch the dependencies of the latest version, we are likely to need
     // them later.
@@ -224,6 +240,82 @@ class BoundHostedSource extends CachedSource {
       }));
     }
     return result;
+  }
+
+  /// If a cached version listing response for [ref] exists on disk and is less
+  /// than [maxAge] old it is parsed and returned.
+  ///
+  /// Otherwise deletes a cached response if it exists and returns `null`
+  Map<PackageId, _VersionInfo> _cachedVersionListingResponse(
+      PackageRef ref, Duration maxAge) {
+    final cachePath = _versionListingCachePath(ref);
+    final stat = io.File(cachePath).statSync();
+    final now = DateTime.now();
+    if (stat.type == io.FileSystemEntityType.file) {
+      if (now.difference(stat.modified) < maxAge) {
+        try {
+          final cachedDoc = jsonDecode(readTextFile(cachePath));
+          final timestamp = cachedDoc['timestamp'];
+          if (timestamp is String) {
+            final cacheAge =
+                DateTime.now().difference(DateTime.parse(timestamp));
+            if (cacheAge > maxAge) {
+              // Too old according to internal timestamp - delete.
+              tryDeleteEntry(cachePath);
+            } else {
+              return _versionInfoFromPackageListing(
+                  cachedDoc['response'], ref, Uri.file(cachePath));
+            }
+          }
+        } on io.IOException {
+          // Could not read the file. Delete if it exists.
+          tryDeleteEntry(cachePath);
+        } on FormatException {
+          // Decoding error - bad file or bad timestamp. Delete the file.
+          tryDeleteEntry(cachePath);
+        }
+      } else {
+        // File too old
+        tryDeleteEntry(cachePath);
+      }
+    }
+    return null;
+  }
+
+  /// Saves the (decoded) response from package-listing of [ref].
+  void _cacheVersionListingResponse(Object body, PackageRef ref) {
+    final path = _versionListingCachePath(ref);
+    try {
+      ensureDir(p.dirname(path));
+      writeTextFile(
+          path,
+          jsonEncode({
+            'timestamp': DateTime.now().toIso8601String(),
+            'response': body
+          }));
+    } on io.IOException catch (e) {
+      // Not being able to write this cache is not fatal. Just move on...
+      log.fine('Failed writing cache file. $e');
+    }
+  }
+
+  @override
+  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+    final ref = id.toRef();
+    // Did we already get info for this package?
+    var versionListing = _scheduler.peek(ref);
+    // Do we have a cached version response on disk?
+    versionListing ??= _cachedVersionListingResponse(ref, maxAge);
+    // Otherwise retrieve the info from the host.
+    versionListing ??= await _scheduler.schedule(ref);
+    return versionListing[id].status;
+  }
+
+  // The path where the response from the package-listing api is cached.
+  String _versionListingCachePath(PackageRef ref) {
+    final parsed = source._parseDescription(ref.description);
+    final dir = _urlToDirectory(parsed.last);
+    return p.join(systemCacheRoot, dir, '${ref.name}-versions.json');
   }
 
   /// Downloads a list of all versions of a package that are available from the

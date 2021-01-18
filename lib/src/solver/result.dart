@@ -10,6 +10,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
 
@@ -90,8 +91,9 @@ class SolveResult {
   /// Displays a report of what changes were made to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
-  void showReport(SolveType type) {
-    SolveReport(type, _sources, _root, _previousLockFile, this).show();
+  Future<void> showReport(SolveType type, SystemCache cache) async {
+    await SolveReport(type, _sources, _root, _previousLockFile, this, cache)
+        .show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -101,8 +103,10 @@ class SolveResult {
   /// that are not at the latest available version.
   ///
   /// [type] is the type of version resolution that was run.
-  void summarizeChanges(SolveType type, {bool dryRun = false}) {
-    final report = SolveReport(type, _sources, _root, _previousLockFile, this);
+  void summarizeChanges(SolveType type, SystemCache cache,
+      {bool dryRun = false}) {
+    final report =
+        SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
       report.reportOutdated();

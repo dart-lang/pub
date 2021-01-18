@@ -259,14 +259,14 @@ class Entrypoint {
       }
     }
 
-    result.showReport(type);
+    await result.showReport(type, cache);
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, dryRun: dryRun);
+    result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't
@@ -716,6 +716,8 @@ class Entrypoint {
     // If the version is different from 2, then it must be a newer incompatible
     // version, hence, the user should run `pub get` with the downgraded SDK.
     if (cfg.configVersion != 2) {
+      print('b');
+
       badPackageConfig();
     }
 
@@ -723,6 +725,7 @@ class Entrypoint {
     for (final pkg in cfg.packages) {
       // Pub always sets packageUri = lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
+        print('a');
         badPackageConfig();
       }
       packagePathsMapping[pkg.name] =
