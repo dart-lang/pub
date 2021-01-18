@@ -45,13 +45,11 @@ void main() {
   List<String> adaptArgs(List<String> args) =>
       Platform.isWindows ? ['/c', 'git', ...args] : args;
 
+  final gitVersionStdOut =
+      Process.runSync(executable, adaptArgs(['--version'])).stdout as String;
   final gitVersion = Version.parse(
-      (Process.runSync(executable, adaptArgs(['--version'])).stdout as String)
-          .trim()
-          .split(' ')[2]
-          .split('.')
-          .take(3)
-          .join('.'));
+      gitVersionStdOut.trim().split(' ')[2].split('.').take(3).join('.'));
+  print('detected git version: $gitVersion');
   group('git', () {
     Directory tmp;
     setUpAll(() async {
