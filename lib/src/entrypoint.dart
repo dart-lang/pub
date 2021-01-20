@@ -597,11 +597,11 @@ class Entrypoint {
     // Check that [packagePathsMapping] does not contain more packages than what
     // is required. This could lead to import statements working, when they are
     // not supposed to work.
-    final hasExtraMappings = packagePathsMapping.keys.every((packageName) {
+    final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
       return packageName == root.name ||
           lockFile.packages.containsKey(packageName);
     });
-    if (!hasExtraMappings) {
+    if (hasExtraMappings) {
       return false;
     }
 
@@ -620,8 +620,7 @@ class Entrypoint {
       }
 
       final source = cache.source(lockFileId.source);
-      final lockFilePackagePath =
-          p.join(root.dir, source.getDirectory(lockFileId));
+      final lockFilePackagePath = root.path(source.getDirectory(lockFileId));
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
@@ -720,8 +719,18 @@ class Entrypoint {
     }
 
     final packagePathsMapping = <String, String>{};
-    for (final pkg in cfg.packages) {
-      // Pub always sets packageUri = lib/
+
+    // We allow the package called 'flutter_gen' to be injected into
+    // package_config.
+    //
+    // This is somewhat a hack. But it allows flutter to generate code in a
+    // package as it likes.
+    //
+    // See https://github.com/flutter/flutter/issues/73870 .
+    final packagesToCheck =
+        cfg.packages.where((package) => package.name != 'flutter_gen');
+    for (final pkg in packagesToCheck) {
+      // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
         badPackageConfig();
       }
