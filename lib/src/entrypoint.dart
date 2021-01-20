@@ -735,11 +735,8 @@ class Entrypoint {
     final packagesToCheck =
         cfg.packages.where((package) => package.name != 'flutter_gen');
     for (final pkg in packagesToCheck) {
-      // Pub always sets packageUri = 'lib/' but package:package_config might
-      // change it to 'lib'.
-      if (pkg.packageUri == null ||
-          (pkg.packageUri.toString() != 'lib' &&
-              pkg.packageUri.toString() != 'lib/')) {
+      // Pub always makes a packageUri of lib/
+      if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
         badPackageConfig();
       }
       packagePathsMapping[pkg.name] =
