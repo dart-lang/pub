@@ -311,9 +311,16 @@ class BoundHostedSource extends CachedSource {
     versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
     // Otherwise retrieve the info from the host.
     versionListing ??= await _scheduler.schedule(ref);
+
+    final listing = versionListing[id];
     // If we don't have the specific version we return the empty response.
+    //
+    // This should not happen. But in production we want to avoid a crash, since
+    // it is more or less harmless.
+    //
     // TODO(sigurdm): Consider representing the non-existence of the
     // package-version in the return value.
+    assert(listing != null);
     return versionListing[id]?.status ?? PackageStatus();
   }
 
