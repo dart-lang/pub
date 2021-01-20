@@ -624,12 +624,7 @@ class Entrypoint {
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
-      //
-      // TODO(sigurdm): We use the absolute paths to work around:
-      // https://github.com/dart-lang/package_config/issues/99
-      // For the case where Flutter has rewritten package_config.json.
-      if (p.absolute(p.normalize(packagePath)) !=
-          p.absolute(p.normalize(lockFilePackagePath))) {
+      if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
         return false;
       }
 
