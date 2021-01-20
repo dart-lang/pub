@@ -103,11 +103,12 @@ class SolveResult {
   /// that are not at the latest available version.
   ///
   /// [type] is the type of version resolution that was run.
-  void summarizeChanges(SolveType type, SystemCache cache,
-      {bool dryRun = false}) {
+  Future<void> summarizeChanges(SolveType type, SystemCache cache,
+      {bool dryRun = false}) async {
     final report =
         SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
+    await report.reportDiscontinued();
     if (type == SolveType.UPGRADE) {
       report.reportOutdated();
     }

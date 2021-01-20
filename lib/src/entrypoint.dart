@@ -266,7 +266,7 @@ class Entrypoint {
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, cache, dryRun: dryRun);
+    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't

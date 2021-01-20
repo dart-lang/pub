@@ -14,34 +14,42 @@ import '../../test_pub.dart';
 
 void main() {
   test('Warns about discontinued packages', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    await servePackages((builder) => builder
+      ..serve('foo', '1.2.3', deps: {'transitive': 'any'})
+      ..serve('transitive', '1.0.0'));
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
     globalPackageServer.add((builder) => builder.discontinue('foo'));
+    globalPackageServer.add((builder) => builder.discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
-    final versionsCache = p.join(d.sandbox, cachePath, 'hosted',
+    final fooVersionsCache = p.join(d.sandbox, cachePath, 'hosted',
         'localhost%58${globalServer.port}', 'foo-versions.json');
-    expect(fileExists(versionsCache), isTrue);
-    deleteEntry(versionsCache);
-    await pubGet(warning: 'Package:foo has been discontinued.');
-    expect(fileExists(versionsCache), isTrue);
-    final c = json.decode(readTextFile(versionsCache));
+    final transitiveVersionsCache = p.join(d.sandbox, cachePath, 'hosted',
+        'localhost%58${globalServer.port}', 'transitive-versions.json');
+    expect(fileExists(fooVersionsCache), isTrue);
+    expect(fileExists(transitiveVersionsCache), isTrue);
+    deleteEntry(fooVersionsCache);
+    deleteEntry(transitiveVersionsCache);
+    // We warn only about the direct dependency here:
+    await pubGet(warning: 'Package foo has been discontinued.');
+    expect(fileExists(fooVersionsCache), isTrue);
+    final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
-    c['timestamp'] =
+    c['_fetchedAt'] =
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
-    writeTextFile(versionsCache, json.encode(c));
+    writeTextFile(fooVersionsCache, json.encode(c));
     globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     await pubGet(
         warning:
-            'Package:foo has been discontinued it has been replaced by package:bar.');
-    final c2 = json.decode(readTextFile(versionsCache));
+            'Package foo has been discontinued it has been replaced by package bar.');
+    final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
-    c2['response']['isDiscontinued'] = false;
-    writeTextFile(versionsCache, json.encode(c2));
+    c2['isDiscontinued'] = false;
+    writeTextFile(fooVersionsCache, json.encode(c2));
     await pubGet(warning: isEmpty);
   });
 }

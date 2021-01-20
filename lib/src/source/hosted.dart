@@ -214,8 +214,8 @@ class BoundHostedSource extends CachedSource {
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (body.length < 100000) {
-      _cacheVersionListingResponse(body, ref);
+    if (body.length < 100 * 1024) {
+      await _cacheVersionListingResponse(body, ref);
     }
 
     // Prefetch the dependencies of the latest version, we are likely to need
@@ -246,16 +246,16 @@ class BoundHostedSource extends CachedSource {
   /// than [maxAge] old it is parsed and returned.
   ///
   /// Otherwise deletes a cached response if it exists and returns `null`
-  Map<PackageId, _VersionInfo> _cachedVersionListingResponse(
-      PackageRef ref, Duration maxAge) {
+  Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
+      PackageRef ref, Duration maxAge) async {
     final cachePath = _versionListingCachePath(ref);
-    final stat = io.File(cachePath).statSync();
+    final stat = await io.File(cachePath).stat();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
       if (now.difference(stat.modified) < maxAge) {
         try {
-          final cachedDoc = jsonDecode(readTextFile(cachePath));
-          final timestamp = cachedDoc['timestamp'];
+          final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
+          final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is String) {
             final cacheAge =
                 DateTime.now().difference(DateTime.parse(timestamp));
@@ -264,7 +264,7 @@ class BoundHostedSource extends CachedSource {
               tryDeleteEntry(cachePath);
             } else {
               return _versionInfoFromPackageListing(
-                  cachedDoc['response'], ref, Uri.file(cachePath));
+                  cachedDoc, ref, Uri.file(cachePath));
             }
           }
         } on io.IOException {
@@ -283,16 +283,19 @@ class BoundHostedSource extends CachedSource {
   }
 
   /// Saves the (decoded) response from package-listing of [ref].
-  void _cacheVersionListingResponse(Object body, PackageRef ref) {
+  Future<void> _cacheVersionListingResponse(Map body, PackageRef ref) async {
     final path = _versionListingCachePath(ref);
     try {
       ensureDir(p.dirname(path));
-      writeTextFile(
-          path,
-          jsonEncode({
-            'timestamp': DateTime.now().toIso8601String(),
-            'response': body
-          }));
+      await writeTextFileAsync(
+        path,
+        jsonEncode(
+          <String, dynamic>{
+            ...body,
+            '_fetchedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
@@ -305,10 +308,13 @@ class BoundHostedSource extends CachedSource {
     // Did we already get info for this package?
     var versionListing = _scheduler.peek(ref);
     // Do we have a cached version response on disk?
-    versionListing ??= _cachedVersionListingResponse(ref, maxAge);
+    versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
     // Otherwise retrieve the info from the host.
     versionListing ??= await _scheduler.schedule(ref);
-    return versionListing[id].status;
+    // If we don't have the specific version we return the empty response.
+    // TODO(sigurdm): Consider representing the non-existence of the
+    // package-version in the return value.
+    return versionListing[id]?.status ?? PackageStatus();
   }
 
   // The path where the response from the package-listing api is cached.

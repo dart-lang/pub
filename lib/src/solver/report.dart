@@ -45,7 +45,6 @@ class SolveReport {
   Future<void> show() async {
     _reportChanges();
     _reportOverrides();
-    await _reportDiscontinued();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -133,22 +132,28 @@ class SolveReport {
     }
   }
 
-  /// Displays a warning about any discontinued packages depended upon.
-  Future<void> _reportDiscontinued() async {
-    for (final id in _result.packages) {
-      if (id.source == null) {
-        continue;
-      }
-
-      /// We allow data to be up to 3 days old to not spend too much network
-      /// time for packages that were not changed.
-      final status =
-          await _cache.source(id.source).status(id, Duration(days: 3));
-      if (status.isDiscontinued ?? false) {
+  /// Displays a warning about any discontinued packages directly depended upon.
+  Future<void> reportDiscontinued() async {
+    final directDependencies = _result.packages
+        .where((id) => _root.dependencyType(id.name) != DependencyType.none);
+    final statuses = await Future.wait(
+      directDependencies.map(
+        (id) async => Pair(
+          id,
+          // We allow data to be up to 3 days old to not spend too much network
+          // time for packages that were not unlocked.
+          await _cache.source(id.source).status(id, Duration(days: 3)),
+        ),
+      ),
+    );
+    for (final statusPair in statuses) {
+      final id = statusPair.first;
+      final status = statusPair.last;
+      if (statusPair.last.isDiscontinued ?? false) {
         final suffix = status.discontinuedReplacedBy == null
             ? ''
-            : ' it has been replaced by package:${status.discontinuedReplacedBy}';
-        log.warning('Package:${id.name} has been discontinued$suffix.');
+            : ' it has been replaced by package ${status.discontinuedReplacedBy}';
+        log.warning('Package ${id.name} has been discontinued$suffix.');
       }
     }
   }
