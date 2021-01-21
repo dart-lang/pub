@@ -808,7 +808,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-        await _createFileFromStream(entry, filePath);
+        await _createFileFromStream(entry.contents, filePath);
         break;
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry
