@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/command/cache_repair.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/io.dart';
