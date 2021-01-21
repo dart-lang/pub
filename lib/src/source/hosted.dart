@@ -328,11 +328,13 @@ class BoundHostedSource extends CachedSource {
   String _versionListingCachePath(PackageRef ref) {
     final parsed = source._parseDescription(ref.description);
     final dir = _urlToDirectory(parsed.last);
-    // Use a .versions/ dir because older versions of pub won't choke on that
+    // Use a dot-dir because older versions of pub won't choke on that
     // name when iterating the cache (it is not listed by [listDir]).
-    return p.join(
-        systemCacheRoot, dir, '.versions', '${ref.name}-versions.json');
+    return p.join(systemCacheRoot, dir, _versionListingDirectory,
+        '${ref.name}-versions.json');
   }
+
+  static const _versionListingDirectory = '.cache';
 
   /// Downloads a list of all versions of a package that are available from the
   /// site.
@@ -401,22 +403,25 @@ class BoundHostedSource extends CachedSource {
         final results = <RepairResult>[];
         var packages = <Package>[];
         for (var entry in listDir(serverDir)) {
-          if (_looksLikePackageDir(entry)) {
-            try {
-              packages.add(Package.load(null, entry, systemCache.sources));
-            } catch (error, stackTrace) {
-              log.error('Failed to load package', error, stackTrace);
-              results.add(RepairResult(_idForBasename(p.basename(entry)),
-                  success: false));
-              tryDeleteEntry(entry);
-            }
-          } else {
-            // A stray file. Delete it.
+          try {
+            packages.add(Package.load(null, entry, systemCache.sources));
+          } catch (error, stackTrace) {
+            log.error('Failed to load package', error, stackTrace);
+            results.add(
+              RepairResult(
+                _idForBasename(
+                  p.basename(entry),
+                  url: _directoryToUrl(serverDir),
+                ),
+                success: false,
+              ),
+            );
             tryDeleteEntry(entry);
           }
         }
+
         // Delete the cached package listings.
-        tryDeleteEntry(p.join(serverDir, '.versions'));
+        tryDeleteEntry(p.join(serverDir, _versionListingDirectory));
 
         packages.sort(Package.orderByNameAndVersion);
 
@@ -448,7 +453,7 @@ class BoundHostedSource extends CachedSource {
 
   /// Returns the best-guess package ID for [basename], which should be a
   /// subdirectory in a hosted cache.
-  PackageId _idForBasename(String basename) {
+  PackageId _idForBasename(String basename, {String url}) {
     var components = split1(basename, '-');
     var version = Version.none;
     if (components.length > 1) {
@@ -458,8 +463,13 @@ class BoundHostedSource extends CachedSource {
         // Default to Version.none.
       }
     }
-    return PackageId(components.first, source, version, components.first);
+    final name = components.first;
+    return source.idFor(name, version, url: url);
   }
+
+  bool _looksLikePackageDir(String path) =>
+      dirExists(path) &&
+      _idForBasename(p.basename(path)).version != Version.none;
 
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
@@ -648,20 +658,9 @@ class _OfflineHostedSource extends BoundHostedSource {
     List<PackageId> versions;
     if (dirExists(dir)) {
       versions = listDir(dir)
-          // Only directories with a pubspec.yaml should be considered packages.
           .where(_looksLikePackageDir)
-          .map((entry) {
-            var components = p.basename(entry).split('-');
-            if (components.first != ref.name) return null;
-            try {
-              return source.idFor(
-                  ref.name, Version.parse(components.skip(1).join('-')),
-                  url: _serverFor(ref.description));
-            } on FormatException {
-              // Failing to parse a package-name is not bad.
-            }
-          })
-          .where((id) => id != null)
+          .map((entry) => _idForBasename(p.basename(entry), url: server))
+          .where((id) => id.name == ref.name && id.version != Version.none)
           .toList();
     } else {
       versions = [];
@@ -688,7 +687,22 @@ class _OfflineHostedSource extends BoundHostedSource {
     throw PackageNotFoundException(
         '${id.name} ${id.version} is not available in your system cache');
   }
-}
 
-bool _looksLikePackageDir(String path) =>
-    fileExists(p.join(path, 'pubspec.yaml'));
+  @override
+  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+    // Do we have a cached version response on disk?
+    final versionListing =
+        await _cachedVersionListingResponse(id.toRef(), maxAge);
+
+    final listing = versionListing[id];
+    // If we don't have the specific version we return the empty response.
+    //
+    // This should not happen. But in production we want to avoid a crash, since
+    // it is more or less harmless.
+    //
+    // TODO(sigurdm): Consider representing the non-existence of the
+    // package-version in the return value.
+    assert(listing != null);
+    return versionListing[id]?.status ?? PackageStatus();
+  }
+}

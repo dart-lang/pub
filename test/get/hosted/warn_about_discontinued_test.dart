@@ -20,15 +20,15 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer.add((builder) => builder.discontinue('foo'));
-    globalPackageServer.add((builder) => builder.discontinue('transitive'));
+    globalPackageServer.add(
+        (builder) => builder..discontinue('foo')..discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
-    final fooVersionsCache = p.join(
-        globalPackageServer.cachingPath, '.versions', 'foo-versions.json');
-    final transitiveVersionsCache = p.join(globalPackageServer.cachingPath,
-        '.versions', 'transitive-versions.json');
+    final fooVersionsCache =
+        p.join(globalPackageServer.cachingPath, '.cache', 'foo-versions.json');
+    final transitiveVersionsCache = p.join(
+        globalPackageServer.cachingPath, '.cache', 'transitive-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     expect(fileExists(transitiveVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
@@ -56,6 +56,15 @@ void main() {
     await pubGet(
         warning:
             'Package foo has been discontinued it has been replaced by package bar.');
+    // Test that --offline won't try to access the server for retrieving the
+    // status.
+    await serveErrors();
+    await pubGet(
+        args: ['--offline'],
+        warning:
+            'Package foo has been discontinued it has been replaced by package bar.');
+    deleteEntry(fooVersionsCache);
+    deleteEntry(transitiveVersionsCache);
+    await pubGet(args: ['--offline']);
   });
 }
-// /private/var/folders/zf/dv4m6qs906n6t1zhjt9jfdw4006vgn/T/dart_test_dskJEn/cache/hosted/localhost%5856564/foo-versions.json.
