@@ -259,14 +259,14 @@ class Entrypoint {
       }
     }
 
-    result.showReport(type);
+    await result.showReport(type, cache);
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, dryRun: dryRun);
+    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't

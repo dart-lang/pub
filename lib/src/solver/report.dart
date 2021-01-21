@@ -9,6 +9,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'result.dart';
 import 'type.dart';
@@ -24,6 +25,7 @@ class SolveReport {
   final Package _root;
   final LockFile _previousLockFile;
   final SolveResult _result;
+  final SystemCache _cache;
 
   /// The dependencies in [_result], keyed by package name.
   final _dependencies = <String, PackageId>{};
@@ -31,7 +33,7 @@ class SolveReport {
   final _output = StringBuffer();
 
   SolveReport(this._type, this._sources, this._root, this._previousLockFile,
-      this._result) {
+      this._result, this._cache) {
     // Fill the map so we can use it later.
     for (var id in _result.packages) {
       _dependencies[id.name] = id;
@@ -40,7 +42,7 @@ class SolveReport {
 
   /// Displays a report of the results of the version resolution relative to
   /// the previous lock file.
-  void show() {
+  Future<void> show() async {
     _reportChanges();
     _reportOverrides();
   }
@@ -127,6 +129,32 @@ class SolveReport {
       }
 
       log.warning(_output);
+    }
+  }
+
+  /// Displays a warning about any discontinued packages directly depended upon.
+  Future<void> reportDiscontinued() async {
+    final directDependencies = _result.packages
+        .where((id) => _root.dependencyType(id.name) != DependencyType.none);
+    final statuses = await Future.wait(
+      directDependencies.map(
+        (id) async => Pair(
+          id,
+          // We allow data to be up to 3 days old to not spend too much network
+          // time for packages that were not unlocked.
+          await _cache.source(id.source).status(id, Duration(days: 3)),
+        ),
+      ),
+    );
+    for (final statusPair in statuses) {
+      final id = statusPair.first;
+      final status = statusPair.last;
+      if (statusPair.last.isDiscontinued ?? false) {
+        final suffix = status.discontinuedReplacedBy == null
+            ? ''
+            : ' it has been replaced by package ${status.discontinuedReplacedBy}';
+        log.warning('Package ${id.name} has been discontinued$suffix.');
+      }
     }
   }
 

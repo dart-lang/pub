@@ -38,6 +38,16 @@ Future servePackages([void Function(PackageServerBuilder) callback]) async {
 /// This will always replace a previous server.
 Future serveNoPackages() => servePackages((_) {});
 
+/// Sets up the global package server to report an error on any request.
+///
+/// If no server has been set up, an empty server will be started.
+Future serveErrors() async {
+  if (globalPackageServer == null) {
+    await serveNoPackages();
+  }
+  globalPackageServer.serveErrors();
+}
+
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
   final DescriptorServer _inner;
@@ -71,6 +81,14 @@ class PackageServer {
   /// Handlers for requests not easily described as packages.
   Map<Pattern, shelf.Handler> get extraHandlers => _inner.extraHandlers;
 
+  /// From now on report errors on any request.
+  void serveErrors() => extraHandlers
+    ..clear()
+    ..[RegExp('.*')] = (request) {
+      fail('The HTTP server received an unexpected request:\n'
+          '${request.method} ${request.requestedUri}');
+    };
+
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///
   /// Calls [callback] with a [PackageServerBuilder] that's used to specify
@@ -97,19 +115,22 @@ class PackageServer {
     _servedApiPackageDir.contents.clear();
     _servedPackageDir.contents.clear();
 
-    _builder._packages.forEach((name, versions) {
+    _builder._packages.forEach((name, package) {
       _servedApiPackageDir.contents.addAll([
         d.file(
             name,
             jsonEncode({
               'name': name,
               'uploaders': ['nweiz@google.com'],
-              'versions': versions
+              'versions': package.versions
                   .map((version) => packageVersionApiMap(url, version.pubspec))
-                  .toList()
+                  .toList(),
+              if (package.isDiscontinued) 'isDiscontinued': true,
+              if (package.discontinuedReplacementText != null)
+                'replacedBy': package.discontinuedReplacementText,
             })),
         d.dir(name, [
-          d.dir('versions', versions.map((version) {
+          d.dir('versions', package.versions.map((version) {
             return d.file(
                 version.version.toString(),
                 jsonEncode(
@@ -121,7 +142,7 @@ class PackageServer {
       _servedPackageDir.contents.add(d.dir(name, [
         d.dir(
             'versions',
-            versions.map((version) =>
+            package.versions.map((version) =>
                 d.tar('${version.version}.tar.gz', version.contents)))
       ]));
     });
@@ -138,8 +159,12 @@ class PackageServer {
 
   /// Returns the path of [package] at [version], installed from this server, in
   /// the pub cache.
-  String pathInCache(String package, String version) => p.join(
-      d.sandbox, cachePath, 'hosted/localhost%58$port/$package-$version');
+  String pathInCache(String package, String version) =>
+      p.join(cachingPath, '$package-$version');
+
+  /// The location where pub will store the cache for this server.
+  String get cachingPath =>
+      p.join(d.sandbox, cachePath, 'hosted', 'localhost%58$port');
 
   /// Replace the current set of packages that are being served.
   void replace(void Function(PackageServerBuilder) callback) {
@@ -150,8 +175,8 @@ class PackageServer {
 
 /// A builder for specifying which packages should be served by [servePackages].
 class PackageServerBuilder {
-  /// A map from package names to a list of concrete packages to serve.
-  final _packages = <String, List<_ServedPackage>>{};
+  /// A map from package names to the concrete packages to serve.
+  final _packages = <String, _ServedPackage>{};
 
   /// The package server that this builder is associated with.
   final PackageServer _server;
@@ -179,8 +204,16 @@ class PackageServerBuilder {
     contents ??= [d.libDir(name, '$name $version')];
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
-    var packages = _packages.putIfAbsent(name, () => []);
-    packages.add(_ServedPackage(pubspecFields, contents));
+    var package = _packages.putIfAbsent(name, () => _ServedPackage());
+    package.versions.add(_ServedPackageVersion(pubspecFields, contents));
+  }
+
+  // Mark a package discontinued.
+  void discontinue(String name,
+      {bool isDiscontinued = true, String replacementText}) {
+    _packages[name]
+      ..isDiscontinued = isDiscontinued
+      ..discontinuedReplacementText = replacementText;
   }
 
   /// Clears all existing packages from this builder.
@@ -189,12 +222,18 @@ class PackageServerBuilder {
   }
 }
 
-/// A package that's intended to be served.
 class _ServedPackage {
+  List<_ServedPackageVersion> versions = [];
+  bool isDiscontinued = false;
+  String discontinuedReplacementText;
+}
+
+/// A package that's intended to be served.
+class _ServedPackageVersion {
   final Map pubspec;
   final List<d.Descriptor> contents;
 
   Version get version => Version.parse(pubspec['version']);
 
-  _ServedPackage(this.pubspec, this.contents);
+  _ServedPackageVersion(this.pubspec, this.contents);
 }

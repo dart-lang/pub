@@ -234,10 +234,27 @@ abstract class BoundSource {
   /// If the source is cached, this will be a path in the system cache.
   String getDirectory(PackageId id);
 
+  /// Returns metadata about a given package. Information about remotely hosted
+  /// packages can be cached for up to [maxAge].
+  Future<PackageStatus> status(PackageId id, Duration maxAge) async =>
+      // Default implementation has no metadata.
+      PackageStatus();
+
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
   /// This is notionally protected; it should only be called by subclasses.
   void memoizePubspec(PackageId id, Pubspec pubspec) {
     _pubspecs[id] = pubspec;
   }
+}
+
+/// Metadata about a [PackageId].
+class PackageStatus {
+  /// `null` if not [isDiscontinued]. Otherwise contains the
+  /// replacement string provided by the host or `null` if there is no
+  /// replacement.
+  final String discontinuedReplacedBy;
+  final bool isDiscontinued;
+  PackageStatus({isDiscontinued, this.discontinuedReplacedBy})
+      : isDiscontinued = isDiscontinued ?? false;
 }
