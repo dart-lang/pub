@@ -9,6 +9,12 @@ on:
   schedule:
     - cron: "0 0 * * 0"
 
+windows:
+  runs-on: windows-latest
+  steps:
+    - run: choco install git
+    - run: git --version
+
 env:
   PUB_ENVIRONMENT: bot.github
   _PUB_TEST_SNAPSHOT: ${{ github.workspace }}/.dart_tool/pub.dart.snapshot.dart2
