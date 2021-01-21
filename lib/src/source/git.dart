@@ -573,14 +573,19 @@ class BoundGitSource extends CachedSource {
 
   /// Checks out any LFS binaries at the current ref to [repoPath].
   /// Ignore errors if `git lfs` is not installed.
-  Future _pullLFS(String repoPath) async {
+  Future<void> _pullLFS(String repoPath) async {
+    var attributesPath = '$repoPath/.gitattributes';
+    // if there is no attributes file there won't be any LFS binaries
+    if (!fileExists(attributesPath)) return;
+    if (!readTextFile(attributesPath).toLowerCase().contains('=lfs')) return;
+
     try {
       // to avoid silent failure let's initialize git lfs hooks in the
       // cloned repository in case the user has not globally ran `git lfs install`
       await git.run(['lfs', 'install', '--local'], workingDir: repoPath);
     } on git.GitException catch (e) {
       if (e.message.contains('not a git command')) {
-        log.fine('git lfs not found, continuing');
+        log.error('git lfs not found');
         return;
       } else {
         rethrow;
