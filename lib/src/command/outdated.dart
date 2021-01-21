@@ -572,11 +572,11 @@ Future<void> _outputHuman(
     if (notAtResolvable == 1) {
       log.message('\n1 dependency is constrained to a '
           'version that is older than a resolvable version.\n'
-          'To update it, edit pubspec.yaml.');
+          'To update it, ${mode.upgradeConstrained}.');
     } else {
       log.message('\n$notAtResolvable  dependencies are constrained to '
           'versions that are older than a resolvable version.\n'
-          'To update these dependencies, edit pubspec.yaml.');
+          'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
 }
@@ -591,6 +591,7 @@ abstract class Mode {
   String get explanation;
   String get foundNoBadText;
   String get allGood;
+  String get upgradeConstrained;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
@@ -607,6 +608,10 @@ Showing outdated packages.
 
   @override
   String get allGood => 'all up-to-date.';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `dart pub upgrade --major-versions`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -679,6 +684,10 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get allGood => 'all support null safety.';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `dart pub upgrade --null-safety`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
