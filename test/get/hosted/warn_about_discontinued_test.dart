@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/command/cache_repair.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/io.dart';
@@ -25,10 +26,10 @@ void main() {
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
-    final fooVersionsCache = p.join(d.sandbox, cachePath, 'hosted',
-        'localhost%58${globalServer.port}', 'foo-versions.json');
-    final transitiveVersionsCache = p.join(d.sandbox, cachePath, 'hosted',
-        'localhost%58${globalServer.port}', 'transitive-versions.json');
+    final fooVersionsCache = p.join(
+        globalPackageServer.cachingPath, '.versions', 'foo-versions.json');
+    final transitiveVersionsCache = p.join(globalPackageServer.cachingPath,
+        '.versions', 'transitive-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     expect(fileExists(transitiveVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
@@ -51,6 +52,11 @@ void main() {
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
     await pubGet(warning: isEmpty);
+    // Repairing the cache should reset the package listing caches.
+    await runPub(args: ['cache', 'repair']);
+    await pubGet(
+        warning:
+            'Package foo has been discontinued it has been replaced by package bar.');
   });
 }
 // /private/var/folders/zf/dv4m6qs906n6t1zhjt9jfdw4006vgn/T/dart_test_dskJEn/cache/hosted/localhost%5856564/foo-versions.json.

@@ -245,7 +245,7 @@ class BoundHostedSource extends CachedSource {
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
-  /// Otherwise deletes a cached response if it exists and returns `null`
+  /// Otherwise deletes a cached response if it exists and returns `null`.
   Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
       PackageRef ref, Duration maxAge) async {
     final cachePath = _versionListingCachePath(ref);
@@ -328,7 +328,10 @@ class BoundHostedSource extends CachedSource {
   String _versionListingCachePath(PackageRef ref) {
     final parsed = source._parseDescription(ref.description);
     final dir = _urlToDirectory(parsed.last);
-    return p.join(systemCacheRoot, dir, '${ref.name}-versions.json');
+    // Use a .versions/ dir because older versions of pub won't choke on that
+    // name when iterating the cache (it is not listed by [listDir]).
+    return p.join(
+        systemCacheRoot, dir, '.versions', '${ref.name}-versions.json');
   }
 
   /// Downloads a list of all versions of a package that are available from the
@@ -398,7 +401,7 @@ class BoundHostedSource extends CachedSource {
         final results = <RepairResult>[];
         var packages = <Package>[];
         for (var entry in listDir(serverDir)) {
-          if (dirExists(entry)) {
+          if (_looksLikePackageDir(entry)) {
             try {
               packages.add(Package.load(null, entry, systemCache.sources));
             } catch (error, stackTrace) {
@@ -408,13 +411,12 @@ class BoundHostedSource extends CachedSource {
               tryDeleteEntry(entry);
             }
           } else {
-            if (entry.endsWith('-versions.json')) {
-              // A cached version listing response.
-              // Just delete it - it will be re-retrieved.
-              tryDeleteEntry(entry);
-            }
+            // A stray file. Delete it.
+            tryDeleteEntry(entry);
           }
         }
+        // Delete the cached package listings.
+        tryDeleteEntry(p.join(serverDir, '.versions'));
 
         packages.sort(Package.orderByNameAndVersion);
 
@@ -467,6 +469,7 @@ class BoundHostedSource extends CachedSource {
     if (!dirExists(cacheDir)) return [];
 
     return listDir(cacheDir)
+        .where(_looksLikePackageDir)
         .map((entry) {
           try {
             return Package.load(null, entry, systemCache.sources);
@@ -645,12 +648,18 @@ class _OfflineHostedSource extends BoundHostedSource {
     List<PackageId> versions;
     if (dirExists(dir)) {
       versions = listDir(dir)
+          // Only directories with a pubspec.yaml should be considered packages.
+          .where(_looksLikePackageDir)
           .map((entry) {
             var components = p.basename(entry).split('-');
             if (components.first != ref.name) return null;
-            return source.idFor(
-                ref.name, Version.parse(components.skip(1).join('-')),
-                url: _serverFor(ref.description));
+            try {
+              return source.idFor(
+                  ref.name, Version.parse(components.skip(1).join('-')),
+                  url: _serverFor(ref.description));
+            } on FormatException {
+              // Failing to parse a package-name is not bad.
+            }
           })
           .where((id) => id != null)
           .toList();
@@ -680,3 +689,6 @@ class _OfflineHostedSource extends BoundHostedSource {
         '${id.name} ${id.version} is not available in your system cache');
   }
 }
+
+bool _looksLikePackageDir(String path) =>
+    fileExists(p.join(path, 'pubspec.yaml'));

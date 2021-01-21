@@ -38,6 +38,16 @@ Future servePackages([void Function(PackageServerBuilder) callback]) async {
 /// This will always replace a previous server.
 Future serveNoPackages() => servePackages((_) {});
 
+/// Sets up the global package server to report an error on any request.
+///
+/// If no server has been set up, an empty server will be started.
+Future serveErrors() async {
+  if (globalPackageServer == null) {
+    await serveNoPackages();
+  }
+  globalPackageServer.serveErrors();
+}
+
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
   final DescriptorServer _inner;
@@ -70,6 +80,14 @@ class PackageServer {
 
   /// Handlers for requests not easily described as packages.
   Map<Pattern, shelf.Handler> get extraHandlers => _inner.extraHandlers;
+
+  /// From now on report errors on any request.
+  void serveErrors() => extraHandlers
+    ..clear()
+    ..[RegExp('.*')] = (request) {
+      fail('The HTTP server received an unexpected request:\n'
+          '${request.method} ${request.requestedUri}');
+    };
 
   /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
   ///
@@ -141,8 +159,12 @@ class PackageServer {
 
   /// Returns the path of [package] at [version], installed from this server, in
   /// the pub cache.
-  String pathInCache(String package, String version) => p.join(
-      d.sandbox, cachePath, 'hosted/localhost%58$port/$package-$version');
+  String pathInCache(String package, String version) =>
+      p.join(cachingPath, '$package-$version');
+
+  /// The location where pub will store the cache for this server.
+  String get cachingPath =>
+      p.join(d.sandbox, cachePath, 'hosted', 'localhost%58$port');
 
   /// Replace the current set of packages that are being served.
   void replace(void Function(PackageServerBuilder) callback) {
