@@ -9,18 +9,18 @@ on:
   schedule:
     - cron: "0 0 * * 0"
 
-windows:
-  runs-on: windows-latest
-  steps:
-    - run: choco install git
-    - run: git --version
-
 env:
   PUB_ENVIRONMENT: bot.github
   _PUB_TEST_SNAPSHOT: ${{ github.workspace }}/.dart_tool/pub.dart.snapshot.dart2
   _TESTS_FILE: .dart_tool/test_files
 
 jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - run: choco install git
+      - run: git --version
+
   # Check code formatting and static analysis on a single OS (linux)
   # against Dart stable and dev.
   analyze:
