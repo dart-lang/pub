@@ -8,7 +8,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
-import 'package:pub/src/source/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
@@ -21,6 +20,7 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/git.dart';
+import '../source/path.dart';
 import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
 import '../utils.dart';
