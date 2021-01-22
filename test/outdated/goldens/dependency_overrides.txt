@@ -138,7 +138,7 @@ foo           *1.0.1 (overridden)  *1.0.0      *1.0.0      2.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 1 dependency is constrained to a version that is older than a resolvable version.
-To update it, edit pubspec.yaml.
+To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
