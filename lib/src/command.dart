@@ -183,7 +183,7 @@ abstract class PubCommand extends Command<int> {
         log.error("""
 This is an unexpected error. Please run
 
-    dart pub --trace ${_topCommand.name} ${_topCommand.argResults.arguments.map(protectArgument).join(' ')}
+    $topLevelProgram pub --trace ${_topCommand.name} ${_topCommand.argResults.arguments.map(protectArgument).join(' ')}
 
 and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);

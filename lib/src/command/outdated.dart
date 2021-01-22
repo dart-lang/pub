@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/command_runner.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
@@ -560,12 +561,12 @@ Future<void> _outputHuman(
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
             'an older version.\n'
-            'To update it, use `dart pub upgrade`.');
+            'To update it, use `$topLevelProgram pub upgrade`.');
       } else {
         log.message(
             '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
             'to older versions.\n'
-            'To update these dependencies, use `dart pub upgrade`.');
+            'To update these dependencies, use `$topLevelProgram pub upgrade`.');
       }
     }
 
@@ -623,11 +624,11 @@ Showing outdated packages.
 
   @override
   String get noResolutionText =>
-      '''No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.''';
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --dry-run` to explore why.''';
 
   @override
   String get upgradeConstrained =>
-      'edit pubspec.yaml, or run `dart pub upgrade --major-versions`';
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --major-versions`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -703,11 +704,11 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get noResolutionText =>
-      '''No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.''';
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --null-safety --dry-run` to explore why.''';
 
   @override
   String get upgradeConstrained =>
-      'edit pubspec.yaml, or run `dart pub upgrade --null-safety`';
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(

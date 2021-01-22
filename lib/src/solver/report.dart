@@ -4,6 +4,7 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
+import '../command_runner.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -180,7 +181,7 @@ class SolveReport {
         packageCountString = '$outdatedPackagesCount packages have';
       }
       log.message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\nTry `dart pub outdated` for more information.');
+          'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
     }
   }
 
