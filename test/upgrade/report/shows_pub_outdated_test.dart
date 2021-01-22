@@ -45,7 +45,7 @@ Try `dart pub outdated` for more information.$''', multiLine: true));
 
     // Running inside Flutter this will recommend the Flutter variant.
     await pubUpgrade(
-        environment: {'PUB_ENVIRONMENT': 'flutter_cli'}, output: RegExp(r'''
+        environment: {'PUB_ENVIRONMENT': 'flutter_cli:get'}, output: RegExp(r'''
 3 packages have newer versions incompatible with dependency constraints.
 Try `flutter pub outdated` for more information.$''', multiLine: true));
 
