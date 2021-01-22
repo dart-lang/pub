@@ -111,8 +111,7 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+foo           ✗1.1.0   ✗1.1.0      ✓2.0.0      ✓2.0.0  
 
 dev_dependencies:
 flutter_test  ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
@@ -128,8 +127,7 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+foo           ✗1.1.0   ✗1.1.0      ✓2.0.0      ✓2.0.0  
 
 dev_dependencies:
 flutter_test  ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
@@ -145,8 +143,7 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-flutter       ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+foo           ✗1.1.0   ✗1.1.0      ✓2.0.0      ✓2.0.0  
 
 dev_dependencies:
 flutter_test  ✗(sdk)   ✗(sdk)      ✗(sdk)      ✗(sdk)  
@@ -157,25 +154,6 @@ To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
 $ pub outdated --json --mode=null-safety
 {
   "packages": [
-    {
-      "package": "flutter",
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
     {
       "package": "flutter_test",
       "current": {
@@ -207,11 +185,11 @@ $ pub outdated --json --mode=null-safety
       },
       "resolvable": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       }
     }
   ]
