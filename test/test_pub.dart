@@ -374,6 +374,7 @@ String testVersion = '0.1.2+3';
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
+    'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
     'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',

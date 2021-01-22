@@ -61,7 +61,7 @@ Package Name  Current  Upgradable  Resolvable  Latest
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
 foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
 
 $ pub outdated --no-color --mode=null-safety --transitive
 Showing dependencies that are currently not opted in to null-safety.
@@ -73,7 +73,7 @@ Package Name  Current  Upgradable  Resolvable  Latest
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
 foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
 
 $ pub outdated --no-color --mode=null-safety --no-prereleases
 Showing dependencies that are currently not opted in to null-safety.
@@ -85,7 +85,7 @@ Package Name  Current  Upgradable  Resolvable  Latest
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
 foo           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
 
 $ pub outdated --json --mode=null-safety
 {

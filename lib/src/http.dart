@@ -80,6 +80,11 @@ class _PubHttpClient extends http.BaseClient {
       if (request.url.origin != 'https://pub.dartlang.org') return false;
     }
 
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
+    }
+
     return true;
   }
 

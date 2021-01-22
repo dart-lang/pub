@@ -430,16 +430,19 @@ Future<void> _outputJson(
   );
 }
 
-Future<void> _outputHuman(List<_PackageDetails> rows, Mode mode,
-    {@required bool showAll,
-    @required bool useColors,
-    @required bool includeDevDependencies,
-    @required bool lockFileExists,
-    @required bool hasDirectDependencies,
-    @required bool hasDevDependencies,
-    @required bool showTransitiveDependencies,
-    @required bool hasUpgradableResolution,
-    @required bool hasResolvableResolution}) async {
+Future<void> _outputHuman(
+  List<_PackageDetails> rows,
+  Mode mode, {
+  @required bool showAll,
+  @required bool useColors,
+  @required bool includeDevDependencies,
+  @required bool lockFileExists,
+  @required bool hasDirectDependencies,
+  @required bool hasDevDependencies,
+  @required bool showTransitiveDependencies,
+  @required bool hasUpgradableResolution,
+  @required bool hasResolvableResolution,
+}) async {
   final explanation = mode.explanation;
   if (explanation != null) {
     log.message(explanation + '\n');
@@ -578,11 +581,11 @@ Future<void> _outputHuman(List<_PackageDetails> rows, Mode mode,
     if (notAtResolvable == 1) {
       log.message('\n1 dependency is constrained to a '
           'version that is older than a resolvable version.\n'
-          'To update it, edit pubspec.yaml.');
+          'To update it, ${mode.upgradeConstrained}.');
     } else {
       log.message('\n$notAtResolvable  dependencies are constrained to '
           'versions that are older than a resolvable version.\n'
-          'To update these dependencies, edit pubspec.yaml.');
+          'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
 }
@@ -598,6 +601,7 @@ abstract class Mode {
   String get foundNoBadText;
   String get allGood;
   String get noResolutionText;
+  String get upgradeConstrained;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
@@ -617,7 +621,11 @@ Showing outdated packages.
 
   @override
   String get noResolutionText =>
-      '''No resolution was found. Try running `dart pub upgrade --dry-run to explore why.''';
+      '''No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `dart pub upgrade --major-versions`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -693,7 +701,11 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get noResolutionText =>
-      '''No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.''';
+      '''No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `dart pub upgrade --null-safety`';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
