@@ -428,8 +428,8 @@ class VersionSolver {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       var cached = _packageListers[package.toRef()]?.cachedVersions;
-      // If the version list was never requested, just use the one known
-      // version.
+      // If the version list was never requested, use versions from cached
+      // version listings.
       var versions = cached == null
           ? [package.version]
           : cached.map((id) => id.version).toList();

@@ -339,9 +339,14 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
-    final versions = await _scheduler.schedule(ref);
-    return versions.keys.toList();
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+    Map<PackageId, _VersionInfo> versionListing;
+    if (maxAge != null) {
+      // Do we have a cached version response on disk?
+      versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
+    }
+    versionListing ??= await _scheduler.schedule(ref);
+    return versionListing.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -647,7 +652,7 @@ class _OfflineHostedSource extends BoundHostedSource {
 
   /// Gets the list of all versions of [ref] that are in the system cache.
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     var parsed = source._parseDescription(ref.description);
     var server = parsed.last;
     log.io('Finding versions of ${ref.name} in '

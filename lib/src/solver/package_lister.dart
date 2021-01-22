@@ -427,7 +427,7 @@ class _RootSource extends BoundSource {
   _RootSource(this._package);
 
   @override
-  Future<List<PackageId>> getVersions(PackageRef ref) {
+  Future<List<PackageId>> getVersions(PackageRef ref, {Duration maxAge}) {
     assert(ref.isRoot);
     return Future.value([PackageId.root(_package)]);
   }
@@ -443,7 +443,8 @@ class _RootSource extends BoundSource {
   @override
   SystemCache get systemCache => throw _unsupported;
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) => throw _unsupported;
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
+      throw _unsupported;
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
   @override
