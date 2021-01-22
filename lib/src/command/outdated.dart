@@ -130,10 +130,19 @@ class OutdatedCommand extends PubCommand {
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
+    bool hasUpgradableResolution;
+    bool hasResolvableResolution;
 
     await log.spinner('Resolving', () async {
-      upgradablePackages = await _tryResolve(upgradablePubspec, cache);
-      resolvablePackages = await _tryResolve(resolvablePubspec, cache);
+      final upgradablePackagesResult =
+          await _tryResolve(upgradablePubspec, cache);
+      hasUpgradableResolution = upgradablePackagesResult != null;
+      upgradablePackages = upgradablePackagesResult ?? [];
+
+      final resolvablePackagesResult =
+          await _tryResolve(resolvablePubspec, cache);
+      hasResolvableResolution = resolvablePackagesResult != null;
+      resolvablePackages = resolvablePackagesResult ?? [];
     }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
@@ -259,6 +268,8 @@ class OutdatedCommand extends PubCommand {
           (c) => c.source is! SdkSource,
         ),
         showTransitiveDependencies: showTransitiveDependencies,
+        hasUpgradableResolution: hasUpgradableResolution,
+        hasResolvableResolution: hasResolvableResolution,
       );
     }
   }
@@ -371,18 +382,16 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
+/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
+/// resolution was found.
 Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
     SolveType.UPGRADE,
     cache,
     Package.inMemory(pubspec),
   );
-  if (solveResult == null) {
-    return [];
-  }
 
-  return solveResult.packages;
+  return solveResult?.packages;
 }
 
 Future<void> _outputJson(
@@ -431,6 +440,8 @@ Future<void> _outputHuman(
   @required bool hasDirectDependencies,
   @required bool hasDevDependencies,
   @required bool showTransitiveDependencies,
+  @required bool hasUpgradableResolution,
+  @required bool hasResolvableResolution,
 }) async {
   final explanation = mode.explanation;
   if (explanation != null) {
@@ -540,7 +551,9 @@ Future<void> _outputHuman(
               hasKind(_DependencyKind.dev)(row)))
       .length;
 
-  if (lockFileExists) {
+  if (!hasUpgradableResolution || !hasResolvableResolution) {
+    log.message(mode.noResolutionText);
+  } else if (lockFileExists) {
     if (upgradable != 0) {
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
@@ -553,21 +566,17 @@ Future<void> _outputHuman(
             'To update these dependencies, use `dart pub upgrade`.');
       }
     }
+
+    if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
+      log.message(
+          "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
+          "Newer versions, listed in 'Latest', may not be mutually compatible.");
+    }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
         'Run `pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
   }
-
-  if (lockFileExists &&
-      notAtResolvable == 0 &&
-      upgradable == 0 &&
-      rows.isNotEmpty) {
-    log.message(
-        "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
-        "Newer versions, listed in 'Latest', may not be mutually compatible.");
-  }
-
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
       log.message('\n1 dependency is constrained to a '
@@ -591,6 +600,7 @@ abstract class Mode {
   String get explanation;
   String get foundNoBadText;
   String get allGood;
+  String get noResolutionText;
   String get upgradeConstrained;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
@@ -608,6 +618,10 @@ Showing outdated packages.
 
   @override
   String get allGood => 'all up-to-date.';
+
+  @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.''';
 
   @override
   String get upgradeConstrained =>
@@ -684,6 +698,10 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get allGood => 'all support null safety.';
+
+  @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.''';
 
   @override
   String get upgradeConstrained =>
