@@ -109,8 +109,7 @@ Package Name  Current              Upgradable  Resolvable  Latest
 direct dependencies:
 bar           *1.0.0 (overridden)  -           -           2.0.0   
 foo           *1.0.0 (overridden)  -           -           2.0.0   
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+No resolution was found. Try running `dart pub upgrade --dry-run to explore why.
 
 $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.

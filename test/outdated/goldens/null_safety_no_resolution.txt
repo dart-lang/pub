@@ -1,0 +1,132 @@
+$ pub outdated --json
+{
+  "packages": []
+}
+
+$ pub outdated --no-color
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Found no outdated packages
+
+$ pub outdated --no-color --no-transitive
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Found no outdated packages
+
+$ pub outdated --no-color --up-to-date
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+bar           1.0.0    1.0.0       1.0.0       1.0.0   
+foo           1.0.0    1.0.0       1.0.0       1.0.0   
+You are already using the newest resolvable versions listed in the 'Resolvable' column.
+Newer versions, listed in 'Latest', may not be mutually compatible.
+
+$ pub outdated --no-color --prereleases
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest              
+
+direct dependencies:
+bar           *1.0.0   *1.0.0      *1.0.0      2.0.0-nullsafety.0  
+foo           *1.0.0   *1.0.0      *1.0.0      2.0.0-nullsafety.0  
+You are already using the newest resolvable versions listed in the 'Resolvable' column.
+Newer versions, listed in 'Latest', may not be mutually compatible.
+
+$ pub outdated --no-color --no-dev-dependencies
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Found no outdated packages
+
+$ pub outdated --no-color --no-dependency-overrides
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Found no outdated packages
+
+$ pub outdated --no-color --mode=null-safety
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest               
+
+direct dependencies:
+bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+
+$ pub outdated --no-color --mode=null-safety --transitive
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest               
+
+direct dependencies:
+bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+
+$ pub outdated --no-color --mode=null-safety --no-prereleases
+Showing dependencies that are currently not opted in to null-safety.
+[✗] indicates versions without null safety support.
+[✓] indicates versions opting in to null safety.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies:
+bar           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
+foo           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
+No resolution was found. Try running `dart pub upgrade --null-safety --dry-run to explore why.
+
+$ pub outdated --json --mode=null-safety
+{
+  "packages": [
+    {
+      "package": "bar",
+      "current": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "resolvable": null,
+      "latest": {
+        "version": "2.0.0-nullsafety.0",
+        "nullSafety": true
+      }
+    },
+    {
+      "package": "foo",
+      "current": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "resolvable": null,
+      "latest": {
+        "version": "2.0.0-nullsafety.0",
+        "nullSafety": true
+      }
+    }
+  ]
+}
+
+$ pub outdated --json --no-dev-dependencies
+{
+  "packages": []
+}
+
