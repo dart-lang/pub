@@ -777,7 +777,8 @@ class _VersionDetails {
     if (_overridden) {
       suffix = ' (overridden)';
     } else if (_id.source is SdkSource) {
-      suffix = ' (sdk)';
+      // Version is not relevant for sdk-packages.
+      return '(sdk)';
     } else if (_id.source is GitSource) {
       suffix = ' (git)';
     } else if (_id.source is PathSource) {
