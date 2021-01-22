@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:pub/src/source/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
@@ -19,6 +20,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source/git.dart';
 import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
 import '../utils.dart';
@@ -218,7 +220,7 @@ class OutdatedCommand extends PubCommand {
       ...upgradablePackages,
       ...resolvablePackages
     ]) {
-      if (!visited.add(id.name) || id.source is SdkSource) continue;
+      if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
@@ -771,7 +773,16 @@ class _VersionDetails {
   /// A string representation of this version to include in the outdated report.
   String get describe {
     final version = _pubspec.version;
-    final suffix = _overridden ? ' (overridden)' : '';
+    var suffix = '';
+    if (_overridden) {
+      suffix = ' (overridden)';
+    } else if (_id.source is SdkSource) {
+      suffix = ' (sdk)';
+    } else if (_id.source is GitSource) {
+      suffix = ' (git)';
+    } else if (_id.source is PathSource) {
+      suffix = ' (path)';
+    }
     return '$version$suffix';
   }
 

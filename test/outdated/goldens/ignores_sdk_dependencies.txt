@@ -51,12 +51,14 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current      Upgradable   Resolvable   Latest       
 
 direct dependencies:
-foo           *1.1.0   *1.1.0      2.0.0       2.0.0   
+flutter       1.0.0 (sdk)  1.0.0 (sdk)  1.0.0 (sdk)  1.0.0 (sdk)  
+foo           *1.1.0       *1.1.0       2.0.0        2.0.0        
 
-dev_dependencies: all up-to-date.
+dev_dependencies:
+flutter_test  1.0.0 (sdk)  1.0.0 (sdk)  1.0.0 (sdk)  1.0.0 (sdk)  
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -106,12 +108,14 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current       Upgradable    Resolvable    Latest        
 
 direct dependencies:
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+flutter       ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
+foo           ✗1.1.0        ✗1.1.0        ✗2.0.0        ✗2.0.0        
 
-dev_dependencies: all support null safety.
+dev_dependencies:
+flutter_test  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -121,12 +125,14 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current       Upgradable    Resolvable    Latest        
 
 direct dependencies:
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+flutter       ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
+foo           ✗1.1.0        ✗1.1.0        ✗2.0.0        ✗2.0.0        
 
-dev_dependencies: all support null safety.
+dev_dependencies:
+flutter_test  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -136,12 +142,14 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current       Upgradable    Resolvable    Latest        
 
 direct dependencies:
-foo           ✗1.1.0   ✗1.1.0      ✗2.0.0      ✗2.0.0  
+flutter       ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
+foo           ✗1.1.0        ✗1.1.0        ✗2.0.0        ✗2.0.0        
 
-dev_dependencies: all support null safety.
+dev_dependencies:
+flutter_test  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  ✗1.0.0 (sdk)  
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -149,6 +157,44 @@ To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
 $ pub outdated --json --mode=null-safety
 {
   "packages": [
+    {
+      "package": "flutter",
+      "current": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "1.0.0",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "flutter_test",
+      "current": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "1.0.0",
+        "nullSafety": false
+      }
+    },
     {
       "package": "foo",
       "current": {
