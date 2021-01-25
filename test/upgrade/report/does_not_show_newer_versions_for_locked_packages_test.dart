@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-      'Shows many newer versions available for '
-      'packages that are locked and not being upgraded', () async {
+      'Shows newer versions available for packages that are locked and not being upgraded',
+      () async {
     await servePackages((builder) {
       builder.serve('not_upgraded', '1.0.0');
       builder.serve('not_upgraded', '2.0.0');
