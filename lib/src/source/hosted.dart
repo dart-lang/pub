@@ -178,20 +178,29 @@ class BoundHostedSource extends CachedSource {
 
   Map<PackageId, _VersionInfo> _versionInfoFromPackageListing(
       Map body, PackageRef ref, Uri location) {
-    final versions = body['versions'] as List;
-    return Map.fromEntries(versions.map((map) {
-      var pubspec = Pubspec.fromMap(map['pubspec'], systemCache.sources,
-          expectedName: ref.name, location: location);
-      var id = source.idFor(ref.name, pubspec.version,
-          url: _serverFor(ref.description));
-      final archiveUrlValue = map['archive_url'];
-      final archiveUrl =
-          archiveUrlValue is String ? Uri.tryParse(archiveUrlValue) : null;
-      final status = PackageStatus(
-          isDiscontinued: body['isDiscontinued'] as bool ?? false,
-          discontinuedReplacedBy: body['replacedBy'] as String);
-      return MapEntry(id, _VersionInfo(pubspec, archiveUrl, status));
-    }));
+    final versions = body['versions'];
+    if (versions is List) {
+      return Map.fromEntries(versions.map((map) {
+        final pubspecData = map['pubspec'];
+        if (pubspecData is Map) {
+          var pubspec = Pubspec.fromMap(pubspecData, systemCache.sources,
+              expectedName: ref.name, location: location);
+          var id = source.idFor(ref.name, pubspec.version,
+              url: _serverFor(ref.description));
+          var archiveUrl = map['archive_url'];
+          if (archiveUrl is String) {
+            final status = PackageStatus(
+                isDiscontinued: body['isDiscontinued'] as bool ?? false,
+                discontinuedReplacedBy: body['replacedBy'] as String);
+            return MapEntry(
+                id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
+          }
+          throw FormatException('archive_url must be a String');
+        }
+        throw FormatException('pubspec must be a map');
+      }));
+    }
+    throw FormatException('versions must be a list');
   }
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
@@ -201,16 +210,17 @@ class BoundHostedSource extends CachedSource {
 
     String bodyText;
     Map body;
+    Map<PackageId, _VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       bodyText = await httpClient.read(url, headers: pubApiHeaders);
       body = jsonDecode(bodyText);
+      result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
       var parsed = source._parseDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
     }
-    final result = _versionInfoFromPackageListing(body, ref, url);
 
     // Cache the response on disk.
     // Don't cache overly big responses.
@@ -264,7 +274,10 @@ class BoundHostedSource extends CachedSource {
               tryDeleteEntry(cachePath);
             } else {
               return _versionInfoFromPackageListing(
-                  cachedDoc, ref, Uri.file(cachePath));
+                cachedDoc,
+                ref,
+                Uri.file(cachePath),
+              );
             }
           }
         } on io.IOException {
@@ -564,6 +577,11 @@ class BoundHostedSource extends CachedSource {
           stackTrace);
     } else if (error is io.TlsException) {
       fail('Got TLS error trying to find package $package at $url.', error,
+          stackTrace);
+    } else if (error is FormatException) {
+      fail(
+          'Got badly formatted response trying to find package $package at $url',
+          error,
           stackTrace);
     } else {
       // Otherwise re-throw the original exception.

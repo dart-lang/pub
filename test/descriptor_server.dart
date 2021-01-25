@@ -74,6 +74,7 @@ class DescriptorServer {
     _server.mount((request) async {
       final pathWithInitialSlash = '/${request.url.path}';
       final key = extraHandlers.keys.firstWhere((pattern) {
+        print("Matching $pattern against $pathWithInitialSlash");
         final match = pattern.matchAsPrefix(pathWithInitialSlash);
         return match != null && match.end == pathWithInitialSlash.length;
       }, orElse: () => null);
