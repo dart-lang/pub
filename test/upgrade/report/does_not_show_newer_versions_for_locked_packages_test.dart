@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-      'does not show how many newer versions are available for '
-      'packages that are locked and not being upgraded', () async {
+      'Shows newer versions available for packages that are locked and not being upgraded',
+      () async {
     await servePackages((builder) {
       builder.serve('not_upgraded', '1.0.0');
       builder.serve('not_upgraded', '2.0.0');
@@ -31,7 +31,7 @@ void main() {
     // Only upgrade "upgraded".
     await pubUpgrade(args: ['upgraded'], output: RegExp(r'''
 Resolving dependencies\.\.\..*
-  not_upgraded 1\.0\.0
+  not_upgraded 1\.0\.0 \(2\.0\.0 available\)
 . upgraded 2\.0\.0 \(was 1\.0\.0\)
 ''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
   });

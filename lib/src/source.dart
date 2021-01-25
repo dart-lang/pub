@@ -157,7 +157,9 @@ abstract class BoundSource {
   /// uses [describe] to get that version.
   ///
   /// Sources should not override this. Instead, they implement [doGetVersions].
-  Future<List<PackageId>> getVersions(PackageRef ref) {
+  ///
+  /// If [maxAge] is given answers can be taken from cache - up to that age old.
+  Future<List<PackageId>> getVersions(PackageRef ref, {Duration maxAge}) {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
@@ -165,7 +167,7 @@ abstract class BoundSource {
       throw ArgumentError('Package $ref does not use source ${source.name}.');
     }
 
-    return doGetVersions(ref);
+    return doGetVersions(ref, maxAge);
   }
 
   /// Get the IDs of all versions that match [ref].
@@ -180,7 +182,7 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref);
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge);
 
   /// A cache of pubspecs described by [describe].
   final _pubspecs = <PackageId, Pubspec>{};

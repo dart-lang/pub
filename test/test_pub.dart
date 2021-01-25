@@ -123,7 +123,7 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-Future pubCommand(RunCommand command,
+Future<void> pubCommand(RunCommand command,
     {Iterable<String> args,
     output,
     error,
@@ -155,14 +155,14 @@ Future pubCommand(RunCommand command,
       environment: environment);
 }
 
-Future pubAdd(
+Future<void> pubAdd(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.add,
+        Map<String, String> environment}) async =>
+    await pubCommand(RunCommand.add,
         args: args,
         output: output,
         error: error,
@@ -170,14 +170,14 @@ Future pubAdd(
         exitCode: exitCode,
         environment: environment);
 
-Future pubGet(
+Future<void> pubGet(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.get,
+        Map<String, String> environment}) async =>
+    await pubCommand(RunCommand.get,
         args: args,
         output: output,
         error: error,
@@ -185,14 +185,14 @@ Future pubGet(
         exitCode: exitCode,
         environment: environment);
 
-Future pubUpgrade(
+Future<void> pubUpgrade(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.upgrade,
+        Map<String, String> environment}) async =>
+    await pubCommand(RunCommand.upgrade,
         args: args,
         output: output,
         error: error,
@@ -200,14 +200,14 @@ Future pubUpgrade(
         exitCode: exitCode,
         environment: environment);
 
-Future pubDowngrade(
+Future<void> pubDowngrade(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.downgrade,
+        Map<String, String> environment}) async =>
+    await pubCommand(RunCommand.downgrade,
         args: args,
         output: output,
         error: error,
@@ -215,14 +215,14 @@ Future pubDowngrade(
         exitCode: exitCode,
         environment: environment);
 
-Future pubRemove(
+Future<void> pubRemove(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.remove,
+        Map<String, String> environment}) async =>
+    await pubCommand(RunCommand.remove,
         args: args,
         output: output,
         error: error,
@@ -295,7 +295,7 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future runPub(
+Future<void> runPub(
     {List<String> args,
     output,
     error,
@@ -349,7 +349,7 @@ Future<PubProcess> startPublish(PackageServer server,
 ///
 /// Ensures that the right output is shown and then enters "y" to confirm the
 /// upload.
-Future confirmPublish(TestProcess pub) async {
+Future<void> confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
   await expectLater(
@@ -577,7 +577,7 @@ void ensureGit() {
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-Future createLockFile(String package,
+Future<void> createLockFile(String package,
     {Iterable<String> sandbox, Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
@@ -592,7 +592,7 @@ Future createLockFile(String package,
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
-Future createPackagesFile(String package,
+Future<void> createPackagesFile(String package,
     {Iterable<String> sandbox, Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var lockFile =
