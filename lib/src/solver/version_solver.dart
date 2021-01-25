@@ -458,7 +458,7 @@ class VersionSolver {
 
       return PackageLister(_systemCache, ref, locked,
           _root.dependencyType(package.name), overridden,
-          downgrade: _type == SolveType.DOWNGRADE);
+          downgrade: _type == SolveType.downgrade);
     });
   }
 
@@ -466,7 +466,7 @@ class VersionSolver {
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
   PackageId _getLocked(String package) {
-    if (_type == SolveType.GET) {
+    if (_type == SolveType.get) {
       if (_unlock.contains(package)) {
         return null;
       }
@@ -476,7 +476,7 @@ class VersionSolver {
     // When downgrading, we don't want to force the latest versions of
     // non-hosted packages, since they don't support multiple versions and thus
     // can't be downgraded.
-    if (_type == SolveType.DOWNGRADE) {
+    if (_type == SolveType.downgrade) {
       var locked = _lockFile.packages[package];
       if (locked != null && !locked.source.hasMultipleVersions) return locked;
     }

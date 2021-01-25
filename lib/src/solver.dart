@@ -24,8 +24,8 @@ export 'solver/type.dart';
 /// If [unlock] is given, then only packages listed in [unlock] will be unlocked
 /// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
-/// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
-/// while [SolveType.UPGRADE] and [SolveType.DOWNGRADE] interprets an empty
+/// If [unlock] is empty [SolveType.get] interprets this as lock everything,
+/// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 Future<SolveResult> resolveVersions(
   SolveType type,
@@ -55,8 +55,8 @@ Future<SolveResult> resolveVersions(
 /// If [unlock] is given, only packages listed in [unlock] will be unlocked
 /// from [lockFile]. This is useful for a upgrading specific packages only.
 ///
-/// If [unlock] is empty [SolveType.GET] interprets this as lock everything,
-/// while [SolveType.UPGRADE] and [SolveType.DOWNGRADE] interprets an empty
+/// If [unlock] is empty [SolveType.get] interprets this as lock everything,
+/// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 Future<SolveResult> tryResolveVersions(
   SolveType type,

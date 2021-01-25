@@ -97,7 +97,7 @@ class AddCommand extends PubCommand {
       /// where the user specifies a version constraint, this serves to ensure
       /// that a resolution exists before we update pubspec.yaml.
       solveResult = await resolveVersions(
-          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
+          SolveType.upgrade, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
@@ -136,7 +136,7 @@ class AddCommand extends PubCommand {
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
           .acquireDependencies(
-        SolveType.GET,
+        SolveType.get,
         dryRun: true,
         precompile: argResults['precompile'],
       );
@@ -149,7 +149,7 @@ class AddCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+      await Entrypoint.current(cache).acquireDependencies(SolveType.get,
           precompile: argResults['precompile']);
     }
 

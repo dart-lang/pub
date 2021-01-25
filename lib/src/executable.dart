@@ -292,7 +292,7 @@ Future<String> getExecutableForCommand(
       entrypoint.assertUpToDate();
     } on DataException {
       await warningsOnlyUnlessTerminal(
-          () => entrypoint.acquireDependencies(SolveType.GET));
+          () => entrypoint.acquireDependencies(SolveType.get));
     }
 
     String command;
