@@ -432,6 +432,9 @@ class VersionSolver {
       var cached = _packageListers[package.toRef()]?.cachedVersions;
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
+      // TODO(sigurdm): This has a smell. The Git source should have a
+      // reasonable behavior here (we should be able to call getVersions in a
+      // way that doesn't fetch.
       var ids = cached ??
           (package.source is HostedSource
               ? (await _systemCache
