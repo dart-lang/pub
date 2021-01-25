@@ -489,6 +489,10 @@ void createPackageSymlink(String name, String target, String symlink,
 /// invocations of pub.
 final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
 
+final bool runningFromFlutter =
+    Platform.environment.containsKey('PUB_ENVIRONMENT') &&
+        Platform.environment['PUB_ENVIRONMENT'].contains('flutter_cli');
+
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
 final _dartRepoRegExp = RegExp(r'/third_party/pkg/pub/('
