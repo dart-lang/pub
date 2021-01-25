@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -430,13 +431,13 @@ class VersionSolver {
     for (var package in packages) {
       var cached = _packageListers[package.toRef()]?.cachedVersions;
       // If the version list was never requested, use versions from cached
-      // version listings.
+      // version listings if the package is "hosted".
       var ids = cached ??
-          (package.source == null
-              ? [package]
-              : (await _systemCache
+          (package.source is HostedSource
+              ? (await _systemCache
                   .source(package.source)
-                  .getVersions(package.toRef(), maxAge: Duration(days: 3))));
+                  .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+              : [package]);
 
       availableVersions[package.name] = ids.map((id) => id.version).toList();
     }
