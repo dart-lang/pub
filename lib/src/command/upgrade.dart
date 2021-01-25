@@ -99,7 +99,7 @@ class UpgradeCommand extends PubCommand {
 
   Future<void> _runUpgrade() async {
     await entrypoint.acquireDependencies(
-      SolveType.upgrade,
+      SolveType.UPGRADE,
       unlock: argResults.rest,
       dryRun: _dryRun,
       precompile: _precompile,
@@ -156,7 +156,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         cache,
         Package.inMemory(resolvablePubspec),
       );
@@ -207,7 +207,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
       );
@@ -218,7 +218,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         precompile: _precompile,
       );
     }
@@ -252,7 +252,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
@@ -300,7 +300,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
       );
@@ -311,7 +311,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint.current(cache).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.UPGRADE,
         precompile: _precompile,
       );
     }

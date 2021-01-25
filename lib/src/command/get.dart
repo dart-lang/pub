@@ -40,7 +40,7 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    return entrypoint.acquireDependencies(SolveType.get,
+    return entrypoint.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'], precompile: argResults['precompile']);
   }
 }

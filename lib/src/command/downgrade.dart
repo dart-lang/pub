@@ -44,7 +44,7 @@ class DowngradeCommand extends PubCommand {
     }
     var dryRun = argResults['dry-run'];
     await entrypoint.acquireDependencies(
-      SolveType.downgrade,
+      SolveType.DOWNGRADE,
       unlock: argResults.rest,
       dryRun: dryRun,
     );

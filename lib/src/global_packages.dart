@@ -140,7 +140,7 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.get);
+    await entrypoint.acquireDependencies(SolveType.GET);
     var name = entrypoint.root.name;
 
     try {
@@ -192,7 +192,7 @@ class GlobalPackages {
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies',
-          () => resolveVersions(SolveType.get, cache, root));
+          () => resolveVersions(SolveType.GET, cache, root));
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {
@@ -212,7 +212,7 @@ The package ${dep.name} is already activated at newest available version.
 To recompile executables, first run `global decativate ${dep.name}`.
 ''');
     } else {
-      await result.showReport(SolveType.get, cache);
+      await result.showReport(SolveType.GET, cache);
     }
 
     // Make sure all of the dependencies are locally installed.
