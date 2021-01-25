@@ -427,8 +427,9 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id) {
-    return http.withDependencyType(root.dependencyType(id.name), () async {
+  Future<void> _get(PackageId id) async {
+    return await http.withDependencyType(root.dependencyType(id.name),
+        () async {
       if (id.isRoot) return;
 
       var source = cache.source(id.source);

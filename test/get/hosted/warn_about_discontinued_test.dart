@@ -34,7 +34,12 @@ void main() {
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
     // We warn only about the direct dependency here:
-    await pubGet(warning: 'Package foo has been discontinued.');
+    await pubGet(output: '''
+Resolving dependencies...
+  foo 1.2.3 (discontinued)
+  transitive 1.0.0 (discontinued)
+Got dependencies!
+''');
     expect(fileExists(fooVersionsCache), isTrue);
     final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
@@ -43,28 +48,39 @@ void main() {
     writeTextFile(fooVersionsCache, json.encode(c));
     globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
-    await pubGet(
-        warning:
-            'Package foo has been discontinued it has been replaced by package bar.');
+    await pubGet(output: '''
+Resolving dependencies...
+  foo 1.2.3 (discontinued replaced by bar)
+  transitive 1.0.0 (discontinued)
+Got dependencies!''');
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
-    await pubGet(warning: isEmpty);
+    await pubGet(output: '''
+Resolving dependencies...
+  transitive 1.0.0 (discontinued)
+Got dependencies!''');
     // Repairing the cache should reset the package listing caches.
     await runPub(args: ['cache', 'repair']);
-    await pubGet(
-        warning:
-            'Package foo has been discontinued it has been replaced by package bar.');
+    await pubGet(output: '''
+Resolving dependencies...
+  foo 1.2.3 (discontinued replaced by bar)
+  transitive 1.0.0 (discontinued)
+Got dependencies!''');
     // Test that --offline won't try to access the server for retrieving the
     // status.
     await serveErrors();
-    await pubGet(
-        args: ['--offline'],
-        warning:
-            'Package foo has been discontinued it has been replaced by package bar.');
+    await pubGet(args: ['--offline'], output: '''
+Resolving dependencies...
+  foo 1.2.3 (discontinued replaced by bar)
+  transitive 1.0.0 (discontinued)
+Got dependencies!''');
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
-    await pubGet(args: ['--offline']);
+    await pubGet(args: ['--offline'], output: '''
+Resolving dependencies...
+Got dependencies!
+''');
   });
 }

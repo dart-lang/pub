@@ -699,6 +699,9 @@ class _OfflineHostedSource extends BoundHostedSource {
     final versionListing =
         await _cachedVersionListingResponse(id.toRef(), maxAge);
 
+    if (versionListing == null) {
+      return PackageStatus();
+    }
     final listing = versionListing[id];
     // If we don't have the specific version we return the empty response.
     //

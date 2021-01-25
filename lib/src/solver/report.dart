@@ -44,7 +44,7 @@ class SolveReport {
   /// the previous lock file.
   Future<void> show() async {
     await _reportChanges();
-    _reportOverrides();
+    await _reportOverrides();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
