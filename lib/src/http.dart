@@ -56,7 +56,9 @@ class _PubHttpClient extends http.BaseClient {
       }
 
       var type = Zone.current[#_dependencyType];
-      if (type != null) request.headers['X-Pub-Reason'] = type.toString();
+      if (type != null && type != DependencyType.none) {
+        request.headers['X-Pub-Reason'] = type.toString();
+      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
@@ -285,8 +287,9 @@ set innerHttpClient(http.Client client) => _pubClient._inner = client;
 ///
 /// If [type] is [DependencyType.none], no extra metadata is added.
 Future<T> withDependencyType<T>(
-    DependencyType type, Future<T> Function() callback) {
-  if (type == DependencyType.none) return callback();
+  DependencyType type,
+  Future<T> Function() callback,
+) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
 
