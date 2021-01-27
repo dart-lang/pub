@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:args/args.dart';
 import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 

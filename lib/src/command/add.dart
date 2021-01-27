@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import '../args_wrapper.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -36,44 +37,47 @@ class AddCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => argResults.get(isOfflineFlag);
 
-  bool get isDev => argResults['dev'];
-  bool get isDryRun => argResults['dry-run'];
-  String get gitUrl => argResults['git-url'];
-  String get gitPath => argResults['git-path'];
-  String get gitRef => argResults['git-ref'];
-  String get hostUrl => argResults['hosted-url'];
-  String get path => argResults['path'];
-  String get sdk => argResults['sdk'];
+  final Flag isOfflineFlag = Flag('offline',
+      help: 'Use cached packages instead of accessing the network.');
+  final Flag isDev = Flag('dev',
+      abbr: 'd',
+      negatable: false,
+      help: 'Adds package to the development dependencies instead.');
+  final Flag isDryRun = Flag('dry-run',
+      help: 'Use cached packages instead of accessing the network.',
+      negatable: false);
+
+  final Flag precompile = Flag('precompile',
+      help: 'Precompile executables in immediate dependencies.');
+
+  final Option gitUrl = Option('git-url', help: 'Git URL of the package');
+  final Option gitRef =
+      Option('git-ref', help: 'Git branch or commit to be retrieved');
+  final Option gitPath =
+      Option('git-path', help: 'Path of git package in repository');
+  final Option hostUrl =
+      Option('hosted-url', help: 'URL of package host server');
+  final Option path = Option('path', help: 'Local path');
+  final Option sdk = Option('sdk', help: 'SDK source for package');
 
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
   bool get hasHostOptions => hostUrl != null;
 
   AddCommand() {
-    argParser.addFlag('dev',
-        abbr: 'd',
-        negatable: false,
-        help: 'Adds package to the development dependencies instead.');
+    argParser.add(isDev);
+    argParser.add(gitUrl);
+    argParser.add(gitRef);
+    argParser.add(gitPath);
+    argParser.add(hostUrl);
+    argParser.add(sdk);
 
-    argParser.addOption('git-url', help: 'Git URL of the package');
-    argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
-    argParser.addOption('git-path', help: 'Path of git package in repository');
-    argParser.addOption('hosted-url', help: 'URL of package host server');
-    argParser.addOption('path', help: 'Local path');
-    argParser.addOption('sdk', help: 'SDK source for package');
+    argParser.add(isOfflineFlag);
 
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.add(isDryRun);
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
-
-    argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+    argParser.add(precompile);
   }
 
   @override
@@ -126,7 +130,7 @@ class AddCommand extends PubCommand {
           'does not satisfy constraint "${package.constraint}".');
     }
 
-    if (isDryRun) {
+    if (argResults.get(isDryRun)) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
       /// to this new dependency.
@@ -138,19 +142,19 @@ class AddCommand extends PubCommand {
           .acquireDependencies(
         SolveType.GET,
         dryRun: true,
-        precompile: argResults['precompile'],
+        precompile: argResults.get(precompile),
       );
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(resultPackage, packageInformation, isDev);
+      _updatePubspec(resultPackage, packageInformation, argResults.get(isDev));
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
       await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+          precompile: argResults.get(precompile));
     }
 
     if (isOffline) {
@@ -172,7 +176,7 @@ class AddCommand extends PubCommand {
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
 
-    if (isDev) {
+    if (argResults.get(isDev)) {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (devDependencyNames.contains(package.name)) {
@@ -252,18 +256,19 @@ class AddCommand extends PubCommand {
     ArgumentError.checkNotNull(package, 'package');
 
     final _conflictingFlagSets = [
-      ['git-url', 'git-ref', 'git-path'],
-      ['hosted-url'],
-      ['path'],
-      ['sdk'],
+      [gitUrl, gitRef, gitPath],
+      [hostUrl],
+      [path],
+      [sdk],
     ];
 
-    for (final flag
-        in _conflictingFlagSets.expand((s) => s).where(argResults.wasParsed)) {
+    for (final flag in _conflictingFlagSets
+        .expand((s) => s)
+        .where(argResults.argWasParsed)) {
       final conflictingFlag = _conflictingFlagSets
           .where((s) => !s.contains(flag))
           .expand((s) => s)
-          .firstWhere(argResults.wasParsed, orElse: () => null);
+          .firstWhere(argResults.argWasParsed, orElse: () => null);
       if (conflictingFlag != null) {
         usageException(
             'Packages can only have one source, "pub add" flags "--$flag" and '
