@@ -579,10 +579,10 @@ class BoundHostedSource extends CachedSource {
       fail('Got TLS error trying to find package $package at $url.', error,
           stackTrace);
     } else if (error is FormatException) {
-      fail(
+      throw PackageNotFoundException(
           'Got badly formatted response trying to find package $package at $url',
-          error,
-          stackTrace);
+          innerError: error,
+          innerTrace: stackTrace);
     } else {
       // Otherwise re-throw the original exception.
       throw error;

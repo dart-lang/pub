@@ -31,11 +31,10 @@ void main() {
       await pubCommand(command,
           error: allOf([
             contains(
-                "Because myapp depends on foo any which doesn't exist (could "
-                'not find package foo at http://localhost:'),
+                'Got badly formatted response trying to find package foo at http://localhost:'),
             contains('), version solving failed.')
           ]),
-          exitCode: exit_codes.UNAVAILABLE);
+          exitCode: exit_codes.DATA);
     });
   });
 }
