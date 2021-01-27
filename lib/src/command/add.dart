@@ -2,10 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import '../args_wrapper.dart';
+import 'package:args/args.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
+import '../args_wrapper.dart';
 import '../command.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
@@ -19,7 +20,6 @@ import '../solver.dart';
 import '../utils.dart';
 import '../yaml_edit/editor.dart';
 
-/// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
 /// the package. The user may pass in a git constraint, host url, or path as
 /// requirements. If no such options are passed in, this command will do a
 /// resolution to find the latest version of the package that is compatible with
