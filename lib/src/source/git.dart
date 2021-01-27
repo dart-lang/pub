@@ -225,7 +225,7 @@ class BoundGitSource extends CachedSource {
   }
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     return await _pool.withResource(() async {
       await _ensureRepoCache(ref);
       var path = _repoCachePath(ref);

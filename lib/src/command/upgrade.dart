@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
@@ -133,7 +134,7 @@ class UpgradeCommand extends PubCommand {
       }
 
       usageException('''
-Dependencies specified in `dart pub upgrade $modeFlag <dependencies>` must
+Dependencies specified in `$topLevelProgram pub upgrade $modeFlag <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
  - ${notInDeps.join('\n - ')}
 
@@ -473,7 +474,7 @@ null-safety compatible versions do not exist for:
  - ${hasNoNullSafetyVersions.join('\n - ')}
 
 You can choose to upgrade only some dependencies to null-safety using:
-  dart pub upgrade --nullsafety ${hasNullSafetyVersions.join(' ')}
+  $topLevelProgram pub upgrade --nullsafety ${hasNullSafetyVersions.join(' ')}
 
 Warning: Using null-safety features before upgrading all dependencies is
 discouraged. For more details see: ${NullSafetyAnalysis.guideUrl}

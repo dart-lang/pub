@@ -258,6 +258,43 @@ Future<void> main() async {
         environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
   });
 
+  test('null-safety no resolution', () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('foo', '2.0.0-nullsafety.0', deps: {
+        'bar': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('bar', '2.0.0-nullsafety.0', deps: {
+        'foo': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      }));
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.0',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+
+    await variations('null_safety_no_resolution',
+        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+  });
+
   test('overridden dependencies', () async {
     ensureGit();
     await servePackages(
@@ -362,20 +399,26 @@ Future<void> main() async {
     await variations('prereleases');
   });
 
-  test('ignores SDK dependencies', () async {
+  test('Handles SDK dependencies', () async {
     await servePackages((builder) => builder
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '1.1.0')
-      ..serve('foo', '2.0.0'));
+      ..serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+      })
+      ..serve('foo', '1.1.0', pubspec: {
+        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+      })
+      ..serve('foo', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+      }));
 
     await d.dir('flutter-root', [
       d.file('version', '1.2.3'),
       d.dir('packages', [
         d.dir('flutter', [
-          d.libPubspec('flutter', '1.0.0'),
+          d.libPubspec('flutter', '1.0.0', sdk: '>=2.12.0 <3.0.0'),
         ]),
         d.dir('flutter_test', [
-          d.libPubspec('flutter_test', '1.0.0'),
+          d.libPubspec('flutter_test', '1.0.0', sdk: '>=2.10.0 <3.0.0'),
         ]),
       ]),
     ]).create();
@@ -384,6 +427,7 @@ Future<void> main() async {
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
         'dependencies': {
           'foo': '^1.0.0',
           'flutter': {
@@ -401,10 +445,14 @@ Future<void> main() async {
 
     await pubGet(environment: {
       'FLUTTER_ROOT': d.path('flutter-root'),
+      '_PUB_TEST_SDK_VERSION': '2.13.0'
     });
 
-    await variations('ignores_sdk_dependencies', environment: {
+    await variations('handles_sdk_dependencies', environment: {
       'FLUTTER_ROOT': d.path('flutter-root'),
+      '_PUB_TEST_SDK_VERSION': '2.13.0',
+      // To test that the reproduction command is reflected correctly.
+      'PUB_ENVIRONMENT': 'flutter_cli:get',
     });
   });
 }

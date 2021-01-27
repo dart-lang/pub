@@ -10,7 +10,7 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http_retry/http_retry.dart';
-import 'package:http_throttle/http_throttle.dart';
+import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
@@ -56,7 +56,9 @@ class _PubHttpClient extends http.BaseClient {
       }
 
       var type = Zone.current[#_dependencyType];
-      if (type != null) request.headers['X-Pub-Reason'] = type.toString();
+      if (type != null && type != DependencyType.none) {
+        request.headers['X-Pub-Reason'] = type.toString();
+      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
@@ -78,6 +80,11 @@ class _PubHttpClient extends http.BaseClient {
       }
     } else {
       if (request.url.origin != 'https://pub.dartlang.org') return false;
+    }
+
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
     }
 
     return true;
@@ -229,7 +236,7 @@ class _ThrowingClient extends http.BaseClient {
 }
 
 /// The HTTP client to use for all HTTP requests.
-final httpClient = ThrottleClient(
+final httpClient = _ThrottleClient(
     16,
     _ThrowingClient(RetryClient(_pubClient,
         retries: math.max(
@@ -280,8 +287,9 @@ set innerHttpClient(http.Client client) => _pubClient._inner = client;
 ///
 /// If [type] is [DependencyType.none], no extra metadata is added.
 Future<T> withDependencyType<T>(
-    DependencyType type, Future<T> Function() callback) {
-  if (type == DependencyType.none) return callback();
+  DependencyType type,
+  Future<T> Function() callback,
+) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
 
@@ -343,4 +351,52 @@ class PubHttpException implements Exception {
   @override
   String toString() => 'HTTP error ${response.statusCode}: '
       '${response.reasonPhrase}';
+}
+
+/// A middleware client that throttles the number of concurrent requests.
+///
+/// As long as the number of requests is within the limit, this works just like
+/// a normal client. If a request is made beyond the limit, the underlying HTTP
+/// request won't be sent until other requests have completed.
+class _ThrottleClient extends http.BaseClient {
+  final Pool _pool;
+  final http.Client _inner;
+
+  /// Creates a new client that allows no more than [maxActiveRequests]
+  /// concurrent requests.
+  ///
+  /// If [inner] is passed, it's used as the inner client for sending HTTP
+  /// requests. It defaults to `new http.Client()`.
+  _ThrottleClient(int maxActiveRequests, this._inner)
+      : _pool = Pool(maxActiveRequests);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    var resource = await _pool.request();
+
+    http.StreamedResponse response;
+    try {
+      response = await _inner.send(request);
+    } catch (_) {
+      resource.release();
+      rethrow;
+    }
+
+    var stream = response.stream.transform(
+        StreamTransformer<List<int>, List<int>>.fromHandlers(
+            handleDone: (sink) {
+      resource.release();
+      sink.close();
+    }));
+    return http.StreamedResponse(stream, response.statusCode,
+        contentLength: response.contentLength,
+        request: response.request,
+        headers: response.headers,
+        isRedirect: response.isRedirect,
+        persistentConnection: response.persistentConnection,
+        reasonPhrase: response.reasonPhrase);
+  }
+
+  @override
+  void close() => _inner.close();
 }

@@ -9,8 +9,6 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart' hide fail;
 
-import 'package:pub/src/utils.dart';
-
 import 'descriptor.dart' as d;
 
 /// The global [DescriptorServer] that's used by default.
@@ -38,11 +36,6 @@ DescriptorServer _globalServer;
 /// via [server]. Subsequent calls to [serve] replace the previous server.
 Future serve([List<d.Descriptor> contents]) async {
   globalServer = (await DescriptorServer.start())..contents.addAll(contents);
-}
-
-/// Like [serve], but reports an error if a request ever comes in to the server.
-Future serveErrors() async {
-  globalServer = await DescriptorServer.errors();
 }
 
 class DescriptorServer {
@@ -75,11 +68,7 @@ class DescriptorServer {
 
   /// Creates a server that reports an error if a request is ever received.
   static Future<DescriptorServer> errors() async =>
-      DescriptorServer._(await shelf_io.IOServer.bind('localhost', 0))
-        ..extraHandlers[RegExp('.*')] = (request) {
-          fail('The HTTP server received an unexpected request:\n'
-              '${request.method} ${request.requestedUri}');
-        };
+      DescriptorServer._(await shelf_io.IOServer.bind('localhost', 0));
 
   DescriptorServer._(this._server) : _baseDir = d.dir('serve-dir', []) {
     _server.mount((request) async {

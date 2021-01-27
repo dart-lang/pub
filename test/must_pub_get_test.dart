@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -30,6 +31,32 @@ void main() {
     await pubGet();
   });
 
+  test(
+      'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
+      () async {
+    await d.dir('bar', [
+      d.pubspec({'name': 'bar'})
+    ]).create();
+    await d.dir(appPath, [
+      d.appPubspec({
+        'bar': {'path': '../bar'}
+      })
+    ]).create();
+
+    await pubGet();
+
+    final packageConfig =
+        p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json');
+    final contents = json.decode(readTextFile(packageConfig));
+    contents['packages'].add({
+      'name': 'flutter_gen',
+      'rootUri': '.dart_tool/flutter_gen',
+      'languageVersion': '2.8',
+    });
+    writeTextFile(packageConfig, json.encode(contents));
+
+    await runPub(args: ['run', 'bin/script.dart'], output: 'hello!');
+  });
   group('requires the user to run pub get first if', () {
     group("there's no lockfile", () {
       setUp(() {
