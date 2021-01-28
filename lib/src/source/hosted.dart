@@ -16,7 +16,6 @@ import 'package:stack_trace/stack_trace.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
-import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -232,19 +231,18 @@ class BoundHostedSource extends CachedSource {
       if (listing == null) return;
       final latestVersion =
           maxBy(listing.keys.map((id) => id.version), (e) => e);
-      final latestVersionId =           PackageId(ref.name, source, latestVersion, ref.description);
+      final latestVersionId =
+          PackageId(ref.name, source, latestVersion, ref.description);
       final dependencies =
-      listing[latestVersionId]?.pubspec?.dependencies?.values ?? [];
+          listing[latestVersionId]?.pubspec?.dependencies?.values ?? [];
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
             preschedule(packageRange.toRef());
           }
         }
-      });
+      }));
     }
-
-
 
     if (preschedule != null) {
       /// If we have a cached response - preschedule dependencies of that.
@@ -256,8 +254,8 @@ class BoundHostedSource extends CachedSource {
 
     if (preschedule != null) {
       // Preschedule the dependencies from the actual response.
-      // This might overlap with those from the cached response. But the 
-      // scheduler ensures each listing will be fetched at most once. 
+      // This might overlap with those from the cached response. But the
+      // scheduler ensures each listing will be fetched at most once.
       prescheduleDependenciesOfLatest(result);
     }
     return result;
@@ -368,81 +366,6 @@ class BoundHostedSource extends CachedSource {
     }
     versionListing ??= await _scheduler.schedule(ref);
     return versionListing.keys.toList();
-  }
-
-  /// Will enqueue fetching of fresh version listings of the transitive closure
-  /// of the dependencies of [root] while running callback. Will stop scheduling
-  /// after [callback] is done.
-  ///
-  /// Uses cached version listings as a heuristic for the dependencies of the
-  /// package that will actually be chosen.
-  Future<T> whilePrefetching<T>(Package root, Future<T> Function() callback,
-      {LockFile lockFile}) async {
-    // Stop doing work when [callback] is done running.
-    var done = false;
-    final visited = <String>{};
-    return await _scheduler.withPrescheduling((preschedule) async {
-      Future<void> helper(PackageRef ref) async {
-        if (done) return;
-        // Only prefetch hosted package listings.
-        if (ref.source is! HostedSource) return;
-        // Avoid scheduling dependencies for the same package twice.
-        if (visited.contains(ref.name)) return;
-        visited.add(ref.name);
-        // First check if a version listing was already done for this.
-        var versionListing = _scheduler.peek(ref);
-        // Otherwise prefer cached version listings from disk.
-
-        if (done) return;
-        // [callback might have been done while we got the version listing.
-        // An lastly we request it from network.
-        if (versionListing == null) {
-          try {
-            versionListing = await withDependencyType(
-                root.dependencyType(ref.name), () async => preschedule(ref));
-          } on Exception {
-            // Only prefetching - let the exception bubble up from when needed.
-            return;
-          }
-        } else {
-          // We make sure a listing of [ref] is requested, even if we go ahead
-          // and use the one from cache.
-          unawaited(preschedule(ref)
-              .catchError((error) {}, test: (error) => error is! Exception));
-        }
-
-        final latestVersion = maxBy<Version, Version>(
-          versionListing.keys.map((id) => id.version),
-          (e) => e,
-          compare: Version.prioritize,
-        );
-        final latestVersionId =
-            PackageId(ref.name, source, latestVersion, ref.description);
-        final dependencies =
-            versionListing[latestVersionId]?.pubspec?.dependencies?.values ??
-                [];
-        for (final packageRange in dependencies) {
-          if (packageRange.source is HostedSource) {
-            unawaited(helper(packageRange.toRef()));
-          }
-        }
-      }
-
-      for (final packageRange in root.immediateDependencies.values) {
-        if (lockFile != null) {
-          final locked = lockFile.packages[packageRange.name];
-          if (locked != null &&
-              packageRange.constraint.allows(locked.version)) {
-            // Don't prefetch what is already locked at an allowed version.
-            continue;
-          }
-        }
-        unawaited(helper(packageRange.toRef()));
-      }
-      final result = await callback();
-      done = true;
-      return result;
-    });
   }
 
   /// Parses [description] into its server and package name components, then
