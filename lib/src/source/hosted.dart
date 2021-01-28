@@ -61,6 +61,9 @@ class HostedSource extends Source {
   String _pubHostedUrlConfig() {
     var url = io.Platform.environment['PUB_HOSTED_URL'];
     if (url == null) return null;
+    if (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
     var uri = Uri.parse(url);
     if (!uri.isScheme('http') && !uri.isScheme('https')) {
       throw ConfigException(
