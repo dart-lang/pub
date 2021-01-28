@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
-import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -15,6 +14,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../system_cache.dart';
 import '../utils.dart';

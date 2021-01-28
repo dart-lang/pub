@@ -8,10 +8,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
-import 'package:pub/src/command_runner.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
