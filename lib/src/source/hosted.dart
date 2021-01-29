@@ -206,7 +206,8 @@ class BoundHostedSource extends CachedSource {
     throw FormatException('versions must be a list');
   }
 
-  Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
+  Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
+      PackageRef ref) async {
     var url = _makeUrl(
         ref.description, (server, package) => '$server/api/packages/$package');
     log.io('Get versions from $url.');
@@ -230,20 +231,23 @@ class BoundHostedSource extends CachedSource {
     if (body.length < 100 * 1024) {
       await _cacheVersionListingResponse(body, ref);
     }
+    return result;
+  }
 
-    // Prefetch the dependencies of the latest version, we are likely to need
-    // them later.
+  Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
     final preschedule =
         Zone.current[_prefetchingKey] as void Function(PackageRef);
-    if (preschedule != null) {
-      final latestVersion =
-          maxBy(result.keys.map((id) => id.version), (e) => e);
 
+    /// Prefetch the dependencies of the latest version, we are likely to need
+    /// them later.
+    void prescheduleDependenciesOfLatest(Map<PackageId, _VersionInfo> listing) {
+      if (listing == null) return;
+      final latestVersion =
+          maxBy(listing.keys.map((id) => id.version), (e) => e);
       final latestVersionId =
           PackageId(ref.name, source, latestVersion, ref.description);
-
       final dependencies =
-          result[latestVersionId]?.pubspec?.dependencies?.values ?? [];
+          listing[latestVersionId]?.pubspec?.dependencies?.values ?? [];
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
@@ -251,6 +255,21 @@ class BoundHostedSource extends CachedSource {
           }
         }
       }));
+    }
+
+    if (preschedule != null) {
+      /// If we have a cached response - preschedule dependencies of that.
+      prescheduleDependenciesOfLatest(
+        await _cachedVersionListingResponse(ref, Duration(days: 365)),
+      );
+    }
+    final result = await _fetchVersionsNoPrefetching(ref);
+
+    if (preschedule != null) {
+      // Preschedule the dependencies from the actual response.
+      // This might overlap with those from the cached response. But the
+      // scheduler ensures each listing will be fetched at most once.
+      prescheduleDependenciesOfLatest(result);
     }
     return result;
   }
@@ -356,7 +375,7 @@ class BoundHostedSource extends CachedSource {
   /// site.
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
-    Map<PackageId, _VersionInfo> versionListing;
+    var versionListing = _scheduler.peek(ref);
     if (maxAge != null) {
       // Do we have a cached version response on disk?
       versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
