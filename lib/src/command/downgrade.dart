@@ -35,9 +35,6 @@ class DowngradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('example',
-        help: 'Also run in `example/` (if it exists).', hide: true);
-
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',

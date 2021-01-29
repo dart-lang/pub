@@ -97,7 +97,7 @@ class UpgradeCommand extends PubCommand {
     if (_upgradeNullSafety) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
-            'Running `--null-safety` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+            'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
       }
       return await _runUpgradeNullSafety();
     }
@@ -105,7 +105,7 @@ class UpgradeCommand extends PubCommand {
     if (_upgradeMajorVersions) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
-            'Running `--upgrade-major-versions` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+            'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
       }
       return await _runUpgradeMajorVersions();
     }
