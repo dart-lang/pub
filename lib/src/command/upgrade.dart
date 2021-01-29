@@ -62,6 +62,13 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      defaultsTo: true,
+      hide: true,
+    );
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -88,18 +95,29 @@ class UpgradeCommand extends PubCommand {
     }
 
     if (_upgradeNullSafety) {
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `--null-safety` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+      }
       return await _runUpgradeNullSafety();
     }
 
     if (_upgradeMajorVersions) {
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `--upgrade-major-versions` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+      }
       return await _runUpgradeMajorVersions();
     }
 
-    return await _runUpgrade();
+    await _runUpgrade(entrypoint);
+    if (argResults['example'] && entrypoint.example != null) {
+      await _runUpgrade(entrypoint.example);
+    }
   }
 
-  Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(
+  Future<void> _runUpgrade(Entrypoint e) async {
+    await e.acquireDependencies(
       SolveType.UPGRADE,
       unlock: argResults.rest,
       dryRun: _dryRun,

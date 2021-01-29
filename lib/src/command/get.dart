@@ -32,6 +32,13 @@ class GetCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      defaultsTo: true,
+      hide: true,
+    );
   }
 
   @override
@@ -40,7 +47,12 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    return entrypoint.acquireDependencies(SolveType.GET,
+    await entrypoint.acquireDependencies(SolveType.GET,
         dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+
+    if (argResults['example'] && entrypoint.example != null) {
+      await entrypoint.example.acquireDependencies(SolveType.GET,
+          dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+    }
   }
 }

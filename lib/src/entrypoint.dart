@@ -11,6 +11,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
@@ -189,6 +190,19 @@ class Entrypoint {
     }
   }
 
+  /// Gets the [Entrypoint] package for the current working directory.
+  ///
+  /// This will be null if the example folder doesn't have a `pubspec.yaml`.
+  Entrypoint get example {
+    if (_example != null) return _example;
+    if (!fileExists(root.path('example', 'pubspec.yaml'))) {
+      return null;
+    }
+    return _example = Entrypoint(root.path('example'), cache);
+  }
+
+  Entrypoint _example;
+
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles() async {
     writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
@@ -230,8 +244,9 @@ class Entrypoint {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
 
+    final suffix = root.dir == '.' ? '' : ' in ${root.dir}';
     var result = await log.progress(
-      'Resolving dependencies',
+      'Resolving dependencies$suffix',
       () => resolveVersions(
         type,
         cache,
@@ -446,11 +461,11 @@ class Entrypoint {
     if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
-      dataError('No pubspec.lock file found, please run "pub get" first.');
+      dataError('No $lockFilePath file found, please run "pub get" first.');
     }
     if (!entryExists(packageConfigFile)) {
       dataError(
-        'No .dart_tool/package_config.json file found, please run "pub get".\n'
+        'No $packageConfigFile file found, please run "pub get".\n'
         '\n'
         'Starting with Dart 2.7, the package_config.json file configures '
         'resolution of package import URIs; run "pub get" to generate it.',
@@ -478,8 +493,8 @@ class Entrypoint {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
-        dataError('The pubspec.yaml file has changed since the pubspec.lock '
-            'file was generated, please run "pub get" again.');
+        dataError('$pubspecPath has changed since $lockFilePath '
+            'file was generated, please run "$topLevelProgram pub get" again.');
       }
     }
 
@@ -520,7 +535,7 @@ class Entrypoint {
       var parsedConstraint = VersionConstraint.parse(match[2]);
       if (!parsedConstraint.allows(sdk.version)) {
         dataError('${sdk.name} ${sdk.version} is incompatible with your '
-            "dependencies' SDK constraints. Please run \"pub get\" again.");
+            "dependencies' SDK constraints. Please run \"$topLevelProgram pub get\" again.");
       }
     }
   }
@@ -533,8 +548,8 @@ class Entrypoint {
   /// describing the issue.
   void _assertLockFileUpToDate() {
     if (!root.immediateDependencies.values.every(_isDependencyUpToDate)) {
-      dataError('The pubspec.yaml file has changed since the pubspec.lock '
-          'file was generated, please run "pub get" again.');
+      dataError('$pubspecPath file has changed since $lockFilePath '
+          'was generated, please run "$topLevelProgram pub get" again.');
     }
 
     var overrides = MapKeySet(root.dependencyOverrides);
@@ -555,8 +570,8 @@ class Entrypoint {
       }
 
       dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
-          'changed since the pubspec.lock file was generated, please run "pub '
-          'get" again.');
+          'changed since the $lockFilePath file was generated, please run '
+          '"$topLevelProgram pub get" again.');
     }
   }
 
@@ -583,7 +598,7 @@ class Entrypoint {
       // Get the directory.
       var dir = source.getDirectory(package);
       // See if the directory is there and looks like a package.
-      return dirExists(dir) && fileExists(p.join(dir, 'pubspec.yaml'));
+      return fileExists(p.join(dir, 'pubspec.yaml'));
     });
   }
 
@@ -648,7 +663,7 @@ class Entrypoint {
   /// are not in the `.packages` or that don't match what's in there.
   void _checkPackagesFileUpToDate() {
     void outOfDate() {
-      dataError('The pubspec.lock file has changed since the .packages file '
+      dataError('The $lockFilePath file has changed since the .packages file '
           'was generated, please run "pub get" again.');
     }
 
@@ -685,15 +700,14 @@ class Entrypoint {
   /// up-to-date for some other reason.
   void _checkPackageConfigUpToDate() {
     void outOfDate() {
-      dataError('The pubspec.lock file has changed since the '
-          '.dart_tool/package_config.json file '
-          'was generated, please run "pub get" again.');
+      dataError('The $lockFilePath file has changed since the '
+          '$packageConfigFile file '
+          'was generated, please run "$topLevelProgram pub get" again.');
     }
 
     void badPackageConfig() {
-      dataError(
-          'The ".dart_tool/package_config.json" file is not recognized by '
-          '"pub" version, please run "pub get".');
+      dataError('The "$packageConfigFile" file is not recognized by '
+          '"pub" version, please run "$topLevelProgram pub get".');
     }
 
     String packageConfigRaw;
@@ -701,7 +715,7 @@ class Entrypoint {
       packageConfigRaw = readTextFile(packageConfigFile);
     } on FileException {
       dataError(
-          'The ".dart_tool/package_config.json" file does not exist, please run "pub get".');
+          'The "$packageConfigFile" file does not exist, please run "$topLevelProgram pub get".');
     }
 
     PackageConfig cfg;
@@ -770,12 +784,12 @@ class Entrypoint {
         );
         if (pkg.languageVersion != languageVersion) {
           dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
-              'changed since the pubspec.lock file was generated, please run '
-              '"pub get" again.');
+              'changed since the $lockFilePath file was generated, please run '
+              '"$topLevelProgram pub get" again.');
         }
       } on FileException {
         dataError('Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
-            'entry is missing, please run "pub get".');
+            'entry is missing, please run "$topLevelProgram pub get".');
       }
     }
   }
@@ -814,6 +828,40 @@ class Entrypoint {
     ensureDir(p.dirname(newPath));
     renameDir(oldPath, newPath);
   }
+
+  /// We require an SDK constraint lower-bound as of Dart 2.12.0
+  void _checkSdkConstraintIsDefined(Pubspec pubspec) {
+    final dartSdkConstraint = pubspec.sdkConstraints['dart'];
+    if (dartSdkConstraint is! VersionRange ||
+        (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
+      // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
+      // [CompatibleWithVersionRange] because some pub versions don't support
+      // caret syntax (e.g. '^2.10.0')
+      var suggestedConstraint = VersionRange(
+        min: Version.parse('2.10.0'),
+        max: Version.parse('2.10.0').nextBreaking,
+        includeMin: true,
+      );
+      // But if somehow that doesn't work, we fallback to safe sanity, mostly
+      // important for tests, or if we jump to 3.x without patching this code.
+      if (!suggestedConstraint.allows(sdk.version)) {
+        suggestedConstraint = VersionRange(
+          min: sdk.version,
+          max: sdk.version.nextBreaking,
+          includeMin: true,
+        );
+      }
+      throw DataException('''
+$pubspecPath has no lower-bound SDK constraint.
+You should edit $pubspecPath to contain an SDK constraint:
+
+environment:
+  sdk: '$suggestedConstraint'
+
+See https://dart.dev/go/sdk-constraint
+''');
+    }
+  }
 }
 
 /// Returns `true` if the [text] looks like it uses windows line endings.
@@ -833,38 +881,4 @@ bool detectWindowsLineEndings(String text) {
     }
   }
   return windowsNewlines > unixNewlines;
-}
-
-/// We require an SDK constraint lower-bound as of Dart 2.12.0
-void _checkSdkConstraintIsDefined(Pubspec pubspec) {
-  final dartSdkConstraint = pubspec.sdkConstraints['dart'];
-  if (dartSdkConstraint is! VersionRange ||
-      (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
-    // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
-    // [CompatibleWithVersionRange] because some pub versions don't support
-    // caret syntax (e.g. '^2.10.0')
-    var suggestedConstraint = VersionRange(
-      min: Version.parse('2.10.0'),
-      max: Version.parse('2.10.0').nextBreaking,
-      includeMin: true,
-    );
-    // But if somehow that doesn't work, we fallback to safe sanity, mostly
-    // important for tests, or if we jump to 3.x without patching this code.
-    if (!suggestedConstraint.allows(sdk.version)) {
-      suggestedConstraint = VersionRange(
-        min: sdk.version,
-        max: sdk.version.nextBreaking,
-        includeMin: true,
-      );
-    }
-    throw DataException('''
-pubspec.yaml has no lower-bound SDK constraint.
-You should edit pubspec.yaml to contain an SDK constraint:
-
-environment:
-  sdk: '$suggestedConstraint'
-
-See https://dart.dev/go/sdk-constraint
-''');
-  }
 }

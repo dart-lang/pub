@@ -63,6 +63,12 @@ class AddCommand extends PubCommand {
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
     argParser.addOption('sdk', help: 'SDK source for package');
+    argParser.addFlag(
+      'example',
+      help: 'Also update dependencies `example/` (if it exists).',
+      defaultsTo: true,
+      hide: true,
+    );
 
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -149,8 +155,14 @@ class AddCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+      final updatedEntrypoint = Entrypoint.current(cache);
+      await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
+
+      if (argResults['example'] && entrypoint.example != null) {
+        await entrypoint.example.acquireDependencies(SolveType.GET,
+            precompile: argResults['precompile']);
+      }
     }
 
     if (isOffline) {
