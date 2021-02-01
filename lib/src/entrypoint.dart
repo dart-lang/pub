@@ -132,17 +132,17 @@ class Entrypoint {
   /// This file is being slowly deprecated in favor of
   /// `.dart_tool/package_config.json`. Pub will still create it, but will
   /// not require it or make use of it within pub.
-  String get packagesFile => p.join(_configRoot, '.packages');
+  String get packagesFile => p.normalize(p.join(_configRoot, '.packages'));
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
   String get packageConfigFile =>
-      p.join(_configRoot, '.dart_tool', 'package_config.json');
+      p.normalize(p.join(_configRoot, '.dart_tool', 'package_config.json'));
 
   /// The path to the entrypoint package's pubspec.
-  String get pubspecPath => root.path('pubspec.yaml');
+  String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
   /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => p.join(_configRoot, 'pubspec.lock');
+  String get lockFilePath => p.normalize(p.join(_configRoot, 'pubspec.lock'));
 
   /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
   ///
@@ -461,14 +461,15 @@ class Entrypoint {
     if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
-      dataError('No $lockFilePath file found, please run "pub get" first.');
+      dataError(
+          'No $lockFilePath file found, please run "$topLevelProgram pub get" first.');
     }
     if (!entryExists(packageConfigFile)) {
       dataError(
-        'No $packageConfigFile file found, please run "pub get".\n'
+        'No $packageConfigFile file found, please run "$topLevelProgram pub get".\n'
         '\n'
         'Starting with Dart 2.7, the package_config.json file configures '
-        'resolution of package import URIs; run "pub get" to generate it.',
+        'resolution of package import URIs; run "$topLevelProgram pub get" to generate it.',
       );
     }
 
@@ -493,7 +494,7 @@ class Entrypoint {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
-        dataError('$pubspecPath has changed since $lockFilePath '
+        dataError('The $pubspecPath file has changed since the $lockFilePath '
             'file was generated, please run "$topLevelProgram pub get" again.');
       }
     }
@@ -548,7 +549,8 @@ class Entrypoint {
   /// describing the issue.
   void _assertLockFileUpToDate() {
     if (!root.immediateDependencies.values.every(_isDependencyUpToDate)) {
-      dataError('$pubspecPath file has changed since $lockFilePath '
+      dataError(
+          'The $pubspecPath file has changed since the $lockFilePath file '
           'was generated, please run "$topLevelProgram pub get" again.');
     }
 
@@ -664,7 +666,7 @@ class Entrypoint {
   void _checkPackagesFileUpToDate() {
     void outOfDate() {
       dataError('The $lockFilePath file has changed since the .packages file '
-          'was generated, please run "pub get" again.');
+          'was generated, please run "$topLevelProgram pub get" again.');
     }
 
     var packages = packages_file.parse(

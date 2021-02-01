@@ -64,7 +64,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No pubspec.lock file found, please run "pub get" first.');
+          'No pubspec.lock file found, please run "dart pub get" first.');
     });
 
     group("there's no package_config.json", () {
@@ -73,7 +73,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No .dart_tool/package_config.json file found, please run "pub get".');
+          'No .dart_tool/package_config.json file found, please run "dart pub get".');
     });
 
     group('the pubspec has a new dependency', () {
@@ -91,7 +91,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency from the wrong source', () {
@@ -109,7 +109,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency from an unknown source', () {
@@ -139,7 +139,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency with the wrong description', () {
@@ -161,7 +161,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the pubspec has an incompatible version of a dependency', () {
@@ -181,7 +181,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group(
@@ -201,7 +201,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group(
@@ -221,7 +221,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group("the lockfile has a package that the .packages file doesn't", () {
@@ -243,7 +243,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the .packages file has a package with a non-file URI', () {
@@ -270,7 +270,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the .packages file points to the wrong place', () {
@@ -292,7 +292,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the package_config.json file points to the wrong place', () {
@@ -326,7 +326,7 @@ foo:http://example.com/
 
       _requiresPubGet('The pubspec.lock file has changed since the '
           '.dart_tool/package_config.json file was generated, '
-          'please run "pub get" again.');
+          'please run "dart pub get" again.');
     });
 
     group("the lock file's SDK constraint doesn't match the current SDK", () {
@@ -353,7 +353,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
-          'SDK constraints. Please run \"pub get\" again.');
+          'SDK constraints. Please run "dart pub get" again.');
     });
 
     test(
@@ -383,7 +383,7 @@ foo:http://example.com/
           args: ['run', 'script'],
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
           error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
-              'constraints. Please run "pub get" again.',
+              'constraints. Please run "dart pub get" again.',
           exitCode: exit_codes.DATA);
     });
 
@@ -408,7 +408,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
-          'since the pubspec.lock file was generated, please run "pub get" '
+          'since the pubspec.lock file was generated, please run "dart pub get" '
           'again.');
     });
 
@@ -447,7 +447,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
-          'since the pubspec.lock file was generated, please run "pub get" '
+          'since the pubspec.lock file was generated, please run "dart pub get" '
           'again.');
     });
   });
@@ -585,7 +585,7 @@ void _requiresPubGet(String message) {
   }
 }
 
-/// Ensures that pub doesn't require "pub get" for the current package.
+/// Ensures that pub doesn't require "dart pub get" for the current package.
 ///
 /// If [runDeps] is false, `pub deps` isn't included in the test. This is
 /// sometimes not desirable, since it uses slightly stronger checks for pubspec
