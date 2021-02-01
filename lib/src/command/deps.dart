@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../command_runner.dart';
 import '../dart.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -249,7 +250,7 @@ class DepsCommand extends PubCommand {
     var package = entrypoint.packageGraph.packages[name];
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
-        'was generated, please run "pub get" again.');
+        'was generated, please run "$topLevelProgram pub get" again.');
     return null;
   }
 

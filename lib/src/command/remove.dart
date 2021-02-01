@@ -41,6 +41,13 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addFlag(
+      'example',
+      help: 'Also update dependencies `example/` (if it exists).',
+      defaultsTo: true,
+      hide: true,
+    );
   }
 
   @override
@@ -66,8 +73,16 @@ class RemoveCommand extends PubCommand {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
-      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
+      /// Create a new [Entrypoint] since we have to reprocess the updated
+      /// pubspec file.
+      final updatedEntrypoint = Entrypoint.current(cache);
+      await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
+
+      if (argResults['example'] && entrypoint.example != null) {
+        await entrypoint.example.acquireDependencies(SolveType.GET,
+            precompile: argResults['precompile']);
+      }
     }
   }
 

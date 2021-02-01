@@ -33,6 +33,13 @@ class DowngradeCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      defaultsTo: true,
+      hide: true,
+    );
   }
 
   @override
@@ -47,6 +54,13 @@ class DowngradeCommand extends PubCommand {
       unlock: argResults.rest,
       dryRun: dryRun,
     );
+    if (argResults['example'] && entrypoint.example != null) {
+      await entrypoint.example.acquireDependencies(
+        SolveType.DOWNGRADE,
+        unlock: argResults.rest,
+        dryRun: dryRun,
+      );
+    }
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '
