@@ -73,7 +73,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No .dart_tool/package_config.json file found, please run "dart pub get".');
+          'No .dart_tool${p.separator}package_config.json file found, please run "dart pub get".');
     });
 
     group('the pubspec has a new dependency', () {
@@ -325,7 +325,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the '
-          '.dart_tool/package_config.json file was generated, '
+          '.dart_tool${p.separator}package_config.json file was generated, '
           'please run "dart pub get" again.');
     });
 
