@@ -67,7 +67,8 @@ Changed 1 dependency!''');
         ])
       ]).create();
       await pubGet(
-          error: matches('Error on line 1, column 9 of example/pubspec.yaml'),
+          error: matches(
+              'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
           exitCode: 65);
     });
   });
