@@ -430,6 +430,96 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
         );
       });
     });
+
+    test(
+      'applies executable bits from tar file',
+      () => withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'weird_exe',
+              typeFlag: TypeFlag.reg,
+              mode: int.parse('110', radix: 8),
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        expect(File('$tempDir/weird_exe').statSync().modeString(), 'rwxr-xr--');
+      }),
+      testOn: 'linux || mac-os',
+    );
+
+    test('preserves empty directories', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'bin/',
+              typeFlag: TypeFlag.dir,
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(
+            Directory(tempDir).list(),
+            emits(isA<Directory>()
+                .having((e) => path.basename(e.path), 'basename', 'bin')));
+      });
+    });
+
+    test('throws for entries escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: '../other_package-1.2.3/lib/file.dart',
+              typeFlag: TypeFlag.reg,
+            ),
+            const []));
+
+        await expectLater(
+            extractTarGz(
+                entry.transform(tarWriter).transform(gzip.encoder), tempDir),
+            throwsA(isA<FormatException>()));
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
+
+    test('skips symlinks escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../../outside.txt',
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
+
+    test('skips hardlinks escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link',
+              typeFlag: TypeFlag.link,
+              linkName: '../outside.txt',
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
   });
 }
 

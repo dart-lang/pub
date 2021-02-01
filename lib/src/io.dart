@@ -215,6 +215,10 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
   });
 }
 
+void _chmod(int mode, String file) {
+  runProcessSync('chmod', [mode.toRadixString(8), file]);
+}
+
 /// Deletes [file] if it's a symlink.
 ///
 /// The [File] class overwrites the symlink targets when writing to a file,
@@ -801,26 +805,63 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       // Tar file names always use forward slashes
       ...path.posix.split(entry.name),
     ]);
+
+    if (!path.isWithin(destination, filePath)) {
+      // The tar contains entries that would be written outside of the
+      // destination. That doesn't happen by accident, assume that the tar file
+      // is malicious.
+      await reader.cancel();
+      throw FormatException('Invalid tar entry: ${entry.name}');
+    }
+
     final parentDirectory = path.dirname(filePath);
 
     switch (entry.type) {
+      case TypeFlag.dir:
+        ensureDir(filePath);
+        break;
       case TypeFlag.reg:
+      case TypeFlag.regA:
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
+
         await _createFileFromStream(entry.contents, filePath);
+
+        if (Platform.isLinux || Platform.isMacOS) {
+          // Apply executable bits from tar header, but don't change r/w bits
+          // from the default
+          const defaultMode = 420; // 644 in base 8
+          const executableMask = 0x49; // 001 001 001
+          final mode = defaultMode | (entry.header.mode & executableMask);
+
+          if (mode != defaultMode) {
+            _chmod(mode, filePath);
+          }
+        }
         break;
       case TypeFlag.symlink:
-        // Link to another file in this tar, relative from this entry
+        // Link to another file in this tar, relative from this entry.
+        final resolvedTarget = path.joinAll(
+            [parentDirectory, ...path.posix.split(entry.header.linkName)]);
+        if (!path.isWithin(destination, resolvedTarget)) {
+          // Don't allow links to files outside of this tar.
+          break;
+        }
+
         ensureDir(parentDirectory);
-        createSymlink(entry.header.linkName, filePath);
+        createSymlink(resolvedTarget, filePath);
         break;
       case TypeFlag.link:
         // We generate hardlinks as symlinks too, but their path needs to be
         // resolved against the root of the tar file.
-        ensureDir(parentDirectory);
         final fromDestination = path.join(destination, entry.header.linkName);
+        if (!path.isWithin(destination, fromDestination)) {
+          break; // Link points outside of the tar file.
+        }
+
         final fromFile = path.relative(fromDestination, from: parentDirectory);
+        ensureDir(parentDirectory);
         createSymlink(fromFile, filePath);
         break;
       default:
