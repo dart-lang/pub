@@ -17,7 +17,8 @@ void main() {
       'list-package-dirs',
       '--format=json'
     ], outputJson: {
-      'error': 'Package "myapp" has no lockfile. Please run "pub get" first.'
+      'error':
+          'Package "myapp" has no lockfile. Please run "dart pub get" first.'
     }, exitCode: exit_codes.DATA);
   });
 }

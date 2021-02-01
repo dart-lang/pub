@@ -244,7 +244,7 @@ class Entrypoint {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
 
-    final suffix = root.dir == '.' ? '' : ' in ${root.dir}';
+    final suffix = root.dir == null || root.dir == '.' ? '' : ' in ${root.dir}';
     var result = await log.progress(
       'Resolving dependencies$suffix',
       () => resolveVersions(
