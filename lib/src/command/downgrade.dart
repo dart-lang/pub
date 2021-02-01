@@ -14,8 +14,7 @@ class DowngradeCommand extends PubCommand {
   String get name => 'downgrade';
   @override
   String get description =>
-      "Downgrade the current package's dependencies to oldest versions.\n\n"
-      "This doesn't modify the lockfile, so it can be reset with \"pub get\".";
+      "Downgrade the current package's dependencies to oldest versions.\n\n";
   @override
   String get argumentsDescription => '[dependencies...]';
   @override
