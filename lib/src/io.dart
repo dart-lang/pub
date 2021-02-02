@@ -850,7 +850,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         }
 
         ensureDir(parentDirectory);
-        createSymlink(path.relative(resolvedTarget, from: destination), filePath);
+        createSymlink(
+            path.relative(resolvedTarget, from: parentDirectory), filePath);
         break;
       case TypeFlag.link:
         // We generate hardlinks as symlinks too, but their path needs to be

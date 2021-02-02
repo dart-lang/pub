@@ -307,6 +307,46 @@ void main() {
       testOn: 'linux || mac-os',
     );
 
+    test('extracts files and links', () {
+      return withTempDir((tempDir) async {
+        final entries = Stream.fromIterable([
+          TarEntry.data(
+            TarHeader(name: 'lib/main.txt', typeFlag: TypeFlag.reg),
+            utf8.encode('text content'),
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'bin/main.txt',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../lib/main.txt',
+            ),
+            const [],
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'test/main.txt',
+              typeFlag: TypeFlag.link,
+              // TypeFlag.link is resolved against the root of the tar file
+              linkName: 'lib/main.txt',
+            ),
+            const [],
+          ),
+        ]);
+
+        await extractTarGz(
+            entries.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await d.dir(
+          '.',
+          [
+            d.file('lib/main.txt', 'text content'),
+            d.file('bin/main.txt', 'text content'),
+            d.file('test/main.txt', 'text content'),
+          ],
+        ).validate(tempDir);
+      });
+    });
+
     test('preserves empty directories', () {
       return withTempDir((tempDir) async {
         final entry = Stream.value(TarEntry.data(
