@@ -228,149 +228,6 @@ void main() {
     });
   });
 
-  testExistencePredicate('entryExists', entryExists,
-      forFile: true,
-      forFileSymlink: true,
-      forMultiLevelFileSymlink: true,
-      forDirectory: true,
-      forDirectorySymlink: true,
-      forMultiLevelDirectorySymlink: true,
-      forBrokenSymlink: true,
-      forMultiLevelBrokenSymlink: true);
-
-  testExistencePredicate('linkExists', linkExists,
-      forFile: false,
-      forFileSymlink: true,
-      forMultiLevelFileSymlink: true,
-      forDirectory: false,
-      forDirectorySymlink: true,
-      forMultiLevelDirectorySymlink: true,
-      forBrokenSymlink: true,
-      forMultiLevelBrokenSymlink: true);
-
-  testExistencePredicate('fileExists', fileExists,
-      forFile: true,
-      forFileSymlink: true,
-      forMultiLevelFileSymlink: true,
-      forDirectory: false,
-      forDirectorySymlink: false,
-      forMultiLevelDirectorySymlink: false,
-      forBrokenSymlink: false,
-      forMultiLevelBrokenSymlink: false);
-
-  testExistencePredicate('dirExists', dirExists,
-      forFile: false,
-      forFileSymlink: false,
-      forMultiLevelFileSymlink: false,
-      forDirectory: true,
-      forDirectorySymlink: true,
-      forMultiLevelDirectorySymlink: true,
-      forBrokenSymlink: false,
-      forMultiLevelBrokenSymlink: false);
-}
-
-void testExistencePredicate(String name, bool Function(String path) predicate,
-    {bool forFile,
-    bool forFileSymlink,
-    bool forMultiLevelFileSymlink,
-    bool forDirectory,
-    bool forDirectorySymlink,
-    bool forMultiLevelDirectorySymlink,
-    bool forBrokenSymlink,
-    bool forMultiLevelBrokenSymlink}) {
-  group(name, () {
-    test('returns $forFile for a file', () {
-      expect(withTempDir((temp) {
-        var file = path.join(temp, 'test.txt');
-        writeTextFile(file, 'contents');
-        expect(predicate(file), equals(forFile));
-      }), completes);
-    });
-
-    test('returns $forDirectory for a directory', () {
-      expect(withTempDir((temp) {
-        var file = path.join(temp, 'dir');
-        _createDir(file);
-        expect(predicate(file), equals(forDirectory));
-      }), completes);
-    });
-
-    test('returns $forDirectorySymlink for a symlink to a directory', () {
-      expect(withTempDir((temp) {
-        var targetPath = path.join(temp, 'dir');
-        var symlinkPath = path.join(temp, 'linkdir');
-        _createDir(targetPath);
-        createSymlink(targetPath, symlinkPath);
-        expect(predicate(symlinkPath), equals(forDirectorySymlink));
-      }), completes);
-    });
-
-    test(
-        'returns $forMultiLevelDirectorySymlink for a multi-level symlink to '
-        'a directory', () {
-      expect(withTempDir((temp) {
-        var targetPath = path.join(temp, 'dir');
-        var symlink1Path = path.join(temp, 'link1dir');
-        var symlink2Path = path.join(temp, 'link2dir');
-        _createDir(targetPath);
-        createSymlink(targetPath, symlink1Path);
-        createSymlink(symlink1Path, symlink2Path);
-        expect(predicate(symlink2Path), equals(forMultiLevelDirectorySymlink));
-      }), completes);
-    });
-
-    test('returns $forBrokenSymlink for a broken symlink', () {
-      expect(withTempDir((temp) {
-        var targetPath = path.join(temp, 'dir');
-        var symlinkPath = path.join(temp, 'linkdir');
-        _createDir(targetPath);
-        createSymlink(targetPath, symlinkPath);
-        deleteEntry(targetPath);
-        expect(predicate(symlinkPath), equals(forBrokenSymlink));
-      }), completes);
-    });
-
-    test('returns $forMultiLevelBrokenSymlink for a multi-level broken symlink',
-        () {
-      expect(withTempDir((temp) {
-        var targetPath = path.join(temp, 'dir');
-        var symlink1Path = path.join(temp, 'link1dir');
-        var symlink2Path = path.join(temp, 'link2dir');
-        _createDir(targetPath);
-        createSymlink(targetPath, symlink1Path);
-        createSymlink(symlink1Path, symlink2Path);
-        deleteEntry(targetPath);
-        expect(predicate(symlink2Path), equals(forMultiLevelBrokenSymlink));
-      }), completes);
-    });
-
-    // Windows doesn't support symlinking to files.
-    if (!Platform.isWindows) {
-      test('returns $forFileSymlink for a symlink to a file', () {
-        expect(withTempDir((temp) {
-          var targetPath = path.join(temp, 'test.txt');
-          var symlinkPath = path.join(temp, 'link.txt');
-          writeTextFile(targetPath, 'contents');
-          createSymlink(targetPath, symlinkPath);
-          expect(predicate(symlinkPath), equals(forFileSymlink));
-        }), completes);
-      });
-
-      test(
-          'returns $forMultiLevelFileSymlink for a multi-level symlink to a '
-          'file', () {
-        expect(withTempDir((temp) {
-          var targetPath = path.join(temp, 'test.txt');
-          var symlink1Path = path.join(temp, 'link1.txt');
-          var symlink2Path = path.join(temp, 'link2.txt');
-          writeTextFile(targetPath, 'contents');
-          createSymlink(targetPath, symlink1Path);
-          createSymlink(symlink1Path, symlink2Path);
-          expect(predicate(symlink2Path), equals(forMultiLevelFileSymlink));
-        }), completes);
-      });
-    }
-  });
   group('extractTarGz', () {
     test('decompresses simple archive', () async {
       await withTempDir((tempDir) async {
@@ -520,6 +377,150 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
         await expectLater(Directory(tempDir).list(), emitsDone);
       });
     });
+  });
+
+  testExistencePredicate('entryExists', entryExists,
+      forFile: true,
+      forFileSymlink: true,
+      forMultiLevelFileSymlink: true,
+      forDirectory: true,
+      forDirectorySymlink: true,
+      forMultiLevelDirectorySymlink: true,
+      forBrokenSymlink: true,
+      forMultiLevelBrokenSymlink: true);
+
+  testExistencePredicate('linkExists', linkExists,
+      forFile: false,
+      forFileSymlink: true,
+      forMultiLevelFileSymlink: true,
+      forDirectory: false,
+      forDirectorySymlink: true,
+      forMultiLevelDirectorySymlink: true,
+      forBrokenSymlink: true,
+      forMultiLevelBrokenSymlink: true);
+
+  testExistencePredicate('fileExists', fileExists,
+      forFile: true,
+      forFileSymlink: true,
+      forMultiLevelFileSymlink: true,
+      forDirectory: false,
+      forDirectorySymlink: false,
+      forMultiLevelDirectorySymlink: false,
+      forBrokenSymlink: false,
+      forMultiLevelBrokenSymlink: false);
+
+  testExistencePredicate('dirExists', dirExists,
+      forFile: false,
+      forFileSymlink: false,
+      forMultiLevelFileSymlink: false,
+      forDirectory: true,
+      forDirectorySymlink: true,
+      forMultiLevelDirectorySymlink: true,
+      forBrokenSymlink: false,
+      forMultiLevelBrokenSymlink: false);
+}
+
+void testExistencePredicate(String name, bool Function(String path) predicate,
+    {bool forFile,
+    bool forFileSymlink,
+    bool forMultiLevelFileSymlink,
+    bool forDirectory,
+    bool forDirectorySymlink,
+    bool forMultiLevelDirectorySymlink,
+    bool forBrokenSymlink,
+    bool forMultiLevelBrokenSymlink}) {
+  group(name, () {
+    test('returns $forFile for a file', () {
+      expect(withTempDir((temp) {
+        var file = path.join(temp, 'test.txt');
+        writeTextFile(file, 'contents');
+        expect(predicate(file), equals(forFile));
+      }), completes);
+    });
+
+    test('returns $forDirectory for a directory', () {
+      expect(withTempDir((temp) {
+        var file = path.join(temp, 'dir');
+        _createDir(file);
+        expect(predicate(file), equals(forDirectory));
+      }), completes);
+    });
+
+    test('returns $forDirectorySymlink for a symlink to a directory', () {
+      expect(withTempDir((temp) {
+        var targetPath = path.join(temp, 'dir');
+        var symlinkPath = path.join(temp, 'linkdir');
+        _createDir(targetPath);
+        createSymlink(targetPath, symlinkPath);
+        expect(predicate(symlinkPath), equals(forDirectorySymlink));
+      }), completes);
+    });
+
+    test(
+        'returns $forMultiLevelDirectorySymlink for a multi-level symlink to '
+        'a directory', () {
+      expect(withTempDir((temp) {
+        var targetPath = path.join(temp, 'dir');
+        var symlink1Path = path.join(temp, 'link1dir');
+        var symlink2Path = path.join(temp, 'link2dir');
+        _createDir(targetPath);
+        createSymlink(targetPath, symlink1Path);
+        createSymlink(symlink1Path, symlink2Path);
+        expect(predicate(symlink2Path), equals(forMultiLevelDirectorySymlink));
+      }), completes);
+    });
+
+    test('returns $forBrokenSymlink for a broken symlink', () {
+      expect(withTempDir((temp) {
+        var targetPath = path.join(temp, 'dir');
+        var symlinkPath = path.join(temp, 'linkdir');
+        _createDir(targetPath);
+        createSymlink(targetPath, symlinkPath);
+        deleteEntry(targetPath);
+        expect(predicate(symlinkPath), equals(forBrokenSymlink));
+      }), completes);
+    });
+
+    test('returns $forMultiLevelBrokenSymlink for a multi-level broken symlink',
+        () {
+      expect(withTempDir((temp) {
+        var targetPath = path.join(temp, 'dir');
+        var symlink1Path = path.join(temp, 'link1dir');
+        var symlink2Path = path.join(temp, 'link2dir');
+        _createDir(targetPath);
+        createSymlink(targetPath, symlink1Path);
+        createSymlink(symlink1Path, symlink2Path);
+        deleteEntry(targetPath);
+        expect(predicate(symlink2Path), equals(forMultiLevelBrokenSymlink));
+      }), completes);
+    });
+
+    // Windows doesn't support symlinking to files.
+    if (!Platform.isWindows) {
+      test('returns $forFileSymlink for a symlink to a file', () {
+        expect(withTempDir((temp) {
+          var targetPath = path.join(temp, 'test.txt');
+          var symlinkPath = path.join(temp, 'link.txt');
+          writeTextFile(targetPath, 'contents');
+          createSymlink(targetPath, symlinkPath);
+          expect(predicate(symlinkPath), equals(forFileSymlink));
+        }), completes);
+      });
+
+      test(
+          'returns $forMultiLevelFileSymlink for a multi-level symlink to a '
+          'file', () {
+        expect(withTempDir((temp) {
+          var targetPath = path.join(temp, 'test.txt');
+          var symlink1Path = path.join(temp, 'link1.txt');
+          var symlink2Path = path.join(temp, 'link2.txt');
+          writeTextFile(targetPath, 'contents');
+          createSymlink(targetPath, symlink1Path);
+          createSymlink(symlink1Path, symlink2Path);
+          expect(predicate(symlink2Path), equals(forMultiLevelFileSymlink));
+        }), completes);
+      });
+    }
   });
 }
 
