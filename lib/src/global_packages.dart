@@ -391,6 +391,22 @@ To recompile executables, first run `global deactivate ${dep.name}`.
       }
     });
 
+    // Check that the SDK constraints the lockFile says we have are honored.
+    lockFile.sdkConstraints.forEach((sdkName, constraint) {
+      var sdk = sdks[sdkName];
+      if (sdk == null) {
+        dataError('${log.bold(name)} as globally activated requires '
+            'unknown SDK "$name".');
+      } else if (sdkName == 'dart') {
+        if (constraint.allows(sdk.version)) return;
+        dataError("${log.bold(name)} as globally activated doesn't "
+            'support Dart ${sdk.version}, try to re-activate it.');
+      } else {
+        dataError('${log.bold(name)} as globally activated requires the '
+            '${sdk.name} SDK, which is unsupported for global executables.');
+      }
+    });
+
     return entrypoint;
   }
 
