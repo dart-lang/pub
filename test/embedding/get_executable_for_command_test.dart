@@ -89,12 +89,14 @@ Future<void> main() async {
     ]).create();
     final dir = d.path(appPath);
 
+    final top = Platform.isWindows ? ',' : '╷';
+    final bottom = Platform.isWindows ? r'\' : '╵';
     await testGetExecutable('foo:app', dir, errorMessage: '''
 Error on line 1, column 9 of ${d.sandbox}${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.
-  ╷
+  $top
 1 │ {"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}
   │         ^^^^^^^^^^^^^
-  ╵''');
+  $bottom''');
   });
 
   test('Does `pub get` if there is a pubspec.yaml', () async {
