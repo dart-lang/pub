@@ -822,6 +822,15 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
     final parentDirectory = path.dirname(filePath);
 
+    bool checkValidTarget(String linkTarget) {
+      final isValid = path.isWithin(destination, linkTarget);
+      if (!isValid) {
+        log.fine('Skipping ${entry.name}: Invalid link target');
+      }
+
+      return isValid;
+    }
+
     switch (entry.type) {
       case TypeFlag.dir:
         ensureDir(filePath);
@@ -848,7 +857,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Link to another file in this tar, relative from this entry.
         final resolvedTarget = path.joinAll(
             [parentDirectory, ...path.posix.split(entry.header.linkName)]);
-        if (!path.isWithin(destination, resolvedTarget)) {
+        if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
           break;
         }
@@ -862,7 +871,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // to the root of the tar file (unlike symlink entries, whose linkName
         // is relative to the entry itself).
         final fromDestination = path.join(destination, entry.header.linkName);
-        if (!path.isWithin(destination, fromDestination)) {
+        if (!checkValidTarget(fromDestination)) {
           break; // Link points outside of the tar file.
         }
 
