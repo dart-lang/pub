@@ -33,6 +33,12 @@ export 'package:http/http.dart' show ByteStream;
 /// additional throughput.
 final _descriptorPool = Pool(32);
 
+/// The assumed default file mode on Linux and macOS
+const _defaultMode = 420; // 644₈
+
+/// Mask for executable bits in file modes.
+const _executableMask = 0x49; // 001 001 001
+
 /// Determines if a file or directory exists at [path].
 bool entryExists(String path) =>
     dirExists(path) || fileExists(path) || linkExists(path);
@@ -831,11 +837,9 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         if (Platform.isLinux || Platform.isMacOS) {
           // Apply executable bits from tar header, but don't change r/w bits
           // from the default
-          const defaultMode = 420; // 644 in base 8
-          const executableMask = 0x49; // 001 001 001
-          final mode = defaultMode | (entry.header.mode & executableMask);
+          final mode = _defaultMode | (entry.header.mode & _executableMask);
 
-          if (mode != defaultMode) {
+          if (mode != _defaultMode) {
             _chmod(mode, filePath);
           }
         }
@@ -854,8 +858,9 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
             path.relative(resolvedTarget, from: parentDirectory), filePath);
         break;
       case TypeFlag.link:
-        // We generate hardlinks as symlinks too, but their path needs to be
-        // resolved against the root of the tar file.
+        // We generate hardlinks as symlinks too, but their linkName is relative
+        // to the root of the tar file (unlike symlink entries, whose linkName
+        // is relative to the entry itself).
         final fromDestination = path.join(destination, entry.header.linkName);
         if (!path.isWithin(destination, fromDestination)) {
           break; // Link points outside of the tar file.
@@ -901,11 +906,18 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
     final file = File(path.normalize(entry));
     final stat = file.statSync();
 
+    if (stat.type == FileSystemEntityType.link) {
+      log.message('$entry is a link locally, but will be uploaded as a '
+          'duplicate file.');
+    }
+
     return TarEntry(
       TarHeader(
         // Ensure paths in tar files use forward slashes
         name: path.url.joinAll(path.split(relative)),
-        mode: stat.mode,
+        // We want to keep executable bits, but otherwise use the default
+        // file mode
+        mode: _defaultMode | (stat.mode & _executableMask),
         size: stat.size,
         modified: stat.changed,
         userName: 'pub',
