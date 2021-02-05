@@ -209,7 +209,7 @@ class GlobalPackages {
     if (sameVersions) {
       log.message('''
 The package ${dep.name} is already activated at newest available version.
-To recompile executables, first run `global decativate ${dep.name}`.
+To recompile executables, first run `global deactivate ${dep.name}`.
 ''');
     } else {
       await result.showReport(SolveType.GET, cache);
