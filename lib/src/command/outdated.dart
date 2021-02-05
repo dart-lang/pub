@@ -41,6 +41,9 @@ class OutdatedCommand extends PubCommand {
   /// when we are outputting machine-readable json.
   bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
 
+  @override
+  bool get takesArguments => false;
+
   OutdatedCommand() {
     argParser.addFlag(
       'color',

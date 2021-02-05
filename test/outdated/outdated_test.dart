@@ -9,14 +9,11 @@ import '../test_pub.dart';
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
 Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment,
-    dynamic exitCode = 0,
-    dynamic stdErr = isEmpty}) async {
+    {Map<String, String> environment}) async {
   final process =
       await startPub(args: ['outdated', ...args], environment: environment);
-  await process.shouldExit(exitCode);
+  final exitCode = await process.exitCode;
 
-  expect(await process.stderr.rest.toList(), stdErr);
   buffer.writeln([
     '\$ pub outdated ${args.join(' ')}',
     ...await process.stdout.rest.where((line) {
@@ -25,6 +22,13 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
       return !line.startsWith('Downloading ');
     }).toList(),
   ].join('\n'));
+  final stderrLines = await process.stderr.rest.toList();
+  for (final line in stderrLines) {
+    buffer.writeln('[ERR] ${line.replaceAll(d.sandbox, r'$SANDBOX')}');
+  }
+  if (exitCode != 0) {
+    buffer.writeln('[Exit code] $exitCode');
+  }
   buffer.write('\n');
 }
 
@@ -65,10 +69,12 @@ Future<void> main() async {
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();
-    await runPubOutdated([], buffer,
-        exitCode: isNot(0),
-        stdErr: contains(
-            startsWith('Could not find a file named "pubspec.yaml" in ')));
+    await runPubOutdated(
+      [],
+      buffer,
+    );
+    expectMatchesGoldenFile(
+        buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
   });
 
   test('no lockfile', () async {
@@ -454,5 +460,13 @@ Future<void> main() async {
       // To test that the reproduction command is reflected correctly.
       'PUB_ENVIRONMENT': 'flutter_cli:get',
     });
+  });
+
+  test("doesn't allow arguments. Handles bad flags", () async {
+    final sb = StringBuffer();
+    await runPubOutdated(['random_argument'], sb);
+    await runPubOutdated(['--bad_flag'], sb);
+    expectMatchesGoldenFile(
+        sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
   });
 }
