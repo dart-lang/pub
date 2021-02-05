@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
@@ -24,7 +26,10 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
   ].join('\n'));
   final stderrLines = await process.stderr.rest.toList();
   for (final line in stderrLines) {
-    buffer.writeln('[ERR] ${line.replaceAll(d.sandbox, r'$SANDBOX')}');
+    final sanitized = line
+        .replaceAll(d.sandbox, r'$SANDBOX')
+        .replaceAll(Platform.pathSeparator, '/');
+    buffer.writeln('[ERR] $sanitized');
   }
   if (exitCode != 0) {
     buffer.writeln('[Exit code] $exitCode');
