@@ -8,7 +8,6 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
@@ -16,12 +15,12 @@ import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'sdk.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -33,6 +32,12 @@ export 'package:http/http.dart' show ByteStream;
 /// indicate that beyond 32, additional file reads don't provide substantial
 /// additional throughput.
 final _descriptorPool = Pool(32);
+
+/// The assumed default file mode on Linux and macOS
+const _defaultMode = 420; // 644₈
+
+/// Mask for executable bits in file modes.
+const _executableMask = 0x49; // 001 001 001
 
 /// Determines if a file or directory exists at [path].
 bool entryExists(String path) =>
@@ -214,6 +219,10 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
     log.fine('Created $file from stream.');
     return file;
   });
+}
+
+void _chmod(int mode, String file) {
+  runProcessSync('chmod', [mode.toRadixString(8), file]);
 }
 
 /// Deletes [file] if it's a symlink.
@@ -792,102 +801,96 @@ Future<HttpServer> bindServer(String host, int port) async {
   return server;
 }
 
-String _tarPath = _findTarPath();
-
-/// Find a tar. Prefering system installed tar.
-///
-/// On linux tar should always be /bin/tar [See FHS 2.3][1]
-/// On MacOS it seems to always be /usr/bin/tar.
-///
-/// [1]: https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.pdf
-String _findTarPath() {
-  for (final file in ['/bin/tar', '/usr/bin/tar']) {
-    if (fileExists(file)) {
-      return file;
-    }
-  }
-  log.warning(
-      'Could not find a system `tar` installed in /bin/tar or /usr/bin/tar, '
-      'attempting to use tar from PATH');
-  return 'tar';
-}
-
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  final decompressed = stream.transform(GZipCodec().decoder);
 
-  // We used to stream directly to `tar`,  but that was fragile in certain
-  // settings.
-  final processResult = await withTempDir((tempDir) async {
-    final tarFile = path.join(tempDir, 'archive.tar');
-    try {
-      await _createFileFromStream(decompressed, tarFile);
-    } catch (e) {
-      // We don't know the error type here: https://dartbug.com/41270
-      throw FileSystemException('Could not decompress gz stream $e');
+  destination = path.absolute(destination);
+  final reader = TarReader(stream.transform(gzip.decoder));
+  while (await reader.moveNext()) {
+    final entry = reader.current;
+
+    final filePath = path.joinAll([
+      destination,
+      // Tar file names always use forward slashes
+      ...path.posix.split(entry.name),
+    ]);
+
+    if (!path.isWithin(destination, filePath)) {
+      // The tar contains entries that would be written outside of the
+      // destination. That doesn't happen by accident, assume that the tar file
+      // is malicious.
+      await reader.cancel();
+      throw FormatException('Invalid tar entry: ${entry.name}');
     }
-    return (Platform.isWindows)
-        ? runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination)
-        : runProcess(_tarPath, [
-            if (_noUnknownKeyword) '--warning=no-unknown-keyword',
-            '--extract',
-            '--no-same-owner',
-            '--no-same-permissions',
-            '--directory',
-            destination,
-            '--file',
-            tarFile,
-          ]);
-  });
-  if (processResult.exitCode != exit_codes.SUCCESS) {
-    throw FileSystemException(
-        'Could not un-tar (exit code ${processResult.exitCode}). Error:\n'
-        '${processResult.stdout.join("\n")}\n'
-        '${processResult.stderr.join("\n")}');
+
+    final parentDirectory = path.dirname(filePath);
+
+    bool checkValidTarget(String linkTarget) {
+      final isValid = path.isWithin(destination, linkTarget);
+      if (!isValid) {
+        log.fine('Skipping ${entry.name}: Invalid link target');
+      }
+
+      return isValid;
+    }
+
+    switch (entry.type) {
+      case TypeFlag.dir:
+        ensureDir(filePath);
+        break;
+      case TypeFlag.reg:
+      case TypeFlag.regA:
+        // Regular file
+        deleteIfLink(filePath);
+        ensureDir(parentDirectory);
+
+        await _createFileFromStream(entry.contents, filePath);
+
+        if (Platform.isLinux || Platform.isMacOS) {
+          // Apply executable bits from tar header, but don't change r/w bits
+          // from the default
+          final mode = _defaultMode | (entry.header.mode & _executableMask);
+
+          if (mode != _defaultMode) {
+            _chmod(mode, filePath);
+          }
+        }
+        break;
+      case TypeFlag.symlink:
+        // Link to another file in this tar, relative from this entry.
+        final resolvedTarget = path.joinAll(
+            [parentDirectory, ...path.posix.split(entry.header.linkName)]);
+        if (!checkValidTarget(resolvedTarget)) {
+          // Don't allow links to files outside of this tar.
+          break;
+        }
+
+        ensureDir(parentDirectory);
+        createSymlink(
+            path.relative(resolvedTarget, from: parentDirectory), filePath);
+        break;
+      case TypeFlag.link:
+        // We generate hardlinks as symlinks too, but their linkName is relative
+        // to the root of the tar file (unlike symlink entries, whose linkName
+        // is relative to the entry itself).
+        final fromDestination = path.join(destination, entry.header.linkName);
+        if (!checkValidTarget(fromDestination)) {
+          break; // Link points outside of the tar file.
+        }
+
+        final fromFile = path.relative(fromDestination, from: parentDirectory);
+        ensureDir(parentDirectory);
+        createSymlink(fromFile, filePath);
+        break;
+      default:
+        // Only extract files
+        continue;
+    }
   }
-  log.fine('Extracted .tar.gz to $destination. Exit code $exitCode.');
+
+  log.fine('Extracted .tar.gz to $destination.');
 }
-
-/// Whether to include "--warning=no-unknown-keyword" when invoking tar.
-///
-/// BSD tar (the default on OS X) can insert strange headers to a tarfile that
-/// GNU tar (the default on Linux) is unable to understand. This will cause GNU
-/// tar to emit a number of harmless but scary-looking warnings which are
-/// silenced by this flag.
-final bool _noUnknownKeyword = _computeNoUnknownKeyword();
-bool _computeNoUnknownKeyword() {
-  if (!Platform.isLinux) return false;
-  var result = Process.runSync(_tarPath, ['--version']);
-  if (result.exitCode != 0) {
-    throw ApplicationException(
-        'Pub failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
-  }
-
-  var match =
-      RegExp(r'^tar \(GNU tar\) (\d+).(\d+)\n').firstMatch(result.stdout);
-  if (match == null) return false;
-
-  var major = int.parse(match[1]);
-  var minor = int.parse(match[2]);
-  return major >= 2 || (major == 1 && minor >= 23);
-}
-
-final String _pathTo7zip = (() {
-  final candidate = runningFromDartRepo
-      ? path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe')
-      : path.join(
-          sdk.rootDirectory,
-          'lib',
-          '_internal',
-          'pub',
-          'asset',
-          '7zip',
-          '7za.exe',
-        );
-  if (fileExists(candidate)) return candidate;
-  throw StateError('Could not find 7zip.');
-})();
 
 /// Create a .tar.gz archive from a list of entries.
 ///
@@ -897,110 +900,47 @@ final String _pathTo7zip = (() {
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(List<String> contents, {String baseDir}) {
-  return ByteStream(StreamCompleter.fromFuture(Future.sync(() async {
-    var buffer = StringBuffer();
-    buffer.write('Creating .tar.gz stream containing:\n');
-    contents.forEach(buffer.writeln);
-    log.fine(buffer.toString());
+  var buffer = StringBuffer();
+  buffer.write('Creating .tar.gz stream containing:\n');
+  contents.forEach(buffer.writeln);
+  log.fine(buffer.toString());
 
-    baseDir ??= path.current;
-    baseDir = path.absolute(baseDir);
-    contents = contents.map((entry) {
-      entry = path.absolute(entry);
-      if (!path.isWithin(baseDir, entry)) {
-        throw ArgumentError('Entry $entry is not inside $baseDir.');
-      }
-      return path.relative(entry, from: baseDir);
-    }).toList();
+  baseDir ??= path.current;
+  baseDir = path.absolute(baseDir);
 
-    if (!Platform.isWindows) {
-      var args = [
-        // ustar is the most recent tar format that's compatible across all
-        // OSes.
-        '--format=ustar',
-        '--create',
-        '--gzip',
-        '--directory',
-        baseDir
-      ];
-
-      String stdin;
-      if (Platform.isLinux) {
-        // GNU tar flags.
-        // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
-
-        args.addAll(['--files-from', '/dev/stdin']);
-        stdin = contents.join('\n');
-
-        /// Travis's version of tar apparently doesn't support passing unknown
-        /// values to the --owner and --group flags for some reason.
-        if (!isTravis) {
-          // The ustar format doesn't support large UIDs. We don't care about
-          // preserving ownership anyway, so we just set them to "pub".
-          args.addAll(['--owner=pub', '--group=pub']);
-        }
-      } else {
-        // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
-        // 2.8.3). We use this to set the uname and gname, since it doesn't have
-        // flags for those.
-        //
-        // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
-        args.add('@/dev/stdin');
-
-        // The ustar format doesn't support large UIDs. We don't care about
-        // preserving ownership anyway, so we just set them to "pub".
-        // TODO(rnystrom): This assumes contents does not contain any
-        // directories.
-        var mtreeHeader = '#mtree\n/set uname=pub gname=pub type=file\n';
-
-        // We need a newline at the end, otherwise the last file would get
-        // ignored.
-        stdin =
-            mtreeHeader + contents.join('\n').replaceAll(' ', r'\040') + '\n';
-      }
-
-      // Setting the working directory should be unnecessary since we pass an
-      // explicit base directory to tar. However, on Mac when using an mtree
-      // input file, relative paths in the mtree file are interpreted as
-      // relative to the current working directory, not the "--directory"
-      // argument.
-      var process = await startProcess(_tarPath, args, workingDir: baseDir);
-      process.stdin.add(utf8.encode(stdin));
-      process.stdin.close();
-      return process.stdout;
+  final tarContents = Stream.fromIterable(contents.map((entry) {
+    entry = path.absolute(entry);
+    if (!path.isWithin(baseDir, entry)) {
+      throw ArgumentError('Entry $entry is not inside $baseDir.');
     }
 
-    // Don't use [withTempDir] here because we don't want to delete the temp
-    // directory until the returned stream has closed.
-    var tempDir = await _createSystemTempDir();
+    final relative = path.relative(entry, from: baseDir);
+    // On Windows, we can't open some files without normalizing them
+    final file = File(path.normalize(entry));
+    final stat = file.statSync();
 
-    try {
-      // Create the file containing the list of files to compress.
-      var contentsPath = path.join(tempDir, 'files.txt');
-      writeTextFile(contentsPath, contents.join('\n'));
-
-      // Create the tar file.
-      var tarFile = path.join(tempDir, 'intermediate.tar');
-      var args = ['a', '-w$baseDir', tarFile, '@$contentsPath'];
-
-      // We're passing 'baseDir' both as '-w' and setting it as the working
-      // directory explicitly here intentionally. The former ensures that the
-      // files added to the archive have the correct relative path in the
-      // archive. The latter enables relative paths in the "-i" args to be
-      // resolved.
-      await runProcess(_pathTo7zip, args, workingDir: baseDir);
-
-      // GZIP it. 7zip doesn't support doing both as a single operation.
-      // Send the output to stdout.
-      args = ['a', 'unused', '-tgzip', '-so', tarFile];
-      return (await startProcess(_pathTo7zip, args))
-          .stdout
-          .transform(onDoneTransformer(() => deleteEntry(tempDir)));
-    } catch (_) {
-      deleteEntry(tempDir);
-      rethrow;
+    if (stat.type == FileSystemEntityType.link) {
+      log.message('$entry is a link locally, but will be uploaded as a '
+          'duplicate file.');
     }
-  })));
+
+    return TarEntry(
+      TarHeader(
+        // Ensure paths in tar files use forward slashes
+        name: path.url.joinAll(path.split(relative)),
+        // We want to keep executable bits, but otherwise use the default
+        // file mode
+        mode: _defaultMode | (stat.mode & _executableMask),
+        size: stat.size,
+        modified: stat.changed,
+        userName: 'pub',
+        groupName: 'pub',
+      ),
+      file.openRead(),
+    );
+  }));
+
+  return ByteStream(tarContents.transform(tarWriter).transform(gzip.encoder));
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.
