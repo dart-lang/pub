@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -45,6 +46,9 @@ class LishCommand extends PubCommand {
     return Uri.parse(cache.sources.hosted.defaultUrl);
   }
 
+  /// The path to save the package tar file.
+  String get saveTar => argResults['save-tar'];
+
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
 
@@ -62,6 +66,9 @@ class LishCommand extends PubCommand {
         help: 'Publish without confirmation if there are no errors.');
     argParser.addOption('server',
         help: 'The package server to which to upload this package.',
+        hide: true);
+    argParser.addOption('save-tar',
+        help: 'The path to save the package tar file.',
         hide: true);
   }
 
@@ -154,9 +161,13 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
-    } else if (dryRun) {
-      return;
-    } else {
+    }
+
+    if (saveTar != null) {
+      await File(saveTar).writeAsBytes(await packageBytesFuture);
+    }
+
+    if (!dryRun) {
       await _publish(await packageBytesFuture);
     }
   }
