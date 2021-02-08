@@ -44,6 +44,9 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
+  String get directory => _argResults['directory'];
+
+  @override
   bool get captureStackChains {
     return _argResults['trace'] ||
         _argResults['verbose'] ||
@@ -109,6 +112,13 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run the subcommand in <dir>.',
+      defaultsTo: '.',
+      valueHelp: 'dir',
+    );
 
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.

@@ -9,32 +9,16 @@ import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-/// Runs `pub outdated [args]` and appends the output to [buffer].
-Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment}) async {
-  final process =
-      await startPub(args: ['outdated', ...args], environment: environment);
-  final exitCode = await process.exitCode;
-
-  buffer.writeln([
-    '\$ pub outdated ${args.join(' ')}',
-    ...await process.stdout.rest.where((line) {
+List<String> _outdatedFilter(List<String> input) {
+  return input
       // Downloading order is not deterministic, so to avoid flakiness we filter
       // out these lines.
-      return !line.startsWith('Downloading ');
-    }).toList(),
-  ].join('\n'));
-  final stderrLines = await process.stderr.rest.toList();
-  for (final line in stderrLines) {
-    final sanitized = line
-        .replaceAll(d.sandbox, r'$SANDBOX')
-        .replaceAll(Platform.pathSeparator, '/');
-    buffer.writeln('[ERR] $sanitized');
-  }
-  if (exitCode != 0) {
-    buffer.writeln('[Exit code] $exitCode');
-  }
-  buffer.write('\n');
+      .where((line) => !line.startsWith('Downloading '))
+      // Any paths in output should be relative to the sandbox and with forward
+      // slashes to be stable across platforms.
+      .map((line) => line
+          .replaceAll(d.sandbox, r'$SANDBOX')
+          .replaceAll(Platform.pathSeparator, '/'));
 }
 
 /// Try running 'pub outdated' with a number of different sets of arguments.
@@ -43,20 +27,21 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
 Future<void> variations(String name, {Map<String, String> environment}) async {
   final buffer = StringBuffer();
   for (final args in [
-    ['--json'],
-    ['--no-color'],
-    ['--no-color', '--no-transitive'],
-    ['--no-color', '--up-to-date'],
-    ['--no-color', '--prereleases'],
-    ['--no-color', '--no-dev-dependencies'],
-    ['--no-color', '--no-dependency-overrides'],
-    ['--no-color', '--mode=null-safety'],
-    ['--no-color', '--mode=null-safety', '--transitive'],
-    ['--no-color', '--mode=null-safety', '--no-prereleases'],
-    ['--json', '--mode=null-safety'],
-    ['--json', '--no-dev-dependencies'],
+    ['outdated', '--json'],
+    ['outdated', '--no-color'],
+    ['outdated', '--no-color', '--no-transitive'],
+    ['outdated', '--no-color', '--up-to-date'],
+    ['outdated', '--no-color', '--prereleases'],
+    ['outdated', '--no-color', '--no-dev-dependencies'],
+    ['outdated', '--no-color', '--no-dependency-overrides'],
+    ['outdated', '--no-color', '--mode=null-safety'],
+    ['outdated', '--no-color', '--mode=null-safety', '--transitive'],
+    ['outdated', '--no-color', '--mode=null-safety', '--no-prereleases'],
+    ['outdated', '--json', '--mode=null-safety'],
+    ['outdated', '--json', '--no-dev-dependencies'],
   ]) {
-    await runPubOutdated(args, buffer, environment: environment);
+    await runPubIntoBuffer(args, buffer,
+        environment: environment, filter: _outdatedFilter);
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -66,7 +51,8 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
 Future<void> main() async {
   test('help text', () async {
     final buffer = StringBuffer();
-    await runPubOutdated(['--help'], buffer);
+    await runPubIntoBuffer(['outdated', '--help'], buffer,
+        filter: _outdatedFilter);
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/helptext.txt');
   });
@@ -74,10 +60,7 @@ Future<void> main() async {
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();
-    await runPubOutdated(
-      [],
-      buffer,
-    );
+    await runPubIntoBuffer(['outdated'], buffer, filter: _outdatedFilter);
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
   });
@@ -469,8 +452,10 @@ Future<void> main() async {
 
   test("doesn't allow arguments. Handles bad flags", () async {
     final sb = StringBuffer();
-    await runPubOutdated(['random_argument'], sb);
-    await runPubOutdated(['--bad_flag'], sb);
+    await runPubIntoBuffer(['outdated', 'random_argument'], sb,
+        filter: _outdatedFilter);
+    await runPubIntoBuffer(['outdated', '--bad_flag'], sb,
+        filter: _outdatedFilter);
     expectMatchesGoldenFile(
         sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
   });

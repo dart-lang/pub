@@ -43,6 +43,8 @@ final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
 abstract class PubCommand extends Command<int> {
+  String get directory => argResults['directory'] ?? _pubTopLevel.directory;
+
   SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
   SystemCache _cache;
@@ -55,7 +57,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint => _entrypoint ??= Entrypoint.current(cache);
+  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory, cache);
 
   Entrypoint _entrypoint;
 
@@ -279,6 +281,7 @@ abstract class PubTopLevel {
   bool get captureStackChains;
   log.Verbosity get verbosity;
   bool get trace;
+  String get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;

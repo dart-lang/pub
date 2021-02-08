@@ -62,6 +62,8 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -218,7 +220,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
       );
@@ -311,7 +313,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
       );

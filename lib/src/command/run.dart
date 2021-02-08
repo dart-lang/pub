@@ -45,6 +45,8 @@ class RunCommand extends PubCommand {
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     // mode exposed for `dartdev run` to use as subprocess.
     argParser.addFlag('dart-dev-run', hide: true);
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
   }
 
   @override

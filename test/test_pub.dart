@@ -15,6 +15,7 @@ import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart' hide fail;
@@ -841,3 +842,31 @@ Matcher matchesMultiple(String pattern, int times) {
 
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
+
+/// Runs `pub outdated [args]` and appends the output to [buffer].
+Future<void> runPubIntoBuffer(
+  List<String> args,
+  StringBuffer buffer, {
+  Map<String, String> environment,
+  @required Iterable<String> Function(List<String>) filter,
+  String workingDirectory,
+}) async {
+  final process = await startPub(
+    args: args,
+    environment: environment,
+    workingDirectory: workingDirectory,
+  );
+  final exitCode = await process.exitCode;
+
+  buffer.writeln([
+    '\$ pub ${args.join(' ')}',
+    ...filter(await process.stdout.rest.toList()),
+  ].join('\n'));
+  for (final line in filter(await process.stderr.rest.toList())) {
+    buffer.writeln('[ERR] $line');
+  }
+  if (exitCode != 0) {
+    buffer.writeln('[Exit code] $exitCode');
+  }
+  buffer.write('\n');
+}

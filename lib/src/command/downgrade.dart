@@ -33,6 +33,9 @@ class DowngradeCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
   }
 
   @override

@@ -52,6 +52,9 @@ class DepsCommand extends PubCommand {
 
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
   }
 
   @override

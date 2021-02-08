@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
@@ -70,25 +71,28 @@ class SolveReport {
       return oldId != newId;
     }).length;
 
+    final dir = path.normalize(_root.dir);
+    final suffix = dir == '.' ? '' : ' in $dir';
+
     if (dryRun) {
       if (numChanged == 0) {
-        log.message('No dependencies would change.');
+        log.message('No dependencies would change$suffix.');
       } else if (numChanged == 1) {
-        log.message('Would change $numChanged dependency.');
+        log.message('Would change $numChanged dependency$suffix.');
       } else {
-        log.message('Would change $numChanged dependencies.');
+        log.message('Would change $numChanged dependencies$suffix.');
       }
     } else {
       if (numChanged == 0) {
         if (_type == SolveType.GET) {
-          log.message('Got dependencies!');
+          log.message('Got dependencies$suffix!');
         } else {
-          log.message('No dependencies changed.');
+          log.message('No dependencies changed$suffix.');
         }
       } else if (numChanged == 1) {
-        log.message('Changed $numChanged dependency!');
+        log.message('Changed $numChanged dependency$suffix!');
       } else {
-        log.message('Changed $numChanged dependencies!');
+        log.message('Changed $numChanged dependencies$suffix!');
       }
     }
   }

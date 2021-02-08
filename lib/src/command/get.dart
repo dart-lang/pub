@@ -32,6 +32,9 @@ class GetCommand extends PubCommand {
         help: 'Precompile executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
   }
 
   @override
