@@ -1,13 +1,11 @@
 $ pub add --directory=myapp foo
 Resolving dependencies...
 + foo 1.0.0
-Downloading foo 1.0.0...
 Changed 1 dependency in myapp!
 
 $ pub -C myapp add bar
 Resolving dependencies...
 + bar 1.2.3
-Downloading bar 1.2.3...
 Changed 1 dependency in myapp!
 
 $ pub remove bar -C myapp

@@ -849,10 +849,15 @@ Iterable<String> _filter(List<String> input) {
       .where((line) => !line.startsWith('Downloading '))
       // Any paths in output should be relative to the sandbox and with forward
       // slashes to be stable across platforms.
-      .map((line) => line
-          .replaceAll(d.sandbox, r'$SANDBOX')
-          .replaceAll(globalPackageServer.port.toString(), '\$PORT')
-          .replaceAll(Platform.pathSeparator, '/'));
+      .map((line) {
+    line = line
+        .replaceAll(Platform.pathSeparator, '/')
+        .replaceAll(d.sandbox, r'$SANDBOX');
+    if (globalPackageServer != null) {
+      line = line.replaceAll(globalPackageServer.port.toString(), '\$PORT');
+    }
+    return line;
+  });
 }
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
