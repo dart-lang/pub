@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -56,10 +55,6 @@ main() => print('Hi');
       await runPubIntoBuffer(
         args,
         buffer,
-        filter: (a) => a.map((s) => s
-            .replaceAll(sandbox, '\$SANDBOX')
-            .replaceAll(globalPackageServer.url, '\$SERVER')
-            .replaceAll(Platform.pathSeparator, '/')),
         workingDirectory: sandbox,
         environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
       );

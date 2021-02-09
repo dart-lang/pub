@@ -2,24 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
-
-List<String> _outdatedFilter(List<String> input) {
-  return input
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      .where((line) => !line.startsWith('Downloading '))
-      // Any paths in output should be relative to the sandbox and with forward
-      // slashes to be stable across platforms.
-      .map((line) => line
-          .replaceAll(d.sandbox, r'$SANDBOX')
-          .replaceAll(Platform.pathSeparator, '/'));
-}
 
 /// Try running 'pub outdated' with a number of different sets of arguments.
 ///
@@ -40,8 +26,7 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
     ['outdated', '--json', '--mode=null-safety'],
     ['outdated', '--json', '--no-dev-dependencies'],
   ]) {
-    await runPubIntoBuffer(args, buffer,
-        environment: environment, filter: _outdatedFilter);
+    await runPubIntoBuffer(args, buffer, environment: environment);
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -51,8 +36,10 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
 Future<void> main() async {
   test('help text', () async {
     final buffer = StringBuffer();
-    await runPubIntoBuffer(['outdated', '--help'], buffer,
-        filter: _outdatedFilter);
+    await runPubIntoBuffer(
+      ['outdated', '--help'],
+      buffer,
+    );
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/helptext.txt');
   });
@@ -60,7 +47,7 @@ Future<void> main() async {
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();
-    await runPubIntoBuffer(['outdated'], buffer, filter: _outdatedFilter);
+    await runPubIntoBuffer(['outdated'], buffer);
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
   });
@@ -452,10 +439,8 @@ Future<void> main() async {
 
   test("doesn't allow arguments. Handles bad flags", () async {
     final sb = StringBuffer();
-    await runPubIntoBuffer(['outdated', 'random_argument'], sb,
-        filter: _outdatedFilter);
-    await runPubIntoBuffer(['outdated', '--bad_flag'], sb,
-        filter: _outdatedFilter);
+    await runPubIntoBuffer(['outdated', 'random_argument'], sb);
+    await runPubIntoBuffer(['outdated', '--bad_flag'], sb);
     expectMatchesGoldenFile(
         sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
   });

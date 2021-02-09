@@ -71,8 +71,13 @@ class SolveReport {
       return oldId != newId;
     }).length;
 
-    final dir = path.normalize(_root.dir);
-    final suffix = dir == '.' ? '' : ' in $dir';
+    var suffix = '';
+    if (_root.dir != null) {
+      final dir = path.normalize(_root.dir);
+      if (dir != '.') {
+        suffix = ' in $dir';
+      }
+    }
 
     if (dryRun) {
       if (numChanged == 0) {

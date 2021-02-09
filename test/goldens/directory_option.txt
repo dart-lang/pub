@@ -53,7 +53,7 @@ $ pub run -C myapp bin/app.dart
 Hi
 
 $ pub publish -C myapp --dry-run
-Publishing test_pkg 1.0.0 to $SERVER:
+Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 |-- CHANGELOG.md
 |-- LICENSE
 |-- README.md
@@ -78,5 +78,5 @@ test_pkg 1.0.0
 '-- foo 1.0.0
 
 $ pub list-package-dirs -C myapp
-{"packages":{"foo":"$SANDBOX/cache/hosted/localhost%5862649/foo-1.0.0/lib","test_pkg":"$SANDBOX/myapp/lib"},"input_files":["$SANDBOX/myapp/pubspec.lock","$SANDBOX/myapp/pubspec.yaml"]}
+{"packages":{"foo":"$SANDBOX/cache/hosted/localhost%58$PORT/foo-1.0.0/lib","test_pkg":"$SANDBOX/myapp/lib"},"input_files":["$SANDBOX/myapp/pubspec.lock","$SANDBOX/myapp/pubspec.yaml"]}
 
