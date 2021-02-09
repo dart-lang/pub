@@ -323,7 +323,13 @@ class BoundHostedSource extends CachedSource {
     // Do we have a cached version response on disk?
     versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
     // Otherwise retrieve the info from the host.
-    versionListing ??= await _scheduler.schedule(ref);
+    versionListing ??= await _scheduler
+        .schedule(ref)
+        // Failures retrieving the listing here should just be ignored.
+        .catchError(
+          (_) => <PackageId, _VersionInfo>{},
+          test: (error) => error is Exception,
+        );
 
     final listing = versionListing[id];
     // If we don't have the specific version we return the empty response.
