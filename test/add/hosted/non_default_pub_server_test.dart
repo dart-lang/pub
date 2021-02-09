@@ -42,9 +42,14 @@ void main() {
     await d.appDir({}).create();
 
     await pubAdd(
-        args: ['foo', '--hosted-url', 'https://invalid-url.foo'],
-        error: contains('Could not resolve URL "https://invalid-url.foo".'),
-        exitCode: exit_codes.DATA);
+      args: ['foo', '--hosted-url', 'https://invalid-url.foo'],
+      error: contains('Could not resolve URL "https://invalid-url.foo".'),
+      exitCode: exit_codes.DATA,
+      environment: {
+        // Limit the retries - the url will never go valid.
+        'PUB_MAX_HTTP_RETRIES': '1',
+      },
+    );
 
     await d.appDir({}).validate();
     await d.dir(appPath, [

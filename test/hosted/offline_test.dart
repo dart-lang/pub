@@ -9,16 +9,32 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
+Future<void> populateCache(Map<String, List<String>> versions) async {
+  await servePackages((b) {
+    for (final entry in versions.entries) {
+      for (final version in entry.value) {
+        b.serve(entry.key, version);
+      }
+    }
+  });
+  for (final entry in versions.entries) {
+    for (final version in entry.value) {
+      await d.appDir({entry.key: version}).create();
+      await pubGet();
+    }
+  }
+}
+
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('upgrades a package using the cache', () async {
-      // Run the server so that we know what URL to use in the system cache.
-      await serveErrors();
-
-      await d.cacheDir({
+      await populateCache({
         'foo': ['1.2.2', '1.2.3'],
         'bar': ['1.2.3']
-      }, includePubspecs: true).create();
+      });
+
+      // Now serve only errors - to validate we are truly offline.
+      await serveErrors();
 
       await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
@@ -34,12 +50,11 @@ void main() {
     });
 
     test('supports prerelease versions', () async {
-      // Run the server so that we know what URL to use in the system cache.
-      await serveErrors();
-
-      await d.cacheDir({
+      await populateCache({
         'foo': ['1.2.3-alpha.1']
-      }, includePubspecs: true).create();
+      });
+      // Now serve only errors - to validate we are truly offline.
+      await serveErrors();
 
       await d.appDir({'foo': 'any'}).create();
 
@@ -70,12 +85,12 @@ void main() {
     });
 
     test('fails gracefully if no cached versions match', () async {
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3']
+      });
+
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
-
-      await d.cacheDir({
-        'foo': ['1.2.2', '1.2.3']
-      }, includePubspecs: true).create();
 
       await d.appDir({'foo': '>2.0.0'}).create();
 
@@ -106,12 +121,11 @@ void main() {
     });
 
     test('downgrades to the version in the cache if necessary', () async {
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3']
+      });
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
-
-      await d.cacheDir({
-        'foo': ['1.2.2', '1.2.3']
-      }, includePubspecs: true).create();
 
       await d.appDir({'foo': 'any'}).create();
 
@@ -123,15 +137,15 @@ void main() {
     });
 
     test('skips invalid cached versions', () async {
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3']
+      });
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
 
-      await d.cacheDir({
-        'foo': ['1.2.2', '1.2.3']
-      }, includePubspecs: true).create();
-
       await d.hostedCache([
-        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
+        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
+        d.file('random_filename', ''),
       ]).create();
 
       await d.appDir({'foo': 'any'}).create();
@@ -142,12 +156,11 @@ void main() {
     });
 
     test('skips invalid locked versions', () async {
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3']
+      });
       // Run the server so that we know what URL to use in the system cache.
       await serveErrors();
-
-      await d.cacheDir({
-        'foo': ['1.2.2', '1.2.3']
-      }, includePubspecs: true).create();
 
       await d.hostedCache([
         d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])

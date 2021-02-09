@@ -39,7 +39,8 @@ void main() {
   test('cannot use both --path and --host-<option> flags', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    await serveNoPackages();
+    globalPackageServer.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');
@@ -75,7 +76,8 @@ void main() {
   test('cannot use both --hosted-url and --git-<option> flags', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    await serveNoPackages();
+    globalPackageServer.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');

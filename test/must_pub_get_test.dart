@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -30,6 +31,32 @@ void main() {
     await pubGet();
   });
 
+  test(
+      'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
+      () async {
+    await d.dir('bar', [
+      d.pubspec({'name': 'bar'})
+    ]).create();
+    await d.dir(appPath, [
+      d.appPubspec({
+        'bar': {'path': '../bar'}
+      })
+    ]).create();
+
+    await pubGet();
+
+    final packageConfig =
+        p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json');
+    final contents = json.decode(readTextFile(packageConfig));
+    contents['packages'].add({
+      'name': 'flutter_gen',
+      'rootUri': '.dart_tool/flutter_gen',
+      'languageVersion': '2.8',
+    });
+    writeTextFile(packageConfig, json.encode(contents));
+
+    await runPub(args: ['run', 'bin/script.dart'], output: 'hello!');
+  });
   group('requires the user to run pub get first if', () {
     group("there's no lockfile", () {
       setUp(() {
@@ -38,14 +65,6 @@ void main() {
 
       _requiresPubGet(
           'No pubspec.lock file found, please run "pub get" first.');
-    });
-
-    group("there's no .packages", () {
-      setUp(() {
-        deleteEntry(p.join(d.sandbox, 'myapp/.packages'));
-      });
-
-      _requiresPubGet('No .packages file found, please run "pub get" first.');
     });
 
     group("there's no package_config.json", () {
@@ -356,14 +375,14 @@ foo:http://example.com/
 
       await pubGet(environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
-      await d.dir('flutter', [d.file('version', '2.4.6')]).create();
+      await d.dir('flutter', [d.file('version', '0.9.0')]).create();
 
       // Run pub manually here because otherwise we don't have access to
       // d.sandbox.
       await runPub(
           args: ['run', 'script'],
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
+          error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
               'constraints. Please run "pub get" again.',
           exitCode: exit_codes.DATA);
     });
@@ -487,8 +506,7 @@ foo:http://example.com/
       _runsSuccessfully();
     });
 
-    group(
-        "the lockfile is newer than .packages and package_config.json, but they're up-to-date",
+    group("the lockfile is newer than package_config.json, but it's up-to-date",
         () {
       setUp(() async {
         await d.dir(appPath, [

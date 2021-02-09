@@ -157,7 +157,9 @@ abstract class BoundSource {
   /// uses [describe] to get that version.
   ///
   /// Sources should not override this. Instead, they implement [doGetVersions].
-  Future<List<PackageId>> getVersions(PackageRef ref) {
+  ///
+  /// If [maxAge] is given answers can be taken from cache - up to that age old.
+  Future<List<PackageId>> getVersions(PackageRef ref, {Duration maxAge}) {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
@@ -165,7 +167,7 @@ abstract class BoundSource {
       throw ArgumentError('Package $ref does not use source ${source.name}.');
     }
 
-    return doGetVersions(ref);
+    return doGetVersions(ref, maxAge);
   }
 
   /// Get the IDs of all versions that match [ref].
@@ -180,7 +182,7 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref);
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge);
 
   /// A cache of pubspecs described by [describe].
   final _pubspecs = <PackageId, Pubspec>{};
@@ -229,14 +231,16 @@ abstract class BoundSource {
   /// external code should not call this. Instead, call [describe].
   Future<Pubspec> doDescribe(PackageId id);
 
-  /// Ensures [id] is available locally and creates a symlink at [symlink]
-  /// pointing it.
-  Future get(PackageId id, String symlink);
-
   /// Returns the directory where this package can (or could) be found locally.
   ///
   /// If the source is cached, this will be a path in the system cache.
   String getDirectory(PackageId id);
+
+  /// Returns metadata about a given package. Information about remotely hosted
+  /// packages can be cached for up to [maxAge].
+  Future<PackageStatus> status(PackageId id, Duration maxAge) async =>
+      // Default implementation has no metadata.
+      PackageStatus();
 
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
@@ -244,4 +248,15 @@ abstract class BoundSource {
   void memoizePubspec(PackageId id, Pubspec pubspec) {
     _pubspecs[id] = pubspec;
   }
+}
+
+/// Metadata about a [PackageId].
+class PackageStatus {
+  /// `null` if not [isDiscontinued]. Otherwise contains the
+  /// replacement string provided by the host or `null` if there is no
+  /// replacement.
+  final String discontinuedReplacedBy;
+  final bool isDiscontinued;
+  PackageStatus({isDiscontinued, this.discontinuedReplacedBy})
+      : isDiscontinued = isDiscontinued ?? false;
 }

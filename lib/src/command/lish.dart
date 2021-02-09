@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
-import '../exceptions.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
@@ -97,7 +96,8 @@ class LishCommand extends PubCommand {
 
           var location = postResponse.headers['location'];
           if (location == null) throw PubHttpException(postResponse);
-          handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
+          handleJsonSuccess(
+              await client.get(Uri.parse(location), headers: pubApiHeaders));
         });
       });
     } on PubHttpException catch (error) {
@@ -152,7 +152,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     var isValid =
         await _validate(packageBytesFuture.then((bytes) => bytes.length));
     if (!isValid) {
-      throw ExitWithException(exit_codes.DATA);
+      overrideExitCode(exit_codes.DATA);
+      return;
     } else if (dryRun) {
       return;
     } else {

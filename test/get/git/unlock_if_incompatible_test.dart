@@ -31,7 +31,7 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
@@ -48,6 +48,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNot(originalFooSpec));
+    expect(packageSpec('foo'), isNot(originalFooSpec));
   });
 }

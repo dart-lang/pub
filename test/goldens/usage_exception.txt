@@ -1,0 +1,66 @@
+[command]
+> pub 
+[stdout]
+Pub is a package manager for Dart.
+
+Usage: pub <command> [arguments]
+
+Global options:
+-h, --help             Print this usage information.
+    --version          Print pub version.
+    --[no-]trace       Print debugging information when an error occurs.
+    --verbosity        Control output verbosity.
+
+          [all]        Show all output including internal tracing messages.
+          [error]      Show only errors.
+          [io]         Also show IO operations.
+          [normal]     Show errors, warnings, and user messages.
+          [solver]     Show steps during version resolution.
+          [warning]    Show only errors and warnings.
+
+-v, --verbose          Shortcut for "--verbosity=all".
+
+Available commands:
+  add         Add a dependency to pubspec.yaml.
+  cache       Work with the system cache.
+  deps        Print package dependencies.
+  downgrade   Downgrade the current package's dependencies to oldest versions.
+  get         Get the current package's dependencies.
+  global      Work with global packages.
+  login       Log into pub.dev.
+  logout      Log out of pub.dev.
+  outdated    Analyze your dependencies to find which ones can be upgraded.
+  publish     Publish the current package to pub.dartlang.org.
+  remove      Removes a dependency from the current package.
+  run         Run an executable from a package.
+  upgrade     Upgrade the current package's dependencies to latest versions.
+  uploader    Manage uploaders for a package on pub.dartlang.org.
+  version     Print pub version.
+
+Run "pub help <command>" for more information about a command.
+See https://dart.dev/tools/pub/cmd for detailed documentation.
+[stderr]
+
+[exitCode]
+0
+
+[command]
+> pub global
+[stdout]
+
+[stderr]
+Missing subcommand for "pub global".
+
+Usage: pub global [arguments...]
+-h, --help    Print this usage information.
+
+Available subcommands:
+  activate     Make a package's executables globally available.
+  deactivate   Remove a previously activated package.
+  list         List globally activated packages.
+  run          Run an executable from a globally activated package.
+
+Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-global for detailed documentation.
+[exitCode]
+64

@@ -163,7 +163,7 @@ class BoundPathSource extends BoundSource {
   BoundPathSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);
@@ -178,15 +178,6 @@ class BoundPathSource extends BoundSource {
   Pubspec _loadPubspec(PackageRef ref) {
     var dir = _validatePath(ref.name, ref.description);
     return Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
-  }
-
-  @override
-  Future get(PackageId id, String symlink) {
-    return Future.sync(() {
-      var dir = _validatePath(id.name, id.description);
-      createPackageSymlink(id.name, dir, symlink,
-          relative: id.description['relative']);
-    });
   }
 
   @override

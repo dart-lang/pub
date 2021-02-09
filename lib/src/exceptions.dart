@@ -26,6 +26,12 @@ class ApplicationException implements Exception {
   String toString() => message;
 }
 
+/// A subclass of [ApplicationException] that occurs when running a subprocess
+/// has failed.
+class RunProcessException extends ApplicationException {
+  RunProcessException(String message) : super(message);
+}
+
 /// An exception class for exceptions that are intended to be seen by the user
 /// and are associated with a problem in a file at some path.
 class FileException implements ApplicationException {
@@ -107,10 +113,4 @@ bool isUserFacingException(error) {
       error is http.ClientException ||
       error is YamlException ||
       error is UsageException;
-}
-
-/// Used to signal a specific error code from a [PubCommand].
-class ExitWithException implements Exception {
-  final int exitCode;
-  ExitWithException(this.exitCode);
 }

@@ -35,6 +35,13 @@ import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
 
+/// The name of the program that is invoking pub
+/// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
+String topLevelProgram = _isrunningInsideFlutter ? 'flutter' : 'dart';
+
+bool _isrunningInsideFlutter =
+    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   bool get captureStackChains {
@@ -129,11 +136,11 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int> run(Iterable<String> args) async {
     try {
       _argResults = parse(args);
+      return await runCommand(_argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);
       return exit_codes.USAGE;
     }
-    return await runCommand(_argResults) ?? exit_codes.SUCCESS;
   }
 
   @override

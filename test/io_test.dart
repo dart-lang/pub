@@ -7,13 +7,36 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
+import 'package:tar/tar.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 void main() {
+  group('process', () {
+    final nonExisting =
+        path.join(path.dirname(Platform.resolvedExecutable), 'gone');
+    test('Nice error message when failing to start process.', () {
+      final throwsNiceErrorMessage = throwsA(
+        predicate(
+          (e) =>
+              e is ApplicationException &&
+              e.message.contains(
+                  'Pub failed to run subprocess `$nonExisting`: ProcessException:'),
+        ),
+      );
+
+      expect(() => runProcess(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+      expect(() => startProcess(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+      expect(() => runProcessSync(nonExisting, ['a', 'b', 'c']),
+          throwsNiceErrorMessage);
+    });
+  });
   group('listDir', () {
     test('ignores hidden files by default', () {
       expect(withTempDir((temp) {
@@ -205,6 +228,197 @@ void main() {
     });
   });
 
+  group('extractTarGz', () {
+    test('decompresses simple archive', () async {
+      await withTempDir((tempDir) async {
+        await extractTarGz(
+            Stream.fromIterable(
+              [
+                base64Decode(
+                    'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
+                    'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
+                    '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
+                    'AAAAAAAAAAAAgM9dALkoaRMAKAAA')
+              ],
+            ),
+            tempDir);
+
+        await d.dir(appPath, [
+          d.rawPubspec({
+            'name': 'myapp',
+          }),
+        ]).validate(tempDir);
+      });
+    });
+
+    test('throws on tar error', () async {
+      await withTempDir((tempDir) async {
+        await expectLater(
+            () async => await extractTarGz(
+                Stream.fromIterable(
+                  [
+                    base64Decode(
+                        // Correct Gzip of a faulty tar archive.
+                        'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
+                        '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
+                        'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
+                        'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA==')
+                  ],
+                ),
+                tempDir),
+            throwsA(isA<TarException>()));
+      });
+    });
+
+    test('throws on gzip error', () async {
+      await withTempDir((tempDir) async {
+        await expectLater(
+          () async => await extractTarGz(
+              Stream.fromIterable(
+                [
+                  [10, 20, 30] // Not a good gz stream.
+                ],
+              ),
+              tempDir),
+          throwsA(
+            isA<FormatException>().having((e) => e.message, 'message',
+                contains('Filter error, bad data')),
+          ),
+        );
+      });
+    });
+
+    test(
+      'applies executable bits from tar file',
+      () => withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'weird_exe',
+              typeFlag: TypeFlag.reg,
+              mode: int.parse('110', radix: 8),
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        expect(File('$tempDir/weird_exe').statSync().modeString(), 'rwxr-xr--');
+      }),
+      testOn: 'linux || mac-os',
+    );
+
+    test('extracts files and links', () {
+      return withTempDir((tempDir) async {
+        final entries = Stream.fromIterable([
+          TarEntry.data(
+            TarHeader(name: 'lib/main.txt', typeFlag: TypeFlag.reg),
+            utf8.encode('text content'),
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'bin/main.txt',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../lib/main.txt',
+            ),
+            const [],
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'test/main.txt',
+              typeFlag: TypeFlag.link,
+              // TypeFlag.link is resolved against the root of the tar file
+              linkName: 'lib/main.txt',
+            ),
+            const [],
+          ),
+        ]);
+
+        await extractTarGz(
+            entries.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await d.dir(
+          '.',
+          [
+            d.file('lib/main.txt', 'text content'),
+            d.file('bin/main.txt', 'text content'),
+            d.file('test/main.txt', 'text content'),
+          ],
+        ).validate(tempDir);
+      });
+    });
+
+    test('preserves empty directories', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'bin/',
+              typeFlag: TypeFlag.dir,
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(
+            Directory(tempDir).list(),
+            emits(isA<Directory>()
+                .having((e) => path.basename(e.path), 'basename', 'bin')));
+      });
+    });
+
+    test('throws for entries escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: '../other_package-1.2.3/lib/file.dart',
+              typeFlag: TypeFlag.reg,
+            ),
+            const []));
+
+        await expectLater(
+            extractTarGz(
+                entry.transform(tarWriter).transform(gzip.encoder), tempDir),
+            throwsA(isA<FormatException>()));
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
+
+    test('skips symlinks escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../../outside.txt',
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
+
+    test('skips hardlinks escaping the tar file', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream.value(TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link',
+              typeFlag: TypeFlag.link,
+              linkName: '../outside.txt',
+            ),
+            const []));
+
+        await extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder), tempDir);
+
+        await expectLater(Directory(tempDir).list(), emitsDone);
+      });
+    });
+  });
+
   testExistencePredicate('entryExists', entryExists,
       forFile: true,
       forFileSymlink: true,
@@ -347,62 +561,6 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
         }), completes);
       });
     }
-  });
-  group('extractTarGz', () {
-    test('decompresses simple archive', () async {
-      await withTempDir((tempDir) async {
-        await extractTarGz(
-            Stream.fromIterable(
-              [
-                base64Decode(
-                    'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
-                    'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
-                    '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
-                    'AAAAAAAAAAAAgM9dALkoaRMAKAAA')
-              ],
-            ),
-            tempDir);
-
-        await d.dir(appPath, [
-          d.rawPubspec({
-            'name': 'myapp',
-          }),
-        ]).validate(tempDir);
-      });
-    });
-
-    test('throws on tar error', () async {
-      await withTempDir((tempDir) async {
-        await expectLater(
-            () async => await extractTarGz(
-                Stream.fromIterable(
-                  [
-                    base64Decode(
-                        // Correct Gzip of a faulty tar archive.
-                        'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
-                        '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
-                        'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
-                        'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA==')
-                  ],
-                ),
-                tempDir),
-            throwsA(isA<FileSystemException>()));
-      });
-    });
-
-    test('throws on gzip error', () async {
-      await withTempDir((tempDir) async {
-        await expectLater(
-            () async => await extractTarGz(
-                Stream.fromIterable(
-                  [
-                    [10, 20, 30] // Not a good gz stream.
-                  ],
-                ),
-                tempDir),
-            throwsA(isA<FileSystemException>()));
-      });
-    });
   });
 }
 

@@ -4,9 +4,6 @@
 
 /// Helper functionality for invoking Git.
 import 'dart:async';
-import 'dart:io';
-
-import 'package:stack_trace/stack_trace.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
@@ -113,10 +110,9 @@ bool _tryGitCommand(String command) {
     var result = runProcessSync(command, ['--version']);
     var regexp = RegExp('^git version');
     return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
-  } on ProcessException catch (error, stackTrace) {
-    var chain = Chain.forTrace(stackTrace);
+  } on RunProcessException catch (err) {
     // If the process failed, they probably don't have it.
-    log.error('Git command is not "$command": $error\n$chain');
+    log.error('Git command is not "$command": $err');
     return false;
   }
 }

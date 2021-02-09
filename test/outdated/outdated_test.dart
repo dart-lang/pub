@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
@@ -9,14 +11,11 @@ import '../test_pub.dart';
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
 Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment,
-    dynamic exitCode = 0,
-    dynamic stdErr = isEmpty}) async {
+    {Map<String, String> environment}) async {
   final process =
       await startPub(args: ['outdated', ...args], environment: environment);
-  await process.shouldExit(exitCode);
+  final exitCode = await process.exitCode;
 
-  expect(await process.stderr.rest.toList(), stdErr);
   buffer.writeln([
     '\$ pub outdated ${args.join(' ')}',
     ...await process.stdout.rest.where((line) {
@@ -25,6 +24,16 @@ Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
       return !line.startsWith('Downloading ');
     }).toList(),
   ].join('\n'));
+  final stderrLines = await process.stderr.rest.toList();
+  for (final line in stderrLines) {
+    final sanitized = line
+        .replaceAll(d.sandbox, r'$SANDBOX')
+        .replaceAll(Platform.pathSeparator, '/');
+    buffer.writeln('[ERR] $sanitized');
+  }
+  if (exitCode != 0) {
+    buffer.writeln('[Exit code] $exitCode');
+  }
   buffer.write('\n');
 }
 
@@ -65,10 +74,12 @@ Future<void> main() async {
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();
-    await runPubOutdated([], buffer,
-        exitCode: isNot(0),
-        stdErr: contains(
-            startsWith('Could not find a file named "pubspec.yaml" in ')));
+    await runPubOutdated(
+      [],
+      buffer,
+    );
+    expectMatchesGoldenFile(
+        buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
   });
 
   test('no lockfile', () async {
@@ -258,6 +269,43 @@ Future<void> main() async {
         environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
   });
 
+  test('null-safety no resolution', () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('foo', '2.0.0-nullsafety.0', deps: {
+        'bar': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('bar', '2.0.0-nullsafety.0', deps: {
+        'foo': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      }));
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.0',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+
+    await variations('null_safety_no_resolution',
+        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+  });
+
   test('overridden dependencies', () async {
     ensureGit();
     await servePackages(
@@ -362,20 +410,26 @@ Future<void> main() async {
     await variations('prereleases');
   });
 
-  test('ignores SDK dependencies', () async {
+  test('Handles SDK dependencies', () async {
     await servePackages((builder) => builder
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '1.1.0')
-      ..serve('foo', '2.0.0'));
+      ..serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+      })
+      ..serve('foo', '1.1.0', pubspec: {
+        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+      })
+      ..serve('foo', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+      }));
 
     await d.dir('flutter-root', [
       d.file('version', '1.2.3'),
       d.dir('packages', [
         d.dir('flutter', [
-          d.libPubspec('flutter', '1.0.0'),
+          d.libPubspec('flutter', '1.0.0', sdk: '>=2.12.0 <3.0.0'),
         ]),
         d.dir('flutter_test', [
-          d.libPubspec('flutter_test', '1.0.0'),
+          d.libPubspec('flutter_test', '1.0.0', sdk: '>=2.10.0 <3.0.0'),
         ]),
       ]),
     ]).create();
@@ -384,6 +438,7 @@ Future<void> main() async {
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
         'dependencies': {
           'foo': '^1.0.0',
           'flutter': {
@@ -401,10 +456,22 @@ Future<void> main() async {
 
     await pubGet(environment: {
       'FLUTTER_ROOT': d.path('flutter-root'),
+      '_PUB_TEST_SDK_VERSION': '2.13.0'
     });
 
-    await variations('ignores_sdk_dependencies', environment: {
+    await variations('handles_sdk_dependencies', environment: {
       'FLUTTER_ROOT': d.path('flutter-root'),
+      '_PUB_TEST_SDK_VERSION': '2.13.0',
+      // To test that the reproduction command is reflected correctly.
+      'PUB_ENVIRONMENT': 'flutter_cli:get',
     });
+  });
+
+  test("doesn't allow arguments. Handles bad flags", () async {
+    final sb = StringBuffer();
+    await runPubOutdated(['random_argument'], sb);
+    await runPubOutdated(['--bad_flag'], sb);
+    expectMatchesGoldenFile(
+        sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
   });
 }

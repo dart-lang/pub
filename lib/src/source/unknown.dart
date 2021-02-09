@@ -61,17 +61,13 @@ class _BoundUnknownSource extends BoundSource {
   _BoundUnknownSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) =>
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
       throw UnsupportedError(
           "Cannot get package versions from unknown source '${source.name}'.");
 
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw UnsupportedError(
       "Cannot describe a package from unknown source '${source.name}'.");
-
-  @override
-  Future get(PackageId id, String symlink) =>
-      throw UnsupportedError("Cannot get an unknown source '${source.name}'.");
 
   /// Returns the directory where this package can be found locally.
   @override

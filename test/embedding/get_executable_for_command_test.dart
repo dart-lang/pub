@@ -69,6 +69,33 @@ Future<void> main() async {
         errorMessage: contains('Could not find file `bar${separator}m.dart`'));
   });
 
+  test('Error message when pubspec is broken', () async {
+    await d.dir('foo', [
+      d.pubspec({
+        'name': 'broken name',
+      }),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'dependencies': {
+          'foo': {
+            'path': '../foo',
+          },
+        },
+      }),
+    ]).create();
+    final dir = d.path(appPath);
+    await testGetExecutable('foo:app', dir,
+        errorMessage: allOf(
+            contains(
+                'Error on line 1, column 9 of ${d.sandbox}${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.'),
+            contains(
+                '{"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}')));
+  });
+
   test('Does `pub get` if there is a pubspec.yaml', () async {
     await d.dir(appPath, [
       d.pubspec({

@@ -8,8 +8,6 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -26,6 +24,7 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'packages_file.dart' as packages_file;
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -103,8 +102,8 @@ class Entrypoint {
   /// The package graph for the application and all of its transitive
   /// dependencies.
   ///
-  /// Throws a [DataError] if the `.packages` file isn't up-to-date relative to
-  /// the pubspec and the lockfile.
+  /// Throws a [DataError] if the `.dart_tool/package_config.json` file isn't
+  /// up-to-date relative to the pubspec and the lockfile.
   PackageGraph get packageGraph {
     if (_packageGraph != null) return _packageGraph;
 
@@ -127,10 +126,11 @@ class Entrypoint {
   String get _configRoot =>
       isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
 
-  /// The path to the entrypoint's "packages" directory.
-  String get packagesPath => root.path('packages');
-
   /// The path to the entrypoint's ".packages" file.
+  ///
+  /// This file is being slowly deprecated in favor of
+  /// `.dart_tool/package_config.json`. Pub will still create it, but will
+  /// not require it or make use of it within pub.
   String get packagesFile => p.join(_configRoot, '.packages');
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
@@ -223,7 +223,7 @@ class Entrypoint {
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
     SolveType type, {
-    List<String> useLatest,
+    Iterable<String> unlock,
     bool dryRun = false,
     bool precompile = false,
   }) async {
@@ -237,7 +237,7 @@ class Entrypoint {
         cache,
         root,
         lockFile: lockFile,
-        useLatest: useLatest,
+        unlock: unlock,
       ),
     );
 
@@ -259,14 +259,14 @@ class Entrypoint {
       }
     }
 
-    result.showReport(type);
+    await result.showReport(type, cache);
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, dryRun: dryRun);
+    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't
@@ -353,7 +353,7 @@ class Entrypoint {
     final package = executable.package;
     await dart.snapshot(
         resolveExecutable(executable), snapshotPathOfExecutable(executable),
-        packagesFile: p.toUri(packagesFile),
+        packageConfigFile: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
@@ -427,8 +427,9 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id) {
-    return http.withDependencyType(root.dependencyType(id.name), () async {
+  Future<void> _get(PackageId id) async {
+    return await http.withDependencyType(root.dependencyType(id.name),
+        () async {
       if (id.isRoot) return;
 
       var source = cache.source(id.source);
@@ -436,9 +437,11 @@ class Entrypoint {
     });
   }
 
-  /// Throws a [DataError] if the `.packages` file or the
-  /// `.dart_tool/package_config.json` file doesn't exist or if it's out-of-date
-  /// relative to the lockfile or the pubspec.
+  /// Throws a [DataError] if the `.dart_tool/package_config.json` file doesn't
+  /// exist or if it's out-of-date relative to the lockfile or the pubspec.
+  ///
+  /// A `.packages` file is not required. But if it exists it is checked for
+  /// consistency with the pubspec.lock.
   void assertUpToDate() {
     if (isCached) return;
 
@@ -452,9 +455,6 @@ class Entrypoint {
         'Starting with Dart 2.7, the package_config.json file configures '
         'resolution of package import URIs; run "pub get" to generate it.',
       );
-    }
-    if (!entryExists(packagesFile)) {
-      dataError('No .packages file found, please run "pub get" first.');
     }
 
     // Manually parse the lockfile because a full YAML parse is relatively slow
@@ -483,12 +483,14 @@ class Entrypoint {
       }
     }
 
-    var packagesModified = File(packagesFile).lastModifiedSync();
-    if (packagesModified.isBefore(lockFileModified)) {
-      _checkPackagesFileUpToDate();
-      touch(packagesFile);
-    } else if (touchedLockFile) {
-      touch(packagesFile);
+    if (fileExists(packagesFile)) {
+      var packagesModified = File(packagesFile).lastModifiedSync();
+      if (packagesModified.isBefore(lockFileModified)) {
+        _checkPackagesFileUpToDate();
+        touch(packagesFile);
+      } else if (touchedLockFile) {
+        touch(packagesFile);
+      }
     }
 
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
@@ -596,11 +598,11 @@ class Entrypoint {
     // Check that [packagePathsMapping] does not contain more packages than what
     // is required. This could lead to import statements working, when they are
     // not supposed to work.
-    final hasExtraMappings = packagePathsMapping.keys.every((packageName) {
+    final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
       return packageName == root.name ||
           lockFile.packages.containsKey(packageName);
     });
-    if (!hasExtraMappings) {
+    if (hasExtraMappings) {
       return false;
     }
 
@@ -619,8 +621,7 @@ class Entrypoint {
       }
 
       final source = cache.source(lockFileId.source);
-      final lockFilePackagePath =
-          p.join(root.dir, source.getDirectory(lockFileId));
+      final lockFilePackagePath = root.path(source.getDirectory(lockFileId));
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
@@ -719,8 +720,18 @@ class Entrypoint {
     }
 
     final packagePathsMapping = <String, String>{};
-    for (final pkg in cfg.packages) {
-      // Pub always sets packageUri = lib/
+
+    // We allow the package called 'flutter_gen' to be injected into
+    // package_config.
+    //
+    // This is somewhat a hack. But it allows flutter to generate code in a
+    // package as it likes.
+    //
+    // See https://github.com/flutter/flutter/issues/73870 .
+    final packagesToCheck =
+        cfg.packages.where((package) => package.name != 'flutter_gen');
+    for (final pkg in packagesToCheck) {
+      // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
         badPackageConfig();
       }
