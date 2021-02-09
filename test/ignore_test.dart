@@ -96,11 +96,12 @@ void main() {
               }
               fail('Expected "$path" to NOT be ignored, it was IGNORED!');
             }
-          }, skip: c.skipOnWindows && Platform.isWindows),
+          },
+              skip: Platform.isMacOS || // System `git` on mac has issues...
+                  c.skipOnWindows && Platform.isWindows),
         );
       }
     },
-    skip: Platform.isMacOS, // System `git` on mac has issues...
   );
 }
 
