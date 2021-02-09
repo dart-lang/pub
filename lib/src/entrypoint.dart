@@ -745,6 +745,7 @@ class Entrypoint {
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
     for (final pkg in cfg.packages) {
+      if (pkg.name == root.name) continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(
