@@ -851,8 +851,8 @@ Iterable<String> _filter(List<String> input) {
       // slashes to be stable across platforms.
       .map((line) {
     line = line
-        .replaceAll(Platform.pathSeparator, '/')
-        .replaceAll(d.sandbox, r'$SANDBOX');
+        .replaceAll(d.sandbox, r'$SANDBOX')
+        .replaceAll(Platform.pathSeparator, '/');
     if (globalPackageServer != null) {
       line = line.replaceAll(globalPackageServer.port.toString(), '\$PORT');
     }
