@@ -13,7 +13,6 @@
 // limitations under the License.
 import 'dart:io';
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:pub/src/ignore.dart';
 
@@ -48,64 +47,61 @@ void main() {
         workingDirectory: workingDirectory);
   }
 
-  final gitVersionStdOut = runGit(['--version']).stdout as String;
-  final gitVersion = Version.parse(
-      gitVersionStdOut.trim().split(' ')[2].split('.').take(3).join('.'));
-  print('detected git version: $gitVersionStdOut');
-  group('git', () {
-    Directory tmp;
-    setUpAll(() async {
-      tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
+  group(
+    'git',
+    () {
+      Directory tmp;
+      setUpAll(() async {
+        tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
 
-      final ret = runGit(['init'], workingDirectory: tmp.path);
-      expect(ret.exitCode, equals(0),
-          reason:
-              'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
-    });
-    tearDownAll(() async {
-      await tmp.delete(recursive: true);
-      tmp = null;
-    });
-    tearDown(() async {
-      runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
-    });
-    for (final c in testData) {
-      c.paths.forEach(
-        (path, expected) => test(
-            '${c.name}: git check-ignore "$path" is ${expected ? 'IGNORED' : 'NOT ignored'}',
-            () async {
-          for (final directory in c.patterns.keys) {
-            final resolvedDirectory =
-                directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
-            Directory.fromUri(resolvedDirectory).createSync(recursive: true);
-            final gitIgnore =
-                File.fromUri(resolvedDirectory.resolve('.gitignore'));
-            gitIgnore
-                .writeAsStringSync(c.patterns[directory].join('\n') + '\n');
-          }
-          final process = runGit(
-              ['-C', tmp.path, 'check-ignore', '--no-index', path],
-              workingDirectory: tmp.path);
-          final exitCode = process.exitCode;
-          expect(
-            exitCode,
-            anyOf(0, 1),
-            reason: 'Running "git check-ignore" failed',
-          );
-          final ignored = exitCode == 0;
-          if (expected != ignored) {
-            if (expected) {
-              fail('Expected "$path" to be ignored, it was NOT!');
+        final ret = runGit(['init'], workingDirectory: tmp.path);
+        expect(ret.exitCode, equals(0),
+            reason:
+                'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
+      });
+      tearDownAll(() async {
+        await tmp.delete(recursive: true);
+        tmp = null;
+      });
+      tearDown(() async {
+        runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
+      });
+      for (final c in testData) {
+        c.paths.forEach(
+          (path, expected) => test(
+              '${c.name}: git check-ignore "$path" is ${expected ? 'IGNORED' : 'NOT ignored'}',
+              () async {
+            for (final directory in c.patterns.keys) {
+              final resolvedDirectory =
+                  directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
+              Directory.fromUri(resolvedDirectory).createSync(recursive: true);
+              final gitIgnore =
+                  File.fromUri(resolvedDirectory.resolve('.gitignore'));
+              gitIgnore
+                  .writeAsStringSync(c.patterns[directory].join('\n') + '\n');
             }
-            fail('Expected "$path" to NOT be ignored, it was IGNORED!');
-          }
-        }),
-      );
-    }
-  },
-      skip: gitVersion < Version(2, 9, 0)
-          ? 'Use a newer git to run these tests'
-          : false);
+            final process = runGit(
+                ['-C', tmp.path, 'check-ignore', '--no-index', path],
+                workingDirectory: tmp.path);
+            final exitCode = process.exitCode;
+            expect(
+              exitCode,
+              anyOf(0, 1),
+              reason: 'Running "git check-ignore" failed',
+            );
+            final ignored = exitCode == 0;
+            if (expected != ignored) {
+              if (expected) {
+                fail('Expected "$path" to be ignored, it was NOT!');
+              }
+              fail('Expected "$path" to NOT be ignored, it was IGNORED!');
+            }
+          }, skip: c.skipOnWindows && Platform.isWindows),
+        );
+      }
+    },
+    skip: Platform.isMacOS, // System `git` on mac has issues...
+  );
 }
 
 class TestData {
@@ -121,9 +117,23 @@ class TestData {
 
   final bool hasWarning;
 
-  TestData(this.name, this.patterns, this.paths, {this.hasWarning = false});
-  TestData.single(String pattern, this.paths, {this.hasWarning = false})
-      : name = '"${pattern.replaceAll('\n', '\\n')}"',
+  /// Many of the tests don't play well on windows. Simply skip them.
+  final bool skipOnWindows;
+
+  TestData(
+    this.name,
+    this.patterns,
+    this.paths, {
+    this.hasWarning = false,
+    this.skipOnWindows = false,
+  });
+
+  TestData.single(
+    String pattern,
+    this.paths, {
+    this.hasWarning = false,
+    this.skipOnWindows = false,
+  })  : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = {
           '': [pattern]
         };
@@ -296,68 +306,101 @@ final testData = [
   }),
   // Special characters from RegExp that are not special in .gitignore
   for (final c in r'(){}+.^$|'.split('')) ...[
-    TestData.single('${c}file.txt', {
-      '${c}file.txt': true,
-      'file.txt': false,
-      'file.txt$c': false,
-    }),
-    TestData.single('file.txt$c', {
-      'file.txt$c': true,
-      'file.txt': false,
-      '${c}file.txt': false,
-    }),
-    TestData.single('fi${c}l)e.txt', {
-      'fi${c}l)e.txt': true,
-      'f${c}il)e.txt': false,
-      'fil)e.txt': false,
-    }),
-    TestData.single('fi${c}l}e.txt', {
-      'fi${c}l}e.txt': true,
-      'f${c}il}e.txt': false,
-      'fil}e.txt': false,
-    }),
+    TestData.single(
+        '${c}file.txt',
+        {
+          '${c}file.txt': true,
+          'file.txt': false,
+          'file.txt$c': false,
+        },
+        skipOnWindows: c == '^' || c == '|'),
+    TestData.single(
+        'file.txt$c',
+        {
+          'file.txt$c': true,
+          'file.txt': false,
+          '${c}file.txt': false,
+        },
+        skipOnWindows: c == '^' || c == '|'),
+    TestData.single(
+        'fi${c}l)e.txt',
+        {
+          'fi${c}l)e.txt': true,
+          'f${c}il)e.txt': false,
+          'fil)e.txt': false,
+        },
+        skipOnWindows: c == '^' || c == '|'),
+    TestData.single(
+        'fi${c}l}e.txt',
+        {
+          'fi${c}l}e.txt': true,
+          'f${c}il}e.txt': false,
+          'fil}e.txt': false,
+        },
+        skipOnWindows: c == '^' || c == '|'),
   ],
   // Special characters from RegExp that are also special in .gitignore
   // can be escaped.
   for (final c in r'[]*?\'.split('')) ...[
-    TestData.single('\\${c}file.txt', {
-      '${c}file.txt': true,
-      'file.txt': false,
-      'file.txt$c': false,
-    }),
-    TestData.single('file.txt\\$c', {
-      'file.txt$c': true,
-      'file.txt': false,
-      '${c}file.txt': false,
-    }),
-    TestData.single('fi\\${c}l)e.txt', {
-      'fi${c}l)e.txt': true,
-      'f${c}il)e.txt': false,
-      'fil)e.txt': false,
-    }),
-    TestData.single('fi\\${c}l}e.txt', {
-      'fi${c}l}e.txt': true,
-      'f${c}il}e.txt': false,
-      'fil}e.txt': false,
-    }),
+    TestData.single(
+        '\\${c}file.txt',
+        {
+          '${c}file.txt': true,
+          'file.txt': false,
+          'file.txt$c': false,
+        },
+        skipOnWindows: c == r'\'),
+    TestData.single(
+        'file.txt\\$c',
+        {
+          'file.txt$c': true,
+          'file.txt': false,
+          '${c}file.txt': false,
+        },
+        skipOnWindows: c == r'\'),
+    TestData.single(
+        'fi\\${c}l)e.txt',
+        {
+          'fi${c}l)e.txt': true,
+          'f${c}il)e.txt': false,
+          'fil)e.txt': false,
+        },
+        skipOnWindows: c == r'\'),
+    TestData.single(
+        'fi\\${c}l}e.txt',
+        {
+          'fi${c}l}e.txt': true,
+          'f${c}il}e.txt': false,
+          'fil}e.txt': false,
+        },
+        skipOnWindows: c == r'\'),
   ],
   // Special characters from RegExp can always be escaped
   for (final c in r'()[]{}*+?.^$|\'.split('')) ...[
-    TestData.single('\\${c}file.txt', {
-      '${c}file.txt': true,
-      'file.txt': false,
-      'file.txt$c': false,
-    }),
-    TestData.single('file.txt\\$c', {
-      'file.txt$c': true,
-      'file.txt': false,
-      '${c}file.txt': false,
-    }),
-    TestData.single('file\\$c.txt', {
-      'file$c.txt': true,
-      'file.txt': false,
-      '${c}file.txt': false,
-    }),
+    TestData.single(
+        '\\${c}file.txt',
+        {
+          '${c}file.txt': true,
+          'file.txt': false,
+          'file.txt$c': false,
+        },
+        skipOnWindows: c == '^' || c == '|' || c == r'\'),
+    TestData.single(
+        'file.txt\\$c',
+        {
+          'file.txt$c': true,
+          'file.txt': false,
+          '${c}file.txt': false,
+        },
+        skipOnWindows: c == '^' || c == '|' || c == r'\'),
+    TestData.single(
+        'file\\$c.txt',
+        {
+          'file$c.txt': true,
+          'file.txt': false,
+          '${c}file.txt': false,
+        },
+        skipOnWindows: c == '^' || c == '|' || c == r'\'),
   ],
   // Ending in backslash (unescaped)
   TestData.single(
@@ -368,7 +411,8 @@ final testData = [
         'file.txt\n': false,
         'file.txt': false,
       },
-      hasWarning: true),
+      hasWarning: true,
+      skipOnWindows: true),
   TestData.single(r'file.txt\n', {
     'file.txt\\\n': false,
     'file.txt ': false,
@@ -494,7 +538,8 @@ final testData = [
         'a[\\]': false,
         'c': false,
       },
-      hasWarning: true),
+      hasWarning: true,
+      skipOnWindows: true),
   TestData.single(
       r'a[\\\]',
       {
@@ -506,29 +551,39 @@ final testData = [
         'a[\\]': false,
         'c': false,
       },
-      hasWarning: true),
+      hasWarning: true,
+      skipOnWindows: true),
   // Character classes with special characters
-  TestData.single(r'a[\\]', {
-    'a': false,
-    'ab': false,
-    'a[]': false,
-    'a[': false,
-    'a\\': true,
-  }),
-  TestData.single(r'a[^b]', {
-    'a': false,
-    'ab': false,
-    'ac': true,
-    'a[': true,
-    'a\\': true,
-  }),
-  TestData.single(r'a[!b]', {
-    'a': false,
-    'ab': false,
-    'ac': true,
-    'a[': true,
-    'a\\': true,
-  }),
+  TestData.single(
+      r'a[\\]',
+      {
+        'a': false,
+        'ab': false,
+        'a[]': false,
+        'a[': false,
+        'a\\': true,
+      },
+      skipOnWindows: true),
+  TestData.single(
+      r'a[^b]',
+      {
+        'a': false,
+        'ab': false,
+        'ac': true,
+        'a[': true,
+        'a\\': true,
+      },
+      skipOnWindows: true),
+  TestData.single(
+      r'a[!b]',
+      {
+        'a': false,
+        'ab': false,
+        'ac': true,
+        'a[': true,
+        'a\\': true,
+      },
+      skipOnWindows: true),
   TestData.single(r'a[[]', {
     'a': false,
     'ab': false,

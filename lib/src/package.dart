@@ -203,24 +203,33 @@ class Package {
 
   static final _pubignorePathEnding = '${Platform.pathSeparator}.pubignore';
 
+  List<String> _pubignoreFiles;
+
+  // All the .pubignore-files in this package.
+  List<String> get pubignoreFiles =>
+      _pubignoreFiles ??
+      listDir(dir, recursive: true, includeHidden: true)
+          .where((e) => e.endsWith(_pubignorePathEnding))
+          .toList();
+
   Ignore _pubignores;
 
-  /// Computes an [Ignore] object representing all the .pubignores in this
-  /// package.
+  /// Returns an [Ignore] object representing all the [pubignoreFiles].
   Ignore get pubignores {
     if (_pubignores != null) {
       return _pubignores;
     }
-    var pubignores = listDir(dir, recursive: true, allowed: ['.pubignore'])
-        .where((e) => e.endsWith(_pubignorePathEnding));
     final mapping = <String, List<String>>{};
-    for (final pubignore in pubignores) {
+
+    for (final pubignore in pubignoreFiles) {
       final relative = pubignore.substring(dir.length + 1);
       if (Platform.pathSeparator != '/') {
         relative.replaceAll(Platform.pathSeparator, '/');
       }
       final relativePath = relative.substring(
-          0, max(0, relative.length - _pubignorePathEnding.length));
+        0,
+        max(0, relative.length - _pubignorePathEnding.length),
+      );
       mapping[relativePath] = [readTextFile(pubignore)];
     }
     return _pubignores = Ignore(
@@ -238,7 +247,8 @@ class Package {
   /// [recursive] is true, this will return all files beneath that path;
   /// otherwise, it will only return files one level beneath it.
   ///
-  /// This will take .gitignore and .pubignore files into account.
+  /// This will take .pubignore files into account. And if no such are found and
+  /// in a git repo it will take .gitignore into account.
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
@@ -260,50 +270,54 @@ class Package {
     // path package, since re-parsing a path is very expensive relative to
     // string operations.
     Iterable<String> files;
-    if (inGitRepo) {
-      // List all files that aren't gitignored, including those not checked in
-      // to Git. Use [beneath] as the working dir rather than passing it as a
-      // parameter so that we list a submodule using its own git logic.
-      files = git.runSync(
-          ['ls-files', '--cached', '--others', '--exclude-standard'],
-          workingDir: beneath);
 
-      // If we're not listing recursively, strip out paths that contain
-      // separators. Since git always prints forward slashes, we always detect
-      // them.
-      if (!recursive) files = files.where((file) => !file.contains('/'));
+    if (pubignoreFiles.isNotEmpty) {
+      // There are .pubignores - use them.
+      final ignores = pubignores;
 
-      // Git prints files relative to [beneath], but we want them relative to
-      // the pub's working directory. It also prints forward slashes on Windows
-      // which we normalize away for easier testing.
-      //
-      // Git lists empty directories as "./", which we skip so we don't keep
-      // trying to recurse into the same directory. Normally git doesn't allow
-      // totally empty directories, but a submodule that's not checked out
-      // behaves like one.
-      files = files.where((file) => file != './').map((file) {
-        return Platform.isWindows
-            ? "$beneath\\${file.replaceAll("/", "\\")}"
-            : '$beneath/$file';
-      }).expand((file) {
-        if (fileExists(file)) return [file];
-        if (!dirExists(file)) return [];
-
-        // `git ls-files` only returns files, except in the case of a submodule
-        // or a symlink to a directory.
-        return recursive ? _listWithinDir(file) : [file];
-      });
-    } else {
       files = listDir(beneath,
-          recursive: recursive, includeDirs: false, allowed: _allowedFiles);
-    }
-    final ignores = pubignores;
+              recursive: recursive, includeDirs: false, allowed: _allowedFiles)
+          .where((file) => !ignores.ignores(Platform.pathSeparator == '/'
+              ? file.substring(dir.length + 1)
+              :
+              // convert '\' to '/' on windows.
+              p.toUri(file.substring(dir.length + 1)).path));
+    } else {
+      if (inGitRepo) {
+        // List all files that aren't gitignored, including those not checked in
+        // to Git. Use [beneath] as the working dir rather than passing it as a
+        // parameter so that we list a submodule using its own git logic.
+        files = git.runSync(
+            ['ls-files', '--cached', '--others', '--exclude-standard'],
+            workingDir: beneath);
 
-    files = files.where((file) => !ignores.ignores(Platform.pathSeparator == '/'
-        ? file.substring(dir.length + 1)
-        :
-        // convert '\' to '/' on windows.
-        p.toUri(file.substring(dir.length + 1)).path));
+        // Git prints files relative to [beneath], but we want them relative to
+        // the pub's working directory. It also prints forward slashes on Windows
+        // which we normalize away for easier testing.
+        //
+        // Git lists empty directories as "./", which we skip so we don't keep
+        // trying to recurse into the same directory. Normally git doesn't allow
+        // totally empty directories, but a submodule that's not checked out
+        // behaves like one.
+        files = files.where((file) => file != './').map((file) {
+          return Platform.isWindows
+              ? "$beneath\\${file.replaceAll("/", "\\")}"
+              : '$beneath/$file';
+        }).expand((file) {
+          if (fileExists(file)) return [file];
+          if (!dirExists(file)) return <String>[];
+
+          // `git ls-files` only returns files, except in the case of a submodule
+          // or a symlink to a directory.
+          return recursive ? _listWithinDir(file) : [file];
+        });
+      } else {
+        // No git, no .pubignore.
+        files = listDir(beneath,
+            recursive: recursive, includeDirs: false, allowed: _allowedFiles);
+      }
+    }
+
     return files.where((file) {
       // Using substring here is generally problematic in cases where dir has
       // one or more trailing slashes. If you do listDir("foo"), you'll get back

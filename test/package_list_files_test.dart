@@ -153,6 +153,31 @@ void main() {
 
     commonTests();
   });
+
+  test('.pubignore overrides .gitignore', () async {
+    ensureGit();
+    final repo = d.git(appPath, [
+      d.appPubspec(),
+      d.file('.gitignore', '*.txt'),
+      d.file('.pubignore', '*.text'),
+      d.file('ignored_by_pubignore.text', ''),
+      d.file('not_ignored_by_gitignore.txt', 'contents'),
+      d.file('.hidden'),
+    ]);
+    await repo.create();
+    createEntrypoint();
+    await d.dir(appPath, [
+      d.file('ignored_by_gitignore.txt', 'contents'),
+      d.file('ignored_by_pubignore2.text', ''),
+    ]).create();
+
+    createEntrypoint();
+    expect(entrypoint.root.listFiles(), {
+      p.join(root, 'pubspec.yaml'),
+      p.join(root, 'not_ignored_by_gitignore.txt'),
+      p.join(root, 'ignored_by_gitignore.txt'),
+    });
+  });
 }
 
 void createEntrypoint([String path]) {
