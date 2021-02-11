@@ -874,10 +874,10 @@ Future<void> runPubIntoBuffer(
   );
   final exitCode = await process.exitCode;
 
-  buffer.writeln([
+  buffer.writeln(_filter([
     '\$ pub ${args.join(' ')}',
-    ..._filter(await process.stdout.rest.toList()),
-  ].join('\n'));
+    ...await process.stdout.rest.toList(),
+  ]).join('\n'));
   for (final line in _filter(await process.stderr.rest.toList())) {
     buffer.writeln('[ERR] $line');
   }
