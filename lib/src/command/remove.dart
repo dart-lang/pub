@@ -42,7 +42,7 @@ class RemoveCommand extends PubCommand {
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

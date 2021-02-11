@@ -65,7 +65,7 @@ class LishCommand extends PubCommand {
         hide: true);
 
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   Future<void> _publish(List<int> packageBytes) async {

@@ -109,7 +109,7 @@ class OutdatedCommand extends PubCommand {
           '(defaults to off in --mode=null-safety).',
     );
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

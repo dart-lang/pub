@@ -33,7 +33,7 @@ Usage: pub run <executable> [arguments...]
                                         slower startup).
     --[no-]sound-null-safety            Override the default null safety
                                         execution mode.
--C, --directory=<dir>                   Run this in <dir>.
+-C, --directory=<dir>                   Run this in the directory<dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.

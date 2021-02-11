@@ -36,7 +36,7 @@ class UploaderCommand extends PubCommand {
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

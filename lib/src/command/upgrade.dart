@@ -63,7 +63,7 @@ class UpgradeCommand extends PubCommand {
       negatable: false,
     );
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.

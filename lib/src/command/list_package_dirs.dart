@@ -27,7 +27,7 @@ class ListPackageDirsCommand extends PubCommand {
     argParser.addOption('format',
         help: 'How output should be displayed.', allowed: ['json']);
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in <dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

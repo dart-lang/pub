@@ -115,7 +115,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     argParser.addOption(
       'directory',
       abbr: 'C',
-      help: 'Run the subcommand in <dir>.',
+      help: 'Run the subcommand in the directory<dir>.',
       defaultsTo: '.',
       valueHelp: 'dir',
     );
