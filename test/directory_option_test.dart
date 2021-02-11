@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'descriptor.dart';
@@ -63,6 +64,15 @@ main() => print('Hi');
     await run(['add', '--directory=$appPath', 'foo']);
     // Try the top-level version also.
     await run(['-C', appPath, 'add', 'bar']);
+    // When both top-level and after command, the one after command takes
+    // precedence.
+    await run([
+      '-C',
+      p.join(appPath, 'example'),
+      'get',
+      '--directory=$appPath',
+      'bar',
+    ]);
     await run(['remove', 'bar', '-C', appPath]);
     await run(['get', 'bar', '-C', appPath]);
     await run(['get', 'bar', '-C', '$appPath/example']);

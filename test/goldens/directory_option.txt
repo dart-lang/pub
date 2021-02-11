@@ -8,6 +8,10 @@ Resolving dependencies...
 + bar 1.2.3
 Changed 1 dependency in myapp!
 
+$ pub -C myapp/example get --directory=myapp bar
+Resolving dependencies...
+Got dependencies in myapp!
+
 $ pub remove bar -C myapp
 Resolving dependencies...
 These packages are no longer being depended on:
