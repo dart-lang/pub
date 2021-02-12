@@ -1,4 +1,4 @@
-$ pub outdated 
+$ pub outdated
 [ERR] Could not find a file named "pubspec.yaml" in "$SANDBOX/myapp".
 [Exit code] 66
 

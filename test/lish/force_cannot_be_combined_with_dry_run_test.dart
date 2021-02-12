@@ -16,9 +16,10 @@ void main() {
 Cannot use both --force and --dry-run.
 
 Usage: pub publish [options]
--h, --help       Print this usage information.
--n, --dry-run    Validate but do not publish the package.
--f, --force      Publish without confirmation if there are no errors.
+-h, --help               Print this usage information.
+-n, --dry-run            Validate but do not publish the package.
+-f, --force              Publish without confirmation if there are no errors.
+-C, --directory=<dir>    Run this in the directory<dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-lish for detailed documentation.

@@ -841,3 +841,48 @@ Matcher matchesMultiple(String pattern, int times) {
 
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
+
+Iterable<String> _filter(List<String> input) {
+  return input
+      // Downloading order is not deterministic, so to avoid flakiness we filter
+      // out these lines.
+      .where((line) => !line.startsWith('Downloading '))
+      // Any paths in output should be relative to the sandbox and with forward
+      // slashes to be stable across platforms.
+      .map((line) {
+    line = line
+        .replaceAll(d.sandbox, r'$SANDBOX')
+        .replaceAll(Platform.pathSeparator, '/');
+    if (globalPackageServer != null) {
+      line = line.replaceAll(globalPackageServer.port.toString(), '\$PORT');
+    }
+    return line;
+  });
+}
+
+/// Runs `pub outdated [args]` and appends the output to [buffer].
+Future<void> runPubIntoBuffer(
+  List<String> args,
+  StringBuffer buffer, {
+  Map<String, String> environment,
+  String workingDirectory,
+}) async {
+  final process = await startPub(
+    args: args,
+    environment: environment,
+    workingDirectory: workingDirectory,
+  );
+  final exitCode = await process.exitCode;
+
+  buffer.writeln(_filter([
+    '\$ pub ${args.join(' ')}',
+    ...await process.stdout.rest.toList(),
+  ]).join('\n'));
+  for (final line in _filter(await process.stderr.rest.toList())) {
+    buffer.writeln('[ERR] $line');
+  }
+  if (exitCode != 0) {
+    buffer.writeln('[Exit code] $exitCode');
+  }
+  buffer.write('\n');
+}

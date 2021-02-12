@@ -63,6 +63,9 @@ class LishCommand extends PubCommand {
     argParser.addOption('server',
         help: 'The package server to which to upload this package.',
         hide: true);
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   Future<void> _publish(List<int> packageBytes) async {

@@ -32,11 +32,21 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
+  @override
+  String get directory => argResults['directory'];
+
   PubEmbeddableCommand() : super() {
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run the subcommand in the directory<dir>.',
+      defaultsTo: '.',
+      valueHelp: 'dir',
+    );
     // This list is intentionally shorter than the one in
     // pub_command_runner.dart.
     //

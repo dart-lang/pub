@@ -169,11 +169,6 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
-  /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources),
-        isGlobal = false;
-
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources),
