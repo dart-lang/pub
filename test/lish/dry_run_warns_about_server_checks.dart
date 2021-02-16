@@ -12,8 +12,7 @@ void main() {
     await d.validPackage.create();
     await runPub(
       args: ['publish', '--dry-run'],
-      output: contains(
-          'The server might run further checks on the package before accepting it.'),
+      output: contains('The server may enforce additional checks.'),
     );
   });
 }
