@@ -158,6 +158,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       overrideExitCode(exit_codes.DATA);
       return;
     } else if (dryRun) {
+      log.message('The server may enforce additional checks.');
       return;
     } else {
       await _publish(await packageBytesFuture);

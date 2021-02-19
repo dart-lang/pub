@@ -68,6 +68,7 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 |-- lib
 |   '-- test_pkg.dart
 '-- pubspec.yaml
+The server may enforce additional checks.
 [ERR] 
 [ERR] Package has 0 warnings.
 
