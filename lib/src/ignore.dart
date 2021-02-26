@@ -49,7 +49,7 @@ import 'package:meta/meta.dart';
 /// [1]: https://git-scm.com/docs/gitignore
 @sealed
 class Ignore {
-  final List<GitIgnoreRule> _rules;
+  final List<_IgnoreRule> _rules;
 
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]
   /// patterns.
@@ -291,12 +291,12 @@ class Ignore {
   }
 }
 
-class GitIgnoreParseResult {
+class _IgnoreParseResult {
   // The parsed pattern.
   final String pattern;
 
   // The resulting matching rule. `null` if the pattern was empty or invalid.
-  final GitIgnoreRule rule;
+  final _IgnoreRule rule;
 
   // An invalid pattern is also considered empty.
   bool get empty => rule == null;
@@ -305,14 +305,14 @@ class GitIgnoreParseResult {
   // For invalid patterns this contains a description of the problem.
   final FormatException exception;
 
-  GitIgnoreParseResult(this.pattern, this.rule) : exception = null;
-  GitIgnoreParseResult.invalid(this.pattern, this.exception) : rule = null;
-  GitIgnoreParseResult.empty(this.pattern)
+  _IgnoreParseResult(this.pattern, this.rule) : exception = null;
+  _IgnoreParseResult.invalid(this.pattern, this.exception) : rule = null;
+  _IgnoreParseResult.empty(this.pattern)
       : rule = null,
         exception = null;
 }
 
-class GitIgnoreRule {
+class _IgnoreRule {
   /// A regular expression that represents this rule.
   final RegExp pattern;
   final bool negative;
@@ -320,7 +320,7 @@ class GitIgnoreRule {
   /// The String this pattern was generated from.
   final String original;
 
-  GitIgnoreRule(this.pattern, this.negative, this.original);
+  _IgnoreRule(this.pattern, this.negative, this.original);
 
   @override
   String toString() {
@@ -331,7 +331,7 @@ class GitIgnoreRule {
 
 /// [onInvalidPattern] can be used to handle parse failures. If
 /// [onInvalidPattern] is `null` invalid patterns are ignored.
-List<GitIgnoreRule> parseIgnorePatterns(
+List<_IgnoreRule> parseIgnorePatterns(
     Iterable<String> patterns, bool ignoreCase,
     {void Function(String pattern, FormatException exception)
         onInvalidPattern}) {
@@ -351,11 +351,11 @@ List<GitIgnoreRule> parseIgnorePatterns(
   return parsedPatterns.where((r) => !r.empty).map((r) => r.rule).toList();
 }
 
-GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
+_IgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
     {source}) {
   // Check if patterns is a comment
   if (pattern.startsWith('#')) {
-    return GitIgnoreParseResult.empty(pattern);
+    return _IgnoreParseResult.empty(pattern);
   }
   var first = 0;
   var end = pattern.length;
@@ -373,7 +373,7 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
     end--;
   }
   // Empty patterns match nothing.
-  if (first == end) return GitIgnoreParseResult.empty(pattern);
+  if (first == end) return _IgnoreParseResult.empty(pattern);
 
   var current = first;
   String peekChar() => current >= end ? null : pattern[current];
@@ -461,7 +461,7 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
       // Character ranges
       final characterRange = parseCharacterRange();
       if (characterRange == null) {
-        return GitIgnoreParseResult.invalid(
+        return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
               'Pattern "$pattern" had an invalid `[a-b]` style character range',
@@ -474,7 +474,7 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
       // Escapes
       final escaped = peekChar();
       if (escaped == null) {
-        return GitIgnoreParseResult.invalid(
+        return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
               'Pattern "$pattern" end of pattern inside character escape.',
@@ -509,9 +509,9 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
     // expr = '$expr\$';
   }
   try {
-    return GitIgnoreParseResult(
+    return _IgnoreParseResult(
         pattern,
-        GitIgnoreRule(
+        _IgnoreRule(
             RegExp(expr, caseSensitive: !ignoreCase), negative, pattern));
   } on FormatException catch (e) {
     throw AssertionError(
