@@ -15,12 +15,6 @@ env:
   _TESTS_FILE: .dart_tool/test_files
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    steps:
-      - run: choco install git
-      - run: git --version
-
   # Check code formatting and static analysis on a single OS (linux)
   # against Dart stable and dev.
   analyze:
