@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'git.dart' as git;
 import 'ignore.dart';
 import 'io.dart';
+import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source_registry.dart';
@@ -227,15 +228,23 @@ class Package {
       ignoreForDir: (dir) {
         final pubIgnore = File.fromUri(directoryUri.resolve('$dir/.pubignore'));
         final gitIgnore = File.fromUri(directoryUri.resolve('$dir/.gitignore'));
+        final ignoreFile = pubIgnore.existsSync()
+            ? pubIgnore
+            : (gitIgnore.existsSync() ? gitIgnore : null);
+
         final rules = [
           if (dir == '.') ..._basicIgnoreRules,
-          if (pubIgnore.existsSync())
-            pubIgnore.readAsStringSync()
-          else if (gitIgnore.existsSync())
-            gitIgnore.readAsStringSync(),
+          if (ignoreFile != null) ignoreFile.readAsStringSync(),
         ];
-        print('dir $dir rules: $rules');
-        return rules.isEmpty ? null : Ignore(rules);
+        return rules.isEmpty
+            ? null
+            : Ignore(
+                rules,
+                onInvalidPattern: (pattern, exception) {
+                  log.warning(
+                      '${ignoreFile.path} had invalid pattern $pattern. ${exception.message}');
+                },
+              );
       },
       isDir: (dir) => Directory.fromUri(directoryUri.resolve(dir)).existsSync(),
     ).map((e) => directoryUri.resolve(e).path).toList();

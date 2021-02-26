@@ -274,7 +274,6 @@ class Ignore {
       final currentIsDir = isDir(normalizedCurrent);
       if (_matchesStack(ignoreStack, currentIsDir ? '$current/' : current)) {
         // current was ignored. Continue with the next item.
-        print('ignored $normalizedCurrent');
         continue;
       }
       if (currentIsDir) {
@@ -287,7 +286,6 @@ class Ignore {
           result.add(normalizedCurrent);
         }
       } else {
-        print('Adding $normalizedCurrent');
         result.add(normalizedCurrent);
       }
     }
@@ -545,15 +543,12 @@ class _IgnorePrefixPair {
 bool _matchesStack(List<_IgnorePrefixPair> ignores, String path) {
   // This is optimized by trying the rules in reverse order.
   // If a rule matches, the result is true if the rule is not negative.
-  print('ignores: $ignores');
   for (final ignorePair in ignores.reversed) {
     if (ignorePair == null) continue;
     final prefixLength = ignorePair.prefix.length;
     final s =
         prefixLength == 0 ? path : path.substring(ignorePair.prefix.length);
     for (final rule in ignorePair.ignore._rules.reversed) {
-      print(
-          'matching $s from $path against ${rule.original} ${rule.pattern.hasMatch(s)} ${!rule.negative}');
       if (rule.pattern.hasMatch(s)) {
         return !rule.negative;
       }
