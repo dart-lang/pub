@@ -37,7 +37,8 @@ class SolveFailure implements ApplicationException {
   }
 
   SolveFailure(this.incompatibility)
-      : assert(incompatibility.terms.single.package.isRoot);
+      : assert(incompatibility.terms.isEmpty ||
+            incompatibility.terms.single.package.isRoot);
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.

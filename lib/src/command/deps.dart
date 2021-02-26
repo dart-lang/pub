@@ -52,11 +52,14 @@ class DepsCommand extends PubCommand {
 
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
   Future<void> runProtected() async {
-    // Explicitly run this in case we don't access `entrypoint.packageGraph`.
+    // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
 
     _buffer = StringBuffer();

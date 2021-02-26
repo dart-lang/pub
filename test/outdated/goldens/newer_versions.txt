@@ -108,7 +108,7 @@ transitive3   -        -           1.0.0       1.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --no-transitive
 Showing outdated packages.
@@ -126,35 +126,35 @@ builder       *1.2.3   *1.3.0      2.0.0       2.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name   Current  Upgradable  Resolvable  Latest  
+Package Name   Current       Upgradable    Resolvable    Latest        
 
 direct dependencies:
-bar            1.0.0    1.0.0       1.0.0       1.0.0   
-foo            *1.2.3   *1.3.0      *2.0.0      3.0.0   
-local_package  0.0.1    0.0.1       0.0.1       0.0.1   
+bar            1.0.0         1.0.0         1.0.0         1.0.0         
+foo            *1.2.3        *1.3.0        *2.0.0        3.0.0         
+local_package  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)  
 
 dev_dependencies:
-builder        *1.2.3   *1.3.0      2.0.0       2.0.0   
+builder        *1.2.3        *1.3.0        2.0.0         2.0.0         
 
 transitive dependencies:
-transitive     *1.2.3   *1.3.0      *1.3.0      2.0.0   
-transitive2    -        -           1.0.0       1.0.0   
+transitive     *1.2.3        *1.3.0        *1.3.0        2.0.0         
+transitive2    -             -             1.0.0         1.0.0         
 
 transitive dev_dependencies:
-dev_trans      *1.0.0   -           *1.0.0      2.0.0   
-transitive3    -        -           1.0.0       1.0.0   
+dev_trans      *1.0.0        -             *1.0.0        2.0.0         
+transitive3    -             -             1.0.0         1.0.0         
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --prereleases
 Showing outdated packages.
@@ -180,7 +180,7 @@ transitive3   -        -           1.0.0       1.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
@@ -198,7 +198,7 @@ transitive    *1.2.3   2.0.0       2.0.0       2.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 1 dependency is constrained to a version that is older than a resolvable version.
-To update it, edit pubspec.yaml.
+To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
@@ -224,78 +224,78 @@ transitive3   -        -           1.0.0       1.0.0
 To update these dependencies, use `dart pub upgrade`.
 
 3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 $ pub outdated --no-color --mode=null-safety
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current  Upgradable  Resolvable  Latest        
+Package Name   Current        Upgradable     Resolvable     Latest         
 
 direct dependencies:
-bar            ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0        
-foo            ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0        
-local_package  ✗0.0.1   ✗0.0.1      ✗0.0.1      ✗0.0.1        
+bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
+foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
+local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
 
 dev_dependencies:
-builder        ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0-alpha  
+builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
 
 2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
 
 $ pub outdated --no-color --mode=null-safety --transitive
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current  Upgradable  Resolvable  Latest        
+Package Name   Current        Upgradable     Resolvable     Latest         
 
 direct dependencies:
-bar            ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0        
-foo            ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0        
-local_package  ✗0.0.1   ✗0.0.1      ✗0.0.1      ✗0.0.1        
+bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
+foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
+local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
 
 dev_dependencies:
-builder        ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0-alpha  
+builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
 
 transitive dependencies:
-transitive     ✗1.2.3   ✗1.3.0      ✗1.3.0      ✗2.0.0        
-transitive2    -        -           ✗1.0.0      ✗1.0.0        
+transitive     ✗1.2.3         ✗1.3.0         ✗1.3.0         ✗2.0.0         
+transitive2    -              -              ✗1.0.0         ✗1.0.0         
 
 transitive dev_dependencies:
-dev_trans      ✗1.0.0   -           ✗1.0.0      ✗2.0.0        
-transitive3    -        -           ✗1.0.0      ✗1.0.0        
+dev_trans      ✗1.0.0         -              ✗1.0.0         ✗2.0.0         
+transitive3    -              -              ✗1.0.0         ✗1.0.0         
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
 
 $ pub outdated --no-color --mode=null-safety --no-prereleases
 Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current  Upgradable  Resolvable  Latest  
+Package Name   Current        Upgradable     Resolvable     Latest         
 
 direct dependencies:
-bar            ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
-foo            ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗3.0.0  
-local_package  ✗0.0.1   ✗0.0.1      ✗0.0.1      ✗0.0.1  
+bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
+foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
+local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
 
 dev_dependencies:
-builder        ✗1.2.3   ✗1.3.0      ✗2.0.0      ✗2.0.0  
+builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗2.0.0         
 
 2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml.
+To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
 
 $ pub outdated --json --mode=null-safety
 {

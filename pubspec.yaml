@@ -24,6 +24,7 @@ dependencies:
   shelf: ^0.7.0
   source_span: ^1.4.0
   stack_trace: ^1.0.0
+  tar: ^0.3.0-nullsafety
   yaml: ^2.2.0
 
 dev_dependencies:

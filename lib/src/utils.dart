@@ -17,9 +17,6 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
-/// Whether Pub is running its own tests under Travis.CI.
-final isTravis = Platform.environment['TRAVIS_REPO_SLUG'] == 'dart-lang/pub';
-
 /// A regular expression matching a Dart identifier.
 ///
 /// This also matches a package name, since they must be Dart identifiers.

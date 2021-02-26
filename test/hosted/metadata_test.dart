@@ -95,5 +95,19 @@ void main() {
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
     });
+
+    test("doesn't send metadata headers when CI=true", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(command,
+          silent: isNot(contains('X-Pub-')),
+          environment: {
+            'CI': 'true',
+          });
+    });
   });
 }

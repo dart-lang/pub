@@ -2,13 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
+import '../command_runner.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import '../utils.dart';
 import 'result.dart';
 import 'type.dart';
@@ -24,6 +27,7 @@ class SolveReport {
   final Package _root;
   final LockFile _previousLockFile;
   final SolveResult _result;
+  final SystemCache _cache;
 
   /// The dependencies in [_result], keyed by package name.
   final _dependencies = <String, PackageId>{};
@@ -31,7 +35,7 @@ class SolveReport {
   final _output = StringBuffer();
 
   SolveReport(this._type, this._sources, this._root, this._previousLockFile,
-      this._result) {
+      this._result, this._cache) {
     // Fill the map so we can use it later.
     for (var id in _result.packages) {
       _dependencies[id.name] = id;
@@ -40,9 +44,9 @@ class SolveReport {
 
   /// Displays a report of the results of the version resolution relative to
   /// the previous lock file.
-  void show() {
-    _reportChanges();
-    _reportOverrides();
+  Future<void> show() async {
+    await _reportChanges();
+    await _reportOverrides();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -67,40 +71,49 @@ class SolveReport {
       return oldId != newId;
     }).length;
 
+    var suffix = '';
+    if (_root.dir != null) {
+      final dir = path.normalize(_root.dir);
+      if (dir != '.') {
+        suffix = ' in $dir';
+      }
+    }
+
     if (dryRun) {
       if (numChanged == 0) {
-        log.message('No dependencies would change.');
+        log.message('No dependencies would change$suffix.');
       } else if (numChanged == 1) {
-        log.message('Would change $numChanged dependency.');
+        log.message('Would change $numChanged dependency$suffix.');
       } else {
-        log.message('Would change $numChanged dependencies.');
+        log.message('Would change $numChanged dependencies$suffix.');
       }
     } else {
       if (numChanged == 0) {
         if (_type == SolveType.GET) {
-          log.message('Got dependencies!');
+          log.message('Got dependencies$suffix!');
         } else {
-          log.message('No dependencies changed.');
+          log.message('No dependencies changed$suffix.');
         }
       } else if (numChanged == 1) {
-        log.message('Changed $numChanged dependency!');
+        log.message('Changed $numChanged dependency$suffix!');
       } else {
-        log.message('Changed $numChanged dependencies!');
+        log.message('Changed $numChanged dependencies$suffix!');
       }
     }
   }
 
   /// Displays a report of all of the previous and current dependencies and
   /// how they have changed.
-  void _reportChanges() {
+  Future<void> _reportChanges() async {
     _output.clear();
 
     // Show the new set of dependencies ordered by name.
     var names = _result.packages.map((id) => id.name).toList();
     names.remove(_root.name);
     names.sort();
-    names.forEach(_reportPackage);
-
+    for (final name in names) {
+      await _reportPackage(name);
+    }
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
@@ -108,7 +121,7 @@ class SolveReport {
     if (removed.isNotEmpty) {
       _output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
-        _reportPackage(name, alwaysShow: true);
+        await _reportPackage(name, alwaysShow: true);
       }
     }
 
@@ -116,14 +129,14 @@ class SolveReport {
   }
 
   /// Displays a warning about the overrides currently in effect.
-  void _reportOverrides() {
+  Future<void> _reportOverrides() async {
     _output.clear();
 
     if (_root.dependencyOverrides.isNotEmpty) {
       _output.writeln('Warning: You are using these overridden dependencies:');
 
       for (var name in ordered(_root.dependencyOverrides.keys)) {
-        _reportPackage(name, alwaysShow: true, highlightOverride: false);
+        await _reportPackage(name, alwaysShow: true, highlightOverride: false);
       }
 
       log.warning(_output);
@@ -152,7 +165,7 @@ class SolveReport {
         packageCountString = '$outdatedPackagesCount packages have';
       }
       log.message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\nTry `pub outdated` for more information.');
+          'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
     }
   }
 
@@ -161,8 +174,8 @@ class SolveReport {
   /// If [alwaysShow] is true, the package is reported even if it didn't change,
   /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
   /// "(override)" next to overridden packages.
-  void _reportPackage(String name,
-      {bool alwaysShow = false, bool highlightOverride = true}) {
+  Future<void> _reportPackage(String name,
+      {bool alwaysShow = false, bool highlightOverride = true}) async {
     var newId = _dependencies[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId;
@@ -206,8 +219,46 @@ class SolveReport {
       // Unchanged.
       icon = '  ';
     }
+    String message;
+    // See if there are any newer versions of the package that we were
+    // unable to upgrade to.
+    if (newId != null && _type != SolveType.DOWNGRADE) {
+      var versions = _result.availableVersions[newId.name];
 
-    if (_type == SolveType.GET && !(alwaysShow || changed || addedOrRemoved)) {
+      var newerStable = false;
+      var newerUnstable = false;
+
+      for (var version in versions) {
+        if (version > newId.version) {
+          if (version.isPreRelease) {
+            newerUnstable = true;
+          } else {
+            newerStable = true;
+          }
+        }
+      }
+      final status =
+          await _cache.source(id.source).status(id, Duration(days: 3));
+      if (status.isDiscontinued) {
+        if (status.discontinuedReplacedBy == null) {
+          message = '(discontinued)';
+        } else {
+          message =
+              '(discontinued replaced by ${status.discontinuedReplacedBy})';
+        }
+      } else if (newerStable) {
+        // If there are newer stable versions, only show those.
+        message = '(${maxAll(versions, Version.prioritize)} available)';
+      } else if (
+          // Only show newer prereleases for versions where a prerelease is
+          // already chosen.
+          newId.version.isPreRelease && newerUnstable) {
+        message = '(${maxAll(versions)} available)';
+      }
+    }
+
+    if (_type == SolveType.GET &&
+        !(alwaysShow || changed || addedOrRemoved || message != null)) {
       return;
     }
 
@@ -228,37 +279,7 @@ class SolveReport {
       _output.write(" ${log.magenta('(overridden)')}");
     }
 
-    // See if there are any newer versions of the package that we were
-    // unable to upgrade to.
-    if (newId != null && _type != SolveType.DOWNGRADE) {
-      var versions = _result.availableVersions[newId.name];
-
-      var newerStable = false;
-      var newerUnstable = false;
-
-      for (var version in versions) {
-        if (version > newId.version) {
-          if (version.isPreRelease) {
-            newerUnstable = true;
-          } else {
-            newerStable = true;
-          }
-        }
-      }
-
-      // If there are newer stable versions, only show those.
-      String message;
-      if (newerStable) {
-        message = '(${maxAll(versions, Version.prioritize)} available)';
-      } else if (
-          // Only show newer prereleases for versions where a prerelease is
-          // already chosen.
-          newId.version.isPreRelease && newerUnstable) {
-        message = '(${maxAll(versions)} available)';
-      }
-
-      if (message != null) _output.write(' ${log.cyan(message)}');
-    }
+    if (message != null) _output.write(' ${log.cyan(message)}');
 
     _output.writeln();
   }

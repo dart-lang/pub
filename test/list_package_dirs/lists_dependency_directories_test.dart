@@ -26,12 +26,11 @@ void main() {
 
     await pubGet();
 
-    await
-        // Note: Using canonicalize here because pub gets the path to the
-        // entrypoint package from the working directory, which has had symlinks
-        // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
-        // need to accommodate that.
-        await runPub(args: [
+    // Note: Using canonicalize here because pub gets the path to the
+    // entrypoint package from the working directory, which has had symlinks
+    // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
+    // need to accommodate that.
+    await runPub(args: [
       'list-package-dirs',
       '--format=json'
     ], outputJson: {

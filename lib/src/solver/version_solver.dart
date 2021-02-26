@@ -14,6 +14,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -414,7 +415,7 @@ class VersionSolver {
         _lockFile,
         decisions,
         pubspecs,
-        _getAvailableVersions(decisions),
+        await _getAvailableVersions(decisions),
         _solution.attemptedSolutions);
   }
 
@@ -424,17 +425,29 @@ class VersionSolver {
   /// The version list may not always be complete. If the package is the root
   /// package, or if it's a package that we didn't unlock while solving because
   /// we weren't trying to upgrade it, we will just know the current version.
-  Map<String, List<Version>> _getAvailableVersions(List<PackageId> packages) {
+  Future<Map<String, List<Version>>> _getAvailableVersions(
+      List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       var cached = _packageListers[package.toRef()]?.cachedVersions;
-      // If the version list was never requested, just use the one known
-      // version.
-      var versions = cached == null
-          ? [package.version]
-          : cached.map((id) => id.version).toList();
+      // If the version list was never requested, use versions from cached
+      // version listings if the package is "hosted".
+      // TODO(sigurdm): This has a smell. The Git source should have a
+      // reasonable behavior here (we should be able to call getVersions in a
+      // way that doesn't fetch.
+      List<PackageId> ids;
+      try {
+        ids = cached ??
+            (package.source is HostedSource
+                ? (await _systemCache
+                    .source(package.source)
+                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+                : [package]);
+      } on Exception {
+        ids = <PackageId>[package];
+      }
 
-      availableVersions[package.name] = versions;
+      availableVersions[package.name] = ids.map((id) => id.version).toList();
     }
 
     return availableVersions;

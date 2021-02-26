@@ -169,11 +169,6 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
-  /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources),
-        isGlobal = false;
-
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources),
@@ -259,14 +254,14 @@ class Entrypoint {
       }
     }
 
-    result.showReport(type);
+    await result.showReport(type, cache);
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, dryRun: dryRun);
+    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't
@@ -427,8 +422,9 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id) {
-    return http.withDependencyType(root.dependencyType(id.name), () async {
+  Future<void> _get(PackageId id) async {
+    return await http.withDependencyType(root.dependencyType(id.name),
+        () async {
       if (id.isRoot) return;
 
       var source = cache.source(id.source);
@@ -597,11 +593,11 @@ class Entrypoint {
     // Check that [packagePathsMapping] does not contain more packages than what
     // is required. This could lead to import statements working, when they are
     // not supposed to work.
-    final hasExtraMappings = packagePathsMapping.keys.every((packageName) {
+    final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
       return packageName == root.name ||
           lockFile.packages.containsKey(packageName);
     });
-    if (!hasExtraMappings) {
+    if (hasExtraMappings) {
       return false;
     }
 
@@ -620,8 +616,7 @@ class Entrypoint {
       }
 
       final source = cache.source(lockFileId.source);
-      final lockFilePackagePath =
-          p.join(root.dir, source.getDirectory(lockFileId));
+      final lockFilePackagePath = root.path(source.getDirectory(lockFileId));
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
@@ -720,8 +715,18 @@ class Entrypoint {
     }
 
     final packagePathsMapping = <String, String>{};
-    for (final pkg in cfg.packages) {
-      // Pub always sets packageUri = lib/
+
+    // We allow the package called 'flutter_gen' to be injected into
+    // package_config.
+    //
+    // This is somewhat a hack. But it allows flutter to generate code in a
+    // package as it likes.
+    //
+    // See https://github.com/flutter/flutter/issues/73870 .
+    final packagesToCheck =
+        cfg.packages.where((package) => package.name != 'flutter_gen');
+    for (final pkg in packagesToCheck) {
+      // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
         badPackageConfig();
       }
@@ -735,6 +740,7 @@ class Entrypoint {
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
     for (final pkg in cfg.packages) {
+      if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(

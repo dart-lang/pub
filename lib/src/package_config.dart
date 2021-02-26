@@ -213,10 +213,13 @@ class PackageConfigEntry {
     }
 
     Uri packageUri;
-    final packageUriRaw = root['packageUri'];
+    var packageUriRaw = root['packageUri'];
     if (packageUriRaw != null) {
       if (packageUriRaw is! String) {
         _throw('packageUri', 'must be a string');
+      }
+      if (!packageUriRaw.endsWith('/')) {
+        packageUriRaw = '$packageUriRaw/';
       }
       try {
         packageUri = Uri.parse(packageUriRaw);
