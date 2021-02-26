@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// An [Ignore] filter compatible with `.gitignore`.
+/// Implements an [Ignore] filter compatible with `.gitignore`.
 ///
 /// An [Ignore] instance holds a set of [`.gitignore` rules][1], and allows
 /// testing if a given path is ignored.
@@ -21,14 +21,16 @@
 /// }
 /// ```
 ///
+/// For a generic walk of a file-hierarchy with ignore files at all levels see
+/// [Ignore.unignoredFiles].
+///
 /// [1]: https://git-scm.com/docs/gitignore
 
 import 'package:meta/meta.dart';
 
-/// A set of ignore rules representing a hierrchy of ignore files.
+/// A set of ignore rules representing a single ignore file.
 ///
-/// An [Ignore] instance holds [`.gitignore` rules][1] relative to given paths,
-/// and allows testing if a given path is ignored.
+/// An [Ignore] instance holds [`.gitignore` rules][1] relative to a given path.
 ///
 /// **Example**:
 /// ```dart
@@ -47,10 +49,7 @@ import 'package:meta/meta.dart';
 /// [1]: https://git-scm.com/docs/gitignore
 @sealed
 class Ignore {
-  final Map<String, List<GitIgnoreRule>> _rules;
-
-  // True if no rule-files have been added.
-  bool get isEmpty => _rules.isEmpty;
+  final List<GitIgnoreRule> _rules;
 
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]
   /// patterns.
@@ -91,14 +90,14 @@ class Ignore {
   /// [1]: https://git-scm.com/docs/gitignore
   /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
   Ignore(
-    Map<String, Iterable<String>> patterns, {
+    Iterable<String> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception) onInvalidPattern,
   }) : _rules = parseIgnorePatterns(patterns, ignoreCase,
             onInvalidPattern: onInvalidPattern);
 
   /// Returns `true` if [path] is ignored by the patterns used to create this
-  /// [Ignore] instance.
+  /// [Ignore] instance, assuming those patterns are placed at `.`.
   ///
   /// The [path] must be a relative path, not starting with `./`, `../`, and
   /// must end in slash (`/`) if it is directory.
@@ -138,44 +137,157 @@ class Ignore {
     if (_rules.isEmpty) {
       return false;
     }
-    bool ignoresSubpath(String path) {
-      bool testRulesForPrefix(String prefix) {
-        final rules = _rules[prefix];
+    final pathWithoutSlash =
+        path.endsWith('/') ? path.substring(0, path.length - 1) : path;
+    return unignoredFiles(
+      beneath: pathWithoutSlash,
+      includeDirs: true,
+      listDir: (dir) {
+        // List the next part of path:
+        if (dir == pathWithoutSlash) return [];
+        final startOfNext = dir.isEmpty ? 0 : dir.length + 1;
+        final nextSlash = path.indexOf('/', startOfNext);
+        return [path.substring(startOfNext, nextSlash)];
+      },
+      ignoreForDir: (dir) => dir == '' ? this : null,
+      isDir: (candidate) =>
+          path.length > candidate.length && path[candidate.length] == '/',
+    ).isEmpty;
+  }
 
-        if (rules != null) {
-          // Test the rules against the rest of the path.
-          final l = prefix == '' ? 0 : prefix.length + 1;
-          final suffix = path.substring(l);
-          // Test patterns in reverse. The negativity of the last
-          // matching pattern decides the fate of the path.
-          for (final r in rules.reversed) {
-            if (r.pattern.hasMatch(suffix)) {
-              return !r.negative;
-            }
-          }
+  /// Returns all the files in the tree under (and including) [beneath] not
+  /// ignored by ignore-files from [root] and down.
+  ///
+  /// Represents paths normalized  using '/' as directory separator. The empty
+  /// relative path is '.', no '..' are allowed.
+  ///
+  /// [beneath] must start with [root] and even if it is a directory it should not
+  /// end with '/', if [beneath] is not provided, everything under root is
+  /// included.
+  ///
+  /// [listDir] should enumerate the immediate contents of a given directory,
+  /// returning paths including [root].
+  ///
+  /// [isDir] should return true if the argument is a directory. It will only be
+  /// queried with file-names under (and including) [beneath]
+  ///
+  /// [ignoreForDir] should retrieve the ignore rules for a single directory
+  /// or return `null` if there is no ignore rules.
+  ///
+  /// If [includeDirs] is true non-ignored directories will be included in the
+  /// result (including beneath).
+  ///
+  /// This example program lists all files under second argument that are
+  /// not ignored by .gitignore files from first argument and below:
+  ///
+  /// ```dart
+  /// import 'dart:io';
+  /// import 'package:path/path.dart';
+  /// import 'package:pub/src/ignore.dart';
+  ///
+  /// void main(List<String> args) {
+  ///   var root = normalize(args[0]);
+  ///   if (root == '.') root = '';
+  ///   var beneath = args.length > 1 ? normalize(args[1]) : root;
+  ///   if (beneath == '.') beneath = '';
+  ///   final uri = Directory(root).uri;
+  ///   Ignore.unignoredFiles(
+  ///     beneath: beneath,
+  ///     listDir: (dir) {
+  ///       return Directory.fromUri(uri.resolve(dir))
+  ///           .listSync()
+  ///           .map((x) => x.uri.path);
+  ///     },
+  ///     ignoreForDir: (dir) {
+  ///       final f = File.fromUri(uri.resolve(dir).resolve('.gitignore'));
+  ///       return f.existsSync() ? Ignore([f.readAsStringSync()]) : null;
+  ///     },
+  ///     isDir: (dir) => Directory.fromUri(uri.resolve(dir)).existsSync(),
+  ///   ).forEach(print);
+  /// }
+  /// ```
+  static List<String> unignoredFiles({
+    String beneath = '',
+    @required Iterable<String> Function(String) listDir,
+    @required Ignore Function(String) ignoreForDir,
+    @required bool Function(String) isDir,
+    bool includeDirs = false,
+  }) {
+    if (beneath.startsWith('/') ||
+        beneath.startsWith('./') ||
+        beneath.startsWith('../')) {
+      throw ArgumentError.value(
+          'must be relative and normalized', 'beneath', beneath);
+    }
+    if (beneath.endsWith('/')) {
+      throw ArgumentError.value('must not end with /', beneath);
+    }
+    // To streamline the algorithm we represent all paths as starting with '/'
+    // and the empty path as just '/'.
+    if (beneath == '.') beneath = '';
+    beneath = '/$beneath';
+
+    // Will contain all the files that are not ignored.
+    final result = <String>[];
+    // At any given point in the search, this will contain the Ignores from
+    // directories leading up to the current entity.
+    // The single `null` aligns popping and pushing in this stack with [toVisit]
+    // below.
+    final ignoreStack = <_IgnorePrefixPair>[null];
+    // Find all ignores between './' and [beneath] (not inclusive).
+
+    // [index] points at the next '/' in the path.
+    var index = 0;
+    while ((index = beneath.indexOf('/', index + 1)) != -1) {
+      final partial = beneath.substring(0, index + 1);
+      if (_matchesStack(ignoreStack, partial)) {
+        // A directory on the way towards [beneath] was ignored. Empty result.
+        return <String>[];
+      }
+      final ignore = ignoreForDir(
+          partial.isEmpty ? '.' : partial.substring(1, partial.length - 1));
+      ignoreStack
+          .add(ignore == null ? null : _IgnorePrefixPair(ignore, partial));
+    }
+    // Do a depth first tree-search starting at [beneath].
+    // toVisit is a stack containing all items that are waiting to be processed.
+    final toVisit = [
+      [beneath]
+    ];
+    while (toVisit.isNotEmpty) {
+      final topOfStack = toVisit.last;
+      if (topOfStack.isEmpty) {
+        toVisit.removeLast();
+        ignoreStack.removeLast();
+        continue;
+      }
+      final current = topOfStack.removeLast();
+      // This is the version of current we present to the callbacks and in
+      // [result].
+      //
+      // The empty path is represented as '.' and there is no leading '/'.
+      final normalizedCurrent = current == '/' ? '.' : current.substring(1);
+      final currentIsDir = isDir(normalizedCurrent);
+      if (_matchesStack(ignoreStack, currentIsDir ? '$current/' : current)) {
+        // current was ignored. Continue with the next item.
+        print('ignored $normalizedCurrent');
+        continue;
+      }
+      if (currentIsDir) {
+        final ignore = ignoreForDir(normalizedCurrent);
+        ignoreStack
+            .add(ignore == null ? null : _IgnorePrefixPair(ignore, current));
+        // Put all entities in current on the stack to be processed.
+        toVisit.add(listDir(normalizedCurrent).map((x) => '/$x').toList());
+        if (includeDirs) {
+          result.add(normalizedCurrent);
         }
-        return null;
-      }
-
-      // Iterate over all subpaths to find relevant rules.
-      for (var index = path.lastIndexOf('/');
-          index != -1;
-          index = path.lastIndexOf('/', index - 1)) {
-        final result = testRulesForPrefix(path.substring(0, index));
-        if (result != null) return result;
-      }
-      return testRulesForPrefix('') == true;
-    }
-
-    for (var slashIndex = path.indexOf('/');
-        slashIndex != -1;
-        slashIndex = path.indexOf('/', slashIndex + 1)) {
-      if (ignoresSubpath(path.substring(0, slashIndex + 1))) {
-        // If a folder above [path] is ignored the pattern cannot be un-ignored.
-        return true;
+      } else {
+        print('Adding $normalizedCurrent');
+        result.add(normalizedCurrent);
       }
     }
-    return ignoresSubpath(path);
+    return result;
   }
 }
 
@@ -219,31 +331,24 @@ class GitIgnoreRule {
 
 /// [onInvalidPattern] can be used to handle parse failures. If
 /// [onInvalidPattern] is `null` invalid patterns are ignored.
-Map<String, List<GitIgnoreRule>> parseIgnorePatterns(
-    Map<String, Iterable<String>> patternsHierarchy, bool ignoreCase,
+List<GitIgnoreRule> parseIgnorePatterns(
+    Iterable<String> patterns, bool ignoreCase,
     {void Function(String pattern, FormatException exception)
         onInvalidPattern}) {
-  ArgumentError.checkNotNull(patternsHierarchy, 'patterns');
+  ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
-  if (patternsHierarchy.values.contains(null)) {
-    throw ArgumentError.value(
-        patternsHierarchy, 'patterns', 'may not contain null');
-  }
 
-  return patternsHierarchy.map((directory, patterns) {
-    final parseResults = patterns
-        .map((s) => s.split('\n'))
-        .expand((e) => e)
-        .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
-    if (onInvalidPattern != null) {
-      for (final invalidResult
-          in parseResults.where((result) => !result.valid)) {
-        onInvalidPattern(invalidResult.pattern, invalidResult.exception);
-      }
+  final parsedPatterns = patterns
+      .map((s) => s.split('\n'))
+      .expand((e) => e)
+      .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
+  if (onInvalidPattern != null) {
+    for (final invalidResult
+        in parsedPatterns.where((result) => !result.valid)) {
+      onInvalidPattern(invalidResult.pattern, invalidResult.exception);
     }
-    return MapEntry(directory,
-        parseResults.where((r) => !r.empty).map((r) => r.rule).toList());
-  });
+  }
+  return parsedPatterns.where((r) => !r.empty).map((r) => r.rule).toList();
 }
 
 GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
@@ -407,9 +512,48 @@ GitIgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
     return GitIgnoreParseResult(
         pattern,
         GitIgnoreRule(
-            RegExp(expr, caseSensitive: ignoreCase), negative, pattern));
+            RegExp(expr, caseSensitive: !ignoreCase), negative, pattern));
   } on FormatException catch (e) {
     throw AssertionError(
         'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
   }
+}
+
+/// A [Ignore] object, paired with the prefix where it is found in the directory
+/// hierarchy.
+class _IgnorePrefixPair {
+  final Ignore ignore;
+  final String prefix;
+  _IgnorePrefixPair(this.ignore, this.prefix);
+  @override
+  String toString() {
+    // TODO: implement toString
+    return '{${ignore._rules.map((r) => r.original)} ${prefix}}';
+  }
+}
+
+/// Returns true if any of [ignores] has a match of [path] that is not negated
+/// by a later one.
+///
+/// expects [path] to start with '/'
+///
+/// If [path] should be matched as a directory, it should end with '/'.
+bool _matchesStack(List<_IgnorePrefixPair> ignores, String path) {
+  // This is optimized by trying the rules in reverse order.
+  // If a rule matches, the result is true if the rule is not negative.
+  print('ignores: $ignores');
+  for (final ignorePair in ignores.reversed) {
+    if (ignorePair == null) continue;
+    final prefixLength = ignorePair.prefix.length;
+    final s =
+        prefixLength == 0 ? path : path.substring(ignorePair.prefix.length);
+    for (final rule in ignorePair.ignore._rules.reversed) {
+      print(
+          'matching $s from $path against ${rule.original} ${rule.pattern.hasMatch(s)} ${!rule.negative}');
+      if (rule.pattern.hasMatch(s)) {
+        return !rule.negative;
+      }
+    }
+  }
+  return false;
 }

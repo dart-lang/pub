@@ -24,14 +24,56 @@ void main() {
           '${c.name}: Ignore.ignores("$path") == $expected',
           () {
             var hasWarning = false;
-            final ignore = Ignore(c.patterns, onInvalidPattern: (a, b) {
-              hasWarning = true;
-            });
-            if (expected != ignore.ignores(path)) {
-              if (expected) {
-                fail('Expected "$path" to be ignored, it was NOT!');
-              }
-              fail('Expected "$path" to NOT be ignored, it was IGNORED!');
+            final pathWithoutSlash =
+                path.endsWith('/') ? path.substring(0, path.length - 1) : path;
+
+            Iterable<String> listDir(String dir) {
+              // List the next part of path:
+              if (dir == pathWithoutSlash) return [];
+              final nextSlash =
+                  path.indexOf('/', dir == '.' ? 0 : dir.length + 1);
+              return [
+                path.substring(0, nextSlash == -1 ? path.length : nextSlash)
+              ];
+            }
+
+            Ignore ignoreForDir(String dir) => c.patterns[dir] == null
+                ? null
+                : Ignore(c.patterns[dir],
+                    onInvalidPattern: (_, __) => hasWarning = true);
+
+            bool isDir(String candidate) =>
+                candidate == '.' ||
+                path.length > candidate.length && path[candidate.length] == '/';
+
+            // final r = Ignore.unignoredFiles(
+            //     beneath: pathWithoutSlash,
+            //     includeDirs: true,
+            //     listDir: listDir,
+            //     ignoreForDir: ignoreForDir,
+            //     isDir: isDir);
+            // if (expected) {
+            //   expect(r, isEmpty,
+            //       reason: 'Expected "$path" to be ignored, it was NOT!');
+            // } else {
+            //   expect(r, [pathWithoutSlash],
+            //       reason:
+            //           'Expected "$path" to NOT be ignored, it was IGNORED!');
+            // }
+
+            // Also test that the logic of walking the tree works.
+            final r2 = Ignore.unignoredFiles(
+                includeDirs: true,
+                listDir: listDir,
+                ignoreForDir: ignoreForDir,
+                isDir: isDir);
+            if (expected) {
+              expect(r2, isNot(contains(pathWithoutSlash)),
+                  reason: 'Expected "$path" to be ignored, it was NOT!');
+            } else {
+              expect(r2, contains(pathWithoutSlash),
+                  reason:
+                      'Expected "$path" to NOT be ignored, it was IGNORED!');
             }
             expect(hasWarning, c.hasWarning);
           },
@@ -136,14 +178,14 @@ class TestData {
     this.skipOnWindows = false,
   })  : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = {
-          '': [pattern]
+          '.': [pattern]
         };
 }
 
 final testData = [
   // Simple test case
   TestData('simple', {
-    '': [
+    '.': [
       '/.git/',
       '*.o',
     ]
@@ -156,7 +198,7 @@ final testData = [
   }),
   // Test empty lines
   TestData('empty', {
-    '': ['']
+    '.': ['']
   }, {
     'README.md': false,
   }),
@@ -195,7 +237,7 @@ final testData = [
   TestData(
     'negation',
     {
-      '': ['f*', '!file.txt']
+      '.': ['f*', '!file.txt']
     },
     {
       'file.txt': false,
@@ -777,6 +819,11 @@ final testData = [
     'sub/bolder/other.paf': false,
     'subblob/file.txt': false,
   }),
+  TestData.single('sub/', {
+    'sub/': true,
+    'mop/': false,
+    'sup': false,
+  }),
   TestData.single('sub/**/', {
     'file.txt': false,
     'otherf.txt': false,
@@ -816,7 +863,7 @@ final testData = [
     'subblob/file.txt': false,
   }),
   TestData('ignores in subfolders only target those', {
-    '': ['a.txt'],
+    '.': ['a.txt'],
     'folder': ['b.txt'],
     'folder/sub': ['c.txt'],
   }, {
@@ -831,19 +878,19 @@ final testData = [
     'folder/sub/c.txt': true,
   }),
   TestData('Cannot negate folders that were excluded', {
-    '': ['sub/', '!sub/foo.txt']
+    '.': ['sub/', '!sub/foo.txt']
   }, {
     'sub/a.txt': true,
     'sub/foo.txt': true,
   }),
   TestData('Can negate the exclusion of folders', {
-    '': ['*.txt', 'sub', '!sub', '!foo.txt'],
+    '.': ['*.txt', 'sub', '!sub', '!foo.txt'],
   }, {
     'sub/a.txt': true,
     'sub/foo.txt': false,
   }),
   TestData('Can negate the exclusion of folders 2', {
-    '': ['sub/', '*.txt'],
+    '.': ['sub/', '*.txt'],
     'folder': ['!sub/', '!foo.txt']
   }, {
     'folder/sub/a.txt': true,
