@@ -66,6 +66,10 @@ class Ignore {
   /// repository is created, or by configuration option, see
   /// [`core.ignoreCase` documentation][2] for details.
   ///
+  /// If [onInvalidPattern] is passed, it will be called with a
+  /// [FormatException] describing the problem. The exception will have [source]
+  /// as source.
+  ///
   /// **Example**:
   /// ```dart
   /// import 'package:ignore/ignore.dart';
@@ -93,7 +97,7 @@ class Ignore {
     Iterable<String> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception) onInvalidPattern,
-  }) : _rules = parseIgnorePatterns(patterns, ignoreCase,
+  }) : _rules = _parseIgnorePatterns(patterns, ignoreCase,
             onInvalidPattern: onInvalidPattern);
 
   /// Returns `true` if [path] is ignored by the patterns used to create this
@@ -331,17 +335,18 @@ class _IgnoreRule {
 
 /// [onInvalidPattern] can be used to handle parse failures. If
 /// [onInvalidPattern] is `null` invalid patterns are ignored.
-List<_IgnoreRule> parseIgnorePatterns(
-    Iterable<String> patterns, bool ignoreCase,
-    {void Function(String pattern, FormatException exception)
-        onInvalidPattern}) {
+List<_IgnoreRule> _parseIgnorePatterns(
+  Iterable<String> patterns,
+  bool ignoreCase, {
+  void Function(String pattern, FormatException exception) onInvalidPattern,
+}) {
   ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
 
   final parsedPatterns = patterns
       .map((s) => s.split('\n'))
       .expand((e) => e)
-      .map((pattern) => parseIgnorePattern(pattern, ignoreCase));
+      .map((pattern) => _parseIgnorePattern(pattern, ignoreCase));
   if (onInvalidPattern != null) {
     for (final invalidResult
         in parsedPatterns.where((result) => !result.valid)) {
@@ -351,8 +356,7 @@ List<_IgnoreRule> parseIgnorePatterns(
   return parsedPatterns.where((r) => !r.empty).map((r) => r.rule).toList();
 }
 
-_IgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
-    {source}) {
+_IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
   // Check if patterns is a comment
   if (pattern.startsWith('#')) {
     return _IgnoreParseResult.empty(pattern);
@@ -465,7 +469,7 @@ _IgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
           pattern,
           FormatException(
               'Pattern "$pattern" had an invalid `[a-b]` style character range',
-              source,
+              pattern,
               current),
         );
       }
@@ -478,7 +482,7 @@ _IgnoreParseResult parseIgnorePattern(String pattern, bool ignoreCase,
           pattern,
           FormatException(
               'Pattern "$pattern" end of pattern inside character escape.',
-              source,
+              pattern,
               current),
         );
       }
