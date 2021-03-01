@@ -247,7 +247,7 @@ class Package {
               );
       },
       isDir: (dir) => Directory.fromUri(directoryUri.resolve(dir)).existsSync(),
-    ).map((e) => directoryUri.resolve(e).path).toList();
+    ).map((e) => File.fromUri(directoryUri.resolve(e)).path).toList();
   }
 }
 

@@ -844,7 +844,6 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-        print('******* creating $filePath');
         await _createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {
