@@ -186,27 +186,28 @@ class Ignore {
   ///
   /// ```dart
   /// import 'dart:io';
-  /// import 'package:path/path.dart';
+  /// import 'package:path/path.dart' as p;
   /// import 'package:pub/src/ignore.dart';
   ///
   /// void main(List<String> args) {
-  ///   var root = normalize(args[0]);
+  ///   var root = p.normalize(args[0]);
   ///   if (root == '.') root = '';
-  ///   var beneath = args.length > 1 ? normalize(args[1]) : root;
+  ///   var beneath = args.length > 1 ? p.normalize(args[1]) : root;
   ///   if (beneath == '.') beneath = '';
-  ///   final uri = Directory(root).uri;
+  ///   String resolve(String path) {
+  ///     return p.joinAll([root, ...p.posix.split(path)]);
+  ///   }
+  ///
   ///   Ignore.unignoredFiles(
   ///     beneath: beneath,
   ///     listDir: (dir) {
-  ///       return Directory.fromUri(uri.resolve(dir))
-  ///           .listSync()
-  ///           .map((x) => x.uri.path);
+  ///       return Directory(resolve(dir)).listSync().map((x) => x.uri.path);
   ///     },
   ///     ignoreForDir: (dir) {
-  ///       final f = File.fromUri(uri.resolve(dir).resolve('.gitignore'));
+  ///       final f = File(resolve('dir/.gitignore'));
   ///       return f.existsSync() ? Ignore([f.readAsStringSync()]) : null;
   ///     },
-  ///     isDir: (dir) => Directory.fromUri(uri.resolve(dir)).existsSync(),
+  ///     isDir: (dir) => Directory(resolve(dir)).existsSync(),
   ///   ).forEach(print);
   /// }
   /// ```
