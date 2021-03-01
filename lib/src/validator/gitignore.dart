@@ -22,9 +22,12 @@ class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
     if (entrypoint.root.inGitRepo) {
-      final checkedIntoGit = git.runSync(
-          ['ls-files', '--cached', '--exclude-standard'],
-          workingDir: entrypoint.root.dir);
+      final checkedIntoGit = git.runSync([
+        'ls-files',
+        '--cached',
+        '--exclude-standard',
+        '--recurse-submodules'
+      ], workingDir: entrypoint.root.dir);
       final uri = Directory('${entrypoint.root.dir}/').uri;
       final unignoredByGitignore = Ignore.unignoredFiles(
         listDir: (dir) {
