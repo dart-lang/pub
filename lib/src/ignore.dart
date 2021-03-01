@@ -242,7 +242,7 @@ class Ignore {
     // Find all ignores between './' and [beneath] (not inclusive).
 
     // [index] points at the next '/' in the path.
-    var index = 0;
+    var index = -1;
     while ((index = beneath.indexOf('/', index + 1)) != -1) {
       final partial = beneath.substring(0, index + 1);
       if (_matchesStack(ignoreStack, partial)) {
@@ -250,7 +250,7 @@ class Ignore {
         return <String>[];
       }
       final ignore = ignoreForDir(
-          partial.isEmpty ? '.' : partial.substring(1, partial.length - 1));
+          partial == '/' ? '.' : partial.substring(1, partial.length - 1));
       ignoreStack
           .add(ignore == null ? null : _IgnorePrefixPair(ignore, partial));
     }
