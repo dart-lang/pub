@@ -234,27 +234,43 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
+  /// if [onlySummary] is `true` only success or failure will be shown ---
+  /// in case of failure, a reproduction command is shown.
+  ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String> unlock,
     bool dryRun = false,
     bool precompile = false,
+    bool onlySummary = false,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
 
     final suffix = root.dir == null || root.dir == '.' ? '' : ' in ${root.dir}';
-    var result = await log.progress(
-      'Resolving dependencies$suffix',
-      () => resolveVersions(
-        type,
-        cache,
-        root,
-        lockFile: lockFile,
-        unlock: unlock,
-      ),
-    );
+    SolveResult result;
+    try {
+      result = await log.progress(
+        'Resolving dependencies$suffix',
+        () => resolveVersions(
+          type,
+          cache,
+          root,
+          lockFile: lockFile,
+          unlock: unlock,
+        ),
+      );
+    } on SolveFailure {
+      if (onlySummary) {
+        final directoryOption = root.dir == null || root.dir == '.'
+            ? ''
+            : ' --directory ${root.dir}';
+        log.warning(
+            'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
+      }
+      throw ApplicationException('');
+    }
 
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
@@ -274,7 +290,9 @@ class Entrypoint {
       }
     }
 
-    await result.showReport(type, cache);
+    if (!onlySummary) {
+      await result.showReport(type, cache);
+    }
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));

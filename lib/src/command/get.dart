@@ -52,7 +52,9 @@ class GetCommand extends PubCommand {
 
     if (argResults['example'] && entrypoint.example != null) {
       await entrypoint.example.acquireDependencies(SolveType.GET,
-          dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+          dryRun: argResults['dry-run'],
+          precompile: argResults['precompile'],
+          onlySummary: true);
     }
   }
 }

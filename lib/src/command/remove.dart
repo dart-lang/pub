@@ -81,7 +81,7 @@ class RemoveCommand extends PubCommand {
 
       if (argResults['example'] && entrypoint.example != null) {
         await entrypoint.example.acquireDependencies(SolveType.GET,
-            precompile: argResults['precompile']);
+            precompile: argResults['precompile'], onlySummary: true);
       }
     }
   }

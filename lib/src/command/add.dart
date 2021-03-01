@@ -160,8 +160,11 @@ class AddCommand extends PubCommand {
           precompile: argResults['precompile']);
 
       if (argResults['example'] && entrypoint.example != null) {
-        await entrypoint.example.acquireDependencies(SolveType.GET,
-            precompile: argResults['precompile']);
+        await entrypoint.example.acquireDependencies(
+          SolveType.GET,
+          precompile: argResults['precompile'],
+          onlySummary: true,
+        );
       }
     }
 

@@ -97,7 +97,7 @@ class UpgradeCommand extends PubCommand {
     if (_upgradeNullSafety) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
-            'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+            'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --null-safety --directory example/` separately.');
       }
       return await _runUpgradeNullSafety();
     }
@@ -105,24 +105,23 @@ class UpgradeCommand extends PubCommand {
     if (_upgradeMajorVersions) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
-            'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run in `example/` separately.');
+            'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.');
       }
       return await _runUpgradeMajorVersions();
     }
 
     await _runUpgrade(entrypoint);
     if (argResults['example'] && entrypoint.example != null) {
-      await _runUpgrade(entrypoint.example);
+      await _runUpgrade(entrypoint.example, onlySummary: true);
     }
   }
 
-  Future<void> _runUpgrade(Entrypoint e) async {
-    await e.acquireDependencies(
-      SolveType.UPGRADE,
-      unlock: argResults.rest,
-      dryRun: _dryRun,
-      precompile: _precompile,
-    );
+  Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
+    await e.acquireDependencies(SolveType.UPGRADE,
+        unlock: argResults.rest,
+        dryRun: _dryRun,
+        precompile: _precompile,
+        onlySummary: onlySummary);
 
     _showOfflineWarning();
   }
