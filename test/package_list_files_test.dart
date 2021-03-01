@@ -23,7 +23,10 @@ void main() {
       d.dir('subdir', [
         d.file('subfile1.txt', 'subcontents'),
         d.file('subfile2.txt', 'subcontents')
-      ])
+      ]),
+      d.dir(Uri.encodeComponent('\\/%+-='), [
+        d.file(Uri.encodeComponent('\\/%+-=')),
+      ]),
     ]).create();
     createEntrypoint();
 
@@ -34,7 +37,9 @@ void main() {
           p.join(root, 'file1.txt'),
           p.join(root, 'file2.txt'),
           p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt')
+          p.join(root, 'subdir', 'subfile2.txt'),
+          p.join(root, Uri.encodeComponent('\\/%+-='),
+              Uri.encodeComponent('\\/%+-=')),
         ]));
   });
 

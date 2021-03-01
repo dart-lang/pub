@@ -214,11 +214,17 @@ class Package {
     // An in-memory package has no files.
     if (dir == null) return [];
     beneath = beneath == null ? '.' : p.toUri(p.normalize(beneath)).path;
-    final directoryUri = Directory('$dir/').uri;
+    String resolve(String path) {
+      if (Platform.isWindows) {
+        return p.joinAll([dir, ...p.posix.split(path)]);
+      }
+      return p.join(dir, path);
+    }
+
     return Ignore.unignoredFiles(
       beneath: beneath,
       listDir: (dir) {
-        var contents = Directory.fromUri(directoryUri.resolve(dir)).listSync();
+        var contents = Directory(resolve(dir)).listSync();
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
@@ -226,15 +232,15 @@ class Package {
             .map((entity) => p.relative(entity.path, from: this.dir));
       },
       ignoreForDir: (dir) {
-        final pubIgnore = File.fromUri(directoryUri.resolve('$dir/.pubignore'));
-        final gitIgnore = File.fromUri(directoryUri.resolve('$dir/.gitignore'));
-        final ignoreFile = pubIgnore.existsSync()
+        final pubIgnore = resolve('$dir/.pubignore');
+        final gitIgnore = resolve('$dir/.gitignore');
+        final ignoreFile = fileExists(pubIgnore)
             ? pubIgnore
-            : (gitIgnore.existsSync() ? gitIgnore : null);
+            : (fileExists(gitIgnore) ? gitIgnore : null);
 
         final rules = [
           if (dir == '.') ..._basicIgnoreRules,
-          if (ignoreFile != null) ignoreFile.readAsStringSync(),
+          if (ignoreFile != null) readTextFile(ignoreFile),
         ];
         return rules.isEmpty
             ? null
@@ -242,12 +248,12 @@ class Package {
                 rules,
                 onInvalidPattern: (pattern, exception) {
                   log.warning(
-                      '${ignoreFile.path} had invalid pattern $pattern. ${exception.message}');
+                      '$ignoreFile had invalid pattern $pattern. ${exception.message}');
                 },
               );
       },
-      isDir: (dir) => Directory.fromUri(directoryUri.resolve(dir)).existsSync(),
-    ).map((e) => File.fromUri(directoryUri.resolve(e)).path).toList();
+      isDir: (dir) => dirExists(resolve(dir)),
+    ).map(resolve).toList();
   }
 }
 
