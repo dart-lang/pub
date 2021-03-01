@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import '../entrypoint.dart';
 import '../git.dart' as git;
 import '../ignore.dart';
+import '../io.dart';
 import '../utils.dart';
 import '../validator.dart';
 
@@ -28,21 +29,27 @@ class GitignoreValidator extends Validator {
         '--exclude-standard',
         '--recurse-submodules'
       ], workingDir: entrypoint.root.dir);
-      final uri = Directory('${entrypoint.root.dir}/').uri;
+      String resolve(String path) {
+        if (Platform.isWindows) {
+          return p.joinAll([entrypoint.root.dir, ...p.posix.split(path)]);
+        }
+        return p.join(entrypoint.root.dir, path);
+      }
+
       final unignoredByGitignore = Ignore.unignoredFiles(
         listDir: (dir) {
-          var contents = Directory.fromUri(uri.resolve(dir)).listSync();
+          var contents = Directory(resolve(dir)).listSync();
           return contents.map(
               (entity) => p.relative(entity.path, from: entrypoint.root.dir));
         },
         ignoreForDir: (dir) {
-          final gitIgnore = File.fromUri(uri.resolve('$dir/.gitignore'));
+          final gitIgnore = resolve('$dir/.gitignore');
           final rules = [
-            if (gitIgnore.existsSync()) gitIgnore.readAsStringSync(),
+            if (fileExists(gitIgnore)) readTextFile(gitIgnore),
           ];
           return rules.isEmpty ? null : Ignore(rules);
         },
-        isDir: (dir) => Directory.fromUri(uri.resolve(dir)).existsSync(),
+        isDir: (dir) => dirExists(resolve(dir)),
       ).toSet();
 
       final ignoredFilesCheckedIn = checkedIntoGit
