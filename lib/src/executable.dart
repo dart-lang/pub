@@ -334,7 +334,7 @@ Future<String> getExecutableForCommand(
       return p.relative(snapshotPath, from: root);
     }
   } on ApplicationException catch (e) {
-    throw CommandResolutionFailedException(e.message);
+    throw CommandResolutionFailedException(e.toString());
   }
 }
 

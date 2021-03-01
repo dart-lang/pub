@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
+import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/io.dart';
@@ -82,5 +83,22 @@ Got dependencies!''');
 Resolving dependencies...
 Got dependencies!
 ''');
+  });
+
+  test('get does not fail when status listing fails', () async {
+    await servePackages((builder) => builder..serve('foo', '1.2.3'));
+    await d.appDir({'foo': '1.2.3'}).create();
+    await pubGet();
+    final fooVersionsCache =
+        p.join(globalPackageServer.cachingPath, '.cache', 'foo-versions.json');
+    expect(fileExists(fooVersionsCache), isTrue);
+    deleteEntry(fooVersionsCache);
+    // Serve 400 on all requests.
+    globalPackageServer.extraHandlers
+      ..clear()
+      ..[RegExp('.*')] = (request) async => Response(400);
+
+    /// Even if we fail to get status we still report success if versions don't unlock.
+    await pubGet();
   });
 }

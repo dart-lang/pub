@@ -170,11 +170,6 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
-  /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources),
-        isGlobal = false;
-
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources),
@@ -779,6 +774,7 @@ class Entrypoint {
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
     for (final pkg in cfg.packages) {
+      if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(

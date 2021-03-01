@@ -44,6 +44,9 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
+  String get directory => _argResults['directory'];
+
+  @override
   bool get captureStackChains {
     return _argResults['trace'] ||
         _argResults['verbose'] ||
@@ -109,6 +112,13 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run the subcommand in the directory<dir>.',
+      defaultsTo: '.',
+      valueHelp: 'dir',
+    );
 
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
@@ -134,8 +144,13 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
 
   @override
   Future<int> run(Iterable<String> args) async {
-    _argResults = parse(args);
-    return await runCommand(_argResults) ?? exit_codes.SUCCESS;
+    try {
+      _argResults = parse(args);
+      return await runCommand(_argResults) ?? exit_codes.SUCCESS;
+    } on UsageException catch (error) {
+      log.exception(error);
+      return exit_codes.USAGE;
+    }
   }
 
   @override
@@ -146,12 +161,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       log.message('Pub ${sdk.version}');
       return 0;
     }
-    try {
-      return await super.runCommand(topLevelResults);
-    } on UsageException catch (error) {
-      log.exception(error);
-      return exit_codes.USAGE;
-    }
+    return await super.runCommand(topLevelResults);
   }
 
   @override

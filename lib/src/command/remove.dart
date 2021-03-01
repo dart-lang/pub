@@ -48,6 +48,9 @@ class RemoveCommand extends PubCommand {
       defaultsTo: true,
       hide: true,
     );
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -75,7 +78,7 @@ class RemoveCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      final updatedEntrypoint = Entrypoint.current(cache);
+      final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
 

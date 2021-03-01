@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
@@ -40,6 +41,9 @@ class OutdatedCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
   bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+
+  @override
+  bool get takesArguments => false;
 
   OutdatedCommand() {
     argParser.addFlag(
@@ -104,6 +108,8 @@ class OutdatedCommand extends PubCommand {
       help: 'Show transitive dependencies.\n'
           '(defaults to off in --mode=null-safety).',
     );
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -255,25 +261,23 @@ class OutdatedCommand extends PubCommand {
       final useColors =
           argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
-      await _outputHuman(
-        rows,
-        mode,
-        useColors: useColors,
-        showAll: showAll,
-        includeDevDependencies: includeDevDependencies,
-        lockFileExists: fileExists(entrypoint.lockFilePath),
-        hasDirectDependencies: rootPubspec.dependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        hasDevDependencies: rootPubspec.devDependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        showTransitiveDependencies: showTransitiveDependencies,
-        hasUpgradableResolution: hasUpgradableResolution,
-        hasResolvableResolution: hasResolvableResolution,
-      );
+      await _outputHuman(rows, mode,
+          useColors: useColors,
+          showAll: showAll,
+          includeDevDependencies: includeDevDependencies,
+          lockFileExists: fileExists(entrypoint.lockFilePath),
+          hasDirectDependencies: rootPubspec.dependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          hasDevDependencies: rootPubspec.devDependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          showTransitiveDependencies: showTransitiveDependencies,
+          hasUpgradableResolution: hasUpgradableResolution,
+          hasResolvableResolution: hasResolvableResolution,
+          directory: path.normalize(directory));
     }
   }
 
@@ -445,11 +449,10 @@ Future<void> _outputHuman(
   @required bool showTransitiveDependencies,
   @required bool hasUpgradableResolution,
   @required bool hasResolvableResolution,
+  @required String directory,
 }) async {
-  final explanation = mode.explanation;
-  if (explanation != null) {
-    log.message(explanation + '\n');
-  }
+  final directoryDesc = directory == '.' ? '' : ' in $directory';
+  log.message(mode.explanation(directoryDesc) + '\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -600,7 +603,7 @@ abstract class Mode {
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packageDetails);
 
-  String get explanation;
+  String explanation(String directoryDescription);
   String get foundNoBadText;
   String get allGood;
   String get noResolutionText;
@@ -611,8 +614,8 @@ abstract class Mode {
 
 class _OutdatedMode implements Mode {
   @override
-  String get explanation => '''
-Showing outdated packages.
+  String explanation(String directoryDescription) => '''
+Showing outdated packages$directoryDescription.
 [${log.red('*')}] indicates versions that are not the latest available.
 ''';
 
@@ -689,8 +692,8 @@ class _NullSafetyMode implements Mode {
       {@required this.shouldShowSpinner});
 
   @override
-  String get explanation => '''
-Showing dependencies that are currently not opted in to null-safety.
+  String explanation(String directoryDescription) => '''
+Showing dependencies$directoryDescription that are currently not opted in to null-safety.
 [${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
 [${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
 ''';

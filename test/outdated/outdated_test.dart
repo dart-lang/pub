@@ -7,47 +7,26 @@ import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-/// Runs `pub outdated [args]` and appends the output to [buffer].
-Future<void> runPubOutdated(List<String> args, StringBuffer buffer,
-    {Map<String, String> environment,
-    dynamic exitCode = 0,
-    dynamic stdErr = isEmpty}) async {
-  final process =
-      await startPub(args: ['outdated', ...args], environment: environment);
-  await process.shouldExit(exitCode);
-
-  expect(await process.stderr.rest.toList(), stdErr);
-  buffer.writeln([
-    '\$ pub outdated ${args.join(' ')}',
-    ...await process.stdout.rest.where((line) {
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      return !line.startsWith('Downloading ');
-    }).toList(),
-  ].join('\n'));
-  buffer.write('\n');
-}
-
 /// Try running 'pub outdated' with a number of different sets of arguments.
 ///
 /// Compare the stdout and stderr output to the file in goldens/$[name].
 Future<void> variations(String name, {Map<String, String> environment}) async {
   final buffer = StringBuffer();
   for (final args in [
-    ['--json'],
-    ['--no-color'],
-    ['--no-color', '--no-transitive'],
-    ['--no-color', '--up-to-date'],
-    ['--no-color', '--prereleases'],
-    ['--no-color', '--no-dev-dependencies'],
-    ['--no-color', '--no-dependency-overrides'],
-    ['--no-color', '--mode=null-safety'],
-    ['--no-color', '--mode=null-safety', '--transitive'],
-    ['--no-color', '--mode=null-safety', '--no-prereleases'],
-    ['--json', '--mode=null-safety'],
-    ['--json', '--no-dev-dependencies'],
+    ['outdated', '--json'],
+    ['outdated', '--no-color'],
+    ['outdated', '--no-color', '--no-transitive'],
+    ['outdated', '--no-color', '--up-to-date'],
+    ['outdated', '--no-color', '--prereleases'],
+    ['outdated', '--no-color', '--no-dev-dependencies'],
+    ['outdated', '--no-color', '--no-dependency-overrides'],
+    ['outdated', '--no-color', '--mode=null-safety'],
+    ['outdated', '--no-color', '--mode=null-safety', '--transitive'],
+    ['outdated', '--no-color', '--mode=null-safety', '--no-prereleases'],
+    ['outdated', '--json', '--mode=null-safety'],
+    ['outdated', '--json', '--no-dev-dependencies'],
   ]) {
-    await runPubOutdated(args, buffer, environment: environment);
+    await runPubIntoBuffer(args, buffer, environment: environment);
   }
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
@@ -57,7 +36,10 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
 Future<void> main() async {
   test('help text', () async {
     final buffer = StringBuffer();
-    await runPubOutdated(['--help'], buffer);
+    await runPubIntoBuffer(
+      ['outdated', '--help'],
+      buffer,
+    );
     expectMatchesGoldenFile(
         buffer.toString(), 'test/outdated/goldens/helptext.txt');
   });
@@ -65,10 +47,9 @@ Future<void> main() async {
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();
-    await runPubOutdated([], buffer,
-        exitCode: isNot(0),
-        stdErr: contains(
-            startsWith('Could not find a file named "pubspec.yaml" in ')));
+    await runPubIntoBuffer(['outdated'], buffer);
+    expectMatchesGoldenFile(
+        buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
   });
 
   test('no lockfile', () async {
@@ -454,5 +435,13 @@ Future<void> main() async {
       // To test that the reproduction command is reflected correctly.
       'PUB_ENVIRONMENT': 'flutter_cli:get',
     });
+  });
+
+  test("doesn't allow arguments. Handles bad flags", () async {
+    final sb = StringBuffer();
+    await runPubIntoBuffer(['outdated', 'random_argument'], sb);
+    await runPubIntoBuffer(['outdated', '--bad_flag'], sb);
+    expectMatchesGoldenFile(
+        sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
   });
 }

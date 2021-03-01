@@ -435,12 +435,17 @@ class VersionSolver {
       // TODO(sigurdm): This has a smell. The Git source should have a
       // reasonable behavior here (we should be able to call getVersions in a
       // way that doesn't fetch.
-      var ids = cached ??
-          (package.source is HostedSource
-              ? (await _systemCache
-                  .source(package.source)
-                  .getVersions(package.toRef(), maxAge: Duration(days: 3)))
-              : [package]);
+      List<PackageId> ids;
+      try {
+        ids = cached ??
+            (package.source is HostedSource
+                ? (await _systemCache
+                    .source(package.source)
+                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+                : [package]);
+      } on Exception {
+        ids = <PackageId>[package];
+      }
 
       availableVersions[package.name] = ids.map((id) => id.version).toList();
     }

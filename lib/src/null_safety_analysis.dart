@@ -174,7 +174,7 @@ class NullSafetyAnalysis {
               .createContext(
                 sdkPath: getSdkPath(),
                 contextRoot: ContextLocator().locateRoots(
-                  includedPaths: [packageDir],
+                  includedPaths: [path.normalize(packageDir)],
                 ).first,
               )
               .currentSession;

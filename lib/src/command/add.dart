@@ -80,6 +80,8 @@ class AddCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -102,6 +104,7 @@ class AddCommand extends PubCommand {
       /// in case [package] was already a transitive dependency. In the case
       /// where the user specifies a version constraint, this serves to ensure
       /// that a resolution exists before we update pubspec.yaml.
+      // TODO(sigurdm): We should really use a spinner here.
       solveResult = await resolveVersions(
           SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
@@ -155,7 +158,7 @@ class AddCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      final updatedEntrypoint = Entrypoint.current(cache);
+      final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
 
