@@ -200,9 +200,10 @@ class Ignore {
   ///
   ///   Ignore.unignoredFiles(
   ///     beneath: beneath,
-  ///     listDir: (dir) {
-  ///       return Directory(resolve(dir)).listSync().map((x) => x.uri.path);
-  ///     },
+  ///     listDir: (dir) => Directory(resolve(dir)).listSync().map((x) {
+  ///        final relative = p.relative(x.path, from: root);
+  ///       return p.posix.joinAll(p.split(relative));
+  ///     }),
   ///     ignoreForDir: (dir) {
   ///       final f = File(resolve('dir/.gitignore'));
   ///       return f.existsSync() ? Ignore([f.readAsStringSync()]) : null;

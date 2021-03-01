@@ -228,8 +228,13 @@ class Package {
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
-        return contents
-            .map((entity) => p.relative(entity.path, from: this.dir));
+        return contents.map((entity) {
+          final relative = p.relative(entity.path, from: this.dir);
+          if (Platform.isWindows) {
+            return p.posix.joinAll(p.split(relative));
+          }
+          return relative;
+        });
       },
       ignoreForDir: (dir) {
         final pubIgnore = resolve('$dir/.pubignore');
