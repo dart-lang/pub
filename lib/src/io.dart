@@ -844,7 +844,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-
+        print('******* creating $filePath');
         await _createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {
@@ -909,6 +909,7 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
   baseDir = path.absolute(baseDir);
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
+    print('Packing up $entry');
     entry = path.absolute(entry);
     if (!path.isWithin(baseDir, entry)) {
       throw ArgumentError('Entry $entry is not inside $baseDir.');
