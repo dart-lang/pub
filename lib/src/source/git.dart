@@ -306,10 +306,13 @@ class BoundGitSource extends CachedSource {
       var revisionCachePath = _revisionCachePath(id);
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
-          await _clone(_repoCachePath(ref), revisionCachePath);
+          await _clone(ref.description['url'], revisionCachePath,
+              reference: _repoCachePath(ref));
           await _checkOut(revisionCachePath, id.description['resolved-ref']);
+          await _pullLFS(revisionCachePath);
           _writePackageList(revisionCachePath, [id.description['path']]);
         } else {
+          await _pullLFS(revisionCachePath);
           _updatePackageList(revisionCachePath, id.description['path']);
         }
       });
@@ -541,8 +544,13 @@ class BoundGitSource extends CachedSource {
   ///
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
+  ///
+  /// If [reference] is not null, we expect [from] to be a remote repository
+  ///  and [reference] to be the URI of a local filesystem repository.
+  /// This allows our clone to save network and filesystem resources while
+  /// still allowing Git LFS to fetch any binary files from the remote.
   Future _clone(String from, String to,
-      {bool mirror = false, bool shallow = false}) {
+      {bool mirror = false, bool shallow = false, String reference}) {
     return Future.sync(() {
       // Git on Windows does not seem to automatically create the destination
       // directory.
@@ -551,6 +559,7 @@ class BoundGitSource extends CachedSource {
 
       if (mirror) args.insert(1, '--mirror');
       if (shallow) args.insertAll(1, ['--depth', '1']);
+      if (reference != null) args.insertAll(1, ['--reference', reference]);
 
       return git.run(args);
     }).then((result) => null);
@@ -560,6 +569,31 @@ class BoundGitSource extends CachedSource {
   Future _checkOut(String repoPath, String ref) {
     return git
         .run(['checkout', ref], workingDir: repoPath).then((result) => null);
+  }
+
+  /// Checks out any LFS binaries at the current ref to [repoPath].
+  /// Ignore errors if `git lfs` is not installed.
+  Future<void> _pullLFS(String repoPath) async {
+    var attributesPath = '$repoPath/.gitattributes';
+    // if there is no attributes file there won't be any LFS binaries
+    if (!fileExists(attributesPath)) return;
+    if (!readTextFile(attributesPath).toLowerCase().contains('=lfs')) return;
+
+    try {
+      // to avoid silent failure let's initialize git lfs hooks in the
+      // cloned repository in case the user has not globally ran `git lfs install`
+      await git.run(['lfs', 'install', '--local'], workingDir: repoPath);
+    } on git.GitException catch (e) {
+      if (e.message.contains('not a git command')) {
+        log.error('git lfs not found');
+        return;
+      } else {
+        rethrow;
+      }
+    }
+
+    return git
+        .run(['lfs', 'pull'], workingDir: repoPath).then((result) => null);
   }
 
   String _revisionCachePath(PackageId id) => p.join(
