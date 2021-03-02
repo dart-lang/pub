@@ -3,8 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:collection';
-
-import 'package:path/path.dart' as p;
+import 'dart:convert';
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
@@ -47,6 +46,9 @@ class DepsCommand extends PubCommand {
         allowed: ['compact', 'tree', 'list'],
         defaultsTo: 'tree');
 
+    argParser.addFlag('json',
+        negatable: false, help: 'Output in a json format');
+
     argParser.addFlag('dev',
         help: 'Whether to include dev dependencies.', defaultsTo: true);
 
@@ -59,6 +61,9 @@ class DepsCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    if (argResults.wasParsed('style') && argResults.wasParsed('json')) {
+      usageException('Cannot specify both json and style');
+    }
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
 
@@ -67,23 +72,58 @@ class DepsCommand extends PubCommand {
     if (argResults['executables']) {
       _outputExecutables();
     } else {
-      for (var sdk in sdks.values) {
-        if (!sdk.isAvailable) continue;
-        _buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
-      }
+      if (argResults['json']) {
+        final visited = <String>[];
+        final toVisit = [entrypoint.root.name];
+        final packagesJson = <String, dynamic>{};
+        while (toVisit.isNotEmpty) {
+          final current = toVisit.removeLast();
+          if (visited.contains(current)) continue;
+          visited.add(current);
+          final currentPackage = entrypoint.packageGraph.packages[current];
+          final next = (current == entrypoint.root.name
+                  ? entrypoint.root.immediateDependencies
+                  : currentPackage.dependencies)
+              .keys
+              .toList();
+          packagesJson[current] = {
+            'version': currentPackage.version.toString(),
+            'dependencies': next
+          };
+          toVisit.addAll(next);
+        }
+        _buffer.writeln(
+          JsonEncoder.withIndent('  ').convert(
+            {
+              'root': entrypoint.root.name,
+              'packages': packagesJson,
+              'sdks': [
+                for (var sdk in sdks.values)
+                  if (sdk.version != null)
+                    {'name': sdk.name, 'version': sdk.version.toString()}
+              ],
+            },
+          ),
+        );
+      } else {
+        for (var sdk in sdks.values) {
+          if (!sdk.isAvailable) continue;
+          _buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+        }
 
-      _buffer.writeln(_labelPackage(entrypoint.root));
+        _buffer.writeln(_labelPackage(entrypoint.root));
 
-      switch (argResults['style']) {
-        case 'compact':
-          _outputCompact();
-          break;
-        case 'list':
-          _outputList();
-          break;
-        case 'tree':
-          _outputTree();
-          break;
+        switch (argResults['style']) {
+          case 'compact':
+            _outputCompact();
+            break;
+          case 'list':
+            _outputList();
+            break;
+          case 'tree':
+            _outputTree();
+            break;
+        }
       }
     }
 
@@ -267,33 +307,23 @@ class DepsCommand extends PubCommand {
           .map((name) => entrypoint.packageGraph.packages[name])
     ];
 
-    for (var package in packages) {
-      var executables = _getExecutablesFor(package);
-      if (executables.isNotEmpty) {
-        _buffer.writeln(_formatExecutables(package.name, executables.toList()));
+    if (argResults['json']) {
+      _buffer.writeln(JsonEncoder.withIndent('  ').convert({
+        'packages': {
+          for (final package in packages)
+            if (package.executableNames.isNotEmpty)
+              package.name: package.executableNames
+        }
+      }));
+    } else {
+      for (var package in packages) {
+        var executables = package.executableNames;
+        if (executables.isNotEmpty) {
+          _buffer
+              .writeln(_formatExecutables(package.name, executables.toList()));
+        }
       }
     }
-  }
-
-  /// Returns `true` if [path] looks like a Dart entrypoint.
-  bool _isDartExecutable(String path) {
-    try {
-      var unit = analysisContextManager.parse(path);
-      return isEntrypoint(unit);
-    } on AnalyzerErrorGroup {
-      return false;
-    }
-  }
-
-  /// Lists all Dart files in the `bin` directory of the [package].
-  ///
-  /// Returns file names without extensions.
-  Iterable<String> _getExecutablesFor(Package package) {
-    var packagePath = p.normalize(p.absolute(package.dir));
-    analysisContextManager.createContextsForDirectory(packagePath);
-    return package.executablePaths
-        .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-        .map(p.basenameWithoutExtension);
   }
 
   /// Returns formatted string that lists [executables] for the [packageName].
