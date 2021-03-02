@@ -130,6 +130,92 @@ void main() {
                       '-- myapp...
           ''');
     });
+    test('in json form', () async {
+      await pubGet();
+      await runPub(args: ['deps', '--json'], output: '''
+{
+  "root": "myapp",
+  "packages": {
+    "myapp": {
+      "version": "0.0.0",
+      "dependencies": [
+        "normal",
+        "overridden",
+        "from_path",
+        "unittest",
+        "override_only"
+      ]
+    },
+    "override_only": {
+      "version": "1.2.3",
+      "dependencies": []
+    },
+    "unittest": {
+      "version": "1.2.3",
+      "dependencies": [
+        "shared",
+        "dev_only"
+      ]
+    },
+    "dev_only": {
+      "version": "1.2.3",
+      "dependencies": []
+    },
+    "shared": {
+      "version": "1.2.3",
+      "dependencies": [
+        "other"
+      ]
+    },
+    "other": {
+      "version": "1.0.0",
+      "dependencies": [
+        "myapp"
+      ]
+    },
+    "from_path": {
+      "version": "1.2.3",
+      "dependencies": []
+    },
+    "overridden": {
+      "version": "2.0.0",
+      "dependencies": []
+    },
+    "normal": {
+      "version": "1.2.3",
+      "dependencies": [
+        "transitive",
+        "circular_a"
+      ]
+    },
+    "circular_a": {
+      "version": "1.2.3",
+      "dependencies": [
+        "circular_b"
+      ]
+    },
+    "circular_b": {
+      "version": "1.2.3",
+      "dependencies": [
+        "circular_a"
+      ]
+    },
+    "transitive": {
+      "version": "1.2.3",
+      "dependencies": [
+        "shared"
+      ]
+    }
+  },
+  "sdks": [
+    {
+      "name": "Dart",
+      "version": "0.1.2+3"
+    }
+  ]
+}
+          ''');
+    });
 
     test('with the Flutter SDK, if applicable', () async {
       await pubGet();
