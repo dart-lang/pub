@@ -573,10 +573,15 @@ Future<void> _outputHuman(
       }
     }
 
-    if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
+    if (notAtResolvable == 0 &&
+        upgradable == 0 &&
+        rows.isNotEmpty &&
+        (directRows.isNotEmpty || devRows.isNotEmpty)) {
       log.message(
           "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
           "Newer versions, listed in 'Latest', may not be mutually compatible.");
+    } else if (directRows.isEmpty && devRows.isEmpty) {
+      log.message('All dependencies opt in to null-safety.');
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
