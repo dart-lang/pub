@@ -1,0 +1,74 @@
+|-- bar
+|   |-- bin
+|   |   '-- qux.dart
+|   '-- pubspec.yaml
+|-- foo
+|   |-- bin
+|   |   |-- baz.dart
+|   |   '-- foo.dart
+|   '-- pubspec.yaml
+'-- myapp
+    |-- bin
+    |   '-- myapp.dart
+    '-- pubspec.yaml
+
+$ pub deps --executables
+myapp
+foo: foo, baz
+bar:qux
+
+$ pub deps --executables --dev
+myapp
+foo: foo, baz
+bar:qux
+
+$ pub deps --executables --json
+{
+  "packages": [
+    {
+      "name": "myapp",
+      "executables": [
+        "myapp"
+      ]
+    },
+    {
+      "name": "foo",
+      "executables": [
+        "baz",
+        "foo"
+      ]
+    },
+    {
+      "name": "bar",
+      "executables": [
+        "qux"
+      ]
+    }
+  ]
+}
+
+$ pub deps --executables --dev --json
+{
+  "packages": [
+    {
+      "name": "myapp",
+      "executables": [
+        "myapp"
+      ]
+    },
+    {
+      "name": "foo",
+      "executables": [
+        "baz",
+        "foo"
+      ]
+    },
+    {
+      "name": "bar",
+      "executables": [
+        "qux"
+      ]
+    }
+  ]
+}
+

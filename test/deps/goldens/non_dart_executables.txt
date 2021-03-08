@@ -1,0 +1,20 @@
+'-- myapp
+    |-- bin
+    |   |-- bar.sh
+    |   '-- foo.py
+    '-- pubspec.yaml
+
+$ pub deps --executables
+
+$ pub deps --executables --dev
+
+$ pub deps --executables --json
+{
+  "packages": []
+}
+
+$ pub deps --executables --dev --json
+{
+  "packages": []
+}
+

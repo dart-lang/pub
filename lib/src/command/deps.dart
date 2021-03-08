@@ -75,7 +75,7 @@ class DepsCommand extends PubCommand {
       if (argResults['json']) {
         final visited = <String>[];
         final toVisit = [entrypoint.root.name];
-        final packagesJson = <String, dynamic>{};
+        final packagesJson = <dynamic>[];
         while (toVisit.isNotEmpty) {
           final current = toVisit.removeLast();
           if (visited.contains(current)) continue;
@@ -86,10 +86,11 @@ class DepsCommand extends PubCommand {
                   : currentPackage.dependencies)
               .keys
               .toList();
-          packagesJson[current] = {
+          packagesJson.add({
+            'name': current,
             'version': currentPackage.version.toString(),
             'dependencies': next
-          };
+          });
           toVisit.addAll(next);
         }
         _buffer.writeln(
@@ -309,11 +310,11 @@ class DepsCommand extends PubCommand {
 
     if (argResults['json']) {
       _buffer.writeln(JsonEncoder.withIndent('  ').convert({
-        'packages': {
+        'packages': [
           for (final package in packages)
             if (package.executableNames.isNotEmpty)
-              package.name: package.executableNames
-        }
+              {'name': package.name, 'executables': package.executableNames}
+        ]
       }));
     } else {
       for (var package in packages) {

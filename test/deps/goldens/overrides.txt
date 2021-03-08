@@ -1,0 +1,44 @@
+|-- foo-1.0
+|   |-- bin
+|   |   '-- bar.dart
+|   '-- pubspec.yaml
+|-- foo-2.0
+|   |-- bin
+|   |   |-- bar.dart
+|   |   '-- baz.dart
+|   '-- pubspec.yaml
+'-- myapp
+    '-- pubspec.yaml
+
+$ pub deps --executables
+foo: bar, baz
+
+$ pub deps --executables --dev
+foo: bar, baz
+
+$ pub deps --executables --json
+{
+  "packages": [
+    {
+      "name": "foo",
+      "executables": [
+        "bar",
+        "baz"
+      ]
+    }
+  ]
+}
+
+$ pub deps --executables --dev --json
+{
+  "packages": [
+    {
+      "name": "foo",
+      "executables": [
+        "bar",
+        "baz"
+      ]
+    }
+  ]
+}
+
