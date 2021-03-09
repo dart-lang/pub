@@ -46,23 +46,23 @@ void main() {
                 candidate == '.' ||
                 path.length > candidate.length && path[candidate.length] == '/';
 
-            // final r = Ignore.unignoredFiles(
-            //     beneath: pathWithoutSlash,
-            //     includeDirs: true,
-            //     listDir: listDir,
-            //     ignoreForDir: ignoreForDir,
-            //     isDir: isDir);
-            // if (expected) {
-            //   expect(r, isEmpty,
-            //       reason: 'Expected "$path" to be ignored, it was NOT!');
-            // } else {
-            //   expect(r, [pathWithoutSlash],
-            //       reason:
-            //           'Expected "$path" to NOT be ignored, it was IGNORED!');
-            // }
+            final r = Ignore.listFiles(
+                beneath: pathWithoutSlash,
+                includeDirs: true,
+                listDir: listDir,
+                ignoreForDir: ignoreForDir,
+                isDir: isDir);
+            if (expected) {
+              expect(r, isEmpty,
+                  reason: 'Expected "$path" to be ignored, it was NOT!');
+            } else {
+              expect(r, [pathWithoutSlash],
+                  reason:
+                      'Expected "$path" to NOT be ignored, it was IGNORED!');
+            }
 
             // Also test that the logic of walking the tree works.
-            final r2 = Ignore.unignoredFiles(
+            final r2 = Ignore.listFiles(
                 includeDirs: true,
                 listDir: listDir,
                 ignoreForDir: ignoreForDir,

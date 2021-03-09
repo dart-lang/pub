@@ -36,7 +36,7 @@ class GitignoreValidator extends Validator {
         return p.join(entrypoint.root.dir, path);
       }
 
-      final unignoredByGitignore = Ignore.unignoredFiles(
+      final unignoredByGitignore = Ignore.listFiles(
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
           return contents.map((entity) => p.posix.joinAll(

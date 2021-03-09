@@ -221,7 +221,7 @@ class Package {
       return p.join(dir, path);
     }
 
-    return Ignore.unignoredFiles(
+    return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         var contents = Directory(resolve(dir)).listSync();

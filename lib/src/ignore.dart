@@ -22,7 +22,7 @@
 /// ```
 ///
 /// For a generic walk of a file-hierarchy with ignore files at all levels see
-/// [Ignore.unignoredFiles].
+/// [Ignore.listFiles].
 ///
 /// [1]: https://git-scm.com/docs/gitignore
 
@@ -143,7 +143,7 @@ class Ignore {
     }
     final pathWithoutSlash =
         path.endsWith('/') ? path.substring(0, path.length - 1) : path;
-    return unignoredFiles(
+    return listFiles(
       beneath: pathWithoutSlash,
       includeDirs: true,
       listDir: (dir) {
@@ -198,7 +198,7 @@ class Ignore {
   ///     return p.joinAll([root, ...p.posix.split(path)]);
   ///   }
   ///
-  ///   Ignore.unignoredFiles(
+  ///   Ignore.listFiles(
   ///     beneath: beneath,
   ///     listDir: (dir) => Directory(resolve(dir)).listSync().map((x) {
   ///        final relative = p.relative(x.path, from: root);
@@ -212,7 +212,7 @@ class Ignore {
   ///   ).forEach(print);
   /// }
   /// ```
-  static List<String> unignoredFiles({
+  static List<String> listFiles({
     String beneath = '',
     @required Iterable<String> Function(String) listDir,
     @required Ignore Function(String) ignoreForDir,
