@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -40,6 +42,27 @@ void main() {
           p.join(root, 'subdir', 'subfile2.txt'),
           p.join(root, Uri.encodeComponent('\\/%+-='),
               Uri.encodeComponent('\\/%+-=')),
+        ]));
+  });
+
+  test('handles cycles', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', []),
+    ]).create();
+    Link(p.join(d.sandbox, appPath, 'subdir', 'cycle')).createSync('..');
+
+    createEntrypoint();
+
+    expect(
+        entrypoint.root.listFiles(),
+        unorderedEquals([
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'cycle'),
         ]));
   });
 

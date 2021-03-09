@@ -263,6 +263,10 @@ Future<String> _createSystemTempDir() async {
   return tempDir.resolveSymbolicLinksSync();
 }
 
+String resolveSymlinksOfDir(String dir) {
+  return Directory(dir).resolveSymbolicLinksSync();
+}
+
 /// Lists the contents of [dir].
 ///
 /// If [recursive] is `true`, lists subdirectory contents (defaults to `false`).

@@ -221,6 +221,7 @@ class Package {
       return p.join(dir, path);
     }
 
+    final visitedDirs = <String>{};
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
@@ -257,7 +258,16 @@ class Package {
                 },
               );
       },
-      isDir: (dir) => dirExists(resolve(dir)),
+      isDir: (dir) {
+        final resolved = resolve(dir);
+        final isDir = dirExists(resolved);
+        if (isDir) {
+          final canonicalized = resolveSymlinksOfDir(resolved);
+          // Avoid cycles by only visiting each location once.
+          return visitedDirs.add(canonicalized);
+        }
+        return false;
+      },
     ).map(resolve).toList();
   }
 }
