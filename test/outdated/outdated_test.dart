@@ -276,6 +276,46 @@ Future<void> main() async {
         environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
   });
 
+  test('null-safety already migrated', () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('foo', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('bar', '2.0.0', deps: {
+        'devTransitive': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('devTransitive', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      }));
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.0',
+        'dependencies': {
+          'foo': '^2.0.0',
+        },
+        'dev_dependencies': {
+          'bar': '^2.0.0',
+        },
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+
+    await variations('null_safety_already_migrated',
+        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+  });
+
   test('overridden dependencies', () async {
     ensureGit();
     await servePackages(
