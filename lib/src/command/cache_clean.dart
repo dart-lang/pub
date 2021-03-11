@@ -10,7 +10,7 @@ class CacheCleanCommand extends PubCommand {
   @override
   String get name => 'clean';
   @override
-  String get description => 'Clears the entire system cache.';
+  String get description => 'Clears the global PUB_CACHE.';
   @override
   bool get takesArguments => false;
 
