@@ -61,7 +61,8 @@ class GitignoreValidator extends Validator {
 ${ignoredFilesCheckedIn.length} checked in ${pluralize('file', ignoredFilesCheckedIn.length)} are ignored by a `.gitignore`.
 Previous versions of Pub would include those in the published package.
 
-Consider adjusting your .gitignore files to not ignore those files.
+Consider adjusting your `.gitignore` files to not ignore those files, and if you do not wish to
+publish these files use `.pubignore`. See also dart.dev/go/pubignore
 
 Files that are checked in while gitignored:
 
