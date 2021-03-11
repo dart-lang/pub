@@ -5,7 +5,6 @@
 import '../command.dart';
 import '../command_runner.dart';
 import '../io.dart';
-import '../io.dart';
 import '../log.dart' as log;
 
 class CacheCleanCommand extends PubCommand {
