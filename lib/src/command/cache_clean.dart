@@ -4,6 +4,7 @@
 
 import '../command.dart';
 import '../io.dart';
+import '../io.dart';
 import '../log.dart' as log;
 
 class CacheCleanCommand extends PubCommand {
@@ -14,11 +15,25 @@ class CacheCleanCommand extends PubCommand {
   @override
   bool get takesArguments => false;
 
+  CacheCleanCommand() {
+    argParser.addFlag(
+      'force',
+      abbr: 'f',
+      help: 'Don\'t ask for confirmation.',
+      negatable: false,
+    );
+  }
+
   @override
   Future<void> runProtected() async {
-    if (entryExists(cache.rootDir)) {
-      log.message('Removing pub cache directory ${cache.rootDir}.');
-      deleteEntry(cache.rootDir);
+    if (dirExists(cache.rootDir)) {
+      if (argResults['force'] ||
+          await confirm(
+              'This will remove everything inside ${cache.rootDir}. Are you sure?')) {
+        log.message('Removing pub cache directory ${cache.rootDir}.');
+        deleteEntry(cache.rootDir);
+        ensureDir(cache.rootDir);
+      }
     } else {
       log.message('No pub cache at ${cache.rootDir}.');
     }

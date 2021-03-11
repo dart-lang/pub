@@ -17,15 +17,41 @@ void main() {
     await runPub(args: ['cache', 'clean'], output: 'No pub cache at $cache.');
   });
 
-  test('running pub cache clean deletes cache', () async {
+  test('running pub cache clean --force deletes cache', () async {
     await servePackages((b) => b..serve('foo', '1.1.2')..serve('bar', '1.2.3'));
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
-    expect(dirExists(cache), isTrue);
+    expect(listDir(cache, includeHidden: true), isNotEmpty);
     await runPub(
-        args: ['cache', 'clean'],
+        args: ['cache', 'clean', '--force'],
         output: 'Removing pub cache directory $cache.');
-    expect(dirExists(cache), isFalse);
+    expect(listDir(cache, includeHidden: true), isEmpty);
+  });
+
+  test('running pub cache clean deletes cache only with confirmation',
+      () async {
+    await servePackages((b) => b..serve('foo', '1.1.2')..serve('bar', '1.2.3'));
+    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await pubGet();
+    final cache = path.join(d.sandbox, cachePath);
+    expect(listDir(cache, includeHidden: true), isNotEmpty);
+    {
+      final process = await startPub(
+        args: ['cache', 'clean'],
+      );
+      process.stdin.writeln('n');
+      expect(await process.exitCode, 0);
+    }
+    expect(listDir(cache, includeHidden: true), isNotEmpty);
+
+    {
+      final process = await startPub(
+        args: ['cache', 'clean'],
+      );
+      process.stdin.writeln('y');
+      expect(await process.exitCode, 0);
+    }
+    expect(listDir(cache, includeHidden: true), isEmpty);
   });
 }
