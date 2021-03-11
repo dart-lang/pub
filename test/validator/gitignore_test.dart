@@ -40,7 +40,7 @@ void main() {
           contains('Package has 1 warning.'),
           contains('foo.txt'),
           contains(
-              'Consider adjusting your .gitignore files to not ignore those files.'),
+              'Consider adjusting your `.gitignore` files to not ignore those files'),
         ]),
         exit_codes.DATA);
   });
