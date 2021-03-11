@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exceptions.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'git.dart' as git;
@@ -221,7 +222,6 @@ class Package {
       return p.join(dir, path);
     }
 
-    final visitedDirs = <String>{};
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
@@ -230,6 +230,19 @@ class Package {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
         return contents.map((entity) {
+          if (linkExists(entity.path)) {
+            final target = Link(entity.path).targetSync();
+            print(
+                'Found link: ${entity.path} ${dirExists(entity.path)} ${target}');
+            if (dirExists(entity.path)) {
+              throw DataException(
+                  '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
+            }
+            if (!fileExists(entity.path)) {
+              throw DataException(
+                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => $target.''');
+            }
+          }
           final relative = p.relative(entity.path, from: this.dir);
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
@@ -258,16 +271,7 @@ class Package {
                 },
               );
       },
-      isDir: (dir) {
-        final resolved = resolve(dir);
-        final isDir = dirExists(resolved);
-        if (isDir) {
-          final canonicalized = resolveSymlinksOfDir(resolved);
-          // Avoid cycles by only visiting each location once.
-          return visitedDirs.add(canonicalized);
-        }
-        return false;
-      },
+      isDir: (dir) => dirExists(resolve(dir)),
     ).map(resolve).toList();
   }
 }

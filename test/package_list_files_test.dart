@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exceptions.dart';
 import 'package:test/test.dart';
 
 import 'package:pub/src/entrypoint.dart';
@@ -45,27 +46,86 @@ void main() {
         ]));
   });
 
-  test('handles cycles', () async {
+  test('throws on directory symlinks', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
-      d.dir('subdir', []),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')])
+      ]),
     ]).create();
-    Link(p.join(d.sandbox, appPath, 'subdir', 'cycle')).createSync('..');
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink')).createSync('a');
 
     createEntrypoint();
 
     expect(
-        entrypoint.root.listFiles(),
-        unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.txt'),
-          p.join(root, 'subdir', 'cycle'),
-        ]));
+      () => entrypoint.root.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+              'Pub does not support publishing packages with directory symlinks'),
+        ),
+      ),
+    );
   });
 
+  test('throws on non-resolving file symlinks', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')])
+      ]),
+    ]).create();
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
+        .createSync('nonexisting');
+
+    createEntrypoint();
+
+    expect(
+      () => entrypoint.root.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+              'Pub does not support publishing packages with non-resolving symlink:'),
+        ),
+      ),
+    );
+  });
+
+  test('throws on reciprocal symlinks', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')])
+      ]),
+    ]).create();
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink1'))
+        .createSync('symlink2');
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink2'))
+        .createSync('symlink1');
+    createEntrypoint();
+
+    expect(
+      () => entrypoint.root.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+              'Pub does not support publishing packages with non-resolving symlink:'),
+        ),
+      ),
+    );
+  });
   test('pubignore can undo the exclusion of .-files', () async {
     await d.dir(appPath, [
       d.file('.pubignore', '!.foo'),
