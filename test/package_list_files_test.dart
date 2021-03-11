@@ -73,6 +73,30 @@ void main() {
     );
   });
 
+  test('can list a package inside a symlinked folder', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')])
+      ]),
+    ]).create();
+
+    final root = p.join(d.sandbox, 'symlink');
+    Link(root).createSync(appPath);
+
+    final entrypoint = Entrypoint(p.join(d.sandbox, 'symlink'),
+        SystemCache(rootDir: p.join(d.sandbox, cachePath)));
+
+    expect(entrypoint.root.listFiles(), {
+      p.join(root, 'pubspec.yaml'),
+      p.join(root, 'file1.txt'),
+      p.join(root, 'file2.txt'),
+      p.join(root, 'subdir', 'a', 'file'),
+    });
+  });
+
   test('throws on non-resolving file symlinks', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
