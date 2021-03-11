@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../io.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -27,9 +28,10 @@ class CacheCleanCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     if (dirExists(cache.rootDir)) {
-      if (argResults['force'] ||
-          await confirm(
-              'This will remove everything inside ${cache.rootDir}. Are you sure?')) {
+      if (argResults['force'] || await confirm('''
+This will remove everything inside ${cache.rootDir}.
+You will have to run `$topLevelProgram pub get` again in each project.
+Are you sure?''')) {
         log.message('Removing pub cache directory ${cache.rootDir}.');
         deleteEntry(cache.rootDir);
         ensureDir(cache.rootDir);
