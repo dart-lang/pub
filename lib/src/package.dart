@@ -232,15 +232,13 @@ class Package {
         return contents.map((entity) {
           if (linkExists(entity.path)) {
             final target = Link(entity.path).targetSync();
-            print(
-                'Found link: ${entity.path} ${dirExists(entity.path)} ${target}');
             if (dirExists(entity.path)) {
               throw DataException(
                   '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
             }
             if (!fileExists(entity.path)) {
               throw DataException(
-                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => $target.''');
+                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
             }
           }
           final relative = p.relative(entity.path, from: this.dir);

@@ -65,8 +65,9 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(
-              'Pub does not support publishing packages with directory symlinks'),
+          contains(Platform.isWindows
+              ? 'Pub does not support publishing packages with non-resolving symlink:'
+              : 'Pub does not support publishing packages with directory symlinks'),
         ),
       ),
     );
