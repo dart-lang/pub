@@ -140,9 +140,8 @@ class DependencyValidator extends Validator {
     }
 
     String constraint;
-    var primary = Version.primary(versions);
-    if (primary != null) {
-      constraint = '^$primary';
+    if (versions.isNotEmpty) {
+      constraint = '^${Version.primary(versions)}';
     } else {
       constraint = dep.constraint.toString();
       if (!dep.constraint.isAny && dep.constraint is! Version) {
