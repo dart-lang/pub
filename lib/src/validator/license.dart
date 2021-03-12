@@ -19,7 +19,7 @@ class LicenseValidator extends Validator {
       final licenseLike =
           RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
       final candidates = entrypoint.root
-          .listFiles(recursive: false, useGitIgnore: true)
+          .listFiles(recursive: false)
           .map(path.basename)
           .where(licenseLike.hasMatch);
       if (candidates.isNotEmpty) {

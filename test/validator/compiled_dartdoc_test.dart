@@ -79,23 +79,5 @@ void main() {
 
       await expectValidation(compiledDartdoc, warnings: isNotEmpty);
     });
-
-    test(
-        'contains compiled dartdoc in a non-gitignored hidden '
-        'directory', () async {
-      ensureGit();
-
-      await d.git(appPath, [
-        d.dir('.doc-out', [
-          d.file('nav.json', ''),
-          d.file('index.html', ''),
-          d.file('styles.css', ''),
-          d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
-        ])
-      ]).create();
-
-      await expectValidation(compiledDartdoc, warnings: isNotEmpty);
-    });
   });
 }
