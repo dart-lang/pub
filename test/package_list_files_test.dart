@@ -46,6 +46,15 @@ void main() {
         ]));
   });
 
+  // On windows symlinks to directories are distinct from symlinks to files.
+  void createDirectorySymlink(String path, String target) {
+    if (Platform.isWindows) {
+      Process.runSync('cmd', ['/c', 'mklink', '/D', path, target]);
+    } else {
+      Link(path).createSync(target);
+    }
+  }
+
   test('throws on directory symlinks', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
@@ -55,7 +64,8 @@ void main() {
         d.dir('a', [d.file('file')])
       ]),
     ]).create();
-    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink')).createSync('a');
+    createDirectorySymlink(
+        p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
 
     createEntrypoint();
 
@@ -65,9 +75,9 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(Platform.isWindows
-              ? 'Pub does not support publishing packages with non-resolving symlink:'
-              : 'Pub does not support publishing packages with directory symlinks'),
+          contains(
+            'Pub does not support publishing packages with directory symlinks',
+          ),
         ),
       ),
     );
@@ -84,7 +94,7 @@ void main() {
     ]).create();
 
     final root = p.join(d.sandbox, 'symlink');
-    Link(root).createSync(appPath);
+    createDirectorySymlink(root, appPath);
 
     final entrypoint = Entrypoint(p.join(d.sandbox, 'symlink'),
         SystemCache(rootDir: p.join(d.sandbox, cachePath)));
