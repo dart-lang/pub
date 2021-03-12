@@ -153,10 +153,12 @@ class SolveReport {
           await _cache.source(id.source).status(id, Duration(days: 3));
       if (status.isDiscontinued) numDiscontinued++;
     }
-    if (numDiscontinued > 1) {
-      log.message('$numDiscontinued packages are discontinued.');
-    } else if (numDiscontinued == 1) {
-      log.message('1 package is discontinued.');
+    if (numDiscontinued > 0) {
+      if (numDiscontinued == 1) {
+        log.message('1 package is discontinued.');
+      } else {
+        log.message('$numDiscontinued packages are discontinued.');
+      }
     }
   }
 

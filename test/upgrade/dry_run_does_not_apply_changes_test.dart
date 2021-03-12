@@ -50,50 +50,6 @@ void main() {
     ]).validate();
   });
 
-  test('--dry-run: shows count of discontinued packages', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0');
-    });
-
-    globalPackageServer.add((builder) => builder..discontinue('foo'));
-
-    // Create the first lockfile.
-    await d.appDir({'foo': '2.0.0'}).create();
-
-    await pubGet();
-
-    await d.dir(appPath, [
-      d.file('pubspec.lock', contains('2.0.0')),
-      d.dir('.dart_tool'),
-    ]).validate();
-
-    // Also delete the ".dart_tool" directory.
-    deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
-
-    // Do the dry run.
-    await pubUpgrade(
-      args: ['--dry-run'],
-      output: contains('1 package is discontinued.'),
-    );
-
-    await d.dir(appPath, [
-      // The lockfile should be unmodified.
-      d.file('pubspec.lock', contains('2.0.0')),
-      // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
-    ]).validate();
-
-    // Try without --dry-run
-    await pubUpgrade(
-      output: contains('1 package is discontinued.'),
-    );
-
-    await d.dir(appPath, [
-      d.file('pubspec.lock', contains('2.0.0')),
-      d.dir('.dart_tool')
-    ]).validate();
-  });
-
   test('--dry-run --major-versions: shows report, changes nothing', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0');
