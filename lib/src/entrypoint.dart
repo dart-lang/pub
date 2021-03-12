@@ -109,7 +109,7 @@ class Entrypoint {
 
     assertUpToDate();
     var packages = {
-      for (var id in lockFile.packages.values) id.name: cache.load(id)
+      for (var id in lockFile.packages.values) id.name: cache.load(id, root.dir)
     };
     packages[root.name] = root;
 
@@ -186,15 +186,18 @@ class Entrypoint {
 
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles() async {
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    writeTextFile(
+        packagesFile,
+        lockFile.packagesFile(cache,
+            entrypoint: root.name, relativeFrom: root.dir));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
-        await lockFile.packageConfigFile(
-          cache,
-          entrypoint: root.name,
-          entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
-        ));
+        await lockFile.packageConfigFile(cache,
+            entrypoint: root.name,
+            entrypointSdkConstraint:
+                root.pubspec.sdkConstraints[sdk.identifier],
+            relativeFrom: root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -541,7 +544,7 @@ class Entrypoint {
       if (source is CachedSource) continue;
 
       try {
-        if (cache.load(id).dependencies.values.every((dep) =>
+        if (cache.load(id, root.dir).dependencies.values.every((dep) =>
             overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
           continue;
         }
@@ -549,7 +552,8 @@ class Entrypoint {
         // If we can't load the pubspec, the user needs to re-run "pub get".
       }
 
-      dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+      dataError(
+          '${p.join(source.getDirectory(id, root.dir), 'pubspec.yaml')} has '
           'changed since the pubspec.lock file was generated, please run "pub '
           'get" again.');
     }
@@ -576,7 +580,7 @@ class Entrypoint {
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package);
+      var dir = source.getDirectory(package, root.dir);
       // See if the directory is there and looks like a package.
       return dirExists(dir) && fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -616,7 +620,9 @@ class Entrypoint {
       }
 
       final source = cache.source(lockFileId.source);
-      final lockFilePackagePath = root.path(source.getDirectory(lockFileId));
+      final lockFilePackagePath = root.path(
+        source.getDirectory(lockFileId, root.dir),
+      );
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
@@ -762,10 +768,11 @@ class Entrypoint {
         // Load `pubspec.yaml` and extract language version to compare with the
         // language version from `package_config.json`.
         final languageVersion = LanguageVersion.fromSdkConstraint(
-          cache.load(id).pubspec.sdkConstraints[sdk.identifier],
+          cache.load(id, root.dir).pubspec.sdkConstraints[sdk.identifier],
         );
         if (pkg.languageVersion != languageVersion) {
-          dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+          dataError(
+              '${p.join(source.getDirectory(id, root.dir), 'pubspec.yaml')} has '
               'changed since the pubspec.lock file was generated, please run '
               '"pub get" again.');
         }

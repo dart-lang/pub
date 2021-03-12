@@ -99,12 +99,22 @@ class SystemCache {
   /// Loads the package identified by [id].
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
-  Package load(PackageId id) {
+  Package load(PackageId id, String relativeFrom) {
     if (id.source is UnknownSource) {
       throw ArgumentError('Unknown source ${id.source}.');
     }
 
-    return Package.load(id.name, source(id.source).getDirectory(id), sources);
+    return Package.load(
+        id.name, source(id.source).getDirectory(id, relativeFrom), sources);
+  }
+
+  Package loadCached(PackageId id) {
+    final bound = source(id.source);
+    if (bound is CachedSource) {
+      return Package.load(id.name, bound.getDirectoryInCache(id), sources);
+    } else {
+      throw ArgumentError('Call only on Cached ids.');
+    }
   }
 
   /// Determines if the system cache contains the package identified by [id].

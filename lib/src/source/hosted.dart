@@ -417,12 +417,12 @@ class BoundHostedSource extends CachedSource {
   @override
   Future<Package> downloadToSystemCache(PackageId id) async {
     if (!isInSystemCache(id)) {
-      var packageDir = getDirectory(id);
+      var packageDir = getDirectoryInCache(id);
       ensureDir(p.dirname(packageDir));
       await _download(id, packageDir);
     }
 
-    return Package.load(id.name, getDirectory(id), systemCache.sources);
+    return Package.load(id.name, getDirectoryInCache(id), systemCache.sources);
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -431,7 +431,7 @@ class BoundHostedSource extends CachedSource {
   /// Each of these subdirectories then contains a subdirectory for each
   /// package downloaded from that site.
   @override
-  String getDirectory(PackageId id) {
+  String getDirectoryInCache(PackageId id) {
     var parsed = source._parseDescription(id.description);
     var dir = _urlToDirectory(parsed.last);
     return p.join(systemCacheRoot, dir, '${parsed.first}-${id.version}');

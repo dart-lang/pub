@@ -323,7 +323,7 @@ class BoundGitSource extends CachedSource {
 
   /// Returns the path to the revision-specific cache of [id].
   @override
-  String getDirectory(PackageId id) =>
+  String getDirectoryInCache(PackageId id) =>
       p.join(_revisionCachePath(id), id.description['path']);
 
   @override
@@ -396,7 +396,7 @@ class BoundGitSource extends CachedSource {
         result.add(RepairResult(id, success: false));
 
         // Delete the revision cache path, not the subdirectory that contains the package.
-        tryDeleteEntry(getDirectory(id));
+        tryDeleteEntry(getDirectoryInCache(id));
       }
     }
 

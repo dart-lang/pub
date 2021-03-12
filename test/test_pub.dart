@@ -123,14 +123,17 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-Future<void> pubCommand(RunCommand command,
-    {Iterable<String> args,
-    output,
-    error,
-    silent,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) async {
+Future<void> pubCommand(
+  RunCommand command, {
+  Iterable<String> args,
+  output,
+  error,
+  silent,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -152,38 +155,49 @@ Future<void> pubCommand(RunCommand command,
       error: error,
       silent: silent,
       exitCode: exitCode,
-      environment: environment);
+      environment: environment,
+      workingDirectory: workingDirectory);
 }
 
-Future<void> pubAdd(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.add,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubAdd({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.add,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubGet(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.get,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubGet({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.get,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
 Future<void> pubUpgrade(
         {Iterable<String> args,
@@ -191,44 +205,58 @@ Future<void> pubUpgrade(
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.upgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+        Map<String, String> environment,
+        String workingDirectory}) async =>
+    await pubCommand(
+      RunCommand.upgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubDowngrade(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.downgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubDowngrade({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.downgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubRemove(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.remove,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubRemove({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.remove,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
@@ -572,34 +600,51 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [sandbox] is a list of path dependencies to be found in the sandbox
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
 /// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 Future<void> createLockFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file('pubspec.lock', lockFile.serialize(null)),
-    d.file('.packages', lockFile.packagesFile(cache, package))
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: p.join(d.sandbox, package),
+      ),
+    )
   ]).create();
 }
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
 Future<void> createPackagesFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
-  await d.dir(package,
-      [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
+  await d.dir(package, [
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: d.sandbox,
+      ),
+    )
+  ]).create();
 }
 
 /// Creates a lock file for [sources] without running `pub get`.

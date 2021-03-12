@@ -45,8 +45,11 @@ class PackageGraph {
         value: (id) {
           if (id.name == entrypoint.root.name) return entrypoint.root;
 
-          return Package(result.pubspecs[id.name],
-              entrypoint.cache.source(id.source).getDirectory(id));
+          return Package(
+              result.pubspecs[id.name],
+              entrypoint.cache
+                  .source(id.source)
+                  .getDirectory(id, entrypoint.root.dir));
         });
 
     return PackageGraph(entrypoint, result.lockFile, packages);

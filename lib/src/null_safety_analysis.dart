@@ -117,8 +117,12 @@ class NullSafetyAnalysis {
     }
     return nullSafetyComplianceOfPackages(
         result.packages.where((id) => id.name != fakeRootName),
-        Package(rootPubspec,
-            packageId.source.bind(_systemCache).getDirectory(packageId)));
+        Package(
+            rootPubspec,
+            packageId.source
+                .bind(_systemCache)
+                .getDirectory(packageId, containingPath)),
+        containingPath);
   }
 
   /// Decides if all dependendencies (transitively) have a language version
@@ -133,7 +137,10 @@ class NullSafetyAnalysis {
   ///
   /// Assumes the root package is opted in.
   Future<NullSafetyAnalysisResult> nullSafetyComplianceOfPackages(
-      Iterable<PackageId> packages, Package rootPackage) async {
+    Iterable<PackageId> packages,
+    Package rootPackage,
+    String containingPath,
+  ) async {
     NullSafetyAnalysisResult firstBadPackage;
     for (final dependencyId in packages) {
       final packageInternalAnalysis =
@@ -147,7 +154,7 @@ class NullSafetyAnalysis {
         } else {
           boundSource = _systemCache.source(dependencyId.source);
           pubspec = await boundSource.describe(dependencyId);
-          packageDir = boundSource.getDirectory(dependencyId);
+          packageDir = boundSource.getDirectory(dependencyId, containingPath);
         }
 
         if (!pubspec.languageVersion.supportsNullSafety) {

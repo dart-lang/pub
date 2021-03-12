@@ -236,11 +236,14 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     final entrypoint = Entrypoint.global(
-        Package(result.pubspecs[dep.name],
-            cache.source(dep.source).getDirectory(id)),
-        lockFile,
-        cache,
-        solveResult: result);
+      Package(
+        result.pubspecs[dep.name],
+        (cache.source(dep.source) as CachedSource).getDirectoryInCache(id),
+      ),
+      lockFile,
+      cache,
+      solveResult: result,
+    );
     if (!sameVersions) {
       // Only precompile binaries if we have a new resolution.
       await entrypoint.precompileExecutables();
@@ -248,7 +251,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
 
     _updateBinStubs(
       entrypoint,
-      cache.load(entrypoint.lockFile.packages[dep.name]),
+      cache.load(entrypoint.lockFile.packages[dep.name], entrypoint.root.dir),
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -355,7 +358,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.global(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.global(cache.loadCached(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -515,8 +518,13 @@ To recompile executables, first run `global deactivate ${dep.name}`.
           await _writePackageConfigFiles(id.name, entrypoint.lockFile);
           await entrypoint.precompileExecutables();
           var packageExecutables = executables.remove(id.name) ?? [];
-          _updateBinStubs(entrypoint, cache.load(id), packageExecutables,
-              overwriteBinStubs: true, suggestIfNotOnPath: false);
+          _updateBinStubs(
+            entrypoint,
+            cache.load(id, p.join(_directory, entry)),
+            packageExecutables,
+            overwriteBinStubs: true,
+            suggestIfNotOnPath: false,
+          );
           successes.add(id.name);
         } catch (error, stackTrace) {
           var message = 'Failed to reactivate '
