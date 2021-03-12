@@ -143,6 +143,25 @@ class SolveReport {
     }
   }
 
+  /// Displays a single-line message, number of discontinued packages
+  /// if discontinued packages are detected.
+  Future<void> reportDiscontinued() async {
+    var numDiscontinued = 0;
+    for (var id in _result.packages) {
+      if (id.source == null) continue;
+      final status =
+          await _cache.source(id.source).status(id, Duration(days: 3));
+      if (status.isDiscontinued) numDiscontinued++;
+    }
+    if (numDiscontinued > 0) {
+      if (numDiscontinued == 1) {
+        log.message('1 package is discontinued.');
+      } else {
+        log.message('$numDiscontinued packages are discontinued.');
+      }
+    }
+  }
+
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
