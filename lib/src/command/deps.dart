@@ -46,14 +46,15 @@ class DepsCommand extends PubCommand {
         allowed: ['compact', 'tree', 'list'],
         defaultsTo: 'tree');
 
-    argParser.addFlag('json',
-        negatable: false, help: 'Output in a json format');
-
     argParser.addFlag('dev',
         help: 'Whether to include dev dependencies.', defaultsTo: true);
 
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
+
+    argParser.addFlag('json',
+        negatable: false,
+        help: 'Output dependency information in a json format.');
 
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
@@ -61,51 +62,84 @@ class DepsCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (argResults.wasParsed('style') && argResults.wasParsed('json')) {
-      usageException('Cannot specify both json and style');
-    }
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
 
     _buffer = StringBuffer();
 
-    if (argResults['executables']) {
-      _outputExecutables();
+    if (argResults['json']) {
+      if (argResults.wasParsed('dev')) {
+        usageException(
+            'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.');
+      }
+      if (argResults.wasParsed('executables')) {
+        usageException(
+            'Cannot combine --json and --executables.\nThe json output always lists available executables.');
+      }
+      if (argResults.wasParsed('style')) {
+        usageException('Cannot combine --json and --style.');
+      }
+      final visited = <String>[];
+      final toVisit = [entrypoint.root.name];
+      final packagesJson = <dynamic>[];
+      while (toVisit.isNotEmpty) {
+        final current = toVisit.removeLast();
+        if (visited.contains(current)) continue;
+        visited.add(current);
+        final currentPackage = entrypoint.packageGraph.packages[current];
+        final next = (current == entrypoint.root.name
+                ? entrypoint.root.immediateDependencies
+                : currentPackage.dependencies)
+            .keys
+            .toList();
+        final dependencyType = entrypoint.root.dependencyType(current);
+        final kind = currentPackage == entrypoint.root
+            ? 'root'
+            : (dependencyType == DependencyType.direct
+                ? 'direct'
+                : (dependencyType == DependencyType.dev
+                    ? 'dev'
+                    : 'transitive'));
+        final source =
+            entrypoint.packageGraph.lockFile.packages[current]?.source?.name ??
+                'root';
+        packagesJson.add({
+          'name': current,
+          'version': currentPackage.version.toString(),
+          'kind': kind,
+          'source': source,
+          'dependencies': next
+        });
+        toVisit.addAll(next);
+      }
+      var executables = [
+        for (final package in [
+          entrypoint.root,
+          ...entrypoint.root.immediateDependencies.keys
+              .map((name) => entrypoint.packageGraph.packages[name])
+        ])
+          ...package.executableNames.map((name) => package == entrypoint.root
+              ? ':$name'
+              : (package.name == name ? name : '${package.name}:$name'))
+      ];
+
+      _buffer.writeln(
+        JsonEncoder.withIndent('  ').convert(
+          {
+            'root': entrypoint.root.name,
+            'packages': packagesJson,
+            'sdks': [
+              for (var sdk in sdks.values)
+                if (sdk.version != null)
+                  {'name': sdk.name, 'version': sdk.version.toString()}
+            ],
+            'executables': executables
+          },
+        ),
+      );
     } else {
-      if (argResults['json']) {
-        final visited = <String>[];
-        final toVisit = [entrypoint.root.name];
-        final packagesJson = <dynamic>[];
-        while (toVisit.isNotEmpty) {
-          final current = toVisit.removeLast();
-          if (visited.contains(current)) continue;
-          visited.add(current);
-          final currentPackage = entrypoint.packageGraph.packages[current];
-          final next = (current == entrypoint.root.name
-                  ? entrypoint.root.immediateDependencies
-                  : currentPackage.dependencies)
-              .keys
-              .toList();
-          packagesJson.add({
-            'name': current,
-            'version': currentPackage.version.toString(),
-            'dependencies': next
-          });
-          toVisit.addAll(next);
-        }
-        _buffer.writeln(
-          JsonEncoder.withIndent('  ').convert(
-            {
-              'root': entrypoint.root.name,
-              'packages': packagesJson,
-              'sdks': [
-                for (var sdk in sdks.values)
-                  if (sdk.version != null)
-                    {'name': sdk.name, 'version': sdk.version.toString()}
-              ],
-            },
-          ),
-        );
+      if (argResults['executables']) {
+        _outputExecutables();
       } else {
         for (var sdk in sdks.values) {
           if (!sdk.isAvailable) continue;
@@ -308,21 +342,10 @@ class DepsCommand extends PubCommand {
           .map((name) => entrypoint.packageGraph.packages[name])
     ];
 
-    if (argResults['json']) {
-      _buffer.writeln(JsonEncoder.withIndent('  ').convert({
-        'packages': [
-          for (final package in packages)
-            if (package.executableNames.isNotEmpty)
-              {'name': package.name, 'executables': package.executableNames}
-        ]
-      }));
-    } else {
-      for (var package in packages) {
-        var executables = package.executableNames;
-        if (executables.isNotEmpty) {
-          _buffer
-              .writeln(_formatExecutables(package.name, executables.toList()));
-        }
+    for (var package in packages) {
+      var executables = package.executableNames;
+      if (executables.isNotEmpty) {
+        _buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }
     }
   }

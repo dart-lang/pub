@@ -21,8 +21,8 @@ Future<void> variations(String name) async {
   await pubGet();
   await runPubIntoBuffer(['deps', '--executables'], buffer);
   await runPubIntoBuffer(['deps', '--executables', '--dev'], buffer);
-  await runPubIntoBuffer(['deps', '--executables', '--json'], buffer);
-  await runPubIntoBuffer(['deps', '--executables', '--dev', '--json'], buffer);
+  // The json ouput also lists the exectuables.
+  await runPubIntoBuffer(['deps', '--json'], buffer);
   // The easiest way to update the golden files is to delete them and rerun the
   // test.
   expectMatchesGoldenFile(buffer.toString(), 'test/deps/goldens/$name.txt');

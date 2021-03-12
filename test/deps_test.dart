@@ -139,6 +139,8 @@ void main() {
     {
       "name": "myapp",
       "version": "0.0.0",
+      "kind": "root",
+      "source": "root",
       "dependencies": [
         "normal",
         "overridden",
@@ -150,11 +152,15 @@ void main() {
     {
       "name": "override_only",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": []
     },
     {
       "name": "unittest",
       "version": "1.2.3",
+      "kind": "dev",
+      "source": "hosted",
       "dependencies": [
         "shared",
         "dev_only"
@@ -163,11 +169,15 @@ void main() {
     {
       "name": "dev_only",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": []
     },
     {
       "name": "shared",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": [
         "other"
       ]
@@ -175,6 +185,8 @@ void main() {
     {
       "name": "other",
       "version": "1.0.0",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": [
         "myapp"
       ]
@@ -182,16 +194,22 @@ void main() {
     {
       "name": "from_path",
       "version": "1.2.3",
+      "kind": "direct",
+      "source": "path",
       "dependencies": []
     },
     {
       "name": "overridden",
       "version": "2.0.0",
+      "kind": "direct",
+      "source": "hosted",
       "dependencies": []
     },
     {
       "name": "normal",
       "version": "1.2.3",
+      "kind": "direct",
+      "source": "hosted",
       "dependencies": [
         "transitive",
         "circular_a"
@@ -200,6 +218,8 @@ void main() {
     {
       "name": "circular_a",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": [
         "circular_b"
       ]
@@ -207,6 +227,8 @@ void main() {
     {
       "name": "circular_b",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": [
         "circular_a"
       ]
@@ -214,6 +236,8 @@ void main() {
     {
       "name": "transitive",
       "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
       "dependencies": [
         "shared"
       ]
@@ -224,7 +248,8 @@ void main() {
       "name": "Dart",
       "version": "0.1.2+3"
     }
-  ]
+  ],
+  "executables": []
 }''');
     });
 

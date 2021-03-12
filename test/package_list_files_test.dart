@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -203,7 +205,7 @@ void commonTests() {
     deleteEntry(p.join(d.sandbox, appPath, 'target'));
 
     expect(entrypoint.root.listFiles(), equals([p.join(root, 'pubspec.yaml')]));
-  });
+  }, skip: Platform.isWindows);
 
   test('ignores pubspec.lock files', () async {
     await d.dir(appPath, [
