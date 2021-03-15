@@ -448,5 +448,6 @@ class _RootSource extends BoundSource {
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
   @override
-  String getDirectory(PackageId id, _) => throw _unsupported;
+  String getDirectory(PackageId id, {String relativeFrom}) =>
+      throw _unsupported;
 }

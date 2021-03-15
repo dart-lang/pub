@@ -110,7 +110,7 @@ class BoundSdkSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, String relativeFrom) {
+  String getDirectory(PackageId id, {String relativeFrom}) {
     try {
       return _verifiedPackagePath(id);
     } on PackageNotFoundException catch (error) {

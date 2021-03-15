@@ -41,7 +41,7 @@ abstract class CachedSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, String relativeFrom) =>
+  String getDirectory(PackageId id, {String relativeFrom}) =>
       getDirectoryInCache(id);
 
   String getDirectoryInCache(PackageId id);
