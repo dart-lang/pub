@@ -264,10 +264,12 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
     final packagesFilePath = _getPackagesFilePath(package);
     final packageConfigFilePath = _getPackageConfigFilePath(package);
-    writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
-    ensureDir(p.dirname(packageConfigFilePath));
+    final dir = p.dirname(packagesFilePath);
     writeTextFile(
-        packageConfigFilePath, await lockFile.packageConfigFile(cache));
+        packagesFilePath, lockFile.packagesFile(cache, relativeFrom: dir));
+    ensureDir(p.dirname(packageConfigFilePath));
+    writeTextFile(packageConfigFilePath,
+        await lockFile.packageConfigFile(cache, relativeFrom: dir));
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
