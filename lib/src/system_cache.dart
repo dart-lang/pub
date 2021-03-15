@@ -104,8 +104,7 @@ class SystemCache {
       throw ArgumentError('Unknown source ${id.source}.');
     }
 
-    return Package.load(
-        id.name, source(id.source).getDirectory(id, '.'), sources);
+    return Package.load(id.name, source(id.source).getDirectory(id), sources);
   }
 
   Package loadCached(PackageId id) {

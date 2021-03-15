@@ -117,11 +117,8 @@ class NullSafetyAnalysis {
     }
     return nullSafetyComplianceOfPackages(
         result.packages.where((id) => id.name != fakeRootName),
-        Package(
-            rootPubspec,
-            packageId.source
-                .bind(_systemCache)
-                .getDirectory(packageId, containingPath)),
+        Package(rootPubspec,
+            packageId.source.bind(_systemCache).getDirectory(packageId)),
         containingPath);
   }
 
@@ -154,7 +151,7 @@ class NullSafetyAnalysis {
         } else {
           boundSource = _systemCache.source(dependencyId.source);
           pubspec = await boundSource.describe(dependencyId);
-          packageDir = boundSource.getDirectory(dependencyId, containingPath);
+          packageDir = boundSource.getDirectory(dependencyId);
         }
 
         if (!pubspec.languageVersion.supportsNullSafety) {

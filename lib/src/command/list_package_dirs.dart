@@ -43,7 +43,7 @@ class ListPackageDirsCommand extends PubCommand {
     // Include the local paths to all locked packages.
     var packages = mapMap(entrypoint.lockFile.packages, value: (name, package) {
       var source = entrypoint.cache.source(package.source);
-      var packageDir = source.getDirectory(package, entrypoint.root.dir);
+      var packageDir = source.getDirectory(package);
       // Normalize paths and make them absolute for backwards compatibility
       // with the protocol used by the analyzer.
       return p.normalize(p.absolute(p.join(packageDir, 'lib')));

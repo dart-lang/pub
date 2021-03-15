@@ -553,7 +553,7 @@ class Entrypoint {
       }
 
       dataError(
-          '${p.join(source.getDirectory(id, root.dir), 'pubspec.yaml')} has '
+          '${p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml')} has '
           'changed since the pubspec.lock file was generated, please run "pub '
           'get" again.');
     }
@@ -580,7 +580,7 @@ class Entrypoint {
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package, root.dir);
+      var dir = source.getDirectory(package, relativeFrom: '.');
       // See if the directory is there and looks like a package.
       return dirExists(dir) && fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -621,7 +621,7 @@ class Entrypoint {
 
       final source = cache.source(lockFileId.source);
       final lockFilePackagePath = root.path(
-        source.getDirectory(lockFileId, root.dir),
+        source.getDirectory(lockFileId),
       );
 
       // Make sure that the packagePath agrees with the lock file about the
@@ -772,7 +772,7 @@ class Entrypoint {
         );
         if (pkg.languageVersion != languageVersion) {
           dataError(
-              '${p.join(source.getDirectory(id, root.dir), 'pubspec.yaml')} has '
+              '${p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml')} has '
               'changed since the pubspec.lock file was generated, please run '
               '"pub get" again.');
         }

@@ -236,8 +236,8 @@ abstract class BoundSource {
   /// If the source is cached, this will be a path in the system cache.
   ///
   /// If id is a relative path id, the directory will be relative from
-  /// [relativeFrom].
-  String getDirectory(PackageId id, String relativeFrom);
+  /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
+  String getDirectory(PackageId id, {String relativeFrom});
 
   /// Returns metadata about a given package. Information about remotely hosted
   /// packages can be cached for up to [maxAge].
