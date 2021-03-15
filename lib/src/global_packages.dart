@@ -236,11 +236,14 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     final entrypoint = Entrypoint.global(
-        Package(result.pubspecs[dep.name],
-            cache.source(dep.source).getDirectory(id)),
-        lockFile,
-        cache,
-        solveResult: result);
+      Package(
+        result.pubspecs[dep.name],
+        (cache.source(dep.source) as CachedSource).getDirectoryInCache(id),
+      ),
+      lockFile,
+      cache,
+      solveResult: result,
+    );
     if (!sameVersions) {
       // Only precompile binaries if we have a new resolution.
       await entrypoint.precompileExecutables();
@@ -261,10 +264,12 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
     final packagesFilePath = _getPackagesFilePath(package);
     final packageConfigFilePath = _getPackageConfigFilePath(package);
-    writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
-    ensureDir(p.dirname(packageConfigFilePath));
+    final dir = p.dirname(packagesFilePath);
     writeTextFile(
-        packageConfigFilePath, await lockFile.packageConfigFile(cache));
+        packagesFilePath, lockFile.packagesFile(cache, relativeFrom: dir));
+    ensureDir(p.dirname(packageConfigFilePath));
+    writeTextFile(packageConfigFilePath,
+        await lockFile.packageConfigFile(cache, relativeFrom: dir));
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -355,7 +360,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.global(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.global(cache.loadCached(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -515,8 +520,13 @@ To recompile executables, first run `global deactivate ${dep.name}`.
           await _writePackageConfigFiles(id.name, entrypoint.lockFile);
           await entrypoint.precompileExecutables();
           var packageExecutables = executables.remove(id.name) ?? [];
-          _updateBinStubs(entrypoint, cache.load(id), packageExecutables,
-              overwriteBinStubs: true, suggestIfNotOnPath: false);
+          _updateBinStubs(
+            entrypoint,
+            cache.load(id),
+            packageExecutables,
+            overwriteBinStubs: true,
+            suggestIfNotOnPath: false,
+          );
           successes.add(id.name);
         } catch (error, stackTrace) {
           var message = 'Failed to reactivate '

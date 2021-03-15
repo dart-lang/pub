@@ -102,7 +102,7 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
@@ -154,7 +154,7 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
@@ -285,7 +285,7 @@ foo:http://example.com/
 
         await pubGet();
 
-        await createPackagesFile(appPath, sandbox: ['foo']);
+        await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.lock');

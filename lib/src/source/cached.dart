@@ -31,7 +31,7 @@ abstract class CachedSource extends BoundSource {
   /// Otherwise, defers to the subclass.
   @override
   Future<Pubspec> doDescribe(PackageId id) async {
-    var packageDir = getDirectory(id);
+    var packageDir = getDirectoryInCache(id);
     if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(packageDir, systemCache.sources,
           expectedName: id.name);
@@ -39,6 +39,12 @@ abstract class CachedSource extends BoundSource {
 
     return await describeUncached(id);
   }
+
+  @override
+  String getDirectory(PackageId id, {String relativeFrom}) =>
+      getDirectoryInCache(id);
+
+  String getDirectoryInCache(PackageId id);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -49,7 +55,7 @@ abstract class CachedSource extends BoundSource {
 
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.
-  bool isInSystemCache(PackageId id) => dirExists(getDirectory(id));
+  bool isInSystemCache(PackageId id) => dirExists(getDirectoryInCache(id));
 
   /// Downloads the package identified by [id] to the system cache.
   Future<Package> downloadToSystemCache(PackageId id);

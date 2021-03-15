@@ -71,6 +71,7 @@ class _BoundUnknownSource extends BoundSource {
 
   /// Returns the directory where this package can be found locally.
   @override
-  String getDirectory(PackageId id) => throw UnsupportedError(
-      "Cannot find a package from an unknown source '${source.name}'.");
+  String getDirectory(PackageId id, {String relativeFrom}) =>
+      throw UnsupportedError(
+          "Cannot find a package from an unknown source '${source.name}'.");
 }

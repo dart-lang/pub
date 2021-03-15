@@ -50,6 +50,34 @@ void main() {
         {'foo': '../relative/foo', 'bar': '../relative/bar'}).validate();
   });
 
+  test('path is relative to containing pubspec when using --directory',
+      () async {
+    await d.dir('relative', [
+      d.dir('foo', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '0.0.1', deps: {
+          'bar': {'path': '../bar'}
+        })
+      ]),
+      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
+    ]).create();
+
+    await d.dir(appPath, [
+      d.appPubspec({
+        'foo': {'path': '../relative/foo'}
+      })
+    ]).create();
+
+    await pubGet(
+        args: ['--directory', appPath],
+        workingDirectory: d.sandbox,
+        output: contains('Changed 2 dependencies in myapp!'));
+
+    await d.appPackagesFile(
+      {'foo': '../relative/foo', 'bar': '../relative/bar'},
+    ).validate();
+  });
+
   test('relative path preserved in the lockfile', () async {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();

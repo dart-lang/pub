@@ -107,6 +107,15 @@ class SystemCache {
     return Package.load(id.name, source(id.source).getDirectory(id), sources);
   }
 
+  Package loadCached(PackageId id) {
+    final bound = source(id.source);
+    if (bound is CachedSource) {
+      return Package.load(id.name, bound.getDirectoryInCache(id), sources);
+    } else {
+      throw ArgumentError('Call only on Cached ids.');
+    }
+  }
+
   /// Determines if the system cache contains the package identified by [id].
   bool contains(PackageId id) {
     var source = this.source(id.source);

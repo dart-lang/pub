@@ -181,7 +181,11 @@ class BoundPathSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id) => id.description['path'];
+  String getDirectory(PackageId id, {String relativeFrom}) {
+    return id.description['relative']
+        ? p.relative(id.description['path'], from: relativeFrom)
+        : id.description['path'];
+  }
 
   /// Ensures that [description] is a valid path description and returns a
   /// normalized path to the package.
