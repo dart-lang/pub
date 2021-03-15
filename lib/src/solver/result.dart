@@ -109,6 +109,7 @@ class SolveResult {
         SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
+      await report.reportDiscontinued();
       report.reportOutdated();
     }
   }

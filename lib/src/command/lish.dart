@@ -140,7 +140,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    var files = entrypoint.root.listFiles(useGitIgnore: true);
+    var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root}.');
 
     // Show the package contents so the user can verify they look OK.
@@ -158,6 +158,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       overrideExitCode(exit_codes.DATA);
       return;
     } else if (dryRun) {
+      log.message('The server may enforce additional checks.');
       return;
     } else {
       await _publish(await packageBytesFuture);

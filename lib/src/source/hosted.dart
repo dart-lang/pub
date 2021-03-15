@@ -354,15 +354,15 @@ class BoundHostedSource extends CachedSource {
         );
 
     final listing = versionListing[id];
-    // If we don't have the specific version we return the empty response.
+    // If we don't have the specific version we return the empty response, since
+    // it is more or less harmless..
     //
-    // This should not happen. But in production we want to avoid a crash, since
-    // it is more or less harmless.
+    // This can happen if the connection is broken, or the server is faulty.
+    // We want to avoid a crash
     //
     // TODO(sigurdm): Consider representing the non-existence of the
     // package-version in the return value.
-    assert(listing != null);
-    return versionListing[id]?.status ?? PackageStatus();
+    return listing?.status ?? PackageStatus();
   }
 
   // The path where the response from the package-listing api is cached.

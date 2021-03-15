@@ -573,10 +573,15 @@ Future<void> _outputHuman(
       }
     }
 
-    if (notAtResolvable == 0 && upgradable == 0 && rows.isNotEmpty) {
+    if (notAtResolvable == 0 &&
+        upgradable == 0 &&
+        rows.isNotEmpty &&
+        (directRows.isNotEmpty || devRows.isNotEmpty)) {
       log.message(
           "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
           "Newer versions, listed in 'Latest', may not be mutually compatible.");
+    } else if (directRows.isEmpty && devRows.isEmpty) {
+      log.message(mode.allSafe);
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
@@ -608,6 +613,7 @@ abstract class Mode {
   String get allGood;
   String get noResolutionText;
   String get upgradeConstrained;
+  String get allSafe;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
@@ -632,6 +638,9 @@ Showing outdated packages$directoryDescription.
   @override
   String get upgradeConstrained =>
       'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --major-versions`';
+
+  @override
+  String get allSafe => 'all dependencies are up-to-date.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -712,6 +721,9 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
   @override
   String get upgradeConstrained =>
       'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
+
+  @override
+  String get allSafe => 'All dependencies opt in to null-safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(

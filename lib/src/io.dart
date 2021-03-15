@@ -263,6 +263,10 @@ Future<String> _createSystemTempDir() async {
   return tempDir.resolveSymbolicLinksSync();
 }
 
+String resolveSymlinksOfDir(String dir) {
+  return Directory(dir).resolveSymbolicLinksSync();
+}
+
 /// Lists the contents of [dir].
 ///
 /// If [recursive] is `true`, lists subdirectory contents (defaults to `false`).
@@ -844,7 +848,6 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-
         await _createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {

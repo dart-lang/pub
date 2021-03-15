@@ -32,7 +32,7 @@ class RelativeVersionNumberingValidator extends Validator {
     } on PackageNotFoundException {
       existingVersions = [];
     }
-    existingVersions..sort((a, b) => a.version.compareTo(b.version));
+    existingVersions.sort((a, b) => a.version.compareTo(b.version));
     final previousVersion = existingVersions.lastWhere(
         (id) => id.version < entrypoint.root.version,
         orElse: () => null);
