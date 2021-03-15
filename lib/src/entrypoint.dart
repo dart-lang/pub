@@ -621,7 +621,7 @@ class Entrypoint {
 
       final source = cache.source(lockFileId.source);
       final lockFilePackagePath = root.path(
-        source.getDirectory(lockFileId),
+        source.getDirectory(lockFileId, relativeFrom: root.dir),
       );
 
       // Make sure that the packagePath agrees with the lock file about the
