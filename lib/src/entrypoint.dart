@@ -109,7 +109,7 @@ class Entrypoint {
 
     assertUpToDate();
     var packages = {
-      for (var id in lockFile.packages.values) id.name: cache.load(id, root.dir)
+      for (var id in lockFile.packages.values) id.name: cache.load(id)
     };
     packages[root.name] = root;
 
@@ -544,7 +544,7 @@ class Entrypoint {
       if (source is CachedSource) continue;
 
       try {
-        if (cache.load(id, root.dir).dependencies.values.every((dep) =>
+        if (cache.load(id).dependencies.values.every((dep) =>
             overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
           continue;
         }
@@ -768,7 +768,7 @@ class Entrypoint {
         // Load `pubspec.yaml` and extract language version to compare with the
         // language version from `package_config.json`.
         final languageVersion = LanguageVersion.fromSdkConstraint(
-          cache.load(id, root.dir).pubspec.sdkConstraints[sdk.identifier],
+          cache.load(id).pubspec.sdkConstraints[sdk.identifier],
         );
         if (pkg.languageVersion != languageVersion) {
           dataError(

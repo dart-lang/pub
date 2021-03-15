@@ -99,13 +99,13 @@ class SystemCache {
   /// Loads the package identified by [id].
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
-  Package load(PackageId id, String relativeFrom) {
+  Package load(PackageId id) {
     if (id.source is UnknownSource) {
       throw ArgumentError('Unknown source ${id.source}.');
     }
 
     return Package.load(
-        id.name, source(id.source).getDirectory(id, relativeFrom), sources);
+        id.name, source(id.source).getDirectory(id, '.'), sources);
   }
 
   Package loadCached(PackageId id) {

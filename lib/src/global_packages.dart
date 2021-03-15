@@ -251,7 +251,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
 
     _updateBinStubs(
       entrypoint,
-      cache.load(entrypoint.lockFile.packages[dep.name], entrypoint.root.dir),
+      cache.load(entrypoint.lockFile.packages[dep.name]),
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -522,7 +522,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
           var packageExecutables = executables.remove(id.name) ?? [];
           _updateBinStubs(
             entrypoint,
-            cache.load(id, p.join(_directory, entry)),
+            cache.load(id),
             packageExecutables,
             overwriteBinStubs: true,
             suggestIfNotOnPath: false,
