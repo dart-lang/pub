@@ -60,5 +60,5 @@ class _UserInfo {
   final String email;
   _UserInfo(this.name, this.email);
   @override
-  String toString() => '<$email> "$name"';
+  String toString() => '<$email> ${name ?? ''}';
 }
