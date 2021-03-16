@@ -532,7 +532,7 @@ class _IgnorePrefixPair {
   @override
   String toString() {
     // TODO: implement toString
-    return '{${ignore._rules.map((r) => r.original)} ${prefix}}';
+    return '{${ignore._rules.map((r) => r.original)} $prefix}';
   }
 }
 
