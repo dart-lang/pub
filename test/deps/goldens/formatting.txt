@@ -1,0 +1,67 @@
+|-- bar
+|   |-- bin
+|   |   '-- qux.dart
+|   '-- pubspec.yaml
+|-- foo
+|   |-- bin
+|   |   |-- baz.dart
+|   |   '-- foo.dart
+|   '-- pubspec.yaml
+'-- myapp
+    |-- bin
+    |   '-- myapp.dart
+    '-- pubspec.yaml
+
+$ pub deps --executables
+myapp
+foo: foo, baz
+bar:qux
+
+$ pub deps --executables --dev
+myapp
+foo: foo, baz
+bar:qux
+
+$ pub deps --json
+{
+  "root": "myapp",
+  "packages": [
+    {
+      "name": "myapp",
+      "version": "0.0.0",
+      "kind": "root",
+      "source": "root",
+      "dependencies": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "name": "bar",
+      "version": "1.0.0",
+      "kind": "direct",
+      "source": "path",
+      "dependencies": []
+    },
+    {
+      "name": "foo",
+      "version": "1.0.0",
+      "kind": "direct",
+      "source": "path",
+      "dependencies": []
+    }
+  ],
+  "sdks": [
+    {
+      "name": "Dart",
+      "version": "0.1.2+3"
+    }
+  ],
+  "executables": [
+    ":myapp",
+    "foo:baz",
+    "foo",
+    "bar:qux"
+  ]
+}
+

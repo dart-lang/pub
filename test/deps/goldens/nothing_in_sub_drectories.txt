@@ -1,0 +1,36 @@
+'-- myapp
+    |-- bin
+    |   |-- foo.dart
+    |   '-- sub
+    |       '-- bar.dart
+    '-- pubspec.yaml
+
+$ pub deps --executables
+myapp:foo
+
+$ pub deps --executables --dev
+myapp:foo
+
+$ pub deps --json
+{
+  "root": "myapp",
+  "packages": [
+    {
+      "name": "myapp",
+      "version": "0.0.0",
+      "kind": "root",
+      "source": "root",
+      "dependencies": []
+    }
+  ],
+  "sdks": [
+    {
+      "name": "Dart",
+      "version": "0.1.2+3"
+    }
+  ],
+  "executables": [
+    ":foo"
+  ]
+}
+

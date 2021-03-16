@@ -84,6 +84,9 @@ class Package {
         .toList();
   }
 
+  List<String> get executableNames =>
+      executablePaths.map(p.basenameWithoutExtension).toList();
+
   /// Returns the path to the README file at the root of the entrypoint, or null
   /// if no README file is found.
   ///
