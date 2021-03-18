@@ -902,13 +902,16 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(List<String> contents, {String baseDir}) {
+ByteStream createTarGz(
+  List<String> contents, {
+  @required String baseDir,
+}) {
   var buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
 
-  baseDir ??= path.current;
+  ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = path.absolute(baseDir);
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
