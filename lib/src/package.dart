@@ -5,9 +5,9 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/exceptions.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'exceptions.dart';
 import 'git.dart' as git;
 import 'ignore.dart';
 import 'io.dart';

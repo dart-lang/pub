@@ -43,7 +43,7 @@ class LoginCommand extends PubCommand {
       final discovery = await httpClient.get(Uri.https(
           'accounts.google.com', '/.well-known/openid-configuration'));
       final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
-      final userInfoRequest = await client.get(userInfoEndpoint);
+      final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
@@ -60,5 +60,5 @@ class _UserInfo {
   final String email;
   _UserInfo(this.name, this.email);
   @override
-  String toString() => '<$email> "$name"';
+  String toString() => ['<$email>', if (name != null) name].join(' ');
 }
