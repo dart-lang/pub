@@ -122,7 +122,7 @@ class GitSource extends Source {
     if (!url.contains('@')) {
       // Otherwise, we use Dart's URL parser to validate the URL.
       final parsed = Uri.parse(url);
-      if (!parsed.isAbsolute) {
+      if (!parsed.hasAbsolutePath) {
         // Relative paths coming from pubspecs that are not on the local file
         // system aren't allowed. This can happen if a hosted or git dependency
         // has a git dependency.
