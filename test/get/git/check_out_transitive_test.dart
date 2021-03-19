@@ -16,7 +16,10 @@ void main() {
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'git': p.absolute(d.sandbox, appPath, '../bar.git')}
+        'bar': {
+          'git':
+              p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString()
+        }
       })
     ]).create();
 
@@ -24,7 +27,9 @@ void main() {
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      'foo': {'git': p.absolute(d.sandbox, appPath, '../foo.git')}
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
     }).create();
 
     await pubGet();
@@ -56,7 +61,9 @@ void main() {
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      'foo': {'git': p.absolute(d.sandbox, appPath, '../foo.git')}
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
     }).create();
 
     await pubGet(
@@ -81,7 +88,9 @@ void main() {
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      'foo': {'git': p.absolute(d.sandbox, appPath, '../foo.git')}
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
     }).create();
 
     await pubGet(
