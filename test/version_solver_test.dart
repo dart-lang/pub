@@ -240,7 +240,7 @@ void rootDependency() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
       builder.serve('bar', '1.0.0', deps: {
-        'myapp': {'git': 'nowhere'}
+        'myapp': {'git': 'http://nowhere'}
       });
     });
 

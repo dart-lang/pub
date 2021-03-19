@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:test/test.dart';
+import 'package:path/path.dart' as p;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -45,7 +46,7 @@ void main() {
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {'git': '../foo_dep.git'}
+        'foo_dep': {'git': p.absolute(d.sandbox, appPath, '../foo_dep.git')}
       })
     ]).create();
 
