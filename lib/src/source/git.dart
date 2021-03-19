@@ -105,7 +105,8 @@ class GitSource extends Source {
     final copy = Map.from(description);
     copy.remove('relative');
     if (description['relative'] == true) {
-      copy['url'] = p.url.relative(description['url'], from: containingPath);
+      copy['url'] = p.url.relative(description['url'],
+          from: Uri.file(containingPath).toString());
     }
     return copy;
   }
