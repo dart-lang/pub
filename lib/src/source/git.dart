@@ -36,7 +36,7 @@ class GitSource extends Source {
   String urlFromDescription(description) {
     var url = description['url'];
     if (description['relative'] == true) {
-      return p.url.relative(url, from: p.toUri(p.current).path);
+      return p.url.relative(url, from: p.toUri(p.current).toString());
     }
     return url;
   }
