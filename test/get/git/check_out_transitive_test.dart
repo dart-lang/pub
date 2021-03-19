@@ -11,18 +11,26 @@ void main() {
   test('checks out packages transitively from Git', () async {
     ensureGit();
 
-    await d.git('foo.git', [
-      d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'git': '../bar.git'}
-      })
-    ]).create();
+    await d.dir(
+      'nested',
+      [
+        d.git(
+          'foo.git',
+          [
+            d.libDir('foo'),
+            d.libPubspec('foo', '1.0.0', deps: {
+              'bar': {'git': '../../bar.git'}
+            }),
+          ],
+        ),
+      ],
+    ).create();
 
     await d.git(
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      'foo': {'git': '../foo.git'}
+      'foo': {'git': '../nested/foo.git'}
     }).create();
 
     await pubGet();
