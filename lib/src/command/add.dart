@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -311,25 +312,44 @@ class AddCommand extends PubCommand {
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
+      Uri parsed;
+      try {
+        parsed = Uri.parse(gitUrl);
+      } on FormatException catch (e) {
+        usageException('The --git-url must be a valid url: ${e.message}.');
+      }
+      final urlRelativeToEntrypoint = parsed.isAbsolute
+          ? parsed.toString()
+          :
+          // Turn the relative url from current working directory into a relative
+          // url from the entrypoint.
+          p.url.relative(
+              p.url.join(Uri.file(p.absolute(p.current)).toString(),
+                  parsed.toString()),
+              from: p.toUri(p.absolute(entrypoint.root.dir)).toString());
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
       if (gitRef == null && gitPath == null) {
-        git = gitUrl;
+        git = urlRelativeToEntrypoint;
       } else {
-        git = {'url': gitUrl, 'ref': gitRef, 'path': gitPath};
+        git = {'url': urlRelativeToEntrypoint, 'ref': gitRef, 'path': gitPath};
         git.removeWhere((key, value) => value == null);
       }
 
       packageRange = cache.sources['git']
-          .parseRef(packageName, git)
+          .parseRef(packageName, git, containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
     } else if (path != null) {
+      final relativeToEntryPoint = p.isRelative(path)
+          ? p.relative(path, from: entrypoint.root.dir)
+          : path;
       packageRange = cache.sources['path']
-          .parseRef(packageName, path, containingPath: entrypoint.pubspecPath)
+          .parseRef(packageName, relativeToEntryPoint,
+              containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
-      pubspecInformation = {'path': path};
+      pubspecInformation = {'path': relativeToEntryPoint};
     } else if (sdk != null) {
       packageRange = cache.sources['sdk']
           .parseRef(packageName, sdk)
