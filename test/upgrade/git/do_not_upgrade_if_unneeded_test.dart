@@ -17,7 +17,7 @@ void main() {
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {'git': '../foo_dep.git'}
+        'foo_dep': {'git': p.absolute(d.sandbox, appPath, '../foo_dep.git')}
       })
     ]).create();
 
