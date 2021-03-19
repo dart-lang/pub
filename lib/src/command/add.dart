@@ -82,6 +82,8 @@ class AddCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
+    } else if (argResults.rest.length > 1) {
+      usageException('Takes only a single argument.');
     }
 
     final packageInformation = _parsePackage(argResults.rest.first);
