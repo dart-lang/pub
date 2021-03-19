@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/source/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -343,7 +344,8 @@ class AddCommand extends PubCommand {
       pubspecInformation = {'git': git};
     } else if (path != null) {
       final relativeToEntryPoint = p.isRelative(path)
-          ? p.relative(path, from: entrypoint.root.dir)
+          ? PathSource.relativePathWithPosixSeparators(
+              p.relative(path, from: entrypoint.root.dir))
           : path;
       packageRange = cache.sources['path']
           .parseRef(packageName, relativeToEntryPoint,
