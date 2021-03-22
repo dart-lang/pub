@@ -90,9 +90,14 @@ class GlobalPackages {
     // dependencies. Their executables shouldn't be cached, and there should
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
+    PackageRef ref;
+    try {
+      ref = cache.git.source.parseRef(name, {'url': repo}, containingPath: '.');
+    } on FormatException catch (e) {
+      throw ApplicationException(e.message);
+    }
     await _installInCache(
-        cache.git.source
-            .refFor(name, repo)
+        ref
             .withConstraint(VersionConstraint.any)
             .withFeatures(features ?? const {}),
         executables,
@@ -282,7 +287,8 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     var oldPath = p.join(_directory, '$package.lock');
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
-    writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
+    writeTextFile(_getLockFilePath(package),
+        lockFile.serialize(p.join(_directory, package)));
   }
 
   /// Shows the user the currently active package with [name], if any.
