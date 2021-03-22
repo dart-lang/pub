@@ -65,8 +65,7 @@ class AddCommand extends PubCommand {
     argParser.addOption('sdk', help: 'SDK source for package');
     argParser.addFlag(
       'example',
-      help: 'Also update dependencies `example/` (if it exists).',
-      defaultsTo: true,
+      help: 'Also update dependencies in `example/` (if it exists).',
       hide: true,
     );
 
@@ -166,7 +165,7 @@ class AddCommand extends PubCommand {
         await entrypoint.example.acquireDependencies(
           SolveType.GET,
           precompile: argResults['precompile'],
-          onlySummary: true,
+          onlyReportSuccessOrFailure: true,
         );
       }
     }

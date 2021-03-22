@@ -13,7 +13,8 @@ import '../test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test('pub ${command.name} also retrieves dependencies in example/',
+    test(
+        'pub ${command.name} --example also retrieves dependencies in example/',
         () async {
       await d.dir(appPath, [
         d.appPubspec(),
@@ -27,7 +28,7 @@ void main() {
         ])
       ]).create();
 
-      await pubCommand(command, args: ['--no-example']);
+      await pubCommand(command, args: []);
       final lockFile = File(p.join(d.sandbox, appPath, 'pubspec.lock'));
       final exampleLockFile = File(
         p.join(d.sandbox, appPath, 'example', 'pubspec.lock'),
@@ -37,24 +38,23 @@ void main() {
       expect(exampleLockFile.existsSync(), false);
 
       await pubCommand(command,
+          args: ['--example'],
           output: command.name == 'get'
               ? '''
 Resolving dependencies... 
 Got dependencies!
 Resolving dependencies in .${p.separator}example...
-+ myapp 0.0.0 from path .
-Changed 1 dependency!'''
+Got dependencies in ./example.'''
               : '''
 Resolving dependencies... 
 No dependencies changed.
 Resolving dependencies in .${p.separator}example...
-+ myapp 0.0.0 from path .
-Changed 1 dependency!''');
+Got dependencies in ./example.''');
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), true);
     });
 
-    test('paths are relative to cwd.', () async {
+    test('Failures are met with a suggested command', () async {
       await d.dir(appPath, [
         d.appPubspec(),
         d.dir('example', [
@@ -67,9 +67,17 @@ Changed 1 dependency!''');
         ])
       ]).create();
       await pubGet(
-          error: contains(
-              'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
-          exitCode: 65);
+        args: ['--example'],
+        error: contains(
+            'Resolving dependencies in .${p.separator}example failed. For details run `dart pub get --directory .${p.separator}example`'),
+        exitCode: 1,
+      );
+      await pubGet(
+        args: ['--directory', '.${p.separator}example'],
+        error: contains(
+            'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
+        exitCode: 65,
+      );
     });
   });
 }

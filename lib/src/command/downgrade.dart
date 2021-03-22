@@ -37,7 +37,6 @@ class DowngradeCommand extends PubCommand {
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
-      defaultsTo: true,
       hide: true,
     );
 
@@ -58,8 +57,10 @@ class DowngradeCommand extends PubCommand {
       dryRun: dryRun,
     );
     if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.DOWNGRADE,
-          unlock: argResults.rest, dryRun: dryRun, onlySummary: true);
+      await entrypoint.example.acquireDependencies(SolveType.GET,
+          unlock: argResults.rest,
+          dryRun: dryRun,
+          onlyReportSuccessOrFailure: true);
     }
 
     if (isOffline) {

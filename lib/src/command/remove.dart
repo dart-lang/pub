@@ -44,8 +44,7 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag(
       'example',
-      help: 'Also update dependencies `example/` (if it exists).',
-      defaultsTo: true,
+      help: 'Also update dependencies in `example/` (if it exists).',
       hide: true,
     );
 
@@ -84,7 +83,8 @@ class RemoveCommand extends PubCommand {
 
       if (argResults['example'] && entrypoint.example != null) {
         await entrypoint.example.acquireDependencies(SolveType.GET,
-            precompile: argResults['precompile'], onlySummary: true);
+            precompile: argResults['precompile'],
+            onlyReportSuccessOrFailure: true);
       }
     }
   }

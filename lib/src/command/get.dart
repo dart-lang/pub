@@ -36,7 +36,6 @@ class GetCommand extends PubCommand {
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
-      defaultsTo: true,
       hide: true,
     );
 
@@ -57,7 +56,7 @@ class GetCommand extends PubCommand {
       await entrypoint.example.acquireDependencies(SolveType.GET,
           dryRun: argResults['dry-run'],
           precompile: argResults['precompile'],
-          onlySummary: true);
+          onlyReportSuccessOrFailure: true);
     }
   }
 }

@@ -564,7 +564,7 @@ class BoundHostedSource extends CachedSource {
       url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     }
     log.io('Get package from $url.');
-    log.message('Downloading ${log.bold(id.name)} ${id.version}...');
+    log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();

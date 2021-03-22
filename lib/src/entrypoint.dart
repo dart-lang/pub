@@ -229,7 +229,7 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// if [onlySummary] is `true` only success or failure will be shown ---
+  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be shown ---
   /// in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
@@ -238,7 +238,7 @@ class Entrypoint {
     Iterable<String> unlock,
     bool dryRun = false,
     bool precompile = false,
-    bool onlySummary = false,
+    bool onlyReportSuccessOrFailure = false,
   }) async {
     // We require an SDK constraint lower-bound as of Dart 2.12.0
     _checkSdkConstraintIsDefined(root.pubspec);
@@ -257,16 +257,23 @@ class Entrypoint {
         ),
       );
     } on SolveFailure {
-      if (onlySummary) {
+      if (onlyReportSuccessOrFailure) {
         final directoryOption = root.dir == null || root.dir == '.'
             ? ''
             : ' --directory ${root.dir}';
         log.warning(
             'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
+        throw ApplicationException('');
+      } else {
+        rethrow;
       }
-      throw ApplicationException('');
     }
 
+    if (!dryRun) {
+      await log.progress('Fetching dependencies$suffix',
+          () => Future.wait(result.packages.map(_get)));
+      _saveLockFile(result);
+    }
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
       var overriddenPackages = (result.pubspecs.values
@@ -285,16 +292,15 @@ class Entrypoint {
       }
     }
 
-    if (!onlySummary) {
+    if (!onlyReportSuccessOrFailure) {
       await result.showReport(type, cache);
     }
 
-    if (!dryRun) {
-      await Future.wait(result.packages.map(_get));
-      _saveLockFile(result);
+    if (onlyReportSuccessOrFailure) {
+      log.message('Got dependencies$suffix.');
+    } else {
+      await result.summarizeChanges(type, cache, dryRun: dryRun);
     }
-
-    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       /// Build a package graph from the version solver results so we don't

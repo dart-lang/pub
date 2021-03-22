@@ -66,7 +66,6 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
-      defaultsTo: true,
       hide: true,
     );
 
@@ -124,7 +123,7 @@ class UpgradeCommand extends PubCommand {
         unlock: argResults.rest,
         dryRun: _dryRun,
         precompile: _precompile,
-        onlySummary: onlySummary);
+        onlyReportSuccessOrFailure: onlySummary);
 
     _showOfflineWarning();
   }
