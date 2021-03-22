@@ -37,6 +37,30 @@ void main() {
   });
 
   group('normally', () {
+    test('fails if extra arguments are passed', () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'})
+      ]).create();
+
+      await pubAdd(
+          args: ['foo', '^1.2.2'],
+          exitCode: exit_codes.USAGE,
+          error: contains('Takes only a single argument.'));
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+        }),
+        d.nothing('.dart_tool/package_config.json'),
+        d.nothing('pubspec.lock'),
+        d.nothing('.packages'),
+      ]).validate();
+    });
+
     test('adds a package from a pub server', () async {
       await servePackages((builder) => builder.serve('foo', '1.2.3'));
 
