@@ -1,0 +1,10 @@
+dart:
+# todo: Uncomment once Dart 2.12 is stable
+#  - stable
+  - dev
+stages:
+  - analyze:
+      - dartanalyzer
+      - dartfmt
+  - tests:
+      - test
