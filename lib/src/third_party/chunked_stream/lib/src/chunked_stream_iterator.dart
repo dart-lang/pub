@@ -18,7 +18,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart' show sealed;
-import 'package:chunked_stream/src/read_chunked_stream.dart';
+import 'read_chunked_stream.dart';
 
 /// Auxiliary class for iterating over the items in a chunked stream.
 ///
