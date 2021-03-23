@@ -1,0 +1,44 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image:  google/dart:beta
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Print Dart SDK version
+        run: dart --version
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v2
+        env:
+          cache-name: tar-cache-deps
+        with:
+          path: .dart_tool
+          key: ${{ env.cache-name }}
+
+      - name: Install dependencies
+        env: 
+          PUB_CACHE: ".dart_tool/pub_cache"
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: dart analyze --fatal-infos
+
+      - name: Run tests
+        env:
+          PUB_CACHE: ".dart_tool/pub_cache"
+        run: dart test
