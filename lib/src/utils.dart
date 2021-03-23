@@ -399,8 +399,7 @@ bool forceColors = false;
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
 bool get canUseAnsiCodes =>
-    forceColors ||
-    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
@@ -418,7 +417,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    stdioType(stdout) != StdioType.terminal ||
+    !stdout.hasTerminal ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 
