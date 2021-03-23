@@ -390,11 +390,9 @@ String _urlDecode(String encoded) =>
 /// Set to `true` if ANSI colors should be output regardless of terminalD
 bool forceColors = false;
 
-/// Whether "special" strings such as Unicode characters or color escapes are
-/// safe to use.
+/// Whether ansi codes such as color escapes are safe to use.
 ///
-/// On Windows or when not printing to a terminal, only printable ASCII
-/// characters should be used.
+/// On a terminal we can use ansi codes also on Windows.
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
