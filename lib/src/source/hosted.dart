@@ -574,6 +574,11 @@ class BoundHostedSource extends CachedSource {
     var response = await httpClient.send(http.Request('GET', url));
 
     try {
+      // We download the archive to disk instead of streaming it directly into
+      // the tar unpacking. This simplifies stream handling.
+      // Package:tar cancels the stream when it reaches end-of-archive, and
+      // cancelling a http stream makes it not reusable.
+      // There are ways around this, and we might revisit this later.
       await writeBinaryFileFromStream(archivePath, response.stream);
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
