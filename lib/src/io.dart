@@ -170,6 +170,13 @@ List<int> readBinaryFile(String file) {
   return contents;
 }
 
+/// Reads the contents of the binary file [file] as a [Stream].
+Stream<List<int>> readBinaryFileAsSream(String file) {
+  log.io('Reading binary file $file.');
+  var contents = File(file).openRead();
+  return contents;
+}
+
 /// Creates [file] and writes [contents] to it.
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
@@ -186,6 +193,16 @@ void writeTextFile(String file, String contents,
 
   deleteIfLink(file);
   File(file).writeAsStringSync(contents, encoding: encoding);
+}
+
+/// Creates [file] and writes [contents] to it.
+Future<void> writeBinaryFileFromStream(
+  String file,
+  Stream<List<int>> contents,
+) async {
+  deleteIfLink(file);
+  log.fine('Writing text file $file.');
+  await File(file).openWrite().addStream(contents);
 }
 
 /// Creates [file] and writes [contents] to it.

@@ -568,17 +568,26 @@ class BoundHostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     var tempDir = systemCache.createTempDir();
+    var tempDirForArchive = systemCache.createTempDir();
+
+    var archivePath = p.join(tempDirForArchive, '$packageName-$version.tar.gz');
     var response = await httpClient.send(http.Request('GET', url));
-    await extractTarGz(response.stream, tempDir);
 
-    // Remove the existing directory if it exists. This will happen if
-    // we're forcing a download to repair the cache.
-    if (dirExists(destPath)) deleteEntry(destPath);
+    try {
+      await writeBinaryFileFromStream(archivePath, response.stream);
+      await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
-    // Now that the get has succeeded, move it to the real location in the
-    // cache. This ensures that we don't leave half-busted ghost
-    // directories in the user's pub cache if a get fails.
-    renameDir(tempDir, destPath);
+      // Remove the existing directory if it exists. This will happen if
+      // we're forcing a download to repair the cache.
+      if (dirExists(destPath)) deleteEntry(destPath);
+
+      // Now that the get has succeeded, move it to the real location in the
+      // cache. This ensures that we don't leave half-busted ghost
+      // directories in the user's pub cache if a get fails.
+      renameDir(tempDir, destPath);
+    } finally {
+      deleteEntry(tempDirForArchive);
+    }
   }
 
   /// When an error occurs trying to read something about [package] from [url],
