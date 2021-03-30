@@ -196,16 +196,6 @@ void writeTextFile(String file, String contents,
 }
 
 /// Creates [file] and writes [contents] to it.
-Future<void> writeBinaryFileFromStream(
-  String file,
-  Stream<List<int>> contents,
-) async {
-  deleteIfLink(file);
-  log.fine('Writing text file $file.');
-  await File(file).openWrite().addStream(contents);
-}
-
-/// Creates [file] and writes [contents] to it.
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
 /// logged.
@@ -227,7 +217,7 @@ Future<void> writeTextFileAsync(String file, String contents,
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
+Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io('Creating $file from stream.');
 
@@ -866,7 +856,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-        await _createFileFromStream(entry.contents, filePath);
+        await createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {
           // Apply executable bits from tar header, but don't change r/w bits

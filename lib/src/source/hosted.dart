@@ -567,19 +567,18 @@ class BoundHostedSource extends CachedSource {
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
-    var tempDir = systemCache.createTempDir();
-    var tempDirForArchive = systemCache.createTempDir();
+    await withTempDir((tempDirForArchive) async {
+      var archivePath =
+          p.join(tempDirForArchive, '$packageName-$version.tar.gz');
+      var response = await httpClient.send(http.Request('GET', url));
 
-    var archivePath = p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-    var response = await httpClient.send(http.Request('GET', url));
-
-    try {
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
       // Package:tar cancels the stream when it reaches end-of-archive, and
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
-      await writeBinaryFileFromStream(archivePath, response.stream);
+      await createFileFromStream(response.stream, archivePath);
+      var tempDir = systemCache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
       // Remove the existing directory if it exists. This will happen if
@@ -590,9 +589,7 @@ class BoundHostedSource extends CachedSource {
       // cache. This ensures that we don't leave half-busted ghost
       // directories in the user's pub cache if a get fails.
       renameDir(tempDir, destPath);
-    } finally {
-      deleteEntry(tempDirForArchive);
-    }
+    });
   }
 
   /// When an error occurs trying to read something about [package] from [url],
