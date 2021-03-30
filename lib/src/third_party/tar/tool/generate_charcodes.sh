@@ -1,1 +1,0 @@
-dart run charcode 'ustarxgASLK=\x20\x0a\d' > lib/src/charcodes.dart

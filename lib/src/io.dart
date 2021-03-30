@@ -15,13 +15,12 @@ import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-// ignore: avoid_relative_lib_imports
-import 'third_party/tar/lib/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
