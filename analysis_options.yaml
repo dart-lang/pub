@@ -1,7 +1,6 @@
 include: package:pedantic/analysis_options.yaml
 
 analyzer:
-  exclude: [lib/src/third_party/**]
   errors:
     unused_import: error
     unused_local_variable: error
