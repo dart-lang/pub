@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http_retry/http_retry.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -382,13 +383,10 @@ class _ThrottleClient extends http.BaseClient {
       rethrow;
     }
 
-    var stream = response.stream.transform(
-        StreamTransformer<List<int>, List<int>>.fromHandlers(
-            handleDone: (sink) {
-      resource.release();
-      sink.close();
-    }));
-    return http.StreamedResponse(stream, response.statusCode,
+    final responseController = StreamController<List<int>>(sync: true);
+    unawaited(response.stream.pipe(responseController));
+    unawaited(responseController.done.then((_) => resource.release()));
+    return http.StreamedResponse(responseController.stream, response.statusCode,
         contentLength: response.contentLength,
         request: response.request,
         headers: response.headers,

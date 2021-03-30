@@ -170,6 +170,13 @@ List<int> readBinaryFile(String file) {
   return contents;
 }
 
+/// Reads the contents of the binary file [file] as a [Stream].
+Stream<List<int>> readBinaryFileAsSream(String file) {
+  log.io('Reading binary file $file.');
+  var contents = File(file).openRead();
+  return contents;
+}
+
 /// Creates [file] and writes [contents] to it.
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
@@ -210,7 +217,7 @@ Future<void> writeTextFileAsync(String file, String contents,
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
+Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io('Creating $file from stream.');
 
@@ -849,7 +856,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-        await _createFileFromStream(entry.contents, filePath);
+        await createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {
           // Apply executable bits from tar header, but don't change r/w bits
