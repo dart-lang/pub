@@ -36,8 +36,6 @@ class AddCommand extends PubCommand {
   @override
   String get argumentsDescription => '<package>[:<constraint>] [options]';
   @override
-  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
-  @override
   bool get isOffline => argResults['offline'];
 
   bool get isDev => argResults['dev'];
