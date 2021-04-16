@@ -50,4 +50,13 @@ void main() {
       });
     }
   });
+
+  group('should consider a package invalid if contains .pub_cache ', () {
+    setUp(d.validPackage.create);
+    const name = '.pub_cache';
+    test('"$name"', () async {
+      await d.dir(appPath, [d.dir(name)]).create();
+      await expectValidation(directory, errors: isNotEmpty);
+    });
+  });
 }

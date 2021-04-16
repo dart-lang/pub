@@ -45,6 +45,10 @@ class DirectoryValidator extends Validator {
               'This allows Pub to find your examples and create "packages" '
               'directories for them.\n');
         }
+        if (dir.contains(r'^.pub_cache$')) {
+          errors.add('Pushing "$dir" directory if forbidden".\n'
+              'Cache directory should not be part of package\n');
+        }
       }
     });
   }
