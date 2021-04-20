@@ -15,6 +15,7 @@ import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:cli_util/cli_util.dart';
+import 'package:frontend_server_client/frontend_server_client.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -173,4 +174,39 @@ class AnalyzerErrorGroup implements Exception {
 
   @override
   String toString() => errors.join('\n');
+}
+
+Future<void> precompile(
+    String executablePath, String outputPath, String incrementalDillOutputPath,
+    {String packageConfigFile, String name}) async {
+  const platformDill = 'lib/_internal/vm_platform_strong.dill';
+  final sdkRoot =
+      Directory(p.relative(p.join(Platform.resolvedExecutable, '..', '..')))
+          .uri;
+  var client = await FrontendServerClient.start(
+    executablePath,
+    incrementalDillOutputPath,
+    platformDill,
+    sdkRoot: sdkRoot.path,
+    packagesJson: packageConfigFile ?? '.dart_tool/package_config.json',
+    printIncrementalDependencies: false,
+  );
+  try {
+    var result = await client.compile();
+
+    final highlightedName = name = log.bold(name ?? executablePath.toString());
+    if (result.errorCount == 0) {
+      log.message('Precompiled $highlightedName.');
+      await File(incrementalDillOutputPath).copy(outputPath);
+    } else {
+      // Don't leave partial results.
+      deleteEntry(outputPath);
+
+      throw ApplicationException(
+          log.yellow('Failed to precompile $highlightedName:\n') +
+              result.compilerOutputLines.join('\n'));
+    }
+  } finally {
+    client.kill();
+  }
 }
