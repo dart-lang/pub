@@ -181,7 +181,7 @@ Future<void> precompile(
     {String packageConfigFile, String name}) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
-  const platformDill = 'lib/_internal/vm_platform_strong.dill';
+  final platformDill = p.join('lib', '_internal', 'vm_platform_strong.dill');
   final sdkRoot =
       Directory(p.relative(p.join(Platform.resolvedExecutable, '..', '..')))
           .uri;
@@ -190,7 +190,8 @@ Future<void> precompile(
     incrementalDillOutputPath,
     platformDill,
     sdkRoot: sdkRoot.path,
-    packagesJson: packageConfigFile ?? '.dart_tool/package_config.json',
+    packagesJson:
+        packageConfigFile ?? p.join('.dart_tool', 'package_config.json'),
     printIncrementalDependencies: false,
   );
   try {
