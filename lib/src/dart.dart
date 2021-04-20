@@ -197,7 +197,7 @@ Future<void> precompile(
     var result = await client.compile();
 
     final highlightedName = name = log.bold(name ?? executablePath.toString());
-    if (result.errorCount == 0) {
+    if (result?.errorCount == 0) {
       log.message('Precompiled $highlightedName.');
       await File(incrementalDillOutputPath).copy(outputPath);
     } else {
@@ -206,7 +206,7 @@ Future<void> precompile(
 
       throw ApplicationException(
           log.yellow('Failed to precompile $highlightedName:\n') +
-              result.compilerOutputLines.join('\n'));
+              (result?.compilerOutputLines?.join('\n') ?? ''));
     }
   } finally {
     client.kill();
