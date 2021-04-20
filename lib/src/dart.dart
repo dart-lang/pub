@@ -179,6 +179,8 @@ class AnalyzerErrorGroup implements Exception {
 Future<void> precompile(
     String executablePath, String outputPath, String incrementalDillOutputPath,
     {String packageConfigFile, String name}) async {
+  ensureDir(p.dirname(outputPath));
+  ensureDir(p.dirname(incrementalDillOutputPath));
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot =
       Directory(p.relative(p.join(Platform.resolvedExecutable, '..', '..')))

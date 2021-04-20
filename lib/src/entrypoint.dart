@@ -347,7 +347,6 @@ class Entrypoint {
   Future<void> precompileExecutable(Executable executable) async {
     return await log.progress('Precompiling executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
-      ensureDir(p.dirname(incrementalDillPathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
   }
