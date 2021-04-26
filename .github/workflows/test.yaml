@@ -68,5 +68,5 @@ jobs:
           tail -n+$offset $_TESTS_FILE | head -n$tests_per_shard > $_TESTS_FILE.${{ matrix.shard }}
         shell: bash
       - name: Run tests
-        run: dart test --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
+        run: dart test --use-data-isolate-strategy --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
         shell: bash
