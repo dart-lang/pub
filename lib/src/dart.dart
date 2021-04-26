@@ -181,7 +181,7 @@ Future<void> precompile(
     {String packageConfigFile, String name}) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
-  final platformDill = p.join('lib', '_internal', 'vm_platform_strong.dill');
+  const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
   var client = await FrontendServerClient.start(
     executablePath,
