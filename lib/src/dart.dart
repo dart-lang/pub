@@ -182,14 +182,12 @@ Future<void> precompile(
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
   final platformDill = p.join('lib', '_internal', 'vm_platform_strong.dill');
-  final sdkRoot =
-      Directory(p.relative(p.join(Platform.resolvedExecutable, '..', '..')))
-          .uri;
+  final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
   var client = await FrontendServerClient.start(
     executablePath,
     incrementalDillOutputPath,
     platformDill,
-    sdkRoot: sdkRoot.path,
+    sdkRoot: sdkRoot,
     packagesJson:
         packageConfigFile ?? p.join('.dart_tool', 'package_config.json'),
     printIncrementalDependencies: false,
