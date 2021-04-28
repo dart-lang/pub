@@ -354,9 +354,9 @@ class Entrypoint {
   Future<void> _precompileExecutable(Executable executable) async {
     final package = executable.package;
     await dart.precompile(
-        resolveExecutable(executable),
-        pathOfExecutable(executable),
-        incrementalDillPathOfExecutable(executable),
+        executablePath: resolveExecutable(executable),
+        outputPath: pathOfExecutable(executable),
+        incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
         packageConfigFile: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');

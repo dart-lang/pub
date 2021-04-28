@@ -16,6 +16,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -34,41 +35,6 @@ bool isEntrypoint(CompilationUnit dart) {
         node.name.name == 'main' &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
-}
-
-/// Snapshots the Dart executable at [executablePath] to a snapshot at
-/// [snapshotPath].
-///
-/// If [packageConfigFile] is passed, it's used to resolve `package:` URIs in
-/// the executable. Otherwise, a `packages/` directory or a package spec is
-/// inferred from the executable's location.
-///
-/// If [name] is passed, it is used to describe the executable in logs and error
-/// messages.
-Future snapshot(
-  String executablePath,
-  String snapshotPath, {
-  String packageConfigFile,
-  String name,
-}) async {
-  final args = [
-    if (packageConfigFile != null) '--packages=$packageConfigFile',
-    '--snapshot=$snapshotPath',
-    p.toUri(executablePath).toString()
-  ];
-
-  final result = await runProcess(Platform.executable, args);
-  final highlightedName = name = log.bold(name ?? executablePath.toString());
-  if (result.success) {
-    log.message('Precompiled $highlightedName.');
-  } else {
-    // Don't leave partial results.
-    deleteEntry(snapshotPath);
-
-    throw ApplicationException(
-        log.yellow('Failed to precompile $highlightedName:\n') +
-            result.stderr.join('\n'));
-  }
 }
 
 class AnalysisContextManager {
@@ -176,9 +142,23 @@ class AnalyzerErrorGroup implements Exception {
   String toString() => errors.join('\n');
 }
 
-Future<void> precompile(
-    String executablePath, String outputPath, String incrementalDillOutputPath,
-    {String packageConfigFile, String name}) async {
+/// Precompiles the Dart executable at [executablePath] to a kernel file at
+/// [outputPath].
+///
+/// This file is also cached at [incrementalDillOutputPath] which is used to
+/// initialize the compiler on future runs.
+///
+/// The [packageConfigPath] should point at the package config file to be used
+/// for `package:` uri resolution.
+///
+/// The [name] is used to describe the executable in logs and error messages.
+Future<void> precompile({
+  @required String executablePath,
+  @required String incrementalDillOutputPath,
+  @required String name,
+  @required String outputPath,
+  @required String packageConfigPath,
+}) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
@@ -188,14 +168,13 @@ Future<void> precompile(
     incrementalDillOutputPath,
     platformDill,
     sdkRoot: sdkRoot,
-    packagesJson:
-        packageConfigFile ?? p.join('.dart_tool', 'package_config.json'),
+    packagesJson: packageConfigPath,
     printIncrementalDependencies: false,
   );
   try {
     var result = await client.compile();
 
-    final highlightedName = name = log.bold(name ?? executablePath.toString());
+    final highlightedName = log.bold(name);
     if (result?.errorCount == 0) {
       log.message('Precompiled $highlightedName.');
       await File(incrementalDillOutputPath).copy(outputPath);
