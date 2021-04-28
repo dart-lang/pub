@@ -357,7 +357,7 @@ class Entrypoint {
         executablePath: resolveExecutable(executable),
         outputPath: pathOfExecutable(executable),
         incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
-        packageConfigFile: packageConfigFile,
+        packageConfigPath: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
