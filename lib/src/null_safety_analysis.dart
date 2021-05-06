@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
@@ -188,9 +189,17 @@ class NullSafetyAnalysis {
             if (file.endsWith('.dart')) {
               final fileUrl =
                   'package:${dependencyId.name}/${path.relative(file, from: libDir)}';
-              final unitResult =
-                  analysisSession.getParsedUnit(path.normalize(file));
-              if (unitResult == null || unitResult.errors.isNotEmpty) {
+              final someUnitResult =
+                  analysisSession.getParsedUnit2(path.normalize(file));
+              ParsedUnitResult unitResult;
+              if (someUnitResult is ParsedUnitResult) {
+                unitResult = someUnitResult;
+              } else {
+                return NullSafetyAnalysisResult(
+                    NullSafetyCompliance.analysisFailed,
+                    'Could not analyze $fileUrl.');
+              }
+              if (unitResult.errors.isNotEmpty) {
                 return NullSafetyAnalysisResult(
                     NullSafetyCompliance.analysisFailed,
                     'Could not analyze $fileUrl.');

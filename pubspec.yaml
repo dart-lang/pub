@@ -6,7 +6,7 @@ environment:
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
-  analyzer: ^1.0.0
+  analyzer: ^1.5.0
   args: ^2.0.0
   async: ^2.5.0
   cli_util: ^0.3.0
