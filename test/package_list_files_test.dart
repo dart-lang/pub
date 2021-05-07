@@ -344,23 +344,6 @@ void main() {
     });
   });
 
-  test('.-files are ignored', () async {
-    ensureGit();
-    final repo = d.git(appPath, [
-      d.appPubspec(),
-      d.dir('.dart_tool', [d.file('package_config.json')]),
-      d.dir('.github', [d.file('ignored.yml')]),
-      d.file('.gitignore'),
-    ]);
-
-    await repo.create();
-    createEntrypoint();
-
-    expect(entrypoint.root.listFiles(), {
-      p.join(root, 'pubspec.yaml'),
-    });
-  });
-
   test('.pubignore overrides .gitignore', () async {
     ensureGit();
     final repo = d.git(appPath, [

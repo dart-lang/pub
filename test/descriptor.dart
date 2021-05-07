@@ -33,7 +33,19 @@ TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
+      libPubspec('test_pk', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      file('LICENSE', 'Eh, do what you want.'),
+      file('README.md', "This package isn't real."),
+      file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      dir('lib', [file('test_pk.dart', 'int i = 1;')])
+    ]);
+
+/// Describes a package that passes all validation.
+DirectoryDescriptor get validPackageWithDotFiles => dir(appPath, [
       libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      dir('.dart_tool', [file('package_config.json')]),
+      dir('.github', [file('ignored.yml')]),
+      file('.gitignore'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
