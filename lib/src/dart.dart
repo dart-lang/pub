@@ -2,11 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// A library for compiling Dart code and manipulating analyzer parse trees.
 import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/file_system/overlay_file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
@@ -94,11 +97,15 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit(path);
-    if (parseResult.errors.isNotEmpty) {
-      throw AnalyzerErrorGroup(parseResult.errors);
+    var parseResult = _getExistingSession(path).getParsedUnit2(path);
+    if (parseResult is ParsedUnitResult) {
+      if (parseResult.errors.isNotEmpty) {
+        throw AnalyzerErrorGroup(parseResult.errors);
+      }
+      return parseResult.unit;
+    } else {
+      throw StateError('Unable to parse $path, ${parseResult.runtimeType}');
     }
-    return parseResult.unit;
   }
 
   /// Return import and export directives in the file with the given [path].
