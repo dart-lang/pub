@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Helper functionality to make working with IO easier.
 import 'dart:async';
 import 'dart:collection';
@@ -15,12 +17,12 @@ import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
+import 'third_party/tar/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
