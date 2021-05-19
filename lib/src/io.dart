@@ -568,6 +568,11 @@ Future<bool> confirm(String message) {
   return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }
 
+/// Reads a line from stdin stream.
+Future<String> readLine() {
+  return _stdinLines.first;
+}
+
 /// Flushes the stdout and stderr streams, then exits the program with the given
 /// status code.
 ///

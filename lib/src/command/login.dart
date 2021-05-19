@@ -7,8 +7,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import '../authentication/bearer.dart';
+
 import '../command.dart';
 import '../http.dart';
+import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 
@@ -21,16 +24,45 @@ class LoginCommand extends PubCommand {
   @override
   String get invocation => 'pub login';
 
-  LoginCommand();
+  String get token => argResults['token'];
+  bool get tokenStdin => argResults['token-stdin'];
+
+  LoginCommand() {
+    argParser.addOption('token', help: 'Authorization token for the server');
+
+    argParser.addFlag('token-stdin',
+        help: 'Read authorization token from stdin stream');
+  }
 
   @override
   Future<void> runProtected() async {
+    if (argResults.rest.isEmpty) {
+      await _loginToPubDev();
+    } else {
+      if (token?.isNotEmpty != true && !tokenStdin) {
+        usageException('Must specify a token.');
+      }
+      await _loginToServer(argResults.rest.first);
+    }
+  }
+
+  Future<void> _loginToServer(String server) async {
+    if (Uri.tryParse(server) == null) {
+      usageException('Invalid or malformed server URL provided.');
+    }
+
+    final _token = tokenStdin ? await readLine() : token;
+    credentialStore.addCredentials(server, BearerCredential(_token));
+    log.message('You are now logged in to $server using bearer token');
+  }
+
+  Future<void> _loginToPubDev() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       log.message('You are now logged in as $userInfo');
     } else {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
             'Run `pub logout` to delete your credentials  and try again.');
@@ -40,7 +72,7 @@ class LoginCommand extends PubCommand {
     }
   }
 
-  Future<_UserInfo> retrieveUserInfo() async {
+  Future<_UserInfo> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
       final discovery = await httpClient.get(Uri.https(
           'accounts.google.com', '/.well-known/openid-configuration'));
