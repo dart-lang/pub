@@ -8,7 +8,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import '../authentication/bearer.dart';
-
 import '../command.dart';
 import '../http.dart';
 import '../io.dart';
