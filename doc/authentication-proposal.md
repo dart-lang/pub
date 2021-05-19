@@ -4,10 +4,18 @@ Authenticating with Hosted Pub Repositories Proposal
 This document specifies how the REST API could be authenticated with the pub CLI
 tool.
 
+This proposal is mostly based on
+[RFC7235](https://datatracker.ietf.org/doc/html/rfc7235) - HTTP Authentication
+specifications. This ensures exists un-protected endpoints could be protected
+just by setting up reverse proxies like NGINX, Apache, Traefik, which already
+supports this specifications.
+
 ## Requesting authentication
 
 If the repository requires special authentication to access resources or upload
-new packages, it has to respond with `401 Unauthorized` status code with `WWW-Authenticate` header. This header should specify authentication method that should be used to gain access to the resource.
+new packages, it has to respond with `401 Unauthorized` status code with
+`WWW-Authenticate` header. This header should specify authentication method that
+should be used to gain access to the resource.
 
 WWW-Authenticate header syntax:
 
@@ -102,6 +110,5 @@ authentication methods in future.
 
 ## References
 
-- [RFC7235 - 401 Unauthorized](https://datatracker.ietf.org/doc/html/rfc7235#section-3.1)
-- [RFC7235 - WWW-Authenticate](https://datatracker.ietf.org/doc/html/rfc7235#section-4.1)
+- [RFC7235](https://datatracker.ietf.org/doc/html/rfc7235)
 - [MDN - WWW-Authenticate](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate)
