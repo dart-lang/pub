@@ -25,7 +25,7 @@ class LogoutCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       oauth2.logout(cache);
     } else {
-      credentialStore.removeCredentials(argResults.rest.first);
+      credentialStore.removeServer(argResults.rest.first);
     }
   }
 }

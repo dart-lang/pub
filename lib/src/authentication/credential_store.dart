@@ -14,13 +14,13 @@ class CredentialStore {
   final SystemCache cache;
 
   /// Adds [credentials] for [server] into store.
-  void addCredentials(String server, Credential credentials) {
+  void addServer(String server, Credential credentials) {
     serverCredentials[server] = credentials;
     _save();
   }
 
   /// Removes credentials for [server].
-  void removeCredentials(String server) {
+  void removeServer(String server) {
     serverCredentials.removeWhere((key, value) => key == server);
     _save();
   }
