@@ -756,9 +756,9 @@ if exist "$snapshot" (
   if not errorlevel 253 (
     goto error
   )
-  pub global run ${package.name}:$script %*
+  dart pub global run ${package.name}:$script %*
 ) else (
-  pub global run ${package.name}:$script %*
+  dart pub global run ${package.name}:$script %*
 )
 goto eof
 :error
@@ -766,7 +766,7 @@ exit /b %errorlevel%
 :eof
 ''';
       } else {
-        invocation = 'pub global run ${package.name}:$script %*';
+        invocation = 'dart pub global run ${package.name}:$script %*';
       }
       var batch = '''
 @echo off
@@ -792,13 +792,13 @@ if [ -f $snapshot ]; then
   if [ \$exit_code != 253 ]; then	
     exit \$exit_code	
   fi	
-  pub global run ${package.name}:$script "\$@"
+  dart pub global run ${package.name}:$script "\$@"
 else
-  pub global run ${package.name}:$script "\$@"
+  dart pub global run ${package.name}:$script "\$@"
 fi
 ''';
       } else {
-        invocation = 'pub global run ${package.name}:$script "\$@"';
+        invocation = 'dart pub global run ${package.name}:$script "\$@"';
       }
       var bash = '''
 #!/usr/bin/env sh
