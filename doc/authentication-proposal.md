@@ -12,8 +12,12 @@ new packages, it has to respond with `401 Unauthorized` status code with `WWW-Au
 WWW-Authenticate header syntax:
 
 ```plain
-WWW-Authenticate: <type> realm=<realm>[, charset="UTF-8"]
+WWW-Authenticate: <type> [realm=<realm>][, charset="UTF-8"]
 ```
+
+> `realm` parameter is completely optional, and is not used in this proposal.
+> You can read more about this parameter here:
+> https://datatracker.ietf.org/doc/html/rfc7235#section-2.2
 
 Pub CLI will only support **Basic** and **Bearer** authentication methods by
 default.
