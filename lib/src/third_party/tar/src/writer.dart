@@ -7,16 +7,19 @@ import 'constants.dart';
 import 'entry.dart';
 import 'format.dart';
 import 'header.dart';
+import 'utils.dart';
 
 class _WritingTransformer extends StreamTransformerBase<TarEntry, List<int>> {
-  const _WritingTransformer();
+  final OutputFormat format;
+
+  const _WritingTransformer(this.format);
 
   @override
   Stream<List<int>> bind(Stream<TarEntry> stream) {
     // sync because the controller proxies another stream
     final controller = StreamController<List<int>>(sync: true);
     controller.onListen = () {
-      stream.pipe(tarWritingSink(controller));
+      stream.pipe(tarWritingSink(controller, format: format));
     };
 
     return controller.stream;
@@ -32,7 +35,30 @@ class _WritingTransformer extends StreamTransformerBase<TarEntry, List<int>> {
 ///
 /// When piping the resulting stream into a [StreamConsumer], consider using
 /// [tarWritingSink] directly.
-const StreamTransformer<TarEntry, List<int>> tarWriter = _WritingTransformer();
+/// To change the output format of files with long names, use [tarWriterWith].
+const StreamTransformer<TarEntry, List<int>> tarWriter =
+    _WritingTransformer(OutputFormat.pax);
+
+/// Creates a stream transformer writing tar entries as byte streams, with
+/// custom encoding options.
+///
+/// The [format] [OutputFormat] can be used to select the way tar entries with
+/// long file or link names are written. By default, the writer will emit an
+/// extended PAX header for the file ([OutputFormat.pax]).
+/// Alternatively, [OutputFormat.gnuLongName] can be used to emit special tar
+/// entries with the [TypeFlag.gnuLongName] type.
+///
+/// Regardless of the input stream, the stream returned by this
+/// [StreamTransformer.bind] is a single-subscription stream.
+/// Apart from that, subscriptions, cancellations, pauses and resumes are
+/// propagated as one would expect from a [StreamTransformer].
+///
+/// When using the default options, prefer using the constant [tarWriter]
+/// instead.
+StreamTransformer<TarEntry, List<int>> tarWriterWith(
+    {OutputFormat format = OutputFormat.pax}) {
+  return _WritingTransformer(format);
+}
 
 /// Create a sink emitting encoded tar files to the [output] sink.
 ///
@@ -62,15 +88,46 @@ const StreamTransformer<TarEntry, List<int>> tarWriter = _WritingTransformer();
 /// Note that, if you don't set the [TarHeader.size], outgoing tar entries need
 /// to be buffered once, which decreases performance.
 ///
+/// The [format] argument can be used to control how long file names are written
+/// in the tar archive. For more details, see the options in [OutputFormat].
+///
 /// See also:
 ///  - [tarWriter], a stream transformer using this sink
 ///  - [StreamSink]
-StreamSink<TarEntry> tarWritingSink(StreamSink<List<int>> output) {
-  return _WritingSink(output);
+StreamSink<TarEntry> tarWritingSink(StreamSink<List<int>> output,
+    {OutputFormat format = OutputFormat.pax}) {
+  return _WritingSink(output, format);
+}
+
+/// This option controls how long file and link names should be written.
+///
+/// This option can be passed to writer in [tarWritingSink] or[tarWriterWith].
+enum OutputFormat {
+  /// Generates an extended PAX headers to encode files with a long name.
+  ///
+  /// This is the default option.
+  pax,
+
+  /// Generates [TypeFlag.gnuLongName] or [TypeFlag.gnuLongLink] entries when
+  /// encoding files with a long name.
+  ///
+  /// When this option is set, `package:tar` will not emit PAX headers which
+  /// may improve compatibility with some legacy systems like old 7zip versions.
+  ///
+  /// Note that this format can't encode large file sizes or long user names.
+  /// Tar entries can't be written if
+  ///  * their [TarHeader.userName] is longer than 31 bytes in utf8,
+  ///  * their [TarHeader.groupName] is longer than 31 bytes in utf8, or,
+  ///  * their [TarEntry.contents] are larger than 8589934591 byte (around
+  ///    8 GiB).
+  ///
+  /// Attempting to encode such file will throw an [UnsupportedError].
+  gnuLongName,
 }
 
 class _WritingSink extends StreamSink<TarEntry> {
   final StreamSink<List<int>> _output;
+  final OutputFormat format;
 
   int _paxHeaderCount = 0;
   bool _closed = false;
@@ -79,7 +136,7 @@ class _WritingSink extends StreamSink<TarEntry> {
   int _pendingOperations = 0;
   Future<void> _ready = Future.value();
 
-  _WritingSink(this._output);
+  _WritingSink(this._output, this.format);
 
   @override
   Future<void> get done => _done.future;
@@ -127,6 +184,7 @@ class _WritingSink extends StreamSink<TarEntry> {
     // have to insert an entry just to store the names. Some tar implementations
     // expect them to be zero-terminated, so use 99 chars to be safe.
     final paxHeader = <String, List<int>>{};
+
     if (nameBytes.length > 99) {
       paxHeader[paxPath] = nameBytes;
       nameBytes = nameBytes.sublist(0, 99);
@@ -151,7 +209,11 @@ class _WritingSink extends StreamSink<TarEntry> {
     }
 
     if (paxHeader.isNotEmpty) {
-      await _writePaxHeader(paxHeader);
+      if (format == OutputFormat.pax) {
+        await _writePaxHeader(paxHeader);
+      } else {
+        await _writeGnuLongName(paxHeader);
+      }
     }
 
     final headerBlock = Uint8List(blockSize)
@@ -228,7 +290,7 @@ class _WritingSink extends StreamSink<TarEntry> {
     final file = TarEntry.data(
       HeaderImpl.internal(
         format: TarFormat.pax,
-        modified: DateTime.fromMillisecondsSinceEpoch(0),
+        modified: millisecondsSinceEpoch(0),
         name: 'PaxHeader/${_paxHeaderCount++}',
         mode: 0,
         size: paxData.length,
@@ -237,6 +299,43 @@ class _WritingSink extends StreamSink<TarEntry> {
       paxData,
     );
     return _safeAdd(file);
+  }
+
+  Future<void> _writeGnuLongName(Map<String, List<int>> values) async {
+    // Ensure that a file that can't be written in the GNU format is not written
+    const allowedKeys = {paxPath, paxLinkpath};
+    final invalidOptions = values.keys.toSet()..removeAll(allowedKeys);
+    if (invalidOptions.isNotEmpty) {
+      throw UnsupportedError(
+        'Unsupporteed entry for OutputFormat.gnu. It uses long fields that '
+        "can't be represented: $invalidOptions. \n"
+        'Try using OutputFormat.pax instead.',
+      );
+    }
+
+    final name = values[paxPath];
+    final linkName = values[paxLinkpath];
+
+    Future<void> write(List<int> name, TypeFlag flag) {
+      return _safeAdd(
+        TarEntry.data(
+          HeaderImpl.internal(
+            name: '././@LongLink',
+            modified: millisecondsSinceEpoch(0),
+            format: TarFormat.gnu,
+            typeFlag: flag,
+          ),
+          name,
+        ),
+      );
+    }
+
+    if (name != null) {
+      await write(name, TypeFlag.gnuLongName);
+    }
+    if (linkName != null) {
+      await write(linkName, TypeFlag.gnuLongLink);
+    }
   }
 
   @override
