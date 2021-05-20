@@ -1,4 +1,4 @@
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 
 import 'bearer.dart';
@@ -34,7 +34,7 @@ abstract class Credential {
   String get authenticationType;
 
   /// Creates authenticated client using this credential.
-  Future<BaseClient> createClient();
+  Future<http.BaseClient> createClient();
 
   /// Converts credential data into [Map<String, dynamic>].
   @protected

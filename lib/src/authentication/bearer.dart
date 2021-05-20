@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 
 import 'credential.dart';
 
@@ -16,8 +16,8 @@ class BearerCredential extends Credential {
   String get authenticationType => 'Bearer';
 
   @override
-  Future<BaseClient> createClient() {
-    return Future.value(_Client(token));
+  Future<http.BaseClient> createClient([http.Client? inner]) {
+    return Future.value(_Client(token: token, inner: inner));
   }
 
   @override
@@ -26,21 +26,22 @@ class BearerCredential extends Credential {
   }
 }
 
-class _Client extends BaseClient {
-  _Client(this._token);
+class _Client extends http.BaseClient {
+  _Client({required this.token, http.Client? inner})
+      : _inner = inner ?? http.Client();
 
-  final Client _client = Client();
-  final String _token;
+  final http.Client _inner;
+  final String token;
 
   @override
-  Future<StreamedResponse> send(BaseRequest request) {
-    request.headers[HttpHeaders.authorizationHeader] = 'Bearer $_token';
-    return _client.send(request);
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+    return _inner.send(request);
   }
 
   @override
   void close() {
-    _client.close();
+    _inner.close();
     super.close();
   }
 }
