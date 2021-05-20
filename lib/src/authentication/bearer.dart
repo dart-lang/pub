@@ -16,32 +16,12 @@ class BearerCredential extends Credential {
   String get authenticationType => 'Bearer';
 
   @override
-  Future<http.BaseClient> createClient([http.Client? inner]) {
-    return Future.value(_Client(token: token, inner: inner));
+  Future<void> beforeRequest(http.BaseRequest request) async {
+    request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
   }
 
   @override
   Map<String, dynamic> toMapInternal() {
     return <String, dynamic>{'token': token};
-  }
-}
-
-class _Client extends http.BaseClient {
-  _Client({required this.token, http.Client? inner})
-      : _inner = inner ?? http.Client();
-
-  final http.Client _inner;
-  final String token;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
-    return _inner.send(request);
-  }
-
-  @override
-  void close() {
-    _inner.close();
-    super.close();
   }
 }

@@ -1,4 +1,4 @@
-// @dart=2.10
+// ignore_for_file: import_of_legacy_library_into_null_safe
 
 import 'dart:convert';
 
@@ -15,26 +15,39 @@ class CredentialStore {
 
   /// Adds [credentials] for [server] into store.
   void addServer(String server, Credential credentials) {
-    serverCredentials[server] = credentials;
+    var key = server.toLowerCase();
+    // Make sure server name ends with a backslash. It's here to deny possible
+    // credential thief attach vectors where victim can add credential for
+    // server 'https://safesite.com' and attacker could steal credentials by
+    // requesting credentials for 'https://safesite.com.attacher.com', because
+    // URL matcher (_serverMatches method) matches credential keys with the
+    // beginning of the URL.
+    if (!key.endsWith('/')) key += '/';
+    serverCredentials[key] = credentials;
     _save();
   }
 
-  /// Removes credentials for [server].
-  void removeServer(String server) {
-    serverCredentials.removeWhere((key, value) => key == server);
+  /// Removes credentials for servers that [url] matches with.
+  void removeServer(String url) {
+    serverCredentials.removeWhere((key, value) => _serverMatches(key, url));
     _save();
   }
 
-  /// Returns credentials for [server] if any exists, otherwise returns null.
-  Credential getCredential(String server) {
-    return serverCredentials[server];
+  /// Returns credentials for server that [url] matches if any exists, otherwise
+  /// returns null.
+  Credential? getCredential(String url) {
+    for (final key in serverCredentials.keys) {
+      if (_serverMatches(key, url)) {
+        return serverCredentials[key];
+      }
+    }
   }
 
   void _save() {
-    _saveCredentials(_serverCredentials);
+    _saveCredentials(serverCredentials);
   }
 
-  Map<String, Credential> _serverCredentials;
+  Map<String, Credential>? _serverCredentials;
   Map<String, Credential> get serverCredentials =>
       _serverCredentials ??= _loadCredentials();
 
@@ -58,5 +71,9 @@ class CredentialStore {
         path,
         jsonEncode(
             credentials.map((key, value) => MapEntry(key, value.toMap()))));
+  }
+
+  bool _serverMatches(String server, String url) {
+    return server.startsWith(url.toLowerCase());
   }
 }

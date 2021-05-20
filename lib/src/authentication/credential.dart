@@ -33,8 +33,8 @@ abstract class Credential {
   /// Authentication type of this credential.
   String get authenticationType;
 
-  /// Creates authenticated client using this credential.
-  Future<http.BaseClient> createClient();
+  /// Add required details for authentication to [request].
+  Future<void> beforeRequest(http.BaseRequest request);
 
   /// Converts credential data into [Map<String, dynamic>].
   @protected
