@@ -171,10 +171,6 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
-  /// The path to the directory containing previous dill files for incremental
-  /// builds.
-  String get _incrementalDillsPath => p.join(cachePath, 'incremental');
-
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
       : root = Package.load(null, rootDir, cache.sources),
@@ -338,7 +334,7 @@ class Entrypoint {
         ensureDir(_snapshotPath);
       }
       return waitAndPrintErrors(executables.map((executable) {
-        var dir = p.dirname(pathOfExecutable(executable));
+        var dir = p.dirname(snapshotPathOfExecutable(executable));
         cleanDir(dir);
         return _precompileExecutable(executable);
       }));
@@ -348,18 +344,16 @@ class Entrypoint {
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(Executable executable) async {
     return await log.progress('Precompiling executable', () async {
-      ensureDir(p.dirname(pathOfExecutable(executable)));
+      ensureDir(p.dirname(snapshotPathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
   }
 
   Future<void> _precompileExecutable(Executable executable) async {
     final package = executable.package;
-    await dart.precompile(
-        executablePath: resolveExecutable(executable),
-        outputPath: pathOfExecutable(executable),
-        incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
-        packageConfigPath: packageConfigFile,
+    await dart.snapshot(
+        resolveExecutable(executable), snapshotPathOfExecutable(executable),
+        packageConfigFile: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
@@ -371,7 +365,7 @@ class Entrypoint {
   /// different sdk.
   ///
   /// [path] must be relative.
-  String pathOfExecutable(Executable executable) {
+  String snapshotPathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
     final versionSuffix = sdk.version;
     return isGlobal
@@ -379,15 +373,6 @@ class Entrypoint {
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot')
         : p.join(_snapshotPath, executable.package,
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot');
-  }
-
-  String incrementalDillPathOfExecutable(Executable executable) {
-    assert(p.isRelative(executable.relativePath));
-    return isGlobal
-        ? p.join(_incrementalDillsPath,
-            '${p.basename(executable.relativePath)}.incremental.dill')
-        : p.join(_incrementalDillsPath, executable.package,
-            '${p.basename(executable.relativePath)}.incremental.dill');
   }
 
   /// The absolute path of [executable] resolved relative to [this].
