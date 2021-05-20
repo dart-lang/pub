@@ -803,8 +803,8 @@ class PaxHeaders extends UnmodifiableMapBase<String, String> {
       // If we're seeing weird PAX Version 0.0 sparse keys, expect alternating
       // GNU.sparse.offset and GNU.sparse.numbytes headers.
       if (key == paxGNUSparseNumBytes || key == paxGNUSparseOffset) {
-        if ((sparseMap.length % 2 == 0 && key != paxGNUSparseOffset) ||
-            (sparseMap.length % 2 == 1 && key != paxGNUSparseNumBytes) ||
+        if ((sparseMap.length.isEven && key != paxGNUSparseOffset) ||
+            (sparseMap.length.isOdd && key != paxGNUSparseNumBytes) ||
             value.contains(',')) {
           error();
         }
