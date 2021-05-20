@@ -24,6 +24,8 @@ class LogoutCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       oauth2.logout(cache);
+    } else if (argResults.rest.length > 1) {
+      usageException('Takes only a single argument.');
     } else {
       credentialStore.removeServer(argResults.rest.first);
     }

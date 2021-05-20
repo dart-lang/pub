@@ -37,6 +37,8 @@ class LoginCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       await _loginToPubDev();
+    } else if (argResults.rest.length > 1) {
+      usageException('Takes only a single argument.');
     } else {
       if (token?.isNotEmpty != true && !tokenStdin) {
         usageException('Must specify a token.');
