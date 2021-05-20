@@ -590,8 +590,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         deleteEntry(file);
         _createBinStub(
             entrypoint.root, p.basenameWithoutExtension(file), binStubScript,
-            overwrite: true,
-            snapshot: entrypoint.snapshotPathOfExecutable(executable));
+            overwrite: true, snapshot: entrypoint.pathOfExecutable(executable));
       }
     }
   }
@@ -641,7 +640,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         executable,
         script,
         overwrite: overwriteBinStubs,
-        snapshot: entrypoint.snapshotPathOfExecutable(
+        snapshot: entrypoint.pathOfExecutable(
           exec.Executable.adaptProgramName(package.name, script),
         ),
       );
