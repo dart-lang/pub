@@ -70,40 +70,42 @@ class LishCommand extends PubCommand {
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
-  Future<void> _publish(List<int> packageBytes) async {
+  Future<void> _publishUsingClient(
+    List<int> packageBytes,
+    http.BaseClient client,
+  ) async {
     Uri cloudStorageUrl;
+
     try {
-      await oauth2.withClient(cache, (client) {
-        return log.progress('Uploading', () async {
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
-          var newUri = server.resolve('/api/packages/versions/new');
-          var response = await client.get(newUri, headers: pubApiHeaders);
-          var parameters = parseJsonResponse(response);
+      await log.progress('Uploading', () async {
+        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+        // should report that error and exit.
+        var newUri = server.resolve('/api/packages/versions/new');
+        var response = await client.get(newUri, headers: pubApiHeaders);
+        var parameters = parseJsonResponse(response);
 
-          var url = _expectField(parameters, 'url', response);
-          if (url is! String) invalidServerResponse(response);
-          cloudStorageUrl = Uri.parse(url);
-          var request = http.MultipartRequest('POST', cloudStorageUrl);
+        var url = _expectField(parameters, 'url', response);
+        if (url is! String) invalidServerResponse(response);
+        cloudStorageUrl = Uri.parse(url);
+        var request = http.MultipartRequest('POST', cloudStorageUrl);
 
-          var fields = _expectField(parameters, 'fields', response);
-          if (fields is! Map) invalidServerResponse(response);
-          fields.forEach((key, value) {
-            if (value is! String) invalidServerResponse(response);
-            request.fields[key] = value;
-          });
-
-          request.followRedirects = false;
-          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-              filename: 'package.tar.gz'));
-          var postResponse =
-              await http.Response.fromStream(await client.send(request));
-
-          var location = postResponse.headers['location'];
-          if (location == null) throw PubHttpException(postResponse);
-          handleJsonSuccess(
-              await client.get(Uri.parse(location), headers: pubApiHeaders));
+        var fields = _expectField(parameters, 'fields', response);
+        if (fields is! Map) invalidServerResponse(response);
+        fields.forEach((key, value) {
+          if (value is! String) invalidServerResponse(response);
+          request.fields[key] = value;
         });
+
+        request.followRedirects = false;
+        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
+            filename: 'package.tar.gz'));
+        var postResponse =
+            await http.Response.fromStream(await client.send(request));
+
+        var location = postResponse.headers['location'];
+        if (location == null) throw PubHttpException(postResponse);
+        handleJsonSuccess(
+            await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
@@ -113,6 +115,30 @@ class LishCommand extends PubCommand {
         // XML parser.
         fail(log.red('Failed to upload the package.'));
       } else if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
+        handleJsonError(error.response);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> _publish(List<int> packageBytes) async {
+    try {
+      if (credentialStore.hasCredential(server.toString())) {
+        // If there's a saved credential for the server, publish using
+        // httpClient which should authenticate with the server using
+        // AuthenticationClient.
+        await _publishUsingClient(packageBytes, httpClient);
+      } else {
+        // If user had not yet logged in into the server, use OAuth2 credentials
+        // for authentication.
+        await oauth2.withClient(cache, (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
+      }
+    } on PubHttpException catch (error) {
+      var url = error.response.request.url;
+      if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;

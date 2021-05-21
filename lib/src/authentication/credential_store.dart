@@ -29,7 +29,7 @@ class CredentialStore {
 
   /// Removes credentials for servers that [url] matches with.
   void removeServer(String url) {
-    serverCredentials.removeWhere((key, value) => _serverMatches(key, url));
+    serverCredentials.removeWhere((key, value) => _serverKeyMatches(key, url));
     _save();
   }
 
@@ -37,10 +37,21 @@ class CredentialStore {
   /// returns null.
   Credential? getCredential(String url) {
     for (final key in serverCredentials.keys) {
-      if (_serverMatches(key, url)) {
+      if (_serverKeyMatches(key, url)) {
         return serverCredentials[key];
       }
     }
+  }
+
+  /// Returns whether or not store has a credential for server that [url]
+  /// matches to.
+  bool hasCredential(String url) {
+    for (final key in serverCredentials.keys) {
+      if (_serverKeyMatches(key, url)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _save() {
@@ -73,7 +84,7 @@ class CredentialStore {
             credentials.map((key, value) => MapEntry(key, value.toMap()))));
   }
 
-  bool _serverMatches(String server, String url) {
-    return server.startsWith(url.toLowerCase());
+  bool _serverKeyMatches(String serverKey, String url) {
+    return serverKey.startsWith(url.toLowerCase());
   }
 }
