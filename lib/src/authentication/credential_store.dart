@@ -6,6 +6,7 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../system_cache.dart';
+import '../utils.dart';
 import 'credential.dart';
 
 class CredentialStore {
@@ -19,7 +20,7 @@ class CredentialStore {
     // Make sure server name ends with a backslash. It's here to deny possible
     // credential thief attach vectors where victim can add credential for
     // server 'https://safesite.com' and attacker could steal credentials by
-    // requesting credentials for 'https://safesite.com.attacher.com', because
+    // requesting credentials for 'https://safesite.com.attacker.com', because
     // URL matcher (_serverMatches method) matches credential keys with the
     // beginning of the URL.
     if (!key.endsWith('/')) key += '/';
@@ -29,25 +30,25 @@ class CredentialStore {
 
   /// Removes credentials for servers that [url] matches with.
   void removeServer(String url) {
-    serverCredentials.removeWhere((key, value) => _serverKeyMatches(key, url));
+    serverCredentials.removeWhere((key, value) => serverKeyMatches(key, url));
     _save();
   }
 
-  /// Returns credentials for server that [url] matches if any exists, otherwise
-  /// returns null. If [alsoMatches] argument is provided, the store will check
-  /// for every item of [alsoMatches] matches the credential key.
-  Credential? getCredential(String url, {List<String>? alsoMatches}) {
+  /// Returns pair of credential and server key for server that [url] and
+  /// [alsoMatches] matches to server key.
+  Pair<String, Credential>? getCredential(String url,
+      {List<String>? alsoMatches}) {
     for (final key in serverCredentials.keys) {
-      if (_serverKeyMatches(key, url)) {
+      if (serverKeyMatches(key, url)) {
         if (alsoMatches != null && alsoMatches.isNotEmpty) {
           for (final item in alsoMatches) {
-            if (!_serverKeyMatches(key, item)) {
+            if (!serverKeyMatches(key, item)) {
               continue;
             }
           }
         }
 
-        return serverCredentials[key];
+        return Pair(key, serverCredentials[key]);
       }
     }
   }
@@ -56,7 +57,7 @@ class CredentialStore {
   /// matches to.
   bool hasCredential(String url) {
     for (final key in serverCredentials.keys) {
-      if (_serverKeyMatches(key, url)) {
+      if (serverKeyMatches(key, url)) {
         return true;
       }
     }
@@ -92,8 +93,9 @@ class CredentialStore {
         jsonEncode(
             credentials.map((key, value) => MapEntry(key, value.toJson()))));
   }
+}
 
-  bool _serverKeyMatches(String serverKey, String url) {
-    return serverKey.startsWith(url.toLowerCase());
-  }
+bool serverKeyMatches(String serverKey, String url) {
+  if (!serverKey.endsWith('/')) serverKey += '/';
+  return serverKey.startsWith(url.toLowerCase());
 }

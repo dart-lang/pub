@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
+import '../authentication/client.dart';
 import '../command.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
@@ -128,7 +129,9 @@ class LishCommand extends PubCommand {
         // If there's a saved credential for the server, publish using
         // httpClient which should authenticate with the server using
         // AuthenticationClient.
-        await _publishUsingClient(packageBytes, httpClient);
+        await withAuthenticatedClient(cache, server.toString(), (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
       } else {
         // If user had not yet logged in into the server, use OAuth2 credentials
         // for authentication.

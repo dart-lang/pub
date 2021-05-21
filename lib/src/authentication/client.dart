@@ -11,14 +11,23 @@ import 'credential_store.dart';
 /// in request. For example some credentials might add `Authentication` header
 /// to request.
 class _AuthenticationClient extends http.BaseClient {
-  _AuthenticationClient(this._inner, {required this.credential});
+  _AuthenticationClient(
+    this._inner, {
+    required this.credential,
+    required this.serverKey,
+  });
 
   final http.BaseClient _inner;
   final Credential credential;
+  final String serverKey;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    await credential.beforeRequest(request);
+    // Let's last time make sure that, we're allowed to use credential for this
+    // request.
+    if (serverKeyMatches(serverKey, request.url.toString())) {
+      await credential.beforeRequest(request);
+    }
     return _inner.send(request);
   }
 
@@ -33,10 +42,14 @@ Future<T> withAuthenticatedClient<T>(
   List<String>? alsoMatches,
 }) {
   final store = CredentialStore(systemCache);
-  final credential = store.getCredential(server, alsoMatches: alsoMatches);
-  final http.Client client = credential == null
+  final match = store.getCredential(server, alsoMatches: alsoMatches);
+  final http.Client client = match == null
       ? httpClient
-      : _AuthenticationClient(httpClient, credential: credential);
+      : _AuthenticationClient(
+          httpClient,
+          credential: match.last,
+          serverKey: match.first,
+        );
 
   return fn(client).catchError((error) {
     if (error is PubHttpException) {
