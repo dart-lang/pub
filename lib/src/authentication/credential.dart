@@ -32,6 +32,7 @@ abstract class Credential {
   }
 
   /// Authentication type of this credential.
+  @protected
   String get authenticationType;
 
   /// Add required details for authentication to [request].
