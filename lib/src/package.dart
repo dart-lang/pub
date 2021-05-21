@@ -272,6 +272,41 @@ class Package {
                   log.warning(
                       '$ignoreFile had invalid pattern $pattern. ${exception.message}');
                 },
+                // Ignore case on MacOs and Windows, because `git clone` and
+                // `git init` will set `core.ignoreCase = true` in the local
+                // local `.git/config` file for the repository.
+                //
+                // So on Windows and MacOS most users will have case-insensitive
+                // behavior with `.gitignore`, hence, it seems reasonable to do
+                // the same when we interpret `.gitignore` and `.pubignore`.
+                //
+                // There are cases where a user may have case-sensitive behavior
+                // with `.gitignore` on Windows and MacOS:
+                //
+                //  (A) The user has manually overwritten the repository
+                //      configuration setting `core.ignoreCase = false`.
+                //
+                //  (B) The git-clone or git-init command that create the
+                //      repository did not deem `core.ignoreCase = true` to be
+                //      appropriate. Documentation for [git-config]][1] implies
+                //      this might depend on whether or not the filesystem is
+                //      case sensitive:
+                //      > If true, this option enables various workarounds to
+                //      > enable Git to work better on filesystems that are not
+                //      > case sensitive, like FAT.
+                //      > ...
+                //      > The default is false, except git-clone[1] or
+                //      > git-init[1] will probe and set core.ignoreCase true
+                //      > if appropriate when the repository is created.
+                //
+                // In either case, it seems likely that users on Windows and
+                // MacOS will prefer case-insensitive matching. We specifically
+                // know that some tooling will generate `.PDB` files instead of
+                // `.pdb`, see: [#3003][2]
+                //
+                // [1]: https://git-scm.com/docs/git-config/2.14.6#Documentation/git-config.txt-coreignoreCase
+                // [2]: https://github.com/dart-lang/pub/issues/3003
+                ignoreCase: Platform.isMacOS || Platform.isWindows,
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
