@@ -70,7 +70,7 @@ class CredentialStore {
 
     final parsed = jsonDecode(readTextFile(path)) as Map<String, dynamic>;
     final result = parsed
-        .map((key, value) => MapEntry(key, Credential.fromMap(value)))
+        .map((key, value) => MapEntry(key, Credential.fromJson(value)))
           ..removeWhere((key, value) => value == null);
 
     return result.cast<String, Credential>();
@@ -81,7 +81,7 @@ class CredentialStore {
     writeTextFile(
         path,
         jsonEncode(
-            credentials.map((key, value) => MapEntry(key, value.toMap()))));
+            credentials.map((key, value) => MapEntry(key, value.toJson()))));
   }
 
   bool _serverKeyMatches(String serverKey, String url) {

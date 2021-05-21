@@ -10,7 +10,7 @@ final Map<String, CredentialDeserializer> _supportedMethods = {
 };
 
 abstract class Credential {
-  static Credential? fromMap(Map<String, dynamic> map) {
+  static Credential? fromJson(Map<String, dynamic> map) {
     final authMethod = map['method'] as String?;
     final credentials = map['credentials'] as Map<String, dynamic>?;
 
@@ -23,7 +23,8 @@ abstract class Credential {
     return null;
   }
 
-  Map<String, dynamic> toMap() {
+  /// Converts this instance into Json map.
+  Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'method': authenticationType,
       'credentials': toMapInternal(),
