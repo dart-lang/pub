@@ -1,6 +1,10 @@
 import 'package:http/http.dart' as http;
+
 import 'credential_store.dart';
 
+/// This client automatically modifies request to contain required credentials
+/// in request. For example some credentials might add `Authentication` header
+/// to request.
 class AuthenticationClient extends http.BaseClient {
   AuthenticationClient(this._inner, {required this.credentialStore});
 
