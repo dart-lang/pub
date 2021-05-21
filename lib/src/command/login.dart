@@ -25,8 +25,12 @@ class LoginCommand extends PubCommand {
 
   String get token => argResults['token'];
   bool get tokenStdin => argResults['token-stdin'];
+  String get server => argResults['server'];
 
   LoginCommand() {
+    argParser.addOption('server',
+        help: 'The package server to which needs to be authenticated.');
+
     argParser.addOption('token', help: 'Authorization token for the server');
 
     argParser.addFlag('token-stdin',
@@ -35,15 +39,16 @@ class LoginCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (argResults.rest.isEmpty) {
+    if (server == null) {
       await _loginToPubDev();
-    } else if (argResults.rest.length > 1) {
-      usageException('Takes only a single argument.');
     } else {
+      if (Uri.tryParse(server) == null) {
+        usageException('Invalid or malformed server URL provided.');
+      }
       if (token?.isNotEmpty != true && !tokenStdin) {
         usageException('Must specify a token.');
       }
-      await _loginToServer(argResults.rest.first);
+      await _loginToServer(server);
     }
   }
 

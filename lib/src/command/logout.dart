@@ -18,16 +18,19 @@ class LogoutCommand extends PubCommand {
   @override
   bool get takesArguments => true;
 
-  LogoutCommand();
+  String get server => argResults['server'];
+
+  LogoutCommand() {
+    argParser.addOption('server',
+        help: 'The package server to which needs to be authenticated.');
+  }
 
   @override
   Future<void> runProtected() async {
-    if (argResults.rest.isEmpty) {
+    if (server == null) {
       oauth2.logout(cache);
-    } else if (argResults.rest.length > 1) {
-      usageException('Takes only a single argument.');
     } else {
-      credentialStore.removeServer(argResults.rest.first);
+      credentialStore.removeServer(server);
     }
   }
 }
