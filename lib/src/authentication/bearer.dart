@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import 'credential.dart';
 
+/// Bearer credential type that simply puts authorization header formatted as
+/// `Bearer $token` to request.header.
 class BearerCredential extends Credential {
   BearerCredential(this.token);
 

@@ -9,7 +9,12 @@ final Map<String, CredentialDeserializer> _supportedMethods = {
   'Bearer': BearerCredential.fromMap,
 };
 
+/// Credentials used to authenticate requests sent to auth - protected hosted
+/// pub repositories. This class is base class for different credential type
+/// implementations like [BearerCredential].
 abstract class Credential {
+  /// Parse Credential details from given [map]. If parsing fails this method
+  /// will return null.
   static Credential? fromJson(Map<String, dynamic> map) {
     final authMethod = map['method'] as String?;
     final credentials = map['credentials'] as Map<String, dynamic>?;
