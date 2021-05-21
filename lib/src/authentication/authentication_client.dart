@@ -17,8 +17,5 @@ class AuthenticationClient extends http.BaseClient {
   }
 
   @override
-  void close() {
-    _inner.close();
-    super.close();
-  }
+  void close() => _inner.close();
 }
