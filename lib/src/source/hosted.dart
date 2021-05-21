@@ -15,6 +15,7 @@ import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -220,7 +221,13 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      bodyText = await httpClient.read(url, headers: pubApiHeaders);
+      bodyText = await withAuthenticatedClient(
+        systemCache,
+        url.toString(),
+        (client) async {
+          return client.read(url, headers: pubApiHeaders);
+        },
+      );
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
@@ -557,14 +564,13 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
+    final parsedDescription = source._parseDescription(id.description);
+    final server = parsedDescription.last;
+
     var url = versionInfo.archiveUrl;
-    if (url == null) {
-      // To support old servers that has no archive_url we fall back to the
-      // hard-coded path.
-      final parsedDescription = source._parseDescription(id.description);
-      final server = parsedDescription.last;
-      url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
-    }
+    // To support old servers that has no archive_url we fall back to the
+    // hard-coded path.
+    url ??= Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
@@ -572,7 +578,14 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await httpClient.send(http.Request('GET', url));
+      var response = await withAuthenticatedClient(
+        systemCache,
+        server,
+        (client) {
+          return client.send(http.Request('GET', url));
+        },
+        alsoMatches: [archivePath],
+      );
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.

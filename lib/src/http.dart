@@ -16,15 +16,12 @@ import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import 'authentication/authentication_client.dart';
-import 'authentication/credential_store.dart';
 import 'command.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
-import 'system_cache.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -244,13 +241,7 @@ class _ThrowingClient extends http.BaseClient {
 /// The HTTP client to use for all HTTP requests.
 final httpClient = _ThrottleClient(
     16,
-    _ThrowingClient(RetryClient(
-        AuthenticationClient(
-          _pubClient,
-          // TODO(themisir): Figure out a way to resolve system cache from
-          // somewhere else
-          credentialStore: CredentialStore(SystemCache()),
-        ),
+    _ThrowingClient(RetryClient(_pubClient,
         retries: math.max(
           1, // Having less than 1 retry is **always** wrong.
           int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,

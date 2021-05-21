@@ -34,10 +34,19 @@ class CredentialStore {
   }
 
   /// Returns credentials for server that [url] matches if any exists, otherwise
-  /// returns null.
-  Credential? getCredential(String url) {
+  /// returns null. If [alsoMatches] argument is provided, the store will check
+  /// for every item of [alsoMatches] matches the credential key.
+  Credential? getCredential(String url, {List<String>? alsoMatches}) {
     for (final key in serverCredentials.keys) {
       if (_serverKeyMatches(key, url)) {
+        if (alsoMatches != null && alsoMatches.isNotEmpty) {
+          for (final item in alsoMatches) {
+            if (!_serverKeyMatches(key, item)) {
+              continue;
+            }
+          }
+        }
+
         return serverCredentials[key];
       }
     }
