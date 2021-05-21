@@ -72,7 +72,7 @@ Future<int> runExecutable(
 
   entrypoint.migrateCache();
 
-  var snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
+  var snapshotPath = entrypoint.pathOfExecutable(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
   // change later on.
@@ -327,7 +327,7 @@ Future<String> getExecutableForCommand(
     if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
       return p.relative(path, from: root);
     } else {
-      final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
+      final snapshotPath = entrypoint.pathOfExecutable(executable);
       if (!fileExists(snapshotPath)) {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
