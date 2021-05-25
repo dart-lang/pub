@@ -18,18 +18,23 @@ class _AuthenticationClient extends http.BaseClient {
   _AuthenticationClient(
     this._inner, {
     required this.credential,
-    required this.serverKey,
+    required this.serverBaseUrl,
   });
 
   final http.BaseClient _inner;
   final Credential credential;
-  final String serverKey;
+  final String serverBaseUrl;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     // Let's last time make sure that, we're allowed to use credential for this
     // request.
-    if (serverKeyMatches(serverKey, request.url.toString())) {
+    //
+    // This check ensures that this client will only authenticate requests sent
+    // to given serverBaseUrl. Otherwise credential leaks might ocurr when
+    // archive_url hosted on 3rd party server that should not receive
+    // credentials of the first party.
+    if (serverBaseUrlMatches(serverBaseUrl, request.url.toString())) {
       await credential.beforeRequest(request);
     }
     return _inner.send(request);
@@ -41,18 +46,17 @@ class _AuthenticationClient extends http.BaseClient {
 
 Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
-  String server,
-  Future<T> Function(http.Client) fn, {
-  List<String>? alsoMatches,
-}) {
+  String serverBaseUrl,
+  Future<T> Function(http.Client) fn,
+) {
   final store = CredentialStore(systemCache);
-  final match = store.getCredential(server, alsoMatches: alsoMatches);
-  final http.Client client = match == null
+  final credential = store.getCredential(serverBaseUrl);
+  final http.Client client = credential == null
       ? httpClient
       : _AuthenticationClient(
           httpClient,
-          credential: match.last,
-          serverKey: match.first,
+          serverBaseUrl: credential.first,
+          credential: credential.last,
         );
 
   return fn(client).catchError((error) {

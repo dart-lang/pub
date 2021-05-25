@@ -34,24 +34,16 @@ class CredentialStore {
 
   /// Removes credentials for servers that [url] matches with.
   void removeServer(String url) {
-    serverCredentials.removeWhere((key, value) => serverKeyMatches(key, url));
+    serverCredentials
+        .removeWhere((key, value) => serverBaseUrlMatches(key, url));
     _save();
   }
 
   /// Returns pair of credential and server key for server that [url] and
   /// [alsoMatches] matches to server key.
-  Pair<String, Credential>? getCredential(String url,
-      {List<String>? alsoMatches}) {
+  Pair<String, Credential>? getCredential(String url) {
     for (final key in serverCredentials.keys) {
-      if (serverKeyMatches(key, url)) {
-        if (alsoMatches != null && alsoMatches.isNotEmpty) {
-          for (final item in alsoMatches) {
-            if (!serverKeyMatches(key, item)) {
-              continue;
-            }
-          }
-        }
-
+      if (serverBaseUrlMatches(key, url)) {
         return Pair(key, serverCredentials[key]);
       }
     }
@@ -61,7 +53,7 @@ class CredentialStore {
   /// matches to.
   bool hasCredential(String url) {
     for (final key in serverCredentials.keys) {
-      if (serverKeyMatches(key, url)) {
+      if (serverBaseUrlMatches(key, url)) {
         return true;
       }
     }
@@ -99,7 +91,7 @@ class CredentialStore {
   }
 }
 
-bool serverKeyMatches(String serverKey, String url) {
-  if (!serverKey.endsWith('/')) serverKey += '/';
-  return serverKey.startsWith(url.toLowerCase());
+bool serverBaseUrlMatches(String serverBaseUrl, String url) {
+  if (!serverBaseUrl.endsWith('/')) serverBaseUrl += '/';
+  return serverBaseUrl.startsWith(url.toLowerCase());
 }
