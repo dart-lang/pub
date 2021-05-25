@@ -578,12 +578,8 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await withAuthenticatedClient(
-        systemCache,
-        server,
-        (client) => client.send(http.Request('GET', url)),
-        alsoMatches: [archivePath],
-      );
+      var response = await withAuthenticatedClient(systemCache, server,
+          (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
