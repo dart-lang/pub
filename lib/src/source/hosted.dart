@@ -581,9 +581,7 @@ class BoundHostedSource extends CachedSource {
       var response = await withAuthenticatedClient(
         systemCache,
         server,
-        (client) {
-          return client.send(http.Request('GET', url));
-        },
+        (client) => client.send(http.Request('GET', url)),
         alsoMatches: [archivePath],
       );
 
