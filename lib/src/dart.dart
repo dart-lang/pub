@@ -9,14 +9,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:analyzer/file_system/overlay_file_system.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as p;
 
@@ -62,7 +62,7 @@ Future snapshot(
   final result = await runProcess(Platform.executable, args);
   final highlightedName = name = log.bold(name ?? executablePath.toString());
   if (result.success) {
-    log.message('Precompiled $highlightedName.');
+    log.message('Built $highlightedName.');
   } else {
     // Don't leave partial results.
     deleteEntry(snapshotPath);

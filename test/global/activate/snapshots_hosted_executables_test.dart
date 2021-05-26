@@ -24,10 +24,8 @@ void main() {
 
     await runPub(
         args: ['global', 'activate', 'foo'],
-        output: allOf([
-          contains('Precompiled foo:hello.'),
-          contains('Precompiled foo:goodbye.')
-        ]));
+        output: allOf(
+            [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
 
     await d.dir(cachePath, [
       d.dir('global_packages', [

@@ -46,7 +46,7 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
 /// If the executable is in an immutable package and we pass no [vmArgs], it
-/// run from snapshot (and precompiled if the snapshot doesn't already exist).
+/// run from snapshot (and built if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
@@ -136,7 +136,7 @@ Future<int> runExecutable(
       rethrow;
     }
 
-    log.fine('Precompiled executable is out of date.');
+    log.fine('Built executable is out of date.');
     await recompile(executable);
     return await _runDartProgram(
       executablePath,
@@ -259,7 +259,7 @@ Future<int> _runDartProgram(
 /// the package is an immutable (non-path) dependency of [root].
 ///
 /// If returning the path to a snapshot that doesn't already exist, the script
-/// Will be precompiled. And a message will be printed only if a terminal is
+/// Will be built. And a message will be printed only if a terminal is
 /// attached to stdout.
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or

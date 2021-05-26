@@ -296,7 +296,7 @@ class Entrypoint {
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.
-  List<Executable> get precompiledExecutables {
+  List<Executable> get builtExecutables {
     if (isGlobal) {
       if (isCached) {
         return root.executablePaths
@@ -317,15 +317,15 @@ class Entrypoint {
     return r;
   }
 
-  /// Precompiles all [precompiledExecutables].
+  /// Precompiles all [builtExecutables].
   Future<void> precompileExecutables({Iterable<String> changed}) async {
     migrateCache();
 
-    final executables = precompiledExecutables;
+    final executables = builtExecutables;
 
     if (executables.isEmpty) return;
 
-    await log.progress('Precompiling executables', () async {
+    await log.progress('Building package executables', () async {
       if (isGlobal) {
         /// Global snapshots might linger in the cache if we don't remove old
         /// snapshots when it is re-activated.
@@ -343,7 +343,7 @@ class Entrypoint {
 
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(Executable executable) async {
-    return await log.progress('Precompiling executable', () async {
+    return await log.progress('Building package executable', () async {
       ensureDir(p.dirname(snapshotPathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });

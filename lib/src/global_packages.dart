@@ -22,8 +22,8 @@ import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
-import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
+import 'solver.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -396,7 +396,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
 
   /// Runs [package]'s [executable] with [args].
   ///
-  /// If [executable] is available in its precompiled form, that will be
+  /// If [executable] is available in its built form, that will be
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
@@ -741,7 +741,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
       }
     }
 
-    // If the script was precompiled to a snapshot, just try to invoke that
+    // If the script was built to a snapshot, just try to invoke that
     // directly and skip pub global run entirely.
     String invocation;
     if (Platform.isWindows) {

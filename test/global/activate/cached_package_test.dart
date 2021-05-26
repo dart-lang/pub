@@ -22,8 +22,8 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo'], output: '''
         Resolving dependencies...
         + foo 1.0.0
-        Precompiling executables...
-        Precompiled foo:foo.
+        Building package executables...
+        Built foo:foo.
         Activated foo 1.0.0.''');
 
     // Should be in global package cache.
