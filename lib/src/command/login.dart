@@ -27,10 +27,10 @@ class LoginCommand extends PubCommand {
   Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       log.message('You are now logged in as $userInfo');
     } else {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
             'Run `pub logout` to delete your credentials  and try again.');
@@ -40,7 +40,7 @@ class LoginCommand extends PubCommand {
     }
   }
 
-  Future<_UserInfo> retrieveUserInfo() async {
+  Future<_UserInfo> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
       final discovery = await httpClient.get(Uri.https(
           'accounts.google.com', '/.well-known/openid-configuration'));

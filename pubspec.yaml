@@ -12,9 +12,9 @@ dependencies:
   cli_util: ^0.3.0
   collection: ^1.15.0
   crypto: ^3.0.1
+  frontend_server_client: ^2.0.0
   http: ^0.13.3
   http_multi_server: ^3.0.1
-  http_retry: ^0.2.0
   meta: ^1.3.0
   oauth2: ^2.0.0
   path: ^1.8.0
@@ -24,7 +24,6 @@ dependencies:
   shelf: ^1.1.1
   source_span: ^1.8.1
   stack_trace: ^1.10.0
-  tar: ^0.3.3
   yaml: ^3.1.0
 
 dev_dependencies:
