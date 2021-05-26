@@ -4,6 +4,8 @@
 
 // ignore_for_file: import_of_legacy_library_into_null_safe
 
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 
 import '../http.dart';
@@ -35,7 +37,8 @@ class _AuthenticatedClient extends http.BaseClient {
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
     if (serverBaseUrlMatches(serverBaseUrl, request.url.toString())) {
-      await credential.beforeRequest(request);
+      request.headers[HttpHeaders.authorizationHeader] =
+          await credential.getAuthorizationHeaderValue();
     }
     return _inner.send(request);
   }

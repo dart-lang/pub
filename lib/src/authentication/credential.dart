@@ -2,15 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:http/http.dart' as http;
-import 'package:meta/meta.dart';
-
 import 'bearer.dart';
 
 typedef CredentialDeserializer = Credential Function(Map<String, dynamic>);
 
-final Map<String, CredentialDeserializer> _supportedMethods = {
-  'Bearer': BearerCredential.fromMap,
+final Map<String, CredentialDeserializer> _credentialKinds = {
+  BearerCredential.kind: BearerCredential.fromJson,
 };
 
 /// Credentials used to authenticate requests sent to auth - protected hosted
@@ -20,34 +17,18 @@ abstract class Credential {
   /// Parse Credential details from given [map]. If parsing fails this method
   /// will return null.
   static Credential? fromJson(Map<String, dynamic> map) {
-    final authMethod = map['method'] as String?;
-    final credentials = map['credentials'] as Map<String, dynamic>?;
+    final credentialKind = map['kind'] as String?;
 
-    if (credentials != null &&
-        authMethod?.isNotEmpty == true &&
-        _supportedMethods.containsKey(authMethod)) {
-      return _supportedMethods[authMethod]!(credentials);
-    }
-
-    return null;
+    return credentialKind?.isNotEmpty == true &&
+            _credentialKinds.containsKey(credentialKind)
+        ? _credentialKinds[credentialKind]!(map)
+        : null;
   }
 
   /// Converts this instance into Json map.
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'method': authenticationType,
-      'credentials': toMapInternal(),
-    };
-  }
+  Map<String, dynamic> toJson();
 
-  /// Authentication type of this credential.
-  @protected
-  String get authenticationType;
-
-  /// Add required details for authentication to [request].
-  Future<void> beforeRequest(http.BaseRequest request);
-
-  /// Converts credential data into [Map<String, dynamic>].
-  @protected
-  Map<String, dynamic> toMapInternal();
+  /// Returns future that resolves "Authorization" header value used for
+  /// authenticating.
+  Future<String> getAuthorizationHeaderValue();
 }
