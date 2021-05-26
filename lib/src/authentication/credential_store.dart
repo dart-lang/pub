@@ -93,5 +93,6 @@ class CredentialStore {
 
 bool serverBaseUrlMatches(String serverBaseUrl, String url) {
   if (!serverBaseUrl.endsWith('/')) serverBaseUrl += '/';
-  return serverBaseUrl.startsWith(url.toLowerCase());
+  if (!url.endsWith('/')) url += '/';
+  return url.startsWith(serverBaseUrl.toLowerCase());
 }

@@ -224,9 +224,7 @@ class BoundHostedSource extends CachedSource {
       bodyText = await withAuthenticatedClient(
         systemCache,
         url.toString(),
-        (client) async {
-          return client.read(url, headers: pubApiHeaders);
-        },
+        (client) => client.read(url, headers: pubApiHeaders),
       );
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
