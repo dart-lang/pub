@@ -347,7 +347,7 @@ class Entrypoint {
 
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(Executable executable) async {
-    return await log.progress('Building executable', () async {
+    return await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
