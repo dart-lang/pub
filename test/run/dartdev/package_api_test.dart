@@ -65,8 +65,8 @@ void main() {
 
     var pub = await pubRunFromDartDev(args: ['foo:script']);
 
-    expect(pub.stdout, emits('Precompiling executable...'));
-    expect(pub.stdout, emits('Precompiled foo:script.'));
+    expect(pub.stdout, emits('Building package executable...'));
+    expect(pub.stdout, emits('Built foo:script.'));
     expect(pub.stdout, emits('null'));
     expect(
         pub.stdout,

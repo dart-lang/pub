@@ -77,7 +77,7 @@ class AddCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+        help: 'Build executables in immediate dependencies.');
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }

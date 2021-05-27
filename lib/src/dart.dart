@@ -9,14 +9,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:analyzer/file_system/overlay_file_system.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
 import 'package:meta/meta.dart';
@@ -183,14 +183,14 @@ Future<void> precompile({
 
     final highlightedName = log.bold(name);
     if (result?.errorCount == 0) {
-      log.message('Precompiled $highlightedName.');
+      log.message('Built $highlightedName.');
       await File(incrementalDillOutputPath).copy(outputPath);
     } else {
       // Don't leave partial results.
       deleteEntry(outputPath);
 
       throw ApplicationException(
-          log.yellow('Failed to precompile $highlightedName:\n') +
+          log.yellow('Failed to build $highlightedName:\n') +
               (result?.compilerOutputLines?.join('\n') ?? ''));
     }
   } finally {

@@ -24,8 +24,8 @@ void main() {
             startsWith('Resolving dependencies...\n'
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith('Precompiling executables...\n'
-                'Precompiled foo:foo.\n'
+            endsWith('Building package executables...\n'
+                'Built foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).commit();
@@ -39,8 +39,8 @@ void main() {
                 'Resolving dependencies...\n'
                 '+ foo 1.0.1 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith('Precompiling executables...\n'
-                'Precompiled foo:foo.\n'
+            endsWith('Building package executables...\n'
+                'Built foo:foo.\n'
                 'Activated foo 1.0.1 from Git repository "../foo.git".')));
   });
 }
