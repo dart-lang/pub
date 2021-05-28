@@ -23,89 +23,52 @@ WWW-Authenticate header syntax:
 WWW-Authenticate: <type> [realm=<realm>][, charset="UTF-8"]
 ```
 
-> `realm` parameter is completely optional, and is not used in this proposal.
+> `realm` parameter is completely optional, and will not be used by pub.
 > You can read more about this parameter here:
 > https://datatracker.ietf.org/doc/html/rfc7235#section-2.2
 
-Pub CLI will only support **Basic** and **Bearer** authentication methods by
-default.
+Pub CLI currently only support **Bearer** authentication methods.
 
-## Authentication flow
+### Login / logout
 
-After receiving `WWW-Authenticate` header, pub CLI will prompt user for
-the credentials like this:
-
-```plain
-user@machine$ pub get
-Please enter required credentials to authenticate with "https://myserver.com"
-hosted repository.
-
-Username: bob
-Password: password
-
-Please enter required credentials to authenticate with "https://pub.example.com"
-hosted repository.
-
-Bearer token: 8O868XsPJm-F5nyEzXfa9-YWFvrd3O8r
-```
-
-After providing credentials, the client will send those credentials to the
-server in `Authorization` header.
-
-
-```dart
-// Bearer authentication
-{ 'Autorization': 'Bearer $token' }
-
-// Basic authentication
-{ 'Autorization': 'Basic ' + base64('$username:$password') }
-```
-
-### Explicit authentication
-
-Users can also explicitly define authentication credentials even before server
-asks for it using a modified **pub login** command. By default if no argument is
-presented, **pub login** will behave as previously: authenticate with Google.
-But if you you specify server to login, it will try to authenticate with the
-given server instead.
+Users can login to 3rd party hosted pub server using **pub login** command like
+that:
 
 ```plain
-pub login https://myspuberver.dev
+pub login --server https://myspuberver.dev --token xxxxxxxxxx
 ```
 
-To discover authentication method, client will send **GET** request to `/login`
-endpoint. This endpoint should be authenticated by the server as well as other
-endpoints. The client might use this endpoint to:
+`--server` is base url of the pub server and `--token` is bearer token for the
+authentication. If the server option is not provided, **pub login** will behave
+like previous versions - will try authenticating with Google account.
 
-1. Validate cached credentials when needed
-2. Discover authentication method by sending unauthenticated requests
+Just like this, **pub logout** will also support 3rd party hosted pub server
+de-authentication. If you provide `--server` option to the command it will
+simply remove saved credentials for the server. If not, it will remove Google
+account credentials.
 
 ## Storing credentials
 
 Hosted Pub Repository authentication credentials will be stored on json file
-named `hosted.credentials.json` located in cache root directory. Authentication
-details will be stored at this file as json values while their keys will be URLs
-of the server (`PUB_HOSTED_URL`).
+named `tokens.json` located in cache root directory. Authentication details will
+be stored at this file as json values while their keys will be URLs of the
+server (`PUB_HOSTED_URL`).
 
 ```json
 {
   "https://myserver.com": {
-    "method": "Basic",
-    "credentials": {
-      "username": "bob",
-      "password": "password"
-    }
+    "kind": "Basic",
+    "username": "bob",
+    "password": "password"
   },
   "https://pub.example.com": {
-    "method": "Bearer",
-    "credentials": {
-      "token": "8O868XsPJm-F5nyEzXfa9-YWFvrd3O8r"
-    }
+    "kind": "Bearer",
+    "token": "8O868XsPJm-F5nyEzXfa9-YWFvrd3O8r"
   }
 }
 ```
 
-This model of storing credentials allows us to extend support to new
+This model of storing credentials allows us to extend support for new
 authentication methods in future.
 
 ## References
