@@ -372,7 +372,6 @@ class _ThrottleClient extends http.BaseClient {
   /// requests. It defaults to `new http.Client()`.
   _ThrottleClient(int maxActiveRequests, this._inner)
       : _pool = Pool(maxActiveRequests);
-
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     var resource = await _pool.request();
