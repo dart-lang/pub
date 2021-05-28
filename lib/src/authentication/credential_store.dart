@@ -18,42 +18,42 @@ class CredentialStore {
 
   final SystemCache cache;
 
-  /// Adds [credentials] for [server] into store.
-  void addServer(String server, Credential credentials) {
-    var key = server.toLowerCase();
+  /// Adds [credentials] for [serverBaseUrl] into store.
+  void addServer(String serverBaseUrl, Credential credentials) {
+    serverBaseUrl = serverBaseUrl.toLowerCase();
     // Make sure server name ends with a backslash. It's here to deny possible
     // credential thief attach vectors where victim can add credential for
     // server 'https://safesite.com' and attacker could steal credentials by
     // requesting credentials for 'https://safesite.com.attacker.com', because
     // URL matcher (_serverMatches method) matches credential keys with the
     // beginning of the URL.
-    if (!key.endsWith('/')) key += '/';
-    serverCredentials[key] = credentials;
+    if (!serverBaseUrl.endsWith('/')) serverBaseUrl += '/';
+    serverCredentials[serverBaseUrl] = credentials;
     _save();
   }
 
   /// Removes credentials for servers that [url] matches with.
   void removeServer(String url) {
-    serverCredentials
-        .removeWhere((key, value) => serverBaseUrlMatches(key, url));
+    serverCredentials.removeWhere(
+        (serverBaseUrl, _) => serverBaseUrlMatches(serverBaseUrl, url));
     _save();
   }
 
-  /// Returns pair of credential and server key for server that [url] and
-  /// [alsoMatches] matches to server key.
+  /// Returns pair of credential and server base url for server for
+  /// authenticating [url].
   Pair<String, Credential>? getCredential(String url) {
-    for (final key in serverCredentials.keys) {
-      if (serverBaseUrlMatches(key, url)) {
-        return Pair(key, serverCredentials[key]);
+    for (final serverBaseUrl in serverCredentials.keys) {
+      if (serverBaseUrlMatches(serverBaseUrl, url)) {
+        return Pair(serverBaseUrl, serverCredentials[serverBaseUrl]);
       }
     }
   }
 
   /// Returns whether or not store has a credential for server that [url]
-  /// matches to.
+  /// could be authenticated with.
   bool hasCredential(String url) {
-    for (final key in serverCredentials.keys) {
-      if (serverBaseUrlMatches(key, url)) {
+    for (final serverBaseUrl in serverCredentials.keys) {
+      if (serverBaseUrlMatches(serverBaseUrl, url)) {
         return true;
       }
     }
