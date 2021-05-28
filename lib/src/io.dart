@@ -960,7 +960,9 @@ ByteStream createTarGz(
     );
   }));
 
-  return ByteStream(tarContents.transform(tarWriter).transform(gzip.encoder));
+  return ByteStream(tarContents
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder));
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.

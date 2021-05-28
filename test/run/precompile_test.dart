@@ -37,7 +37,7 @@ void main() {
     var pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
-    expect(lines, contains('Precompiling executable...'));
+    expect(lines, contains('Building package executable...'));
     expect(lines, contains('hello'));
   });
 
@@ -49,7 +49,7 @@ void main() {
     var pub = await pubRun(args: ['test'], verbose: false);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
-    expect(lines, isNot(contains('Precompiling executable...')));
+    expect(lines, isNot(contains('Building package executable...')));
     expect(lines, contains('hello'));
   });
 
@@ -73,7 +73,7 @@ void main() {
     );
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
-    expect(lines, contains('Precompiling executable...'));
+    expect(lines, contains('Building package executable...'));
     expect(lines, contains('running with PUB_CACHE: ".pub_cache"'));
   });
 
@@ -89,14 +89,14 @@ void main() {
 
     await pubGet(
         args: ['--precompile'],
-        output: contains('Precompiling executables...'));
+        output: contains('Building package executables...'));
 
     var pub = await pubRun(
       args: ['test'],
     );
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
-    expect(lines, isNot(contains('Precompiling executable...')));
+    expect(lines, isNot(contains('Building package executable...')));
   });
 
   // Regression test of https://github.com/dart-lang/pub/issues/2483
@@ -114,7 +114,7 @@ void main() {
     await pubGet(
         args: ['--precompile'],
         environment: {'PUB_CACHE': '.pub_cache'},
-        output: contains('Precompiling executables...'));
+        output: contains('Building package executables...'));
 
     var pub = await pubRun(
       args: ['test'],
@@ -122,7 +122,7 @@ void main() {
     );
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
-    expect(lines, isNot(contains('Precompiling executable...')));
+    expect(lines, isNot(contains('Building package executable...')));
     expect(lines, contains('running with PUB_CACHE: ".pub_cache"'));
   });
 }

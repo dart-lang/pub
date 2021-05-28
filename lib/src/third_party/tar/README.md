@@ -4,4 +4,4 @@ Vendored elements from `package:tar` for use in creation and extration of
 tar-archives.
 
  * Repository: `https://github.com/simolus3/tar/`
- * Revision: `e8bf3e828e1c4c89774fab1b9083a6879ed5eae9`
+ * Revision: `b5c5a11d8969f458ccdeb8cf01615f692fed3e97`

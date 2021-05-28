@@ -18,11 +18,6 @@ import 'dart:math';
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart' hide fail;
-import 'package:test/test.dart' as test show fail;
-import 'package:test_process/test_process.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
@@ -38,6 +33,10 @@ import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
+import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart' hide fail;
+import 'package:test/test.dart' as test show fail;
+import 'package:test_process/test_process.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
@@ -78,7 +77,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
     .firstWhere((e) => e['name'] == packageName,
         orElse: () => null) as Map<String, dynamic>;
 
-/// The suffix appended to a precompiled snapshot.
+/// The suffix appended to a built snapshot.
 final versionSuffix = testVersion ?? sdk.version;
 
 /// Enum identifying a pub command that can be run with a well-defined success

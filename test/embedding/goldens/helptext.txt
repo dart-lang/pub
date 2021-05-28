@@ -88,7 +88,7 @@ Usage: pub_command_runner pub get <subcommand> [arguments...]
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
-    --[no-]precompile    Precompile executables in immediate dependencies.
+    --[no-]precompile    Build executables in immediate dependencies.
 -C, --directory=<dir>    Run this in the directory<dir>.
 
 Run "pub_command_runner help" to see global options.

@@ -14,4 +14,4 @@ export 'src/exception.dart';
 export 'src/format.dart';
 export 'src/header.dart' show TarHeader;
 export 'src/reader.dart' show TarReader;
-export 'src/writer.dart' show tarWritingSink, tarWriter;
+export 'src/writer.dart';

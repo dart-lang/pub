@@ -10,7 +10,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('the binstubs runs a precompiled snapshot if present', () async {
+  test('the binstubs runs a built snapshot if present', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         'executables': {'foo-script': 'script'}
