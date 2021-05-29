@@ -51,7 +51,7 @@ Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
   String serverBaseUrl,
   Future<T> Function(http.Client) fn,
-) {
+) async {
   final store = CredentialStore(systemCache);
   final credential = store.getCredential(serverBaseUrl);
   final http.Client client = credential == null
@@ -62,12 +62,15 @@ Future<T> withAuthenticatedClient<T>(
           credential: credential.last,
         );
 
-  return fn(client).catchError((error) {
+  try {
+    return await fn(client);
+  } catch (error) {
     if (error is PubHttpException) {
       if (error.response.statusCode == 401) {
         // TODO(themisir): authentication is required for the server or
         // credential might be invalid.
       }
     }
-  });
+    rethrow;
+  }
 }
