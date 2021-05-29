@@ -53,13 +53,14 @@ class LoginCommand extends PubCommand {
   }
 
   Future<void> _loginToServer(String server) async {
-    if (Uri.tryParse(server) == null) {
+    if (Uri.tryParse(server) == null ||
+        !server.startsWith(RegExp(r'https?:\/\/'))) {
       usageException('Invalid or malformed server URL provided.');
     }
 
     final _token = tokenStdin ? await readLine() : token;
     credentialStore.addServer(server, BearerCredential(_token));
-    log.message('You are now logged in to $server using bearer token');
+    log.message('You are now logged in to $server using bearer token.');
   }
 
   Future<void> _loginToPubDev() async {
