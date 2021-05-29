@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:path/path.dart' as path;
 
 import '../io.dart';
+import '../log.dart' as log;
 import '../system_cache.dart';
 import '../utils.dart';
 import 'credential.dart';
@@ -34,9 +35,21 @@ class CredentialStore {
 
   /// Removes credentials for servers that [url] matches with.
   void removeServer(String url) {
-    serverCredentials.removeWhere(
-        (serverBaseUrl, _) => serverBaseUrlMatches(serverBaseUrl, url));
-    _save();
+    var modified = false;
+    // Iterating serverCredentials.keys.toList() because otherwise we'll get
+    // concurrent modification during iteration error.
+    for (final serverBaseUrl in serverCredentials.keys.toList()) {
+      if (serverBaseUrlMatches(serverBaseUrl, url)) {
+        log.message('Logging out of $serverBaseUrl.');
+        serverCredentials.remove(serverBaseUrl);
+        modified = true;
+      }
+    }
+    if (modified) {
+      _save();
+    } else {
+      log.message('No matching credential found for $url. Cannot log out.');
+    }
   }
 
   /// Returns pair of credential and server base url for server for

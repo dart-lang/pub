@@ -1,0 +1,41 @@
+// Copyright (c) 2021, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+// @dart=2.10
+
+import 'package:test/test.dart';
+
+import '../descriptor.dart' as d;
+import '../test_pub.dart';
+
+void main() {
+  test('with an matching server url, removes the entry.', () async {
+    await d.tokensFile({
+      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+    }).create();
+
+    await runPub(
+      args: ['logout', '--server', 'http://server.demo'],
+      output: contains('Logging out of http://server.demo/.'),
+    );
+
+    await d.tokensFile({}).validate();
+  });
+
+  test('without an matching server url, does nothing.', () async {
+    await d.tokensFile({
+      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+    }).create();
+
+    await runPub(
+      args: ['logout', '--server', 'http://another-server.demo'],
+      output: 'No matching credential found for http://another-server.demo. '
+          'Cannot log out.',
+    );
+
+    await d.tokensFile({
+      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+    }).validate();
+  });
+}
