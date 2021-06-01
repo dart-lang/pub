@@ -56,15 +56,24 @@ server (`PUB_HOSTED_URL`).
 
 ```json
 {
-  "https://myserver.com": {
-    "kind": "Basic",
-    "username": "bob",
-    "password": "password"
-  },
-  "https://pub.example.com": {
-    "kind": "Bearer",
-    "token": "8O868XsPJm-F5nyEzXfa9-YWFvrd3O8r"
-  }
+  "version": "1.0",
+  "hosted": [
+    {
+      "url": "https://myserver.com",
+      "credential": {
+        "kind": "Basic",
+        "username": "bob",
+        "password": "password"
+      }
+    },
+    {
+      "url": "https://pub.example.com",
+      "credential": {
+        "kind": "Bearer",
+        "token": "8O868XsPJm-F5nyEzXfa9-YWFvrd3O8r"
+      }
+    }
+  ]
 }
 ```
 
