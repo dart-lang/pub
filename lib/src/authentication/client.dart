@@ -13,9 +13,10 @@ import '../system_cache.dart';
 import 'credential.dart';
 import 'credential_store.dart';
 
-/// This client automatically modifies request to contain required credentials
-/// in request. For example some credentials might add `Authentication` header
-/// to request.
+/// This client authenticates requests by injecting `Authentication` header to
+/// requests.
+///
+/// Requests to URLs not under [serverBaseUrl] will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
   _AuthenticatedClient(
     this._inner, {
@@ -24,7 +25,12 @@ class _AuthenticatedClient extends http.BaseClient {
   });
 
   final http.BaseClient _inner;
+
+  /// Authentication credentials used to generate `Authorization` header value.
   final Credential credential;
+
+  /// Base URL of the pub repository server. Used to check whether or not the
+  /// request should be authenticated.
   final String serverBaseUrl;
 
   @override
@@ -47,6 +53,11 @@ class _AuthenticatedClient extends http.BaseClient {
   void close() => _inner.close();
 }
 
+/// Invoke [fn] with a [http.Client] capable of authenticating against
+/// [serverBaseUrl].
+///
+/// Importantly, requests to URLs not under [serverBaseUrl] will not be
+/// authenticated.
 Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
   String serverBaseUrl,

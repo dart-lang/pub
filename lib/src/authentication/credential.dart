@@ -17,11 +17,11 @@ abstract class Credential {
   /// Parse Credential details from given [map]. If parsing fails this method
   /// will return null.
   static Credential fromJson(Map<String, dynamic> map) {
-    final credentialKind = map['kind'] as String?;
-    if (credentialKind?.isNotEmpty != true) {
+    if (map['kind'] is! String) {
       throw FormatException('Credential kind is not provided.');
     }
 
+    final credentialKind = map['kind'] as String;
     if (_credentialKinds.containsKey(credentialKind)) {
       return _credentialKinds[credentialKind]!(map);
     } else {
