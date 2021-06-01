@@ -10,9 +10,15 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('with an matching server url, removes the entry.', () async {
+  test('with one matching scheme, removes the entry.', () async {
     await d.tokensFile({
-      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://server.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
     }).create();
 
     await runPub(
@@ -20,12 +26,57 @@ void main() {
       output: contains('Logging out of http://server.demo/.'),
     );
 
-    await d.tokensFile({}).validate();
+    await d.tokensFile({'version': '1.0', 'hosted': []}).validate();
   });
 
-  test('without an matching server url, does nothing.', () async {
+  test('with multiple matching schemes, removes all matching entries.',
+      () async {
     await d.tokensFile({
-      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://server.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        },
+        {
+          'url': 'http://server.demo/sub',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        },
+        {
+          'url': 'http://another-.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
+    }).create();
+
+    await runPub(
+      args: ['logout', '--server', 'http://server.demo/sub'],
+      output: allOf(
+        contains('Logging out of http://server.demo/.'),
+        contains('Logging out of http://server.demo/sub/.'),
+      ),
+    );
+
+    await d.tokensFile({
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://another-.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
+    }).validate();
+  });
+
+  test('without an matching schemes, does nothing.', () async {
+    await d.tokensFile({
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://server.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
     }).create();
 
     await runPub(
@@ -35,7 +86,13 @@ void main() {
     );
 
     await d.tokensFile({
-      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://server.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
     }).validate();
   });
 }

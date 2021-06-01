@@ -56,10 +56,7 @@ abstract class PubCommand extends Command<int> {
 
   GlobalPackages _globals;
 
-  CredentialStore get credentialStore =>
-      _credentialStore ?? CredentialStore(cache);
-
-  CredentialStore _credentialStore;
+  CredentialStore get credentialStore => cache.credentialStore;
 
   /// Gets the [Entrypoint] package for the current working directory.
   ///

@@ -10,98 +10,129 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../log.dart' as log;
-import '../system_cache.dart';
-import '../utils.dart';
 import 'credential.dart';
+import 'scheme.dart';
 
 class CredentialStore {
-  CredentialStore(this.cache);
+  CredentialStore(this.cacheRootDir);
 
-  final SystemCache cache;
+  /// Cache directory.
+  final String cacheRootDir;
 
-  /// Adds [credentials] for [serverBaseUrl] into store.
-  void addServer(String serverBaseUrl, Credential credentials) {
-    serverBaseUrl = serverBaseUrl.toLowerCase();
-    // Make sure server name ends with a backslash. It's here to deny possible
-    // credential thief attach vectors where victim can add credential for
-    // server 'https://safesite.com' and attacker could steal credentials by
-    // requesting credentials for 'https://safesite.com.attacker.com', because
-    // URL matcher (_serverMatches method) matches credential keys with the
-    // beginning of the URL.
-    if (!serverBaseUrl.endsWith('/')) serverBaseUrl += '/';
-    serverCredentials[serverBaseUrl] = credentials;
-    _save();
+  List<AuthenticationScheme>? _schemes;
+  List<AuthenticationScheme> get schemes => _schemes ??= _loadSchemes();
+
+  List<AuthenticationScheme> _loadSchemes() {
+    final result = List<AuthenticationScheme>.empty(growable: true);
+    final path = _tokensFile;
+    if (!fileExists(path)) {
+      return result;
+    }
+
+    try {
+      final json = jsonDecode(readTextFile(path));
+
+      if (json is! Map<String, dynamic>) {
+        throw FormatException('JSON contents is corrupted or not supported.');
+      }
+      if (json['version'] != '1.0') {
+        throw FormatException('Version is not supported.');
+      }
+
+      if (json.containsKey('hosted')) {
+        if (json['hosted'] is! List) {
+          throw FormatException(
+              'tokens.json format is invalid or not supported.');
+        }
+
+        result.addAll((json['hosted'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(HostedAuthenticationScheme.fromJson));
+      }
+    } on FormatException catch (error, stackTrace) {
+      log.error('Failed to load tokens.json.', error, stackTrace);
+    }
+
+    return result;
   }
 
-  /// Removes credentials for servers that [url] matches with.
-  void removeServer(String url) {
-    var modified = false;
-    // Iterating serverCredentials.keys.toList() because otherwise we'll get
-    // concurrent modification during iteration error.
-    for (final serverBaseUrl in serverCredentials.keys.toList()) {
-      if (serverBaseUrlMatches(serverBaseUrl, url)) {
-        log.message('Logging out of $serverBaseUrl.');
-        serverCredentials.remove(serverBaseUrl);
-        modified = true;
-      }
+  void _saveSchemes(List<AuthenticationScheme> schemes) {
+    writeTextFile(
+        _tokensFile,
+        jsonEncode(<String, dynamic>{
+          'version': '1.0',
+          'hosted': schemes
+              .whereType<HostedAuthenticationScheme>()
+              .map((it) => it.toJson())
+              .toList(),
+        }));
+  }
+
+  /// Writes latest state of the store to disk.
+  void flush() {
+    if (_schemes == null) {
+      throw Exception('Schemes should be loaded before saving.');
     }
-    if (modified) {
-      _save();
+    _saveSchemes(_schemes!);
+  }
+
+  /// Adds [scheme] into store.
+  void addScheme(AuthenticationScheme scheme) {
+    schemes.add(scheme);
+    flush();
+  }
+
+  /// Creates [HostedAuthenticationScheme] for [baseUrl] with [credential], then
+  /// adds it to store.
+  void addHostedScheme(String baseUrl, Credential credential) {
+    schemes.add(HostedAuthenticationScheme(
+      baseUrl: baseUrl,
+      credential: credential,
+    ));
+    flush();
+  }
+
+  /// Removes [HostedAuthenticationScheme] matching to [url] from store.
+  void removeMatchingHostedSchemes(String url) {
+    final schemesToRemove =
+        schemes.where((it) => it.canAuthenticate(url)).toList();
+    if (schemesToRemove.isNotEmpty) {
+      for (final scheme in schemesToRemove) {
+        schemes.remove(scheme);
+        log.message('Logging out of ${scheme.baseUrl}.');
+      }
+
+      flush();
     } else {
       log.message('No matching credential found for $url. Cannot log out.');
     }
   }
 
-  /// Returns pair of credential and server base url for server for
-  /// authenticating [url].
-  Pair<String, Credential>? getCredential(String url) {
-    for (final serverBaseUrl in serverCredentials.keys) {
-      if (serverBaseUrlMatches(serverBaseUrl, url)) {
-        return Pair(serverBaseUrl, serverCredentials[serverBaseUrl]);
+  /// Returns matching authentication scheme to given [url] or returns `null` if
+  /// no matches found.
+  AuthenticationScheme? findScheme(String url) {
+    AuthenticationScheme? matchedScheme;
+    for (final scheme in schemes) {
+      if (scheme.canAuthenticate(url)) {
+        if (matchedScheme == null) {
+          matchedScheme = scheme;
+        } else {
+          log.warning(
+            'Found multiple matching authentication schemes for url "$url". '
+            'First matching scheme will be used for authentication.',
+          );
+        }
       }
     }
   }
 
-  /// Returns whether or not store has a credential for server that [url]
-  /// could be authenticated with.
-  bool hasCredential(String url) {
-    for (final serverBaseUrl in serverCredentials.keys) {
-      if (serverBaseUrlMatches(serverBaseUrl, url)) {
-        return true;
-      }
-    }
-    return false;
+  /// Returns whether or not store contains a scheme that could be used for
+  /// authenticating give [url].
+  bool hasScheme(String url) {
+    return schemes.any((it) => it.canAuthenticate(url));
   }
 
-  void _save() {
-    _saveCredentials(serverCredentials);
-  }
-
-  Map<String, Credential>? _serverCredentials;
-  Map<String, Credential> get serverCredentials =>
-      _serverCredentials ??= _loadCredentials();
-
-  String get _tokensFile => path.join(cache.rootDir, 'tokens.json');
-
-  Map<String, Credential> _loadCredentials() {
-    final path = _tokensFile;
-    if (!fileExists(path)) return <String, Credential>{};
-
-    final parsed = jsonDecode(readTextFile(path)) as Map<String, dynamic>;
-    final result = parsed
-        .map((key, value) => MapEntry(key, Credential.fromJson(value)))
-          ..removeWhere((key, value) => value == null);
-
-    return result.cast<String, Credential>();
-  }
-
-  void _saveCredentials(Map<String, Credential> credentials) {
-    final path = _tokensFile;
-    writeTextFile(
-        path,
-        jsonEncode(
-            credentials.map((key, value) => MapEntry(key, value.toJson()))));
-  }
+  String get _tokensFile => path.join(cacheRootDir, 'tokens.json');
 }
 
 bool serverBaseUrlMatches(String serverBaseUrl, String url) {

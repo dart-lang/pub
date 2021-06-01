@@ -9,13 +9,11 @@ import 'credential.dart';
 /// Bearer credential type that simply puts authorization header formatted as
 /// `Bearer $token` to request.header.
 @sealed
-class BearerCredential extends Credential {
+class BearerCredential implements Credential {
   BearerCredential(this.token);
 
-  static const String kind = 'Bearer';
-
   /// Deserializes [map] into [BearerCredential].
-  static BearerCredential fromJson(Map<String, dynamic> json) {
+  factory BearerCredential.fromJson(Map<String, dynamic> json) {
     if (json['kind'] != kind) {
       throw FormatException(
           'Token kind is not compatible with BearerCredential.');
@@ -25,6 +23,8 @@ class BearerCredential extends Credential {
     }
     return BearerCredential(json['token'] as String);
   }
+
+  static const String kind = 'Bearer';
 
   /// Bearer token
   final String token;

@@ -6,27 +6,23 @@ import 'bearer.dart';
 
 typedef CredentialDeserializer = Credential Function(Map<String, dynamic>);
 
-final Map<String, CredentialDeserializer> _credentialKinds = {
-  BearerCredential.kind: BearerCredential.fromJson,
-};
-
 /// Credentials used to authenticate requests sent to auth - protected hosted
 /// pub repositories. This class is base class for different credential type
 /// implementations like [BearerCredential].
 abstract class Credential {
   /// Parse Credential details from given [map]. If parsing fails this method
   /// will return null.
-  static Credential fromJson(Map<String, dynamic> map) {
+  factory Credential.fromJson(Map<String, dynamic> map) {
     if (map['kind'] is! String) {
       throw FormatException('Credential kind is not provided.');
     }
 
-    final credentialKind = map['kind'] as String;
-    if (_credentialKinds.containsKey(credentialKind)) {
-      return _credentialKinds[credentialKind]!(map);
-    } else {
-      throw FormatException(
-          'Credential kind "$credentialKind" is not supported.');
+    final kind = map['kind'] as String;
+    switch (kind) {
+      case BearerCredential.kind:
+        return BearerCredential.fromJson(map);
+      default:
+        throw FormatException('Credential kind "$kind" is not supported.');
     }
   }
 

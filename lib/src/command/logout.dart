@@ -30,7 +30,7 @@ class LogoutCommand extends PubCommand {
     if (server == null) {
       oauth2.logout(cache);
     } else {
-      credentialStore.removeServer(server);
+      credentialStore.removeMatchingHostedSchemes(server);
     }
   }
 }

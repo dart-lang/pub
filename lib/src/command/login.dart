@@ -59,7 +59,7 @@ class LoginCommand extends PubCommand {
     }
 
     final _token = tokenStdin ? await readLine() : token;
-    credentialStore.addServer(server, BearerCredential(_token));
+    credentialStore.addHostedScheme(server, BearerCredential(_token));
     log.message('You are now logged in to $server using bearer token.');
   }
 

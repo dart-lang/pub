@@ -10,28 +10,19 @@ import 'package:http/http.dart' as http;
 
 import '../http.dart';
 import '../system_cache.dart';
-import 'credential.dart';
-import 'credential_store.dart';
+import 'scheme.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
 /// Requests to URLs not under [serverBaseUrl] will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
-  _AuthenticatedClient(
-    this._inner, {
-    required this.credential,
-    required this.serverBaseUrl,
-  });
+  _AuthenticatedClient(this._inner, this.scheme);
 
   final http.BaseClient _inner;
 
-  /// Authentication credentials used to generate `Authorization` header value.
-  final Credential credential;
-
-  /// Base URL of the pub repository server. Used to check whether or not the
-  /// request should be authenticated.
-  final String serverBaseUrl;
+  /// Authentication scheme that could be used for authenticating requests.
+  final AuthenticationScheme scheme;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -42,9 +33,9 @@ class _AuthenticatedClient extends http.BaseClient {
     // to given serverBaseUrl. Otherwise credential leaks might ocurr when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
-    if (serverBaseUrlMatches(serverBaseUrl, request.url.toString())) {
+    if (scheme.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await credential.getAuthorizationHeaderValue();
+          await scheme.credential.getAuthorizationHeaderValue();
     }
     return _inner.send(request);
   }
@@ -63,15 +54,9 @@ Future<T> withAuthenticatedClient<T>(
   String serverBaseUrl,
   Future<T> Function(http.Client) fn,
 ) async {
-  final store = CredentialStore(systemCache);
-  final credential = store.getCredential(serverBaseUrl);
-  final http.Client client = credential == null
-      ? httpClient
-      : _AuthenticatedClient(
-          httpClient,
-          serverBaseUrl: credential.first,
-          credential: credential.last,
-        );
+  final scheme = systemCache.credentialStore.findScheme(serverBaseUrl);
+  final http.Client client =
+      scheme == null ? httpClient : _AuthenticatedClient(httpClient, scheme);
 
   try {
     return await fn(client);

@@ -27,7 +27,13 @@ void main() {
     );
 
     await d.tokensFile({
-      'http://server.demo/': {'kind': 'Bearer', 'token': 'auth-token'}
+      'version': '1.0',
+      'hosted': [
+        {
+          'url': 'http://server.demo/',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        }
+      ]
     }).validate();
   });
 
