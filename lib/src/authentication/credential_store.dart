@@ -13,6 +13,7 @@ import '../log.dart' as log;
 import 'credential.dart';
 import 'scheme.dart';
 
+/// Stores and manages authentication credentials.
 class CredentialStore {
   CredentialStore(this.cacheRootDir);
 
@@ -20,8 +21,15 @@ class CredentialStore {
   final String cacheRootDir;
 
   List<AuthenticationScheme>? _schemes;
+
+  /// List of saved authentication schemes.
+  ///
+  /// Modifying this field will not write changes to the disk. You have to call
+  /// [flush] to save changes.
   List<AuthenticationScheme> get schemes => _schemes ??= _loadSchemes();
 
+  /// Reads "tokens.json" and parses / deserializes it into list of
+  /// [AuthenticationScheme].
   List<AuthenticationScheme> _loadSchemes() {
     final result = List<AuthenticationScheme>.empty(growable: true);
     final path = _tokensFile;
@@ -56,6 +64,7 @@ class CredentialStore {
     return result;
   }
 
+  /// Saves [schemes] into "tokens.json".
   void _saveSchemes(List<AuthenticationScheme> schemes) {
     writeTextFile(
         _tokensFile,
@@ -132,11 +141,6 @@ class CredentialStore {
     return schemes.any((it) => it.canAuthenticate(url));
   }
 
+  /// Full path to the "tokens.json" file.
   String get _tokensFile => path.join(cacheRootDir, 'tokens.json');
-}
-
-bool serverBaseUrlMatches(String serverBaseUrl, String url) {
-  if (!serverBaseUrl.endsWith('/')) serverBaseUrl += '/';
-  if (!url.endsWith('/')) url += '/';
-  return url.startsWith(serverBaseUrl.toLowerCase());
 }
