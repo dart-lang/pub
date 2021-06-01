@@ -16,17 +16,22 @@ final Map<String, CredentialDeserializer> _credentialKinds = {
 abstract class Credential {
   /// Parse Credential details from given [map]. If parsing fails this method
   /// will return null.
-  static Credential? fromJson(Map<String, dynamic> map) {
+  static Credential fromJson(Map<String, dynamic> map) {
     final credentialKind = map['kind'] as String?;
+    if (credentialKind?.isNotEmpty != true) {
+      throw FormatException('Credential kind is not provided.');
+    }
 
-    return credentialKind?.isNotEmpty == true &&
-            _credentialKinds.containsKey(credentialKind)
-        ? _credentialKinds[credentialKind]!(map)
-        : null;
+    if (_credentialKinds.containsKey(credentialKind)) {
+      return _credentialKinds[credentialKind]!(map);
+    } else {
+      throw FormatException(
+          'Credential kind "$credentialKind" is not supported.');
+    }
   }
 
   /// Converts this instance into Json map.
-  Map<String, dynamic> toJson();
+  Map<String, Object> toJson();
 
   /// Returns future that resolves "Authorization" header value used for
   /// authenticating.

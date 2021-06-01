@@ -12,15 +12,23 @@ class BearerCredential extends Credential {
   static const String kind = 'Bearer';
 
   /// Deserializes [map] into [BearerCredential].
-  static BearerCredential fromJson(Map<String, dynamic> map) =>
-      BearerCredential(map['token'] as String);
+  static BearerCredential fromJson(Map<String, dynamic> json) {
+    if (json['kind'] != kind) {
+      throw FormatException(
+          'Token kind is not compatible with BearerCredential.');
+    }
+    if (json['token'] is! String) {
+      throw FormatException('Failed to parse bearer token from json.');
+    }
+    return BearerCredential(json['token'] as String);
+  }
 
   /// Bearer token
   final String token;
 
   @override
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'kind': kind, 'token': token};
+  Map<String, Object> toJson() =>
+      <String, Object>{'kind': kind, 'token': token};
 
   @override
   Future<String> getAuthorizationHeaderValue() => Future.value('Bearer $token');
