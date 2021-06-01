@@ -5,7 +5,6 @@
 // @dart=2.10
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/source/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -19,6 +18,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
+import '../source/path.dart';
 import '../utils.dart';
 import '../yaml_edit/editor.dart';
 
