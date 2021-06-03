@@ -6,72 +6,83 @@
 
 import 'dart:io';
 
-import 'package:test/test.dart';
 import 'package:pub/src/ignore.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('pub', () {
+    void _testIgnorePath(
+      TestData c,
+      String path,
+      bool expected,
+      bool ignoreCase,
+    ) {
+      final casing = 'with ignoreCase = $ignoreCase';
+      test('${c.name}: Ignore.ignores("$path") == $expected $casing', () {
+        var hasWarning = false;
+        final pathWithoutSlash =
+            path.endsWith('/') ? path.substring(0, path.length - 1) : path;
+
+        Iterable<String> listDir(String dir) {
+          // List the next part of path:
+          if (dir == pathWithoutSlash) return [];
+          final nextSlash = path.indexOf('/', dir == '.' ? 0 : dir.length + 1);
+          return [path.substring(0, nextSlash == -1 ? path.length : nextSlash)];
+        }
+
+        Ignore ignoreForDir(String dir) => c.patterns[dir] == null
+            ? null
+            : Ignore(
+                c.patterns[dir],
+                onInvalidPattern: (_, __) => hasWarning = true,
+                ignoreCase: ignoreCase,
+              );
+
+        bool isDir(String candidate) =>
+            candidate == '.' ||
+            path.length > candidate.length && path[candidate.length] == '/';
+
+        final r = Ignore.listFiles(
+          beneath: pathWithoutSlash,
+          includeDirs: true,
+          listDir: listDir,
+          ignoreForDir: ignoreForDir,
+          isDir: isDir,
+        );
+        if (expected) {
+          expect(r, isEmpty,
+              reason: 'Expected "$path" to be ignored, it was NOT!');
+        } else {
+          expect(r, [pathWithoutSlash],
+              reason: 'Expected "$path" to NOT be ignored, it was IGNORED!');
+        }
+
+        // Also test that the logic of walking the tree works.
+        final r2 = Ignore.listFiles(
+            includeDirs: true,
+            listDir: listDir,
+            ignoreForDir: ignoreForDir,
+            isDir: isDir);
+        if (expected) {
+          expect(r2, isNot(contains(pathWithoutSlash)),
+              reason: 'Expected "$path" to be ignored, it was NOT!');
+        } else {
+          expect(r2, contains(pathWithoutSlash),
+              reason: 'Expected "$path" to NOT be ignored, it was IGNORED!');
+        }
+        expect(hasWarning, c.hasWarning);
+      });
+    }
+
     for (final c in testData) {
-      c.paths.forEach(
-        (path, expected) => test(
-          '${c.name}: Ignore.ignores("$path") == $expected',
-          () {
-            var hasWarning = false;
-            final pathWithoutSlash =
-                path.endsWith('/') ? path.substring(0, path.length - 1) : path;
-
-            Iterable<String> listDir(String dir) {
-              // List the next part of path:
-              if (dir == pathWithoutSlash) return [];
-              final nextSlash =
-                  path.indexOf('/', dir == '.' ? 0 : dir.length + 1);
-              return [
-                path.substring(0, nextSlash == -1 ? path.length : nextSlash)
-              ];
-            }
-
-            Ignore ignoreForDir(String dir) => c.patterns[dir] == null
-                ? null
-                : Ignore(c.patterns[dir],
-                    onInvalidPattern: (_, __) => hasWarning = true);
-
-            bool isDir(String candidate) =>
-                candidate == '.' ||
-                path.length > candidate.length && path[candidate.length] == '/';
-
-            final r = Ignore.listFiles(
-                beneath: pathWithoutSlash,
-                includeDirs: true,
-                listDir: listDir,
-                ignoreForDir: ignoreForDir,
-                isDir: isDir);
-            if (expected) {
-              expect(r, isEmpty,
-                  reason: 'Expected "$path" to be ignored, it was NOT!');
-            } else {
-              expect(r, [pathWithoutSlash],
-                  reason:
-                      'Expected "$path" to NOT be ignored, it was IGNORED!');
-            }
-
-            // Also test that the logic of walking the tree works.
-            final r2 = Ignore.listFiles(
-                includeDirs: true,
-                listDir: listDir,
-                ignoreForDir: ignoreForDir,
-                isDir: isDir);
-            if (expected) {
-              expect(r2, isNot(contains(pathWithoutSlash)),
-                  reason: 'Expected "$path" to be ignored, it was NOT!');
-            } else {
-              expect(r2, contains(pathWithoutSlash),
-                  reason:
-                      'Expected "$path" to NOT be ignored, it was IGNORED!');
-            }
-            expect(hasWarning, c.hasWarning);
-          },
-        ),
-      );
+      c.paths.forEach((path, expected) {
+        if (c.ignoreCase == null) {
+          _testIgnorePath(c, path, expected, false);
+          _testIgnorePath(c, path, expected, true);
+        } else {
+          _testIgnorePath(c, path, expected, c.ignoreCase);
+        }
+      });
     }
   });
 
@@ -82,62 +93,83 @@ void main() {
         workingDirectory: workingDirectory);
   }
 
-  group(
-    'git',
-    () {
-      Directory tmp;
-      setUpAll(() async {
-        tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
+  group('git', () {
+    Directory tmp;
 
-        final ret = runGit(['init'], workingDirectory: tmp.path);
-        expect(ret.exitCode, equals(0),
-            reason:
-                'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
-      });
-      tearDownAll(() async {
-        await tmp.delete(recursive: true);
-        tmp = null;
-      });
-      tearDown(() async {
-        runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
-      });
-      for (final c in testData) {
-        c.paths.forEach(
-          (path, expected) => test(
-              '${c.name}: git check-ignore "$path" is ${expected ? 'IGNORED' : 'NOT ignored'}',
-              () async {
-            for (final directory in c.patterns.keys) {
-              final resolvedDirectory =
-                  directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
-              Directory.fromUri(resolvedDirectory).createSync(recursive: true);
-              final gitIgnore =
-                  File.fromUri(resolvedDirectory.resolve('.gitignore'));
-              gitIgnore
-                  .writeAsStringSync(c.patterns[directory].join('\n') + '\n');
-            }
-            final process = runGit(
-                ['-C', tmp.path, 'check-ignore', '--no-index', path],
-                workingDirectory: tmp.path);
-            final exitCode = process.exitCode;
-            expect(
-              exitCode,
-              anyOf(0, 1),
-              reason: 'Running "git check-ignore" failed',
-            );
-            final ignored = exitCode == 0;
-            if (expected != ignored) {
-              if (expected) {
-                fail('Expected "$path" to be ignored, it was NOT!');
-              }
-              fail('Expected "$path" to NOT be ignored, it was IGNORED!');
-            }
-          },
-              skip: Platform.isMacOS || // System `git` on mac has issues...
-                  c.skipOnWindows && Platform.isWindows),
+    setUpAll(() async {
+      tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
+
+      final ret = runGit(['init'], workingDirectory: tmp.path);
+      expect(ret.exitCode, equals(0),
+          reason:
+              'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
+    });
+
+    tearDownAll(() async {
+      await tmp.delete(recursive: true);
+      tmp = null;
+    });
+
+    tearDown(() async {
+      runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
+    });
+
+    void _testIgnorePath(
+      TestData c,
+      String path,
+      bool expected,
+      bool ignoreCase,
+    ) {
+      final casing = 'with ignoreCase = $ignoreCase';
+      final result = expected ? 'IGNORED' : 'NOT ignored';
+      test('${c.name}: git check-ignore "$path" is $result $casing', () async {
+        expect(
+          runGit(
+            ['config', '--local', 'core.ignoreCase', ignoreCase.toString()],
+            workingDirectory: tmp.path,
+          ).exitCode,
+          anyOf(0, 1),
+          reason: 'Running "git config --local core.ignoreCase ..." failed',
         );
-      }
-    },
-  );
+
+        for (final directory in c.patterns.keys) {
+          final resolvedDirectory =
+              directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
+          Directory.fromUri(resolvedDirectory).createSync(recursive: true);
+          final gitIgnore =
+              File.fromUri(resolvedDirectory.resolve('.gitignore'));
+          gitIgnore.writeAsStringSync(
+            c.patterns[directory].join('\n') + '\n',
+          );
+        }
+        final process = runGit(
+            ['-C', tmp.path, 'check-ignore', '--no-index', path],
+            workingDirectory: tmp.path);
+        expect(process.exitCode, anyOf(0, 1),
+            reason: 'Running "git check-ignore" failed');
+        final ignored = process.exitCode == 0;
+        if (expected != ignored) {
+          if (expected) {
+            fail('Expected "$path" to be ignored, it was NOT!');
+          }
+          fail('Expected "$path" to NOT be ignored, it was IGNORED!');
+        }
+      },
+          skip: Platform.isMacOS || // System `git` on mac has issues...
+              c.skipOnWindows && Platform.isWindows);
+    }
+
+    for (final c in testData) {
+      c.paths.forEach((path, expected) {
+        if (c.ignoreCase == null) {
+          _testIgnorePath(c, path, expected, false);
+          _testIgnorePath(c, path, expected, true);
+        } else {
+          _testIgnorePath(c, path, expected, c.ignoreCase);
+        }
+      });
+    }
+  });
 }
 
 class TestData {
@@ -156,12 +188,16 @@ class TestData {
   /// Many of the tests don't play well on windows. Simply skip them.
   final bool skipOnWindows;
 
+  /// Test with `core.ignoreCase` set to `true`, `false` or both (if `null`).
+  final bool ignoreCase;
+
   TestData(
     this.name,
     this.patterns,
     this.paths, {
     this.hasWarning = false,
     this.skipOnWindows = false,
+    this.ignoreCase,
   });
 
   TestData.single(
@@ -169,6 +205,7 @@ class TestData {
     this.paths, {
     this.hasWarning = false,
     this.skipOnWindows = false,
+    this.ignoreCase,
   })  : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = {
           '.': [pattern]
@@ -890,5 +927,78 @@ final testData = [
     'folder/sub/foo.txt': false,
     'folder/foo.txt': false,
     'folder/a.txt': true,
-  })
+  }),
+
+  // Case sensitivity
+  TestData(
+    'simple',
+    {
+      '.': [
+        '/.git/',
+        '*.o',
+      ]
+    },
+    {
+      '.git/config': true,
+      '.git/': true,
+      'README.md': false,
+      'main.c': false,
+      'main.o': true,
+      'main.O': false,
+    },
+    ignoreCase: false,
+  ),
+  // Test simple patterns
+  TestData.single(
+    'file.txt',
+    {
+      'file.TXT': false,
+      'file.txT': false,
+      'file.txt': true,
+      'other.txt': false,
+      'src/file.txt': true,
+      '.obj/file.txt': true,
+      'sub/folder/file.txt': true,
+      'src/file.TXT': false,
+      '.obj/file.TXT': false,
+      'sub/folder/file.TXT': false,
+    },
+    ignoreCase: false,
+  ),
+
+  // Case insensitivity
+  TestData(
+    'simple',
+    {
+      '.': [
+        '/.git/',
+        '*.o',
+      ]
+    },
+    {
+      '.git/config': true,
+      '.git/': true,
+      'README.md': false,
+      'main.c': false,
+      'main.o': true,
+      'main.O': true,
+    },
+    ignoreCase: true,
+  ),
+  TestData.single(
+    'file.txt',
+    {
+      'file.TXT': true,
+      'file.txT': true,
+      'file.txt': true,
+      'other.txt': false,
+      'src/file.txt': true,
+      '.obj/file.txt': true,
+      'sub/folder/file.txt': true,
+      'src/file.TXT': true,
+      '.obj/file.TXT': true,
+      'sub/folder/file.TXT': true,
+    },
+    ignoreCase: true,
+  ),
 ];
