@@ -195,6 +195,43 @@ final testData = [
   }, {
     'README.md': false,
   }),
+  // Patterns given in multiple lines with comments
+  TestData('multiple lines LF', {
+    '.': [
+      '#comment\n/.git/ \n*.o\n',
+      // Using CR CR LF doesn't work
+      '#comment\n*.md\r\r\n',
+      // Tab is not ignored
+      '#comment\nLICENSE\t\n',
+      // Trailing comments not allowed
+      '#comment\nLICENSE  # ignore license\n',
+    ]
+  }, {
+    '.git/config': true,
+    '.git/': true,
+    'README.md': false,
+    'LICENSE': false,
+    'main.c': false,
+    'main.o': true,
+  }),
+  TestData('multiple lines CR LF', {
+    '.': [
+      '#comment\r\n/.git/ \r\n*.o\r\n',
+      // Using CR CR LF doesn't work
+      '#comment\r\n*.md\r\r\n',
+      // Tab is not ignored
+      '#comment\r\nLICENSE\t\r\n',
+      // Trailing comments not allowed
+      '#comment\r\nLICENSE  # ignore license\r\n',
+    ]
+  }, {
+    '.git/config': true,
+    '.git/': true,
+    'README.md': false,
+    'LICENSE': false,
+    'main.c': false,
+    'main.o': true,
+  }),
   // Test simple patterns
   TestData.single('file.txt', {
     'file.txt': true,
