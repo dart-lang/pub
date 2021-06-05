@@ -211,8 +211,9 @@ class BoundHostedSource extends CachedSource {
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
       PackageRef ref) async {
-    var url = _makeUrl(
-        ref.description, (server, package) => '$server/api/packages/$package');
+    final parsedDescription = source._parseDescription(ref.description);
+    final url = _makeUrl(parsedDescription,
+        (server, package) => '$server/api/packages/$package');
     log.io('Get versions from $url.');
 
     String bodyText;
@@ -223,7 +224,7 @@ class BoundHostedSource extends CachedSource {
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       bodyText = await withAuthenticatedClient(
         systemCache,
-        url.toString(),
+        parsedDescription.last,
         (client) => client.read(url, headers: pubApiHeaders),
       );
       body = jsonDecode(bodyText);
@@ -401,11 +402,10 @@ class BoundHostedSource extends CachedSource {
   /// converts that to a Uri given [pattern].
   ///
   /// Ensures the package name is properly URL encoded.
-  Uri _makeUrl(
-      description, String Function(String server, String package) pattern) {
-    var parsed = source._parseDescription(description);
-    var server = parsed.last;
-    var package = Uri.encodeComponent(parsed.first);
+  Uri _makeUrl(Pair<String, String> parsedDescription,
+      String Function(String server, String package) pattern) {
+    var server = parsedDescription.last;
+    var package = Uri.encodeComponent(parsedDescription.first);
     return Uri.parse(pattern(server, package));
   }
 
@@ -414,8 +414,9 @@ class BoundHostedSource extends CachedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) async {
     final versions = await _scheduler.schedule(id.toRef());
-    final url = _makeUrl(
-        id.description, (server, package) => '$server/api/packages/$package');
+    final parsedDescription = source._parseDescription(id.description);
+    final url = _makeUrl(parsedDescription,
+        (server, package) => '$server/api/packages/$package');
     return versions[id]?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }
