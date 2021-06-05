@@ -99,8 +99,11 @@ class Ignore {
     Iterable<String> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception) onInvalidPattern,
-  }) : _rules = _parseIgnorePatterns(patterns, ignoreCase,
-            onInvalidPattern: onInvalidPattern);
+  }) : _rules = _parseIgnorePatterns(
+          patterns,
+          ignoreCase,
+          onInvalidPattern: onInvalidPattern,
+        ).toList(growable: false);
 
   /// Returns `true` if [path] is ignored by the patterns used to create this
   /// [Ignore] instance, assuming those patterns are placed at `.`.
@@ -335,27 +338,32 @@ class _IgnoreRule {
   }
 }
 
+/// Pattern for a line-break which accepts CR LF and LF.
+final _lineBreakPattern = RegExp('\r?\n');
+
 /// [onInvalidPattern] can be used to handle parse failures. If
 /// [onInvalidPattern] is `null` invalid patterns are ignored.
-List<_IgnoreRule> _parseIgnorePatterns(
+Iterable<_IgnoreRule> _parseIgnorePatterns(
   Iterable<String> patterns,
   bool ignoreCase, {
   void Function(String pattern, FormatException exception) onInvalidPattern,
-}) {
+}) sync* {
   ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
+  onInvalidPattern ??= (_, __) => null;
 
   final parsedPatterns = patterns
-      .map((s) => s.split('\n'))
-      .expand((e) => e)
+      .expand((s) => s.split(_lineBreakPattern))
       .map((pattern) => _parseIgnorePattern(pattern, ignoreCase));
-  if (onInvalidPattern != null) {
-    for (final invalidResult
-        in parsedPatterns.where((result) => !result.valid)) {
-      onInvalidPattern(invalidResult.pattern, invalidResult.exception);
+
+  for (final r in parsedPatterns) {
+    if (!r.valid) {
+      onInvalidPattern(r.pattern, r.exception);
+    }
+    if (!r.empty) {
+      yield r.rule;
     }
   }
-  return parsedPatterns.where((r) => !r.empty).map((r) => r.rule).toList();
 }
 
 _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
