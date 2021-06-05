@@ -13,8 +13,7 @@ abstract class AuthenticationScheme {
   /// value.
   Credential get credential;
 
-  /// This url used for identifying this authentication scheme in logs or
-  /// error messages.
+  /// Server base URL which this authentication scheme could authenticate.
   String get baseUrl;
 
   /// Returns whether or not given [url] could be authenticated using

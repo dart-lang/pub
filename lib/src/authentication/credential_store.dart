@@ -117,17 +117,17 @@ class CredentialStore {
     }
   }
 
-  /// Returns matching authentication scheme to given [url] or returns `null` if
-  /// no matches found.
+  /// Returns [AuthenticationScheme] for given server [url], or null if no
+  /// scheme were found.
   AuthenticationScheme? findScheme(String url) {
     AuthenticationScheme? matchedScheme;
     for (final scheme in schemes) {
-      if (scheme.canAuthenticate(url)) {
+      if (scheme.baseUrl == url) {
         if (matchedScheme == null) {
           matchedScheme = scheme;
         } else {
           log.warning(
-            'Found multiple matching authentication schemes for url "$url". '
+            'Found multiple matching authentication schemes for "$url". '
             'First matching scheme will be used for authentication.',
           );
         }
@@ -136,9 +136,9 @@ class CredentialStore {
   }
 
   /// Returns whether or not store contains a scheme that could be used for
-  /// authenticating give [url].
+  /// authenticating given [url].
   bool hasScheme(String url) {
-    return schemes.any((it) => it.canAuthenticate(url));
+    return schemes.any((it) => it.baseUrl == url);
   }
 
   /// Full path to the "tokens.json" file.
