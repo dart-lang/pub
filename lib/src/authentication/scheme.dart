@@ -36,7 +36,7 @@ class HostedAuthenticationScheme implements AuthenticationScheme {
   HostedAuthenticationScheme({
     required String baseUrl,
     required this.credential,
-  }) : baseUrl = _normalizeUrl(baseUrl).toLowerCase();
+  }) : baseUrl = _normalizeUrl(baseUrl);
 
   /// Deserializes [HostedAuthenticationScheme] from given json [map].
   static HostedAuthenticationScheme fromJson(Map<String, dynamic> map) {
@@ -56,7 +56,7 @@ class HostedAuthenticationScheme implements AuthenticationScheme {
   }
 
   static String _normalizeUrl(String url) {
-    return url.endsWith('/') ? url : '$url/';
+    return (url.endsWith('/') ? url : '$url/').toLowerCase();
   }
 
   @override
@@ -72,6 +72,6 @@ class HostedAuthenticationScheme implements AuthenticationScheme {
 
   @override
   bool canAuthenticate(String url) {
-    return _normalizeUrl(url).startsWith(baseUrl.toLowerCase());
+    return _normalizeUrl(url).startsWith(baseUrl);
   }
 }
