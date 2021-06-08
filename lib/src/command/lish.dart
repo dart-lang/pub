@@ -10,11 +10,13 @@ import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -33,19 +35,35 @@ class LishCommand extends PubCommand {
 
   /// The URL of the server to which to upload the package.
   Uri get server {
+    if (_server != null) {
+      return _server;
+    }
+
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
-      return Uri.parse(argResults['server']);
+      try {
+        return _server = validateAndNormalizeHostedUrl(argResults['server']);
+      } on FormatException catch (e) {
+        usageException('Invalid server: $e');
+      }
     }
 
     // Otherwise, use the one specified in the pubspec.
-    if (entrypoint.root.pubspec.publishTo != null) {
-      return Uri.parse(entrypoint.root.pubspec.publishTo);
+    final publishTo = entrypoint.root.pubspec.publishTo;
+    if (publishTo != null) {
+      try {
+        return _server = validateAndNormalizeHostedUrl(publishTo);
+      } on FormatException catch (e) {
+        throw DataException('Invalid publish_to: $e');
+      }
     }
 
-    // Otherwise, use the default.
-    return Uri.parse(cache.sources.hosted.defaultUrl);
+    // Use the default server if nothing else is specified
+    return _server = cache.sources.hosted.defaultUrl;
   }
+
+  /// Cache value for [server].
+  Uri _server;
 
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
@@ -77,7 +95,7 @@ class LishCommand extends PubCommand {
         return log.progress('Uploading', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
-          var newUri = server.resolve('/api/packages/versions/new');
+          var newUri = server.resolve('api/packages/versions/new');
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
 
@@ -181,8 +199,14 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(entrypoint, packageSize, server.toString(),
-        hints: hints, warnings: warnings, errors: errors);
+    await Validator.runAll(
+      entrypoint,
+      packageSize,
+      server,
+      hints: hints,
+      warnings: warnings,
+      errors: errors,
+    );
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '

@@ -6,6 +6,7 @@
 
 import 'dart:async';
 
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
@@ -78,7 +79,15 @@ class GlobalActivateCommand extends PubCommand {
     }
 
     var overwrite = argResults['overwrite'];
-    var hostedUrl = argResults['hosted-url'];
+    Uri hostedUrl;
+    if (argResults.wasParsed('hosted-url')) {
+      try {
+        hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
+      } on FormatException catch (e) {
+        usageException('Invalid hosted-url: $e');
+      }
+    }
+
     Iterable<String> args = argResults.rest;
 
     dynamic readArg([String error]) {
