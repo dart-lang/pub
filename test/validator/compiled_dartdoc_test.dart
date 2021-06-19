@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 // @dart=2.10
+
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/compiled_dartdoc.dart';
