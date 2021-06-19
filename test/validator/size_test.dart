@@ -7,9 +7,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/validator/size.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';

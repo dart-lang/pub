@@ -8,8 +8,8 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
-import 'package:pool/pool.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:pool/pool.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///

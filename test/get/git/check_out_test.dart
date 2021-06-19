@@ -6,11 +6,11 @@
 
 import 'dart:io';
 
-import 'package:pub/src/io.dart';
-import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub/src/io.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
