@@ -19,9 +19,8 @@ void main() {
         'login',
         '--server',
         'http://server.demo',
-        '--token',
-        'auth-token',
       ],
+      input: ['auth-token'],
       output: contains(
           'You are now logged in to http://server.demo using bearer token.'),
     );
@@ -44,25 +43,9 @@ void main() {
         'login',
         '--server',
         'http:;://invalid-url,.com',
-        '--token',
-        'auth-token',
       ],
+      input: ['auth-token'],
       error: contains('Invalid or malformed server URL provided.'),
-      exitCode: exit_codes.USAGE,
-    );
-
-    await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
-  });
-
-  test('without token returns error', () async {
-    await d.dir(cachePath).create();
-    await runPub(
-      args: [
-        'login',
-        '--server',
-        'http://server.demo',
-      ],
-      error: contains('Must specify a token.'),
       exitCode: exit_codes.USAGE,
     );
 

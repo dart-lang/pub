@@ -122,7 +122,7 @@ class CredentialStore {
   AuthenticationScheme? findScheme(String url) {
     AuthenticationScheme? matchedScheme;
     for (final scheme in schemes) {
-      if (_urlMatches(scheme.baseUrl, url)) {
+      if (scheme.canAuthenticate(url)) {
         if (matchedScheme == null) {
           matchedScheme = scheme;
         } else {
@@ -149,10 +149,4 @@ class CredentialStore {
 
   /// Full path to the "tokens.json" file.
   String get _tokensFile => path.join(cacheRootDir, 'tokens.json');
-}
-
-bool _urlMatches(String u1, String u2) {
-  if (!u1.endsWith('/')) u1 += '/';
-  if (!u2.endsWith('/')) u2 += '/';
-  return u1 == u2;
 }
