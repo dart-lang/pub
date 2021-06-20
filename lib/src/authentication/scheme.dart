@@ -34,9 +34,9 @@ abstract class AuthenticationScheme {
 /// Authentication scheme that used by
 class HostedAuthenticationScheme implements AuthenticationScheme {
   HostedAuthenticationScheme({
-    required String baseUrl,
+    required this.baseUrl,
     required this.credential,
-  }) : baseUrl = _normalizeUrl(baseUrl);
+  });
 
   /// Deserializes [HostedAuthenticationScheme] from given json [map].
   static HostedAuthenticationScheme fromJson(Map<String, dynamic> map) {
@@ -72,6 +72,6 @@ class HostedAuthenticationScheme implements AuthenticationScheme {
 
   @override
   bool canAuthenticate(String url) {
-    return _normalizeUrl(url).startsWith(baseUrl);
+    return _normalizeUrl(url).startsWith(_normalizeUrl(baseUrl));
   }
 }

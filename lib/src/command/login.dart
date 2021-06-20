@@ -23,44 +23,63 @@ class LoginCommand extends PubCommand {
   @override
   String get invocation => 'pub login';
 
-  String get token => argResults['token'];
-  bool get tokenStdin => argResults['token-stdin'];
   String get server => argResults['server'];
+  bool get list => argResults['list'];
 
   LoginCommand() {
     argParser.addOption('server',
         help: 'The package server to which needs to be authenticated.');
 
-    argParser.addOption('token', help: 'Authorization token for the server');
-
-    argParser.addFlag('token-stdin',
-        help: 'Read authorization token from stdin stream');
+    argParser.addFlag('list',
+        help: 'Displays list of currently logged in hosted pub servers',
+        defaultsTo: false);
   }
 
   @override
   Future<void> runProtected() async {
-    if (server == null) {
+    if (list) {
+      await _listCredentials();
+    } else if (server == null) {
       await _loginToPubDev();
     } else {
       if (Uri.tryParse(server) == null) {
         usageException('Invalid or malformed server URL provided.');
       }
-      if (token?.isNotEmpty != true && !tokenStdin) {
-        usageException('Must specify a token.');
-      }
       await _loginToServer(server);
     }
   }
 
+  Future<void> _listCredentials() async {
+    log.message('Found ${cache.credentialStore.schemes.length} entries.');
+    for (final scheme in cache.credentialStore.schemes) {
+      log.message(scheme.baseUrl);
+    }
+  }
+
   Future<void> _loginToServer(String server) async {
+    // TODO(themisir): Replace this line with validateAndNormalizeHostedUrl from
+    // source/hosted.dart when dart-lang/pub#3030 is merged.
     if (Uri.tryParse(server) == null ||
         !server.startsWith(RegExp(r'https?:\/\/'))) {
       usageException('Invalid or malformed server URL provided.');
     }
 
-    final _token = tokenStdin ? await readLine() : token;
-    credentialStore.addHostedScheme(server, BearerCredential(_token));
-    log.message('You are now logged in to $server using bearer token.');
+    try {
+      final token = await readLine('Please enter bearer token')
+          .timeout(const Duration(minutes: 5));
+      if (token.isEmpty) {
+        usageException('Token is not provided.');
+      }
+
+      credentialStore.addHostedScheme(server, BearerCredential(token));
+      log.message('You are now logged in to $server using bearer token.');
+    } on TimeoutException catch (error, stackTrace) {
+      log.error(
+          'Timeout error. Token is not provided within '
+          '${error.duration.inSeconds} seconds.',
+          error,
+          stackTrace);
+    }
   }
 
   Future<void> _loginToPubDev() async {

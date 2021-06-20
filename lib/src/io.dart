@@ -569,7 +569,12 @@ Future<bool> confirm(String message) {
 }
 
 /// Reads a line from stdin stream.
-Future<String> readLine() {
+Future<String> readLine(String message) {
+  if (runningFromTest) {
+    log.message('$message:');
+  } else {
+    stdout.write('$message: ');
+  }
   return _stdinLines.first;
 }
 

@@ -122,7 +122,7 @@ class CredentialStore {
   AuthenticationScheme? findScheme(String url) {
     AuthenticationScheme? matchedScheme;
     for (final scheme in schemes) {
-      if (scheme.baseUrl == url) {
+      if (_urlMatches(scheme.baseUrl, url)) {
         if (matchedScheme == null) {
           matchedScheme = scheme;
         } else {
@@ -141,6 +141,18 @@ class CredentialStore {
     return schemes.any((it) => it.baseUrl == url);
   }
 
+  /// Deletes tokens.json file from the disk.
+  void deleteTokensFile() {
+    deleteEntry(_tokensFile);
+    log.message('tokens.json is deleted.');
+  }
+
   /// Full path to the "tokens.json" file.
   String get _tokensFile => path.join(cacheRootDir, 'tokens.json');
+}
+
+bool _urlMatches(String u1, String u2) {
+  if (!u1.endsWith('/')) u1 += '/';
+  if (!u2.endsWith('/')) u2 += '/';
+  return u1 == u2;
 }
