@@ -1760,6 +1760,41 @@ void prerelease() {
       'c': '1.0.0',
     });
   });
+
+  test('existence of pre-release prevent backtracking', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.1.0', deps: {'b': '^1.0.0'});
+      builder.serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
+      builder.serve('b', '1.1.0-alpha');
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+    }).create();
+    await expectResolves(result: {
+      'a': '1.1.0',       // would have expected 1.0.0 here
+      'b': '1.1.0-alpha',
+    });
+  });
+
+  test('unable to backtrack to pre-release after NoVersions', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.1.0', deps: {'b': '^1.0.0'});
+      builder.serve('b', '1.0.0', deps: {'c': '^1.0.0'});
+      builder.serve('c', '0.9.0');
+      builder.serve('b', '1.1.0-alpha');
+      builder.serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+    }).create();
+    await expectResolves();
+    // fails though I would have expected it to succeed with either
+    // a 1.0.0, b 1.1.0-alpha or
+    // a 1.1.0, b 1.1.0-alpha
+  });
+
 }
 
 void override() {
