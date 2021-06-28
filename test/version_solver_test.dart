@@ -8,12 +8,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';

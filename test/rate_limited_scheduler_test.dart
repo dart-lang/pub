@@ -6,9 +6,9 @@
 
 import 'dart:async';
 
-import 'package:test/test.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:pub/src/rate_limited_scheduler.dart';
+import 'package:test/test.dart';
 
 void main() {
   Map<String, Completer> threeCompleters() =>

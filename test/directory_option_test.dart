@@ -7,8 +7,9 @@
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:test/test.dart';
+
 import 'descriptor.dart';
 import 'golden_file.dart';
 import 'test_pub.dart';

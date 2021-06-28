@@ -6,10 +6,10 @@
 
 import 'dart:io';
 
-import 'package:test/test.dart';
-import 'package:pub/pub.dart';
 import 'package:path/path.dart' show separator;
 import 'package:path/path.dart' as p;
+import 'package:pub/pub.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';

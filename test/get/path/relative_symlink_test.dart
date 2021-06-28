@@ -9,9 +9,8 @@
 // support relative paths. So this test, by design, will not pass on Windows.
 // So just skip it.
 @TestOn('!windows')
-import 'package:test/test.dart';
-
 import 'package:path/path.dart' as path;
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
