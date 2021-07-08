@@ -318,6 +318,8 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// [output], [error], and [silent] can be [String]s, [RegExp]s, or [Matcher]s.
 ///
+/// If [input] is given, writes given lines into process stdin stream.
+///
 /// If [outputJson] is given, validates that pub outputs stringified JSON
 /// matching that object, which can be a literal JSON object or any other
 /// [Matcher].
@@ -332,12 +334,19 @@ Future<void> runPub(
     silent,
     int exitCode = exit_codes.SUCCESS,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    List<String> input}) async {
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
+
+  if (input != null) {
+    input.forEach(pub.stdin.writeln);
+    await pub.stdin.flush();
+  }
+
   await pub.shouldExit(exitCode);
 
   var actualOutput = (await pub.stdoutStream().toList()).join('\n');

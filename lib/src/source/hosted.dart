@@ -15,6 +15,7 @@ import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -210,8 +211,9 @@ class BoundHostedSource extends CachedSource {
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
       PackageRef ref) async {
-    var url = _makeUrl(
-        ref.description, (server, package) => '$server/api/packages/$package');
+    final parsedDescription = source._parseDescription(ref.description);
+    final url = _makeUrl(parsedDescription,
+        (server, package) => '$server/api/packages/$package');
     log.io('Get versions from $url.');
 
     String bodyText;
@@ -220,7 +222,11 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      bodyText = await httpClient.read(url, headers: pubApiHeaders);
+      bodyText = await withAuthenticatedClient(
+        systemCache,
+        parsedDescription.last,
+        (client) => client.read(url, headers: pubApiHeaders),
+      );
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
@@ -396,11 +402,10 @@ class BoundHostedSource extends CachedSource {
   /// converts that to a Uri given [pattern].
   ///
   /// Ensures the package name is properly URL encoded.
-  Uri _makeUrl(
-      description, String Function(String server, String package) pattern) {
-    var parsed = source._parseDescription(description);
-    var server = parsed.last;
-    var package = Uri.encodeComponent(parsed.first);
+  Uri _makeUrl(Pair<String, String> parsedDescription,
+      String Function(String server, String package) pattern) {
+    var server = parsedDescription.last;
+    var package = Uri.encodeComponent(parsedDescription.first);
     return Uri.parse(pattern(server, package));
   }
 
@@ -409,8 +414,9 @@ class BoundHostedSource extends CachedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) async {
     final versions = await _scheduler.schedule(id.toRef());
-    final url = _makeUrl(
-        id.description, (server, package) => '$server/api/packages/$package');
+    final parsedDescription = source._parseDescription(id.description);
+    final url = _makeUrl(parsedDescription,
+        (server, package) => '$server/api/packages/$package');
     return versions[id]?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }
@@ -557,14 +563,13 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
+    final parsedDescription = source._parseDescription(id.description);
+    final server = parsedDescription.last;
+
     var url = versionInfo.archiveUrl;
-    if (url == null) {
-      // To support old servers that has no archive_url we fall back to the
-      // hard-coded path.
-      final parsedDescription = source._parseDescription(id.description);
-      final server = parsedDescription.last;
-      url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
-    }
+    // To support old servers that has no archive_url we fall back to the
+    // hard-coded path.
+    url ??= Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
@@ -572,7 +577,8 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await httpClient.send(http.Request('GET', url));
+      var response = await withAuthenticatedClient(systemCache, server,
+          (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
