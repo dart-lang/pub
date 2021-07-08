@@ -123,7 +123,7 @@ class GlobalPackages {
       String name, VersionConstraint constraint, List<String> executables,
       {Map<String, FeatureDependency> features,
       bool overwriteBinStubs,
-      String url}) async {
+      Uri url}) async {
     await _installInCache(
         cache.hosted.source
             .refFor(name, url: url)

@@ -122,7 +122,7 @@ abstract class Validator {
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
   static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, String serverUrl,
+      Entrypoint entrypoint, Future<int> packageSize, Uri serverUrl,
       {List<String> hints, List<String> warnings, List<String> errors}) {
     var validators = [
       GitignoreValidator(entrypoint),

@@ -13,8 +13,10 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator validator(Entrypoint entrypoint) =>
-    RelativeVersionNumberingValidator(entrypoint, globalPackageServer.url);
+Validator validator(Entrypoint entrypoint) => RelativeVersionNumberingValidator(
+      entrypoint,
+      Uri.parse(globalPackageServer.url),
+    );
 
 Future<void> setup({String sdkConstraint}) async {
   await d.validPackage.create();

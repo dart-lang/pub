@@ -18,7 +18,7 @@ class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
-  final String _server;
+  final Uri _server;
 
   RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
