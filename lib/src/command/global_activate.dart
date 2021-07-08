@@ -6,11 +6,11 @@
 
 import 'dart:async';
 
-import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../package_name.dart';
+import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
