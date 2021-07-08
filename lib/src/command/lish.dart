@@ -93,8 +93,6 @@ class LishCommand extends PubCommand {
     try {
       await oauth2.withClient(cache, (client) {
         return log.progress('Uploading', () async {
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
           var newUri = server.resolve('api/packages/versions/new');
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
@@ -102,6 +100,8 @@ class LishCommand extends PubCommand {
           var url = _expectField(parameters, 'url', response);
           if (url is! String) invalidServerResponse(response);
           cloudStorageUrl = Uri.parse(url);
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
           var request = http.MultipartRequest('POST', cloudStorageUrl);
 
           var fields = _expectField(parameters, 'fields', response);
