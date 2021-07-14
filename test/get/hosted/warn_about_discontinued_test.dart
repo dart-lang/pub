@@ -22,8 +22,9 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer.add(
-        (builder) => builder..discontinue('foo')..discontinue('transitive'));
+    globalPackageServer.add((builder) => builder
+      ..discontinue('foo')
+      ..discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
