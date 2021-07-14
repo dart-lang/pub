@@ -255,7 +255,10 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     var result = ['/$dir/'];
     if (Platform.isWindows) {
-      result..add('/$dir\\')..add('\\$dir/')..add('\\$dir\\');
+      result
+        ..add('/$dir\\')
+        ..add('\\$dir/')
+        ..add('\\$dir\\');
     }
     return result;
   }).toSet();
