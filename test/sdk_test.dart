@@ -133,7 +133,7 @@ void main() {
               Because myapp depends on foo any from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
-              Flutter users should run `flutter pub get` instead of `pub
+              Flutter users should run `flutter pub get` instead of `dart pub
                 get`.
             """), exitCode: exit_codes.UNAVAILABLE);
       });
