@@ -20,7 +20,9 @@ class FlutterSdk extends Sdk {
   @override
   Version get firstPubVersion => Version.parse('1.19.0');
 
-  static final bool _isAvailable = _rootDirectory != null;
+  // We only consider the Flutter SDK to present if we find a root directory
+  // and the root directory contains a valid 'version' file.
+  static final bool _isAvailable = _rootDirectory != null && _version != null;
   static final String _rootDirectory = () {
     // If FLUTTER_ROOT is specified, then this always points to the Flutter SDK
     if (Platform.environment.containsKey('FLUTTER_ROOT')) {
@@ -55,6 +57,19 @@ class FlutterSdk extends Sdk {
 
     return null;
   }();
+  static final Version _version = () {
+    if (_rootDirectory == null) return null;
+
+    try {
+      return Version.parse(
+        readTextFile(p.join(_rootDirectory, 'version')).trim(),
+      );
+    } on IOException {
+      return null; // I guess the file doesn't exist
+    } on FormatException {
+      return null; // I guess the file has the wrong format
+    }
+  }();
 
   @override
   String get installMessage =>
@@ -62,14 +77,9 @@ class FlutterSdk extends Sdk {
 
   @override
   Version get version {
-    if (!_isAvailable) return null;
-
-    _version ??=
-        Version.parse(readTextFile(p.join(_rootDirectory, 'version')).trim());
+    if (!isAvailable) return null;
     return _version;
   }
-
-  Version _version;
 
   @override
   String packagePath(String name) {
