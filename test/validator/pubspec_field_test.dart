@@ -46,6 +46,24 @@ void main() {
 
       await expectValidation(pubspecField);
     });
+
+    test('has empty executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, String>{};
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField);
+    });
+
+    test('has executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, String>{
+        'test_pkg': null,
+      };
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField);
+    });
   });
 
   group('should warn if a package', () {
@@ -113,6 +131,24 @@ void main() {
     test('has a non-HTTP repository URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['repository'] = 'file:///foo/bar';
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField, errors: isNotEmpty);
+    });
+
+    test('has invalid executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String>['wrong-thing'];
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField, errors: isNotEmpty);
+    });
+
+    test('has invalid executables (2)', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, dynamic>{
+        'test_pkg': 33,
+      };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField, errors: isNotEmpty);
