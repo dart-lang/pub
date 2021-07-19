@@ -580,6 +580,7 @@ class Pubspec {
     _collectError(() => devDependencies);
     _collectError(() => publishTo);
     _collectError(() => features);
+    _collectError(() => executables);
     _collectError(_ensureEnvironment);
     return errors;
   }
