@@ -388,6 +388,43 @@ class Pubspec {
   bool _parsedPublishTo = false;
   String _publishTo;
 
+  /// The list of patterns covering _false-positive leaks_ in the package.
+  ///
+  /// This is a list of git-ignore style patterns for files that should be
+  /// ignored when trying to detect possible leaks of secrets during
+  /// package publication.
+  List<String> get falseLeaks {
+    if (_falseLeaks == null) {
+      final falseLeaks = <String>[];
+
+      // Throws a [PubspecException]
+      void _falseLeaksError(SourceSpan span) => _error(
+            '"false_leaks" field must be a list of git-ignore style patterns',
+            span,
+          );
+
+      final falseLeaksNode = fields.nodes['false_leaks'];
+      if (falseLeaksNode != null) {
+        if (falseLeaksNode is YamlList) {
+          for (final node in falseLeaksNode.nodes) {
+            final value = node.value;
+            if (value is! String) {
+              _falseLeaksError(node.span);
+            }
+            falseLeaks.add(value);
+          }
+        } else {
+          _falseLeaksError(falseLeaksNode.span);
+        }
+      }
+
+      _falseLeaks = List.unmodifiable(falseLeaks);
+    }
+    return _falseLeaks;
+  }
+
+  List<String> _falseLeaks;
+
   /// The executables that should be placed on the user's PATH when this
   /// package is globally activated.
   ///
@@ -580,6 +617,7 @@ class Pubspec {
     _collectError(() => devDependencies);
     _collectError(() => publishTo);
     _collectError(() => features);
+    _collectError(() => falseLeaks);
     _collectError(_ensureEnvironment);
     return errors;
   }

@@ -150,7 +150,7 @@ class Ignore {
         path.endsWith('/') ? path.substring(0, path.length - 1) : path;
     return listFiles(
       beneath: pathWithoutSlash,
-      includeDirs: true,
+      includeDirs: true, // because we listing below pathWithoutSlash
       listDir: (dir) {
         // List the next part of path:
         if (dir == pathWithoutSlash) return [];
@@ -158,8 +158,10 @@ class Ignore {
         final nextSlash = path.indexOf('/', startOfNext);
         return [path.substring(startOfNext, nextSlash)];
       },
-      ignoreForDir: (dir) => dir == '' ? this : null,
+      ignoreForDir: (dir) => dir == '.' || dir.isEmpty ? this : null,
       isDir: (candidate) =>
+          candidate == '.' ||
+          candidate.isEmpty ||
           path.length > candidate.length && path[candidate.length] == '/',
     ).isEmpty;
   }
