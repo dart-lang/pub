@@ -70,5 +70,5 @@ jobs:
           cat "$_TESTS_FILE.${{ matrix.shard }}"
         shell: bash
       - name: Run tests
-        run: pwd; dart test --use-data-isolate-strategy --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
+        run: pwd; pub run test --use-data-isolate-strategy --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
         shell: bash
