@@ -59,6 +59,7 @@ void main() {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['executables'] = <String, String>{
         'test_pkg': null,
+        'test_pkg_helper': 'helper',
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
@@ -144,7 +145,7 @@ void main() {
       await expectValidation(pubspecField, errors: isNotEmpty);
     });
 
-    test('has invalid executables (2)', () async {
+    test('has invalid executables mapping to a number', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['executables'] = <String, dynamic>{
         'test_pkg': 33,
