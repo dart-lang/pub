@@ -756,7 +756,6 @@ if exist "$snapshot" (
   if not errorlevel 253 (
     goto error
   )
-  dart pub global run ${package.name}:$script %*
 ) else (
   dart pub global run ${package.name}:$script %*
 )
