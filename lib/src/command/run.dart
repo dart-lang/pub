@@ -55,7 +55,7 @@ class RunCommand extends PubCommand {
   Future<void> runProtected() async {
     if (deprecated) {
       await log.warningsOnlyUnlessTerminal(() {
-        log.message('Deprecated. Use `dart run instead`');
+        log.message('Deprecated. Use `dart run` instead.');
       });
     }
     if (argResults['dart-dev-run']) {
