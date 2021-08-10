@@ -300,7 +300,7 @@ class Entrypoint {
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.
-  List<Executable> get builtExecutables {
+  List<Executable> get _builtExecutables {
     if (isGlobal) {
       if (isCached) {
         return root.executablePaths
@@ -311,9 +311,6 @@ class Entrypoint {
       }
     }
     final r = root.immediateDependencies.keys.expand((packageName) {
-      if (packageGraph.isPackageMutable(packageName)) {
-        return <Executable>[];
-      }
       final package = packageGraph.packages[packageName];
       return package.executablePaths
           .map((path) => Executable(packageName, path));
@@ -321,11 +318,11 @@ class Entrypoint {
     return r;
   }
 
-  /// Precompiles all [builtExecutables].
+  /// Precompiles all [_builtExecutables].
   Future<void> precompileExecutables({Iterable<String> changed}) async {
     migrateCache();
 
-    final executables = builtExecutables;
+    final executables = _builtExecutables;
 
     if (executables.isEmpty) return;
 
