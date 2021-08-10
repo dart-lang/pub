@@ -37,7 +37,7 @@ void main() {
     await pubGet();
     var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
     expect(
         pub.stdout,
         emits(p

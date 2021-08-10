@@ -28,7 +28,7 @@ void main() {
     // isn't trying to look at them.
     var pub = await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
 
-    expect(pub.stdout, emits('--verbose -m -- help'));
+    expect(pub.stdout, emitsThrough('--verbose -m -- help'));
     await pub.shouldExit();
   });
 }

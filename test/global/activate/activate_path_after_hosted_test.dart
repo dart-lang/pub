@@ -36,7 +36,7 @@ void main() {
 
     // Should now run the path one.
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('path'));
+    expect(pub.stdout, emitsThrough('path'));
     await pub.shouldExit();
   });
 }

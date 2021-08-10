@@ -29,7 +29,7 @@ void main() {
     var pub = await pubRunFromDartDev(
         args: ['myapp:args', '--verbose', '-m', '--', 'help']);
 
-    expect(pub.stdout, emits('--verbose -m -- help'));
+    expect(pub.stdout, emitsThrough('--verbose -m -- help'));
     await pub.shouldExit();
   });
 }

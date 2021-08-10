@@ -52,7 +52,7 @@ void main() {
 
     await runPub(
         args: ['global', 'run', 'foo'],
-        output: 'ok',
+        output: endsWith('ok'),
         workingDirectory: p.current);
   });
 

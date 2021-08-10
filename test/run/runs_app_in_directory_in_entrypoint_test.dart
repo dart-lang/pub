@@ -22,11 +22,11 @@ void main() {
 
     await pubGet();
     var pub = await pubRun(args: [path.join('tool', 'app')]);
-    expect(pub.stdout, emits('tool'));
+    expect(pub.stdout, emitsThrough('tool'));
     await pub.shouldExit();
 
     pub = await pubRun(args: [path.join('tool', 'sub', 'app')]);
-    expect(pub.stdout, emits('sub'));
+    expect(pub.stdout, emitsThrough('sub'));
     await pub.shouldExit();
   });
 }

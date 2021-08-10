@@ -28,7 +28,7 @@ void main() {
         'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo:script']);
-    expect(pub.stdout, emits('ok'));
+    expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
   });
 
@@ -46,7 +46,7 @@ void main() {
         'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('ok'));
+    expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
   });
 }

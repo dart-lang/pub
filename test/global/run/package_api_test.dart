@@ -39,7 +39,7 @@ main() async {
 
     var pub = await pubRun(global: true, args: ['foo:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath = p.join(d.sandbox, cachePath,
         'global_packages/foo/.dart_tool/package_config.json');
@@ -83,7 +83,7 @@ main() async {
 
     var pub = await pubRun(global: true, args: ['myapp:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath =
         p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');

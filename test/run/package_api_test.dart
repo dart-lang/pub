@@ -37,7 +37,7 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['bin/script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
     expect(
         pub.stdout,
         emits(p
@@ -65,7 +65,7 @@ void main() {
 
     var pub = await pubRun(args: ['foo:script']);
 
-    expect(pub.stdout, emits('Building package executable...'));
+    expect(pub.stdout, emitsThrough('Building package executable...'));
     expect(pub.stdout, emits('Built foo:script.'));
     expect(pub.stdout, emits('null'));
     expect(
