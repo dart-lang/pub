@@ -142,6 +142,8 @@ class GitSource extends Source {
     return {'relative': relative, 'url': url};
   }
 
+  /// Returns [path] normalized.
+  ///
   /// Throws a [FormatException] if [path] isn't a relative url or null.
   String _validatedPath(dynamic path) {
     path ??= '.';
@@ -161,7 +163,7 @@ class GitSource extends Source {
           "The 'path' field of the description must not reach outside the "
           'repository.');
     }
-    return p.normalize(parsed.toString());
+    return p.url.normalize(parsed.toString());
   }
 
   /// If [description] has a resolved ref, print it out in short-form.
@@ -352,7 +354,7 @@ class BoundGitSource extends CachedSource {
 
       return Package.load(
           id.name,
-          p.join(revisionCachePath, id.description['path']),
+          p.join(revisionCachePath, p.fromUri(id.description['path'])),
           systemCache.sources);
     });
   }
