@@ -15,7 +15,7 @@ void main() {
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo/',
+          'url': 'http://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]
@@ -23,10 +23,10 @@ void main() {
 
     await runPub(
       args: ['logout', '--server', 'http://server.demo'],
-      output: contains('Logging out of http://server.demo/.'),
+      output: contains('Logging out of http://server.demo.'),
     );
 
-    await d.tokensFile({'version': '1.0', 'hosted': []}).validate();
+    await d.tokensFile({'version': 1, 'hosted': []}).validate();
   });
 
   test('with multiple matching schemes, removes all matching entries.',
@@ -35,15 +35,15 @@ void main() {
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo/',
+          'url': 'http://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         },
         {
-          'url': 'http://server.demo/sub',
+          'url': 'http://server.demo/sub/',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         },
         {
-          'url': 'http://another-.demo/',
+          'url': 'http://another-.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]
@@ -51,17 +51,18 @@ void main() {
 
     await runPub(
       args: ['logout', '--server', 'http://server.demo/sub'],
-      output: allOf(
-        contains('Logging out of http://server.demo/.'),
-        contains('Logging out of http://server.demo/sub/.'),
-      ),
+      output: contains('Logging out of http://server.demo/sub/.'),
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
         {
-          'url': 'http://another-.demo/',
+          'url': 'http://server.demo',
+          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
+        },
+        {
+          'url': 'http://another-.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]
@@ -73,7 +74,7 @@ void main() {
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo/',
+          'url': 'http://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]
@@ -89,7 +90,7 @@ void main() {
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo/',
+          'url': 'http://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]

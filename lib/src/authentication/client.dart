@@ -51,7 +51,7 @@ class _AuthenticatedClient extends http.BaseClient {
 /// authenticated.
 Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
-  String serverBaseUrl,
+  Uri serverBaseUrl,
   Future<T> Function(http.Client) fn,
 ) async {
   final scheme = systemCache.tokenStore.findToken(serverBaseUrl);

@@ -18,18 +18,18 @@ void main() {
       args: [
         'login',
         '--server',
-        'http://server.demo',
+        'http://server.demo/',
       ],
       input: ['auth-token'],
       output: contains(
-          'You are now logged in to http://server.demo using bearer token.'),
+          'You are now logged in to http://server.demo/ using bearer token.'),
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo/',
+          'url': 'http://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]

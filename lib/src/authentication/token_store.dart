@@ -10,6 +10,7 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../log.dart' as log;
+import '../source/hosted.dart';
 import 'token.dart';
 
 /// Stores and manages authentication credentials.
@@ -89,8 +90,9 @@ class TokenStore {
 
   /// Removes tokens with matching [url] from store.
   void removeMatchingTokens(String url) {
+    final normalizedUrl = validateAndNormalizeHostedUrl(url);
     final tokensToRemove =
-        tokens.where((it) => it.canAuthenticate(url)).toList();
+        tokens.where((it) => it.url == normalizedUrl).toList();
     if (tokensToRemove.isNotEmpty) {
       for (final token in tokensToRemove) {
         tokens.remove(token);
@@ -105,7 +107,7 @@ class TokenStore {
 
   /// Returns [Token] for authenticating given url or null if no matching token
   /// is found.
-  Token? findToken(String url) {
+  Token? findToken(Uri url) {
     Token? matchedToken;
     for (final token in tokens) {
       if (token.url == url) {
@@ -125,7 +127,7 @@ class TokenStore {
 
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
-  bool hasToken(String url) {
+  bool hasToken(Uri url) {
     return tokens.any((it) => it.url == url);
   }
 

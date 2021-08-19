@@ -282,7 +282,7 @@ class BoundHostedSource extends CachedSource {
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       bodyText = await withAuthenticatedClient(
         systemCache,
-        serverUrl.toString(),
+        serverUrl,
         (client) => client.read(url, headers: pubApiHeaders),
       );
       body = jsonDecode(bodyText);
@@ -645,8 +645,8 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await withAuthenticatedClient(systemCache,
-          server.toString(), (client) => client.send(http.Request('GET', url)));
+      var response = await withAuthenticatedClient(systemCache, server,
+          (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.

@@ -1,7 +1,14 @@
-class Token {
-  const Token({required this.url, required this.kind, required this.token});
+// ignore_for_file: import_of_legacy_library_into_null_safe
 
-  const Token.bearer(this.url, this.token) : kind = 'Bearer';
+import '../source/hosted.dart';
+
+class Token {
+  Token({required String url, required this.kind, required this.token})
+      : url = validateAndNormalizeHostedUrl(url);
+
+  Token.bearer(String url, this.token)
+      : kind = 'Bearer',
+        url = validateAndNormalizeHostedUrl(url);
 
   /// Deserialize [json] into [Token] type.
   factory Token.fromJson(Map<String, dynamic> json) {
@@ -35,7 +42,7 @@ class Token {
   }
 
   /// Server url which this token authenticates.
-  final String url;
+  final Uri url;
 
   /// Specifies authentication token kind.
   ///
@@ -48,7 +55,7 @@ class Token {
   /// Serializes [Token] into json format.
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'url': url,
+      'url': url.toString(),
       'credential': <String, dynamic>{'kind': kind, 'token': token},
     };
   }
@@ -66,7 +73,7 @@ class Token {
   /// Returns whether or not given [url] could be authenticated using this
   /// token.
   bool canAuthenticate(String url) {
-    return _normalizeUrl(url).startsWith(_normalizeUrl(this.url));
+    return _normalizeUrl(url).startsWith(_normalizeUrl(this.url.toString()));
   }
 
   static String _normalizeUrl(String url) {
