@@ -4,9 +4,8 @@
 
 // @dart=2.10
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/validator/pubspec.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';

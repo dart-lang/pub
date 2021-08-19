@@ -44,8 +44,11 @@ Adding a custom `User-Agent` that allows _pub repository operators_ to identify 
 ```js
 {
   "name": "<PACKAGE>",
+  "isDiscontinued": true || false, /* optional field, missing if false */
+  "replacedBy": "<PACKAGE>", /* optional field, if isDiscontinued == true */
   "latest": {
     "version": "<VERSION>",
+    "isRetracted": true || false, /* optional field, missing if false */
     "archive_url": "https://.../archive.tar.gz",
     "pubspec": {
       /* pubspec contents as JSON object */
@@ -54,6 +57,7 @@ Adding a custom `User-Agent` that allows _pub repository operators_ to identify 
   "versions": [
     {
       "version": "<VERSION>",
+      "isRetracted": true || false, /* optional field, missing if false */
       "archive_url": "https://.../archive.tar.gz",
       "pubspec": {
         /* pubspec contents as JSON object */

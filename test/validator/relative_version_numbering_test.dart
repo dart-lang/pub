@@ -4,18 +4,19 @@
 
 // @dart=2.10
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/relative_version_numbering.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator validator(Entrypoint entrypoint) =>
-    RelativeVersionNumberingValidator(entrypoint, globalPackageServer.url);
+Validator validator(Entrypoint entrypoint) => RelativeVersionNumberingValidator(
+      entrypoint,
+      Uri.parse(globalPackageServer.url),
+    );
 
 Future<void> setup({String sdkConstraint}) async {
   await d.validPackage.create();

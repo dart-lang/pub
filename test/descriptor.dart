@@ -7,12 +7,12 @@
 /// Pub-specific test descriptors.
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
-import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
 
 import 'descriptor/git.dart';
 import 'descriptor/packages.dart';
@@ -21,6 +21,7 @@ import 'descriptor/yaml.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
+
 export 'descriptor/git.dart';
 export 'descriptor/packages.dart';
 export 'descriptor/tar.dart';

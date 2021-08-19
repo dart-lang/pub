@@ -8,8 +8,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/log.dart' as log;
 import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a tar file and its contents.

@@ -251,7 +251,7 @@ class Entrypoint {
               .where((pubspec) => pubspec.dartSdkWasOverridden)
               .map((pubspec) => pubspec.name)
               .toList()
-                ..sort())
+            ..sort())
           .join(', ');
       if (overriddenPackages.isNotEmpty) {
         log.message(log.yellow(

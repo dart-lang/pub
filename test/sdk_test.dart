@@ -5,11 +5,9 @@
 // @dart=2.10
 
 import 'package:path/path.dart' as p;
-
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -135,7 +133,7 @@ void main() {
               Because myapp depends on foo any from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
-              Flutter users should run `flutter pub get` instead of `pub
+              Flutter users should run `flutter pub get` instead of `dart pub
                 get`.
             """), exitCode: exit_codes.UNAVAILABLE);
       });

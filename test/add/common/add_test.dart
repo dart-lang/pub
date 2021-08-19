@@ -3,12 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 // @dart=2.10
+
 import 'dart:io' show File;
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';

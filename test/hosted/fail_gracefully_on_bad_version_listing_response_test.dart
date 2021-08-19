@@ -6,10 +6,9 @@
 
 import 'dart:convert';
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
-
-import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';

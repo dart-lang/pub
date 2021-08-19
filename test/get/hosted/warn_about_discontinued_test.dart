@@ -7,10 +7,9 @@
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/io.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
-
-import 'package:pub/src/io.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -23,8 +22,9 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer.add(
-        (builder) => builder..discontinue('foo')..discontinue('transitive'));
+    globalPackageServer.add((builder) => builder
+      ..discontinue('foo')
+      ..discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();

@@ -16,15 +16,19 @@ void main() {
     // Get once so it gets cached.
     await pubGet(
       environment: {'PUB_HOSTED_URL': 'abc://bad_scheme.com'},
-      error: contains(
-          'PUB_HOSTED_URL` must have either the scheme "https://" or "http://".'),
+      error: allOf(
+        contains('PUB_HOSTED_URL'),
+        contains('url scheme must be https:// or http://'),
+      ),
       exitCode: 78,
     );
 
     await pubGet(
       environment: {'PUB_HOSTED_URL': ''},
-      error: contains(
-          'PUB_HOSTED_URL` must have either the scheme "https://" or "http://".'),
+      error: allOf(
+        contains('PUB_HOSTED_URL'),
+        contains('url scheme must be https:// or http://'),
+      ),
       exitCode: 78,
     );
   });

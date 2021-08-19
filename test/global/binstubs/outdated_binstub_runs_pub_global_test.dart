@@ -7,8 +7,8 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test_process/test_process.dart';
 import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';

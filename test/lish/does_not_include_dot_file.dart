@@ -2,12 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:convert';
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
-
-import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test_descriptor/test_descriptor.dart' as td;
 
 import '../descriptor.dart' as d;
