@@ -12,7 +12,7 @@ import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 
-import 'authentication/credential_store.dart';
+import 'authentication/token_store.dart';
 import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
@@ -56,7 +56,7 @@ abstract class PubCommand extends Command<int> {
 
   GlobalPackages _globals;
 
-  CredentialStore get credentialStore => cache.credentialStore;
+  TokenStore get tokenStore => cache.tokenStore;
 
   /// Gets the [Entrypoint] package for the current working directory.
   ///

@@ -36,12 +36,12 @@ class LogoutCommand extends PubCommand {
   Future<void> runProtected() async {
     if (clear) {
       if (await confirm('Are you sure you want to remove all credentials')) {
-        credentialStore.deleteTokensFile();
+        tokenStore.deleteTokensFile();
       }
     } else if (server == null) {
       oauth2.logout(cache);
     } else {
-      credentialStore.removeMatchingHostedSchemes(server);
+      tokenStore.removeMatchingTokens(server);
     }
   }
 }

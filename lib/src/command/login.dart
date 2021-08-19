@@ -7,7 +7,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import '../authentication/bearer.dart';
+import '../authentication/token.dart';
 import '../command.dart';
 import '../http.dart';
 import '../io.dart';
@@ -50,9 +50,9 @@ class LoginCommand extends PubCommand {
   }
 
   Future<void> _listCredentials() async {
-    log.message('Found ${cache.credentialStore.schemes.length} entries.');
-    for (final scheme in cache.credentialStore.schemes) {
-      log.message(scheme.baseUrl);
+    log.message('Found ${cache.tokenStore.tokens.length} entries.');
+    for (final scheme in cache.tokenStore.tokens) {
+      log.message(scheme.url);
     }
   }
 
@@ -71,7 +71,7 @@ class LoginCommand extends PubCommand {
         usageException('Token is not provided.');
       }
 
-      credentialStore.addHostedScheme(server, BearerCredential(token));
+      tokenStore.addToken(Token.bearer(server, token));
       log.message('You are now logged in to $server using bearer token.');
     } on TimeoutException catch (error, stackTrace) {
       log.error(

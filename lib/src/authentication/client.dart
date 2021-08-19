@@ -10,19 +10,19 @@ import 'package:http/http.dart' as http;
 
 import '../http.dart';
 import '../system_cache.dart';
-import 'scheme.dart';
+import 'token.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
 /// Requests to URLs not under [serverBaseUrl] will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
-  _AuthenticatedClient(this._inner, this.scheme);
+  _AuthenticatedClient(this._inner, this.token);
 
   final http.BaseClient _inner;
 
   /// Authentication scheme that could be used for authenticating requests.
-  final AuthenticationScheme scheme;
+  final Token token;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -33,9 +33,9 @@ class _AuthenticatedClient extends http.BaseClient {
     // to given serverBaseUrl. Otherwise credential leaks might ocurr when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
-    if (scheme.canAuthenticate(request.url.toString())) {
+    if (token.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await scheme.credential.getAuthorizationHeaderValue();
+          await token.getAuthorizationHeaderValue();
     }
     return _inner.send(request);
   }
@@ -54,7 +54,7 @@ Future<T> withAuthenticatedClient<T>(
   String serverBaseUrl,
   Future<T> Function(http.Client) fn,
 ) async {
-  final scheme = systemCache.credentialStore.findScheme(serverBaseUrl);
+  final scheme = systemCache.tokenStore.findToken(serverBaseUrl);
   final http.Client client =
       scheme == null ? httpClient : _AuthenticatedClient(httpClient, scheme);
 
