@@ -26,7 +26,7 @@ void main() {
     );
 
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://server.demo/',

@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   test('with one matching scheme, removes the entry.', () async {
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://server.demo/',
@@ -32,7 +32,7 @@ void main() {
   test('with multiple matching schemes, removes all matching entries.',
       () async {
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://server.demo/',
@@ -58,7 +58,7 @@ void main() {
     );
 
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://another-.demo/',
@@ -70,7 +70,7 @@ void main() {
 
   test('without an matching schemes, does nothing.', () async {
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://server.demo/',
@@ -86,7 +86,7 @@ void main() {
     );
 
     await d.tokensFile({
-      'version': '1.0',
+      'version': 1,
       'hosted': [
         {
           'url': 'http://server.demo/',
