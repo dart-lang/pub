@@ -5,6 +5,7 @@
 // @dart=2.10
 
 import 'package:args/command_runner.dart';
+import 'src/command_runner.dart';
 import 'src/pub_embeddable_command.dart';
 export 'src/executable.dart'
     show getExecutableForCommand, CommandResolutionFailedException;
@@ -12,3 +13,7 @@ export 'src/executable.dart'
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
 Command<int> pubCommand() => PubEmbeddableCommand();
+
+/// Support for the `pub` toplevel command.
+@Deprecated('Use [pubCommand] instead.')
+CommandRunner<int> deprecatedpubCommand() => PubCommandRunner();
