@@ -28,7 +28,7 @@ void main() {
     await pubGet(args: ['--precompile']);
 
     var pub = await pubRunFromDartDev(args: ['foo:bar']);
-    expect(pub.stdout, emits('foobar'));
+    expect(pub.stdout, emitsThrough('foobar'));
     await pub.shouldExit();
 
     await d.dir('foo', [
@@ -48,7 +48,7 @@ void main() {
     await pubGet();
 
     pub = await pubRunFromDartDev(args: ['foo:bar']);
-    expect(pub.stdout, emits('different'));
+    expect(pub.stdout, emitsThrough('different'));
     await pub.shouldExit();
   });
 }

@@ -32,7 +32,7 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['bin/script']);
 
-    await expectLater(pub.stdout, emits('started'));
+    await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');
     await expectLater(pub.stdout, emits('between'));
     pub.stdin.writeln('second');
@@ -59,7 +59,7 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['bin/script']);
 
-    await expectLater(pub.stdout, emits('started'));
+    await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');
     await expectLater(pub.stdout, emits('first'));
     pub.stdin.writeln('second');

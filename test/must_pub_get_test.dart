@@ -56,7 +56,7 @@ void main() {
     });
     writeTextFile(packageConfig, json.encode(contents));
 
-    await runPub(args: ['run', 'bin/script.dart'], output: 'hello!');
+    await runPub(args: ['run', 'bin/script.dart'], output: endsWith('hello!'));
   });
   group('requires the user to run pub get first if', () {
     group("there's no lockfile", () {

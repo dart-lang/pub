@@ -19,7 +19,7 @@ void main() {
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('ok'));
+    expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
   });
 }

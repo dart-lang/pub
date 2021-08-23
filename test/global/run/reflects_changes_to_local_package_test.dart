@@ -21,7 +21,7 @@ void main() {
     await d.file('foo/bin/foo.dart', "main() => print('changed');").create();
 
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('changed'));
+    expect(pub.stdout, emitsThrough('changed'));
     await pub.shouldExit();
   });
 }
