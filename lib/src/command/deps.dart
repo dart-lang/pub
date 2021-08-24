@@ -2,9 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection';
+// @dart=2.10
 
-import 'package:path/path.dart' as p;
+import 'dart:collection';
+import 'dart:convert';
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
@@ -54,6 +55,10 @@ class DepsCommand extends PubCommand {
     argParser.addFlag('executables',
         negatable: false, help: 'List all available executables.');
 
+    argParser.addFlag('json',
+        negatable: false,
+        help: 'Output dependency information in a json format.');
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -65,26 +70,98 @@ class DepsCommand extends PubCommand {
 
     _buffer = StringBuffer();
 
-    if (argResults['executables']) {
-      _outputExecutables();
-    } else {
-      for (var sdk in sdks.values) {
-        if (!sdk.isAvailable) continue;
-        _buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+    if (argResults['json']) {
+      if (argResults.wasParsed('dev')) {
+        usageException(
+            'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.');
       }
+      if (argResults.wasParsed('executables')) {
+        usageException(
+            'Cannot combine --json and --executables.\nThe json output always lists available executables.');
+      }
+      if (argResults.wasParsed('style')) {
+        usageException('Cannot combine --json and --style.');
+      }
+      final visited = <String>[];
+      final toVisit = [entrypoint.root.name];
+      final packagesJson = <dynamic>[];
+      while (toVisit.isNotEmpty) {
+        final current = toVisit.removeLast();
+        if (visited.contains(current)) continue;
+        visited.add(current);
+        final currentPackage = entrypoint.packageGraph.packages[current];
+        final next = (current == entrypoint.root.name
+                ? entrypoint.root.immediateDependencies
+                : currentPackage.dependencies)
+            .keys
+            .toList();
+        final dependencyType = entrypoint.root.dependencyType(current);
+        final kind = currentPackage == entrypoint.root
+            ? 'root'
+            : (dependencyType == DependencyType.direct
+                ? 'direct'
+                : (dependencyType == DependencyType.dev
+                    ? 'dev'
+                    : 'transitive'));
+        final source =
+            entrypoint.packageGraph.lockFile.packages[current]?.source?.name ??
+                'root';
+        packagesJson.add({
+          'name': current,
+          'version': currentPackage.version.toString(),
+          'kind': kind,
+          'source': source,
+          'dependencies': next
+        });
+        toVisit.addAll(next);
+      }
+      var executables = [
+        for (final package in [
+          entrypoint.root,
+          ...entrypoint.root.immediateDependencies.keys
+              .map((name) => entrypoint.packageGraph.packages[name])
+        ])
+          ...package.executableNames.map((name) => package == entrypoint.root
+              ? ':$name'
+              : (package.name == name ? name : '${package.name}:$name'))
+      ];
 
-      _buffer.writeln(_labelPackage(entrypoint.root));
+      _buffer.writeln(
+        JsonEncoder.withIndent('  ').convert(
+          {
+            'root': entrypoint.root.name,
+            'packages': packagesJson,
+            'sdks': [
+              for (var sdk in sdks.values)
+                if (sdk.version != null)
+                  {'name': sdk.name, 'version': sdk.version.toString()}
+            ],
+            'executables': executables
+          },
+        ),
+      );
+    } else {
+      if (argResults['executables']) {
+        _outputExecutables();
+      } else {
+        for (var sdk in sdks.values) {
+          if (!sdk.isAvailable) continue;
+          _buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+        }
 
-      switch (argResults['style']) {
-        case 'compact':
-          _outputCompact();
-          break;
-        case 'list':
-          _outputList();
-          break;
-        case 'tree':
-          _outputTree();
-          break;
+        _buffer.writeln(_labelPackage(entrypoint.root));
+
+        switch (argResults['style']) {
+          case 'compact':
+            _outputCompact();
+            break;
+          case 'list':
+            _outputList();
+            break;
+          case 'tree':
+            _outputTree();
+            break;
+        }
       }
     }
 
@@ -269,32 +346,11 @@ class DepsCommand extends PubCommand {
     ];
 
     for (var package in packages) {
-      var executables = _getExecutablesFor(package);
+      var executables = package.executableNames;
       if (executables.isNotEmpty) {
         _buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }
     }
-  }
-
-  /// Returns `true` if [path] looks like a Dart entrypoint.
-  bool _isDartExecutable(String path) {
-    try {
-      var unit = analysisContextManager.parse(path);
-      return isEntrypoint(unit);
-    } on AnalyzerErrorGroup {
-      return false;
-    }
-  }
-
-  /// Lists all Dart files in the `bin` directory of the [package].
-  ///
-  /// Returns file names without extensions.
-  Iterable<String> _getExecutablesFor(Package package) {
-    var packagePath = p.normalize(p.absolute(package.dir));
-    analysisContextManager.createContextsForDirectory(packagePath);
-    return package.executablePaths
-        .where((e) => _isDartExecutable(p.absolute(package.dir, e)))
-        .map(p.basenameWithoutExtension);
   }
 
   /// Returns formatted string that lists [executables] for the [packageName].

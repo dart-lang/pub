@@ -2,13 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('the binstubs runs a precompiled snapshot if present', () async {
+  test('the binstubs runs a built snapshot if present', () async {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', pubspec: {
         'executables': {'foo-script': 'script'}

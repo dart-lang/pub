@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -234,7 +236,10 @@ abstract class BoundSource {
   /// Returns the directory where this package can (or could) be found locally.
   ///
   /// If the source is cached, this will be a path in the system cache.
-  String getDirectory(PackageId id);
+  ///
+  /// If id is a relative path id, the directory will be relative from
+  /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
+  String getDirectory(PackageId id, {String relativeFrom});
 
   /// Returns metadata about a given package. Information about remotely hosted
   /// packages can be cached for up to [maxAge].

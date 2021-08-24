@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -17,7 +19,7 @@ class ExecutableValidator extends Validator {
   @override
   Future validate() async {
     var binFiles = entrypoint.root
-        .listFiles(beneath: 'bin', recursive: false, useGitIgnore: true)
+        .listFiles(beneath: 'bin', recursive: false)
         .map(entrypoint.root.relative)
         .toList();
 

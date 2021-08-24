@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -15,6 +18,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../solver.dart';
+import '../source/path.dart';
 import '../utils.dart';
 import '../yaml_edit/editor.dart';
 
@@ -78,7 +82,7 @@ class AddCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+        help: 'Build executables in immediate dependencies.');
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -87,6 +91,8 @@ class AddCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
+    } else if (argResults.rest.length > 1) {
+      usageException('Takes only a single argument.');
     }
 
     final packageInformation = _parsePackage(argResults.rest.first);
@@ -325,25 +331,45 @@ class AddCommand extends PubCommand {
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
+      Uri parsed;
+      try {
+        parsed = Uri.parse(gitUrl);
+      } on FormatException catch (e) {
+        usageException('The --git-url must be a valid url: ${e.message}.');
+      }
+      final urlRelativeToEntrypoint = parsed.isAbsolute
+          ? parsed.toString()
+          :
+          // Turn the relative url from current working directory into a relative
+          // url from the entrypoint.
+          p.url.relative(
+              p.url.join(Uri.file(p.absolute(p.current)).toString(),
+                  parsed.toString()),
+              from: p.toUri(p.absolute(entrypoint.root.dir)).toString());
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
       if (gitRef == null && gitPath == null) {
-        git = gitUrl;
+        git = urlRelativeToEntrypoint;
       } else {
-        git = {'url': gitUrl, 'ref': gitRef, 'path': gitPath};
+        git = {'url': urlRelativeToEntrypoint, 'ref': gitRef, 'path': gitPath};
         git.removeWhere((key, value) => value == null);
       }
 
       packageRange = cache.sources['git']
-          .parseRef(packageName, git)
+          .parseRef(packageName, git, containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
     } else if (path != null) {
+      final relativeToEntryPoint = p.isRelative(path)
+          ? PathSource.relativePathWithPosixSeparators(
+              p.relative(path, from: entrypoint.root.dir))
+          : path;
       packageRange = cache.sources['path']
-          .parseRef(packageName, path, containingPath: entrypoint.pubspecPath)
+          .parseRef(packageName, relativeToEntryPoint,
+              containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
-      pubspecInformation = {'path': path};
+      pubspecInformation = {'path': relativeToEntryPoint};
     } else if (sdk != null) {
       packageRange = cache.sources['sdk']
           .parseRef(packageName, sdk)

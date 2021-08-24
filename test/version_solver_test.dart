@@ -2,16 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -240,7 +241,7 @@ void rootDependency() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
       builder.serve('bar', '1.0.0', deps: {
-        'myapp': {'git': 'nowhere'}
+        'myapp': {'git': 'http://nowhere.com/'}
       });
     });
 
@@ -1457,7 +1458,7 @@ void sdkConstraint() {
       await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
 
@@ -1473,7 +1474,7 @@ void sdkConstraint() {
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
 
@@ -1501,7 +1502,7 @@ void sdkConstraint() {
       await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
   });
@@ -2967,7 +2968,7 @@ Future expectResolves(
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted
-          .refFor(dep.name, url: globalPackageServer.url)
+          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

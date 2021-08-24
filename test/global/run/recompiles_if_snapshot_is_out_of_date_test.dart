@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -34,7 +36,7 @@ void main() {
     var pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
-    expect(pub.stdout, emits('Precompiling executable...'));
+    expect(pub.stdout, emits('Building package executable...'));
     expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
 

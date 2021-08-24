@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Pub-specific test descriptors.
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
-import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
 
 import 'descriptor/git.dart';
 import 'descriptor/packages.dart';
@@ -19,6 +21,7 @@ import 'descriptor/yaml.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
+
 export 'descriptor/git.dart';
 export 'descriptor/packages.dart';
 export 'descriptor/tar.dart';
@@ -32,7 +35,7 @@ TarFileDescriptor tar(String name, [Iterable<Descriptor> contents]) =>
     TarFileDescriptor(name, contents ?? <Descriptor>[]);
 
 /// Describes a package that passes all validation.
-Descriptor get validPackage => dir(appPath, [
+DirectoryDescriptor get validPackage => dir(appPath, [
       libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),

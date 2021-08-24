@@ -2,12 +2,38 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
+  test('Shows count of discontinued packages', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '2.0.0');
+    });
+
+    globalPackageServer.add((builder) => builder..discontinue('foo'));
+
+    // Create the first lockfile.
+    await d.appDir({'foo': '2.0.0'}).create();
+
+    await pubGet();
+
+    // Do the dry run.
+    await pubUpgrade(
+      args: ['--dry-run'],
+      output: contains('1 package is discontinued.'),
+    );
+
+    // Try without --dry-run
+    await pubUpgrade(
+      output: contains('1 package is discontinued.'),
+    );
+  });
+
   test('shows how package changed from previous lockfile', () async {
     await servePackages((builder) {
       builder.serve('unchanged', '1.0.0');

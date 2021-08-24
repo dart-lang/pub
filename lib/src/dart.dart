@@ -2,19 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// A library for compiling Dart code and manipulating analyzer parse trees.
 import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:analyzer/file_system/overlay_file_system.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
+import 'package:frontend_server_client/frontend_server_client.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -33,41 +38,6 @@ bool isEntrypoint(CompilationUnit dart) {
         node.name.name == 'main' &&
         node.functionExpression.parameters.parameters.length <= 2;
   });
-}
-
-/// Snapshots the Dart executable at [executablePath] to a snapshot at
-/// [snapshotPath].
-///
-/// If [packageConfigFile] is passed, it's used to resolve `package:` URIs in
-/// the executable. Otherwise, a `packages/` directory or a package spec is
-/// inferred from the executable's location.
-///
-/// If [name] is passed, it is used to describe the executable in logs and error
-/// messages.
-Future snapshot(
-  String executablePath,
-  String snapshotPath, {
-  String packageConfigFile,
-  String name,
-}) async {
-  final args = [
-    if (packageConfigFile != null) '--packages=$packageConfigFile',
-    '--snapshot=$snapshotPath',
-    p.toUri(executablePath).toString()
-  ];
-
-  final result = await runProcess(Platform.executable, args);
-  final highlightedName = name = log.bold(name ?? executablePath.toString());
-  if (result.success) {
-    log.message('Precompiled $highlightedName.');
-  } else {
-    // Don't leave partial results.
-    deleteEntry(snapshotPath);
-
-    throw ApplicationException(
-        log.yellow('Failed to precompile $highlightedName:\n') +
-            result.stderr.join('\n'));
-  }
 }
 
 class AnalysisContextManager {
@@ -127,11 +97,15 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit(path);
-    if (parseResult.errors.isNotEmpty) {
-      throw AnalyzerErrorGroup(parseResult.errors);
+    var parseResult = _getExistingSession(path).getParsedUnit2(path);
+    if (parseResult is ParsedUnitResult) {
+      if (parseResult.errors.isNotEmpty) {
+        throw AnalyzerErrorGroup(parseResult.errors);
+      }
+      return parseResult.unit;
+    } else {
+      throw StateError('Unable to parse $path, ${parseResult.runtimeType}');
     }
-    return parseResult.unit;
   }
 
   /// Return import and export directives in the file with the given [path].
@@ -173,4 +147,53 @@ class AnalyzerErrorGroup implements Exception {
 
   @override
   String toString() => errors.join('\n');
+}
+
+/// Precompiles the Dart executable at [executablePath] to a kernel file at
+/// [outputPath].
+///
+/// This file is also cached at [incrementalDillOutputPath] which is used to
+/// initialize the compiler on future runs.
+///
+/// The [packageConfigPath] should point at the package config file to be used
+/// for `package:` uri resolution.
+///
+/// The [name] is used to describe the executable in logs and error messages.
+Future<void> precompile({
+  @required String executablePath,
+  @required String incrementalDillOutputPath,
+  @required String name,
+  @required String outputPath,
+  @required String packageConfigPath,
+}) async {
+  ensureDir(p.dirname(outputPath));
+  ensureDir(p.dirname(incrementalDillOutputPath));
+  const platformDill = 'lib/_internal/vm_platform_strong.dill';
+  final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
+  var client = await FrontendServerClient.start(
+    executablePath,
+    incrementalDillOutputPath,
+    platformDill,
+    sdkRoot: sdkRoot,
+    packagesJson: packageConfigPath,
+    printIncrementalDependencies: false,
+  );
+  try {
+    var result = await client.compile();
+
+    final highlightedName = log.bold(name);
+    if (result?.errorCount == 0) {
+      log.message('Built $highlightedName.');
+      await File(incrementalDillOutputPath).copy(outputPath);
+    } else {
+      // Don't leave partial results.
+      deleteEntry(outputPath);
+
+      throw ApplicationException(
+          log.yellow('Failed to build $highlightedName:\n') +
+              (result?.compilerOutputLines?.join('\n') ?? ''));
+    }
+  } finally {
+    client.kill();
+  }
 }

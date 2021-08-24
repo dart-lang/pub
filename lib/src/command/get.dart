@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import '../command.dart';
@@ -29,7 +31,7 @@ class GetCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+        help: 'Build executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
 

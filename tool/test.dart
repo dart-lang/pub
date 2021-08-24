@@ -1,4 +1,9 @@
 #!/usr/bin/env dart
+// Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+// @dart=2.10
 
 /// Test wrapper script.
 /// Many of the integration tests runs the `pub` command, this is slow if every
@@ -10,26 +15,21 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import 'package:pub/src/dart.dart';
+import 'package:pub/src/exceptions.dart';
+
 Future<void> main(List<String> args) async {
-  final pubSnapshotFilename = path.join(
-      (await Directory.systemTemp.createTemp()).path,
-      'pub.dart.snapshot.dart2');
+  final pubSnapshotFilename = path.absolute(path.join(
+      '.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
+  final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
   try {
     print('Building snapshot');
-    final stopwatch = Stopwatch()..start();
-    final root = path.dirname(path.dirname(Platform.script.path));
-    final compilationResult = await Process.run(Platform.resolvedExecutable, [
-      '--snapshot=$pubSnapshotFilename',
-      path.join(root, 'bin', 'pub.dart')
-    ]);
-    stopwatch.stop();
-    if (compilationResult.exitCode != 0) {
-      print(
-          'Failed building snapshot: ${compilationResult.stdout} ${compilationResult.stderr}');
-      exitCode = compilationResult.exitCode;
-      return;
-    }
-    print('Took ${stopwatch.elapsedMilliseconds} milliseconds');
+    await precompile(
+      executablePath: path.join('bin', 'pub.dart'),
+      outputPath: pubSnapshotFilename,
+      incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+      name: 'bin/pub.dart',
+      packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     final extension = Platform.isWindows ? '.bat' : '';
     final testProcess = await Process.start(
         path.join(path.dirname(Platform.resolvedExecutable), 'pub$extension'),
@@ -40,6 +40,8 @@ Future<void> main(List<String> args) async {
       testProcess.stderr.pipe(stderr),
     ]);
     exitCode = await testProcess.exitCode;
+  } on ApplicationException catch (_) {
+    exitCode = 1;
   } finally {
     try {
       await File(pubSnapshotFilename).delete();

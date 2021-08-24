@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Test infrastructure for testing pub.
 ///
 /// Unlike typical unit tests, most pub tests are integration tests that stage
@@ -16,11 +18,6 @@ import 'dart:math';
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart' hide fail;
-import 'package:test/test.dart' as test show fail;
-import 'package:test_process/test_process.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
@@ -36,6 +33,10 @@ import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
+import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart' hide fail;
+import 'package:test/test.dart' as test show fail;
+import 'package:test_process/test_process.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
@@ -76,7 +77,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
     .firstWhere((e) => e['name'] == packageName,
         orElse: () => null) as Map<String, dynamic>;
 
-/// The suffix appended to a precompiled snapshot.
+/// The suffix appended to a built snapshot.
 final versionSuffix = testVersion ?? sdk.version;
 
 /// Enum identifying a pub command that can be run with a well-defined success
@@ -123,14 +124,17 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-Future<void> pubCommand(RunCommand command,
-    {Iterable<String> args,
-    output,
-    error,
-    silent,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) async {
+Future<void> pubCommand(
+  RunCommand command, {
+  Iterable<String> args,
+  output,
+  error,
+  silent,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -152,38 +156,49 @@ Future<void> pubCommand(RunCommand command,
       error: error,
       silent: silent,
       exitCode: exitCode,
-      environment: environment);
+      environment: environment,
+      workingDirectory: workingDirectory);
 }
 
-Future<void> pubAdd(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.add,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubAdd({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.add,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubGet(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.get,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubGet({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.get,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
 Future<void> pubUpgrade(
         {Iterable<String> args,
@@ -191,44 +206,58 @@ Future<void> pubUpgrade(
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.upgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+        Map<String, String> environment,
+        String workingDirectory}) async =>
+    await pubCommand(
+      RunCommand.upgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubDowngrade(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.downgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubDowngrade({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.downgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future<void> pubRemove(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) async =>
-    await pubCommand(RunCommand.remove,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubRemove({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.remove,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
@@ -452,7 +481,9 @@ Future<PubProcess> startPub(
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
   var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
-  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
+  dartArgs
+    ..addAll([pubPath, if (verbose) '--verbose'])
+    ..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
@@ -573,34 +604,51 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [sandbox] is a list of path dependencies to be found in the sandbox
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
 /// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 Future<void> createLockFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file('pubspec.lock', lockFile.serialize(null)),
-    d.file('.packages', lockFile.packagesFile(cache, package))
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: p.join(d.sandbox, package),
+      ),
+    )
   ]).create();
 }
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
 Future<void> createPackagesFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
-  await d.dir(package,
-      [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
+  await d.dir(package, [
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: d.sandbox,
+      ),
+    )
+  ]).create();
 }
 
 /// Creates a lock file for [sources] without running `pub get`.

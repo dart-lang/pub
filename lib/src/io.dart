@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Helper functionality to make working with IO easier.
 import 'dart:async';
 import 'dart:collection';
@@ -15,12 +17,12 @@ import 'package:path/path.dart' as path;
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
+import 'third_party/tar/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -169,6 +171,13 @@ List<int> readBinaryFile(String file) {
   return contents;
 }
 
+/// Reads the contents of the binary file [file] as a [Stream].
+Stream<List<int>> readBinaryFileAsSream(String file) {
+  log.io('Reading binary file $file.');
+  var contents = File(file).openRead();
+  return contents;
+}
+
 /// Creates [file] and writes [contents] to it.
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
@@ -209,7 +218,7 @@ Future<void> writeTextFileAsync(String file, String contents,
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
+Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io('Creating $file from stream.');
 
@@ -261,6 +270,10 @@ Future<String> _createSystemTempDir() async {
   var tempDir = await Directory.systemTemp.createTemp('pub_');
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
+}
+
+String resolveSymlinksOfDir(String dir) {
+  return Directory(dir).resolveSymbolicLinksSync();
 }
 
 /// Lists the contents of [dir].
@@ -844,8 +857,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // Regular file
         deleteIfLink(filePath);
         ensureDir(parentDirectory);
-
-        await _createFileFromStream(entry.contents, filePath);
+        await createFileFromStream(entry.contents, filePath);
 
         if (Platform.isLinux || Platform.isMacOS) {
           // Apply executable bits from tar header, but don't change r/w bits
@@ -899,13 +911,16 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(List<String> contents, {String baseDir}) {
+ByteStream createTarGz(
+  List<String> contents, {
+  @required String baseDir,
+}) {
   var buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
 
-  baseDir ??= path.current;
+  ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = path.absolute(baseDir);
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
@@ -940,7 +955,9 @@ ByteStream createTarGz(List<String> contents, {String baseDir}) {
     );
   }));
 
-  return ByteStream(tarContents.transform(tarWriter).transform(gzip.encoder));
+  return ByteStream(tarContents
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder));
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.

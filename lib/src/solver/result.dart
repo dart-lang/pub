@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -109,6 +111,7 @@ class SolveResult {
         SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
+      await report.reportDiscontinued();
       report.reportOutdated();
     }
   }

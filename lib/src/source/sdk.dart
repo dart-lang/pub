@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -110,7 +112,7 @@ class BoundSdkSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id) {
+  String getDirectory(PackageId id, {String relativeFrom}) {
     try {
       return _verifiedPackagePath(id);
     } on PackageNotFoundException catch (error) {

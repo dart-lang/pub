@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -25,8 +27,8 @@ void main() {
           Downloading foo 1.0.0...
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
-          Precompiling executables...
-          Precompiled foo:script.
+          Building package executables...
+          Built foo:script.
           Reactivated 1 package.''');
 
     var pub = await pubRun(global: true, args: ['foo:script']);

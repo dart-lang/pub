@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/dart-lang/pub/workflows/Dart%20CI/badge.svg)](https://github.com/dart-lang/pub/actions?query=workflow%3A"Dart+CI")
+[![Build Status](https://github.com/dart-lang/pub/workflows/Dart%20CI/badge.svg)](https://github.com/dart-lang/pub/actions/workflows/test.yaml?query=workflow%3A%22Dart+CI%22+branch%3Amaster)
 
 Pub is the package manager for Dart.
 

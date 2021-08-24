@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:io' show Platform;
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -18,6 +20,25 @@ void main() {
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo', '--path', '../foo']);
+
+    await d.appPackagesFile({'foo': '../foo'}).validate();
+
+    await d.appDir({
+      'foo': {'path': '../foo'}
+    }).validate();
+  });
+
+  test('can use relative path with --directory', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['--directory', appPath, 'foo', '--path', 'foo'],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
 
     await d.appPackagesFile({'foo': '../foo'}).validate();
 

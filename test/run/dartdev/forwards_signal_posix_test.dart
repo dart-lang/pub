@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 // Windows doesn't support sending signals.
 @TestOn('!windows')
 import 'dart:io';
@@ -43,7 +45,7 @@ void main() {
     await pubGet();
     var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
-    await expectLater(pub.stdout, emits('ready'));
+    await expectLater(pub.stdout, emitsThrough('ready'));
     for (var signal in _catchableSignals) {
       pub.signal(signal);
       await expectLater(pub.stdout, emits(signal.toString()));

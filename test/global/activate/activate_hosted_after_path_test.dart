@@ -2,10 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
+// @dart=2.10
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -31,8 +32,8 @@ void main() {
         Resolving dependencies...
         + foo 2.0.0
         Downloading foo 2.0.0...
-        Precompiling executables...
-        Precompiled foo:foo.
+        Building package executables...
+        Built foo:foo.
         Activated foo 2.0.0.''');
 
     // Should now run the hosted one.

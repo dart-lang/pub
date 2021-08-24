@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -53,7 +55,7 @@ class RunCommand extends PubCommand {
   Future<void> runProtected() async {
     if (deprecated) {
       await log.warningsOnlyUnlessTerminal(() {
-        log.message('Deprecated. Use `dart run instead`');
+        log.message('Deprecated. Use `dart run` instead.');
       });
     }
     if (argResults['dart-dev-run']) {

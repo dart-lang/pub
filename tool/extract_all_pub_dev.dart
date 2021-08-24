@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// This is a manual test that can be run to test the .tar.gz decoding.
 /// It will save progress in [statusFileName] such that it doesn't have to be
 /// finished in a single run.
@@ -18,13 +20,13 @@ import 'package:pub/src/io.dart';
 const statusFilename = 'extract_all_pub_status.json';
 
 Future<List<String>> allPackageNames() async {
-  var nextUrl = 'https://pub.dev/api/packages?compact=1';
+  var nextUrl = Uri.https('pub.dev', 'api/packages?compact=1');
   final result = json.decode(await httpClient.read(nextUrl));
   return List<String>.from(result['packages']);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
-  final url = 'https://pub.dev/api/packages/$packageName';
+  final url = Uri.https('pub.dev', 'api/packages/$packageName');
   final result = json.decode(await httpClient.read(url));
   return List<String>.from(result['versions'].map((v) => v['archive_url']));
 }

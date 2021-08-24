@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Generic utility functions. Stuff that should possibly be in core.
 import 'dart:async';
 import 'dart:convert';
@@ -253,7 +255,10 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     var result = ['/$dir/'];
     if (Platform.isWindows) {
-      result..add('/$dir\\')..add('\\$dir/')..add('\\$dir\\');
+      result
+        ..add('/$dir\\')
+        ..add('\\$dir/')
+        ..add('\\$dir\\');
     }
     return result;
   }).toSet();

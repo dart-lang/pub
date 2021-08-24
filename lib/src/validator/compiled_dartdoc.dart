@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
@@ -18,7 +20,7 @@ class CompiledDartdocValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      for (var entry in entrypoint.root.listFiles(useGitIgnore: true)) {
+      for (var entry in entrypoint.root.listFiles()) {
         if (path.basename(entry) != 'nav.json') continue;
         var dir = path.dirname(entry);
 

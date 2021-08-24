@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -181,7 +183,11 @@ class BoundPathSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id) => id.description['path'];
+  String getDirectory(PackageId id, {String relativeFrom}) {
+    return id.description['relative']
+        ? p.relative(id.description['path'], from: relativeFrom)
+        : id.description['path'];
+  }
 
   /// Ensures that [description] is a valid path description and returns a
   /// normalized path to the package.

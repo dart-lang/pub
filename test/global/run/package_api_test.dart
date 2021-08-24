@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -37,7 +39,7 @@ main() async {
 
     var pub = await pubRun(global: true, args: ['foo:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath = p.join(d.sandbox, cachePath,
         'global_packages/foo/.dart_tool/package_config.json');
@@ -81,7 +83,7 @@ main() async {
 
     var pub = await pubRun(global: true, args: ['myapp:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath =
         p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');

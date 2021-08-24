@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -35,7 +37,7 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['bin/script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
     expect(
         pub.stdout,
         emits(p
@@ -63,8 +65,8 @@ void main() {
 
     var pub = await pubRun(args: ['foo:script']);
 
-    expect(pub.stdout, emits('Precompiling executable...'));
-    expect(pub.stdout, emits('Precompiled foo:script.'));
+    expect(pub.stdout, emitsThrough('Building package executable...'));
+    expect(pub.stdout, emits('Built foo:script.'));
     expect(pub.stdout, emits('null'));
     expect(
         pub.stdout,

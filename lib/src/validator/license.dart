@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
@@ -19,7 +21,7 @@ class LicenseValidator extends Validator {
       final licenseLike =
           RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
       final candidates = entrypoint.root
-          .listFiles(recursive: false, useGitIgnore: true)
+          .listFiles(recursive: false)
           .map(path.basename)
           .where(licenseLike.hasMatch);
       if (candidates.isNotEmpty) {

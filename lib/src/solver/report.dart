@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -140,6 +142,25 @@ class SolveReport {
       }
 
       log.warning(_output);
+    }
+  }
+
+  /// Displays a single-line message, number of discontinued packages
+  /// if discontinued packages are detected.
+  Future<void> reportDiscontinued() async {
+    var numDiscontinued = 0;
+    for (var id in _result.packages) {
+      if (id.source == null) continue;
+      final status =
+          await _cache.source(id.source).status(id, Duration(days: 3));
+      if (status.isDiscontinued) numDiscontinued++;
+    }
+    if (numDiscontinued > 0) {
+      if (numDiscontinued == 1) {
+        log.message('1 package is discontinued.');
+      } else {
+        log.message('$numDiscontinued packages are discontinued.');
+      }
     }
   }
 

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:async/async.dart';
@@ -448,5 +450,6 @@ class _RootSource extends BoundSource {
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
   @override
-  String getDirectory(PackageId id) => throw _unsupported;
+  String getDirectory(PackageId id, {String relativeFrom}) =>
+      throw _unsupported;
 }
