@@ -98,7 +98,8 @@ Future<int> runExecutable(
     // automatically.
     entrypoint.assertUpToDate();
 
-    if (!fileExists(snapshotPath) || entrypoint.packageGraph.isPackageMutable(package)) {
+    if (!fileExists(snapshotPath) ||
+        entrypoint.packageGraph.isPackageMutable(package)) {
       await recompile(executable);
     }
     executablePath = snapshotPath;
@@ -327,7 +328,8 @@ Future<String> getExecutableForCommand(
       return p.relative(path, from: root);
     } else {
       final snapshotPath = entrypoint.pathOfExecutable(executable);
-      if (!fileExists(snapshotPath) || entrypoint.packageGraph.isPackageMutable(package)) {
+      if (!fileExists(snapshotPath) ||
+          entrypoint.packageGraph.isPackageMutable(package)) {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
         );
