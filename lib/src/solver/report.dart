@@ -278,7 +278,8 @@ class SolveReport {
       }
     }
 
-    if (!(alwaysShow || changed || addedOrRemoved || message != null)) {
+    if (_type == SolveType.GET &&
+        !(alwaysShow || changed || addedOrRemoved || message != null)) {
       return;
     }
 

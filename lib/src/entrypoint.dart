@@ -249,40 +249,32 @@ class Entrypoint {
     bool precompile = false,
     bool onlyReportSuccessOrFailure = false,
   }) async {
-    // We require an SDK constraint lower-bound as of Dart 2.12.0
-    _checkSdkConstraintIsDefined(root.pubspec);
-
     final suffix = root.dir == null || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
-      result = await log.progress(
-        'Resolving dependencies$suffix',
-        () => resolveVersions(
+      result = await log.progress('Resolving dependencies$suffix', () async {
+        // We require an SDK constraint lower-bound as of Dart 2.12.0
+        _checkSdkConstraintIsDefined(root.pubspec);
+        return resolveVersions(
           type,
           cache,
           root,
           lockFile: lockFile,
           unlock: unlock,
-        ),
-      );
-    } on SolveFailure {
-      if (onlyReportSuccessOrFailure) {
+        );
+      });
+    } catch (e) {
+      if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
         final directoryOption = root.dir == null || root.dir == '.'
             ? ''
             : ' --directory ${root.dir}';
-        log.warning(
+        throw ApplicationException(
             'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
-        throw ApplicationException('');
       } else {
         rethrow;
       }
     }
 
-    if (!dryRun) {
-      await log.progress('Fetching dependencies$suffix',
-          () => Future.wait(result.packages.map(_get)));
-      _saveLockFile(result);
-    }
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
       var overriddenPackages = (result.pubspecs.values
@@ -304,7 +296,10 @@ class Entrypoint {
     if (!onlyReportSuccessOrFailure) {
       await result.showReport(type, cache);
     }
-
+    if (!dryRun) {
+      await Future.wait(result.packages.map(_get));
+      _saveLockFile(result);
+    }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
     } else {

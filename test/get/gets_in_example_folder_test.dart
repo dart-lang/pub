@@ -7,6 +7,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -77,7 +78,7 @@ Got dependencies in ./example.''');
         args: ['--directory', '.${p.separator}example'],
         error: contains(
             'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
-        exitCode: 65,
+        exitCode: exit_codes.DATA,
       );
     });
   });

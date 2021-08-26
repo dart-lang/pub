@@ -32,7 +32,7 @@ void main() {
     ]).create();
 
     await pubUpgrade(
-      args: ['--major-versions'],
+      args: ['--major-versions', '--example'],
       output: '''
 Resolving dependencies...
 + bar 2.0.0
@@ -42,7 +42,7 @@ Changed 1 dependency!
 Changed 1 constraint in pubspec.yaml:
   bar: ^1.0.0 -> ^2.0.0''',
       warning:
-          'Running `upgrade --major-versions` only in `.`. Run in `example/` separately.',
+          'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory example/` separately.',
     );
   });
 
@@ -73,9 +73,7 @@ Changed 1 constraint in pubspec.yaml:
       ])
     ]).create();
 
-    await pubUpgrade(
-        args: ['--null-safety'],
-        output: '''
+    await pubUpgrade(args: ['--null-safety', '--example'], output: '''
 Resolving dependencies...
 + bar 2.0.0
 Downloading bar 2.0.0...
@@ -83,8 +81,8 @@ Changed 1 dependency!
 
 Changed 1 constraint in pubspec.yaml:
   bar: ^1.0.0 -> ^2.0.0''',
-        warning:
-            'Running `upgrade --null-safety` only in `.`. Run in `example/` separately.',
+        // warning:
+        //     'Running `upgrade --null-safety` only in `.`. Run in `example/` separately.',
         environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
   });
 }
