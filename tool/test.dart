@@ -19,17 +19,17 @@ import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
-  final pubSnapshotFilename = path.absolute(path.join(
-      '.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
+  final pubSnapshotFilename =
+      path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
   try {
     print('Building snapshot');
     await precompile(
-      executablePath: path.join('bin', 'pub.dart'),
-      outputPath: pubSnapshotFilename,
-      incrementalDillOutputPath: pubSnapshotIncrementalFilename,
-      name: 'bin/pub.dart',
-      packageConfigPath: path.join('.dart_tool', 'package_config.json'));
+        executablePath: path.join('bin', 'pub.dart'),
+        outputPath: pubSnapshotFilename,
+        incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+        name: 'bin/pub.dart',
+        packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     final extension = Platform.isWindows ? '.bat' : '';
     final testProcess = await Process.start(
         path.join(path.dirname(Platform.resolvedExecutable), 'pub$extension'),
