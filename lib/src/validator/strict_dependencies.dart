@@ -154,7 +154,7 @@ class _Usage {
           'section of `pubspec.yaml`.');
 
   /// Returns an error message saying the package is not listed in `dependencies`
-  //  or `dev_dependencies`.
+  ///  or `dev_dependencies`.
   String dependenciesMissingMessage() =>
       _toMessage('This package does not have $package in the `dependencies` '
           'or `dev_dependencies` section of `pubspec.yaml`.');
