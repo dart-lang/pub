@@ -13,6 +13,8 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
+final dotExample = p.join('.', 'example');
+
 void main() {
   forBothPubGetAndUpgrade((command) {
     test(
@@ -38,20 +40,19 @@ void main() {
 
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), false);
-
       await pubCommand(command,
           args: ['--example'],
           output: command.name == 'get'
               ? '''
 Resolving dependencies... 
 Got dependencies!
-Resolving dependencies in .${p.separator}example...
-Got dependencies in ./example.'''
+Resolving dependencies in $dotExample...
+Got dependencies in $dotExample.'''
               : '''
 Resolving dependencies... 
 No dependencies changed.
-Resolving dependencies in .${p.separator}example...
-Got dependencies in ./example.''');
+Resolving dependencies in $dotExample...
+Got dependencies in $dotExample.''');
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), true);
     });
@@ -71,11 +72,11 @@ Got dependencies in ./example.''');
       await pubGet(
         args: ['--example'],
         error: contains(
-            'Resolving dependencies in .${p.separator}example failed. For details run `dart pub get --directory .${p.separator}example`'),
+            'Resolving dependencies in $dotExample failed. For details run `dart pub get --directory $dotExample`'),
         exitCode: 1,
       );
       await pubGet(
-        args: ['--directory', '.${p.separator}example'],
+        args: ['--directory', dotExample],
         error: contains(
             'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
         exitCode: exit_codes.DATA,
