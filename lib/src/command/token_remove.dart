@@ -23,7 +23,7 @@ class TokenRemoveCommand extends PubCommand {
   }
 
   @override
-  void runProtected() {
+  Future<void> runProtected() async {
     if (isAll) {
       return tokenStore.deleteTokensFile();
     }

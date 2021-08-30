@@ -15,21 +15,15 @@ void main() {
       () async {
     await d.dir(cachePath).create();
     await runPub(
-      args: [
-        'login',
-        '--server',
-        'http://server.demo/',
-      ],
+      args: ['token', 'add', 'https://server.demo/'],
       input: ['auth-token'],
-      output: contains(
-          'You are now logged in to http://server.demo/ using bearer token.'),
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
         {
-          'url': 'http://server.demo',
+          'url': 'https://server.demo',
           'credential': {'kind': 'Bearer', 'token': 'auth-token'},
         }
       ]
@@ -39,13 +33,19 @@ void main() {
   test('with invalid server url returns error', () async {
     await d.dir(cachePath).create();
     await runPub(
-      args: [
-        'login',
-        '--server',
-        'http:;://invalid-url,.com',
-      ],
-      input: ['auth-token'],
+      args: ['token', 'add', 'http:;://invalid-url,.com'],
       error: contains('Invalid or malformed server URL provided.'),
+      exitCode: exit_codes.USAGE,
+    );
+
+    await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
+  });
+
+  test('with non-secure server url returns error', () async {
+    await d.dir(cachePath).create();
+    await runPub(
+      args: ['token', 'add', 'http://mypub.com'],
+      error: contains('Unsecure pub server could not be added.'),
       exitCode: exit_codes.USAGE,
     );
 

@@ -46,8 +46,8 @@ class TokenAddCommand extends PubCommand {
 
       tokenStore.addToken(Token.bearer(hostedUrl, token));
       log.message('You are now logged in to $hostedUrl using bearer token.');
-    } on FormatException catch (error, stackTrace) {
-      log.error('Invalid or malformed server URL provided.', error, stackTrace);
+    } on FormatException catch (_) {
+      usageException('Invalid or malformed server URL provided.');
     } on TimeoutException catch (error, stackTrace) {
       // Timeout is added to readLine call to make sure automated jobs doesn't
       // get stuck on noop state if user forget to pipe token to the 'token add'

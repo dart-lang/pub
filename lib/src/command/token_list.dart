@@ -17,7 +17,7 @@ class TokenListCommand extends PubCommand {
   String get invocation => 'pub token list';
 
   @override
-  void runProtected() {
+  Future<void> runProtected() async {
     // TODO(themisir): The output interface could be improved even more with
     // additional details line, token preview, token kind, and instructions
     // to remove a token.
