@@ -58,7 +58,14 @@ class TokenStore {
             .map((it) => Token.fromJson(it)));
       }
     } on FormatException catch (error, stackTrace) {
-      log.error('Failed to load tokens.json.', error, stackTrace);
+      log.error('Failed to load tokens.json', error, stackTrace);
+
+      // When an invalid, damaged or not compatible version of token.json is
+      // found, we remove it after showing error message. Otherwise the error
+      // message will be displayed on each pub command.
+      // Or instead we could write instructrions to execute
+      //`pub token remove --all` if user couldn't solve the issue.
+      deleteEntry(_tokensFile);
     }
 
     return result;
