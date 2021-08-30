@@ -150,7 +150,7 @@ class Ignore {
         path.endsWith('/') ? path.substring(0, path.length - 1) : path;
     return listFiles(
       beneath: pathWithoutSlash,
-      includeDirs: true, // because we listing below pathWithoutSlash
+      includeDirs: true, // because we are listing below pathWithoutSlash
       listDir: (dir) {
         // List the next part of path:
         if (dir == pathWithoutSlash) return [];

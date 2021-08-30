@@ -69,7 +69,7 @@ class LeakDetectionValidator extends Validator {
           .expand((i) => i);
     })).then((lists) => lists.expand((i) => i).toList());
 
-    // Convert detect leaks to errors, if we have more than 3 then we print
+    // Convert detected leaks to errors, if we have more than 3 then we return
     // the first 2 leaks, followed by a general summary of leaks.
     //
     // This way we never return more than 3 errors, and we always show a 2-3
@@ -82,7 +82,7 @@ class LeakDetectionValidator extends Validator {
           .map((leak) => leak.span.sourceUrl.toFilePath(windows: false))
           .toSet()
           .toList(growable: false)
-        ..sort();
+            ..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add([
@@ -90,7 +90,7 @@ class LeakDetectionValidator extends Validator {
         ...files.take(10).map((f) => '- /$f'),
         if (files.length > 10) '...',
         '',
-        'Add a git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
+        'Add git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
         'to ignore this. See $_falseSecretsDocumentationLink'
       ].join('\n'));
     } else if (leaks.isNotEmpty) {
@@ -291,7 +291,7 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     pattern:
         r'[^A-Z0-9]((?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{12,128})[^A-Z0-9]',
     allowed: [
-      // Commonly used in AWS documentation and code samples as an example key
+      // Commonly used in AWS documentation and code samples as an example key.
       'AKIAIOSFODNN7EXAMPLE',
       // Test credentials for play.min.io, see:
       // https://docs.min.io/docs/how-to-use-paperclip-with-minio-server.html
@@ -309,8 +309,8 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       //      Mean - 3 * std.dev. = 3.322
       1: 3.32,
     },
-    // Added a requirement that start/end is differnet from [^A-Z0-9]
-    // This minimize false positives in large base64 blobs
+    // Added a requirement that start/end is different from [^A-Z0-9]
+    // This minimizes false positives in large base64 blobs
     testsWithLeaks: [
       // Generated with AWS Console and immediately deactivated and deleted!
       'final accessKey = "AKIAVBOGPFGGW6HQOSMY";',
