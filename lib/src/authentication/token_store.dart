@@ -91,17 +91,24 @@ class TokenStore {
   /// Removes tokens with matching [url] from store.
   void removeMatchingTokens(String url) {
     final normalizedUrl = validateAndNormalizeHostedUrl(url);
-    final tokensToRemove =
-        tokens.where((it) => it.url == normalizedUrl).toList();
-    if (tokensToRemove.isNotEmpty) {
-      for (final token in tokensToRemove) {
-        tokens.remove(token);
-        log.message('Logging out of ${token.url}.');
-      }
 
-      flush();
+    var i = 0;
+    var found = false;
+    while (i < tokens.length) {
+      if (tokens[i].url == normalizedUrl) {
+        tokens.removeAt(i);
+        found = true;
+      } else {
+        i++;
+      }
+    }
+
+    flush();
+
+    if (found) {
+      log.message('Token removed for server $normalizedUrl.');
     } else {
-      log.message('No matching credential found for $url. Cannot log out.');
+      log.message('No saved token found for $normalizedUrl.');
     }
   }
 
