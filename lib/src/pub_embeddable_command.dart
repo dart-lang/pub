@@ -19,6 +19,7 @@ import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
+import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
@@ -71,6 +72,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(UploaderCommand());
     addSubcommand(LoginCommand());
     addSubcommand(LogoutCommand());
+    addSubcommand(TokenCommand());
   }
 
   @override
