@@ -7,10 +7,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import '../authentication/token.dart';
 import '../command.dart';
 import '../http.dart';
-import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 
@@ -23,66 +21,10 @@ class LoginCommand extends PubCommand {
   @override
   String get invocation => 'pub login';
 
-  String get server => argResults['server'];
-  bool get list => argResults['list'];
-
-  LoginCommand() {
-    argParser.addOption('server',
-        help: 'The package server to which needs to be authenticated.');
-
-    argParser.addFlag('list',
-        help: 'Displays list of currently logged in hosted pub servers',
-        defaultsTo: false);
-  }
+  LoginCommand();
 
   @override
   Future<void> runProtected() async {
-    if (list) {
-      await _listCredentials();
-    } else if (server == null) {
-      await _loginToPubDev();
-    } else {
-      if (Uri.tryParse(server) == null) {
-        usageException('Invalid or malformed server URL provided.');
-      }
-      await _loginToServer(server);
-    }
-  }
-
-  Future<void> _listCredentials() async {
-    log.message('Found ${cache.tokenStore.tokens.length} entries.');
-    for (final scheme in cache.tokenStore.tokens) {
-      log.message(scheme.url);
-    }
-  }
-
-  Future<void> _loginToServer(String server) async {
-    // TODO(themisir): Replace this line with validateAndNormalizeHostedUrl from
-    // source/hosted.dart when dart-lang/pub#3030 is merged.
-    if (Uri.tryParse(server) == null ||
-        !server.startsWith(RegExp(r'https?:\/\/'))) {
-      usageException('Invalid or malformed server URL provided.');
-    }
-
-    try {
-      final token = await readLine('Please enter bearer token')
-          .timeout(const Duration(minutes: 5));
-      if (token.isEmpty) {
-        usageException('Token is not provided.');
-      }
-
-      tokenStore.addToken(Token.bearer(server, token));
-      log.message('You are now logged in to $server using bearer token.');
-    } on TimeoutException catch (error, stackTrace) {
-      log.error(
-          'Timeout error. Token is not provided within '
-          '${error.duration.inSeconds} seconds.',
-          error,
-          stackTrace);
-    }
-  }
-
-  Future<void> _loginToPubDev() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
       final userInfo = await _retrieveUserInfo();
