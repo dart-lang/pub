@@ -172,9 +172,6 @@ class LeakPattern {
   /// [1]: https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_04B-3_Meli_paper.pdf
   final Map<int, double> _entropyThresholds;
 
-  /// Patterns for file-paths where in matches for [_pattern] should be ignored.
-  final List<Pattern> _ignoredFiles;
-
   /// Test vectors that will have a match in [findPossibleLeaks].
   @visibleForTesting
   final List<String> testsWithLeaks;
@@ -188,13 +185,11 @@ class LeakPattern {
     @required String pattern,
     Iterable<Pattern> allowed = const <Pattern>[],
     Map<int, double> entropyThresholds = const <int, double>{},
-    Iterable<Pattern> ignoredFiles = const <Pattern>[],
     Iterable<String> testsWithLeaks = const <String>[],
     Iterable<String> testsWithNoLeaks = const <String>[],
   })  : _pattern = RegExp(pattern),
         _allowed = List.unmodifiable(allowed),
         _entropyThresholds = Map.unmodifiable(entropyThresholds),
-        _ignoredFiles = List.unmodifiable(ignoredFiles),
         testsWithLeaks = List.unmodifiable(testsWithLeaks),
         testsWithNoLeaks = List.unmodifiable(testsWithNoLeaks);
 
@@ -205,12 +200,7 @@ class LeakPattern {
   ///  * no pattern in [_allowed] is matched,
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
-  ///  * [file] does not match any pattern in [_ignoredFiles].
   Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
-    // Skip if we have a filename match
-    if (_ignoredFiles.any((p) => p.allMatches(file).isNotEmpty)) {
-      return;
-    }
     final source = SourceFile.fromString(content, url: file);
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0).contains(s))) {
@@ -497,12 +487,6 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
   LeakPattern._(
     kind: 'Private Key',
     pattern: _pemKeyFormat('PRIVATE KEY'),
-    ignoredFiles: [
-      RegExp('(?:^|/)test/'),
-      RegExp('(?:^|/)example/'),
-      // If filename contains localhost then we ignore the file
-      RegExp(r'[^/]*localhost[^/]*$'),
-    ],
     testsWithLeaks: [
       // Normal text file
       '''
@@ -578,22 +562,10 @@ H0M6xpM2q+53wmsN/eYLdgtjgBd3DBmHtPilCkiFICXyaA8z9LkJ
   LeakPattern._(
     kind: 'RSA Private Key',
     pattern: _pemKeyFormat('RSA PRIVATE KEY'),
-    ignoredFiles: [
-      RegExp('(?:^|/)test/'),
-      RegExp('(?:^|/)example/'),
-      // If filename contains localhost then we ignore the file
-      RegExp(r'[^/]*localhost[^/]*$'),
-    ],
   ),
   LeakPattern._(
     kind: 'EC Private Key',
     pattern: _pemKeyFormat('EC PRIVATE KEY'),
-    ignoredFiles: [
-      RegExp('(?:^|/)test/'),
-      RegExp('(?:^|/)example/'),
-      // If filename contains localhost then we ignore the file
-      RegExp(r'[^/]*localhost[^/]*$'),
-    ],
   ),
   LeakPattern._(
     kind: 'PGP Private Key',
