@@ -160,14 +160,6 @@ class LeakPattern {
   /// illustrative purposes.
   final List<Pattern> _allowed;
 
-  /// List of allow-listed patterns, where the secret matched is ignored if the
-  /// 10 lines preceeding matches one of the [_allowedPreceeding] patterns.
-  ///
-  /// Examples include: `<meta name="google-signin-client_id" content="`
-  /// which clearly indicates that the `client_id` that might be considered
-  /// leaked is likely just used for a client-side sign-in flow.
-  final List<Pattern> _allowedPreceeding;
-
   /// Entropy threshold for matched groups in [_pattern].
   ///
   /// This is a map from _group identifier_ to entropy threshold. This is
@@ -196,14 +188,12 @@ class LeakPattern {
     @required String pattern,
     Iterable<Pattern> allowed = const <Pattern>[],
     Map<int, double> entropyThresholds = const <int, double>{},
-    Iterable<Pattern> allowedPreceeding = const <Pattern>[],
     Iterable<Pattern> ignoredFiles = const <Pattern>[],
     Iterable<String> testsWithLeaks = const <String>[],
     Iterable<String> testsWithNoLeaks = const <String>[],
   })  : _pattern = RegExp(pattern),
         _allowed = List.unmodifiable(allowed),
         _entropyThresholds = Map.unmodifiable(entropyThresholds),
-        _allowedPreceeding = List.unmodifiable(allowedPreceeding),
         _ignoredFiles = List.unmodifiable(ignoredFiles),
         testsWithLeaks = List.unmodifiable(testsWithLeaks),
         testsWithNoLeaks = List.unmodifiable(testsWithNoLeaks);
@@ -213,7 +203,6 @@ class LeakPattern {
   /// A possible [LeakMatch] is found when:
   ///  * [_pattern] is matched,
   ///  * no pattern in [_allowed] is matched,
-  ///  * 10 preceeding lines does not match any pattern in [_allowedPreceeding],
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
   ///  * [file] does not match any pattern in [_ignoredFiles].
@@ -229,18 +218,6 @@ class LeakPattern {
       }
       if (_entropyThresholds.entries
           .any((entry) => _entropy(m.group(entry.key)) < entry.value)) {
-        continue;
-      }
-      // Find text from 10 lines preceeding the match
-      var offset = m.start;
-      for (var i = 0; i < 10 && offset > 0; i++) {
-        offset = content.lastIndexOf('\n', offset - 1);
-        if (offset <= 0) {
-          offset = 0;
-        }
-      }
-      final preceedingLines = content.substring(offset, m.start);
-      if (_allowedPreceeding.any(preceedingLines.contains)) {
         continue;
       }
 
@@ -384,28 +361,6 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       //      Mean - 3 * std.dev. = 4.25
       1: 4.25,
     },
-    allowedPreceeding: [
-      // If the preceeding 10 lines contains:
-      //    "firebase" AND (initializeApp|Options?|Config(uration)?)
-      // Before hitting any closing backets, then this indicates that it's a
-      // non-secret firebase API key. Sharing these in code is not recommended,
-      // but it is also not a security concern, see:
-      // https://firebase.google.com/docs/projects/learn-more#config-files-objects
-      RegExp(
-        r'firebase[^\]})>]*(initializeApp|Options?|Config(uration)?)[^\]})>]*$',
-        caseSensitive: false,
-      ),
-      // Ignore cases like:
-      // <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIza..."/>
-      // These are used to embed GEO keys in applications. Ideally, these
-      // shouldn't be distributed in source, but we probably have to assume that
-      // these have been restricted, see:
-      // https://developers.google.com/maps/api-key-best-practices
-      RegExp(
-        r'''<meta-data[^\]})>]+com\.google\.android\.geo\.API_KEY[^\]})>]*$''',
-        caseSensitive: false,
-      ),
-    ],
     testsWithLeaks: [
       // Generated with GCP Console and immediately deleted!
       'final apiKey = "AIzaSyDG0yD6347wy0i1U4ThqQoEZ0y37ZvFKPM";',
@@ -420,24 +375,8 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       'final apiKey = "AIzaSyAazCCPl4tWkSuDt9XBWRTpHxroViYhSxg";',
     ],
     testsWithNoLeaks: [
-      '''
-      // Initialize default app
-      // Retrieve your own options values by adding a web app on
-      // https://console.firebase.google.com
-      firebase.initializeApp({
-        apiKey: "AIzaSyDG0yD6347wy0i1U4ThqQoEZ0y37ZvFKPM",
-        appId: "1:27992087142:web:ce....",
-        projectId: "my-firebase-project",
-        authDomain: "YOUR_APP.firebaseapp.com",
-        databaseURL: "https://YOUR_APP.firebaseio.com",
-        storageBucket: "YOUR_APP.appspot.com",
-        messagingSenderId: "123456789",
-        measurementId: "G-12345"
-      });
-      ''',
-      '''
-        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDG0yD6347wy0i1U4ThqQoEZ0y37ZvFKPM"/>
-      ''',
+      // Insufficient entropy
+      'final apiKey = "AIzaXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";',
     ],
   ),
   LeakPattern._(
@@ -458,26 +397,6 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       //      Mean - 3 * std.dev. = 3.54
       1: 3.54,
     },
-    allowedPreceeding: [
-      /// If 10 lines preceeding this contains "GoogleSignIn" without hitting
-      /// any closing brackets, then this is probably configuration for sign-in.
-      ///
-      /// Sharing these is not ideal, but they probably not security sensitive.
-      /// It's perfectly reasonably to be building secrets into an application.
-      RegExp(
-        r'GoogleSignIn[^\]})>]*$',
-        caseSensitive: false,
-      ),
-      RegExp(
-        // We ignore meta-tags like:
-        // <meta name="google-signin-client_id" content="...apps.googleusercontent.com">
-        //
-        // You could argue that these shouldn't be shared in code, but when this
-        // the case they are rarely secret.
-        r'''<meta[^<>]*\sname=['"]google-signin-client_id['"]\s[^\]})>]*$''',
-        caseSensitive: false,
-      ),
-    ],
     testsWithLeaks: [
       'final id = "204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com";',
       'final id = "204799038523-lskk842vjvcn1lqjela2ased27sh4s5m.apps.googleusercontent.com";',
@@ -490,12 +409,8 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       'final id = "204799038523-brnom9obdhic04q4e7pvcgdopg6lb1ah.apps.googleusercontent.com";',
       'final id = "204799038523-4bjsvv3bmqklm92mlaps2nbi9cjbi94i.apps.googleusercontent.com";',
       '''
-      GoogleSignInDart.register(
-        exchangeEndpoint:
-            'https://somewhere-somewhere.cloudfunctions.net/authHandler',
-        clientId:
-            '204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com',
-      ),
+      // Not enough entropy:
+      final id = "191919191919-onesonesonesonesonesonesonesones.apps.googleusercontent.com";
       // This will count as being leaked
       final superSecret = '204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com';
       '''
@@ -503,16 +418,6 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     testsWithNoLeaks: [
       // Not enough entropy:
       'final id = "191919191919-onesonesonesonesonesonesonesones.apps.googleusercontent.com";',
-      // Ignored because of preceeding lines:
-      '''
-      GoogleSignInDart.register(
-        exchangeEndpoint:
-            'https://somewhere-somewhere.cloudfunctions.net/authHandler',
-        clientId:
-            '204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com',
-      ),''',
-      // Ignored because it's in a <meta> tag!
-      '''<meta name="google-signin-client_id" content="204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com">'''
     ],
   ),
   LeakPattern._(
