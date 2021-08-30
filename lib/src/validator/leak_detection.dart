@@ -78,7 +78,7 @@ class LeakDetectionValidator extends Validator {
           .map((leak) => leak.span.sourceUrl.toFilePath(windows: false))
           .toSet()
           .toList(growable: false)
-            ..sort();
+        ..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add([
