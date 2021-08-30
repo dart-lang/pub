@@ -48,10 +48,6 @@ class LeakDetectionValidator extends Validator {
         return <LeakMatch>[];
       }
 
-      if (_filesToIgnore.any((p) => p.allMatches(relPath).isNotEmpty)) {
-        return <LeakMatch>[];
-      }
-
       String text;
       try {
         // On Windows, we can't open some files without normalizing them
@@ -108,28 +104,6 @@ class LeakDetectionValidator extends Validator {
     }
   }
 }
-
-final _filesToIgnore = [
-  // We're not going to grep around inside what we assume are binary blobs
-  // If these include API keys of some sort it's hopefully because the author
-  // intended it so.
-  RegExp(r'\.(dill|bin|apk|so|a|dll|dylib|svg|png|jpe?g|gif|pdf)$'),
-  // Ignore anything inside node_modules, it's probably leaked from somewhere
-  // else, it's unlikely to be part of this package.
-  RegExp(r'(?:^|/)node_modules/'),
-  // Let's allow keys in files with DUMMY in the filename.
-  RegExp(r'/[^/]*dummy[^/]$', caseSensitive: false),
-  // .flat is a binary intermediate file, see:
-  // https://developer.android.com/studio/command-line/aapt2
-  RegExp(r'\.flat$'),
-  // Ignore non-secret Firebase project configuration, see:
-  // https://firebase.google.com/docs/projects/learn-more#config-files-objects
-  // While sharing this in source code is discouraged it's not a secret!
-  RegExp(r'(?:^|/)google-services\.json$'),
-  RegExp(r'(?:^|/)GoogleService-Info\.plist$'),
-  // Ignore: README.md, if it contains a key, it's probably illustrative.
-  RegExp('^README.md\$'),
-];
 
 /// Instance of a match against a [LeakPattern].
 @sealed

@@ -32,27 +32,6 @@ void main() {
       await expectValidation(leakDetection);
     });
 
-    test('contains a READNE with secrets', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0'),
-        d.file('README.md', '''
-          # README with possible secrets
-
-          If someone writes secrets in their README, then they probably meant
-          to leak them.
-
-          **Example**
-          ```dart
-          final awsKey = "AKIAVBOGPFGGW6HQOSMY";
-
-          final client = AwsClient(awsKey, ...);
-          ...
-          ```
-        '''),
-      ]).create();
-      await expectValidation(leakDetection);
-    });
-
     test('contains a source file listed in false_secrets', () async {
       await d.dir(appPath, [
         d.pubspec({
