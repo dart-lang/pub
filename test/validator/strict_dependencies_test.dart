@@ -192,7 +192,9 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: isNotEmpty);
+      await expectValidation(strictDeps, errors: [
+        matches('does not have silly_monkey in the `dependencies` section')
+      ]);
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -200,7 +202,9 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: isNotEmpty);
+      await expectValidation(strictDeps, errors: [
+        matches('does not have silly_monkey in the `dependencies` section')
+      ]);
     });
 
     test('has an invalid URI', () async {
@@ -242,7 +246,10 @@ linter:
             ]),
           ]).create();
 
-          await expectValidation(strictDeps, warnings: isNotEmpty);
+          await expectValidation(strictDeps, warnings: [
+            matches(
+                'does not have silly_monkey in the `dependencies` or `dev_dependencies` section')
+          ]);
         });
       }
     }
