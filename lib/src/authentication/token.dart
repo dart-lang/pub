@@ -2,19 +2,35 @@
 
 import '../source/hosted.dart';
 
+/// Token is a structure for storing authentication credentials for third-party
+/// pub registries. A token holds registry [url], credential [kind] and [token]
+/// itself.
+///
+/// Token could be serialized into and from JSON format structured like
+/// this:
+///
+/// ```json
+/// {
+///   "url": "https://example.com/",
+///   "credential": {
+///     "kind": "Bearer",
+///     "token": "gjrjo7Tm2F0u64cTsECDq4jBNZYhco"
+///   }
+/// }
+/// ```
 class Token {
-  Token({required String url, required this.kind, required this.token})
-      : url = validateAndNormalizeHostedUrl(url);
+  Token({required this.url, required this.kind, required this.token});
 
-  Token.bearer(String url, this.token)
-      : kind = 'Bearer',
-        url = validateAndNormalizeHostedUrl(url);
+  /// Create [Token] instance with the `'Bearer'` kind.
+  Token.bearer(this.url, this.token) : kind = 'Bearer';
 
   /// Deserialize [json] into [Token] type.
   factory Token.fromJson(Map<String, dynamic> json) {
     if (json['url'] is! String) {
       throw FormatException('Url is not provided for the token');
     }
+
+    var hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
 
     if (json['credential'] is! Map<String, dynamic>) {
       throw FormatException('Credential is not provided for the token');
@@ -35,7 +51,7 @@ class Token {
     }
 
     return Token(
-      url: json['url'] as String,
+      url: hostedUrl,
       kind: kindValue,
       token: json['credential']['token'] as String,
     );
