@@ -89,7 +89,7 @@ void main() {
       await expectValidation(leakDetection,
           errors: allOf(
             hasLength(lessThanOrEqualTo(3)),
-            contains(contains('10 potential leak detected in 1 file:')),
+            contains(contains('10 potential leaks detected in 1 file:')),
           ));
     });
 
@@ -122,7 +122,7 @@ void main() {
       await expectValidation(leakDetection,
           errors: allOf(
             hasLength(lessThanOrEqualTo(3)),
-            contains(contains('12 potential leak detected in 2 files:')),
+            contains(contains('12 potential leaks detected in 2 files:')),
           ));
     });
   });

@@ -78,11 +78,11 @@ class LeakDetectionValidator extends Validator {
           .map((leak) => leak.span.sourceUrl.toFilePath(windows: false))
           .toSet()
           .toList(growable: false)
-        ..sort();
+            ..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add([
-        '${leaks.length} potential leak detected in ${files.length} file$s:',
+        '${leaks.length} potential leaks detected in ${files.length} file$s:',
         ...files.take(10).map((f) => '- /$f'),
         if (files.length > 10) '...',
         '',
