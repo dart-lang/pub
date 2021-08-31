@@ -103,20 +103,21 @@ class UpgradeCommand extends PubCommand {
         log.warning(
             'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --null-safety --directory example/` separately.');
       }
-      return await _runUpgradeNullSafety();
-    }
-
-    if (_upgradeMajorVersions) {
+      await _runUpgradeNullSafety();
+    } else if (_upgradeMajorVersions) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
             'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.');
       }
-      return await _runUpgradeMajorVersions();
+      await _runUpgradeMajorVersions();
+    } else {
+      await _runUpgrade(entrypoint);
     }
-
-    await _runUpgrade(entrypoint);
     if (argResults['example'] && entrypoint.example != null) {
-      await _runUpgrade(entrypoint.example, onlySummary: true);
+      // Reload the entrypoint to ensure we pick up potential changes that has
+      // been made.
+      final exampleEntrypoint = Entrypoint(directory, cache).example;
+      await _runUpgrade(exampleEntrypoint, onlySummary: true);
     }
   }
 
