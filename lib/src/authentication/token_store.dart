@@ -91,6 +91,8 @@ class TokenStore {
 
   /// Adds [token] into store and writes into disk.
   void addToken(Token token) {
+    // Remove duplicate tokens
+    tokens.removeWhere((it) => it.url == token.url);
     tokens.add(token);
     flush();
   }
