@@ -18,6 +18,7 @@ import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -136,11 +137,11 @@ class GlobalPackages {
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future<void> activatePath(String path, List<String> executables,
-      {bool overwriteBinStubs}) async {
+      {bool overwriteBinStubs, @required PubAnalytics analytics}) async {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.GET);
+    await entrypoint.acquireDependencies(SolveType.GET, analytics: analytics);
     var name = entrypoint.root.name;
 
     try {
@@ -212,7 +213,7 @@ The package ${dep.name} is already activated at newest available version.
 To recompile executables, first run `global decativate ${dep.name}`.
 ''');
     } else {
-      result.showReport(SolveType.GET);
+      result.showReport();
     }
 
     // Make sure all of the dependencies are locally installed.
