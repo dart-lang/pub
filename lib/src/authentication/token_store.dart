@@ -131,6 +131,7 @@ class TokenStore {
             'Found multiple matching authentication tokens for "$url". '
             'First matching token will be used for authentication.',
           );
+          break;
         }
       }
     }
