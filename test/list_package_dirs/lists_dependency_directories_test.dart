@@ -2,10 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
+// @dart=2.10
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
+
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -26,12 +28,11 @@ void main() {
 
     await pubGet();
 
-    await
-        // Note: Using canonicalize here because pub gets the path to the
-        // entrypoint package from the working directory, which has had symlinks
-        // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
-        // need to accommodate that.
-        await runPub(args: [
+    // Note: Using canonicalize here because pub gets the path to the
+    // entrypoint package from the working directory, which has had symlinks
+    // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
+    // need to accommodate that.
+    await runPub(args: [
       'list-package-dirs',
       '--format=json'
     ], outputJson: {

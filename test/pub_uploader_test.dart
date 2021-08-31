@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -17,9 +19,10 @@ const _usageString = '''
 Manage uploaders for a package on pub.dartlang.org.
 
 Usage: pub uploader [options] {add/remove} <email>
--h, --help       Print this usage information.
-    --package    The package whose uploaders will be modified.
-                 (defaults to the current package)
+-h, --help               Print this usage information.
+    --package            The package whose uploaders will be modified.
+                         (defaults to the current package)
+-C, --directory=<dir>    Run this in the directory<dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.

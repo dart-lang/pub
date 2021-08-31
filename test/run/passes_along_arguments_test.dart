@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -26,7 +28,7 @@ void main() {
     // isn't trying to look at them.
     var pub = await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
 
-    expect(pub.stdout, emits('--verbose -m -- help'));
+    expect(pub.stdout, emitsThrough('--verbose -m -- help'));
     await pub.shouldExit();
   });
 }

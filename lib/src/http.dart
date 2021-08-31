@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Helpers for dealing with HTTP.
 import 'dart:async';
 import 'dart:convert';
@@ -9,7 +11,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-import 'package:http_retry/http_retry.dart';
+import 'package:http/retry.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -56,7 +59,9 @@ class _PubHttpClient extends http.BaseClient {
       }
 
       var type = Zone.current[#_dependencyType];
-      if (type != null) request.headers['X-Pub-Reason'] = type.toString();
+      if (type != null && type != DependencyType.none) {
+        request.headers['X-Pub-Reason'] = type.toString();
+      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
@@ -78,6 +83,11 @@ class _PubHttpClient extends http.BaseClient {
       }
     } else {
       if (request.url.origin != 'https://pub.dartlang.org') return false;
+    }
+
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
     }
 
     return true;
@@ -280,8 +290,9 @@ set innerHttpClient(http.Client client) => _pubClient._inner = client;
 ///
 /// If [type] is [DependencyType.none], no extra metadata is added.
 Future<T> withDependencyType<T>(
-    DependencyType type, Future<T> Function() callback) {
-  if (type == DependencyType.none) return callback();
+  DependencyType type,
+  Future<T> Function() callback,
+) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
 
@@ -374,13 +385,10 @@ class _ThrottleClient extends http.BaseClient {
       rethrow;
     }
 
-    var stream = response.stream.transform(
-        StreamTransformer<List<int>, List<int>>.fromHandlers(
-            handleDone: (sink) {
-      resource.release();
-      sink.close();
-    }));
-    return http.StreamedResponse(stream, response.statusCode,
+    final responseController = StreamController<List<int>>(sync: true);
+    unawaited(response.stream.pipe(responseController));
+    unawaited(responseController.done.then((_) => resource.release()));
+    return http.StreamedResponse(responseController.stream, response.statusCode,
         contentLength: response.contentLength,
         request: response.request,
         headers: response.headers,

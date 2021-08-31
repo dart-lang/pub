@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:yaml/yaml.dart';
 
 import '../command.dart';
@@ -41,6 +43,8 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -65,8 +69,11 @@ class RemoveCommand extends PubCommand {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
-      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile'], analytics: analytics);
+      await Entrypoint(directory, cache).acquireDependencies(
+        SolveType.GET,
+        precompile: argResults['precompile'],
+        analytics: analytics,
+      );
     }
   }
 

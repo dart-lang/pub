@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
+import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -14,7 +18,10 @@ void main() {
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'git': '../bar.git'}
+        'bar': {
+          'git':
+              p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString()
+        }
       })
     ]).create();
 
@@ -22,7 +29,9 @@ void main() {
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir({
-      'foo': {'git': '../foo.git'}
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
     }).create();
 
     await pubGet();
@@ -38,5 +47,58 @@ void main() {
 
     expect(packageSpec('foo'), isNotNull);
     expect(packageSpec('bar'), isNotNull);
+  });
+
+  test('cannot have relative git url packages transitively from Git', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0', deps: {
+        'bar': {'git': '../bar.git'}
+      })
+    ]).create();
+
+    await d.git(
+        'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
+    }).create();
+
+    await pubGet(
+      error: contains(
+          '"../bar.git" is a relative path, but this isn\'t a local pubspec.'),
+      exitCode: exit_codes.DATA,
+    );
+  });
+
+  test('cannot have relative path dependencies transitively from Git',
+      () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0', deps: {
+        'bar': {'path': '../bar'}
+      })
+    ]).create();
+
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({
+      'foo': {
+        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+      }
+    }).create();
+
+    await pubGet(
+      error: contains(
+          '"../bar" is a relative path, but this isn\'t a local pubspec.'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

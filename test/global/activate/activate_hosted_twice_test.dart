@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -29,15 +31,15 @@ Resolving dependencies...
 + foo 1.0.0
 Downloading foo 1.0.0...
 Downloading bar 1.0.0...
-Precompiling executables...
-Precompiled foo:foo.
+Building package executables...
+Built foo:foo.
 Activated foo 1.0.0.''');
 
     await runPub(args: ['global', 'activate', 'foo'], output: '''
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
 The package foo is already activated at newest available version.
-To recompile executables, first run `global decativate foo`.
+To recompile executables, first run `global deactivate foo`.
 Activated foo 1.0.0.''');
 
     var pub = await pubRun(global: true, args: ['foo']);
@@ -57,8 +59,8 @@ Resolving dependencies...
 + bar 2.0.0
 + foo 1.0.0
 Downloading bar 2.0.0...
-Precompiling executables...
-Precompiled foo:foo.
+Building package executables...
+Built foo:foo.
 Activated foo 1.0.0.''');
 
     var pub2 = await pubRun(global: true, args: ['foo']);

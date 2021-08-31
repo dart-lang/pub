@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
@@ -26,6 +28,8 @@ class ListPackageDirsCommand extends PubCommand {
   ListPackageDirsCommand() {
     argParser.addOption('format',
         help: 'How output should be displayed.', allowed: ['json']);
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

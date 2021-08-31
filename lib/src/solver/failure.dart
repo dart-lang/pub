@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:collection/collection.dart';
 
 import '../exceptions.dart';
@@ -37,7 +39,8 @@ class SolveFailure implements ApplicationException {
   }
 
   SolveFailure(this.incompatibility)
-      : assert(incompatibility.terms.single.package.isRoot);
+      : assert(incompatibility.terms.isEmpty ||
+            incompatibility.terms.single.package.isRoot);
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.

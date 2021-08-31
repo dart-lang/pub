@@ -2,17 +2,21 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
+import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -31,19 +35,35 @@ class LishCommand extends PubCommand {
 
   /// The URL of the server to which to upload the package.
   Uri get server {
+    if (_server != null) {
+      return _server;
+    }
+
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
-      return Uri.parse(argResults['server']);
+      try {
+        return _server = validateAndNormalizeHostedUrl(argResults['server']);
+      } on FormatException catch (e) {
+        usageException('Invalid server: $e');
+      }
     }
 
     // Otherwise, use the one specified in the pubspec.
-    if (entrypoint.root.pubspec.publishTo != null) {
-      return Uri.parse(entrypoint.root.pubspec.publishTo);
+    final publishTo = entrypoint.root.pubspec.publishTo;
+    if (publishTo != null) {
+      try {
+        return _server = validateAndNormalizeHostedUrl(publishTo);
+      } on FormatException catch (e) {
+        throw DataException('Invalid publish_to: $e');
+      }
     }
 
-    // Otherwise, use the default.
-    return Uri.parse(cache.sources.hosted.defaultUrl);
+    // Use the default server if nothing else is specified
+    return _server = cache.sources.hosted.defaultUrl;
   }
+
+  /// Cache value for [server].
+  Uri _server;
 
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
@@ -63,6 +83,9 @@ class LishCommand extends PubCommand {
     argParser.addOption('server',
         help: 'The package server to which to upload this package.',
         hide: true);
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   Future<void> _publish(List<int> packageBytes) async {
@@ -70,15 +93,15 @@ class LishCommand extends PubCommand {
     try {
       await oauth2.withClient(cache, (client) {
         return log.progress('Uploading', () async {
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
-          var newUri = server.resolve('/api/packages/versions/new');
+          var newUri = server.resolve('api/packages/versions/new');
           var response = await client.get(newUri, headers: pubApiHeaders);
           var parameters = parseJsonResponse(response);
 
           var url = _expectField(parameters, 'url', response);
           if (url is! String) invalidServerResponse(response);
           cloudStorageUrl = Uri.parse(url);
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
           var request = http.MultipartRequest('POST', cloudStorageUrl);
 
           var fields = _expectField(parameters, 'fields', response);
@@ -137,7 +160,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    var files = entrypoint.root.listFiles(useGitIgnore: true);
+    var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root}.');
 
     // Show the package contents so the user can verify they look OK.
@@ -155,6 +178,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       overrideExitCode(exit_codes.DATA);
       return;
     } else if (dryRun) {
+      log.message('The server may enforce additional checks.');
       return;
     } else {
       await _publish(await packageBytesFuture);
@@ -175,8 +199,14 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(entrypoint, packageSize, server.toString(),
-        hints: hints, warnings: warnings, errors: errors);
+    await Validator.runAll(
+      entrypoint,
+      packageSize,
+      server,
+      hints: hints,
+      warnings: warnings,
+      errors: errors,
+    );
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '

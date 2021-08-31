@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -31,8 +33,8 @@ void main() {
                 'Resolving dependencies...\n'
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith('Precompiling executables...\n'
-                'Precompiled foo:foo.\n'
+            endsWith('Building package executables...\n'
+                'Built foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
     // Should now run the git one.

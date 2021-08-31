@@ -2,14 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -26,6 +26,7 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'packages_file.dart' as packages_file;
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
@@ -171,10 +172,9 @@ class Entrypoint {
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
 
-  /// Loads the entrypoint for the package at the current directory.
-  Entrypoint.current(this.cache)
-      : root = Package.load(null, '.', cache.sources),
-        isGlobal = false;
+  /// The path to the directory containing previous dill files for incremental
+  /// builds.
+  String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
@@ -193,15 +193,18 @@ class Entrypoint {
 
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles() async {
-    writeTextFile(packagesFile, lockFile.packagesFile(cache, root.name));
+    writeTextFile(
+        packagesFile,
+        lockFile.packagesFile(cache,
+            entrypoint: root.name, relativeFrom: root.dir));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
-        await lockFile.packageConfigFile(
-          cache,
-          entrypoint: root.name,
-          entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
-        ));
+        await lockFile.packageConfigFile(cache,
+            entrypoint: root.name,
+            entrypointSdkConstraint:
+                root.pubspec.sdkConstraints[sdk.identifier],
+            relativeFrom: root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -250,7 +253,7 @@ class Entrypoint {
               .where((pubspec) => pubspec.dartSdkWasOverridden)
               .map((pubspec) => pubspec.name)
               .toList()
-                ..sort())
+            ..sort())
           .join(', ');
       if (overriddenPackages.isNotEmpty) {
         log.message(log.yellow(
@@ -262,14 +265,14 @@ class Entrypoint {
       }
     }
 
-    result.showReport(type);
+    await result.showReport(type, cache);
 
     if (!dryRun) {
       await Future.wait(result.packages.map(_get));
       _saveLockFile(result);
     }
 
-    result.summarizeChanges(type, dryRun: dryRun);
+    await result.summarizeChanges(type, cache, dryRun: dryRun);
 
     if (!dryRun) {
       if (analytics != null) {
@@ -303,7 +306,7 @@ class Entrypoint {
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.
-  List<Executable> get precompiledExecutables {
+  List<Executable> get _builtExecutables {
     if (isGlobal) {
       if (isCached) {
         return root.executablePaths
@@ -314,9 +317,6 @@ class Entrypoint {
       }
     }
     final r = root.immediateDependencies.keys.expand((packageName) {
-      if (packageGraph.isPackageMutable(packageName)) {
-        return <Executable>[];
-      }
       final package = packageGraph.packages[packageName];
       return package.executablePaths
           .map((path) => Executable(packageName, path));
@@ -324,15 +324,15 @@ class Entrypoint {
     return r;
   }
 
-  /// Precompiles all [precompiledExecutables].
+  /// Precompiles all [_builtExecutables].
   Future<void> precompileExecutables({Iterable<String> changed}) async {
     migrateCache();
 
-    final executables = precompiledExecutables;
+    final executables = _builtExecutables;
 
     if (executables.isEmpty) return;
 
-    await log.progress('Precompiling executables', () async {
+    await log.progress('Building package executables', () async {
       if (isGlobal) {
         /// Global snapshots might linger in the cache if we don't remove old
         /// snapshots when it is re-activated.
@@ -341,7 +341,7 @@ class Entrypoint {
         ensureDir(_snapshotPath);
       }
       return waitAndPrintErrors(executables.map((executable) {
-        var dir = p.dirname(snapshotPathOfExecutable(executable));
+        var dir = p.dirname(pathOfExecutable(executable));
         cleanDir(dir);
         return _precompileExecutable(executable);
       }));
@@ -350,17 +350,19 @@ class Entrypoint {
 
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(Executable executable) async {
-    return await log.progress('Precompiling executable', () async {
-      ensureDir(p.dirname(snapshotPathOfExecutable(executable)));
+    return await log.progress('Building package executable', () async {
+      ensureDir(p.dirname(pathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
   }
 
   Future<void> _precompileExecutable(Executable executable) async {
     final package = executable.package;
-    await dart.snapshot(
-        resolveExecutable(executable), snapshotPathOfExecutable(executable),
-        packageConfigFile: packageConfigFile,
+    await dart.precompile(
+        executablePath: resolveExecutable(executable),
+        outputPath: pathOfExecutable(executable),
+        incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
+        packageConfigPath: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
@@ -372,7 +374,7 @@ class Entrypoint {
   /// different sdk.
   ///
   /// [path] must be relative.
-  String snapshotPathOfExecutable(Executable executable) {
+  String pathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
     final versionSuffix = sdk.version;
     return isGlobal
@@ -380,6 +382,15 @@ class Entrypoint {
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot')
         : p.join(_snapshotPath, executable.package,
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot');
+  }
+
+  String incrementalDillPathOfExecutable(Executable executable) {
+    assert(p.isRelative(executable.relativePath));
+    return isGlobal
+        ? p.join(_incrementalDillsPath,
+            '${p.basename(executable.relativePath)}.incremental.dill')
+        : p.join(_incrementalDillsPath, executable.package,
+            '${p.basename(executable.relativePath)}.incremental.dill');
   }
 
   /// The absolute path of [executable] resolved relative to [this].
@@ -434,8 +445,9 @@ class Entrypoint {
   /// This automatically downloads the package to the system-wide cache as well
   /// if it requires network access to retrieve (specifically, if the package's
   /// source is a [CachedSource]).
-  Future _get(PackageId id) {
-    return http.withDependencyType(root.dependencyType(id.name), () async {
+  Future<void> _get(PackageId id) async {
+    return await http.withDependencyType(root.dependencyType(id.name),
+        () async {
       if (id.isRoot) return;
 
       var source = cache.source(id.source);
@@ -560,7 +572,8 @@ class Entrypoint {
         // If we can't load the pubspec, the user needs to re-run "pub get".
       }
 
-      dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+      dataError(
+          '${p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml')} has '
           'changed since the pubspec.lock file was generated, please run "pub '
           'get" again.');
     }
@@ -587,7 +600,7 @@ class Entrypoint {
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package);
+      var dir = source.getDirectory(package, relativeFrom: '.');
       // See if the directory is there and looks like a package.
       return dirExists(dir) && fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -604,11 +617,11 @@ class Entrypoint {
     // Check that [packagePathsMapping] does not contain more packages than what
     // is required. This could lead to import statements working, when they are
     // not supposed to work.
-    final hasExtraMappings = packagePathsMapping.keys.every((packageName) {
+    final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
       return packageName == root.name ||
           lockFile.packages.containsKey(packageName);
     });
-    if (!hasExtraMappings) {
+    if (hasExtraMappings) {
       return false;
     }
 
@@ -627,8 +640,9 @@ class Entrypoint {
       }
 
       final source = cache.source(lockFileId.source);
-      final lockFilePackagePath =
-          p.join(root.dir, source.getDirectory(lockFileId));
+      final lockFilePackagePath = root.path(
+        source.getDirectory(lockFileId, relativeFrom: root.dir),
+      );
 
       // Make sure that the packagePath agrees with the lock file about the
       // path to the package.
@@ -727,8 +741,18 @@ class Entrypoint {
     }
 
     final packagePathsMapping = <String, String>{};
-    for (final pkg in cfg.packages) {
-      // Pub always sets packageUri = lib/
+
+    // We allow the package called 'flutter_gen' to be injected into
+    // package_config.
+    //
+    // This is somewhat a hack. But it allows flutter to generate code in a
+    // package as it likes.
+    //
+    // See https://github.com/flutter/flutter/issues/73870 .
+    final packagesToCheck =
+        cfg.packages.where((package) => package.name != 'flutter_gen');
+    for (final pkg in packagesToCheck) {
+      // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
         badPackageConfig();
       }
@@ -742,6 +766,7 @@ class Entrypoint {
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
     for (final pkg in cfg.packages) {
+      if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(
@@ -766,7 +791,8 @@ class Entrypoint {
           cache.load(id).pubspec.sdkConstraints[sdk.identifier],
         );
         if (pkg.languageVersion != languageVersion) {
-          dataError('${p.join(source.getDirectory(id), 'pubspec.yaml')} has '
+          dataError(
+              '${p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml')} has '
               'changed since the pubspec.lock file was generated, please run '
               '"pub get" again.');
         }

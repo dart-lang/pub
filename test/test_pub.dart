@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Test infrastructure for testing pub.
 ///
 /// Unlike typical unit tests, most pub tests are integration tests that stage
@@ -16,11 +18,6 @@ import 'dart:math';
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart' hide fail;
-import 'package:test/test.dart' as test show fail;
-import 'package:test_process/test_process.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 // TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
@@ -36,6 +33,10 @@ import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
+import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart' hide fail;
+import 'package:test/test.dart' as test show fail;
+import 'package:test_process/test_process.dart';
 
 import 'descriptor.dart' as d;
 import 'descriptor_server.dart';
@@ -76,7 +77,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
     .firstWhere((e) => e['name'] == packageName,
         orElse: () => null) as Map<String, dynamic>;
 
-/// The suffix appended to a precompiled snapshot.
+/// The suffix appended to a built snapshot.
 final versionSuffix = testVersion ?? sdk.version;
 
 /// Enum identifying a pub command that can be run with a well-defined success
@@ -89,7 +90,7 @@ class RunCommand {
   static final upgrade = RunCommand('upgrade', RegExp(r'''
 (No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
 \d+ packages? (has|have) newer versions incompatible with dependency constraints.
-Try `pub outdated` for more information.$)'''));
+Try `dart pub outdated` for more information.$)'''));
   static final downgrade = RunCommand('downgrade',
       RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
   static final remove = RunCommand(
@@ -123,14 +124,17 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 ///
 /// If [exitCode] is given, expects the command to exit with that code.
 // TODO(rnystrom): Clean up other tests to call this when possible.
-Future pubCommand(RunCommand command,
-    {Iterable<String> args,
-    output,
-    error,
-    silent,
-    warning,
-    int exitCode,
-    Map<String, String> environment}) async {
+Future<void> pubCommand(
+  RunCommand command, {
+  Iterable<String> args,
+  output,
+  error,
+  silent,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
@@ -152,83 +156,108 @@ Future pubCommand(RunCommand command,
       error: error,
       silent: silent,
       exitCode: exitCode,
-      environment: environment);
+      environment: environment,
+      workingDirectory: workingDirectory);
 }
 
-Future pubAdd(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.add,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubAdd({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.add,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future pubGet(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.get,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubGet({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.get,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future pubUpgrade(
+Future<void> pubUpgrade(
         {Iterable<String> args,
         output,
         error,
         warning,
         int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.upgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+        Map<String, String> environment,
+        String workingDirectory}) async =>
+    await pubCommand(
+      RunCommand.upgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future pubDowngrade(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.downgrade,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubDowngrade({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.downgrade,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
-Future pubRemove(
-        {Iterable<String> args,
-        output,
-        error,
-        warning,
-        int exitCode,
-        Map<String, String> environment}) =>
-    pubCommand(RunCommand.remove,
-        args: args,
-        output: output,
-        error: error,
-        warning: warning,
-        exitCode: exitCode,
-        environment: environment);
+Future<void> pubRemove({
+  Iterable<String> args,
+  output,
+  error,
+  warning,
+  int exitCode,
+  Map<String, String> environment,
+  String workingDirectory,
+}) async =>
+    await pubCommand(
+      RunCommand.remove,
+      args: args,
+      output: output,
+      error: error,
+      warning: warning,
+      exitCode: exitCode,
+      environment: environment,
+      workingDirectory: workingDirectory,
+    );
 
 /// Schedules starting the "pub [global] run" process and validates the
 /// expected startup output.
@@ -295,7 +324,7 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future runPub(
+Future<void> runPub(
     {List<String> args,
     output,
     error,
@@ -349,7 +378,7 @@ Future<PubProcess> startPublish(PackageServer server,
 ///
 /// Ensures that the right output is shown and then enters "y" to confirm the
 /// upload.
-Future confirmPublish(TestProcess pub) async {
+Future<void> confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
   await expectLater(
@@ -374,6 +403,7 @@ String testVersion = '0.1.2+3';
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
+    'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
     'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',
@@ -449,8 +479,10 @@ Future<PubProcess> startPub(
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
-  var dartArgs = ['--packages=$dotPackagesPath'];
-  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
+  var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
+  dartArgs
+    ..addAll([pubPath, if (verbose) '--verbose'])
+    ..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
@@ -571,34 +603,51 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [sandbox] is a list of path dependencies to be found in the sandbox
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
 /// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-Future createLockFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+Future<void> createLockFile(String package,
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file('pubspec.lock', lockFile.serialize(null)),
-    d.file('.packages', lockFile.packagesFile(cache, package))
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: p.join(d.sandbox, package),
+      ),
+    )
   ]).create();
 }
 
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
-Future createPackagesFile(String package,
-    {Iterable<String> sandbox, Map<String, String> hosted}) async {
+Future<void> createPackagesFile(String package,
+    {Iterable<String> dependenciesInSandBox,
+    Map<String, String> hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
-      _createLockFile(cache.sources, sandbox: sandbox, hosted: hosted);
+  var lockFile = _createLockFile(cache.sources,
+      sandbox: dependenciesInSandBox, hosted: hosted);
 
-  await d.dir(package,
-      [d.file('.packages', lockFile.packagesFile(cache, package))]).create();
+  await d.dir(package, [
+    d.file(
+      '.packages',
+      lockFile.packagesFile(
+        cache,
+        entrypoint: package,
+        relativeFrom: d.sandbox,
+      ),
+    )
+  ]).create();
 }
 
 /// Creates a lock file for [sources] without running `pub get`.
@@ -840,3 +889,48 @@ Matcher matchesMultiple(String pattern, int times) {
 
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
+
+Iterable<String> _filter(List<String> input) {
+  return input
+      // Downloading order is not deterministic, so to avoid flakiness we filter
+      // out these lines.
+      .where((line) => !line.startsWith('Downloading '))
+      // Any paths in output should be relative to the sandbox and with forward
+      // slashes to be stable across platforms.
+      .map((line) {
+    line = line
+        .replaceAll(d.sandbox, r'$SANDBOX')
+        .replaceAll(Platform.pathSeparator, '/');
+    if (globalPackageServer != null) {
+      line = line.replaceAll(globalPackageServer.port.toString(), '\$PORT');
+    }
+    return line;
+  });
+}
+
+/// Runs `pub outdated [args]` and appends the output to [buffer].
+Future<void> runPubIntoBuffer(
+  List<String> args,
+  StringBuffer buffer, {
+  Map<String, String> environment,
+  String workingDirectory,
+}) async {
+  final process = await startPub(
+    args: args,
+    environment: environment,
+    workingDirectory: workingDirectory,
+  );
+  final exitCode = await process.exitCode;
+
+  buffer.writeln(_filter([
+    '\$ pub ${args.join(' ')}',
+    ...await process.stdout.rest.toList(),
+  ]).join('\n'));
+  for (final line in _filter(await process.stderr.rest.toList())) {
+    buffer.writeln('[ERR] $line');
+  }
+  if (exitCode != 0) {
+    buffer.writeln('[Exit code] $exitCode');
+  }
+  buffer.write('\n');
+}

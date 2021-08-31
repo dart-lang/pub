@@ -2,15 +2,19 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -19,6 +23,8 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source/git.dart';
+import '../source/path.dart';
 import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
 import '../utils.dart';
@@ -37,6 +43,9 @@ class OutdatedCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
   bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+
+  @override
+  bool get takesArguments => false;
 
   OutdatedCommand() {
     argParser.addFlag(
@@ -101,6 +110,8 @@ class OutdatedCommand extends PubCommand {
       help: 'Show transitive dependencies.\n'
           '(defaults to off in --mode=null-safety).',
     );
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -130,10 +141,19 @@ class OutdatedCommand extends PubCommand {
 
     List<PackageId> upgradablePackages;
     List<PackageId> resolvablePackages;
+    bool hasUpgradableResolution;
+    bool hasResolvableResolution;
 
     await log.spinner('Resolving', () async {
-      upgradablePackages = await _tryResolve(upgradablePubspec, cache);
-      resolvablePackages = await _tryResolve(resolvablePubspec, cache);
+      final upgradablePackagesResult =
+          await _tryResolve(upgradablePubspec, cache);
+      hasUpgradableResolution = upgradablePackagesResult != null;
+      upgradablePackages = upgradablePackagesResult ?? [];
+
+      final resolvablePackagesResult =
+          await _tryResolve(resolvablePubspec, cache);
+      hasResolvableResolution = resolvablePackagesResult != null;
+      resolvablePackages = resolvablePackagesResult ?? [];
     }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
@@ -218,7 +238,7 @@ class OutdatedCommand extends PubCommand {
       ...upgradablePackages,
       ...resolvablePackages
     ]) {
-      if (!visited.add(id.name) || id.source is SdkSource) continue;
+      if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
@@ -243,23 +263,23 @@ class OutdatedCommand extends PubCommand {
       final useColors =
           argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
-      await _outputHuman(
-        rows,
-        mode,
-        useColors: useColors,
-        showAll: showAll,
-        includeDevDependencies: includeDevDependencies,
-        lockFileExists: fileExists(entrypoint.lockFilePath),
-        hasDirectDependencies: rootPubspec.dependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        hasDevDependencies: rootPubspec.devDependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        showTransitiveDependencies: showTransitiveDependencies,
-      );
+      await _outputHuman(rows, mode,
+          useColors: useColors,
+          showAll: showAll,
+          includeDevDependencies: includeDevDependencies,
+          lockFileExists: fileExists(entrypoint.lockFilePath),
+          hasDirectDependencies: rootPubspec.dependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          hasDevDependencies: rootPubspec.devDependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          showTransitiveDependencies: showTransitiveDependencies,
+          hasUpgradableResolution: hasUpgradableResolution,
+          hasResolvableResolution: hasResolvableResolution,
+          directory: path.normalize(directory));
     }
   }
 
@@ -371,18 +391,16 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
+/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
+/// resolution was found.
 Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
     SolveType.UPGRADE,
     cache,
     Package.inMemory(pubspec),
   );
-  if (solveResult == null) {
-    return [];
-  }
 
-  return solveResult.packages;
+  return solveResult?.packages;
 }
 
 Future<void> _outputJson(
@@ -431,11 +449,12 @@ Future<void> _outputHuman(
   @required bool hasDirectDependencies,
   @required bool hasDevDependencies,
   @required bool showTransitiveDependencies,
+  @required bool hasUpgradableResolution,
+  @required bool hasResolvableResolution,
+  @required String directory,
 }) async {
-  final explanation = mode.explanation;
-  if (explanation != null) {
-    log.message(explanation + '\n');
-  }
+  final directoryDesc = directory == '.' ? '' : ' in $directory';
+  log.message(mode.explanation(directoryDesc) + '\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -540,43 +559,46 @@ Future<void> _outputHuman(
               hasKind(_DependencyKind.dev)(row)))
       .length;
 
-  if (lockFileExists) {
+  if (!hasUpgradableResolution || !hasResolvableResolution) {
+    log.message(mode.noResolutionText);
+  } else if (lockFileExists) {
     if (upgradable != 0) {
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
             'an older version.\n'
-            'To update it, use `pub upgrade`.');
+            'To update it, use `$topLevelProgram pub upgrade`.');
       } else {
         log.message(
             '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
             'to older versions.\n'
-            'To update these dependencies, use `pub upgrade`.');
+            'To update these dependencies, use `$topLevelProgram pub upgrade`.');
       }
+    }
+
+    if (notAtResolvable == 0 &&
+        upgradable == 0 &&
+        rows.isNotEmpty &&
+        (directRows.isNotEmpty || devRows.isNotEmpty)) {
+      log.message(
+          "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
+          "Newer versions, listed in 'Latest', may not be mutually compatible.");
+    } else if (directRows.isEmpty && devRows.isEmpty) {
+      log.message(mode.allSafe);
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
         'Run `pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
   }
-
-  if (lockFileExists &&
-      notAtResolvable == 0 &&
-      upgradable == 0 &&
-      rows.isNotEmpty) {
-    log.message(
-        "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
-        "Newer versions, listed in 'Latest', may not be mutually compatible.");
-  }
-
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
       log.message('\n1 dependency is constrained to a '
           'version that is older than a resolvable version.\n'
-          'To update it, edit pubspec.yaml.');
+          'To update it, ${mode.upgradeConstrained}.');
     } else {
       log.message('\n$notAtResolvable  dependencies are constrained to '
           'versions that are older than a resolvable version.\n'
-          'To update these dependencies, edit pubspec.yaml.');
+          'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
 }
@@ -588,17 +610,20 @@ abstract class Mode {
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packageDetails);
 
-  String get explanation;
+  String explanation(String directoryDescription);
   String get foundNoBadText;
   String get allGood;
+  String get noResolutionText;
+  String get upgradeConstrained;
+  String get allSafe;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
 
 class _OutdatedMode implements Mode {
   @override
-  String get explanation => '''
-Showing outdated packages.
+  String explanation(String directoryDescription) => '''
+Showing outdated packages$directoryDescription.
 [${log.red('*')}] indicates versions that are not the latest available.
 ''';
 
@@ -607,6 +632,17 @@ Showing outdated packages.
 
   @override
   String get allGood => 'all up-to-date.';
+
+  @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --major-versions`';
+
+  @override
+  String get allSafe => 'all dependencies are up-to-date.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -667,8 +703,8 @@ class _NullSafetyMode implements Mode {
       {@required this.shouldShowSpinner});
 
   @override
-  String get explanation => '''
-Showing dependencies that are currently not opted in to null-safety.
+  String explanation(String directoryDescription) => '''
+Showing dependencies$directoryDescription that are currently not opted in to null-safety.
 [${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
 [${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
 ''';
@@ -679,6 +715,17 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get allGood => 'all support null safety.';
+
+  @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --null-safety --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
+
+  @override
+  String get allSafe => 'All dependencies opt in to null-safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -762,7 +809,17 @@ class _VersionDetails {
   /// A string representation of this version to include in the outdated report.
   String get describe {
     final version = _pubspec.version;
-    final suffix = _overridden ? ' (overridden)' : '';
+    var suffix = '';
+    if (_overridden) {
+      suffix = ' (overridden)';
+    } else if (_id.source is SdkSource) {
+      // Version is not relevant for sdk-packages.
+      return '(sdk)';
+    } else if (_id.source is GitSource) {
+      suffix = ' (git)';
+    } else if (_id.source is PathSource) {
+      suffix = ' (path)';
+    }
     return '$version$suffix';
   }
 

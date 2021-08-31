@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 
@@ -35,6 +37,8 @@ class UploaderCommand extends PubCommand {
     argParser.addOption('package',
         help: 'The package whose uploaders will be modified.\n'
             '(defaults to the current package)');
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override

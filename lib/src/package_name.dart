@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -266,8 +268,7 @@ class PackageRange extends PackageName {
     if (!range.includeMin) return this;
     if (range.includeMax) return this;
     if (range.min == null) return this;
-    if (range.max == range.min.nextBreaking.firstPreRelease ||
-        (range.min.isPreRelease && range.max == range.min.nextBreaking)) {
+    if (range.max == range.min.nextBreaking.firstPreRelease) {
       return withConstraint(VersionConstraint.compatibleWith(range.min));
     } else {
       return this;

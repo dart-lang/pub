@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A trivial embedding of the pub command. Used from tests.
+// @dart = 2.11
 import 'dart:convert';
 import 'dart:io';
 
@@ -18,7 +19,8 @@ class Runner extends CommandRunner<int> {
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
-        ? PubAnalytics(_LoggingAnalytics(), dependencyKindParameterName: 'cd1')
+        ? PubAnalytics(_LoggingAnalytics(),
+            dependencyKindCustomDimensionName: 'cd1')
         : null;
     addCommand(pubCommand(analytics: analytics));
   }

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -23,10 +25,8 @@ void main() {
 
     await runPub(
         args: ['global', 'activate', '-sgit', '../foo.git'],
-        output: allOf([
-          contains('Precompiled foo:hello.'),
-          contains('Precompiled foo:goodbye.')
-        ]));
+        output: allOf(
+            [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
 
     await d.dir(cachePath, [
       d.dir('global_packages', [

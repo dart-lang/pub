@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
-import 'package:pool/pool.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:pool/pool.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///
@@ -50,6 +52,9 @@ class RateLimitedScheduler<J, V> {
   /// The results of ongoing and finished jobs.
   final Map<J, Completer<V>> _cache = <J, Completer<V>>{};
 
+  /// Provides sync access to completed results.
+  final Map<J, V> _results = <J, V>{};
+
   /// Tasks that are waiting to be run.
   final Queue<_Task<J>> _queue = Queue<_Task<J>>();
 
@@ -80,7 +85,8 @@ class RateLimitedScheduler<J, V> {
 
     // Use an async function to catch sync exceptions from _runJob.
     Future<V> runJob() async {
-      return await task.zone.runUnary(_runJob, task.jobId);
+      return _results[task.jobId] =
+          await task.zone.runUnary(_runJob, task.jobId);
     }
 
     completer.complete(runJob());
@@ -131,6 +137,10 @@ class RateLimitedScheduler<J, V> {
     }
     return completer.future;
   }
+
+  /// Returns the result of running [jobId] if that is already done.
+  /// Otherwise returns `null`.
+  V peek(J jobId) => _results[jobId];
 }
 
 class _Task<J> {

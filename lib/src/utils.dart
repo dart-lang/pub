@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 /// Generic utility functions. Stuff that should possibly be in core.
 import 'dart:async';
 import 'dart:convert';
@@ -16,9 +18,6 @@ import 'package:stack_trace/stack_trace.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
-
-/// Whether Pub is running its own tests under Travis.CI.
-final isTravis = Platform.environment['TRAVIS_REPO_SLUG'] == 'dart-lang/pub';
 
 /// A regular expression matching a Dart identifier.
 ///
@@ -256,7 +255,10 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     var result = ['/$dir/'];
     if (Platform.isWindows) {
-      result..add('/$dir\\')..add('\\$dir/')..add('\\$dir\\');
+      result
+        ..add('/$dir\\')
+        ..add('\\$dir/')
+        ..add('\\$dir\\');
     }
     return result;
   }).toSet();
@@ -393,17 +395,14 @@ String _urlDecode(String encoded) =>
 /// Set to `true` if ANSI colors should be output regardless of terminalD
 bool forceColors = false;
 
-/// Whether "special" strings such as Unicode characters or color escapes are
-/// safe to use.
+/// Whether ansi codes such as color escapes are safe to use.
 ///
-/// On Windows or when not printing to a terminal, only printable ASCII
-/// characters should be used.
+/// On a terminal we can use ansi codes also on Windows.
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
 bool get canUseAnsiCodes =>
-    forceColors ||
-    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
@@ -421,7 +420,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    stdioType(stdout) != StdioType.terminal ||
+    !stdout.hasTerminal ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 

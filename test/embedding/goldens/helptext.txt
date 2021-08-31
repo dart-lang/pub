@@ -28,9 +28,11 @@ $ tool/test-bin/pub_command_runner.dart pub
 [E] Missing subcommand for "pub_command_runner pub".
 [E] 
 [E] Usage: pub_command_runner pub [arguments...]
-[E] -h, --help          Print this usage information.
-[E]     --[no-]trace    Print debugging information when an error occurs.
-[E] -v, --verbose       Shortcut for "--verbosity=all".
+[E] -h, --help               Print this usage information.
+[E]     --[no-]trace         Print debugging information when an error occurs.
+[E] -v, --verbose            Shortcut for "--verbosity=all".
+[E] -C, --directory=<dir>    Run the subcommand in the directory<dir>.
+[E]                          (defaults to ".")
 [E] 
 [E] Available subcommands:
 [E]   add         Add a dependency to pubspec.yaml.
@@ -54,9 +56,11 @@ $ tool/test-bin/pub_command_runner.dart pub --help
 Work with packages.
 
 Usage: pub_command_runner pub [arguments...]
--h, --help          Print this usage information.
-    --[no-]trace    Print debugging information when an error occurs.
--v, --verbose       Shortcut for "--verbosity=all".
+-h, --help               Print this usage information.
+    --[no-]trace         Print debugging information when an error occurs.
+-v, --verbose            Shortcut for "--verbosity=all".
+-C, --directory=<dir>    Run the subcommand in the directory<dir>.
+                         (defaults to ".")
 
 Available subcommands:
   add         Add a dependency to pubspec.yaml.
@@ -84,7 +88,8 @@ Usage: pub_command_runner pub get <subcommand> [arguments...]
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
-    --[no-]precompile    Precompile executables in immediate dependencies.
+    --[no-]precompile    Build executables in immediate dependencies.
+-C, --directory=<dir>    Run this in the directory<dir>.
 
 Run "pub_command_runner help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-get for detailed documentation.

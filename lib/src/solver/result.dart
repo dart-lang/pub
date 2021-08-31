@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -14,6 +16,7 @@ import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
 import '../source/hosted.dart';
 import '../source_registry.dart';
+import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
 
@@ -104,8 +107,9 @@ class SolveResult {
   /// Displays a report of what changes were made to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
-  void showReport(SolveType type) {
-    SolveReport(type, _sources, _root, _previousLockFile, this).show();
+  Future<void> showReport(SolveType type, SystemCache cache) async {
+    await SolveReport(type, _sources, _root, _previousLockFile, this, cache)
+        .show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -115,10 +119,13 @@ class SolveResult {
   /// that are not at the latest available version.
   ///
   /// [type] is the type of version resolution that was run.
-  void summarizeChanges(SolveType type, {bool dryRun = false}) {
-    final report = SolveReport(type, _sources, _root, _previousLockFile, this);
+  Future<void> summarizeChanges(SolveType type, SystemCache cache,
+      {bool dryRun = false}) async {
+    final report =
+        SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.UPGRADE) {
+      await report.reportDiscontinued();
       report.reportOutdated();
     }
   }

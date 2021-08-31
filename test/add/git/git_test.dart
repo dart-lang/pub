@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -29,6 +31,48 @@ void main() {
     await d.appDir({
       'foo': {'git': '../foo.git'}
     }).validate();
+  });
+
+  test('adds a package from git with relative url and --directory', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['--directory', appPath, 'foo', '--git-url', 'foo.git'],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+        d.gitPackageRevisionCacheDir('foo')
+      ])
+    ]).validate();
+
+    await d.appDir({
+      'foo': {'git': '../foo.git'}
+    }).validate();
+  });
+
+  test('fails with invalid --git-url', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['foo', '--git-url', ':'],
+      error:
+          contains('The --git-url must be a valid url: Invalid empty scheme.'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 
   test('adds a package from git with version constraint', () async {
@@ -76,7 +120,7 @@ void main() {
     ]).validate();
   });
 
-  test('fails when adding from an invalid url', () async {
+  test('fails when adding from an non-existing url', () async {
     ensureGit();
 
     await d.appDir({}).create();

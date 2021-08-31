@@ -2,12 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
@@ -61,6 +64,8 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -132,7 +137,7 @@ class UpgradeCommand extends PubCommand {
       }
 
       usageException('''
-Dependencies specified in `dart pub upgrade $modeFlag <dependencies>` must
+Dependencies specified in `$topLevelProgram pub upgrade $modeFlag <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
  - ${notInDeps.join('\n - ')}
 
@@ -217,7 +222,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
         analytics: analytics,
@@ -312,7 +317,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
         analytics: analytics,
@@ -476,7 +481,7 @@ null-safety compatible versions do not exist for:
  - ${hasNoNullSafetyVersions.join('\n - ')}
 
 You can choose to upgrade only some dependencies to null-safety using:
-  dart pub upgrade --nullsafety ${hasNullSafetyVersions.join(' ')}
+  $topLevelProgram pub upgrade --nullsafety ${hasNullSafetyVersions.join(' ')}
 
 Warning: Using null-safety features before upgrading all dependencies is
 discouraged. For more details see: ${NullSafetyAnalysis.guideUrl}

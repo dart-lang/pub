@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -94,6 +96,20 @@ void main() {
       }).create();
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
+    });
+
+    test("doesn't send metadata headers when CI=true", () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(command,
+          silent: isNot(contains('X-Pub-')),
+          environment: {
+            'CI': 'true',
+          });
     });
   });
 }

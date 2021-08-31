@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -129,6 +131,128 @@ void main() {
                   '-- other 1.0.0
                       '-- myapp...
           ''');
+    });
+    test('in json form', () async {
+      await pubGet();
+      await runPub(args: ['deps', '--json'], output: '''
+{
+  "root": "myapp",
+  "packages": [
+    {
+      "name": "myapp",
+      "version": "0.0.0",
+      "kind": "root",
+      "source": "root",
+      "dependencies": [
+        "normal",
+        "overridden",
+        "from_path",
+        "unittest",
+        "override_only"
+      ]
+    },
+    {
+      "name": "override_only",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": []
+    },
+    {
+      "name": "unittest",
+      "version": "1.2.3",
+      "kind": "dev",
+      "source": "hosted",
+      "dependencies": [
+        "shared",
+        "dev_only"
+      ]
+    },
+    {
+      "name": "dev_only",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": []
+    },
+    {
+      "name": "shared",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "other"
+      ]
+    },
+    {
+      "name": "other",
+      "version": "1.0.0",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "myapp"
+      ]
+    },
+    {
+      "name": "from_path",
+      "version": "1.2.3",
+      "kind": "direct",
+      "source": "path",
+      "dependencies": []
+    },
+    {
+      "name": "overridden",
+      "version": "2.0.0",
+      "kind": "direct",
+      "source": "hosted",
+      "dependencies": []
+    },
+    {
+      "name": "normal",
+      "version": "1.2.3",
+      "kind": "direct",
+      "source": "hosted",
+      "dependencies": [
+        "transitive",
+        "circular_a"
+      ]
+    },
+    {
+      "name": "circular_a",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "circular_b"
+      ]
+    },
+    {
+      "name": "circular_b",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "circular_a"
+      ]
+    },
+    {
+      "name": "transitive",
+      "version": "1.2.3",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "shared"
+      ]
+    }
+  ],
+  "sdks": [
+    {
+      "name": "Dart",
+      "version": "0.1.2+3"
+    }
+  ],
+  "executables": []
+}''');
     });
 
     test('with the Flutter SDK, if applicable', () async {

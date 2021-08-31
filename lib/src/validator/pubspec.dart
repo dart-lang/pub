@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -18,9 +20,10 @@ class PubspecValidator extends Validator {
 
   @override
   Future validate() async {
-    var files = entrypoint.root.listFiles(recursive: false, useGitIgnore: true);
-    if (!files.any((file) => p.basename(file) == 'pubspec.yaml')) {
-      errors.add('The pubspec is hidden, probably by .gitignore.');
+    var files = entrypoint.root.listFiles(recursive: false);
+    if (!files.any((file) =>
+        p.canonicalize(file) == p.canonicalize(entrypoint.pubspecPath))) {
+      errors.add('The pubspec is hidden, probably by .gitignore or pubignore.');
     }
   }
 }

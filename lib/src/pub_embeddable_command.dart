@@ -2,10 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
 import 'package:meta/meta.dart';
 import 'package:usage/usage.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
+import 'command.dart';
+
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
@@ -47,11 +50,21 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   final PubAnalytics analytics;
 
+  @override
+  String get directory => argResults['directory'];
+
   PubEmbeddableCommand(this.analytics) : super() {
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run the subcommand in the directory<dir>.',
+      defaultsTo: '.',
+      valueHelp: 'dir',
+    );
     // This list is intentionally shorter than the one in
     // pub_command_runner.dart.
     //

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -34,7 +36,7 @@ void main() {
 
     // Should now run the path one.
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('path'));
+    expect(pub.stdout, emitsThrough('path'));
     await pub.shouldExit();
   });
 }

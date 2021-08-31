@@ -1,12 +1,14 @@
 // Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+
+// @dart=2.10
+
 import 'dart:io' show File;
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -37,6 +39,30 @@ void main() {
   });
 
   group('normally', () {
+    test('fails if extra arguments are passed', () async {
+      await servePackages((builder) {
+        builder.serve('foo', '1.2.2');
+      });
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'})
+      ]).create();
+
+      await pubAdd(
+          args: ['foo', '^1.2.2'],
+          exitCode: exit_codes.USAGE,
+          error: contains('Takes only a single argument.'));
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+        }),
+        d.nothing('.dart_tool/package_config.json'),
+        d.nothing('pubspec.lock'),
+        d.nothing('.packages'),
+      ]).validate();
+    });
+
     test('adds a package from a pub server', () async {
       await servePackages((builder) => builder.serve('foo', '1.2.3'));
 

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -45,7 +47,7 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
 /// If the executable is in an immutable package and we pass no [vmArgs], it
-/// run from snapshot (and precompiled if the snapshot doesn't already exist).
+/// run from snapshot (and built if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
@@ -71,7 +73,7 @@ Future<int> runExecutable(
 
   entrypoint.migrateCache();
 
-  var snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
+  var snapshotPath = entrypoint.pathOfExecutable(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
   // change later on.
@@ -79,8 +81,7 @@ Future<int> runExecutable(
   // Also we don't snapshot if we have non-default arguments to the VM, as
   // these would be inconsistent if another set of settings are given in a
   // later invocation.
-  var useSnapshot =
-      !entrypoint.packageGraph.isPackageMutable(package) && vmArgs.isEmpty;
+  var useSnapshot = vmArgs.isEmpty;
 
   var executablePath = entrypoint.resolveExecutable(executable);
   if (!fileExists(executablePath)) {
@@ -98,7 +99,8 @@ Future<int> runExecutable(
     // automatically.
     entrypoint.assertUpToDate();
 
-    if (!fileExists(snapshotPath)) {
+    if (!fileExists(snapshotPath) ||
+        entrypoint.packageGraph.isPackageMutable(package)) {
       await recompile(executable);
     }
     executablePath = snapshotPath;
@@ -135,7 +137,7 @@ Future<int> runExecutable(
       rethrow;
     }
 
-    log.fine('Precompiled executable is out of date.');
+    log.fine('Built executable is out of date.');
     await recompile(executable);
     return await _runDartProgram(
       executablePath,
@@ -260,7 +262,7 @@ Future<int> _runDartProgram(
 /// the package is an immutable (non-path) dependency of [root].
 ///
 /// If returning the path to a snapshot that doesn't already exist, the script
-/// Will be precompiled. And a message will be printed only if a terminal is
+/// Will be built. And a message will be printed only if a terminal is
 /// attached to stdout.
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
@@ -330,11 +332,12 @@ Future<String> getExecutableForCommand(
       throw CommandResolutionFailedException(
           'Could not find `bin${p.separator}$command.dart` in package `$package`.');
     }
-    if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
+    if (!allowSnapshot) {
       return p.relative(path, from: root);
     } else {
-      final snapshotPath = entrypoint.snapshotPathOfExecutable(executable);
-      if (!fileExists(snapshotPath)) {
+      final snapshotPath = entrypoint.pathOfExecutable(executable);
+      if (!fileExists(snapshotPath) ||
+          entrypoint.packageGraph.isPackageMutable(package)) {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
         );
@@ -342,7 +345,7 @@ Future<String> getExecutableForCommand(
       return p.relative(snapshotPath, from: root);
     }
   } on ApplicationException catch (e) {
-    throw CommandResolutionFailedException(e.message);
+    throw CommandResolutionFailedException(e.toString());
   }
 }
 

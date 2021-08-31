@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 
@@ -91,9 +93,14 @@ class GlobalPackages {
     // dependencies. Their executables shouldn't be cached, and there should
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
+    PackageRef ref;
+    try {
+      ref = cache.git.source.parseRef(name, {'url': repo}, containingPath: '.');
+    } on FormatException catch (e) {
+      throw ApplicationException(e.message);
+    }
     await _installInCache(
-        cache.git.source
-            .refFor(name, repo)
+        ref
             .withConstraint(VersionConstraint.any)
             .withFeatures(features ?? const {}),
         executables,
@@ -117,7 +124,7 @@ class GlobalPackages {
       String name, VersionConstraint constraint, List<String> executables,
       {Map<String, FeatureDependency> features,
       bool overwriteBinStubs,
-      String url}) async {
+      Uri url}) async {
     await _installInCache(
         cache.hosted.source
             .refFor(name, url: url)
@@ -210,10 +217,10 @@ class GlobalPackages {
     if (sameVersions) {
       log.message('''
 The package ${dep.name} is already activated at newest available version.
-To recompile executables, first run `global decativate ${dep.name}`.
+To recompile executables, first run `global deactivate ${dep.name}`.
 ''');
     } else {
-      result.showReport();
+      await result.showReport(SolveType.GET, cache);
     }
 
     // Make sure all of the dependencies are locally installed.
@@ -237,11 +244,14 @@ To recompile executables, first run `global decativate ${dep.name}`.
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     final entrypoint = Entrypoint.global(
-        Package(result.pubspecs[dep.name],
-            cache.source(dep.source).getDirectory(id)),
-        lockFile,
-        cache,
-        solveResult: result);
+      Package(
+        result.pubspecs[dep.name],
+        (cache.source(dep.source) as CachedSource).getDirectoryInCache(id),
+      ),
+      lockFile,
+      cache,
+      solveResult: result,
+    );
     if (!sameVersions) {
       // Only precompile binaries if we have a new resolution.
       await entrypoint.precompileExecutables();
@@ -262,10 +272,12 @@ To recompile executables, first run `global decativate ${dep.name}`.
     // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
     final packagesFilePath = _getPackagesFilePath(package);
     final packageConfigFilePath = _getPackageConfigFilePath(package);
-    writeTextFile(packagesFilePath, lockFile.packagesFile(cache));
-    ensureDir(p.dirname(packageConfigFilePath));
+    final dir = p.dirname(packagesFilePath);
     writeTextFile(
-        packageConfigFilePath, await lockFile.packageConfigFile(cache));
+        packagesFilePath, lockFile.packagesFile(cache, relativeFrom: dir));
+    ensureDir(p.dirname(packageConfigFilePath));
+    writeTextFile(packageConfigFilePath,
+        await lockFile.packageConfigFile(cache, relativeFrom: dir));
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
@@ -278,7 +290,8 @@ To recompile executables, first run `global decativate ${dep.name}`.
     var oldPath = p.join(_directory, '$package.lock');
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
-    writeTextFile(_getLockFilePath(package), lockFile.serialize(cache.rootDir));
+    writeTextFile(_getLockFilePath(package),
+        lockFile.serialize(p.join(_directory, package)));
   }
 
   /// Shows the user the currently active package with [name], if any.
@@ -356,7 +369,7 @@ To recompile executables, first run `global decativate ${dep.name}`.
     if (source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.global(cache.load(id), lockFile, cache);
+      entrypoint = Entrypoint.global(cache.loadCached(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -384,7 +397,7 @@ To recompile executables, first run `global decativate ${dep.name}`.
 
   /// Runs [package]'s [executable] with [args].
   ///
-  /// If [executable] is available in its precompiled form, that will be
+  /// If [executable] is available in its built form, that will be
   /// recompiled if the SDK has been upgraded since it was first compiled and
   /// then run. Otherwise, it will be run from source.
   ///
@@ -516,8 +529,13 @@ To recompile executables, first run `global decativate ${dep.name}`.
           await _writePackageConfigFiles(id.name, entrypoint.lockFile);
           await entrypoint.precompileExecutables();
           var packageExecutables = executables.remove(id.name) ?? [];
-          _updateBinStubs(entrypoint, cache.load(id), packageExecutables,
-              overwriteBinStubs: true, suggestIfNotOnPath: false);
+          _updateBinStubs(
+            entrypoint,
+            cache.load(id),
+            packageExecutables,
+            overwriteBinStubs: true,
+            suggestIfNotOnPath: false,
+          );
           successes.add(id.name);
         } catch (error, stackTrace) {
           var message = 'Failed to reactivate '
@@ -573,8 +591,7 @@ To recompile executables, first run `global decativate ${dep.name}`.
         deleteEntry(file);
         _createBinStub(
             entrypoint.root, p.basenameWithoutExtension(file), binStubScript,
-            overwrite: true,
-            snapshot: entrypoint.snapshotPathOfExecutable(executable));
+            overwrite: true, snapshot: entrypoint.pathOfExecutable(executable));
       }
     }
   }
@@ -624,7 +641,7 @@ To recompile executables, first run `global decativate ${dep.name}`.
         executable,
         script,
         overwrite: overwriteBinStubs,
-        snapshot: entrypoint.snapshotPathOfExecutable(
+        snapshot: entrypoint.pathOfExecutable(
           exec.Executable.adaptProgramName(package.name, script),
         ),
       );
@@ -724,7 +741,7 @@ To recompile executables, first run `global decativate ${dep.name}`.
       }
     }
 
-    // If the script was precompiled to a snapshot, just try to invoke that
+    // If the script was built to a snapshot, just try to invoke that
     // directly and skip pub global run entirely.
     String invocation;
     if (Platform.isWindows) {
@@ -740,9 +757,9 @@ if exist "$snapshot" (
   if not errorlevel 253 (
     goto error
   )
-  pub global run ${package.name}:$script %*
+  dart pub global run ${package.name}:$script %*
 ) else (
-  pub global run ${package.name}:$script %*
+  dart pub global run ${package.name}:$script %*
 )
 goto eof
 :error
@@ -750,7 +767,7 @@ exit /b %errorlevel%
 :eof
 ''';
       } else {
-        invocation = 'pub global run ${package.name}:$script %*';
+        invocation = 'dart pub global run ${package.name}:$script %*';
       }
       var batch = '''
 @echo off
@@ -776,13 +793,13 @@ if [ -f $snapshot ]; then
   if [ \$exit_code != 253 ]; then	
     exit \$exit_code	
   fi	
-  pub global run ${package.name}:$script "\$@"
+  dart pub global run ${package.name}:$script "\$@"
 else
-  pub global run ${package.name}:$script "\$@"
+  dart pub global run ${package.name}:$script "\$@"
 fi
 ''';
       } else {
-        invocation = 'pub global run ${package.name}:$script "\$@"';
+        invocation = 'dart pub global run ${package.name}:$script "\$@"';
       }
       var bash = '''
 #!/usr/bin/env sh

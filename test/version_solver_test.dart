@@ -2,16 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -240,7 +241,7 @@ void rootDependency() {
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
       builder.serve('bar', '1.0.0', deps: {
-        'myapp': {'git': 'nowhere'}
+        'myapp': {'git': 'http://nowhere.com/'}
       });
     });
 
@@ -1457,7 +1458,7 @@ void sdkConstraint() {
       await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
 
@@ -1473,7 +1474,7 @@ void sdkConstraint() {
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
 
@@ -1501,7 +1502,7 @@ void sdkConstraint() {
       await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `pub get`.
+        Flutter users should run `flutter pub get` instead of `dart pub get`.
       '''));
     });
   });
@@ -1757,6 +1758,44 @@ void prerelease() {
       'b': '1.1.0-dev',
       'c': '1.0.0',
     });
+  });
+
+  test('https://github.com/dart-lang/pub/issues/3057 regression', () async {
+    // This used to cause an infinite loop.
+    await servePackages((builder) {
+      builder.serve('a', '0.12.0', deps: {});
+      builder.serve('b', '0.1.0', deps: {'c': '2.0.0'});
+      builder.serve('b', '0.9.0-1', deps: {'c': '^1.6.0'});
+      builder.serve('b', '0.10.0', deps: {'a': '1.0.0'});
+      builder.serve('b', '0.17.0', deps: {'a': '1.0.0'});
+      builder.serve('c', '2.0.1', deps: {});
+    });
+
+    await d.appDir(
+      {
+        'a': '0.12.0',
+        'b': 'any',
+      },
+    ).create();
+    await expectResolves(
+        error: contains(
+            'So, because myapp depends on both a 0.12.0 and b any, version solving failed.'),
+        tries: 2);
+  });
+
+  test('https://github.com/dart-lang/pub/pull/3038 regression', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.1.0', deps: {'b': '^1.0.0'});
+      builder.serve('b', '1.0.0', deps: {'c': '^1.0.0'});
+      builder.serve('c', '0.9.0');
+      builder.serve('b', '1.1.0-alpha');
+      builder.serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+    }).create();
+    await expectResolves(tries: 2);
   });
 }
 
@@ -2967,7 +3006,7 @@ Future expectResolves(
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted
-          .refFor(dep.name, url: globalPackageServer.url)
+          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

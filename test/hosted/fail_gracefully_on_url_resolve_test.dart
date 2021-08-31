@@ -2,9 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
+// @dart=2.10
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -15,13 +16,13 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': 'http://pub.invalid'}
+            'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
           }
         })
       ]).create();
 
       await pubCommand(command,
-          error: 'Could not resolve URL "http://pub.invalid".',
+          error: 'Could not resolve URL "https://invalid-url.foo".',
           exitCode: exit_codes.UNAVAILABLE,
           environment: {
             'PUB_MAX_HTTP_RETRIES': '2',

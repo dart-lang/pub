@@ -2,14 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -30,6 +32,32 @@ void main() {
     await pubGet();
   });
 
+  test(
+      'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
+      () async {
+    await d.dir('bar', [
+      d.pubspec({'name': 'bar'})
+    ]).create();
+    await d.dir(appPath, [
+      d.appPubspec({
+        'bar': {'path': '../bar'}
+      })
+    ]).create();
+
+    await pubGet();
+
+    final packageConfig =
+        p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json');
+    final contents = json.decode(readTextFile(packageConfig));
+    contents['packages'].add({
+      'name': 'flutter_gen',
+      'rootUri': '.dart_tool/flutter_gen',
+      'languageVersion': '2.8',
+    });
+    writeTextFile(packageConfig, json.encode(contents));
+
+    await runPub(args: ['run', 'bin/script.dart'], output: endsWith('hello!'));
+  });
   group('requires the user to run pub get first if', () {
     group("there's no lockfile", () {
       setUp(() {
@@ -75,7 +103,7 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
@@ -127,7 +155,7 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
@@ -258,7 +286,7 @@ foo:http://example.com/
 
         await pubGet();
 
-        await createPackagesFile(appPath, sandbox: ['foo']);
+        await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.lock');

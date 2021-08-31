@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// @dart=2.10
+
 import 'dart:io';
 
-import 'package:test/test.dart';
-import 'package:pub/pub.dart';
 import 'package:path/path.dart' show separator;
 import 'package:path/path.dart' as p;
+import 'package:pub/pub.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -69,6 +71,33 @@ Future<void> main() async {
         errorMessage: contains('Could not find file `bar${separator}m.dart`'));
   });
 
+  test('Error message when pubspec is broken', () async {
+    await d.dir('foo', [
+      d.pubspec({
+        'name': 'broken name',
+      }),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'dependencies': {
+          'foo': {
+            'path': '../foo',
+          },
+        },
+      }),
+    ]).create();
+    final dir = d.path(appPath);
+    await testGetExecutable('foo:app', dir,
+        errorMessage: allOf(
+            contains(
+                'Error on line 1, column 9 of ${d.sandbox}${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.'),
+            contains(
+                '{"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}')));
+  });
+
   test('Does `pub get` if there is a pubspec.yaml', () async {
     await d.dir(appPath, [
       d.pubspec({
@@ -119,11 +148,18 @@ Future<void> main() async {
     ]).create();
     final dir = d.path(appPath);
 
-    await testGetExecutable('myapp', dir, result: 'bin${separator}myapp.dart');
+    await testGetExecutable('myapp', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
     await testGetExecutable('myapp:myapp', dir,
-        result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':myapp', dir, result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':tool', dir, result: 'bin${separator}tool.dart');
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
+    await testGetExecutable(':myapp', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
+    await testGetExecutable(':tool', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'tool.dart-$_currentVersion.snapshot'));
     await testGetExecutable('foo', dir,
         allowSnapshot: false,
         result: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'));
