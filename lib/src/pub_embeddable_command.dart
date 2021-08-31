@@ -27,10 +27,11 @@ import 'log.dart';
 /// The information needed for the embedded pub command to send analytics.
 @sealed
 class PubAnalytics {
-  ///
-  final String dependencyKindParameterName;
+  /// Name of the custom dimension of the dependency kind.
+  final String dependencyKindCustomDimensionName;
   final Analytics analytics;
-  PubAnalytics(this.analytics, {@required this.dependencyKindParameterName});
+  PubAnalytics(this.analytics,
+      {@required this.dependencyKindCustomDimensionName});
 }
 
 /// Exposes the `pub` commands as a command to be embedded in another command
