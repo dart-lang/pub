@@ -69,7 +69,8 @@ class AddCommand extends PubCommand {
     argParser.addOption('sdk', help: 'SDK source for package');
     argParser.addFlag(
       'example',
-      help: 'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
+      help:
+          'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
       hide: true,
     );
 
