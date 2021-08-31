@@ -95,8 +95,9 @@ class TokenStore {
     flush();
   }
 
-  /// Removes tokens with matching [url] from store.
-  void removeMatchingTokens(String url) {
+  /// Removes tokens with matching [url] from store. Returns whether or not
+  /// there's a stored token with matching url.
+  bool removeMatchingTokens(String url) {
     final normalizedUrl = validateAndNormalizeHostedUrl(url);
 
     var i = 0;
@@ -112,11 +113,7 @@ class TokenStore {
 
     flush();
 
-    if (found) {
-      log.message('Token removed for server $normalizedUrl.');
-    } else {
-      log.message('No saved token found for $normalizedUrl.');
-    }
+    return found;
   }
 
   /// Returns [Token] for authenticating given url or null if no matching token

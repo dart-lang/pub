@@ -5,6 +5,7 @@
 // ignore_for_file: import_of_legacy_library_into_null_safe
 
 import '../command.dart';
+import '../log.dart' as log;
 
 /// Handles the `token remove` pub command.
 class TokenRemoveCommand extends PubCommand {
@@ -35,6 +36,12 @@ class TokenRemoveCommand extends PubCommand {
     }
 
     final hostedUrl = argResults.rest.first;
-    tokenStore.removeMatchingTokens(hostedUrl);
+    final found = tokenStore.removeMatchingTokens(hostedUrl);
+
+    if (found) {
+      log.message('Token removed for server $hostedUrl.');
+    } else {
+      log.message('No saved token found for $hostedUrl.');
+    }
   }
 }
