@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../http.dart';
+import '../log.dart' as log;
 import '../system_cache.dart';
 import 'token.dart';
 
@@ -45,26 +46,65 @@ class _AuthenticatedClient extends http.BaseClient {
 }
 
 /// Invoke [fn] with a [http.Client] capable of authenticating against
-/// [serverBaseUrl].
+/// [hostedUrl].
 ///
-/// Importantly, requests to URLs not under [serverBaseUrl] will not be
+/// Importantly, requests to URLs not under [hostedUrl] will not be
 /// authenticated.
 Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
-  Uri serverBaseUrl,
+  Uri hostedUrl,
   Future<T> Function(http.Client) fn,
 ) async {
-  final scheme = systemCache.tokenStore.findToken(serverBaseUrl);
+  final token = systemCache.tokenStore.findToken(hostedUrl);
   final http.Client client =
-      scheme == null ? httpClient : _AuthenticatedClient(httpClient, scheme);
+      token == null ? httpClient : _AuthenticatedClient(httpClient, token);
 
   try {
     return await fn(client);
-  } catch (error) {
-    if (error is PubHttpException) {
+  } on PubHttpException catch (error) {
+    if (error.response?.statusCode == 401 ||
+        error.response?.statusCode == 403) {
+      // TODO(themisir): Do we need to match error.response.request.url with
+      // the hostedUrl? Or at least we might need to log request.url to give
+      // user additional insights on what's happening.
+
+      String? serverMessage;
+
+      try {
+        final wwwAuthenticateHeaderValue =
+            error.response.headers[HttpHeaders.wwwAuthenticateHeader];
+        if (wwwAuthenticateHeaderValue != null) {
+          final parsedValue = HeaderValue.parse(wwwAuthenticateHeaderValue,
+              parameterSeparator: ',');
+          if (parsedValue.parameters['realm'] == 'pub') {
+            serverMessage = parsedValue.parameters['message'];
+          }
+        }
+      } catch (_) {
+        // Ignore errors might be caused when parsing invalid header values
+      }
+
       if (error.response.statusCode == 401) {
-        // TODO(themisir): authentication is required for the server or
-        // credential might be invalid.
+        systemCache.tokenStore.removeMatchingTokens(hostedUrl.toString());
+
+        log.error(
+          'Authentication requested by hosted server at: $hostedUrl\n'
+          'You can use the following command to add token for the server:\n'
+          '\n    pub token add $hostedUrl\n',
+        );
+      }
+      if (error.response.statusCode == 403) {
+        log.error(
+          'Insufficient permissions to the resource in hosted server at: '
+          '$hostedUrl\n'
+          'You can use the following command to update token for the server:\n'
+          '\n    pub token add $hostedUrl\n',
+        );
+      }
+
+      if (serverMessage?.isNotEmpty == true) {
+        // TODO(themisir): Sanitize and truncate serverMessage when needed.
+        log.error(serverMessage);
       }
     }
     rethrow;
