@@ -17,6 +17,7 @@ import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
+import 'pub_embeddable_command.dart';
 import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -234,7 +235,9 @@ Future<int> _runDartProgram(
 ///  [CommandResolutionFailedException].
 ///
 /// * Otherwise if the current package resolution is outdated do an implicit
-/// `pub get`, if that fails, throw a [CommandResolutionFailedException].
+///   `pub get`, if that fails, throw a [CommandResolutionFailedException].
+///
+///   This pub get will send analytics events to [analytics] if provided.
 ///
 /// * Otherwise let  `<current>` be the name of the package at [root], and
 ///   interpret [descriptor] as `[<package>][:<command>]`.
@@ -267,6 +270,7 @@ Future<String> getExecutableForCommand(
   bool allowSnapshot = true,
   String root,
   String pubCacheDir,
+  PubAnalytics analytics,
 }) async {
   root ??= p.current;
   var asPath = descriptor;
@@ -292,7 +296,11 @@ Future<String> getExecutableForCommand(
       entrypoint.assertUpToDate();
     } on DataException {
       await warningsOnlyUnlessTerminal(
-          () => entrypoint.acquireDependencies(SolveType.GET));
+        () => entrypoint.acquireDependencies(
+          SolveType.GET,
+          analytics: analytics,
+        ),
+      );
     }
 
     String command;
