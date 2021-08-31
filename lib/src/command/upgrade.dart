@@ -98,12 +98,11 @@ class UpgradeCommand extends PubCommand {
   }
 
   Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(
-      SolveType.UPGRADE,
-      unlock: argResults.rest,
-      dryRun: _dryRun,
-      precompile: _precompile,
-    );
+    await entrypoint.acquireDependencies(SolveType.UPGRADE,
+        unlock: argResults.rest,
+        dryRun: _dryRun,
+        precompile: _precompile,
+        analytics: analytics);
 
     _showOfflineWarning();
   }
@@ -210,6 +209,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
+        analytics: null, // No analytics for dry-run
       );
     } else {
       await _updatePubspec(changes);
@@ -220,6 +220,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
+        analytics: analytics,
       );
     }
 
@@ -303,6 +304,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.UPGRADE,
         dryRun: true,
         precompile: _precompile,
+        analytics: null,
       );
     } else {
       await _updatePubspec(changes);
@@ -313,6 +315,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       await Entrypoint.current(cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
+        analytics: analytics,
       );
     }
 
