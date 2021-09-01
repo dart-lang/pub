@@ -23,6 +23,7 @@ import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
 import 'validator/gitignore.dart';
 import 'validator/language_version.dart';
+import 'validator/leak_detection.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
 import 'validator/null_safety_mixed_mode.dart';
@@ -145,7 +146,8 @@ abstract class Validator {
       LanguageVersionValidator(entrypoint),
       RelativeVersionNumberingValidator(entrypoint, serverUrl),
       NullSafetyMixedModeValidator(entrypoint),
-      PubspecTypoValidator(entrypoint)
+      PubspecTypoValidator(entrypoint),
+      LeakDetectionValidator(entrypoint),
     ];
     if (packageSize != null) {
       validators.add(SizeValidator(entrypoint, packageSize));
