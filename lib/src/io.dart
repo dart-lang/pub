@@ -568,8 +568,8 @@ Future<bool> confirm(String message) {
   return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
 }
 
-/// Reads a line from stdin stream.
-Future<String> readLine(String message) {
+/// Writes [prompt] and reads a line from stdin.
+Future<String> stdinPrompt(String prompt) {
   if (runningFromTest) {
     log.message('$message:');
   } else {
