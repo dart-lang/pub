@@ -80,8 +80,7 @@ Future<int> runExecutable(
   // Also we don't snapshot if we have non-default arguments to the VM, as
   // these would be inconsistent if another set of settings are given in a
   // later invocation.
-  var useSnapshot =
-      !entrypoint.packageGraph.isPackageMutable(package) && vmArgs.isEmpty;
+  var useSnapshot = vmArgs.isEmpty;
 
   var executablePath = entrypoint.resolveExecutable(executable);
   if (!fileExists(executablePath)) {
@@ -99,7 +98,8 @@ Future<int> runExecutable(
     // automatically.
     entrypoint.assertUpToDate();
 
-    if (!fileExists(snapshotPath)) {
+    if (!fileExists(snapshotPath) ||
+        entrypoint.packageGraph.isPackageMutable(package)) {
       await recompile(executable);
     }
     executablePath = snapshotPath;
@@ -324,11 +324,12 @@ Future<String> getExecutableForCommand(
       throw CommandResolutionFailedException(
           'Could not find `bin${p.separator}$command.dart` in package `$package`.');
     }
-    if (!allowSnapshot || entrypoint.packageGraph.isPackageMutable(package)) {
+    if (!allowSnapshot) {
       return p.relative(path, from: root);
     } else {
       final snapshotPath = entrypoint.pathOfExecutable(executable);
-      if (!fileExists(snapshotPath)) {
+      if (!fileExists(snapshotPath) ||
+          entrypoint.packageGraph.isPackageMutable(package)) {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
         );

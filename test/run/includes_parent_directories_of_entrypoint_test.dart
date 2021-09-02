@@ -35,7 +35,7 @@ void main() {
 
     await pubGet();
     var pub = await pubRun(args: [path.join('tool', 'a', 'b', 'app')]);
-    expect(pub.stdout, emits('a b'));
+    expect(pub.stdout, emitsThrough('a b'));
     await pub.shouldExit();
   });
 }

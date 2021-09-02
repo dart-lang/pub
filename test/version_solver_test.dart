@@ -1759,6 +1759,44 @@ void prerelease() {
       'c': '1.0.0',
     });
   });
+
+  test('https://github.com/dart-lang/pub/issues/3057 regression', () async {
+    // This used to cause an infinite loop.
+    await servePackages((builder) {
+      builder.serve('a', '0.12.0', deps: {});
+      builder.serve('b', '0.1.0', deps: {'c': '2.0.0'});
+      builder.serve('b', '0.9.0-1', deps: {'c': '^1.6.0'});
+      builder.serve('b', '0.10.0', deps: {'a': '1.0.0'});
+      builder.serve('b', '0.17.0', deps: {'a': '1.0.0'});
+      builder.serve('c', '2.0.1', deps: {});
+    });
+
+    await d.appDir(
+      {
+        'a': '0.12.0',
+        'b': 'any',
+      },
+    ).create();
+    await expectResolves(
+        error: contains(
+            'So, because myapp depends on both a 0.12.0 and b any, version solving failed.'),
+        tries: 2);
+  });
+
+  test('https://github.com/dart-lang/pub/pull/3038 regression', () async {
+    await servePackages((builder) {
+      builder.serve('a', '1.1.0', deps: {'b': '^1.0.0'});
+      builder.serve('b', '1.0.0', deps: {'c': '^1.0.0'});
+      builder.serve('c', '0.9.0');
+      builder.serve('b', '1.1.0-alpha');
+      builder.serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
+    });
+
+    await d.appDir({
+      'a': '^1.0.0',
+    }).create();
+    await expectResolves(tries: 2);
+  });
 }
 
 void override() {

@@ -268,8 +268,7 @@ class PackageRange extends PackageName {
     if (!range.includeMin) return this;
     if (range.includeMax) return this;
     if (range.min == null) return this;
-    if (range.max == range.min.nextBreaking.firstPreRelease ||
-        (range.min.isPreRelease && range.max == range.min.nextBreaking)) {
+    if (range.max == range.min.nextBreaking.firstPreRelease) {
       return withConstraint(VersionConstraint.compatibleWith(range.min));
     } else {
       return this;

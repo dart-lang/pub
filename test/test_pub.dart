@@ -432,21 +432,13 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
-/// The test runner starts all tests from a `data:` URI.
-final bool _runningAsTestRunner = Platform.script.scheme == 'data';
-
 /// The path to the root of pub's sources in the pub repo.
 final String _pubRoot = (() {
-  // The test runner always runs from the repo directory.
-  if (_runningAsTestRunner) return p.current;
-
-  // Running from "test/../some_test.dart".
-  var script = p.fromUri(Platform.script);
-
-  var components = p.split(script);
-  var testIndex = components.indexOf('test');
-  if (testIndex == -1) throw StateError("Can't find pub's root.");
-  return p.joinAll(components.take(testIndex));
+  if (!fileExists(p.join('bin', 'pub.dart'))) {
+    throw StateError(
+        "Current working directory (${p.current} is not pub's root. Run tests from pub's root.");
+  }
+  return p.current;
 })();
 
 /// Starts a Pub process and returns a [PubProcess] that supports interaction

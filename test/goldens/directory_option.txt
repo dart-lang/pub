@@ -52,6 +52,8 @@ Resolving dependencies...
 No dependencies changed in myapp.
 
 $ pub run -C myapp bin/app.dart
+Building package executable...
+Built test_pkg:app.
 Hi
 
 $ pub publish -C myapp --dry-run

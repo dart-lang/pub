@@ -395,17 +395,14 @@ String _urlDecode(String encoded) =>
 /// Set to `true` if ANSI colors should be output regardless of terminalD
 bool forceColors = false;
 
-/// Whether "special" strings such as Unicode characters or color escapes are
-/// safe to use.
+/// Whether ansi codes such as color escapes are safe to use.
 ///
-/// On Windows or when not printing to a terminal, only printable ASCII
-/// characters should be used.
+/// On a terminal we can use ansi codes also on Windows.
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
 bool get canUseAnsiCodes =>
-    forceColors ||
-    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
@@ -423,7 +420,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    stdioType(stdout) != StdioType.terminal ||
+    !stdout.hasTerminal ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 

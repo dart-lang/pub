@@ -28,8 +28,8 @@ void main() {
 
     await pubGet();
     var pub = await pubRun(args: ['script.dart']);
-    expect(pub.stdout, emits('stdout output'));
-    expect(pub.stderr, emits('stderr output'));
+    expect(pub.stdout, emitsThrough('stdout output'));
+    expect(pub.stderr, emitsThrough('stderr output'));
     await pub.shouldExit(123);
   });
 }

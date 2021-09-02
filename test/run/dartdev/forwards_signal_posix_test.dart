@@ -45,7 +45,7 @@ void main() {
     await pubGet();
     var pub = await pubRunFromDartDev(args: ['myapp:script']);
 
-    await expectLater(pub.stdout, emits('ready'));
+    await expectLater(pub.stdout, emitsThrough('ready'));
     for (var signal in _catchableSignals) {
       pub.signal(signal);
       await expectLater(pub.stdout, emits(signal.toString()));
