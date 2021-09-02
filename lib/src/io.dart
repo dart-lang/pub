@@ -993,10 +993,10 @@ class PubProcessResult {
 
 /// The location for dart-specific configuration.
 final String dartConfigDir = () {
-  String configDir;
   if (runningFromTest) {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
+  String configDir;
   if (Platform.isLinux) {
     configDir = Platform.environment['XDG_CONFIG_HOME'] ??
         path.join(Platform.environment['HOME'], '.config');
