@@ -10,7 +10,7 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../log.dart' as log;
-import 'token.dart';
+import 'credential.dart';
 
 /// Stores and manages authentication credentials.
 class TokenStore {
@@ -19,59 +19,77 @@ class TokenStore {
   /// Cache directory.
   final String cacheRootDir;
 
-  List<Token>? _tokens;
+  /// Cached list of [Credential]s.
+  List<Credential>? _credentials;
 
   /// List of saved authentication tokens.
   ///
   /// Modifying this field will not write changes to the disk. You have to call
   /// [flush] to save changes.
-  List<Token> get tokens => _tokens ??= _loadTokens();
+  List<Credential> get credentials => _credentials ??= _loadCredentials();
 
   /// Reads "tokens.json" and parses / deserializes it into list of
-  /// [Token].
-  List<Token> _loadTokens() {
-    final result = List<Token>.empty(growable: true);
+  /// [Credential].
+  List<Credential> _loadCredentials() {
+    final result = List<Credential>.empty(growable: true);
     final path = _tokensFile;
     if (!fileExists(path)) {
       return result;
     }
 
     try {
-      final json = jsonDecode(readTextFile(path));
+      dynamic json;
+      try {
+        json = jsonDecode(readTextFile(path));
+      } on FormatException {
+        throw FormatException('$path is not valid JSON');
+      }
 
       if (json is! Map<String, dynamic>) {
-        throw FormatException('JSON contents is corrupted or not supported.');
+        throw FormatException('JSON contents is corrupted or not supported');
       }
       if (json['version'] != 1) {
-        throw FormatException('Version is not supported.');
+        throw FormatException('Version is not supported');
       }
 
       if (json.containsKey('hosted')) {
-        if (json['hosted'] is! List) {
-          throw FormatException(
-              'tokens.json format is invalid or not supported.');
+        final hosted = json['hosted'];
+
+        if (hosted is! List) {
+          throw FormatException('Invalid or not supported format');
         }
 
-        result.addAll((json['hosted'] as List)
-            .cast<Map<String, dynamic>>()
-            .map((it) => Token.fromJson(it)));
-      }
-    } on FormatException catch (error, stackTrace) {
-      log.error('Failed to load tokens.json', error, stackTrace);
+        for (final element in hosted) {
+          try {
+            if (element is! Map<String, dynamic>) {
+              throw FormatException('Invalid or not supported format');
+            }
 
-      // When an invalid, damaged or not compatible version of token.json is
-      // found, we remove it after showing error message. Otherwise the error
-      // message will be displayed on each pub command.
-      // Or instead we could write instructrions to execute
-      //`pub token remove --all` if user couldn't solve the issue.
-      deleteEntry(_tokensFile);
+            result.add(Credential.fromJson(element));
+          } on FormatException catch (e) {
+            if (element['url'] is String) {
+              log.warning(
+                'Failed to load credentials for ${element['url']}: '
+                '${e.message}',
+              );
+            } else {
+              log.warning(
+                'Failed to load credentials for unknown hosted repository: '
+                '${e.message}',
+              );
+            }
+          }
+        }
+      }
+    } on FormatException catch (e) {
+      log.warning('Failed to load tokens.json: ${e.message}');
     }
 
     return result;
   }
 
   /// Writes [tokens] into "tokens.json".
-  void _saveTokens(List<Token> tokens) {
+  void _saveTokens(List<Credential> tokens) {
     writeTextFile(
         _tokensFile,
         jsonEncode(<String, dynamic>{
@@ -82,28 +100,28 @@ class TokenStore {
 
   /// Writes latest state of the store to disk.
   void flush() {
-    if (_tokens == null) {
-      throw Exception('Schemes should be loaded before saving.');
+    if (_credentials == null) {
+      throw Exception('Credentials should be loaded before saving.');
     }
-    _saveTokens(_tokens!);
+    _saveTokens(_credentials!);
   }
 
   /// Adds [token] into store and writes into disk.
-  void addToken(Token token) {
+  void addCredential(Credential token) {
     // Remove duplicate tokens
-    tokens.removeWhere((it) => it.url == token.url);
-    tokens.add(token);
+    credentials.removeWhere((it) => it.url == token.url);
+    credentials.add(token);
     flush();
   }
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
-  bool removeMatchingTokens(Uri hostedUrl) {
+  bool removeCredential(Uri hostedUrl) {
     var i = 0;
     var found = false;
-    while (i < tokens.length) {
-      if (tokens[i].url == hostedUrl) {
-        tokens.removeAt(i);
+    while (i < credentials.length) {
+      if (credentials[i].url == hostedUrl) {
+        credentials.removeAt(i);
         found = true;
       } else {
         i++;
@@ -115,11 +133,11 @@ class TokenStore {
     return found;
   }
 
-  /// Returns [Token] for authenticating given url or null if no matching token
+  /// Returns [Credential] for authenticating given url or null if no matching token
   /// is found.
-  Token? findToken(Uri url) {
-    Token? matchedToken;
-    for (final token in tokens) {
+  Credential? findCredential(Uri url) {
+    Credential? matchedToken;
+    for (final token in credentials) {
       if (token.url == url) {
         if (matchedToken == null) {
           matchedToken = token;
@@ -138,8 +156,8 @@ class TokenStore {
 
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
-  bool hasToken(Uri url) {
-    return tokens.any((it) => it.url == url);
+  bool hasCredential(Uri url) {
+    return credentials.any((it) => it.url == url);
   }
 
   /// Deletes tokens.json file from the disk.

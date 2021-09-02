@@ -18,19 +18,19 @@ class TokenListCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (cache.tokenStore.tokens.isNotEmpty) {
+    if (cache.tokenStore.credentials.isNotEmpty) {
       log.message(
-        'You have secret tokens for ${cache.tokenStore.tokens.length} package '
+        'You have secret tokens for ${cache.tokenStore.credentials.length} package '
         'repositories:',
       );
-      for (final token in cache.tokenStore.tokens) {
+      for (final token in cache.tokenStore.credentials) {
         log.message(token.url);
       }
     } else {
       log.message(
         'You do not have any secret tokens for package repositories.\n'
         'However you can add new tokens using the command below:\n'
-        '  pub token add [hosted-url]',
+        '\n    pub token add [hosted-url]',
       );
     }
   }

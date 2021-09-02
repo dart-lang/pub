@@ -143,7 +143,7 @@ class LishCommand extends PubCommand {
 
   Future<void> _publish(List<int> packageBytes) async {
     try {
-      if (tokenStore.hasToken(server)) {
+      if (tokenStore.hasCredential(server)) {
         // If there's a saved credential for the server, publish using
         // httpClient which should authenticate with the server using
         // AuthenticationClient.

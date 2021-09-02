@@ -11,19 +11,19 @@ import 'package:http/http.dart' as http;
 import '../http.dart';
 import '../log.dart' as log;
 import '../system_cache.dart';
-import 'token.dart';
+import 'credential.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
 /// Requests to URLs not under [serverBaseUrl] will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
-  _AuthenticatedClient(this._inner, this.token);
+  _AuthenticatedClient(this._inner, this.credential);
 
   final http.BaseClient _inner;
 
   /// Authentication scheme that could be used for authenticating requests.
-  final Token token;
+  final Credential credential;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -34,9 +34,9 @@ class _AuthenticatedClient extends http.BaseClient {
     // to given serverBaseUrl. Otherwise credential leaks might ocurr when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
-    if (token.canAuthenticate(request.url.toString())) {
+    if (credential.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await token.getAuthorizationHeaderValue();
+          await credential.getAuthorizationHeaderValue();
     }
     return _inner.send(request);
   }
@@ -55,9 +55,10 @@ Future<T> withAuthenticatedClient<T>(
   Uri hostedUrl,
   Future<T> Function(http.Client) fn,
 ) async {
-  final token = systemCache.tokenStore.findToken(hostedUrl);
-  final http.Client client =
-      token == null ? httpClient : _AuthenticatedClient(httpClient, token);
+  final credential = systemCache.tokenStore.findCredential(hostedUrl);
+  final http.Client client = credential == null
+      ? httpClient
+      : _AuthenticatedClient(httpClient, credential);
 
   try {
     return await fn(client);
@@ -85,7 +86,7 @@ Future<T> withAuthenticatedClient<T>(
       }
 
       if (error.response.statusCode == 401) {
-        systemCache.tokenStore.removeMatchingTokens(hostedUrl);
+        systemCache.tokenStore.removeCredential(hostedUrl);
 
         log.error(
           'Authentication requested by hosted server at: $hostedUrl\n'

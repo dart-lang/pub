@@ -6,7 +6,7 @@
 
 import 'dart:async';
 
-import '../authentication/token.dart';
+import '../authentication/credential.dart';
 import '../command.dart';
 import '../exceptions.dart';
 import '../io.dart';
@@ -46,7 +46,7 @@ class TokenAddCommand extends PubCommand {
         usageException('Token is not provided.');
       }
 
-      tokenStore.addToken(Token.bearer(hostedUrl, token));
+      tokenStore.addCredential(Credential.bearer(hostedUrl, token));
       log.message(
         'Requests to $hostedUrl will now be authenticated using the secret '
         'token.',

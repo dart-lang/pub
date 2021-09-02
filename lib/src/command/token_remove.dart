@@ -28,7 +28,7 @@ class TokenRemoveCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     if (isAll) {
-      final count = tokenStore.tokens.length;
+      final count = tokenStore.credentials.length;
       tokenStore.deleteTokensFile();
       log.message('Removed $count secret tokens.');
       return;
@@ -43,7 +43,7 @@ class TokenRemoveCommand extends PubCommand {
 
     try {
       final hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
-      final found = tokenStore.removeMatchingTokens(hostedUrl);
+      final found = tokenStore.removeCredential(hostedUrl);
 
       if (found) {
         log.message('Removed secret token for package repository: $hostedUrl');
