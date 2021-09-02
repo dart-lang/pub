@@ -14,10 +14,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {
-          'url': 'https://server.demo',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        }
+        {'url': 'https://server.demo', 'token': 'auth-token'}
       ]
     }).create();
 
@@ -30,25 +27,21 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {
-          'url': 'https://server.demo',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        }
+        {'url': 'https://server.demo', 'token': 'auth-token'}
       ]
     }).create();
 
     await runPub(
       args: ['token', 'remove', 'https://another-server.demo'],
-      output: 'No saved token found for https://another-server.demo.',
+      output:
+          'No secret token for package repository "https://another-server.demo"'
+          ' was found.',
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {
-          'url': 'https://server.demo',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        }
+        {'url': 'https://server.demo', 'token': 'auth-token'}
       ]
     }).validate();
   });
@@ -57,14 +50,8 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {
-          'url': 'https://server.dev',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        },
-        {
-          'url': 'https://server2.com',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        }
+        {'url': 'https://server.dev', 'token': 'auth-token'},
+        {'url': 'https://server2.com', 'token': 'auth-token'}
       ]
     }).create();
 

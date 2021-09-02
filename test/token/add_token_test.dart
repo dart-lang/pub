@@ -22,10 +22,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {
-          'url': 'https://server.demo',
-          'credential': {'kind': 'Bearer', 'token': 'auth-token'},
-        }
+        {'url': 'https://server.demo', 'token': 'auth-token'}
       ]
     }).validate();
   });
@@ -34,7 +31,7 @@ void main() {
     await d.dir(cachePath).create();
     await runPub(
       args: ['token', 'add', 'http:;://invalid-url,.com'],
-      error: contains('Invalid or malformed server URL provided.'),
+      error: contains('Invalid [hosted-url]'),
       exitCode: exit_codes.USAGE,
     );
 
@@ -45,8 +42,8 @@ void main() {
     await d.dir(cachePath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
-      error: contains('Unsecure pub server could not be added.'),
-      exitCode: exit_codes.USAGE,
+      error: contains('Unsecure package repository could not be added.'),
+      exitCode: exit_codes.DATA,
     );
 
     await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
