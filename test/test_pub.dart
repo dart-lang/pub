@@ -423,9 +423,6 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
-/// The test runner starts all tests from a `data:` URI.
-final bool _runningAsTestRunner = Platform.script.scheme == 'data';
-
 /// The path to the root of pub's sources in the pub repo.
 final String _pubRoot = (() {
   if (!fileExists(p.join('bin', 'pub.dart'))) {
