@@ -62,6 +62,10 @@ String yaml(value) => jsonEncode(value);
 /// sandbox directory.
 const String cachePath = 'cache';
 
+/// The path of the config directory used for tests, relative to the
+/// sandbox directory.
+const String configPath = '.config';
+
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
 const String appPath = 'myapp';
@@ -405,6 +409,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
     'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
+    '_PUB_TEST_CONFIG_DIR': _pathInSandbox(configPath),
     'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',
 

@@ -186,25 +186,61 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int port}) {
   ]);
 }
 
-/// Describes the file in the system cache that contains the client's OAuth2
+/// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
 Descriptor credentialsFile(PackageServer server, String accessToken,
     {String refreshToken, DateTime expiration}) {
-  return dir(cachePath, [
-    file(
-        'credentials.json',
-        oauth2.Credentials(accessToken,
-                refreshToken: refreshToken,
-                tokenEndpoint: Uri.parse(server.url).resolve('/token'),
-                scopes: [
-                  'openid',
-                  'https://www.googleapis.com/auth/userinfo.email',
-                ],
-                expiration: expiration)
-            .toJson())
-  ]);
+  return dir(
+    configPath,
+    [
+      file(
+        'pub_credentials.json',
+        _credentialsFileContent(
+          server,
+          accessToken,
+          refreshToken: refreshToken,
+          expiration: expiration,
+        ),
+      ),
+    ],
+  );
 }
+
+Descriptor legacyCredentialsFile(PackageServer server, String accessToken,
+    {String refreshToken, DateTime expiration}) {
+  return dir(
+    cachePath,
+    [
+      file(
+        'credentials.json',
+        _credentialsFileContent(
+          server,
+          accessToken,
+          refreshToken: refreshToken,
+          expiration: expiration,
+        ),
+      ),
+    ],
+  );
+}
+
+String _credentialsFileContent(
+  PackageServer server,
+  String accessToken, {
+  String refreshToken,
+  DateTime expiration,
+}) =>
+    oauth2.Credentials(
+      accessToken,
+      refreshToken: refreshToken,
+      tokenEndpoint: Uri.parse(server.url).resolve('/token'),
+      scopes: [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ],
+      expiration: expiration,
+    ).toJson();
 
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].

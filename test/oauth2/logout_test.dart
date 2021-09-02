@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('with an existing credentials.json, deletes it.', () async {
+  test('with an existing credentials file, deletes it.', () async {
     await servePackages();
     await d
         .credentialsFile(globalPackageServer, 'access token',
@@ -21,13 +21,49 @@ void main() {
     await runPub(
         args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
 
+    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
+  });
+
+  test(
+      'with an existing credentials file stored in the legacy location, deletes both.',
+      () async {
+    await servePackages();
+    await d
+        .credentialsFile(
+          globalPackageServer,
+          'access token',
+          refreshToken: 'refresh token',
+          expiration: DateTime.now().add(Duration(hours: 1)),
+        )
+        .create();
+
+    await d
+        .legacyCredentialsFile(
+          globalPackageServer,
+          'access token',
+          refreshToken: 'refresh token',
+          expiration: DateTime.now().add(Duration(hours: 1)),
+        )
+        .create();
+
+    await runPub(
+      args: ['logout'],
+      output: allOf(
+        [
+          contains('Logging out of pub.dartlang.org.'),
+          contains('Also deleting legacy credentials at ')
+        ],
+      ),
+    );
+
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
   });
   test('with no existing credentials.json, notifies.', () async {
-    await d.dir(cachePath, [d.nothing('credentials.json')]).create();
+    await d.dir(configPath, [d.nothing('pub_credentials.json')]).create();
     await runPub(
         args: ['logout'], output: contains('No existing credentials file'));
 
-    await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
   });
 }

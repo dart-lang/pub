@@ -509,7 +509,18 @@ void createPackageSymlink(String name, String target, String symlink,
 ///
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
 /// invocations of pub.
-final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
+final bool runningFromTest =
+    Platform.environment.containsKey('_PUB_TESTING') && _assertionsEnabled;
+
+final bool _assertionsEnabled = () {
+  try {
+    assert(false);
+    // ignore: avoid_catching_errors
+  } on AssertionError {
+    return true;
+  }
+  return false;
+}();
 
 final bool runningFromFlutter =
     Platform.environment.containsKey('PUB_ENVIRONMENT') &&
@@ -979,3 +990,23 @@ class PubProcessResult {
 
   bool get success => exitCode == exit_codes.SUCCESS;
 }
+
+/// The location for dart-specific configuration.
+final String dartConfigDir = () {
+  String configDir;
+  if (runningFromTest) {
+    return Platform.environment['_PUB_TEST_CONFIG_DIR'];
+  }
+  if (Platform.isLinux) {
+    configDir = Platform.environment['XDG_CONFIG_HOME'] ??
+        path.join(Platform.environment['HOME'], '.config');
+  } else if (Platform.isWindows) {
+    configDir = Platform.environment['APPDATA'];
+  } else if (Platform.isMacOS) {
+    configDir = path.join(
+        Platform.environment['HOME'], 'Library', 'Application Support');
+  } else {
+    configDir = path.join(Platform.environment['HOME'], '.config');
+  }
+  return path.join(configDir, 'dart');
+}();
