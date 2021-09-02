@@ -19,6 +19,10 @@ import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
+  Process testProcess;
+  ProcessSignal.sigint.watch().listen((signal) {
+    testProcess?.kill(signal);
+  });
   final pubSnapshotFilename =
       path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
@@ -30,17 +34,15 @@ Future<void> main(List<String> args) async {
         incrementalDillOutputPath: pubSnapshotIncrementalFilename,
         name: 'bin/pub.dart',
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
-    final extension = Platform.isWindows ? '.bat' : '';
-    final testProcess = await Process.start(
-        path.join(path.dirname(Platform.resolvedExecutable), 'pub$extension'),
-        ['run', 'test', ...args],
-        environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename});
-    await Future.wait([
-      testProcess.stdout.pipe(stdout),
-      testProcess.stderr.pipe(stderr),
-    ]);
+    testProcess = await Process.start(
+      Platform.resolvedExecutable,
+      ['run', 'test', '--chain-stack-traces', ...args],
+      environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename},
+      mode: ProcessStartMode.inheritStdio,
+    );
     exitCode = await testProcess.exitCode;
-  } on ApplicationException catch (_) {
+  } on ApplicationException catch (e) {
+    print('Failed building snapshot: $e');
     exitCode = 1;
   } finally {
     try {
