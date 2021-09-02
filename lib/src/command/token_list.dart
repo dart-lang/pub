@@ -18,12 +18,20 @@ class TokenListCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    // TODO(themisir): The output interface could be improved even more with
-    // additional details line, token preview, token kind, and instructions
-    // to remove a token.
-    log.message('Found ${cache.tokenStore.tokens.length} entries.');
-    for (final scheme in cache.tokenStore.tokens) {
-      log.message(scheme.url);
+    if (cache.tokenStore.tokens.isNotEmpty) {
+      log.message(
+        'You have secret tokens for ${cache.tokenStore.tokens.length} package '
+        'repositories:',
+      );
+      for (final token in cache.tokenStore.tokens) {
+        log.message(token.url);
+      }
+    } else {
+      log.message(
+        'You do not have any secret tokens for package repositories.\n'
+        'However you can add new tokens using the command below:\n'
+        '  pub token add [hosted-url]',
+      );
     }
   }
 }

@@ -6,42 +6,54 @@
 
 import '../command.dart';
 import '../log.dart' as log;
+import '../source/hosted.dart';
 
 /// Handles the `token remove` pub command.
 class TokenRemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
   @override
-  String get description => 'Remove token for server.';
+  String get description => 'Remove secret token for package repository.';
   @override
   String get invocation => 'pub token remove';
+  @override
+  String get argumentsDescription => '[hosted-url]';
 
   bool get isAll => argResults['all'];
 
   TokenRemoveCommand() {
-    argParser.addFlag('all',
-        help: 'Removes all saved tokens from token store.');
+    argParser.addFlag('all', help: 'Remove all secret tokens.');
   }
 
   @override
   Future<void> runProtected() async {
     if (isAll) {
-      return tokenStore.deleteTokensFile();
+      final count = tokenStore.tokens.length;
+      tokenStore.deleteTokensFile();
+      log.message('Removed $count secret tokens.');
+      return;
     }
 
     if (argResults.rest.isEmpty) {
-      usageException('Must specify a package to be added.');
+      usageException(
+          'The [hosted-url] for a package repository must be specified.');
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
 
-    final hostedUrl = argResults.rest.first;
-    final found = tokenStore.removeMatchingTokens(hostedUrl);
+    try {
+      final hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
+      final found = tokenStore.removeMatchingTokens(hostedUrl);
 
-    if (found) {
-      log.message('Token removed for server $hostedUrl.');
-    } else {
-      log.message('No saved token found for $hostedUrl.');
+      if (found) {
+        log.message('Removed secret token for package repository: $hostedUrl');
+      } else {
+        log.message(
+            'No secret token for package repository "$hostedUrl" was found.');
+      }
+    } on FormatException catch (e) {
+      usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
+          '${e.message}');
     }
   }
 }

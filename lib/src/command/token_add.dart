@@ -8,6 +8,7 @@ import 'dart:async';
 
 import '../authentication/token.dart';
 import '../command.dart';
+import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
@@ -17,43 +18,47 @@ class TokenAddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description => 'Add token for a server.';
+  String get description =>
+      'Add authentication tokens for a package repository.';
   @override
   String get invocation => 'pub token add';
+  @override
+  String get argumentsDescription => '[hosted-url]';
 
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
-      usageException('Must specify a hosted server URL to be added.');
+      usageException(
+          'The [hosted-url] for a package repository must be given.');
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
 
     try {
       var hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
-
       if (hostedUrl.isScheme('HTTP')) {
-        // TODO(themisir): Improve the following message.
-        usageException('Unsecure pub server could not be added.');
+        throw DataException('Unsecure package repository could not be added.');
       }
 
-      final token = await readLine('Please enter bearer token')
-          .timeout(const Duration(minutes: 5));
-
+      final token = await stdinPrompt('Enter secret token:')
+          .timeout(const Duration(minutes: 15));
       if (token.isEmpty) {
         usageException('Token is not provided.');
       }
 
       tokenStore.addToken(Token.bearer(hostedUrl, token));
-      log.message('You are now logged in to $hostedUrl using bearer token.');
-    } on FormatException catch (_) {
-      usageException('Invalid or malformed server URL provided.');
-    } on TimeoutException catch (error, stackTrace) {
+      log.message(
+        'Requests to $hostedUrl will now be authenticated using the secret '
+        'token.',
+      );
+    } on FormatException catch (e) {
+      usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
+          '${e.message}');
+    } on TimeoutException catch (_) {
       // Timeout is added to readLine call to make sure automated jobs doesn't
       // get stuck on noop state if user forget to pipe token to the 'token add'
-      // command. This behavior might be removed..
-      log.error('Timeout error. Token is not provided within 5 minutes.', error,
-          stackTrace);
+      // command. This behavior might be removed.
+      throw ApplicationException('Token is not provided within 5 minutes.');
     }
   }
 }

@@ -14,7 +14,8 @@ class TokenCommand extends PubCommand {
   @override
   String get name => 'token';
   @override
-  String get description => 'Work with pub registry authentication.';
+  String get description =>
+      'Manage authentication tokens for hosted pub repositories.';
 
   TokenCommand() {
     addSubcommand(TokenListCommand());
