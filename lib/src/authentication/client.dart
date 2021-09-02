@@ -85,7 +85,7 @@ Future<T> withAuthenticatedClient<T>(
       }
 
       if (error.response.statusCode == 401) {
-        systemCache.tokenStore.removeMatchingTokens(hostedUrl.toString());
+        systemCache.tokenStore.removeMatchingTokens(hostedUrl);
 
         log.error(
           'Authentication requested by hosted server at: $hostedUrl\n'

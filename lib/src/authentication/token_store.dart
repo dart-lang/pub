@@ -10,7 +10,6 @@ import 'package:path/path.dart' as path;
 
 import '../io.dart';
 import '../log.dart' as log;
-import '../source/hosted.dart';
 import 'token.dart';
 
 /// Stores and manages authentication credentials.
@@ -97,15 +96,13 @@ class TokenStore {
     flush();
   }
 
-  /// Removes tokens with matching [url] from store. Returns whether or not
-  /// there's a stored token with matching url.
-  bool removeMatchingTokens(String url) {
-    final normalizedUrl = validateAndNormalizeHostedUrl(url);
-
+  /// Removes tokens with matching [hostedUrl] from store. Returns whether or
+  /// not there's a stored token with matching url.
+  bool removeMatchingTokens(Uri hostedUrl) {
     var i = 0;
     var found = false;
     while (i < tokens.length) {
-      if (tokens[i].url == normalizedUrl) {
+      if (tokens[i].url == hostedUrl) {
         tokens.removeAt(i);
         found = true;
       } else {
