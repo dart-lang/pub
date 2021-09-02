@@ -560,20 +560,15 @@ final Stream<String> _stdinLines =
 /// is false.
 Future<bool> confirm(String message) {
   log.fine('Showing confirm message: $message');
-  if (runningFromTest) {
-    log.message('$message (y/N)?');
-  } else {
-    stdout.write('$message (y/N)? ');
-  }
-  return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
+  return stdinPrompt('$message (y/N)?').then(RegExp(r'^[yY]').hasMatch);
 }
 
 /// Writes [prompt] and reads a line from stdin.
 Future<String> stdinPrompt(String prompt) {
   if (runningFromTest) {
-    log.message('$message:');
+    log.message(prompt);
   } else {
-    stdout.write('$message: ');
+    stdout.write('$prompt ');
   }
   return _stdinLines.first;
 }
