@@ -46,7 +46,7 @@ $ tool/test-bin/pub_command_runner.dart pub
 [E]   outdated    Analyze your dependencies to find which ones can be upgraded.
 [E]   publish     Publish the current package to pub.dartlang.org.
 [E]   remove      Removes a dependency from the current package.
-[E]   token       Work with pub registry authentication.
+[E]   token       Manage authentication tokens for hosted pub repositories.
 [E]   upgrade     Upgrade the current package's dependencies to latest versions.
 [E]   uploader    Manage uploaders for a package on pub.dartlang.org.
 [E] 
@@ -75,7 +75,7 @@ Available subcommands:
   outdated    Analyze your dependencies to find which ones can be upgraded.
   publish     Publish the current package to pub.dartlang.org.
   remove      Removes a dependency from the current package.
-  token       Work with pub registry authentication.
+  token       Manage authentication tokens for hosted pub repositories.
   upgrade     Upgrade the current package's dependencies to latest versions.
   uploader    Manage uploaders for a package on pub.dartlang.org.
 
