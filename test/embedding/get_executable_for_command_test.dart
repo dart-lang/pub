@@ -148,11 +148,18 @@ Future<void> main() async {
     ]).create();
     final dir = d.path(appPath);
 
-    await testGetExecutable('myapp', dir, result: 'bin${separator}myapp.dart');
+    await testGetExecutable('myapp', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
     await testGetExecutable('myapp:myapp', dir,
-        result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':myapp', dir, result: 'bin${separator}myapp.dart');
-    await testGetExecutable(':tool', dir, result: 'bin${separator}tool.dart');
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
+    await testGetExecutable(':myapp', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'myapp.dart-$_currentVersion.snapshot'));
+    await testGetExecutable(':tool', dir,
+        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+            'tool.dart-$_currentVersion.snapshot'));
     await testGetExecutable('foo', dir,
         allowSnapshot: false,
         result: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'));
