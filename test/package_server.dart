@@ -124,19 +124,20 @@ class PackageServer {
             jsonEncode({
               'name': name,
               'uploaders': ['nweiz@google.com'],
-              'versions': package.versions
-                  .map((version) => packageVersionApiMap(url, version.pubspec))
+              'versions': package.versions.values
+                  .map((version) => packageVersionApiMap(url, version.pubspec,
+                      retracted: version.isRetracted))
                   .toList(),
               if (package.isDiscontinued) 'isDiscontinued': true,
               if (package.discontinuedReplacementText != null)
                 'replacedBy': package.discontinuedReplacementText,
             })),
         d.dir(name, [
-          d.dir('versions', package.versions.map((version) {
+          d.dir('versions', package.versions.values.map((version) {
             return d.file(
                 version.version.toString(),
-                jsonEncode(
-                    packageVersionApiMap(url, version.pubspec, full: true)));
+                jsonEncode(packageVersionApiMap(url, version.pubspec,
+                    retracted: version.isRetracted, full: true)));
           }))
         ])
       ]);
@@ -144,7 +145,7 @@ class PackageServer {
       _servedPackageDir.contents.add(d.dir(name, [
         d.dir(
             'versions',
-            package.versions.map((version) =>
+            package.versions.values.map((version) =>
                 d.tar('${version.version}.tar.gz', version.contents)))
       ]));
     });
@@ -207,7 +208,7 @@ class PackageServerBuilder {
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
     var package = _packages.putIfAbsent(name, () => _ServedPackage());
-    package.versions.add(_ServedPackageVersion(pubspecFields, contents));
+    package.versions[version] = _ServedPackageVersion(pubspecFields, contents);
   }
 
   // Mark a package discontinued.
@@ -222,10 +223,14 @@ class PackageServerBuilder {
   void _clear() {
     _packages.clear();
   }
+
+  void retractPackageVersion(String name, String version) {
+    _packages[name].versions[version].isRetracted = true;
+  }
 }
 
 class _ServedPackage {
-  List<_ServedPackageVersion> versions = [];
+  final versions = <String, _ServedPackageVersion>{};
   bool isDiscontinued = false;
   String discontinuedReplacementText;
 }
@@ -234,6 +239,7 @@ class _ServedPackage {
 class _ServedPackageVersion {
   final Map pubspec;
   final List<d.Descriptor> contents;
+  bool isRetracted = false;
 
   Version get version => Version.parse(pubspec['version']);
 
