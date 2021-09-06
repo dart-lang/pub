@@ -472,7 +472,9 @@ Future<PubProcess> startPub(
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
   var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
-  dartArgs..addAll([pubPath, if (verbose) '--verbose'])..addAll(args);
+  dartArgs
+    ..addAll([pubPath, if (verbose) '--verbose'])
+    ..addAll(args);
 
   return await PubProcess.start(dartBin, dartArgs,
       environment: getPubTestEnvironment(tokenEndpoint)
