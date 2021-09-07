@@ -15,7 +15,6 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0'));
     await d.appDir({'foo': '1.0.0'}).create();
-    // await pubGet();
 
     globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
