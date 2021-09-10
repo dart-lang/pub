@@ -244,6 +244,7 @@ class SolveReport {
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
     if (newId != null && _type != SolveType.DOWNGRADE) {
+      // TODO (zarah): Filter out (or make sure it does not contain) retracted versions.
       var versions = _result.availableVersions[newId.name];
 
       var newerStable = false;
@@ -260,7 +261,11 @@ class SolveReport {
       }
       final status =
           await _cache.source(id.source).status(id, Duration(days: 3));
-      if (status.isDiscontinued) {
+
+      if (status.isRetracted) {
+        /// TODO(zarah): Add info about alternative available version
+        message = '(retracted)';
+      } else if (status.isDiscontinued) {
         if (status.discontinuedReplacedBy == null) {
           message = '(discontinued)';
         } else {

@@ -723,7 +723,8 @@ Map packageMap(
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
 /// this returns the complete map, including metadata that's only included when
 /// requesting the package version directly.
-Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
+Map packageVersionApiMap(String hostedUrl, Map pubspec,
+    {bool retracted = false, bool full = false}) {
   var name = pubspec['name'];
   var version = pubspec['version'];
   var map = {
@@ -731,6 +732,10 @@ Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
     'version': version,
     'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
   };
+
+  if (retracted) {
+    map['retracted'] = true;
+  }
 
   if (full) {
     map.addAll({

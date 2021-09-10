@@ -256,7 +256,8 @@ class BoundHostedSource extends CachedSource {
           if (archiveUrl is String) {
             final status = PackageStatus(
                 isDiscontinued: body['isDiscontinued'] as bool ?? false,
-                discontinuedReplacedBy: body['replacedBy'] as String);
+                discontinuedReplacedBy: body['replacedBy'] as String,
+                isRetracted: map['retracted'] as bool ?? false);
             return MapEntry(
                 id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
           }
