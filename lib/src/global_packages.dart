@@ -750,7 +750,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         assert(p.isAbsolute(snapshot));
         invocation = '''
 if exist "$snapshot" (
-  dart "$snapshot" %*
+  call dart "$snapshot" %*
   rem The VM exits with code 253 if the snapshot version is out-of-date.
   rem If it is, we need to delete it and run "pub global" manually.
   if not errorlevel 253 (
