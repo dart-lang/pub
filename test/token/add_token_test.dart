@@ -13,7 +13,13 @@ import '../test_pub.dart';
 void main() {
   test('with correct server url creates tokens.json that contains token',
       () async {
-    await d.dir(cachePath).create();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': 'https://example.com', 'token': 'abc'},
+      ]
+    }).create();
+
     await runPub(
       args: ['token', 'add', 'https://server.demo/'],
       input: ['auth-token'],
@@ -22,6 +28,47 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
+        {'url': 'https://example.com', 'token': 'abc'},
+        {'url': 'https://server.demo', 'token': 'auth-token'}
+      ]
+    }).validate();
+  });
+
+  test('persists unknown fields on unmodified entries', () async {
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {
+          'url': 'https://example.com',
+          'unknownField': '123',
+          'nestedField': [
+            {
+              'username': 'user',
+              'password': 'pass',
+            },
+          ],
+        }
+      ]
+    }).create();
+
+    await runPub(
+      args: ['token', 'add', 'https://server.demo/'],
+      input: ['auth-token'],
+    );
+
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {
+          'url': 'https://example.com',
+          'unknownField': '123',
+          'nestedField': [
+            {
+              'username': 'user',
+              'password': 'pass',
+            },
+          ],
+        },
         {'url': 'https://server.demo', 'token': 'auth-token'}
       ]
     }).validate();

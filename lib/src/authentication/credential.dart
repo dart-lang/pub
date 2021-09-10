@@ -4,6 +4,7 @@
 
 // ignore_for_file: import_of_legacy_library_into_null_safe
 
+import '../exceptions.dart';
 import '../source/hosted.dart';
 
 /// Token is a structure for storing authentication credentials for third-party
@@ -20,10 +21,10 @@ import '../source/hosted.dart';
 /// }
 /// ```
 class Credential {
-  Credential({required this.url, required this.token});
+  Credential({required this.url, required this.token, this.unknownFields});
 
   /// Create [Credential] instance for bearer tokens.
-  Credential.bearer(this.url, this.token);
+  Credential.bearer(this.url, this.token) : unknownFields = null;
 
   /// Deserialize [json] into [Credential] type.
   ///
@@ -34,23 +35,37 @@ class Credential {
     }
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
+    final token = json['token'] is String ? json['token'] as String : null;
 
-    if (json['token'] is! String) {
-      throw FormatException('Secret token is not provided for the token');
-    }
+    const knownKeys = {'url', 'token'};
+    final unknownFields = Map.fromEntries(
+        json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
-    return Credential(url: hostedUrl, token: json['token'] as String);
+    return Credential(
+      url: hostedUrl,
+      token: token,
+      unknownFields: unknownFields,
+    );
   }
 
   /// Server url which this token authenticates.
   final Uri url;
 
   /// Authentication token value
-  final String token;
+  final String? token;
+
+  /// Unknown fields found in tokens.json. The fields might be created by the
+  /// future version of pub tool. We don't want to override them when using the
+  /// old SDK.
+  final Map<String, dynamic>? unknownFields;
 
   /// Serializes [Credential] into json format.
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{'url': url.toString(), 'token': token};
+    return <String, dynamic>{
+      'url': url.toString(),
+      if (token != null) 'token': token,
+      if (unknownFields != null) ...unknownFields!,
+    };
   }
 
   /// Returns future that resolves "Authorization" header value used for
@@ -59,6 +74,12 @@ class Credential {
   // [Credential] interface for OAuth2.0 authentication too - which requires
   // token rotation (refresh) that's async job.
   Future<String> getAuthorizationHeaderValue() {
+    if (token == null) {
+      throw DataException(
+        'Saved credential for $url pub repository is not supported by current '
+        'version of Dart SDK.',
+      );
+    }
     return Future.value('Bearer $token');
   }
 

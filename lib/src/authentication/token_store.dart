@@ -19,14 +19,11 @@ class TokenStore {
   /// Cache directory.
   final String cacheRootDir;
 
-  /// Cached list of [Credential]s.
-  List<Credential>? _credentials;
-
   /// List of saved authentication tokens.
   ///
   /// Modifying this field will not write changes to the disk. You have to call
   /// [flush] to save changes.
-  List<Credential> get credentials => _credentials ??= _loadCredentials();
+  Iterable<Credential> get credentials => _loadCredentials();
 
   /// Reads "tokens.json" and parses / deserializes it into list of
   /// [Credential].
@@ -88,47 +85,43 @@ class TokenStore {
     return result;
   }
 
-  /// Writes [tokens] into "tokens.json".
-  void _saveTokens(List<Credential> tokens) {
+  /// Writes [credentials] into "tokens.json".
+  void _saveCredentials(List<Credential> credentials) {
     writeTextFile(
         _tokensFile,
         jsonEncode(<String, dynamic>{
           'version': 1,
-          'hosted': tokens.map((it) => it.toJson()).toList(),
+          'hosted': credentials.map((it) => it.toJson()).toList(),
         }));
-  }
-
-  /// Writes latest state of the store to disk.
-  void flush() {
-    if (_credentials == null) {
-      throw Exception('Credentials should be loaded before saving.');
-    }
-    _saveTokens(_credentials!);
   }
 
   /// Adds [token] into store and writes into disk.
   void addCredential(Credential token) {
+    final _credentials = _loadCredentials();
+
     // Remove duplicate tokens
-    credentials.removeWhere((it) => it.url == token.url);
-    credentials.add(token);
-    flush();
+    _credentials.removeWhere((it) => it.url == token.url);
+    _credentials.add(token);
+    _saveCredentials(_credentials);
   }
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
   bool removeCredential(Uri hostedUrl) {
+    final _credentials = _loadCredentials();
+
     var i = 0;
     var found = false;
-    while (i < credentials.length) {
-      if (credentials[i].url == hostedUrl) {
-        credentials.removeAt(i);
+    while (i < _credentials.length) {
+      if (_credentials[i].url == hostedUrl) {
+        _credentials.removeAt(i);
         found = true;
       } else {
         i++;
       }
     }
 
-    flush();
+    _saveCredentials(_credentials);
 
     return found;
   }
