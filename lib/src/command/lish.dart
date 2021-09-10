@@ -143,17 +143,15 @@ class LishCommand extends PubCommand {
 
   Future<void> _publish(List<int> packageBytes) async {
     try {
-      if (tokenStore.hasCredential(server)) {
-        // If there's a saved credential for the server, publish using
-        // httpClient which should authenticate with the server using
-        // AuthenticationClient.
-        await withAuthenticatedClient(cache, server, (client) {
+      if (const {'https://pub.dartlang.org', 'https://pub.dev'}
+          .contains(server.toString())) {
+        // Using OAuth2 authentication client for the official pub servers
+        await oauth2.withClient(cache, (client) {
           return _publishUsingClient(packageBytes, client);
         });
       } else {
-        // If user had not yet logged in into the server, use OAuth2 credentials
-        // for authentication.
-        await oauth2.withClient(cache, (client) {
+        // For third party servers using bearer authentication client
+        await withAuthenticatedClient(cache, server, (client) {
           return _publishUsingClient(packageBytes, client);
         });
       }
