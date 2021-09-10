@@ -4,6 +4,7 @@
 
 // @dart=2.10
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -33,9 +34,10 @@ void main() {
 
     await runPub(
       args: ['token', 'remove', 'https://another-server.demo'],
-      output:
+      error:
           'No secret token for package repository "https://another-server.demo"'
           ' was found.',
+      exitCode: exit_codes.DATA,
     );
 
     await d.tokensFile({

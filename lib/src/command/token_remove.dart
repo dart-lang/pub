@@ -5,6 +5,7 @@
 // ignore_for_file: import_of_legacy_library_into_null_safe
 
 import '../command.dart';
+import '../exceptions.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
 
@@ -48,7 +49,7 @@ class TokenRemoveCommand extends PubCommand {
       if (found) {
         log.message('Removed secret token for package repository: $hostedUrl');
       } else {
-        log.message(
+        throw DataException(
             'No secret token for package repository "$hostedUrl" was found.');
       }
     } on FormatException catch (e) {
