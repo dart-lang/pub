@@ -72,4 +72,4 @@ All patches to official Dart packages, including to pub, need to undergo code
 review before they're submitted. The full process for putting up your patch for
 review is [documented elsewhere][contributing].
 
-[contributing]: https://github.com/dart-lang/sdk/blob/master/CONTRIBUTING.md
+[contributing]: https://github.com/dart-lang/sdk/blob/main/CONTRIBUTING.md
