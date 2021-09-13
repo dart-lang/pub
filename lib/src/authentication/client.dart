@@ -86,7 +86,9 @@ Future<T> withAuthenticatedClient<T>(
       }
 
       if (error.response.statusCode == 401) {
-        systemCache.tokenStore.removeCredential(hostedUrl);
+        if (systemCache.tokenStore.removeCredential(hostedUrl)) {
+          log.warning('Invalid token for $hostedUrl deleted.');
+        }
 
         log.error(
           'Authentication requested by hosted server at: $hostedUrl\n'
@@ -104,8 +106,13 @@ Future<T> withAuthenticatedClient<T>(
       }
 
       if (serverMessage?.isNotEmpty == true) {
-        // TODO(themisir): Sanitize and truncate serverMessage when needed.
-        log.error(serverMessage);
+        // Only allow printable ASCII, map anything else to whitespace, take
+        // at-most 1024 characters.
+        final truncatedMessage = String.fromCharCodes(serverMessage!.runes
+            .map((r) => 32 >= r && r <= 127 ? r : 32)
+            .take(1024));
+
+        log.error(truncatedMessage);
       }
     }
     rethrow;
