@@ -46,7 +46,7 @@ class TokenAddCommand extends PubCommand {
         usageException('Token is not provided.');
       }
 
-      tokenStore.addCredential(Credential.bearer(hostedUrl, token));
+      tokenStore.addCredential(Credential.token(hostedUrl, token));
       log.message(
         'Requests to $hostedUrl will now be authenticated using the secret '
         'token.',

@@ -62,7 +62,12 @@ class TokenStore {
               throw FormatException('Invalid or not supported format');
             }
 
-            result.add(Credential.fromJson(element));
+            final credential = Credential.fromJson(element);
+            result.add(credential);
+
+            if (!credential.isValid()) {
+              throw FormatException('Invalid or not supported credential');
+            }
           } on FormatException catch (e) {
             if (element['url'] is String) {
               log.warning(
@@ -126,17 +131,17 @@ class TokenStore {
     return found;
   }
 
-  /// Returns [Credential] for authenticating given url or null if no matching token
-  /// is found.
-  Credential? findCredential(Uri url) {
-    Credential? matchedToken;
-    for (final token in credentials) {
-      if (token.url == url) {
-        if (matchedToken == null) {
-          matchedToken = token;
+  /// Returns [Credential] for authenticating given [hostedUrl] or null if no
+  /// matching credential is found.
+  Credential? findCredential(Uri hostedUrl) {
+    Credential? matchedCredential;
+    for (final credential in credentials) {
+      if (credential.url == hostedUrl && credential.isValid()) {
+        if (matchedCredential == null) {
+          matchedCredential = credential;
         } else {
           log.warning(
-            'Found multiple matching authentication tokens for "$url". '
+            'Found multiple matching authentication tokens for "$hostedUrl". '
             'First matching token will be used for authentication.',
           );
           break;
@@ -144,13 +149,13 @@ class TokenStore {
       }
     }
 
-    return matchedToken;
+    return matchedCredential;
   }
 
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
   bool hasCredential(Uri url) {
-    return credentials.any((it) => it.url == url);
+    return credentials.any((it) => it.url == url && it.isValid());
   }
 
   /// Deletes tokens.json file from the disk.

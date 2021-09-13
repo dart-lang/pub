@@ -21,29 +21,34 @@ import '../source/hosted.dart';
 /// }
 /// ```
 class Credential {
-  Credential({required this.url, required this.token, this.unknownFields});
+  /// Internal constructor that's only used by [fromJson].
+  Credential._internal({
+    required this.url,
+    required this.token,
+    required this.unknownFields,
+  });
 
-  /// Create [Credential] instance for bearer tokens.
-  Credential.bearer(this.url, this.token) : unknownFields = null;
+  /// Create a new [Credential].
+  Credential.token(this.url, this.token)
+      : unknownFields = const <String, dynamic>{};
 
   /// Deserialize [json] into [Credential] type.
   ///
   /// Throws [FormatException] if [json] is not a valid [Credential].
   factory Credential.fromJson(Map<String, dynamic> json) {
     if (json['url'] is! String) {
-      throw FormatException('Url is not provided for the token');
+      throw FormatException('Url is not provided for the credential');
     }
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
-    final token = json['token'] is String ? json['token'] as String : null;
 
     const knownKeys = {'url', 'token'};
     final unknownFields = Map.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
-    return Credential(
+    return Credential._internal(
       url: hostedUrl,
-      token: token,
+      token: json['token'] is String ? json['token'] as String : null,
       unknownFields: unknownFields,
     );
   }
@@ -57,29 +62,32 @@ class Credential {
   /// Unknown fields found in tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
   /// old SDK.
-  final Map<String, dynamic>? unknownFields;
+  final Map<String, dynamic> unknownFields;
 
   /// Serializes [Credential] into json format.
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'url': url.toString(),
       if (token != null) 'token': token,
-      if (unknownFields != null) ...unknownFields!,
+      ...unknownFields,
     };
   }
 
   /// Returns future that resolves "Authorization" header value used for
   /// authenticating.
+  ///
+  /// Throws [DataException] if credential is not valid.
   // This method returns future to make sure in future we could use the
   // [Credential] interface for OAuth2.0 authentication too - which requires
   // token rotation (refresh) that's async job.
   Future<String> getAuthorizationHeaderValue() {
-    if (token == null) {
+    if (!isValid()) {
       throw DataException(
         'Saved credential for $url pub repository is not supported by current '
         'version of Dart SDK.',
       );
     }
+
     return Future.value('Bearer $token');
   }
 
@@ -88,6 +96,12 @@ class Credential {
   bool canAuthenticate(String url) {
     return _normalizeUrl(url).startsWith(_normalizeUrl(this.url.toString()));
   }
+
+  /// Returns boolean indicates whether or not the credentials is valid.
+  ///
+  /// This method might return `false` when a `tokens.json` file created by
+  /// future SDK used by pub tool from old SDK.
+  bool isValid() => token != null;
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();
