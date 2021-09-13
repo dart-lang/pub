@@ -332,10 +332,11 @@ Future<void> runPub(
     error,
     outputJson,
     silent,
-    int exitCode = exit_codes.SUCCESS,
+    int exitCode,
     String workingDirectory,
     Map<String, String> environment,
     List<String> input}) async {
+  exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 

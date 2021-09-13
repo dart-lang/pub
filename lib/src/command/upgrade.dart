@@ -64,6 +64,13 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -92,23 +99,34 @@ class UpgradeCommand extends PubCommand {
     }
 
     if (_upgradeNullSafety) {
-      return await _runUpgradeNullSafety();
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --null-safety --directory example/` separately.');
+      }
+      await _runUpgradeNullSafety();
+    } else if (_upgradeMajorVersions) {
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.');
+      }
+      await _runUpgradeMajorVersions();
+    } else {
+      await _runUpgrade(entrypoint);
     }
-
-    if (_upgradeMajorVersions) {
-      return await _runUpgradeMajorVersions();
+    if (argResults['example'] && entrypoint.example != null) {
+      // Reload the entrypoint to ensure we pick up potential changes that has
+      // been made.
+      final exampleEntrypoint = Entrypoint(directory, cache).example;
+      await _runUpgrade(exampleEntrypoint, onlySummary: true);
     }
-
-    return await _runUpgrade();
   }
 
-  Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(
-      SolveType.UPGRADE,
-      unlock: argResults.rest,
-      dryRun: _dryRun,
-      precompile: _precompile,
-    );
+  Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
+    await e.acquireDependencies(SolveType.UPGRADE,
+        unlock: argResults.rest,
+        dryRun: _dryRun,
+        precompile: _precompile,
+        onlyReportSuccessOrFailure: onlySummary);
 
     _showOfflineWarning();
   }
