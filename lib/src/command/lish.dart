@@ -5,6 +5,7 @@
 // @dart=2.10
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -143,8 +144,23 @@ class LishCommand extends PubCommand {
 
   Future<void> _publish(List<int> packageBytes) async {
     try {
-      if (const {'https://pub.dartlang.org', 'https://pub.dev'}
-          .contains(server.toString())) {
+      final officialPubServers = {
+        'https://pub.dartlang.org',
+        'https://pub.dev',
+
+        // Pub uses oauth2 credentials only for authenticating official pub
+        // servers for security purposes (to not expose pub.dev access token to
+        // 3rd party servers).
+        // For testing publish command we're using mock servers hosted on
+        // localhost address which is not a known pub server address. So we
+        // explicitly have to define mock servers as official server to test
+        // publish command with oauth2 credentials.
+        if (runningFromTest &&
+            Platform.environment.containsKey('PUB_HOSTED_URL'))
+          Platform.environment['PUB_HOSTED_URL'],
+      };
+
+      if (officialPubServers.contains(server.toString())) {
         // Using OAuth2 authentication client for the official pub servers
         await oauth2.withClient(cache, (client) {
           return _publishUsingClient(packageBytes, client);
