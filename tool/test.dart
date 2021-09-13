@@ -20,7 +20,7 @@ import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
   Process testProcess;
-  ProcessSignal.sigint.watch().listen((signal) {
+  final sub = ProcessSignal.sigint.watch().listen((signal) {
     testProcess?.kill(signal);
   });
   final pubSnapshotFilename =
@@ -47,6 +47,7 @@ Future<void> main(List<String> args) async {
   } finally {
     try {
       await File(pubSnapshotFilename).delete();
+      await sub.cancel();
     } on Exception {
       // snapshot didn't exist.
     }
