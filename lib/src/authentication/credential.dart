@@ -59,7 +59,7 @@ class Credential {
   /// Authentication token value
   final String? token;
 
-  /// Unknown fields found in tokens.json. The fields might be created by the
+  /// Unknown fields found in pub-tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
   /// old SDK.
   final Map<String, dynamic> unknownFields;
@@ -99,7 +99,7 @@ class Credential {
 
   /// Returns boolean indicates whether or not the credentials is valid.
   ///
-  /// This method might return `false` when a `tokens.json` file created by
+  /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
   bool isValid() => token != null;
 

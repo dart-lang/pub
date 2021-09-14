@@ -11,7 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('with correct server url creates tokens.json that contains token',
+  test('with correct server url creates pub-tokens.json that contains token',
       () async {
     await d.tokensFile({
       'version': 1,
@@ -82,7 +82,7 @@ void main() {
       exitCode: exit_codes.USAGE,
     );
 
-    await d.dir(configPath, [d.nothing('tokens.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 
   test('with non-secure server url returns error', () async {
@@ -93,6 +93,6 @@ void main() {
       exitCode: exit_codes.DATA,
     );
 
-    await d.dir(configPath, [d.nothing('tokens.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 }
