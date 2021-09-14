@@ -2,7 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore_for_file: import_of_legacy_library_into_null_safe
+// @dart=2.11
+
+import 'package:meta/meta.dart';
 
 import '../exceptions.dart';
 import '../source/hosted.dart';
@@ -23,9 +25,9 @@ import '../source/hosted.dart';
 class Credential {
   /// Internal constructor that's only used by [fromJson].
   Credential._internal({
-    required this.url,
-    required this.token,
-    required this.unknownFields,
+    @required this.url,
+    @required this.token,
+    @required this.unknownFields,
   });
 
   /// Create a new [Credential].
@@ -57,7 +59,7 @@ class Credential {
   final Uri url;
 
   /// Authentication token value
-  final String? token;
+  final String token;
 
   /// Unknown fields found in pub-tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the

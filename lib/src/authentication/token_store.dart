@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore_for_file: import_of_legacy_library_into_null_safe
+// @dart=2.11
 
 import 'dart:convert';
 
@@ -132,10 +132,10 @@ class TokenStore {
     return found;
   }
 
-  /// Returns [Credential] for authenticating given [hostedUrl] or null if no
+  /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
   /// matching credential is found.
-  Credential? findCredential(Uri hostedUrl) {
-    Credential? matchedCredential;
+  Credential findCredential(Uri hostedUrl) {
+    Credential matchedCredential;
     for (final credential in credentials) {
       if (credential.url == hostedUrl && credential.isValid()) {
         if (matchedCredential == null) {
