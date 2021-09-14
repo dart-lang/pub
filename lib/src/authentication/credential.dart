@@ -4,6 +4,8 @@
 
 // ignore_for_file: import_of_legacy_library_into_null_safe
 
+import 'dart:io';
+
 import '../exceptions.dart';
 import '../source/hosted.dart';
 
@@ -24,13 +26,21 @@ class Credential {
   /// Internal constructor that's only used by [fromJson].
   Credential._internal({
     required this.url,
-    required this.token,
     required this.unknownFields,
+    required this.token,
+    required this.env,
   });
 
-  /// Create a new [Credential].
+  /// Create credential that stores clear text token.
   Credential.token(this.url, this.token)
-      : unknownFields = const <String, dynamic>{};
+      : env = null,
+        unknownFields = const <String, dynamic>{};
+
+  /// Create credential that stores environment variable name that stores token
+  /// value.
+  Credential.env(this.url, this.env)
+      : token = null,
+        unknownFields = const <String, dynamic>{};
 
   /// Deserialize [json] into [Credential] type.
   ///
@@ -42,14 +52,19 @@ class Credential {
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
 
-    const knownKeys = {'url', 'token'};
+    const knownKeys = {'url', 'token', 'env'};
     final unknownFields = Map.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
+    String? _optional(String key) {
+      return json[key] is String ? json[key] as String : null;
+    }
+
     return Credential._internal(
       url: hostedUrl,
-      token: json['token'] is String ? json['token'] as String : null,
       unknownFields: unknownFields,
+      token: _optional('token'),
+      env: _optional('env'),
     );
   }
 
@@ -58,6 +73,9 @@ class Credential {
 
   /// Authentication token value
   final String? token;
+
+  /// Environment variable name that stores token value
+  final String? env;
 
   /// Unknown fields found in tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
@@ -69,6 +87,7 @@ class Credential {
     return <String, dynamic>{
       'url': url.toString(),
       if (token != null) 'token': token,
+      if (env != null) 'env': env,
       ...unknownFields,
     };
   }
@@ -88,6 +107,17 @@ class Credential {
       );
     }
 
+    if (env != null) {
+      final value = Platform.environment[env];
+      if (value == null) {
+        throw DataException(
+          'Saved credential for $url pub repository requires environment '
+          'variable named $env but not defined.',
+        );
+      }
+      return Future.value('Bearer $value');
+    }
+
     return Future.value('Bearer $token');
   }
 
@@ -101,7 +131,7 @@ class Credential {
   ///
   /// This method might return `false` when a `tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
-  bool isValid() => token != null;
+  bool isValid() => token != null || env != null;
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();
