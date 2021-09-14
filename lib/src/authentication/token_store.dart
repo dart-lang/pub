@@ -14,10 +14,10 @@ import 'credential.dart';
 
 /// Stores and manages authentication credentials.
 class TokenStore {
-  TokenStore(this.cacheRootDir);
+  TokenStore(this.configDir);
 
   /// Cache directory.
-  final String cacheRootDir;
+  final String configDir;
 
   /// List of saved authentication tokens.
   ///
@@ -25,7 +25,7 @@ class TokenStore {
   /// [flush] to save changes.
   Iterable<Credential> get credentials => _loadCredentials();
 
-  /// Reads "tokens.json" and parses / deserializes it into list of
+  /// Reads "pub-tokens.json" and parses / deserializes it into list of
   /// [Credential].
   List<Credential> _loadCredentials() {
     final result = List<Credential>.empty(growable: true);
@@ -84,14 +84,15 @@ class TokenStore {
         }
       }
     } on FormatException catch (e) {
-      log.warning('Failed to load tokens.json: ${e.message}');
+      log.warning('Failed to load pub-tokens.json: ${e.message}');
     }
 
     return result;
   }
 
-  /// Writes [credentials] into "tokens.json".
+  /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
+    ensureDir(path.dirname(_tokensFile));
     writeTextFile(
         _tokensFile,
         jsonEncode(<String, dynamic>{
@@ -158,12 +159,12 @@ class TokenStore {
     return credentials.any((it) => it.url == url && it.isValid());
   }
 
-  /// Deletes tokens.json file from the disk.
+  /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
     deleteEntry(_tokensFile);
-    log.message('tokens.json is deleted.');
+    log.message('pub-tokens.json is deleted.');
   }
 
-  /// Full path to the "tokens.json" file.
-  String get _tokensFile => path.join(cacheRootDir, 'tokens.json');
+  /// Full path to the "pub-tokens.json" file.
+  String get _tokensFile => path.join(configDir, 'pub-tokens.json');
 }

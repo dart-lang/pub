@@ -89,7 +89,7 @@ class SystemCache {
   /// Defaults to `false`.
   SystemCache({String rootDir, bool isOffline = false})
       : rootDir = rootDir ?? SystemCache.defaultDir,
-        tokenStore = TokenStore(rootDir ?? SystemCache.defaultDir) {
+        tokenStore = TokenStore(dartConfigDir) {
     for (var source in sources.all) {
       if (source is HostedSource) {
         _boundSources[source] = source.bind(this, isOffline: isOffline);
