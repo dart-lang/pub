@@ -59,6 +59,6 @@ void main() {
 
     await runPub(args: ['token', 'remove', '--all']);
 
-    await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 }

@@ -2,7 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore_for_file: import_of_legacy_library_into_null_safe
+// @dart=2.11
+
+import 'package:meta/meta.dart';
 
 import 'dart:io';
 
@@ -25,10 +27,10 @@ import '../source/hosted.dart';
 class Credential {
   /// Internal constructor that's only used by [fromJson].
   Credential._internal({
-    required this.url,
-    required this.unknownFields,
-    required this.token,
-    required this.env,
+    @required this.url,
+    @required this.unknownFields,
+    @required this.token,
+    @required this.env,
   });
 
   /// Create credential that stores clear text token.
@@ -56,7 +58,7 @@ class Credential {
     final unknownFields = Map.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
-    String? _optional(String key) {
+    String _optional(String key) {
       return json[key] is String ? json[key] as String : null;
     }
 
@@ -72,12 +74,12 @@ class Credential {
   final Uri url;
 
   /// Authentication token value
-  final String? token;
+  final String token;
 
   /// Environment variable name that stores token value
   final String? env;
 
-  /// Unknown fields found in tokens.json. The fields might be created by the
+  /// Unknown fields found in pub-tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
   /// old SDK.
   final Map<String, dynamic> unknownFields;
@@ -129,7 +131,7 @@ class Credential {
 
   /// Returns boolean indicates whether or not the credentials is valid.
   ///
-  /// This method might return `false` when a `tokens.json` file created by
+  /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
   bool isValid() => token != null || env != null;
 

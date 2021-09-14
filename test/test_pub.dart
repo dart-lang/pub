@@ -62,6 +62,10 @@ String yaml(value) => jsonEncode(value);
 /// sandbox directory.
 const String cachePath = 'cache';
 
+/// The path of the config directory used for tests, relative to the
+/// sandbox directory.
+const String configPath = '.config';
+
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
 const String appPath = 'myapp';
@@ -326,16 +330,17 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub(
-    {List<String> args,
-    output,
-    error,
-    outputJson,
-    silent,
-    int exitCode,
-    String workingDirectory,
-    Map<String, String> environment,
-    List<String> input}) async {
+Future<void> runPub({
+  List<String> args,
+  output,
+  error,
+  outputJson,
+  silent,
+  int exitCode,
+  String workingDirectory,
+  Map<String, String> environment,
+  List<String> input,
+}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
@@ -415,6 +420,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
     'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
+    '_PUB_TEST_CONFIG_DIR': _pathInSandbox(configPath),
     'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',
 

@@ -11,7 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('with correct server url creates tokens.json that contains token',
+  test('with correct server url creates pub-tokens.json that contains token',
       () async {
     await d.tokensFile({
       'version': 1,
@@ -121,24 +121,24 @@ void main() {
   });
 
   test('with invalid server url returns error', () async {
-    await d.dir(cachePath).create();
+    await d.dir(configPath).create();
     await runPub(
       args: ['token', 'add', 'http:;://invalid-url,.com'],
       error: contains('Invalid [hosted-url]'),
       exitCode: exit_codes.USAGE,
     );
 
-    await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 
   test('with non-secure server url returns error', () async {
-    await d.dir(cachePath).create();
+    await d.dir(configPath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
       error: contains('Insecure package repository could not be added.'),
       exitCode: exit_codes.DATA,
     );
 
-    await d.dir(cachePath, [d.nothing('tokens.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 }
