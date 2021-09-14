@@ -26,7 +26,7 @@ class TokenAddCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
-  String? get envVar => argResults['env-var'];
+  String get envVar => argResults['env-var'];
 
   TokenAddCommand() {
     argParser.addOption('env-var',
@@ -79,13 +79,13 @@ class TokenAddCommand extends PubCommand {
   }
 
   Future<void> _addTokenFromEnv(Uri hostedUrl) async {
-    tokenStore.addCredential(Credential.env(hostedUrl, envVar!));
+    tokenStore.addCredential(Credential.env(hostedUrl, envVar));
     log.message(
       'Requests to $hostedUrl will now be authenticated using the secret '
       'token stored in environment variable.',
     );
 
-    if (!Platform.environment.containsKey(envVar!)) {
+    if (!Platform.environment.containsKey(envVar)) {
       // If environment variable doesn't exist when
       // pub token add <hosted-url> --env-var <ENV_VAR> is called, we should
       // print a warning.
