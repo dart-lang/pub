@@ -89,7 +89,7 @@ void main() {
     await d.dir(cachePath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
-      error: contains('Unsecure package repository could not be added.'),
+      error: contains('Insecure package repository could not be added.'),
       exitCode: exit_codes.DATA,
     );
 
