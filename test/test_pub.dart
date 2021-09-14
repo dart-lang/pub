@@ -330,16 +330,17 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub(
-    {List<String> args,
-    output,
-    error,
-    outputJson,
-    silent,
-    int exitCode,
-    String workingDirectory,
-    Map<String, String> environment,
-    List<String> input,}) async {
+Future<void> runPub({
+  List<String> args,
+  output,
+  error,
+  outputJson,
+  silent,
+  int exitCode,
+  String workingDirectory,
+  Map<String, String> environment,
+  List<String> input,
+}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
