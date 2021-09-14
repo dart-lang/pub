@@ -36,6 +36,12 @@ class DowngradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -54,6 +60,12 @@ class DowngradeCommand extends PubCommand {
       dryRun: dryRun,
       analytics: analytics,
     );
+    if (argResults['example'] && entrypoint.example != null) {
+      await entrypoint.example.acquireDependencies(SolveType.GET,
+          unlock: argResults.rest,
+          dryRun: dryRun,
+          onlyReportSuccessOrFailure: true);
+    }
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '

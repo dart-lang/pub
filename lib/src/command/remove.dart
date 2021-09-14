@@ -43,6 +43,13 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addFlag(
+      'example',
+      help: 'Also update dependencies in `example/` (if it exists).',
+      hide: true,
+    );
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -69,11 +76,23 @@ class RemoveCommand extends PubCommand {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
-      await Entrypoint(directory, cache).acquireDependencies(
+      /// Create a new [Entrypoint] since we have to reprocess the updated
+      /// pubspec file.
+      final updatedEntrypoint = Entrypoint(directory, cache);
+      await updatedEntrypoint.acquireDependencies(
         SolveType.GET,
         precompile: argResults['precompile'],
         analytics: analytics,
       );
+
+      if (argResults['example'] && entrypoint.example != null) {
+        await entrypoint.example.acquireDependencies(
+          SolveType.GET,
+          precompile: argResults['precompile'],
+          onlyReportSuccessOrFailure: true,
+          analytics: analytics,
+        );
+      }
     }
   }
 

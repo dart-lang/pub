@@ -18,7 +18,8 @@ void main() {
     await d.validPackage.create();
 
     await servePackages();
-    await d.dir(cachePath, [d.file('credentials.json', '{bad json')]).create();
+    await d.dir(
+        configPath, [d.file('pub-credentials.json', '{bad json')]).create();
 
     var pub = await startPublish(globalPackageServer);
     await confirmPublish(pub);

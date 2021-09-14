@@ -35,6 +35,12 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -45,9 +51,21 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    return entrypoint.acquireDependencies(SolveType.GET,
+    await entrypoint.acquireDependencies(
+      SolveType.GET,
+      dryRun: argResults['dry-run'],
+      precompile: argResults['precompile'],
+      analytics: analytics,
+    );
+
+    if (argResults['example'] && entrypoint.example != null) {
+      await entrypoint.example.acquireDependencies(
+        SolveType.GET,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile'],
-        analytics: analytics);
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+      );
+    }
   }
 }

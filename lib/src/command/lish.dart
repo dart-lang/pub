@@ -5,10 +5,12 @@
 // @dart=2.10
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
+import '../authentication/client.dart';
 import '../command.dart';
 import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
@@ -88,40 +90,42 @@ class LishCommand extends PubCommand {
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
-  Future<void> _publish(List<int> packageBytes) async {
+  Future<void> _publishUsingClient(
+    List<int> packageBytes,
+    http.BaseClient client,
+  ) async {
     Uri cloudStorageUrl;
+
     try {
-      await oauth2.withClient(cache, (client) {
-        return log.progress('Uploading', () async {
-          var newUri = server.resolve('api/packages/versions/new');
-          var response = await client.get(newUri, headers: pubApiHeaders);
-          var parameters = parseJsonResponse(response);
+      await log.progress('Uploading', () async {
+        var newUri = server.resolve('/api/packages/versions/new');
+        var response = await client.get(newUri, headers: pubApiHeaders);
+        var parameters = parseJsonResponse(response);
 
-          var url = _expectField(parameters, 'url', response);
-          if (url is! String) invalidServerResponse(response);
-          cloudStorageUrl = Uri.parse(url);
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
-          var request = http.MultipartRequest('POST', cloudStorageUrl);
+        var url = _expectField(parameters, 'url', response);
+        if (url is! String) invalidServerResponse(response);
+        cloudStorageUrl = Uri.parse(url);
+        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+        // should report that error and exit.
+        var request = http.MultipartRequest('POST', cloudStorageUrl);
 
-          var fields = _expectField(parameters, 'fields', response);
-          if (fields is! Map) invalidServerResponse(response);
-          fields.forEach((key, value) {
-            if (value is! String) invalidServerResponse(response);
-            request.fields[key] = value;
-          });
-
-          request.followRedirects = false;
-          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-              filename: 'package.tar.gz'));
-          var postResponse =
-              await http.Response.fromStream(await client.send(request));
-
-          var location = postResponse.headers['location'];
-          if (location == null) throw PubHttpException(postResponse);
-          handleJsonSuccess(
-              await client.get(Uri.parse(location), headers: pubApiHeaders));
+        var fields = _expectField(parameters, 'fields', response);
+        if (fields is! Map) invalidServerResponse(response);
+        fields.forEach((key, value) {
+          if (value is! String) invalidServerResponse(response);
+          request.fields[key] = value;
         });
+
+        request.followRedirects = false;
+        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
+            filename: 'package.tar.gz'));
+        var postResponse =
+            await http.Response.fromStream(await client.send(request));
+
+        var location = postResponse.headers['location'];
+        if (location == null) throw PubHttpException(postResponse);
+        handleJsonSuccess(
+            await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
     } on PubHttpException catch (error) {
       var url = error.response.request.url;
@@ -131,6 +135,45 @@ class LishCommand extends PubCommand {
         // XML parser.
         fail(log.red('Failed to upload the package.'));
       } else if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
+        handleJsonError(error.response);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> _publish(List<int> packageBytes) async {
+    try {
+      final officialPubServers = {
+        'https://pub.dartlang.org',
+        'https://pub.dev',
+
+        // Pub uses oauth2 credentials only for authenticating official pub
+        // servers for security purposes (to not expose pub.dev access token to
+        // 3rd party servers).
+        // For testing publish command we're using mock servers hosted on
+        // localhost address which is not a known pub server address. So we
+        // explicitly have to define mock servers as official server to test
+        // publish command with oauth2 credentials.
+        if (runningFromTest &&
+            Platform.environment.containsKey('PUB_HOSTED_URL'))
+          Platform.environment['PUB_HOSTED_URL'],
+      };
+
+      if (officialPubServers.contains(server.toString())) {
+        // Using OAuth2 authentication client for the official pub servers
+        await oauth2.withClient(cache, (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
+      } else {
+        // For third party servers using bearer authentication client
+        await withAuthenticatedClient(cache, server, (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
+      }
+    } on PubHttpException catch (error) {
+      var url = error.response.request.url;
+      if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;
