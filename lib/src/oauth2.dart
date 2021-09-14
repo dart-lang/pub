@@ -192,7 +192,7 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 ///
 /// To provide backwards compatibility we use the legacy file if only it exists.
 String _credentialsFile(SystemCache cache) {
-  final newCredentialsFile = path.join(dartConfigDir, 'pub_credentials.json');
+  final newCredentialsFile = path.join(dartConfigDir, 'pub-credentials.json');
   return [newCredentialsFile, _legacyCredentialsFile(cache)]
       .firstWhere(fileExists, orElse: () => newCredentialsFile);
 }

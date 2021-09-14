@@ -195,7 +195,7 @@ Descriptor credentialsFile(PackageServer server, String accessToken,
     configPath,
     [
       file(
-        'pub_credentials.json',
+        'pub-credentials.json',
         _credentialsFileContent(
           server,
           accessToken,

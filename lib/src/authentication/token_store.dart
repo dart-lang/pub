@@ -166,5 +166,5 @@ class TokenStore {
   }
 
   /// Full path to the "tokens.json" file.
-  String get _tokensFile => path.join(configDir, 'tokens.json');
+  String get _tokensFile => path.join(configDir, 'pub-tokens.json');
 }
