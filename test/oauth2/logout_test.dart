@@ -21,7 +21,7 @@ void main() {
     await runPub(
         args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
 
-    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
   });
 
   test(
@@ -57,13 +57,13 @@ void main() {
     );
 
     await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
-    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
   });
   test('with no existing credentials.json, notifies.', () async {
-    await d.dir(configPath, [d.nothing('pub_credentials.json')]).create();
+    await d.dir(configPath, [d.nothing('pub-credentials.json')]).create();
     await runPub(
         args: ['logout'], output: contains('No existing credentials file'));
 
-    await d.dir(configPath, [d.nothing('pub_credentials.json')]).validate();
+    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
   });
 }
