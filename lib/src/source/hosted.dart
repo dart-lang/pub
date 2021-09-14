@@ -15,6 +15,7 @@ import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -255,7 +256,8 @@ class BoundHostedSource extends CachedSource {
           if (archiveUrl is String) {
             final status = PackageStatus(
                 isDiscontinued: body['isDiscontinued'] as bool ?? false,
-                discontinuedReplacedBy: body['replacedBy'] as String);
+                discontinuedReplacedBy: body['replacedBy'] as String,
+                isRetracted: map['retracted'] as bool ?? false);
             return MapEntry(
                 id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
           }
@@ -269,6 +271,7 @@ class BoundHostedSource extends CachedSource {
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
       PackageRef ref) async {
+    final serverUrl = _hostedUrl(ref.description);
     final url = _listVersionsUrl(ref.description);
     log.io('Get versions from $url.');
 
@@ -278,7 +281,11 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      bodyText = await httpClient.read(url, headers: pubApiHeaders);
+      bodyText = await withAuthenticatedClient(
+        systemCache,
+        serverUrl,
+        (client) => client.read(url, headers: pubApiHeaders),
+      );
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
@@ -459,6 +466,12 @@ class BoundHostedSource extends CachedSource {
     return hostedUrl.resolve('api/packages/$package');
   }
 
+  /// Parses [description] into server name component.
+  Uri _hostedUrl(description) {
+    final parsed = source._parseDescription(description);
+    return parsed.last;
+  }
+
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   @override
@@ -619,14 +632,13 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
+    final parsedDescription = source._parseDescription(id.description);
+    final server = parsedDescription.last;
+
     var url = versionInfo.archiveUrl;
-    if (url == null) {
-      // To support old servers that has no archive_url we fall back to the
-      // hard-coded path.
-      final parsedDescription = source._parseDescription(id.description);
-      final server = parsedDescription.last;
-      url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
-    }
+    // To support old servers that has no archive_url we fall back to the
+    // hard-coded path.
+    url ??= Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
@@ -634,7 +646,8 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await httpClient.send(http.Request('GET', url));
+      var response = await withAuthenticatedClient(systemCache, server,
+          (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.

@@ -10,6 +10,17 @@ import 'package:pub/src/ignore.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('Ignore.ignores', () {
+    // just for sanity checking
+    test('simple case', () {
+      final ig = Ignore(['*.dart']);
+
+      expect(ig.ignores('file.dart'), isTrue);
+      expect(ig.ignores('lib/file.dart'), isTrue);
+      expect(ig.ignores('README.md'), isFalse);
+    });
+  });
+
   group('pub', () {
     void _testIgnorePath(
       TestData c,

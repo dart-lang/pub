@@ -322,6 +322,8 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// [output], [error], and [silent] can be [String]s, [RegExp]s, or [Matcher]s.
 ///
+/// If [input] is given, writes given lines into process stdin stream.
+///
 /// If [outputJson] is given, validates that pub outputs stringified JSON
 /// matching that object, which can be a literal JSON object or any other
 /// [Matcher].
@@ -334,14 +336,22 @@ Future<void> runPub(
     error,
     outputJson,
     silent,
-    int exitCode = exit_codes.SUCCESS,
+    int exitCode,
     String workingDirectory,
-    Map<String, String> environment}) async {
+    Map<String, String> environment,
+    List<String> input,}) async {
+  exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
+
+  if (input != null) {
+    input.forEach(pub.stdin.writeln);
+    await pub.stdin.flush();
+  }
+
   await pub.shouldExit(exitCode);
 
   var actualOutput = (await pub.stdoutStream().toList()).join('\n');
@@ -428,21 +438,13 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   return environment;
 }
 
-/// The test runner starts all tests from a `data:` URI.
-final bool _runningAsTestRunner = Platform.script.scheme == 'data';
-
 /// The path to the root of pub's sources in the pub repo.
 final String _pubRoot = (() {
-  // The test runner always runs from the repo directory.
-  if (_runningAsTestRunner) return p.current;
-
-  // Running from "test/../some_test.dart".
-  var script = p.fromUri(Platform.script);
-
-  var components = p.split(script);
-  var testIndex = components.indexOf('test');
-  if (testIndex == -1) throw StateError("Can't find pub's root.");
-  return p.joinAll(components.take(testIndex));
+  if (!fileExists(p.join('bin', 'pub.dart'))) {
+    throw StateError(
+        "Current working directory (${p.current} is not pub's root. Run tests from pub's root.");
+  }
+  return p.current;
 })();
 
 /// Starts a Pub process and returns a [PubProcess] that supports interaction
@@ -727,7 +729,8 @@ Map packageMap(
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
 /// this returns the complete map, including metadata that's only included when
 /// requesting the package version directly.
-Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
+Map packageVersionApiMap(String hostedUrl, Map pubspec,
+    {bool retracted = false, bool full = false}) {
   var name = pubspec['name'];
   var version = pubspec['version'];
   var map = {
@@ -735,6 +738,10 @@ Map packageVersionApiMap(String hostedUrl, Map pubspec, {bool full = false}) {
     'version': version,
     'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
   };
+
+  if (retracted) {
+    map['retracted'] = true;
+  }
 
   if (full) {
     map.addAll({

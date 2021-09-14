@@ -71,5 +71,6 @@ const _validPubspecKeys = [
   'environment',
   'executables',
   'publish_to',
-  'flutter'
+  'false_secrets',
+  'flutter',
 ];

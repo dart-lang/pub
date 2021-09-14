@@ -31,6 +31,7 @@ void main() {
         environment: getEnvironment());
 
     expect(process.stdout, emits('ok [arg1, arg2]'));
+    expect(process.stdout, neverEmits('ok [arg1, arg2]'));
     await process.shouldExit();
   });
 

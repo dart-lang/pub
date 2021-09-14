@@ -242,6 +242,13 @@ String _credentialsFileContent(
       expiration: expiration,
     ).toJson();
 
+/// Describes the file in the system cache that contains credentials for
+/// third party hosted pub servers.
+Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
+  return dir(configPath,
+      [file('tokens.json', contents != null ? jsonEncode(contents) : null)]);
+}
+
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
 DirectoryDescriptor appDir([Map dependencies]) =>

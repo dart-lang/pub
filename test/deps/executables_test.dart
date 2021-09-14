@@ -8,6 +8,7 @@ import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
+import '../ascii_tree_test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
@@ -17,8 +18,8 @@ const _invalidMain = 'main() {';
 
 Future<void> variations(String name) async {
   final buffer = StringBuffer();
-  buffer.writeln(
-      tree.fromFiles(listDir(d.sandbox, recursive: true), baseDir: d.sandbox));
+  buffer.writeln(stripColors(
+      tree.fromFiles(listDir(d.sandbox, recursive: true), baseDir: d.sandbox)));
 
   await pubGet();
   await runPubIntoBuffer(['deps', '--executables'], buffer);

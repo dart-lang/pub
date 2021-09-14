@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'authentication/token_store.dart';
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
@@ -79,12 +80,16 @@ class SystemCache {
   /// The default source bound to this cache.
   BoundSource get defaultSource => source(sources[null]);
 
+  /// The default credential store.
+  final TokenStore tokenStore;
+
   /// Creates a system cache and registers all sources in [sources].
   ///
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
   SystemCache({String rootDir, bool isOffline = false})
-      : rootDir = rootDir ?? SystemCache.defaultDir {
+      : rootDir = rootDir ?? SystemCache.defaultDir,
+        tokenStore = TokenStore(dartConfigDir) {
     for (var source in sources.all) {
       if (source is HostedSource) {
         _boundSources[source] = source.bind(this, isOffline: isOffline);
