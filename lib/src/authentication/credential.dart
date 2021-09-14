@@ -4,9 +4,9 @@
 
 // @dart=2.11
 
-import 'package:meta/meta.dart';
-
 import 'dart:io';
+
+import 'package:meta/meta.dart';
 
 import '../exceptions.dart';
 import '../source/hosted.dart';
@@ -77,7 +77,7 @@ class Credential {
   final String token;
 
   /// Environment variable name that stores token value
-  final String? env;
+  final String env;
 
   /// Unknown fields found in pub-tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
