@@ -37,7 +37,7 @@ class TokenAddCommand extends PubCommand {
     try {
       var hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
       if (hostedUrl.isScheme('HTTP')) {
-        throw DataException('Unsecure package repository could not be added.');
+        throw DataException('Insecure package repository could not be added.');
       }
 
       final token = await stdinPrompt('Enter secret token:')
@@ -58,7 +58,7 @@ class TokenAddCommand extends PubCommand {
       // Timeout is added to readLine call to make sure automated jobs doesn't
       // get stuck on noop state if user forget to pipe token to the 'token add'
       // command. This behavior might be removed.
-      throw ApplicationException('Token is not provided within 5 minutes.');
+      throw ApplicationException('Token is not provided within 15 minutes.');
     }
   }
 }
