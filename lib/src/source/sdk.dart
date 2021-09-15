@@ -72,7 +72,8 @@ class BoundSdkSource extends BoundSource {
   BoundSdkSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration maxAge, Version allowedRetractedVersion) async {
     var pubspec = _loadPubspec(ref);
     var id = PackageId(ref.name, source, pubspec.version, ref.description);
     memoizePubspec(id, pubspec);

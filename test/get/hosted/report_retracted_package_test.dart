@@ -4,8 +4,10 @@
 
 // @dart=2.10
 
+import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
+import 'package:path/path.dart' as p;
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
@@ -16,15 +18,26 @@ void main() {
       ..serve('bar', '1.0.0'));
     await d.appDir({'foo': '1.0.0'}).create();
 
-    globalPackageServer
-        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     await pubGet(output: '''
 Resolving dependencies...
-  + bar 1.0.0 (retracted)
+  + bar 1.0.0
   + foo 1.0.0
   Downloading foo 1.0.0...
   Downloading bar 1.0.0...
 Changed 2 dependencies!
+''');
+
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
+    // Delete the cache to trigger the report.
+    final barVersionsCache =
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+    expect(fileExists(barVersionsCache), isTrue);
+    deleteEntry(barVersionsCache);
+    await pubGet(output: '''
+ Resolving dependencies...
+   bar 1.0.0 (retracted)
+ Got dependencies!
 ''');
   });
 }

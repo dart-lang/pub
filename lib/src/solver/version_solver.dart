@@ -431,7 +431,9 @@ class VersionSolver {
       List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
-      var cached = _packageListers[package.toRef()]?.cachedVersions;
+      var packageLister = _packageListers[package.toRef()];
+      var allowedRetractedVersion = packageLister?.allowedRetractedVersion;
+      var cached = packageLister?.cachedVersions;
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
       // TODO(sigurdm): This has a smell. The Git source should have a
@@ -441,9 +443,10 @@ class VersionSolver {
       try {
         ids = cached ??
             (package.source is HostedSource
-                ? (await _systemCache
-                    .source(package.source)
-                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+                ? (await _systemCache.source(package.source).getVersions(
+                    package.toRef(),
+                    maxAge: Duration(days: 3),
+                    allowedRetractedVersion: allowedRetractedVersion?.version))
                 : [package]);
       } on Exception {
         ids = <PackageId>[package];
@@ -471,13 +474,18 @@ class VersionSolver {
         overridden = Set.from(overridden)..add(_root.name);
       }
 
-      return PackageLister(_systemCache, ref, locked,
-          _root.dependencyType(package.name), overridden,
+      return PackageLister(
+          _systemCache,
+          ref,
+          locked,
+          _root.dependencyType(package.name),
+          overridden,
+          _getAllowedRetracted(ref.name),
           downgrade: _type == SolveType.DOWNGRADE);
     });
   }
 
-  /// Gets the version of [ref] currently locked in the lock file.
+  /// Gets the version of [package] currently locked in the lock file.
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
   PackageId _getLocked(String package) {
@@ -497,6 +505,17 @@ class VersionSolver {
     }
 
     if (_unlock.isEmpty || _unlock.contains(package)) return null;
+    return _lockFile.packages[package];
+  }
+
+  /// Gets the version of [package] which can be allowed during version solving
+  /// even if that version is marked as retracted.
+  ///
+  /// We only allow resolving to a retracted version if it is already in the
+  /// pubspec.lock or pinned in dependency_overrides.
+  PackageId _getAllowedRetracted(String package) {
+    // TODO(zarah): Also allow dependency_overrides here.
+
     return _lockFile.packages[package];
   }
 
