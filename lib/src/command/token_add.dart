@@ -40,7 +40,7 @@ class TokenAddCommand extends PubCommand {
         throw DataException('Insecure package repository could not be added.');
       }
 
-      final token = await stdinPrompt('Enter secret token:')
+      final token = await stdinPrompt('Enter secret token:', echoMode: false)
           .timeout(const Duration(minutes: 15));
       if (token.isEmpty) {
         usageException('Token is not provided.');
