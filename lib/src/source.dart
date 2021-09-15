@@ -164,7 +164,7 @@ abstract class BoundSource {
   ///
   /// The [allowedRetractedVersion], if given, is the only version which can be
   /// selected even if it is marked as retracted. Otherwise, all the returned
-  /// IDs correspond to non-retracted versions.
+  /// Is correspond to non-retracted versions.
   Future<List<PackageId>> getVersions(PackageRef ref,
       {Duration maxAge, Version allowedRetractedVersion}) {
     if (ref.isRoot) {

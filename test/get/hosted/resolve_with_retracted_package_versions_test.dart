@@ -76,7 +76,7 @@ void main() {
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
   });
 
-  test('Offline version of pub commands also handles retracted packages',
+  test('Offline versions of pub commands also handle retracted packages',
       () async {
     await populateCache({
       'foo': ['1.0.0'],
@@ -109,7 +109,7 @@ void main() {
     // We choose bar 1.1.0 since we already have it in pubspec.lock
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    // Delete lockfile to so that retracted versions are not considered.
+    // Delete lockfile so that retracted versions are not considered.
     final lockFile = p.join(d.sandbox, appPath, 'pubspec.lock');
     expect(fileExists(lockFile), isTrue);
     deleteEntry(lockFile);
