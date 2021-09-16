@@ -61,10 +61,13 @@ class DowngradeCommand extends PubCommand {
       analytics: analytics,
     );
     if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
-          unlock: argResults.rest,
-          dryRun: dryRun,
-          onlyReportSuccessOrFailure: true);
+      await entrypoint.example.acquireDependencies(
+        SolveType.GET,
+        unlock: argResults.rest,
+        dryRun: dryRun,
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+      );
     }
 
     if (isOffline) {
