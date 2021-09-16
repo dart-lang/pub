@@ -79,7 +79,7 @@ class TokenAddCommand extends PubCommand {
     );
   }
 
-  Future<void> _addTokenFromEnv(Uri hostedUrl) async {
+  Future<void> _addEnvVarToken (Uri hostedUrl) async {
     if (envVar.isEmpty) {
       throw DataException('Cannot use the empty string as --env-var');
     }
