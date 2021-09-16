@@ -40,8 +40,10 @@ class PackageLister {
   // current version solve.
   //
   // We don't allow a retracted version during solving unless it is already
-  // present in pubspec.lock or pinned in dependency_overrides.
-  final PackageId allowedRetractedVersion;
+  // present in `pubspec.lock` or pinned in `dependency_overrides`.
+  //
+  // This is `null` if there is no retracted version that can be allowed.
+  final Version allowedRetractedVersion;
 
   /// The source from which [_ref] comes.
   final BoundSource _source;
@@ -84,7 +86,7 @@ class PackageLister {
         _cachedVersions = await withDependencyType(
             _dependencyType,
             () => _source.getVersions(_ref,
-                allowedRetractedVersion: allowedRetractedVersion?.version));
+                allowedRetractedVersion: allowedRetractedVersion));
         _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
         return _cachedVersions;
       });

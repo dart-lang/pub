@@ -446,7 +446,7 @@ class VersionSolver {
                 ? (await _systemCache.source(package.source).getVersions(
                     package.toRef(),
                     maxAge: Duration(days: 3),
-                    allowedRetractedVersion: allowedRetractedVersion?.version))
+                    allowedRetractedVersion: allowedRetractedVersion))
                 : [package]);
       } on Exception {
         ids = <PackageId>[package];
@@ -512,11 +512,11 @@ class VersionSolver {
   /// even if that version is marked as retracted.
   ///
   /// We only allow resolving to a retracted version if it is already in the
-  /// pubspec.lock or pinned in dependency_overrides.
-  PackageId _getAllowedRetracted(String package) {
+  /// `pubspec.lock` or pinned in `dependency_overrides`.
+  Version _getAllowedRetracted(String package) {
     // TODO(zarah): Also allow dependency_overrides here.
 
-    return _lockFile.packages[package];
+    return _lockFile.packages[package]?.version;
   }
 
   /// Logs [message] in the context of the current selected packages.

@@ -43,11 +43,11 @@ void main() {
             So, because myapp depends on foo 1.0.0, version solving failed.''');
   });
 
-  /// Currently retraction does not affect prioritization. I.e., if
-  /// pubspec.lock already contains a retracted version, which is the newest
-  /// satisfying the dependency contstraint we will not choose to downgrade.
-  /// In this case we expect a newer version to be published at some point which
-  /// will then cause pub upgrade to choose that one.
+  // Currently retraction does not affect prioritization. I.e., if
+  // pubspec.lock already contains a retracted version, which is the newest
+  // satisfying the dependency contstraint we will not choose to downgrade.
+  // In this case we expect a newer version to be published at some point which
+  // will then cause pub upgrade to choose that one.
   test('Allow retracted version when it was already in pubspec.lock', () async {
     await servePackages((builder) => builder
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
