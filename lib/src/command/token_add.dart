@@ -30,7 +30,7 @@ class TokenAddCommand extends PubCommand {
 
   TokenAddCommand() {
     argParser.addOption('env-var',
-        help: 'Environment variable name that stores secret token');
+        help: 'Use this environment variable to fetch the secret token.');
   }
 
   @override
@@ -48,10 +48,11 @@ class TokenAddCommand extends PubCommand {
         throw DataException('Insecure package repository could not be added.');
       }
 
-      if (envVar?.isNotEmpty == true) {
-        await _addTokenFromEnv(hostedUrl);
-      } else {
+      if (envVar == null) {
         await _addTokenFromStdin(hostedUrl);
+      } else {
+        await _addTokenFromEnvVar(hostedUrl);
+      }
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
@@ -79,10 +80,13 @@ class TokenAddCommand extends PubCommand {
   }
 
   Future<void> _addTokenFromEnv(Uri hostedUrl) async {
+    if (envVar.isEmpty) {
+      throw DataException('Cannot use the empty string as --env-var');
+    }
     tokenStore.addCredential(Credential.env(hostedUrl, envVar));
     log.message(
       'Requests to $hostedUrl will now be authenticated using the secret '
-      'token stored in environment variable.',
+      'token stored in the environment variable `$envVar`.',
     );
 
     if (!Platform.environment.containsKey(envVar)) {
