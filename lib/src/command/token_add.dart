@@ -51,8 +51,7 @@ class TokenAddCommand extends PubCommand {
       if (envVar == null) {
         await _addTokenFromStdin(hostedUrl);
       } else {
-        await _addTokenFromEnvVar(hostedUrl);
-      }
+        await _addEnvVarToken(hostedUrl);
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
@@ -79,10 +78,11 @@ class TokenAddCommand extends PubCommand {
     );
   }
 
-  Future<void> _addEnvVarToken (Uri hostedUrl) async {
+  Future<void> _addEnvVarToken(Uri hostedUrl) async {
     if (envVar.isEmpty) {
       throw DataException('Cannot use the empty string as --env-var');
     }
+
     tokenStore.addCredential(Credential.env(hostedUrl, envVar));
     log.message(
       'Requests to $hostedUrl will now be authenticated using the secret '

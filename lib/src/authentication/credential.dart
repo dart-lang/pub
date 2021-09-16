@@ -58,15 +58,25 @@ class Credential {
     final unknownFields = Map.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
-    String _optional(String key) {
-      return json[key] is String ? json[key] as String : null;
+    /// Returns [String] value from [json] at [key] index or `null` if [json]
+    /// doesn't contains [key].
+    ///
+    /// Throws [FormatException] if value type is not [String].
+    String _string(String key) {
+      if (json.containsKey(key)) {
+        if (json[key] is! String) {
+          throw FormatException('Provided $key value should be string');
+        }
+        return json[key] as String;
+      }
+      return null;
     }
 
     return Credential._internal(
       url: hostedUrl,
       unknownFields: unknownFields,
-      token: _optional('token'),
-      env: _optional('env'),
+      token: _string('token'),
+      env: _string('env'),
     );
   }
 
@@ -133,7 +143,8 @@ class Credential {
   ///
   /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
-  bool isValid() => token != null || env != null;
+  // Either [token] or [env] should be defined to be valid.
+  bool isValid() => (token == null) ^ (env == null);
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();
