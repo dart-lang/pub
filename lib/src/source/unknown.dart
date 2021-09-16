@@ -63,8 +63,7 @@ class _BoundUnknownSource extends BoundSource {
   _BoundUnknownSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(
-          PackageRef ref, Duration maxAge, Version allowedRetractedVersion) =>
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
       throw UnsupportedError(
           "Cannot get package versions from unknown source '${source.name}'.");
 

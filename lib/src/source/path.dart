@@ -165,8 +165,7 @@ class BoundPathSource extends BoundSource {
   BoundPathSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration maxAge, Version allowedRetractedVersion) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);

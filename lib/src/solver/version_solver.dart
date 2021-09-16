@@ -427,12 +427,13 @@ class VersionSolver {
   /// The version list may not always be complete. If the package is the root
   /// package, or if it's a package that we didn't unlock while solving because
   /// we weren't trying to upgrade it, we will just know the current version.
+  ///
+  /// The version list will not contain any retracted package versions.
   Future<Map<String, List<Version>>> _getAvailableVersions(
       List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       var packageLister = _packageListers[package.toRef()];
-      var allowedRetractedVersion = packageLister?.allowedRetractedVersion;
       var cached = packageLister?.cachedVersions;
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
@@ -443,10 +444,9 @@ class VersionSolver {
       try {
         ids = cached ??
             (package.source is HostedSource
-                ? (await _systemCache.source(package.source).getVersions(
-                    package.toRef(),
-                    maxAge: Duration(days: 3),
-                    allowedRetractedVersion: allowedRetractedVersion))
+                ? (await _systemCache
+                    .source(package.source)
+                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
                 : [package]);
       } on Exception {
         ids = <PackageId>[package];

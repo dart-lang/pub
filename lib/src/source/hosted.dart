@@ -447,8 +447,7 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration maxAge, Version allowedRetractedVersion) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     var versionListing = _scheduler.peek(ref);
     if (maxAge != null) {
       // Do we have a cached version response on disk?
@@ -456,11 +455,7 @@ class BoundHostedSource extends CachedSource {
     }
     versionListing ??= await _scheduler.schedule(ref);
 
-    return versionListing.keys.where((id) {
-      final info = versionListing[id];
-      return !info.status.isRetracted ||
-          (info.pubspec.version == allowedRetractedVersion);
-    }).toList();
+    return versionListing.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -801,8 +796,7 @@ class _OfflineHostedSource extends BoundHostedSource {
 
   /// Gets the list of all versions of [ref] that are in the system cache.
   @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration maxAge, Version allowedRetractedVersion) async {
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
     var parsed = source._parseDescription(ref.description);
     var server = parsed.last;
     log.io('Finding versions of ${ref.name} in '
@@ -815,19 +809,7 @@ class _OfflineHostedSource extends BoundHostedSource {
       versions = listDir(dir)
           .where(_looksLikePackageDir)
           .map((entry) => _idForBasename(p.basename(entry), url: server))
-          .toList();
-
-      versions = (await Future.wait(versions.map((id) async {
-        final packageStatus = await status(id, Duration(days: 3));
-        if (id.name == ref.name &&
-            id.version != Version.none &&
-            (!packageStatus.isRetracted ||
-                id.version == allowedRetractedVersion)) {
-          return id;
-        }
-        return null;
-      })))
-          .where((element) => element != null)
+          .where((id) => id.name == ref.name && id.version != Version.none)
           .toList();
     } else {
       versions = [];

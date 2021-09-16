@@ -43,7 +43,7 @@ class PackageLister {
   // present in `pubspec.lock` or pinned in `dependency_overrides`.
   //
   // This is `null` if there is no retracted version that can be allowed.
-  final Version allowedRetractedVersion;
+  final Version _allowedRetractedVersion;
 
   /// The source from which [_ref] comes.
   final BoundSource _source;
@@ -86,7 +86,7 @@ class PackageLister {
         _cachedVersions = await withDependencyType(
             _dependencyType,
             () => _source.getVersions(_ref,
-                allowedRetractedVersion: allowedRetractedVersion));
+                allowedRetractedVersion: _allowedRetractedVersion));
         _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
         return _cachedVersions;
       });
@@ -105,7 +105,7 @@ class PackageLister {
       this._locked,
       this._dependencyType,
       this._overriddenPackages,
-      this.allowedRetractedVersion,
+      this._allowedRetractedVersion,
       {bool downgrade = false})
       : _source = cache.source(_ref.source),
         _isDowngrade = downgrade;
@@ -121,7 +121,7 @@ class PackageLister {
         _dependencyType = DependencyType.none,
         _overriddenPackages = const UnmodifiableSetView.empty(),
         _isDowngrade = false,
-        allowedRetractedVersion = null;
+        _allowedRetractedVersion = null;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -463,8 +463,7 @@ class _RootSource extends BoundSource {
   @override
   SystemCache get systemCache => throw _unsupported;
   @override
-  Future<List<PackageId>> doGetVersions(
-          PackageRef ref, Duration maxAge, Version allowedRetractedVersion) =>
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
       throw _unsupported;
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
