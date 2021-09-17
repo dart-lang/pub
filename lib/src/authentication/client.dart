@@ -48,15 +48,17 @@ class _AuthenticatedClient extends http.BaseClient {
 
     try {
       final response = await _inner.send(request);
-      if (response.statusCode == 401) _handleError(response);
+      if (response.statusCode == 401) {
+        _throwAuthException(response);
+      }
       return response;
-    } on PubHttpException catch (error) {
-      if (error.response?.statusCode == 403) _handleError(error.response);
+    } on PubHttpException catch (e) {
+      if (e.response?.statusCode == 403) _throwAuthException(e.response);
       rethrow;
     }
   }
 
-  void _handleError(http.BaseResponse response) {
+  void _throwAuthException(http.BaseResponse response) {
     String serverMessage;
     try {
       final wwwAuthenticateHeaderValue =
