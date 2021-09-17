@@ -6,7 +6,9 @@
 
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../exceptions.dart';
 import '../http.dart';
@@ -58,20 +60,24 @@ class _AuthenticatedClient extends http.BaseClient {
     }
   }
 
+  /// Throws [AuthenticationException] that includes response status code and
+  /// message parsed from WWW-Authenticate header usign
+  /// [RFC 7235 section 4.1][RFC] specifications.
+  ///
+  /// [RFC]: https://datatracker.ietf.org/doc/html/rfc7235#section-4.1
   void _throwAuthException(http.BaseResponse response) {
     String serverMessage;
-    try {
-      final wwwAuthenticateHeaderValue =
-          response.headers[HttpHeaders.wwwAuthenticateHeader];
-      if (wwwAuthenticateHeaderValue != null) {
-        final parsedValue = HeaderValue.parse(wwwAuthenticateHeaderValue,
-            parameterSeparator: ',');
-        if (parsedValue.parameters['realm'] == 'pub') {
-          serverMessage = parsedValue.parameters['message'];
-        }
+    if (response.headers.containsKey(HttpHeaders.wwwAuthenticateHeader)) {
+      try {
+        final header = response.headers[HttpHeaders.wwwAuthenticateHeader];
+        final challenge = AuthenticationChallenge.parseHeader(header)
+            .firstWhereOrNull((challenge) =>
+                challenge.scheme == 'bearer' &&
+                challenge.parameters['realm'] == 'pub');
+        serverMessage = challenge?.parameters['message'];
+      } on FormatException {
+        // Ignore errors might be caused when parsing invalid header values
       }
-    } catch (_) {
-      // Ignore errors might be caused when parsing invalid header values
     }
     if (serverMessage != null) {
       // Only allow printable ASCII, map anything else to whitespace, take
