@@ -123,8 +123,8 @@ class Credential {
       final value = Platform.environment[env];
       if (value == null) {
         throw DataException(
-          'Saved credential for $url pub repository requires environment '
-          'variable named $env but not defined.',
+          'Saved credential for "$url" pub repository requires environment '
+          'variable named "$env" but not defined.',
         );
       }
       return Future.value('Bearer $value');

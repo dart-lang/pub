@@ -30,7 +30,7 @@ class TokenAddCommand extends PubCommand {
 
   TokenAddCommand() {
     argParser.addOption('env-var',
-        help: 'Use this environment variable to fetch the secret token.');
+        help: 'Read the secret token from this environment variable when making requests.');
   }
 
   @override
@@ -73,7 +73,7 @@ class TokenAddCommand extends PubCommand {
 
     tokenStore.addCredential(Credential.token(hostedUrl, token));
     log.message(
-      'Requests to $hostedUrl will now be authenticated using the secret '
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
       'token.',
     );
   }
@@ -85,7 +85,7 @@ class TokenAddCommand extends PubCommand {
 
     tokenStore.addCredential(Credential.env(hostedUrl, envVar));
     log.message(
-      'Requests to $hostedUrl will now be authenticated using the secret '
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
       'token stored in the environment variable `$envVar`.',
     );
 
@@ -93,7 +93,7 @@ class TokenAddCommand extends PubCommand {
       // If environment variable doesn't exist when
       // pub token add <hosted-url> --env-var <ENV_VAR> is called, we should
       // print a warning.
-      log.warning('Environment variable $envVar is not defined.');
+      log.warning('Environment variable `$envVar` is not defined.');
     }
   }
 }
