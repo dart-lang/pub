@@ -30,7 +30,8 @@ class TokenAddCommand extends PubCommand {
 
   TokenAddCommand() {
     argParser.addOption('env-var',
-        help: 'Read the secret token from this environment variable when making requests.');
+        help: 'Read the secret token from this environment variable when '
+            'making requests.');
   }
 
   @override
