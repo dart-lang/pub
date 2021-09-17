@@ -152,7 +152,7 @@ class SolveReport {
     for (var id in _result.packages) {
       if (id.source == null) continue;
       final status =
-          await _cache.source(id.source).status(id, Duration(days: 3));
+          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
       if (status.isDiscontinued) numDiscontinued++;
     }
     if (numDiscontinued > 0) {
@@ -259,7 +259,7 @@ class SolveReport {
         }
       }
       final status =
-          await _cache.source(id.source).status(id, Duration(days: 3));
+          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
 
       if (status.isRetracted) {
         /// TODO(zarah): Add info about alternative available version

@@ -177,7 +177,7 @@ abstract class BoundSource {
     var versions = await doGetVersions(ref, maxAge);
 
     versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await status(id, maxAge);
+      final packageStatus = await status(id, maxAge: maxAge);
       if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
         return id;
       }
@@ -258,9 +258,14 @@ abstract class BoundSource {
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
   String getDirectory(PackageId id, {String relativeFrom});
 
-  /// Returns metadata about a given package. Information about remotely hosted
-  /// packages can be cached for up to [maxAge].
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async =>
+  /// Returns metadata about a given package.
+  ///
+  /// For remotely hosted packages, the information can be cached for up to
+  /// [maxAge]. If [maxAge] is not given, the information is not cached.
+  ///
+  /// In the case of offline sources, [maxAge] is not used, since information is
+  /// per definiton cached.
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async =>
       // Default implementation has no metadata.
       PackageStatus();
 
