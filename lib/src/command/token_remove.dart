@@ -23,7 +23,11 @@ class TokenRemoveCommand extends PubCommand {
   bool get isAll => argResults['all'];
 
   TokenRemoveCommand() {
-    argParser.addFlag('all', help: 'Remove all secret tokens.');
+    argParser.addFlag(
+      'all',
+      negatable: false,
+      help: 'Remove all secret tokens.',
+    );
   }
 
   @override
