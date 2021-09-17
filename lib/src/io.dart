@@ -575,13 +575,21 @@ Future<bool> confirm(String message) {
 }
 
 /// Writes [prompt] and reads a line from stdin.
-Future<String> stdinPrompt(String prompt) {
+Future<String> stdinPrompt(String prompt, {bool echoMode}) {
   if (runningFromTest) {
     log.message(prompt);
   } else {
     stdout.write('$prompt ');
   }
-  return _stdinLines.first;
+  if (echoMode != null && stdin.hasTerminal) {
+    final previousEchoMode = stdin.echoMode;
+    stdin.echoMode = echoMode;
+    return _stdinLines.first.whenComplete(() {
+      stdin.echoMode = previousEchoMode;
+    });
+  } else {
+    return _stdinLines.first;
+  }
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given

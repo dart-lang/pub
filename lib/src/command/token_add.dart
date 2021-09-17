@@ -65,7 +65,7 @@ class TokenAddCommand extends PubCommand {
   }
 
   Future<void> _addTokenFromStdin(Uri hostedUrl) async {
-    final token = await stdinPrompt('Enter secret token:')
+    final token = await stdinPrompt('Enter secret token:', echoMode: false)
         .timeout(const Duration(minutes: 15));
     if (token.isEmpty) {
       usageException('Token is not provided.');
