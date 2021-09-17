@@ -454,7 +454,6 @@ class BoundHostedSource extends CachedSource {
       versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
     }
     versionListing ??= await _scheduler.schedule(ref);
-
     return versionListing.keys.toList();
   }
 

@@ -177,7 +177,7 @@ abstract class BoundSource {
     var versions = await doGetVersions(ref, maxAge);
 
     versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await status(id, Duration(days: 3));
+      final packageStatus = await status(id, maxAge);
       if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
         return id;
       }
