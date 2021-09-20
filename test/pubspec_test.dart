@@ -365,6 +365,28 @@ dependencies:
         });
       });
 
+      test(
+        'reports helpful span when using new syntax with invalid environment',
+        () {
+          var pubspec = Pubspec.parse('''
+name: pkg
+environment:
+  sdk: invalid value
+dependencies:
+  foo:
+    hosted: https://example.org/pub/
+''', sources);
+
+          expect(
+            () => pubspec.dependencies,
+            throwsA(
+              isA<PubspecException>()
+                  .having((e) => e.span.text, 'span.text', 'invalid value'),
+            ),
+          );
+        },
+      );
+
       test('without a description', () {
         var pubspec = Pubspec.parse(
           '''

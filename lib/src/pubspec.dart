@@ -821,6 +821,9 @@ class Pubspec {
     try {
       return fn();
     } on FormatException catch (e) {
+      // If we already have a pub exception with a span, re-use that
+      if (e is PubspecException) rethrow;
+
       var msg = 'Invalid $description';
       if (targetPackage != null) {
         msg = '$msg in the "$name" pubspec on the "$targetPackage" dependency';
