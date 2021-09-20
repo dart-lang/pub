@@ -77,6 +77,8 @@ abstract class Source {
   /// should be interpreted. This will be called during parsing to validate that
   /// the given [description] is well-formed according to this source, and to
   /// give the source a chance to canonicalize the description.
+  /// For simple hosted dependencies like `foo:` or `foo: ^1.2.3`, the
+  /// [description] may also be `null`.
   ///
   /// [containingPath] is the path to the pubspec where this description
   /// appears. It may be `null` if the description is coming from some in-memory

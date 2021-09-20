@@ -128,7 +128,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageRef refFor(String name, {Uri url}) =>
-      PackageRef(name, this, _descriptionFor(name, url));
+      PackageRef(name, this, _HostedDescription(name, url));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
@@ -136,7 +136,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageId idFor(String name, Version version, {Uri url}) =>
-      PackageId(name, this, version, _descriptionFor(name, url));
+      PackageId(name, this, version, _HostedDescription(name, url));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
@@ -154,7 +154,8 @@ class HostedSource extends Source {
 
   @override
   dynamic serializeDescription(String containingPath, description) {
-    return _asDescription(description).originalNode;
+    final desc = _asDescription(description);
+    return _descriptionFor(desc.packageName, desc.uri);
   }
 
   @override
@@ -182,14 +183,23 @@ class HostedSource extends Source {
   /// refers to a package with the given name from the host at the given URL.
   @override
   PackageRef parseRef(String name, description, {String containingPath}) {
-    _parseDescription(name, description);
-    return PackageRef(name, this, description);
+    return PackageRef(name, this, _parseDescription(name, description));
   }
 
   @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
-    return PackageId(name, this, version, _asDescription(description));
+    final serializedDescription = (description as Map).cast<String, String>();
+
+    return PackageId(
+      name,
+      this,
+      version,
+      _HostedDescription(
+        serializedDescription['name'],
+        Uri.parse(serializedDescription['url']),
+      ),
+    );
   }
 
   _HostedDescription _asDescription(desc) => desc;
@@ -199,8 +209,15 @@ class HostedSource extends Source {
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
   _HostedDescription _parseDescription(String packageName, description) {
+    if (description == null) {
+      // Simple dependency without a `hosted` block, use the default server.
+      return _HostedDescription(packageName, defaultUrl);
+    }
+
     if (description is String) {
-      return _HostedDescription(packageName, defaultUrl, description);
+      // We have a dependency like `foo: {hosted: '<url>'}`
+      return _HostedDescription(
+          packageName, validateAndNormalizeHostedUrl(description));
     }
 
     if (description is! Map) {
@@ -221,7 +238,7 @@ class HostedSource extends Source {
       url = validateAndNormalizeHostedUrl(u);
     }
 
-    return _HostedDescription(name, url, description);
+    return _HostedDescription(name, url);
   }
 }
 
@@ -237,9 +254,8 @@ class _VersionInfo {
 class _HostedDescription {
   final String packageName;
   final Uri uri;
-  final dynamic originalNode;
 
-  _HostedDescription(this.packageName, this.uri, this.originalNode);
+  _HostedDescription(this.packageName, this.uri);
 
   @override
   int get hashCode => Object.hash(packageName, uri);

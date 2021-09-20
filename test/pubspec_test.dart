@@ -8,6 +8,7 @@ import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -292,6 +293,90 @@ dependencies:
           'Invalid description in the "pkg" pubspec on the "from_path" '
               'dependency: "non_local_path" is a relative path, but this isn\'t a '
               'local pubspec.');
+    });
+
+    group('source dependencies', () {
+      test('with url and name', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+      name: bar
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'bar',
+        });
+      });
+
+      test('with url only', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'foo',
+        });
+      });
+
+      test('with url as string', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+    hosted: https://example.org/pub/
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'foo',
+        });
+      });
+
+      test('without a description', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://pub.dartlang.org',
+          'name': 'foo',
+        });
+      });
     });
 
     group('git dependencies', () {

@@ -655,10 +655,8 @@ class Pubspec {
       VersionConstraint versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
-        descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
       } else if (spec is String) {
-        descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
         versionConstraint = _parseVersionConstraint(specNode);
       } else if (spec is Map) {
@@ -682,7 +680,6 @@ class Pubspec {
         } else if (sourceNames.isEmpty) {
           // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
-          descriptionNode = nameNode;
         }
 
         sourceName ??= sourceNames.single;
