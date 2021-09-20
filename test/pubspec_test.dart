@@ -4,6 +4,7 @@
 
 // @dart=2.10
 
+import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
@@ -23,7 +24,8 @@ class FakeSource extends Source {
       throw UnsupportedError('Cannot download fake packages.');
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(String name, description,
+      {String containingPath, LanguageVersion languageVersion}) {
     if (description != 'ok') throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
@@ -322,6 +324,8 @@ dependencies:
         var pubspec = Pubspec.parse(
           '''
 name: pkg
+environment:
+  sdk: ^2.15.0
 dependencies:
   foo:
     hosted:
@@ -343,6 +347,8 @@ dependencies:
         var pubspec = Pubspec.parse(
           '''
 name: pkg
+environment:
+  sdk: ^2.15.0
 dependencies:
   foo:
     hosted: https://example.org/pub/
@@ -375,6 +381,35 @@ dependencies:
         expect(foo.source.serializeDescription(null, foo.description), {
           'url': 'https://pub.dartlang.org',
           'name': 'foo',
+        });
+      });
+
+      group('throws without a min SDK constraint', () {
+        test('and without a name', () {
+          expectPubspecException(
+              '''
+name: pkg
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+''',
+              (pubspec) => pubspec.dependencies,
+              "The 'name' key must have a string value without a min Dart SDK "
+                  'constraint of 2.15.');
+        });
+
+        test('and a direct url', () {
+          expectPubspecException(
+              '''
+name: pkg
+dependencies:
+  foo:
+    hosted: https://example.org/pub/
+''',
+              (pubspec) => pubspec.dependencies,
+              'Using `hosted:` with a direct URL requires a min Dart SDK '
+                  'constraint of 2.15');
         });
       });
     });

@@ -19,6 +19,7 @@ import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
+import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -182,8 +183,10 @@ class HostedSource extends Source {
   /// given name from the default host, while a map with keys "name" and "url"
   /// refers to a package with the given name from the host at the given URL.
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
-    return PackageRef(name, this, _parseDescription(name, description));
+  PackageRef parseRef(String name, description,
+      {String containingPath, LanguageVersion languageVersion}) {
+    return PackageRef(
+        name, this, _parseDescription(name, description, languageVersion));
   }
 
   @override
@@ -208,13 +211,21 @@ class HostedSource extends Source {
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  _HostedDescription _parseDescription(String packageName, description) {
+  _HostedDescription _parseDescription(
+      String packageName, description, LanguageVersion version) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
       return _HostedDescription(packageName, defaultUrl);
     }
 
+    final canUseShorthandSyntax = version >= _minVersionForShorterHostedSyntax;
+
     if (description is String) {
+      if (!canUseShorthandSyntax) {
+        throw FormatException('Using `hosted:` with a direct URL requires a '
+            'min Dart SDK constraint of $_minVersionForShorterHostedSyntax!');
+      }
+
       // We have a dependency like `foo: {hosted: '<url>'}`
       return _HostedDescription(
           packageName, validateAndNormalizeHostedUrl(description));
@@ -224,9 +235,12 @@ class HostedSource extends Source {
       throw FormatException('The description must be a package name or map.');
     }
 
-    var name = description['name'] ?? packageName;
+    var name = description['name'];
+    if (canUseShorthandSyntax) name ??= packageName;
+
     if (name is! String) {
-      throw FormatException("The 'name' key must have a string value.");
+      throw FormatException("The 'name' key must have a string value without "
+          'a min Dart SDK constraint of $_minVersionForShorterHostedSyntax.');
     }
 
     var url = defaultUrl;
@@ -240,6 +254,9 @@ class HostedSource extends Source {
 
     return _HostedDescription(name, url);
   }
+
+  static const LanguageVersion _minVersionForShorterHostedSyntax =
+      LanguageVersion(2, 15);
 }
 
 /// Information about a package version retrieved from /api/packages/$package

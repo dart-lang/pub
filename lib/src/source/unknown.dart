@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
+import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
@@ -44,7 +45,8 @@ class UnknownSource extends Source {
   int hashDescription(description) => description.hashCode;
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) =>
+  PackageRef parseRef(String name, description,
+          {String containingPath, LanguageVersion languageVersion}) =>
       PackageRef(name, this, description);
 
   @override

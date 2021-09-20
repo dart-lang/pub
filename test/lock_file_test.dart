@@ -4,6 +4,7 @@
 
 // @dart=2.10
 
+import 'package:pub/src/language_version.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source.dart';
@@ -22,7 +23,8 @@ class FakeSource extends Source {
       throw UnsupportedError('Cannot download fake packages.');
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(String name, description,
+      {String containingPath, LanguageVersion languageVersion}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageRef(name, this, description);
   }

@@ -702,7 +702,7 @@ class Pubspec {
         }
 
         return _sources[sourceName].parseRef(name, descriptionNode?.value,
-            containingPath: pubspecPath);
+            containingPath: pubspecPath, languageVersion: languageVersion);
       }, targetPackage: name);
 
       dependencies[name] =
