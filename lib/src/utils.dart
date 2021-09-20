@@ -125,11 +125,8 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
     });
   } else {
     runZonedGuarded(wrappedCallback, (e, stackTrace) {
-      if (stackTrace == null) {
-        stackTrace = Chain.current();
-      } else {
-        stackTrace = Chain([Trace.from(stackTrace)]);
-      }
+      stackTrace = Chain([Trace.from(stackTrace)]);
+
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
   }

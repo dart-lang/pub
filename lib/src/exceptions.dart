@@ -50,7 +50,7 @@ class FileException implements ApplicationException {
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
   /// The underlying exception that [this] is wrapping, if any.
-  final Object innerError;
+  final Object? innerError;
 
   /// The stack chain for [innerError] if it exists.
   final Chain? innerChain;
@@ -65,7 +65,7 @@ class WrappedException extends ApplicationException {
 /// This is usually used when an exception has already been printed using
 /// [log.exception].
 class SilentException extends WrappedException {
-  SilentException(innerError, [StackTrace? innerTrace])
+  SilentException(Object? innerError, [StackTrace? innerTrace])
       : super(innerError.toString(), innerError, innerTrace);
 }
 
@@ -92,9 +92,12 @@ class PackageNotFoundException extends WrappedException {
   /// If this failure was caused by an SDK being unavailable, this is that SDK.
   final Sdk? missingSdk;
 
-  PackageNotFoundException(String message,
-      {innerError, StackTrace? innerTrace, this.missingSdk})
-      : super(message, innerError, innerTrace);
+  PackageNotFoundException(
+    String message, {
+    Object? innerError,
+    StackTrace? innerTrace,
+    this.missingSdk,
+  }) : super(message, innerError, innerTrace);
 
   @override
   String toString() => "Package doesn't exist ($message).";
