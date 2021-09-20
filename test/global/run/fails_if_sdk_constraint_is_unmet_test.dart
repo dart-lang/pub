@@ -102,7 +102,7 @@ void main() {
         environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
         args: ['global', 'run', 'foo:script'],
         error: contains(
-            "foo as globally activated doesn't support Dart 2.0.0, try to re-activate it."),
+            "foo as globally activated doesn't support Dart 2.0.0, try: dart pub global activate foo"),
         exitCode: exit_codes.DATA);
   });
 }
