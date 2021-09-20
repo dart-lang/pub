@@ -153,52 +153,61 @@ class HostedSource extends Source {
   }
 
   @override
+  dynamic serializeDescription(String containingPath, description) {
+    return _asDescription(description).originalNode;
+  }
+
+  @override
   String formatDescription(description) =>
-      'on ${_parseDescription(description).last}';
+      'on ${_asDescription(description).uri}';
 
   @override
   bool descriptionsEqual(description1, description2) =>
-      _parseDescription(description1) == _parseDescription(description2);
+      _asDescription(description1) == _asDescription(description2);
 
   @override
-  int hashDescription(description) => _parseDescription(description).hashCode;
+  int hashDescription(description) => _asDescription(description).hashCode;
 
   /// Ensures that [description] is a valid hosted package description.
+  ///
+  /// Simple hosted dependencies only consist of a plain string, which is
+  /// resolved against the default host.
+  ///
+  /// Hosted dependencies may also specify a custom host from which the package
+  /// is fetched.
+  /// TODO
   ///
   /// There are two valid formats. A plain string refers to a package with the
   /// given name from the default host, while a map with keys "name" and "url"
   /// refers to a package with the given name from the host at the given URL.
   @override
   PackageRef parseRef(String name, description, {String containingPath}) {
-    _parseDescription(description);
+    _parseDescription(name, description);
     return PackageRef(name, this, description);
   }
 
   @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
-    _parseDescription(description);
-    return PackageId(name, this, version, description);
+    return PackageId(name, this, version, _asDescription(description));
   }
+
+  _HostedDescription _asDescription(desc) => desc;
 
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  Pair<String, Uri> _parseDescription(description) {
+  _HostedDescription _parseDescription(String packageName, description) {
     if (description is String) {
-      return Pair<String, Uri>(description, defaultUrl);
+      return _HostedDescription(packageName, defaultUrl, description);
     }
 
     if (description is! Map) {
       throw FormatException('The description must be a package name or map.');
     }
 
-    if (!description.containsKey('name')) {
-      throw FormatException("The description map must contain a 'name' key.");
-    }
-
-    var name = description['name'];
+    var name = description['name'] ?? packageName;
     if (name is! String) {
       throw FormatException("The 'name' key must have a string value.");
     }
@@ -212,7 +221,7 @@ class HostedSource extends Source {
       url = validateAndNormalizeHostedUrl(u);
     }
 
-    return Pair<String, Uri>(name, url);
+    return _HostedDescription(name, url, description);
   }
 }
 
@@ -223,6 +232,24 @@ class _VersionInfo {
   final PackageStatus status;
 
   _VersionInfo(this.pubspec, this.archiveUrl, this.status);
+}
+
+class _HostedDescription {
+  final String packageName;
+  final Uri uri;
+  final dynamic originalNode;
+
+  _HostedDescription(this.packageName, this.uri, this.originalNode);
+
+  @override
+  int get hashCode => Object.hash(packageName, uri);
+
+  @override
+  bool operator ==(Object other) {
+    return other is _HostedDescription &&
+        other.packageName == packageName &&
+        other.uri == uri;
+  }
 }
 
 /// The [BoundSource] for [HostedSource].
@@ -289,8 +316,8 @@ class BoundHostedSource extends CachedSource {
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
-      var parsed = source._parseDescription(ref.description);
-      _throwFriendlyError(error, stackTrace, parsed.first, parsed.last);
+      var parsed = source._asDescription(ref.description);
+      _throwFriendlyError(error, stackTrace, parsed.packageName, parsed.uri);
     }
 
     // Cache the response on disk.
@@ -441,8 +468,8 @@ class BoundHostedSource extends CachedSource {
 
   // The path where the response from the package-listing api is cached.
   String _versionListingCachePath(PackageRef ref) {
-    final parsed = source._parseDescription(ref.description);
-    final dir = _urlToDirectory(parsed.last);
+    final parsed = source._asDescription(ref.description);
+    final dir = _urlToDirectory(parsed.uri);
     // Use a dot-dir because older versions of pub won't choke on that
     // name when iterating the cache (it is not listed by [listDir]).
     return p.join(systemCacheRoot, dir, _versionListingDirectory,
@@ -468,16 +495,16 @@ class BoundHostedSource extends CachedSource {
   /// Parses [description] into its server and package name components, then
   /// converts that to a Uri for listing versions of the given package.
   Uri _listVersionsUrl(description) {
-    final parsed = source._parseDescription(description);
-    final hostedUrl = parsed.last;
-    final package = Uri.encodeComponent(parsed.first);
+    final parsed = source._asDescription(description);
+    final hostedUrl = parsed.uri;
+    final package = Uri.encodeComponent(parsed.packageName);
     return hostedUrl.resolve('api/packages/$package');
   }
 
   /// Parses [description] into server name component.
   Uri _hostedUrl(description) {
-    final parsed = source._parseDescription(description);
-    return parsed.last;
+    final parsed = source._asDescription(description);
+    return parsed.uri;
   }
 
   /// Retrieves the pubspec for a specific version of a package that is
@@ -509,9 +536,9 @@ class BoundHostedSource extends CachedSource {
   /// package downloaded from that site.
   @override
   String getDirectoryInCache(PackageId id) {
-    var parsed = source._parseDescription(id.description);
-    var dir = _urlToDirectory(parsed.last);
-    return p.join(systemCacheRoot, dir, '${parsed.first}-${id.version}');
+    var parsed = source._asDescription(id.description);
+    var dir = _urlToDirectory(parsed.uri);
+    return p.join(systemCacheRoot, dir, '${parsed.packageName}-${id.version}');
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -640,8 +667,8 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
-    final parsedDescription = source._parseDescription(id.description);
-    final server = parsedDescription.last;
+    final parsedDescription = source._asDescription(id.description);
+    final server = parsedDescription.uri;
 
     var url = versionInfo.archiveUrl;
     // To support old servers that has no archive_url we fall back to the
@@ -777,7 +804,7 @@ class BoundHostedSource extends CachedSource {
   }
 
   /// Returns the server URL for [description].
-  Uri _serverFor(description) => source._parseDescription(description).last;
+  Uri _serverFor(description) => source._asDescription(description).uri;
 
   /// Enables speculative prefetching of dependencies of packages queried with
   /// [getVersions].
@@ -804,8 +831,8 @@ class _OfflineHostedSource extends BoundHostedSource {
   /// Gets the list of all versions of [ref] that are in the system cache.
   @override
   Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
-    var parsed = source._parseDescription(ref.description);
-    var server = parsed.last;
+    var parsed = source._asDescription(ref.description);
+    var server = parsed.uri;
     log.io('Finding versions of ${ref.name} in '
         '$systemCacheRoot/${_urlToDirectory(server)}');
 
