@@ -173,15 +173,14 @@ class HostedSource extends Source {
   /// Ensures that [description] is a valid hosted package description.
   ///
   /// Simple hosted dependencies only consist of a plain string, which is
-  /// resolved against the default host.
+  /// resolved against the default host. In this case, [description] will be
+  /// null.
   ///
   /// Hosted dependencies may also specify a custom host from which the package
-  /// is fetched.
-  /// TODO
+  /// is fetched. There are two syntactic forms of those dependencies:
   ///
-  /// There are two valid formats. A plain string refers to a package with the
-  /// given name from the default host, while a map with keys "name" and "url"
-  /// refers to a package with the given name from the host at the given URL.
+  ///  1. With an url and an optional name in a map: `hosted: {url: <url>}`
+  ///  2. With a direct url: `hosted: <url>`
   @override
   PackageRef parseRef(String name, description,
       {String containingPath, LanguageVersion languageVersion}) {
