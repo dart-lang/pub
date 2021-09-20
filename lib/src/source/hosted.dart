@@ -217,7 +217,8 @@ class HostedSource extends Source {
       return _HostedDescription(packageName, defaultUrl);
     }
 
-    final canUseShorthandSyntax = version >= _minVersionForShorterHostedSyntax;
+    final canUseShorthandSyntax =
+        version == null || version >= _minVersionForShorterHostedSyntax;
 
     if (description is String) {
       if (!canUseShorthandSyntax) {

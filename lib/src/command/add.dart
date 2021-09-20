@@ -386,8 +386,9 @@ class AddCommand extends PubCommand {
         pubspecInformation = {'hosted': hostInfo};
       }
 
-      packageRange = PackageRange(packageName, cache.sources['hosted'],
-          constraint ?? VersionConstraint.any, hostInfo ?? packageName);
+      packageRange = cache.sources['hosted']
+          .parseRef(packageName, hostInfo)
+          .withConstraint(constraint ?? VersionConstraint.any);
     }
 
     if (pubspecInformation is Map && constraint != null) {
