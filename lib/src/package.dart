@@ -227,8 +227,9 @@ class Package {
     var root = dir;
     if (git.isInstalled) {
       try {
-        root = git
-            .runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first;
+        root = p.normalize(
+          git.runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first,
+        );
       } on git.GitException {
         // Not in a git folder.
       }
