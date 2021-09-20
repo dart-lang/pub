@@ -11,6 +11,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exec;
