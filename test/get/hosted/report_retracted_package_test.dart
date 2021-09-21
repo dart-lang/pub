@@ -40,4 +40,52 @@ Changed 2 dependencies!
  Got dependencies!
 ''');
   });
+
+  test('Report retracted packages with newer version available', () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '2.0.0')
+      ..serve('bar', '2.0.1-pre'));
+    await d.appDir({'foo': '1.0.0'}).create();
+
+    await pubGet();
+
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
+    // Delete the cache to trigger the report.
+    final barVersionsCache =
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+    expect(fileExists(barVersionsCache), isTrue);
+    deleteEntry(barVersionsCache);
+    await pubGet(output: '''
+ Resolving dependencies...
+   bar 1.0.0 (retracted, 2.0.0 available)
+ Got dependencies!
+''');
+  });
+
+  test('Report retracted packages with newer prerelease version available',
+      () async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0-pre'})
+      ..serve('bar', '1.0.0-pre')
+      ..serve('bar', '2.0.1-pre'));
+    await d.appDir({'foo': '1.0.0'}).create();
+
+    await pubGet();
+
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
+    // Delete the cache to trigger the report.
+    final barVersionsCache =
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+    expect(fileExists(barVersionsCache), isTrue);
+    deleteEntry(barVersionsCache);
+    await pubGet(output: '''
+ Resolving dependencies...
+   bar 1.0.0-pre (retracted, 2.0.1-pre available)
+ Got dependencies!
+''');
+  });
 }
