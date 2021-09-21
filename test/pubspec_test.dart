@@ -417,8 +417,8 @@ dependencies:
       url: https://example.org/pub/
 ''',
               (pubspec) => pubspec.dependencies,
-              "The 'name' key must have a string value without a min Dart SDK "
-                  'constraint of 2.15.');
+              "The 'name' key must have a string value without a minimum Dart "
+                  'SDK constraint of 2.15.');
         });
 
         test('and a direct url', () {
@@ -430,8 +430,8 @@ dependencies:
     hosted: https://example.org/pub/
 ''',
               (pubspec) => pubspec.dependencies,
-              'Using `hosted:` with a direct URL requires a min Dart SDK '
-                  'constraint of 2.15');
+              'The syntax `hosted: <hosted-url> requires a` minimum Dart SDK '
+                  'constraint of 2.15!');
         });
       });
     });

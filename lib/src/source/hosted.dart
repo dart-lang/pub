@@ -228,8 +228,8 @@ class HostedSource extends Source {
 
     if (description is String) {
       if (!canUseShorthandSyntax) {
-        throw FormatException('Using `hosted:` with a direct URL requires a '
-            'min Dart SDK constraint of $_minVersionForShorterHostedSyntax!');
+        throw FormatException('The syntax `hosted: <hosted-url> requires a` '
+            'minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax!');
       }
 
       // We have a dependency like `foo: {hosted: '<url>'}`
@@ -246,7 +246,7 @@ class HostedSource extends Source {
 
     if (name is! String) {
       throw FormatException("The 'name' key must have a string value without "
-          'a min Dart SDK constraint of $_minVersionForShorterHostedSyntax.');
+          'a minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax.');
     }
 
     var url = defaultUrl;
@@ -261,6 +261,18 @@ class HostedSource extends Source {
     return HostedDescription(name, url);
   }
 
+  /// Minimum language version at which short hosted syntax is supported.
+  ///
+  /// This allows `hosted` dependencies to be expressed as:
+  /// ```yaml
+  /// dependencies:
+  ///   foo:
+  ///     hosted: https://some-pub.com/path
+  ///     version: ^1.0.0
+  /// ```
+  ///
+  /// At older versions, `hosted` dependencies had to be a map with a `url` and
+  /// a `name` key.
   static const LanguageVersion _minVersionForShorterHostedSyntax =
       LanguageVersion(2, 15);
 }
@@ -274,6 +286,8 @@ class _VersionInfo {
   _VersionInfo(this.pubspec, this.archiveUrl, this.status);
 }
 
+/// The description for a [HostedSource], storing the package name and resolved
+/// URI of the package server.
 @visibleForTesting
 class HostedDescription {
   final String packageName;
