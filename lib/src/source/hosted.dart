@@ -10,6 +10,7 @@ import 'dart:io' as io;
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -129,7 +130,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageRef refFor(String name, {Uri url}) =>
-      PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
+      PackageRef(name, this, HostedDescription(name, url ?? defaultUrl));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
@@ -137,7 +138,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageId idFor(String name, Version version, {Uri url}) => PackageId(
-      name, this, version, _HostedDescription(name, url ?? _defaultUrl));
+      name, this, version, HostedDescription(name, url ?? defaultUrl));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
@@ -191,30 +192,35 @@ class HostedSource extends Source {
   @override
   PackageId parseId(String name, Version version, description,
       {String containingPath}) {
+    // Old pub versions only wrote `description: <pkg>` into the lock file.
+    if (description is String) {
+      assert(description == name);
+      return PackageId(
+          name, this, version, HostedDescription(name, defaultUrl));
+    }
+
     final serializedDescription = (description as Map).cast<String, String>();
 
     return PackageId(
       name,
       this,
       version,
-      _HostedDescription(
-        serializedDescription['name'],
-        Uri.parse(serializedDescription['url']),
-      ),
+      HostedDescription(serializedDescription['name'],
+          Uri.parse(serializedDescription['url'])),
     );
   }
 
-  _HostedDescription _asDescription(desc) => desc;
+  HostedDescription _asDescription(desc) => desc;
 
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  _HostedDescription _parseDescription(
+  HostedDescription _parseDescription(
       String packageName, description, LanguageVersion version) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
-      return _HostedDescription(packageName, defaultUrl);
+      return HostedDescription(packageName, defaultUrl);
     }
 
     final canUseShorthandSyntax =
@@ -227,7 +233,7 @@ class HostedSource extends Source {
       }
 
       // We have a dependency like `foo: {hosted: '<url>'}`
-      return _HostedDescription(
+      return HostedDescription(
           packageName, validateAndNormalizeHostedUrl(description));
     }
 
@@ -252,7 +258,7 @@ class HostedSource extends Source {
       url = validateAndNormalizeHostedUrl(u);
     }
 
-    return _HostedDescription(name, url);
+    return HostedDescription(name, url);
   }
 
   static const LanguageVersion _minVersionForShorterHostedSyntax =
@@ -268,11 +274,12 @@ class _VersionInfo {
   _VersionInfo(this.pubspec, this.archiveUrl, this.status);
 }
 
-class _HostedDescription {
+@visibleForTesting
+class HostedDescription {
   final String packageName;
   final Uri uri;
 
-  _HostedDescription(this.packageName, this.uri) {
+  HostedDescription(this.packageName, this.uri) {
     ArgumentError.checkNotNull(packageName, 'packageName');
     ArgumentError.checkNotNull(uri, 'uri');
   }
@@ -282,7 +289,7 @@ class _HostedDescription {
 
   @override
   bool operator ==(Object other) {
-    return other is _HostedDescription &&
+    return other is HostedDescription &&
         other.packageName == packageName &&
         other.uri == uri;
   }
