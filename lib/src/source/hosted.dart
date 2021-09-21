@@ -136,8 +136,8 @@ class HostedSource extends Source {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageId idFor(String name, Version version, {Uri url}) =>
-      PackageId(name, this, version, _HostedDescription(name, url));
+  PackageId idFor(String name, Version version, {Uri url}) => PackageId(
+      name, this, version, _HostedDescription(name, url ?? _defaultUrl));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
