@@ -117,4 +117,57 @@ void main() {
     await pubGet(args: ['--offline']);
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
   });
+
+  test('Allow retracted version when pinned in dependency_overrides', () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
+      builder.serve('foo', '3.0.0');
+    });
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '<3.0.0'},
+        'dependency_overrides': {'foo': '2.0.0'}
+      })
+    ]).create();
+
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
+
+    await pubGet();
+    await d.appPackagesFile({'foo': '2.0.0'}).validate();
+  });
+
+  test('Prefer retracted version in dependency_overrides over pubspec.lock',
+      () async {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
+      builder.serve('foo', '3.0.0');
+    });
+
+    await d.appDir({'foo': 'any'}).create();
+    await pubGet();
+
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('foo', '3.0.0'));
+
+    await pubUpgrade();
+    await d.appPackagesFile({'foo': '3.0.0'}).validate();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '<=3.0.0'},
+        'dependency_overrides': {'foo': '2.0.0'}
+      })
+    ]).create();
+
+    await pubUpgrade();
+    await d.appPackagesFile({'foo': '2.0.0'}).validate();
+  });
 }
