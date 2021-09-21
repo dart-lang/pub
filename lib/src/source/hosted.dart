@@ -286,8 +286,8 @@ class _VersionInfo {
   _VersionInfo(this.pubspec, this.archiveUrl, this.status);
 }
 
-/// The description for a [HostedSource], storing the package name and resolved
-/// URI of the package server.
+/// The [PackageName.description] for a [HostedSource], storing the package name
+/// and resolved URI of the package server.
 @visibleForTesting
 class HostedDescription {
   final String packageName;
