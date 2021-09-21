@@ -632,6 +632,15 @@ class BoundHostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   Future _download(PackageId id, String destPath) async {
+    // We never want to use a cached `archive_url`, so we never attempt to load
+    // the version listing from cache. Besides in most cases we already have
+    // downloaded a fresh copy of the version listing response in the in-memory
+    // cache, so looking in the file-system is pointless.
+    //
+    // We avoid using cached `archive_url` values because the `archive_url` for
+    // a custom package server may include a temporary signature in the
+    // query-string as is the case with signed S3 URLs. And we wish to allow for
+    // such URLs to be used.
     final versions = await _scheduler.schedule(id.toRef());
     final versionInfo = versions[id];
     final packageName = id.name;
