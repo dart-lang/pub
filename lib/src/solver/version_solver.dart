@@ -68,16 +68,19 @@ class VersionSolver {
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
-  /// The set of package names that were overridden by the root package, for
-  /// which other packages' constraints should be ignored.
-  final Set<String> _overriddenPackages;
+  /// The dependency constraints that this package overrides when it is the
+  /// root package.
+  ///
+  /// Dependencies here will replace any dependency on a package with the same
+  /// name anywhere in the dependency graph.
+  final Map<String, PackageRange> _dependencyOverrides;
 
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> unlock)
-      : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
+      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -467,7 +470,7 @@ class VersionSolver {
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
-      var overridden = _overriddenPackages;
+      Set<String> overridden = MapKeySet(_dependencyOverrides);
       if (overridden.contains(package.name)) {
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
@@ -514,8 +517,13 @@ class VersionSolver {
   /// We only allow resolving to a retracted version if it is already in the
   /// `pubspec.lock` or pinned in `dependency_overrides`.
   Version _getAllowedRetracted(String package) {
-    // TODO(zarah): Also allow dependency_overrides here.
-
+    if (_dependencyOverrides.containsKey(package)) {
+      var range = _dependencyOverrides[package];
+      if (range.constraint is Version) {
+        // We have a pinned dependency.
+        return range.constraint;
+      }
+    }
     return _lockFile.packages[package]?.version;
   }
 
