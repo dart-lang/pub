@@ -129,7 +129,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageRef refFor(String name, {Uri url}) =>
-      PackageRef(name, this, _HostedDescription(name, url));
+      PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
@@ -272,7 +272,10 @@ class _HostedDescription {
   final String packageName;
   final Uri uri;
 
-  _HostedDescription(this.packageName, this.uri);
+  _HostedDescription(this.packageName, this.uri) {
+    ArgumentError.checkNotNull(packageName, 'packageName');
+    ArgumentError.checkNotNull(uri, 'uri');
+  }
 
   @override
   int get hashCode => Object.hash(packageName, uri);
