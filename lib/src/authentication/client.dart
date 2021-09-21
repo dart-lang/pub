@@ -75,7 +75,8 @@ class _AuthenticatedClient extends http.BaseClient {
         final challenge = AuthenticationChallenge.parseHeader(header)
             .firstWhereOrNull((challenge) =>
                 challenge.scheme == 'bearer' &&
-                challenge.parameters['realm'] == 'pub');
+                challenge.parameters['realm'] == 'pub'
+                challenge.parameters['message'] != null);
         serverMessage = challenge?.parameters['message'];
       } on FormatException {
         // Ignore errors might be caused when parsing invalid header values
