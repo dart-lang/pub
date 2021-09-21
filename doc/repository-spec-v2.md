@@ -100,7 +100,7 @@ The `dart pub` client will in many cases to display error messages when given a
 response as follows:
 
 ```http
-HTTP/1.1 4XX OK
+HTTP/1.1 4XX Bad Request
 Content-Type: application/vnd.pub.v2+json
 {
   "error": {
@@ -126,11 +126,12 @@ as follows:
 
 Tokens can be added to `dart pub` client using the command:
 
- *  `dart pub token add <hosted-url>`.
+ * `dart pub token add <hosted-url>`
 
 This command will prompt the user for the `<token>` on stdin, reducing the risk
-that the `<token>` is accidentally stored in shell history. For further details
-on token management see: `dart pub token --help`.
+that the `<token>` is accidentally stored in shell history. For security reasons
+authentication can only be used when `<hosted-url>` uses HTTPS. For further
+details on token management see: `dart pub token --help`.
 
 
 ### Missing Authentication or Invalid Token
@@ -156,7 +157,8 @@ When receiving a `401` response the `dart pub` client shall:
  * Inform the user that authentication is required,
  * Print the `<message>` provided by the server.
 
-The `<message>` allows a custom _package server_ to how a token may be obtained.
+The `<message>` allows a custom _package server_ to inform the user how a token
+may be obtained.
 For example, a server might specify a URL from which tokens can be created, as
 illustrated below:
 
@@ -245,9 +247,9 @@ server, this could work in many different ways.
 }
 ```
 
-To fetch the package archive an HTTP `GET` request _following redirects must be
-made to the URL given as `archive_url`. The response (after following redirects)
-must be a gzipped TAR archive.
+To fetch the package archive an HTTP `GET` request **following redirects** must
+be made to the URL given as `archive_url`.
+The response (after following redirects) must be a gzipped TAR archive.
 
 The `archive_url` may be temporary and is allowed to include query-string
 parameters. This allows for the server to return signed-URLs for S3, GCS or
@@ -337,7 +339,7 @@ The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
 accepts the uploaded package the server should respond:
 
 ```http
-HTTP/1.1 200 OK
+HTTP/1.1 200 Ok
 Content-Type: application/vnd.pub.v2+json
 {
   "success": {
@@ -355,7 +357,7 @@ inform the user about this in the `<message>`.
 
 If the server does not want to accept the uploaded package, it can respond:
 ```http
-HTTP/1.1 400 OK
+HTTP/1.1 400 Bad Request
 Content-Type: application/vnd.pub.v2+json
 {
   "error": {
