@@ -365,6 +365,28 @@ dependencies:
         });
       });
 
+      test('interprets string description as name for older versions', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+environment:
+  sdk: ^2.14.0
+dependencies:
+  foo:
+    hosted: bar
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': (foo.source as HostedSource).defaultUrl.toString(),
+          'name': 'bar',
+        });
+      });
+
       test(
         'reports helpful span when using new syntax with invalid environment',
         () {
@@ -419,19 +441,6 @@ dependencies:
               (pubspec) => pubspec.dependencies,
               "The 'name' key must have a string value without a minimum Dart "
                   'SDK constraint of 2.15.');
-        });
-
-        test('and a direct url', () {
-          expectPubspecException(
-              '''
-name: pkg
-dependencies:
-  foo:
-    hosted: https://example.org/pub/
-''',
-              (pubspec) => pubspec.dependencies,
-              'The syntax `hosted: <hosted-url> requires a` minimum Dart SDK '
-                  'constraint of 2.15!');
         });
       });
     });

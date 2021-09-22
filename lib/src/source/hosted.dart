@@ -227,14 +227,16 @@ class HostedSource extends Source {
         version == null || version >= _minVersionForShorterHostedSyntax;
 
     if (description is String) {
-      if (!canUseShorthandSyntax) {
-        throw FormatException('The syntax `hosted: <hosted-url> requires a` '
-            'minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax!');
+      // Old versions of pub (pre Dart 2.15) interpret `hosted: foo` as
+      // `hosted: {name: foo, url: <default>}`.
+      // For later versions, we treat it as `hosted: {name: <inferred>,
+      // url: foo}` if a user opts in by raising their min SDK environment.
+      if (canUseShorthandSyntax) {
+        return HostedDescription(
+            packageName, validateAndNormalizeHostedUrl(description));
+      } else {
+        return HostedDescription(description, defaultUrl);
       }
-
-      // We have a dependency like `foo: {hosted: '<url>'}`
-      return HostedDescription(
-          packageName, validateAndNormalizeHostedUrl(description));
     }
 
     if (description is! Map) {

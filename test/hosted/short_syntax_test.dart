@@ -54,5 +54,34 @@ void main() {
         'hosted': {'url': globalPackageServer.url},
       });
     });
+
+    test('interprets hosted string as name for older versions', () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'app',
+          '1.0.0',
+          deps: {
+            'foo': {'hosted': 'foo', 'version': '^1.2.3'}
+          },
+          sdk: '^2.0.0',
+        ),
+      ]).create();
+
+      await pubCommand(
+        command,
+        exitCode: 0,
+        environment: {'_PUB_TEST_SDK_VERSION': '2.15.0'},
+      );
+
+      final sources = SourceRegistry();
+      final lock =
+          LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), sources);
+
+      expect(
+          lock.packages['foo'].description,
+          isA<HostedDescription>()
+              .having((e) => e.packageName, 'packageName', 'foo')
+              .having((e) => e.uri, 'uri', Uri.parse(globalPackageServer.url)));
+    });
   });
 }
