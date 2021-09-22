@@ -18,14 +18,7 @@ void main() {
       ..serve('bar', '1.0.0'));
     await d.appDir({'foo': '1.0.0'}).create();
 
-    await pubGet(output: '''
-Resolving dependencies...
-  + bar 1.0.0
-  + foo 1.0.0
-  Downloading foo 1.0.0...
-  Downloading bar 1.0.0...
-Changed 2 dependencies!
-''');
+    await pubGet();
 
     globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
@@ -34,11 +27,7 @@ Changed 2 dependencies!
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
-    await pubGet(output: '''
- Resolving dependencies...
-   bar 1.0.0 (retracted)
- Got dependencies!
-''');
+    await pubGet(output: contains('bar 1.0.0 (retracted)'));
   });
 
   test('Report retracted packages with newer version available', () async {
@@ -58,11 +47,7 @@ Changed 2 dependencies!
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
-    await pubGet(output: '''
- Resolving dependencies...
-   bar 1.0.0 (retracted, 2.0.0 available)
- Got dependencies!
-''');
+    await pubGet(output: contains('bar 1.0.0 (retracted, 2.0.0 available)'));
   });
 
   test('Report retracted packages with newer prerelease version available',
@@ -82,10 +67,7 @@ Changed 2 dependencies!
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
-    await pubGet(output: '''
- Resolving dependencies...
-   bar 1.0.0-pre (retracted, 2.0.1-pre available)
- Got dependencies!
-''');
+    await pubGet(
+        output: contains('bar 1.0.0-pre (retracted, 2.0.1-pre available)'));
   });
 }
