@@ -46,7 +46,7 @@ void main() {
 
       await runPub(
         args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
-        error: 'Environment variable TOKEN is not defined.',
+        error: 'Environment variable `TOKEN` is not defined.',
       );
 
       await d.tokensFile({
