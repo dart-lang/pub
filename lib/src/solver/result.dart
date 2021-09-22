@@ -33,6 +33,8 @@ class SolveResult {
   ///
   /// An entry here may not include the full list of versions available if the
   /// given package was locked and did not need to be unlocked during the solve.
+  ///
+  /// No version list will not contain any retracted package versions.
   final Map<String, List<Version>> availableVersions;
 
   /// The number of solutions that were attempted before either finding a

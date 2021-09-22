@@ -262,8 +262,14 @@ class SolveReport {
           await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
 
       if (status.isRetracted) {
-        /// TODO(zarah): Add info about alternative available version
-        message = '(retracted)';
+        if (newerStable) {
+          message =
+              '(retracted, ${maxAll(versions, Version.prioritize)} available)';
+        } else if (newId.version.isPreRelease && newerUnstable) {
+          message = '(retracted, ${maxAll(versions)} available)';
+        } else {
+          message = '(retracted)';
+        }
       } else if (status.isDiscontinued) {
         if (status.discontinuedReplacedBy == null) {
           message = '(discontinued)';
