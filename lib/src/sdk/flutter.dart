@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -23,7 +21,7 @@ class FlutterSdk extends Sdk {
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.
   static final bool _isAvailable = _rootDirectory != null && _version != null;
-  static final String _rootDirectory = () {
+  static final String? _rootDirectory = () {
     // If FLUTTER_ROOT is specified, then this always points to the Flutter SDK
     if (Platform.environment.containsKey('FLUTTER_ROOT')) {
       return Platform.environment['FLUTTER_ROOT'];
@@ -57,12 +55,12 @@ class FlutterSdk extends Sdk {
 
     return null;
   }();
-  static final Version _version = () {
+  static final Version? _version = () {
     if (_rootDirectory == null) return null;
 
     try {
       return Version.parse(
-        readTextFile(p.join(_rootDirectory, 'version')).trim(),
+        readTextFile(p.join(_rootDirectory!, 'version')).trim(),
       );
     } on IOException {
       return null; // I guess the file doesn't exist
@@ -76,23 +74,23 @@ class FlutterSdk extends Sdk {
       'Flutter users should run `flutter pub get` instead of `dart pub get`.';
 
   @override
-  Version get version {
+  Version? get version {
     if (!isAvailable) return null;
     return _version;
   }
 
   @override
-  String packagePath(String name) {
+  String? packagePath(String name) {
     if (!isAvailable) return null;
 
     // Flutter packages exist in both `$flutter/packages` and
     // `$flutter/bin/cache/pkg`. This checks both locations in order. If [name]
     // exists in neither place, it returns the `$flutter/packages` location
     // which is more human-readable for error messages.
-    var packagePath = p.join(_rootDirectory, 'packages', name);
+    var packagePath = p.join(_rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
-    var cachePath = p.join(_rootDirectory, 'bin', 'cache', 'pkg', name);
+    var cachePath = p.join(_rootDirectory!, 'bin', 'cache', 'pkg', name);
     if (dirExists(cachePath)) return cachePath;
 
     return null;

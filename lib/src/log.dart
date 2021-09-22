@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Message logging.
 import 'dart:async';
 import 'dart:convert';
@@ -38,12 +36,12 @@ const _MAX_TRANSCRIPT = 10000;
 
 /// The list of recorded log messages. Will only be recorded if
 /// [recordTranscript()] is called.
-Transcript<_Entry> _transcript;
+Transcript<_Entry>? _transcript;
 
 /// The currently-animated progress indicator, if any.
 ///
 /// This will also be in [_progresses].
-Progress _animatedProgress;
+Progress? _animatedProgress;
 
 final _cyan = getAnsi('\u001b[36m');
 final _green = getAnsi('\u001b[32m');
@@ -173,7 +171,7 @@ class Verbosity {
   const Verbosity._(this.name, this._loggers);
 
   final String name;
-  final Map<Level, void Function(_Entry entry)> _loggers;
+  final Map<Level, void Function(_Entry entry)?> _loggers;
 
   /// Returns whether or not logs at [level] will be printed.
   bool isLevelVisible(Level level) => _loggers[level] != null;
@@ -194,7 +192,7 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(message, [error, StackTrace trace]) {
+void error(message, [error, StackTrace? trace]) {
   message ??= '';
   if (error != null) {
     message = message.isEmpty ? '$error' : '$message: $error';
@@ -235,7 +233,7 @@ void write(Level level, message) {
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
-  if (_transcript != null) _transcript.add(entry);
+  if (_transcript != null) _transcript!.add(entry);
 }
 
 /// Logs the spawning of an [executable] process with [arguments] at [IO]
@@ -277,7 +275,7 @@ void processResult(String executable, PubProcessResult result) {
 }
 
 /// Logs an exception.
-void exception(exception, [StackTrace trace]) {
+void exception(exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
   var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
@@ -326,7 +324,7 @@ void dumpTranscript() {
   if (_transcript == null) return;
 
   stderr.writeln('---- Log transcript ----');
-  _transcript.forEach((entry) {
+  _transcript!.forEach((entry) {
     _printToStream(stderr, entry, showLabel: true);
   }, (discarded) {
     stderr.writeln('---- ($discarded discarded) ----');
@@ -381,7 +379,7 @@ Future<T> spinner<T>(String message, Future<T> Function() callback,
 
 /// Stops animating the running progress indicator, if currently running.
 void _stopProgress() {
-  if (_animatedProgress != null) _animatedProgress.stopAnimating();
+  if (_animatedProgress != null) _animatedProgress!.stopAnimating();
   _animatedProgress = null;
 }
 
@@ -488,13 +486,13 @@ void _logToStderrWithLabel(_Entry entry) {
   _logToStream(stderr, entry, showLabel: true);
 }
 
-void _logToStream(IOSink sink, _Entry entry, {bool showLabel}) {
+void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   if (json.enabled) return;
 
   _printToStream(sink, entry, showLabel: showLabel);
 }
 
-void _printToStream(IOSink sink, _Entry entry, {bool showLabel}) {
+void _printToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;
@@ -535,11 +533,11 @@ class _JsonLogger {
     }
 
     // If the error came from a file, include the path.
-    if (error is SourceSpanException && error.span.sourceUrl != null) {
+    if (error is SourceSpanException && error.span?.sourceUrl != null) {
       // Normalize paths and make them absolute for backwards compatibility with
       // the protocol used by the analyzer.
       errorJson['path'] =
-          p.normalize(p.absolute(p.fromUri(error.span.sourceUrl)));
+          p.normalize(p.absolute(p.fromUri(error.span!.sourceUrl)));
     }
 
     if (error is FileException) {

@@ -337,6 +337,9 @@ class VersionSolver {
     var package = await minByAsync(unsatisfied, (package) async {
       return await _packageLister(package).countVersions(package.constraint);
     });
+    if (package == null) {
+      return null; // when unsatisfied.isEmpty
+    }
 
     PackageId version;
     try {

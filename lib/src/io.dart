@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Helper functionality to make working with IO easier.
 import 'dart:async';
 import 'dart:collection';
@@ -157,11 +155,10 @@ String _resolveLink(String link) {
 }
 
 /// Reads the contents of the text file [file].
-String readTextFile(String file) => File(file).readAsStringSync(encoding: utf8);
+String readTextFile(String file) => File(file).readAsStringSync();
 
 /// Reads the contents of the text file [file].
-Future<String> readTextFileAsync(String file) =>
-    File(file).readAsString(encoding: utf8);
+Future<String> readTextFileAsync(String file) => File(file).readAsString();
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
@@ -182,10 +179,12 @@ Stream<List<int>> readBinaryFileAsSream(String file) {
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
 /// logged.
-void writeTextFile(String file, String contents,
-    {bool dontLogContents = false, Encoding encoding}) {
-  encoding ??= utf8;
-
+void writeTextFile(
+  String file,
+  String contents, {
+  bool dontLogContents = false,
+  Encoding encoding = utf8,
+}) {
   // Sanity check: don't spew a huge file.
   log.io('Writing ${contents.length} characters to text file $file.');
   if (!dontLogContents && contents.length < 1024 * 1024) {
@@ -200,10 +199,12 @@ void writeTextFile(String file, String contents,
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
 /// logged.
-Future<void> writeTextFileAsync(String file, String contents,
-    {bool dontLogContents = false, Encoding encoding}) async {
-  encoding ??= utf8;
-
+Future<void> writeTextFileAsync(
+  String file,
+  String contents, {
+  bool dontLogContents = false,
+  Encoding encoding = utf8,
+}) async {
   // Sanity check: don't spew a huge file.
   log.io('Writing ${contents.length} characters to text file $file.');
   if (!dontLogContents && contents.length < 1024 * 1024) {
@@ -298,8 +299,7 @@ List<String> listDir(String dir,
     {bool recursive = false,
     bool includeHidden = false,
     bool includeDirs = true,
-    Iterable<String> allowed}) {
-  allowed ??= [];
+    Iterable<String> allowed = const <String>[]}) {
   var allowlistFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
@@ -308,7 +308,7 @@ List<String> listDir(String dir,
   // package, since re-parsing a path is very expensive relative to string
   // operations.
   return Directory(dir)
-      .listSync(recursive: recursive, followLinks: true)
+      .listSync(recursive: recursive)
       .where((entity) {
         if (!includeDirs && entity is Directory) return false;
         if (entity is Link) return false;
@@ -329,9 +329,10 @@ List<String> listDir(String dir,
 
         // If the basename is in [allowed], don't count its "/." as making the
         // file hidden.
-        var allowedBasename =
-            allowlistFilter.firstWhere(pathInDir.contains, orElse: () => null);
-        if (allowedBasename != null) {
+
+        if (allowlistFilter.any(pathInDir.contains)) {
+          final allowedBasename =
+              allowlistFilter.firstWhere(pathInDir.contains);
           pathInDir =
               pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }
@@ -363,16 +364,16 @@ void _attempt(String description, void Function() operation) {
     return;
   }
 
-  String getErrorReason(FileSystemException error) {
-    if (error.osError.errorCode == 5) {
+  String? getErrorReason(FileSystemException error) {
+    if (error.osError?.errorCode == 5) {
       return 'access was denied';
     }
 
-    if (error.osError.errorCode == 32) {
+    if (error.osError?.errorCode == 32) {
       return 'it was in use by another process';
     }
 
-    if (error.osError.errorCode == 145) {
+    if (error.osError?.errorCode == 145) {
       return 'of dart-lang/sdk#25353';
     }
 
@@ -524,7 +525,7 @@ final bool _assertionsEnabled = () {
 
 final bool runningFromFlutter =
     Platform.environment.containsKey('PUB_ENVIRONMENT') &&
-        Platform.environment['PUB_ENVIRONMENT'].contains('flutter_cli');
+        (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
@@ -575,7 +576,7 @@ Future<bool> confirm(String message) {
 }
 
 /// Writes [prompt] and reads a line from stdin.
-Future<String> stdinPrompt(String prompt, {bool echoMode}) {
+Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
   if (runningFromTest) {
     log.message(prompt);
   } else {
@@ -620,8 +621,13 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcessResult> runProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell = false}) {
+Future<PubProcessResult> runProcess(
+  String executable,
+  List<String> args, {
+  workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   ArgumentError.checkNotNull(executable, 'executable');
 
   return _descriptorPool.withResource(() async {
@@ -652,8 +658,13 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 @visibleForTesting
-Future<_PubProcess> startProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell = false}) {
+Future<_PubProcess> startProcess(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
@@ -673,10 +684,13 @@ Future<_PubProcess> startProcess(String executable, List<String> args,
 }
 
 /// Like [runProcess], but synchronous.
-PubProcessResult runProcessSync(String executable, List<String> args,
-    {String workingDir,
-    Map<String, String> environment,
-    bool runInShell = false}) {
+PubProcessResult runProcessSync(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
@@ -699,19 +713,19 @@ class _PubProcess {
   final Process _process;
 
   /// The mutable field for [stdin].
-  EventSink<List<int>> _stdin;
+  late EventSink<List<int>> _stdin;
 
   /// The mutable field for [stdinClosed].
-  Future _stdinClosed;
+  late Future _stdinClosed;
 
   /// The mutable field for [stdout].
-  ByteStream _stdout;
+  late ByteStream _stdout;
 
   /// The mutable field for [stderr].
-  ByteStream _stderr;
+  late ByteStream _stderr;
 
   /// The mutable field for [exitCode].
-  Future<int> _exitCode;
+  late Future<int> _exitCode;
 
   /// The sink used for passing data to the process's standard input stream.
   ///
@@ -779,16 +793,20 @@ class _PubProcess {
 /// [fn] should have the same signature as [Process.start], except that the
 /// returned value may have any return type.
 T _doProcess<T>(
-    T Function(String, List<String>,
-            {String workingDirectory,
-            Map<String, String> environment,
-            bool runInShell})
-        fn,
-    String executable,
-    List<String> args,
-    {String workingDir,
-    Map<String, String> environment,
-    bool runInShell = false}) {
+  T Function(
+    String,
+    List<String>, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+    bool runInShell,
+  })
+      fn,
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
@@ -896,7 +914,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry.
         final resolvedTarget = path.joinAll(
-            [parentDirectory, ...path.posix.split(entry.header.linkName)]);
+            [parentDirectory, ...path.posix.split(entry.header.linkName!)]);
         if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
           break;
@@ -937,7 +955,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(
   List<String> contents, {
-  @required String baseDir,
+  required String baseDir,
 }) {
   var buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
@@ -1006,20 +1024,21 @@ class PubProcessResult {
 
 /// The location for dart-specific configuration.
 final String dartConfigDir = () {
+  // TODO: Migrate to new value from cli_util
   if (runningFromTest) {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
   String configDir;
   if (Platform.isLinux) {
     configDir = Platform.environment['XDG_CONFIG_HOME'] ??
-        path.join(Platform.environment['HOME'], '.config');
+        path.join(Platform.environment['HOME']!, '.config');
   } else if (Platform.isWindows) {
-    configDir = Platform.environment['APPDATA'];
+    configDir = Platform.environment['APPDATA']!;
   } else if (Platform.isMacOS) {
     configDir = path.join(
-        Platform.environment['HOME'], 'Library', 'Application Support');
+        Platform.environment['HOME']!, 'Library', 'Application Support');
   } else {
-    configDir = path.join(Platform.environment['HOME'], '.config');
+    configDir = path.join(Platform.environment['HOME']!, '.config');
   }
   return path.join(configDir, 'dart');
-}();
+}()!;
