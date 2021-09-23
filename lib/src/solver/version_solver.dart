@@ -439,8 +439,6 @@ class VersionSolver {
       List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
-      var packageLister = _packageListers[package.toRef()];
-      var cached = packageLister?.cachedVersions;
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
       // TODO(sigurdm): This has a smell. The Git source should have a
@@ -448,12 +446,11 @@ class VersionSolver {
       // way that doesn't fetch.
       List<PackageId> ids;
       try {
-        ids = cached ??
-            (package.source is HostedSource
-                ? (await _systemCache
-                    .source(package.source)
-                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
-                : [package]);
+        ids = package.source is HostedSource
+            ? (await _systemCache
+                .source(package.source)
+                .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+            : [package];
       } on Exception {
         ids = <PackageId>[package];
       }
