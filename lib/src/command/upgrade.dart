@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -22,7 +23,6 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `upgrade` pub command.
 class UpgradeCommand extends PubCommand {
