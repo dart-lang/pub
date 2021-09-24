@@ -5,6 +5,7 @@
 // @dart=2.11
 
 import 'dart:async';
+import 'dart:io';
 
 import '../authentication/credential.dart';
 import '../command.dart';
@@ -25,6 +26,14 @@ class TokenAddCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
+  String get envVar => argResults['env-var'];
+
+  TokenAddCommand() {
+    argParser.addOption('env-var',
+        help: 'Read the secret token from this environment variable when '
+            'making requests.');
+  }
+
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
@@ -40,17 +49,11 @@ class TokenAddCommand extends PubCommand {
         throw DataException('Insecure package repository could not be added.');
       }
 
-      final token = await stdinPrompt('Enter secret token:', echoMode: false)
-          .timeout(const Duration(minutes: 15));
-      if (token.isEmpty) {
-        usageException('Token is not provided.');
+      if (envVar == null) {
+        await _addTokenFromStdin(hostedUrl);
+      } else {
+        await _addEnvVarToken(hostedUrl);
       }
-
-      tokenStore.addCredential(Credential.token(hostedUrl, token));
-      log.message(
-        'Requests to $hostedUrl will now be authenticated using the secret '
-        'token.',
-      );
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
           '${e.message}');
@@ -59,6 +62,39 @@ class TokenAddCommand extends PubCommand {
       // get stuck on noop state if user forget to pipe token to the 'token add'
       // command. This behavior might be removed.
       throw ApplicationException('Token is not provided within 15 minutes.');
+    }
+  }
+
+  Future<void> _addTokenFromStdin(Uri hostedUrl) async {
+    final token = await stdinPrompt('Enter secret token:', echoMode: false)
+        .timeout(const Duration(minutes: 15));
+    if (token.isEmpty) {
+      usageException('Token is not provided.');
+    }
+
+    tokenStore.addCredential(Credential.token(hostedUrl, token));
+    log.message(
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
+      'token.',
+    );
+  }
+
+  Future<void> _addEnvVarToken(Uri hostedUrl) async {
+    if (envVar.isEmpty) {
+      throw DataException('Cannot use the empty string as --env-var');
+    }
+
+    tokenStore.addCredential(Credential.env(hostedUrl, envVar));
+    log.message(
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
+      'token stored in the environment variable `$envVar`.',
+    );
+
+    if (!Platform.environment.containsKey(envVar)) {
+      // If environment variable doesn't exist when
+      // pub token add <hosted-url> --env-var <ENV_VAR> is called, we should
+      // print a warning.
+      log.warning('Environment variable `$envVar` is not defined.');
     }
   }
 }
