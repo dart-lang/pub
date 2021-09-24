@@ -114,8 +114,8 @@ class Credential {
   Future<String> getAuthorizationHeaderValue() {
     if (!isValid()) {
       throw DataException(
-        'Saved credential for $url pub repository is not supported by current '
-        'version of Dart SDK.',
+        'Saved credential for "$url" pub repository is not supported by '
+        'current version of Dart SDK.',
       );
     }
 
