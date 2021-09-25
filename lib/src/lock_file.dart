@@ -4,7 +4,6 @@
 
 // @dart=2.10
 
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:collection/collection.dart' hide mapMap;

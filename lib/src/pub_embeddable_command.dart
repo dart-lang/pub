@@ -5,7 +5,6 @@
 // @dart=2.10
 
 import 'command.dart';
-import 'command.dart' show PubCommand;
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';
