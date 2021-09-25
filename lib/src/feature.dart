@@ -4,8 +4,6 @@
 
 // @dart=2.10
 
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
