@@ -267,8 +267,7 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// Returns the maximum value in [iter] by [compare].
 ///
 /// [compare] defaults to [Comparable.compare].
-T maxAll<T extends Comparable>(Iterable<T> iter, [int Function(T, T) compare]) {
-  compare ??= Comparable.compare;
+T maxAll<T>(Iterable<T> iter, int Function(T, T) compare) {
   return iter
       .reduce((max, element) => compare(element, max) > 0 ? element : max);
 }

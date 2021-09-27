@@ -7,6 +7,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
@@ -21,6 +22,7 @@ import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
 import 'source_registry.dart';
+import 'utils.dart';
 
 /// The system-wide cache of downloaded packages.
 ///
@@ -141,5 +143,40 @@ class SystemCache {
   void deleteTempDir() {
     log.fine('Clean up system cache temp directory $tempDir.');
     if (dirExists(tempDir)) deleteEntry(tempDir);
+  }
+
+  /// Get the latest version of [package].
+  ///
+  /// Will include prereleases in the comparison if [allowPrereleases].
+  ///
+  /// If [package] is a [PackageId] with a prerelease version and there are no
+  /// later stable version we return a prerelease version if it exists.
+  ///
+  /// Returns `null`, if unable to find the package.
+  Future<PackageId> getLatest(PackageName package,
+      {bool allowPrereleases = false}) async {
+    if (package == null) {
+      return null;
+    }
+    final ref = package.toRef();
+    final available = await source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return null;
+    }
+
+    final result = maxAll<PackageId>(
+        available,
+        allowPrereleases
+            ? (x, y) => x.version.compareTo(y.version)
+            : (x, y) => Version.prioritize(x.version, y.version));
+
+    if (package is PackageId &&
+        package.version.isPreRelease &&
+        package.version > result.version) {
+      return maxAll<PackageId>(
+          available, (x, y) => x.version.compareTo(y.version));
+    }
+
+    return result;
   }
 }
