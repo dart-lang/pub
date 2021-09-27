@@ -158,30 +158,35 @@ class SystemCache {
   /// later stable version we return a prerelease version if it exists.
   ///
   /// Returns `null`, if unable to find the package.
-  Future<PackageId> getLatest(PackageName package,
-      {bool allowPrereleases = false}) async {
+  Future<PackageId> getLatest(
+    PackageName package, {
+    bool allowPrereleases = false,
+  }) async {
     if (package == null) {
       return null;
     }
     final ref = package.toRef();
+    // TODO: Pass some maxAge to getVersions
     final available = await source(ref.source).getVersions(ref);
     if (available.isEmpty) {
       return null;
     }
 
-    final result = maxAll<PackageId>(
-        available,
-        allowPrereleases
-            ? (x, y) => x.version.compareTo(y.version)
-            : (x, y) => Version.prioritize(x.version, y.version));
+    final latest = maxAll(
+      available.map((id) => id.version),
+      allowPrereleases ? Comparable.compare : Version.prioritize,
+    );
 
     if (package is PackageId &&
         package.version.isPreRelease &&
-        package.version > result.version) {
-      return maxAll<PackageId>(
-          available, (x, y) => x.version.compareTo(y.version));
+        package.version > latest &&
+        !allowPrereleases) {
+      return getLatest(package, allowPrereleases: true);
     }
 
-    return result;
+    // There should be exactly one entry in [available] matching [latest]
+    assert(available.where((id) => id.version == latest).length == 1);
+
+    return available.firstWhere((id) => id.version == latest);
   }
 }

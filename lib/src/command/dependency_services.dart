@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -22,7 +23,6 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../system_cache.dart';
-import '../yaml_edit/editor.dart';
 
 class DependencyServicesCommand extends PubCommand {
   @override
