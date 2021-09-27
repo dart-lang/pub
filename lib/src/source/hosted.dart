@@ -231,11 +231,27 @@ class HostedSource extends Source {
       // `hosted: {name: foo, url: <default>}`.
       // For later versions, we treat it as `hosted: {name: <inferred>,
       // url: foo}` if a user opts in by raising their min SDK environment.
+      //
+      // Since the old behavior is very rarely used and we want to show a
+      // helpful error message if the new syntax is used without raising the SDK
+      // environment, we throw an error if something that looks like a URI is
+      // used as a package name.
       if (canUseShorthandSyntax) {
         return HostedDescription(
             packageName, validateAndNormalizeHostedUrl(description));
       } else {
-        return HostedDescription(description, defaultUrl);
+        if (_looksLikePackageName.hasMatch(description)) {
+          // Valid use of `hosted: package` dependency with an old SDK
+          // environment.
+          return HostedDescription(description, defaultUrl);
+        } else {
+          throw FormatException(
+            'Using `hosted: <url>` is only supported with a minimum SDK '
+            'constraint of $_minVersionForShorterHostedSyntax.\n'
+            'If `$description` was meant as a package name, please use '
+            '`hosted: {name: "$description"}` instead.',
+          );
+        }
       }
     }
 
@@ -277,6 +293,9 @@ class HostedSource extends Source {
   /// a `name` key.
   static const LanguageVersion _minVersionForShorterHostedSyntax =
       LanguageVersion(2, 15);
+
+  static final RegExp _looksLikePackageName =
+      RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');
 }
 
 /// Information about a package version retrieved from /api/packages/$package

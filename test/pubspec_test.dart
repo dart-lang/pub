@@ -442,6 +442,24 @@ dependencies:
               "The 'name' key must have a string value without a minimum Dart "
                   'SDK constraint of 2.15.');
         });
+
+        test(
+          'and a hosted: <value> syntax that looks like an URI was meant',
+          () {
+            expectPubspecException(
+              '''
+name: pkg
+dependencies:
+  foo:
+    hosted: http://pub.example.org
+''',
+              (pubspec) => pubspec.dependencies,
+              '''
+Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.
+If `http://pub.example.org` was meant as a package name, please use `hosted: {name: "http://pub.example.org"}` instead.''',
+            );
+          },
+        );
       });
     });
 
