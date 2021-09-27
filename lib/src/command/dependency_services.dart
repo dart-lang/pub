@@ -9,14 +9,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:pub_semver/pub_semver.dart';
 import 'package:async/async.dart' show collectBytes;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
-import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -263,7 +262,10 @@ class DependencyServicesApplyCommand extends PubCommand {
     final toApply = <_PackageVersion>[];
     final input = json.decode(utf8.decode(await collectBytes(stdin)));
     for (final change in input['changes']) {
-      toApply.add(_PackageVersion(change['name'], change['version']));
+      toApply.add(_PackageVersion(
+        change['name'],
+        change['version'] != null ? Version.parse(change['version']) : null,
+      ));
     }
 
     final pubspec = entrypoint.root.pubspec;

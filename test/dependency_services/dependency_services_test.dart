@@ -17,20 +17,23 @@ import '../test_pub.dart';
 
 Future<void> pipeline(String name, List<_PackageVersion> upgrades) async {
   final buffer = StringBuffer();
-  await runPubIntoBuffer(
-      ['__experimental-dependency-services', 'list'], buffer);
-  await runPubIntoBuffer(
-      ['__experimental-dependency-services', 'report'], buffer);
+  await runPubIntoBuffer([
+    '__experimental-dependency-services',
+    'list',
+  ], buffer);
+  await runPubIntoBuffer([
+    '__experimental-dependency-services',
+    'report',
+  ], buffer);
+
+  final input = json.encode({
+    'changes': upgrades, //.map((u) => u.toJson()).toList(),
+  });
 
   await runPubIntoBuffer([
     '__experimental-dependency-services',
     'apply',
-  ], buffer,
-      stdin: json.encode({
-        'changes': upgrades
-            .map((e) => {'name': e.name, 'version': e.version.toString()})
-            .toList()
-      }));
+  ], buffer, stdin: input);
   void catIntoBuffer(String path) {
     buffer.writeln('$path:');
     buffer.writeln(File(p.join(d.sandbox, path)).readAsStringSync());
@@ -38,8 +41,11 @@ Future<void> pipeline(String name, List<_PackageVersion> upgrades) async {
 
   catIntoBuffer(p.join(appPath, 'pubspec.yaml'));
   catIntoBuffer(p.join(appPath, 'pubspec.lock'));
-  expectMatchesGoldenFile(buffer.toString(),
-      'test/dependency_services/goldens/dependency_report_$name.txt');
+  expectMatchesGoldenFile(
+    // TODO: Consider if expectMatchesGoldenFile should replace localhost:<port>
+    buffer.toString().replaceAll(RegExp('localhost:\d+'), 'localhost:<port>'),
+    'test/dependency_services/goldens/dependency_report_$name.txt',
+  );
 }
 
 Future<void> main() async {
@@ -90,4 +96,9 @@ class _PackageVersion {
   String name;
   Version version;
   _PackageVersion(this.name, this.version);
+
+  Map<String, Object> toJson() => {
+        'name': name,
+        'version': version?.toString(),
+      };
 }
