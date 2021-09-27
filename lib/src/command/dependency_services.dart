@@ -7,8 +7,10 @@
 /// This implements support for dependency-bot style automated upgrades.
 /// It is still work in progress - do not rely on the current output.
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:async/async.dart' show collectBytes;
 import 'package:yaml/yaml.dart';
 
 import '../command.dart';
@@ -105,13 +107,20 @@ class DependencyServicesReportCommand extends PubCommand {
           final originalVersion = lockFile.packages[r.name];
           return originalVersion == null ||
               r.version != originalVersion.version;
-        }).map((p) => {'name': p.name, 'version': p.version.toString()}),
+        }).map((p) => {
+              'name': p.name,
+              'version': p.version.toString(),
+              'kind': _kindString(pubspec, p.name),
+              'constraint': null // TODO: compute new constraint
+            }),
         for (final oldPackageName in lockFile.packages.keys)
           if (!resolution.packages
               .any((newPackage) => newPackage.name == oldPackageName))
             {
               'name': oldPackageName,
               'version': null,
+              'kind': null,
+              'constraint': null,
             },
       ];
     }
@@ -142,12 +151,9 @@ class DependencyServicesReportCommand extends PubCommand {
       dependencies.add({
         'name': package.name,
         'version': package.version.toString(),
-        'kind': compatiblePubspec.dependencies.containsKey(package.name)
-            ? 'direct'
-            : compatiblePubspec.devDependencies.containsKey(package.name)
-                ? 'dev'
-                : 'transitive',
+        'kind': _kindString(compatiblePubspec, package.name),
         'latest': (await cache.getLatest(package)).version.toString(),
+        'constraint': _constraintOf(compatiblePubspec, package.name).toString(),
         if (compatibleVersion != null)
           'compatible': await _computeUpgradeSet(
               compatiblePubspec, compatibleVersion,
@@ -163,6 +169,20 @@ class DependencyServicesReportCommand extends PubCommand {
     }
     log.message(JsonEncoder.withIndent('  ').convert(result));
   }
+}
+
+VersionConstraint _constraintOf(Pubspec pubspec, String packageName) {
+  return (pubspec.dependencies[packageName] ??
+          pubspec.devDependencies[packageName])
+      ?.constraint;
+}
+
+String _kindString(Pubspec pubspec, String packageName) {
+  return pubspec.dependencies.containsKey(packageName)
+      ? 'direct'
+      : pubspec.devDependencies.containsKey(packageName)
+          ? 'dev'
+          : 'transitive';
 }
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
@@ -207,11 +227,8 @@ class DependencyServicesListCommand extends PubCommand {
       dependencies.add({
         'name': package.name,
         'version': package.version.toString(),
-        'kind': pubspec.dependencies.containsKey(package.name)
-            ? 'direct'
-            : pubspec.devDependencies.containsKey(package.name)
-                ? 'dev'
-                : 'transitive',
+        'kind': _kindString(pubspec, package.name),
+        'constraint': _constraintOf(pubspec, package.name).toString(),
       });
     }
     log.message(JsonEncoder.withIndent('  ').convert(result));
@@ -244,13 +261,9 @@ class DependencyServicesApplyCommand extends PubCommand {
   Future<void> runProtected() async {
     YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
-    for (final arg in argResults.rest) {
-      final parts = arg.split(':');
-      if (parts.length > 2) {
-        throw DataException('use name:version pairs');
-      }
-      toApply.add(_PackageVersion(
-          parts[0], parts.length == 1 ? null : Version.parse(parts[1])));
+    final input = json.decode(utf8.decode(await collectBytes(stdin)));
+    for (final change in input['changes']) {
+      toApply.add(_PackageVersion(change['name'], change['version']));
     }
 
     final pubspec = entrypoint.root.pubspec;
@@ -261,33 +274,22 @@ class DependencyServicesApplyCommand extends PubCommand {
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
-      final constraint = pubspec.dependencies[targetPackage] ??
-          pubspec.devDependencies[targetPackage];
-      if (targetVersion != null &&
-          constraint != null &&
-          constraint.constraint.allows(targetVersion)) {
-        final section = pubspec.dependencies[targetPackage] != null
-            ? 'dependencies'
-            : 'dev_dependencies';
-        pubspecEditor.update([section, targetPackage],
-            VersionConstraint.compatibleWith(targetVersion).toString());
-      }
 
-      if (!lockFileYaml['packages'].containsKey(targetPackage)) {
-        lockFileEditor.update([
-          'packages',
-          targetPackage
-        ], {
-          'dependency': 'transitive',
-          'description': {
-            'name': targetPackage,
-            'url': 'https://pub.dartlang.org',
-          },
-          'source': 'hosted'
-        });
+      if (targetVersion != null) {
+        final constraint = _constraintOf(pubspec, targetPackage);
+        if (constraint != null && !constraint.allows(targetVersion)) {
+          final section = pubspec.dependencies[targetPackage] != null
+              ? 'dependencies'
+              : 'dev_dependencies';
+          pubspecEditor.update([section, targetPackage],
+              VersionConstraint.compatibleWith(targetVersion).toString());
+        }
+
+        if (lockFileYaml['packages'].containsKey(targetPackage)) {
+          lockFileEditor.update(
+              ['packages', targetPackage, 'version'], targetVersion.toString());
+        }
       }
-      lockFileEditor.update(
-          ['packages', targetPackage, 'version'], targetVersion.toString());
     }
     if (pubspecEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.pubspecPath, pubspecEditor.toString());

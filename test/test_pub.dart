@@ -911,12 +911,18 @@ Future<void> runPubIntoBuffer(
   StringBuffer buffer, {
   Map<String, String> environment,
   String workingDirectory,
+  String stdin,
 }) async {
   final process = await startPub(
     args: args,
     environment: environment,
     workingDirectory: workingDirectory,
   );
+  if (stdin != null) {
+    process.stdin.write(stdin);
+    await process.stdin.flush();
+    await process.stdin.close();
+  }
   final exitCode = await process.exitCode;
 
   buffer.writeln(_filter([
