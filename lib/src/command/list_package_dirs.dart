@@ -7,6 +7,7 @@
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
 import '../log.dart' as log;
@@ -37,7 +38,8 @@ class ListPackageDirsCommand extends PubCommand {
     log.json.enabled = true;
 
     if (!fileExists(entrypoint.lockFilePath)) {
-      dataError('Package "myapp" has no lockfile. Please run "pub get" first.');
+      dataError(
+          'Package "myapp" has no lockfile. Please run "$topLevelProgram pub get" first.');
     }
 
     var output = {};

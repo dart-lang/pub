@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 /// An [ErrorGroup] entangles the errors of multiple [Future]s and [Stream]s
@@ -46,7 +44,7 @@ class ErrorGroup {
   ///
   /// We need to be able to access it internally as an [_ErrorGroupFuture] so
   /// we can check if it has listeners and signal errors on it.
-  _ErrorGroupFuture _done;
+  late _ErrorGroupFuture _done;
 
   /// Returns a [Future] that completes successfully when all members of [this]
   /// are complete, or with an error if any member receives an error.
@@ -108,7 +106,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to signal an error.
-  void signalError(var error, [StackTrace stackTrace]) {
+  void signalError(var error, [StackTrace? stackTrace]) {
     if (_isDone) {
       throw StateError("Can't signal errors on a complete ErrorGroup.");
     }
@@ -120,7 +118,7 @@ class ErrorGroup {
   ///
   /// This is just like [signalError], but instead of throwing an error if
   /// [this] is complete, it just does nothing.
-  void _signalError(var error, [StackTrace stackTrace]) {
+  void _signalError(var error, [StackTrace? stackTrace]) {
     if (_isDone) return;
 
     var caught = false;
@@ -187,7 +185,9 @@ class _ErrorGroupFuture<T> implements Future<T> {
       if (!_isDone) _completer.complete(value);
       _isDone = true;
       _group._signalFutureComplete(this);
-    }).catchError(_group._signalError);
+    }).catchError((Object e, [StackTrace? s]) async {
+      _group._signalError(e, s);
+    });
 
     // Make sure _completer.future doesn't automatically send errors to the
     // top-level.
@@ -195,13 +195,13 @@ class _ErrorGroupFuture<T> implements Future<T> {
   }
 
   @override
-  Future<S> then<S>(FutureOr<S> Function(T) onValue, {Function onError}) {
+  Future<S> then<S>(FutureOr<S> Function(T) onValue, {Function? onError}) {
     _hasListeners = true;
     return _completer.future.then(onValue, onError: onError);
   }
 
   @override
-  Future<T> catchError(Function onError, {bool Function(Object error) test}) {
+  Future<T> catchError(Function onError, {bool Function(Object error)? test}) {
     _hasListeners = true;
     return _completer.future.catchError(onError, test: test);
   }
@@ -213,7 +213,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
   }
 
   @override
-  Future<T> timeout(Duration timeLimit, {void Function() onTimeout}) {
+  Future<T> timeout(Duration timeLimit, {FutureOr<T> Function()? onTimeout}) {
     _hasListeners = true;
     return _completer.future.timeout(timeLimit, onTimeout: onTimeout);
   }
@@ -226,7 +226,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
 
   /// Signal that an error from [_group] should be propagated through [this],
   /// unless it's already complete.
-  void _signalError(var error, [StackTrace stackTrace]) {
+  void _signalError(var error, [StackTrace? stackTrace]) {
     if (!_isDone) _completer.completeError(error, stackTrace);
     _isDone = true;
   }
@@ -248,17 +248,17 @@ class _ErrorGroupStream<T> extends Stream<T> {
   var _isDone = false;
 
   /// The underlying [StreamController] for [this].
-  final StreamController<T> _controller;
+  late final StreamController<T> _controller;
 
   /// The controller's [Stream].
   ///
   /// May be different than `_controller.stream` if the wrapped stream is a
   /// broadcasting stream.
-  Stream<T> _stream;
+  late Stream<T> _stream;
 
   /// The [StreamSubscription] that connects the wrapped [Stream] to
   /// [_controller].
-  StreamSubscription<T> _subscription;
+  late StreamSubscription<T> _subscription;
 
   /// Whether [this] has any listeners.
   bool get _hasListeners => _controller.hasListener;
@@ -281,15 +281,15 @@ class _ErrorGroupStream<T> extends Stream<T> {
   }
 
   @override
-  StreamSubscription<T> listen(void Function(T) onData,
-      {Function onError, void Function() onDone, bool cancelOnError}) {
+  StreamSubscription<T> listen(void Function(T)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
     return _stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: true);
   }
 
   /// Signal that an error from [_group] should be propagated through [this],
   /// unless it's already complete.
-  void _signalError(var e, [StackTrace stackTrace]) {
+  void _signalError(var e, [StackTrace? stackTrace]) {
     if (_isDone) return;
     _subscription.cancel();
     // Call these asynchronously to work around issue 7913.

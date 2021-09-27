@@ -7,6 +7,7 @@
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -20,7 +21,6 @@ import '../pubspec.dart';
 import '../solver.dart';
 import '../source/path.dart';
 import '../utils.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
 /// the package. The user may pass in a git constraint, host url, or path as
@@ -67,6 +67,12 @@ class AddCommand extends PubCommand {
     argParser.addOption('hosted-url', help: 'URL of package host server');
     argParser.addOption('path', help: 'Local path');
     argParser.addOption('sdk', help: 'SDK source for package');
+    argParser.addFlag(
+      'example',
+      help:
+          'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
+      hide: true,
+    );
 
     argParser.addFlag('offline',
         help: 'Use cached packages instead of accessing the network.');
@@ -158,8 +164,17 @@ class AddCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      await Entrypoint(directory, cache).acquireDependencies(SolveType.GET,
+      final updatedEntrypoint = Entrypoint(directory, cache);
+      await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
+
+      if (argResults['example'] && entrypoint.example != null) {
+        await entrypoint.example.acquireDependencies(
+          SolveType.GET,
+          precompile: argResults['precompile'],
+          onlyReportSuccessOrFailure: true,
+        );
+      }
     }
 
     if (isOffline) {

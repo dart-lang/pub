@@ -5,6 +5,7 @@
 // @dart=2.10
 
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -13,7 +14,6 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
@@ -43,6 +43,13 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addFlag(
+      'example',
+      help: 'Also update dependencies in `example/` (if it exists).',
+      hide: true,
+    );
+
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
@@ -70,8 +77,17 @@ class RemoveCommand extends PubCommand {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
-      await Entrypoint(directory, cache).acquireDependencies(SolveType.GET,
+      /// Create a new [Entrypoint] since we have to reprocess the updated
+      /// pubspec file.
+      final updatedEntrypoint = Entrypoint(directory, cache);
+      await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
+
+      if (argResults['example'] && entrypoint.example != null) {
+        await entrypoint.example.acquireDependencies(SolveType.GET,
+            precompile: argResults['precompile'],
+            onlyReportSuccessOrFailure: true);
+      }
     }
   }
 

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:collection';
 
 /// A rolling transcript of entries of type [T].
@@ -62,7 +60,7 @@ class Transcript<T> {
   /// where excess entries where dropped, invokes [onGap] with the number of
   /// dropped entries. If no more than [max] entries were added, does not
   /// invoke [onGap].
-  void forEach(void Function(T) onEntry, [void Function(int) onGap]) {
+  void forEach(void Function(T) onEntry, [void Function(int)? onGap]) {
     if (_oldest.isNotEmpty) {
       _oldest.forEach(onEntry);
       if (onGap != null) onGap(discarded);

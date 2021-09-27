@@ -224,23 +224,32 @@ void main() {
         "ignores files that are gitignored even if the package isn't "
         'the repo root', () async {
       await d.dir(appPath, [
-        d.dir('sub', [
-          d.appPubspec(),
-          d.file('.gitignore', '*.txt'),
-          d.file('file1.txt', 'contents'),
-          d.file('file2.text', 'contents'),
-          d.dir('subdir', [
-            d.file('subfile1.txt', 'subcontents'),
-            d.file('subfile2.text', 'subcontents')
-          ])
+        d.file('.gitignore', '*.bak'),
+        d.dir('rep', [
+          d.file('.gitignore', '*.gak'),
+          d.file('.pubignore', '*.hak'),
+          d.dir('sub', [
+            d.appPubspec(),
+            d.file('.gitignore', '*.txt'),
+            d.file('file1.txt', 'contents'),
+            d.file('file2.text', 'contents'),
+            d.file('file3.bak', 'contents'),
+            d.file('file4.gak', 'contents'),
+            d.file('file5.hak', 'contents'),
+            d.dir('subdir', [
+              d.file('subfile1.txt', 'subcontents'),
+              d.file('subfile2.text', 'subcontents'),
+            ])
+          ]),
         ])
       ]).create();
 
-      createEntrypoint(p.join(appPath, 'sub'));
+      createEntrypoint(p.join(appPath, 'rep', 'sub'));
 
       expect(entrypoint.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
+        p.join(root, 'file4.gak'),
         p.join(root, 'subdir', 'subfile2.text')
       });
     });

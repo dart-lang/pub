@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:collection';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -28,7 +26,7 @@ abstract class Sdk {
   bool get isAvailable;
 
   /// The SDK's version number, or `null` if the SDK is unavailable.
-  Version get version;
+  Version? get version;
 
   /// The version of pub that added support for this SDK.
   Version get firstPubVersion;
@@ -37,13 +35,13 @@ abstract class Sdk {
   ///
   /// This is printed after a version solve where the SDK wasn't found. It may
   /// be `null`, indicating that no such message should be printed.
-  String get installMessage;
+  String? get installMessage;
 
   /// Returns the path to the package [name] within this SDK.
   ///
   /// Returns `null` if the SDK isn't available or if it doesn't contain a
   /// package with the given name.
-  String packagePath(String name);
+  String? packagePath(String name);
 
   @override
   String toString() => name;

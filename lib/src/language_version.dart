@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -19,13 +17,11 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   /// The language version implied by a Dart sdk version.
   factory LanguageVersion.fromVersion(Version version) {
-    ArgumentError.checkNotNull(version, 'version');
     return LanguageVersion(version.major, version.minor);
   }
 
   /// Parse language version from string.
   factory LanguageVersion.parse(String languageVersion) {
-    ArgumentError.checkNotNull(languageVersion, 'languageVersion');
     final m = _languageVersionPattern.firstMatch(languageVersion);
     if (m == null) {
       throw FormatException(
@@ -34,8 +30,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
       );
     }
     return LanguageVersion(
-      int.parse(m.group(1)),
-      int.parse(m.group(2)),
+      int.parse(m.group(1)!),
+      int.parse(m.group(2)!),
     );
   }
 
@@ -44,14 +40,14 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   ///
   /// Fallbacks to [defaultLanguageVersion] if there is no [sdkConstraint] or
   /// the [sdkConstraint] has no lower-bound.
-  factory LanguageVersion.fromSdkConstraint(VersionConstraint sdkConstraint) {
+  factory LanguageVersion.fromSdkConstraint(VersionConstraint? sdkConstraint) {
     if (sdkConstraint == null || sdkConstraint.isEmpty) {
       return defaultLanguageVersion;
     } else if (sdkConstraint is Version) {
       return LanguageVersion.fromVersion(sdkConstraint);
     } else if (sdkConstraint is VersionRange) {
       if (sdkConstraint.min != null) {
-        return LanguageVersion.fromVersion(sdkConstraint.min);
+        return LanguageVersion.fromVersion(sdkConstraint.min!);
       }
       return defaultLanguageVersion;
     } else if (sdkConstraint is VersionUnion) {

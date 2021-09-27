@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// A library for utility functions for dealing with isolates.
 import 'dart:async';
 import 'dart:io';
@@ -18,9 +16,9 @@ import 'dart:isolate';
 /// If [buffered] is `true`, this uses [spawnBufferedUri] to spawn the isolate.
 Future<int> runUri(Uri url, List<String> args, Object message,
     {bool buffered = false,
-    bool enableAsserts,
+    bool? enableAsserts,
     bool automaticPackageResolution = false,
-    Uri packageConfig}) async {
+    Uri? packageConfig}) async {
   var errorPort = ReceivePort();
   var exitPort = ReceivePort();
 

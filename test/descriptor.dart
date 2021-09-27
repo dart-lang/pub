@@ -186,23 +186,67 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int port}) {
   ]);
 }
 
-/// Describes the file in the system cache that contains the client's OAuth2
+/// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
 Descriptor credentialsFile(PackageServer server, String accessToken,
     {String refreshToken, DateTime expiration}) {
-  return dir(cachePath, [
-    file(
+  return dir(
+    configPath,
+    [
+      file(
+        'pub-credentials.json',
+        _credentialsFileContent(
+          server,
+          accessToken,
+          refreshToken: refreshToken,
+          expiration: expiration,
+        ),
+      ),
+    ],
+  );
+}
+
+Descriptor legacyCredentialsFile(PackageServer server, String accessToken,
+    {String refreshToken, DateTime expiration}) {
+  return dir(
+    cachePath,
+    [
+      file(
         'credentials.json',
-        oauth2.Credentials(accessToken,
-                refreshToken: refreshToken,
-                tokenEndpoint: Uri.parse(server.url).resolve('/token'),
-                scopes: [
-                  'openid',
-                  'https://www.googleapis.com/auth/userinfo.email',
-                ],
-                expiration: expiration)
-            .toJson())
+        _credentialsFileContent(
+          server,
+          accessToken,
+          refreshToken: refreshToken,
+          expiration: expiration,
+        ),
+      ),
+    ],
+  );
+}
+
+String _credentialsFileContent(
+  PackageServer server,
+  String accessToken, {
+  String refreshToken,
+  DateTime expiration,
+}) =>
+    oauth2.Credentials(
+      accessToken,
+      refreshToken: refreshToken,
+      tokenEndpoint: Uri.parse(server.url).resolve('/token'),
+      scopes: [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ],
+      expiration: expiration,
+    ).toJson();
+
+/// Describes the file in the system cache that contains credentials for
+/// third party hosted pub servers.
+Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
+  return dir(configPath, [
+    file('pub-tokens.json', contents != null ? jsonEncode(contents) : null)
   ]);
 }
 

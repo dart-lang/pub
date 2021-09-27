@@ -15,6 +15,7 @@ import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -270,6 +271,7 @@ class BoundHostedSource extends CachedSource {
 
   Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
       PackageRef ref) async {
+    final serverUrl = _hostedUrl(ref.description);
     final url = _listVersionsUrl(ref.description);
     log.io('Get versions from $url.');
 
@@ -279,7 +281,11 @@ class BoundHostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      bodyText = await httpClient.read(url, headers: pubApiHeaders);
+      bodyText = await withAuthenticatedClient(
+        systemCache,
+        serverUrl,
+        (client) => client.read(url, headers: pubApiHeaders),
+      );
       body = jsonDecode(bodyText);
       result = _versionInfoFromPackageListing(body, ref, url);
     } catch (error, stackTrace) {
@@ -321,7 +327,7 @@ class BoundHostedSource extends CachedSource {
     if (preschedule != null) {
       /// If we have a cached response - preschedule dependencies of that.
       prescheduleDependenciesOfLatest(
-        await _cachedVersionListingResponse(ref, Duration(days: 365)),
+        await _cachedVersionListingResponse(ref),
       );
     }
     final result = await _fetchVersionsNoPrefetching(ref);
@@ -339,20 +345,24 @@ class BoundHostedSource extends CachedSource {
   /// than [maxAge] old it is parsed and returned.
   ///
   /// Otherwise deletes a cached response if it exists and returns `null`.
+  ///
+  /// If [maxAge] is not given, we will try to get the cached version no matter
+  /// how old it is.
   Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
-      PackageRef ref, Duration maxAge) async {
+      PackageRef ref,
+      {Duration maxAge}) async {
     final cachePath = _versionListingCachePath(ref);
     final stat = await io.File(cachePath).stat();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
-      if (now.difference(stat.modified) < maxAge) {
+      if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
           final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
           final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is String) {
             final cacheAge =
                 DateTime.now().difference(DateTime.parse(timestamp));
-            if (cacheAge > maxAge) {
+            if (maxAge != null && cacheAge > maxAge) {
               // Too old according to internal timestamp - delete.
               tryDeleteEntry(cachePath);
             } else {
@@ -399,12 +409,15 @@ class BoundHostedSource extends CachedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
     final ref = id.toRef();
     // Did we already get info for this package?
     var versionListing = _scheduler.peek(ref);
-    // Do we have a cached version response on disk?
-    versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
+    if (maxAge != null) {
+      // Do we have a cached version response on disk?
+      versionListing ??=
+          await _cachedVersionListingResponse(ref, maxAge: maxAge);
+    }
     // Otherwise retrieve the info from the host.
     versionListing ??= await _scheduler
         .schedule(ref)
@@ -445,7 +458,8 @@ class BoundHostedSource extends CachedSource {
     var versionListing = _scheduler.peek(ref);
     if (maxAge != null) {
       // Do we have a cached version response on disk?
-      versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
+      versionListing ??=
+          await _cachedVersionListingResponse(ref, maxAge: maxAge);
     }
     versionListing ??= await _scheduler.schedule(ref);
     return versionListing.keys.toList();
@@ -458,6 +472,12 @@ class BoundHostedSource extends CachedSource {
     final hostedUrl = parsed.last;
     final package = Uri.encodeComponent(parsed.first);
     return hostedUrl.resolve('api/packages/$package');
+  }
+
+  /// Parses [description] into server name component.
+  Uri _hostedUrl(description) {
+    final parsed = source._parseDescription(description);
+    return parsed.last;
   }
 
   /// Retrieves the pubspec for a specific version of a package that is
@@ -612,6 +632,15 @@ class BoundHostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   Future _download(PackageId id, String destPath) async {
+    // We never want to use a cached `archive_url`, so we never attempt to load
+    // the version listing from cache. Besides in most cases we already have
+    // downloaded a fresh copy of the version listing response in the in-memory
+    // cache, so looking in the file-system is pointless.
+    //
+    // We avoid using cached `archive_url` values because the `archive_url` for
+    // a custom package server may include a temporary signature in the
+    // query-string as is the case with signed S3 URLs. And we wish to allow for
+    // such URLs to be used.
     final versions = await _scheduler.schedule(id.toRef());
     final versionInfo = versions[id];
     final packageName = id.name;
@@ -620,14 +649,13 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
+    final parsedDescription = source._parseDescription(id.description);
+    final server = parsedDescription.last;
+
     var url = versionInfo.archiveUrl;
-    if (url == null) {
-      // To support old servers that has no archive_url we fall back to the
-      // hard-coded path.
-      final parsedDescription = source._parseDescription(id.description);
-      final server = parsedDescription.last;
-      url = Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
-    }
+    // To support old servers that has no archive_url we fall back to the
+    // hard-coded path.
+    url ??= Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
@@ -635,7 +663,8 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await httpClient.send(http.Request('GET', url));
+      var response = await withAuthenticatedClient(systemCache, server,
+          (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
@@ -825,10 +854,9 @@ class _OfflineHostedSource extends BoundHostedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
     // Do we have a cached version response on disk?
-    final versionListing =
-        await _cachedVersionListingResponse(id.toRef(), maxAge);
+    final versionListing = await _cachedVersionListingResponse(id.toRef());
 
     if (versionListing == null) {
       return PackageStatus();

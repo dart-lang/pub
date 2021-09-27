@@ -28,6 +28,7 @@ import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
+import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
@@ -143,6 +144,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
+    addCommand(TokenCommand());
     addCommand(DependencyServicesCommand());
   }
 

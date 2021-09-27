@@ -62,6 +62,10 @@ String yaml(value) => jsonEncode(value);
 /// sandbox directory.
 const String cachePath = 'cache';
 
+/// The path of the config directory used for tests, relative to the
+/// sandbox directory.
+const String configPath = '.config';
+
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
 const String appPath = 'myapp';
@@ -318,26 +322,37 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// [output], [error], and [silent] can be [String]s, [RegExp]s, or [Matcher]s.
 ///
+/// If [input] is given, writes given lines into process stdin stream.
+///
 /// If [outputJson] is given, validates that pub outputs stringified JSON
 /// matching that object, which can be a literal JSON object or any other
 /// [Matcher].
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub(
-    {List<String> args,
-    output,
-    error,
-    outputJson,
-    silent,
-    int exitCode = exit_codes.SUCCESS,
-    String workingDirectory,
-    Map<String, String> environment}) async {
+Future<void> runPub({
+  List<String> args,
+  output,
+  error,
+  outputJson,
+  silent,
+  int exitCode,
+  String workingDirectory,
+  Map<String, String> environment,
+  List<String> input,
+}) async {
+  exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
       args: args, workingDirectory: workingDirectory, environment: environment);
+
+  if (input != null) {
+    input.forEach(pub.stdin.writeln);
+    await pub.stdin.flush();
+  }
+
   await pub.shouldExit(exitCode);
 
   var actualOutput = (await pub.stdoutStream().toList()).join('\n');
@@ -405,6 +420,7 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
   var environment = {
     'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
+    '_PUB_TEST_CONFIG_DIR': _pathInSandbox(configPath),
     'PUB_CACHE': _pathInSandbox(cachePath),
     'PUB_ENVIRONMENT': 'test-environment',
 
