@@ -118,7 +118,8 @@ class DependencyServicesReportCommand extends PubCommand {
             {
               'name': oldPackageName,
               'version': null,
-              'kind': null,
+              'kind':
+                  'transitive', // Only transitive constraints can be removed.
               'constraint': null,
             },
       ];
