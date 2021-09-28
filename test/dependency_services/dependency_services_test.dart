@@ -27,7 +27,7 @@ Future<void> pipeline(String name, List<_PackageVersion> upgrades) async {
   ], buffer);
 
   final input = json.encode({
-    'changes': upgrades, //.map((u) => u.toJson()).toList(),
+    'changes': upgrades,
   });
 
   await runPubIntoBuffer([
