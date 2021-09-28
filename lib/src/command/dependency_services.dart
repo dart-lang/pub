@@ -313,6 +313,8 @@ class DependencyServicesApplyCommand extends PubCommand {
             .acquireDependencies(SolveType.GET, dryRun: true);
       },
     );
+    // Dummy message.
+    log.message(json.encode({'dependencies': []}));
   }
 }
 
