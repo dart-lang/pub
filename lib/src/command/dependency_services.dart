@@ -71,7 +71,7 @@ class DependencyServicesReportCommand extends PubCommand {
 
     // This list will be empty if there is no lock file.
     final currentPackages = fileExists(entrypoint.lockFilePath)
-        ? entrypoint.lockFile.packages
+        ? Map<String, PackageId>.from(entrypoint.lockFile.packages)
         : Map<String, PackageId>.fromIterable(
             await _tryResolve(entrypoint.root.pubspec, cache),
             key: (e) => e.name);
