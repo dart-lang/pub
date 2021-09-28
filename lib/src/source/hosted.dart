@@ -12,6 +12,7 @@ import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
+import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -341,6 +342,8 @@ class BoundHostedSource extends CachedSource {
     return result;
   }
 
+  final _filePool = Pool(20);
+
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
@@ -351,41 +354,43 @@ class BoundHostedSource extends CachedSource {
   Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
       PackageRef ref,
       {Duration maxAge}) async {
-    final cachePath = _versionListingCachePath(ref);
-    final stat = await io.File(cachePath).stat();
-    final now = DateTime.now();
-    if (stat.type == io.FileSystemEntityType.file) {
-      if (maxAge == null || now.difference(stat.modified) < maxAge) {
-        try {
-          final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
-          final timestamp = cachedDoc['_fetchedAt'];
-          if (timestamp is String) {
-            final cacheAge =
-                DateTime.now().difference(DateTime.parse(timestamp));
-            if (maxAge != null && cacheAge > maxAge) {
-              // Too old according to internal timestamp - delete.
-              tryDeleteEntry(cachePath);
-            } else {
-              return _versionInfoFromPackageListing(
-                cachedDoc,
-                ref,
-                Uri.file(cachePath),
-              );
+    return await _filePool.withResource(() async {
+      final cachePath = _versionListingCachePath(ref);
+      final stat = await io.File(cachePath).stat();
+      final now = DateTime.now();
+      if (stat.type == io.FileSystemEntityType.file) {
+        if (maxAge == null || now.difference(stat.modified) < maxAge) {
+          try {
+            final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
+            final timestamp = cachedDoc['_fetchedAt'];
+            if (timestamp is String) {
+              final cacheAge =
+                  DateTime.now().difference(DateTime.parse(timestamp));
+              if (maxAge != null && cacheAge > maxAge) {
+                // Too old according to internal timestamp - delete.
+                tryDeleteEntry(cachePath);
+              } else {
+                return _versionInfoFromPackageListing(
+                  cachedDoc,
+                  ref,
+                  Uri.file(cachePath),
+                );
+              }
             }
+          } on io.IOException {
+            // Could not read the file. Delete if it exists.
+            tryDeleteEntry(cachePath);
+          } on FormatException {
+            // Decoding error - bad file or bad timestamp. Delete the file.
+            tryDeleteEntry(cachePath);
           }
-        } on io.IOException {
-          // Could not read the file. Delete if it exists.
-          tryDeleteEntry(cachePath);
-        } on FormatException {
-          // Decoding error - bad file or bad timestamp. Delete the file.
+        } else {
+          // File too old
           tryDeleteEntry(cachePath);
         }
-      } else {
-        // File too old
-        tryDeleteEntry(cachePath);
       }
-    }
-    return null;
+      return null;
+    });
   }
 
   /// Saves the (decoded) response from package-listing of [ref].

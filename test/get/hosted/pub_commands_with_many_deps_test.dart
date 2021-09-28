@@ -10,7 +10,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('test pub commands with many deps', () async {
+  test('test pub commands with many dependencies', () async {
     var deps = {};
     await servePackages((builder) {
       for (var i = 0; i < 500; i++) {
