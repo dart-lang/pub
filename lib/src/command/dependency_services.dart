@@ -306,9 +306,13 @@ class DependencyServicesApplyCommand extends PubCommand {
     if (lockFileEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
     }
-    // This will fail if the new configuration does not resolve.
-    await Entrypoint(directory, cache)
-        .acquireDependencies(SolveType.GET, dryRun: true);
+    await log.warningsOnlyUnlessTerminal(
+      () => () async {
+        // This will fail if the new configuration does not resolve.
+        await Entrypoint(directory, cache)
+            .acquireDependencies(SolveType.GET, dryRun: true);
+      },
+    );
   }
 }
 
