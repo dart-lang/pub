@@ -268,7 +268,7 @@ class DependencyServicesApplyCommand extends PubCommand {
     YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
     final input = json.decode(utf8.decode(await collectBytes(stdin)));
-    for (final change in input['changes']) {
+    for (final change in input['dependencyChanges']) {
       toApply.add(_PackageVersion(
         change['name'],
         change['version'] != null ? Version.parse(change['version']) : null,
