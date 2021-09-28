@@ -70,7 +70,12 @@ class DependencyServicesReportCommand extends PubCommand {
     final breakingPackagesResult = await _tryResolve(breakingPubspec, cache);
 
     // This list will be empty if there is no lock file.
-    final currentPackages = entrypoint.lockFile.packages.values;
+    final currentPackages = fileExists(entrypoint.lockFilePath)
+        ? entrypoint.lockFile.packages
+        : Map<String, PackageId>.fromIterable(
+            await _tryResolve(entrypoint.root.pubspec, cache),
+            key: (e) => e.name);
+    currentPackages.remove(entrypoint.root.name);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
@@ -100,10 +105,11 @@ class DependencyServicesReportCommand extends PubCommand {
         Package.inMemory(pubspec),
         lockFile: lockFile,
       );
+
       return [
         ...resolution.packages.where((r) {
           if (r.name == rootPubspec.name) return false;
-          final originalVersion = lockFile.packages[r.name];
+          final originalVersion = currentPackages[r.name];
           return originalVersion == null ||
               r.version != originalVersion.version;
         }).map((p) => {
@@ -125,7 +131,7 @@ class DependencyServicesReportCommand extends PubCommand {
       ];
     }
 
-    for (final package in currentPackages) {
+    for (final package in currentPackages.values) {
       final compatibleVersion = compatiblePackagesResult.firstWhere(
           (element) => element.name == package.name,
           orElse: () => null);
