@@ -158,7 +158,9 @@ String _resolveLink(String link) {
 String readTextFile(String file) => File(file).readAsStringSync();
 
 /// Reads the contents of the text file [file].
-Future<String> readTextFileAsync(String file) => File(file).readAsString();
+Future<String> readTextFileAsync(String file) {
+  return _descriptorPool.withResource(() => File(file).readAsString());
+}
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
