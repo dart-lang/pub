@@ -352,7 +352,7 @@ class BoundHostedSource extends CachedSource {
       PackageRef ref,
       {Duration maxAge}) async {
     final cachePath = _versionListingCachePath(ref);
-    final stat = await io.File(cachePath).stat();
+    final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
