@@ -640,7 +640,7 @@ void badSource() {
         requires baz from bad.
       And because baz comes from unknown source "bad" and foo >=1.0.2 depends on
         bang from bad, every version of foo requires bang from bad.
-      So, because bang comes from unknown source "bad" and myapp depends on foo,
+      So, because bang comes from unknown source "bad" and myapp depends on foo any,
         version solving failed.
     '''), tries: 3);
   });
