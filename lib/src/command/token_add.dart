@@ -42,11 +42,13 @@ class TokenAddCommand extends PubCommand {
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
+    final rawHostedUrl = argResults.rest.first;
 
     try {
-      var hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
-      if (hostedUrl.isScheme('HTTP')) {
-        throw DataException('Insecure package repository could not be added.');
+      var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
+      if (!hostedUrl.isScheme('HTTPS')) {
+        throw FormatException('url must be https://, '
+            'insecure repositories cannot use authentication.');
       }
 
       if (envVar == null) {
@@ -55,7 +57,7 @@ class TokenAddCommand extends PubCommand {
         await _addEnvVarToken(hostedUrl);
       }
     } on FormatException catch (e) {
-      usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
+      usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
           '${e.message}');
     } on TimeoutException catch (_) {
       // Timeout is added to readLine call to make sure automated jobs doesn't

@@ -135,8 +135,8 @@ void main() {
     await d.dir(configPath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
-      error: contains('Insecure package repository could not be added.'),
-      exitCode: exit_codes.DATA,
+      error: contains('insecure repositories cannot use authentication'),
+      exitCode: exit_codes.USAGE,
     );
 
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
