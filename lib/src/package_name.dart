@@ -9,9 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
-import 'source/git.dart';
 import 'source/hosted.dart';
-import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
@@ -246,9 +244,7 @@ class PackageRange extends PackageName {
   bool get _showVersionConstraint {
     if (isRoot) return false;
     if (!constraint.isAny) return true;
-    if (source is PathSource) return false;
-    if (source is GitSource) return false;
-    return true;
+    return source.hasMultipleVersions;
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
