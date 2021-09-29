@@ -46,7 +46,7 @@ void main() {
 
       await runPub(
         args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
-        error: 'Environment variable `TOKEN` is not defined.',
+        error: 'Environment variable "TOKEN" is not defined.',
       );
 
       await d.tokensFile({
@@ -68,7 +68,7 @@ void main() {
       await runPub(
         args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
         environment: {'TOKEN': 'secret'},
-        error: isNot(contains('Environment variable TOKEN is not defined.')),
+        error: isNot(contains('is not defined.')),
       );
 
       await d.tokensFile({
@@ -135,8 +135,8 @@ void main() {
     await d.dir(configPath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
-      error: contains('Insecure package repository could not be added.'),
-      exitCode: exit_codes.DATA,
+      error: contains('insecure repositories cannot use authentication'),
+      exitCode: exit_codes.USAGE,
     );
 
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
