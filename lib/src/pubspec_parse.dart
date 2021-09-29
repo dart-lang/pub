@@ -97,8 +97,8 @@ abstract class PubspecBase {
   /// be published to the default server.
   ///
   /// If this does return a URL string, it will be a valid parseable URL.
-  String get publishTo {
-    if (_parsedPublishTo) return _publishTo!;
+  String? get publishTo {
+    if (_parsedPublishTo) return _publishTo;
 
     final publishTo = fields['publish_to'];
     if (publishTo != null) {
@@ -121,7 +121,7 @@ abstract class PubspecBase {
 
     _parsedPublishTo = true;
     _publishTo = publishTo;
-    return _publishTo!;
+    return _publishTo;
   }
 
   bool _parsedPublishTo = false;
