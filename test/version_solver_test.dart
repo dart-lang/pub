@@ -636,12 +636,12 @@ void badSource() {
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
         forbidden.
-      And because foo >=1.0.1 <1.0.2 depends on baz any from bad, foo <1.0.2
-        requires baz any from bad.
+      And because foo >=1.0.1 <1.0.2 depends on baz from bad, foo <1.0.2
+        requires baz from bad.
       And because baz comes from unknown source "bad" and foo >=1.0.2 depends on
-        bang any from bad, every version of foo requires bang any from bad.
-      So, because bang comes from unknown source "bad" and myapp depends on foo
-        any, version solving failed.
+        bang from bad, every version of foo requires bang from bad.
+      So, because bang comes from unknown source "bad" and myapp depends on foo,
+        version solving failed.
     '''), tries: 3);
   });
 
