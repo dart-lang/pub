@@ -9,7 +9,6 @@ import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source.dart';
-import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -313,7 +312,7 @@ dependencies:
 
         var foo = pubspec.dependencies['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.name, 'hosted');
         expect(foo.source.serializeDescription(null, foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'bar',
@@ -358,7 +357,7 @@ dependencies:
 
         var foo = pubspec.dependencies['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.name, 'hosted');
         expect(foo.source.serializeDescription(null, foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'foo',
@@ -380,9 +379,9 @@ dependencies:
 
         var foo = pubspec.dependencies['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.name, 'hosted');
         expect(foo.source.serializeDescription(null, foo.description), {
-          'url': (foo.source as HostedSource).defaultUrl.toString(),
+          'url': 'https://pub.dartlang.org',
           'name': 'bar',
         });
       });
@@ -421,7 +420,7 @@ dependencies:
 
         var foo = pubspec.dependencies['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.name, 'hosted');
         expect(foo.source.serializeDescription(null, foo.description), {
           'url': 'https://pub.dartlang.org',
           'name': 'foo',
