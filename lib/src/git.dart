@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Helper functionality for invoking Git.
 import 'dart:async';
 
@@ -47,7 +45,7 @@ bool get isInstalled => command != null;
 /// Returns the stdout as a list of strings if it succeeded. Completes to an
 /// exception if it failed.
 Future<List<String>> run(List<String> args,
-    {String workingDir, Map<String, String> environment}) async {
+    {String? workingDir, Map<String, String>? environment}) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
@@ -55,7 +53,7 @@ Future<List<String>> run(List<String> args,
 
   log.muteProgress();
   try {
-    var result = await runProcess(command, args,
+    final result = await runProcess(command!, args,
         workingDir: workingDir,
         environment: {...?environment, 'LANG': 'en_GB'});
     if (!result.success) {
@@ -70,13 +68,13 @@ Future<List<String>> run(List<String> args,
 
 /// Like [run], but synchronous.
 List<String> runSync(List<String> args,
-    {String workingDir, Map<String, String> environment}) {
+    {String? workingDir, Map<String, String>? environment}) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
   }
 
-  var result = runProcessSync(command, args,
+  final result = runProcessSync(command!, args,
       workingDir: workingDir, environment: environment);
   if (!result.success) {
     throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
@@ -88,7 +86,7 @@ List<String> runSync(List<String> args,
 
 /// Returns the name of the git command-line app, or `null` if Git could not be
 /// found on the user's PATH.
-String get command {
+String? get command {
   if (_commandCache != null) return _commandCache;
 
   if (_tryGitCommand('git')) {
@@ -103,7 +101,7 @@ String get command {
   return _commandCache;
 }
 
-String _commandCache;
+String? _commandCache;
 
 /// Checks whether [command] is the Git command for this computer.
 bool _tryGitCommand(String command) {
