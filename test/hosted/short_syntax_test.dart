@@ -4,11 +4,11 @@
 
 // @dart=2.10
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
-import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/source_registry.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -34,15 +34,20 @@ void main() {
         exitCode: 0,
         environment: {'_PUB_TEST_SDK_VERSION': '2.15.0'},
       );
-      final sources = SourceRegistry();
-      final lock =
-          LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), sources);
 
-      expect(
-          lock.packages['foo'].description,
-          isA<HostedDescription>()
-              .having((e) => e.packageName, 'packageName', 'foo')
-              .having((e) => e.uri, 'uri', Uri.parse(globalPackageServer.url)));
+      final lockFile = loadYaml(
+        await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),
+      );
+
+      expect(lockFile['packages']['foo'], {
+        'dependency': 'direct main',
+        'source': 'hosted',
+        'description': {
+          'name': 'foo',
+          'url': globalPackageServer.url,
+        },
+        'version': '1.2.3',
+      });
     }
 
     test('supports hosted: <url> syntax', () async {
@@ -73,15 +78,12 @@ void main() {
         environment: {'_PUB_TEST_SDK_VERSION': '2.15.0'},
       );
 
-      final sources = SourceRegistry();
-      final lock =
-          LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), sources);
+      final lockFile = loadYaml(
+        await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),
+      );
 
-      expect(
-          lock.packages['foo'].description,
-          isA<HostedDescription>()
-              .having((e) => e.packageName, 'packageName', 'foo')
-              .having((e) => e.uri, 'uri', Uri.parse(globalPackageServer.url)));
+      expect(lockFile['packages']['foo']['description']['url'],
+          globalPackageServer.url);
     });
   });
 }

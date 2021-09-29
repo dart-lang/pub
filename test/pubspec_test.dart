@@ -336,7 +336,7 @@ dependencies:
 
         var foo = pubspec.dependencies['foo'];
         expect(foo.name, equals('foo'));
-        expect(foo.source, isA<HostedSource>());
+        expect(foo.source.name, 'hosted');
         expect(foo.source.serializeDescription(null, foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'foo',
@@ -454,9 +454,7 @@ dependencies:
     hosted: http://pub.example.org
 ''',
               (pubspec) => pubspec.dependencies,
-              '''
-Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.
-If `http://pub.example.org` was meant as a package name, please use `hosted: {name: "http://pub.example.org"}` instead.''',
+              'Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.',
             );
           },
         );

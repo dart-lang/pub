@@ -10,7 +10,6 @@ import 'dart:io' as io;
 
 import 'package:collection/collection.dart' show maxBy;
 import 'package:http/http.dart' as http;
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -130,7 +129,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageRef refFor(String name, {Uri url}) =>
-      PackageRef(name, this, HostedDescription(name, url ?? defaultUrl));
+      PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
@@ -138,11 +137,11 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageId idFor(String name, Version version, {Uri url}) => PackageId(
-      name, this, version, HostedDescription(name, url ?? defaultUrl));
+      name, this, version, _HostedDescription(name, url ?? defaultUrl));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _descriptionFor(String name, [Uri url]) {
+  dynamic _serializedDescriptionFor(String name, [Uri url]) {
     if (url == null) {
       return name;
     }
@@ -157,7 +156,7 @@ class HostedSource extends Source {
   @override
   dynamic serializeDescription(String containingPath, description) {
     final desc = _asDescription(description);
-    return _descriptionFor(desc.packageName, desc.uri);
+    return _serializedDescriptionFor(desc.packageName, desc.uri);
   }
 
   @override
@@ -196,7 +195,7 @@ class HostedSource extends Source {
     if (description is String) {
       assert(description == name);
       return PackageId(
-          name, this, version, HostedDescription(name, defaultUrl));
+          name, this, version, _HostedDescription(name, defaultUrl));
     }
 
     final serializedDescription = (description as Map).cast<String, String>();
@@ -205,22 +204,22 @@ class HostedSource extends Source {
       name,
       this,
       version,
-      HostedDescription(serializedDescription['name'],
+      _HostedDescription(serializedDescription['name'],
           Uri.parse(serializedDescription['url'])),
     );
   }
 
-  HostedDescription _asDescription(desc) => desc;
+  _HostedDescription _asDescription(desc) => desc as _HostedDescription;
 
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  HostedDescription _parseDescription(
+  _HostedDescription _parseDescription(
       String packageName, description, LanguageVersion version) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
-      return HostedDescription(packageName, defaultUrl);
+      return _HostedDescription(packageName, defaultUrl);
     }
 
     final canUseShorthandSyntax =
@@ -237,19 +236,17 @@ class HostedSource extends Source {
       // environment, we throw an error if something that looks like a URI is
       // used as a package name.
       if (canUseShorthandSyntax) {
-        return HostedDescription(
+        return _HostedDescription(
             packageName, validateAndNormalizeHostedUrl(description));
       } else {
         if (_looksLikePackageName.hasMatch(description)) {
           // Valid use of `hosted: package` dependency with an old SDK
           // environment.
-          return HostedDescription(description, defaultUrl);
+          return _HostedDescription(description, defaultUrl);
         } else {
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
-            'constraint of $_minVersionForShorterHostedSyntax.\n'
-            'If `$description` was meant as a package name, please use '
-            '`hosted: {name: "$description"}` instead.',
+            'constraint of $_minVersionForShorterHostedSyntax.',
           );
         }
       }
@@ -276,7 +273,7 @@ class HostedSource extends Source {
       url = validateAndNormalizeHostedUrl(u);
     }
 
-    return HostedDescription(name, url);
+    return _HostedDescription(name, url);
   }
 
   /// Minimum language version at which short hosted syntax is supported.
@@ -309,12 +306,11 @@ class _VersionInfo {
 
 /// The [PackageName.description] for a [HostedSource], storing the package name
 /// and resolved URI of the package server.
-@visibleForTesting
-class HostedDescription {
+class _HostedDescription {
   final String packageName;
   final Uri uri;
 
-  HostedDescription(this.packageName, this.uri) {
+  _HostedDescription(this.packageName, this.uri) {
     ArgumentError.checkNotNull(packageName, 'packageName');
     ArgumentError.checkNotNull(uri, 'uri');
   }
@@ -324,7 +320,7 @@ class HostedDescription {
 
   @override
   bool operator ==(Object other) {
-    return other is HostedDescription &&
+    return other is _HostedDescription &&
         other.packageName == packageName &&
         other.uri == uri;
   }
