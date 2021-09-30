@@ -9,7 +9,7 @@ dependencies:
   analyzer: ^1.5.0
   args: ^2.1.0
   async: ^2.6.1
-  cli_util: ^0.3.0
+  cli_util: ^0.3.4
   collection: ^1.15.0
   crypto: ^3.0.1
   frontend_server_client: ^2.0.0

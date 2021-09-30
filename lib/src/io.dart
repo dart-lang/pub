@@ -8,6 +8,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cli_util/cli_util.dart' show applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
@@ -1026,21 +1027,8 @@ class PubProcessResult {
 
 /// The location for dart-specific configuration.
 final String dartConfigDir = () {
-  // TODO: Migrate to new value from cli_util
   if (runningFromTest) {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
-  String configDir;
-  if (Platform.isLinux) {
-    configDir = Platform.environment['XDG_CONFIG_HOME'] ??
-        path.join(Platform.environment['HOME']!, '.config');
-  } else if (Platform.isWindows) {
-    configDir = Platform.environment['APPDATA']!;
-  } else if (Platform.isMacOS) {
-    configDir = path.join(
-        Platform.environment['HOME']!, 'Library', 'Application Support');
-  } else {
-    configDir = path.join(Platform.environment['HOME']!, '.config');
-  }
-  return path.join(configDir, 'dart');
+  return applicationConfigHome('dart');
 }()!;
