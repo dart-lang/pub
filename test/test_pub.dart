@@ -389,7 +389,7 @@ Future<PubProcess> startPublish(
   args = ['lish', ...?args];
   return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
     'PUB_HOSTED_URL': server.url,
-    'PUB_TEST_AUTH_METHOD': authMethod,
+    '_PUB_TEST_AUTH_METHOD': authMethod,
     if (environment != null) ...environment,
   });
 }

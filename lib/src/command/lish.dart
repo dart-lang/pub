@@ -157,7 +157,7 @@ class LishCommand extends PubCommand {
         // publish command with oauth2 credentials.
         if (runningFromTest &&
             Platform.environment.containsKey('PUB_HOSTED_URL') &&
-            Platform.environment['PUB_TEST_AUTH_METHOD'] == 'oauth2')
+            Platform.environment['_PUB_TEST_AUTH_METHOD'] == 'oauth2')
           Platform.environment['PUB_HOSTED_URL'],
       };
 

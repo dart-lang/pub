@@ -21,7 +21,7 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
     args: ['lish'],
     environment: {
       'PUB_HOSTED_URL': globalPackageServer.url,
-      'PUB_TEST_AUTH_METHOD': 'token',
+      '_PUB_TEST_AUTH_METHOD': 'token',
     },
     exitCode: 65,
     input: ['y'],
