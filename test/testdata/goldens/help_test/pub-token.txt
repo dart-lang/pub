@@ -1,0 +1,13 @@
+$ pub token --help
+Manage authentication tokens for hosted pub repositories.
+
+Usage: pub token [arguments...]
+-h, --help    Print this usage information.
+
+Available subcommands:
+  add      Add authentication tokens for a package repository.
+  list     List servers for which a token exists.
+  remove   Remove secret token for package repository.
+
+Run "pub help" to see global options.
+

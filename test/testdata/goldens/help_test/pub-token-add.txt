@@ -1,0 +1,10 @@
+$ pub token add --help
+Add authentication tokens for a package repository.
+
+Usage: pub token add
+-h, --help       Print this usage information.
+    --env-var    Read the secret token from this environment variable when
+                 making requests.
+
+Run "pub help" to see global options.
+

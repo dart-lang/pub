@@ -1,0 +1,9 @@
+$ pub token remove --help
+Remove secret token for package repository.
+
+Usage: pub token remove
+-h, --help    Print this usage information.
+    --all     Remove all secret tokens.
+
+Run "pub help" to see global options.
+
