@@ -53,11 +53,14 @@ void main() {
     // [1] https://github.com/dart-lang/sdk/blob/main/sdk/lib/_http/http_headers.dart#L653-L662
   });
 
-  test('trims and prints dirty www-authenticate message', () async {
+  test('trims and prints long www-authenticate message', () async {
     var message = List.generate(2048, (_) => 'a').join();
 
     respondWithWwwAuthenticate('bearer realm="pub", message="$message"');
-    await expectPubErrorMessage(contains(message.substring(0, 1024)));
+    await expectPubErrorMessage(allOf(
+      isNot(contains(message)),
+      contains(message.substring(0, 1024)),
+    ));
   });
 
   test('does not prints message if realm is not equals to pub', () async {
