@@ -254,6 +254,23 @@ void main() {
       });
     });
 
+    test("Don't ignore packages/ before the package root", () async {
+      await d.dir(appPath, [
+        d.dir('packages', [
+          d.dir('app', [
+            d.appPubspec(),
+            d.dir('packages', [d.file('a.txt')]),
+          ]),
+        ]),
+      ]).create();
+
+      createEntrypoint(p.join(appPath, 'packages', 'app'));
+
+      expect(entrypoint.root.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+      });
+    });
+
     group('with a submodule', () {
       setUp(() async {
         await d.git('submodule', [
