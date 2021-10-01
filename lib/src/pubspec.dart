@@ -19,17 +19,12 @@ import 'io.dart';
 import 'language_version.dart';
 import 'log.dart';
 import 'package_name.dart';
+import 'pubspec_parse.dart';
 import 'sdk.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
-/// A regular expression matching allowed package names.
-///
-/// This allows dot-separated valid Dart identifiers. The dots are there for
-/// compatibility with Google's internal Dart packages, but they may not be used
-/// when publishing a package to pub.dartlang.org.
-final _packageName =
-    RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
+export 'pubspec_parse.dart' hide PubspecBase;
 
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
@@ -72,7 +67,7 @@ bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 /// accessed. This allows a partially-invalid pubspec to be used if only the
 /// valid portions are relevant. To get a list of all errors in the pubspec, use
 /// [allErrors].
-class Pubspec {
+class Pubspec extends PubspecBase {
   // If a new lazily-initialized field is added to this class and the
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
@@ -89,76 +84,6 @@ class Pubspec {
   /// This can be null if the pubspec was created in-memory or if its location
   /// is unknown.
   Uri get _location => fields.span.sourceUrl;
-
-  /// All pubspec fields.
-  ///
-  /// This includes the fields from which other properties are derived.
-  final YamlMap fields;
-
-  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
-  /// pubspec.
-  final bool _includeDefaultSdkConstraint;
-
-  /// Whether or not the SDK version was overridden from <2.0.0 to
-  /// <2.0.0-dev.infinity.
-  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
-  bool _dartSdkWasOverridden = false;
-
-  /// The package's name.
-  String get name {
-    if (_name != null) return _name;
-
-    var name = fields['name'];
-    if (name == null) {
-      throw PubspecException('Missing the required "name" field.', fields.span);
-    } else if (name is! String) {
-      throw PubspecException(
-          '"name" field must be a string.', fields.nodes['name'].span);
-    } else if (!_packageName.hasMatch(name)) {
-      throw PubspecException('"name" field must be a valid Dart identifier.',
-          fields.nodes['name'].span);
-    } else if (reservedWords.contains(name)) {
-      throw PubspecException('"name" field may not be a Dart reserved word.',
-          fields.nodes['name'].span);
-    }
-
-    _name = name;
-    return _name;
-  }
-
-  String _name;
-
-  /// The package's version.
-  Version get version {
-    if (_version != null) return _version;
-
-    var version = fields['version'];
-    if (version == null) {
-      _version = Version.none;
-      return _version;
-    }
-
-    var span = fields.nodes['version'].span;
-    if (version is num) {
-      var fixed = '$version.0';
-      if (version is int) {
-        fixed = '$fixed.0';
-      }
-      _error(
-          '"version" field must have three numeric components: major, '
-          'minor, and patch. Instead of "$version", consider "$fixed".',
-          span);
-    }
-    if (version is! String) {
-      _error('"version" field must be a string.', span);
-    }
-
-    _version = _wrapFormatException(
-        'version number', span, () => Version.parse(version));
-    return _version;
-  }
-
-  Version _version;
 
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies {
@@ -250,6 +175,15 @@ class Pubspec {
   }
 
   Map<String, VersionConstraint> _sdkConstraints;
+
+  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// pubspec.
+  final bool _includeDefaultSdkConstraint;
+
+  /// Whether or not the SDK version was overridden from <2.0.0 to
+  /// <2.0.0-dev.infinity.
+  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
+  bool _dartSdkWasOverridden = false;
 
   /// The original Dart SDK constraint as written in the pubspec.
   ///
@@ -353,137 +287,6 @@ class Pubspec {
     return constraints;
   }
 
-  /// The URL of the server that the package should default to being published
-  /// to, "none" if the package should not be published, or `null` if it should
-  /// be published to the default server.
-  ///
-  /// If this does return a URL string, it will be a valid parseable URL.
-  String get publishTo {
-    if (_parsedPublishTo) return _publishTo;
-
-    var publishTo = fields['publish_to'];
-    if (publishTo != null) {
-      var span = fields.nodes['publish_to'].span;
-
-      if (publishTo is! String) {
-        _error('"publish_to" field must be a string.', span);
-      }
-
-      // It must be "none" or a valid URL.
-      if (publishTo != 'none') {
-        _wrapFormatException('"publish_to" field', span, () {
-          var url = Uri.parse(publishTo);
-          if (url.scheme.isEmpty) {
-            throw FormatException('must be an absolute URL.');
-          }
-        });
-      }
-    }
-
-    _parsedPublishTo = true;
-    _publishTo = publishTo;
-    return _publishTo;
-  }
-
-  bool _parsedPublishTo = false;
-  String _publishTo;
-
-  /// The list of patterns covering _false-positive secrets_ in the package.
-  ///
-  /// This is a list of git-ignore style patterns for files that should be
-  /// ignored when trying to detect possible leaks of secrets during
-  /// package publication.
-  List<String> get falseSecrets {
-    if (_falseSecrets == null) {
-      final falseSecrets = <String>[];
-
-      // Throws a [PubspecException]
-      void _falseSecretsError(SourceSpan span) => _error(
-            '"false_secrets" field must be a list of git-ignore style patterns',
-            span,
-          );
-
-      final falseSecretsNode = fields.nodes['false_secrets'];
-      if (falseSecretsNode != null) {
-        if (falseSecretsNode is YamlList) {
-          for (final node in falseSecretsNode.nodes) {
-            final value = node.value;
-            if (value is! String) {
-              _falseSecretsError(node.span);
-            }
-            falseSecrets.add(value);
-          }
-        } else {
-          _falseSecretsError(falseSecretsNode.span);
-        }
-      }
-
-      _falseSecrets = List.unmodifiable(falseSecrets);
-    }
-    return _falseSecrets;
-  }
-
-  List<String> _falseSecrets;
-
-  /// The executables that should be placed on the user's PATH when this
-  /// package is globally activated.
-  ///
-  /// It is a map of strings to string. Each key is the name of the command
-  /// that will be placed on the user's PATH. The value is the name of the
-  /// .dart script (without extension) in the package's `bin` directory that
-  /// should be run for that command. Both key and value must be "simple"
-  /// strings: alphanumerics, underscores and hypens only. If a value is
-  /// omitted, it is inferred to use the same name as the key.
-  Map<String, String> get executables {
-    if (_executables != null) return _executables;
-
-    _executables = {};
-    var yaml = fields['executables'];
-    if (yaml == null) return _executables;
-
-    if (yaml is! Map) {
-      _error('"executables" field must be a map.',
-          fields.nodes['executables'].span);
-    }
-
-    yaml.nodes.forEach((key, value) {
-      if (key.value is! String) {
-        _error('"executables" keys must be strings.', key.span);
-      }
-
-      final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
-      if (!keyPattern.hasMatch(key.value)) {
-        _error(
-            '"executables" keys may only contain letters, '
-            'numbers, hyphens and underscores.',
-            key.span);
-      }
-
-      if (value.value == null) {
-        value = key;
-      } else if (value.value is! String) {
-        _error('"executables" values must be strings or null.', value.span);
-      }
-
-      final valuePattern = RegExp(r'[/\\]');
-      if (valuePattern.hasMatch(value.value)) {
-        _error('"executables" values may not contain path separators.',
-            value.span);
-      }
-
-      _executables[key.value] = value.value;
-    });
-
-    return _executables;
-  }
-
-  Map<String, String> _executables;
-
-  /// Whether the package is private and cannot be published.
-  ///
-  /// This is specified in the pubspec by setting "publish_to" to "none".
-  bool get isPrivate => publishTo == 'none';
-
   /// Whether or not the pubspec has no contents.
   bool get isEmpty =>
       name == null && version == Version.none && dependencies.isEmpty;
@@ -513,7 +316,7 @@ class Pubspec {
         expectedName: expectedName, location: pubspecUri);
   }
 
-  Pubspec(this._name,
+  Pubspec(String name,
       {Version version,
       Iterable<PackageRange> dependencies,
       Iterable<PackageRange> devDependencies,
@@ -521,8 +324,7 @@ class Pubspec {
       Map fields,
       SourceRegistry sources,
       Map<String, VersionConstraint> sdkConstraints})
-      : _version = version,
-        _dependencies = dependencies == null
+      : _dependencies = dependencies == null
             ? null
             : Map.fromIterable(dependencies, key: (range) => range.name),
         _devDependencies = devDependencies == null
@@ -534,18 +336,23 @@ class Pubspec {
         _sdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
-        fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
-        _sources = sources;
+        _sources = sources,
+        super(
+          fields == null ? YamlMap() : YamlMap.wrap(fields),
+          name: name,
+          version: version,
+        );
 
   Pubspec.empty()
       : _sources = null,
-        _name = null,
-        _version = Version.none,
         _dependencies = {},
         _devDependencies = {},
         _sdkConstraints = {'dart': VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        fields = YamlMap();
+        super(
+          YamlMap(),
+          version: Version.none,
+        );
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
@@ -556,10 +363,10 @@ class Pubspec {
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
       {String expectedName, Uri location})
-      : fields = fields is YamlMap
+      : _includeDefaultSdkConstraint = true,
+        super(fields is YamlMap
             ? fields
-            : YamlMap.wrap(fields, sourceUrl: location),
-        _includeDefaultSdkConstraint = true {
+            : YamlMap.wrap(fields, sourceUrl: location)) {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -778,7 +585,7 @@ class Pubspec {
     var name = node.value;
     if (name is! String) {
       _error('A feature name must be a string.', node.span);
-    } else if (!_packageName.hasMatch(name)) {
+    } else if (!packageNameRegExp.hasMatch(name)) {
       _error('A feature name must be a valid Dart identifier.', node.span);
     }
 
@@ -838,14 +645,6 @@ class Pubspec {
   void _error(String message, SourceSpan span) {
     throw PubspecException(message, span);
   }
-}
-
-/// An exception thrown when parsing a pubspec.
-///
-/// These exceptions are often thrown lazily while accessing pubspec properties.
-class PubspecException extends SourceSpanFormatException
-    implements ApplicationException {
-  PubspecException(String message, SourceSpan span) : super(message, span);
 }
 
 /// Returns whether [uri] is a file URI.
