@@ -279,7 +279,7 @@ class Package {
             : (fileExists(gitIgnore) ? gitIgnore : null);
 
         final rules = [
-          if (dir == '.') ..._basicIgnoreRules,
+          if (dir == beneath) ..._basicIgnoreRules,
           if (ignoreFile != null) readTextFile(ignoreFile),
         ];
         return rules.isEmpty
