@@ -341,6 +341,15 @@ class BoundHostedSource extends CachedSource {
     return result;
   }
 
+  /// An in-memory cache to store the cached version listing loaded from
+  /// [_versionListingCachePath].
+  ///
+  /// Invariant: Entries in this cache are the parsed version of the exact same
+  ///  information cached on disk. I.e. if the entry is present in this cache,
+  /// there will not be a newer version on disk.
+  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
+      _responseCache = {};
+
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
@@ -351,26 +360,35 @@ class BoundHostedSource extends CachedSource {
   Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
       PackageRef ref,
       {Duration maxAge}) async {
+    if (_responseCache.containsKey(ref)) {
+      final cacheAge = DateTime.now().difference(_responseCache[ref].first);
+      if (maxAge == null || maxAge > cacheAge) {
+        // The cached value is not too old.
+        return _responseCache[ref].last;
+      }
+    }
     final cachePath = _versionListingCachePath(ref);
     final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
-          final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
+          final cachedDoc = jsonDecode(readTextFile(cachePath));
           final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is String) {
-            final cacheAge =
-                DateTime.now().difference(DateTime.parse(timestamp));
+            final parsedTimestamp = DateTime.parse(timestamp);
+            final cacheAge = DateTime.now().difference(parsedTimestamp);
             if (maxAge != null && cacheAge > maxAge) {
               // Too old according to internal timestamp - delete.
               tryDeleteEntry(cachePath);
             } else {
-              return _versionInfoFromPackageListing(
+              var res = _versionInfoFromPackageListing(
                 cachedDoc,
                 ref,
                 Uri.file(cachePath),
               );
+              _responseCache[ref] = Pair(parsedTimestamp, res);
+              return res;
             }
           }
         } on io.IOException {
@@ -402,6 +420,9 @@ class BoundHostedSource extends CachedSource {
           },
         ),
       );
+      // Delete the entry in the in-memory cache to maintain the invariant that
+      // cached information in memory is the same as that on the disk.
+      _responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
