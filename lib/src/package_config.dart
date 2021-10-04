@@ -2,10 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:meta/meta.dart';
-
 import 'package:pub_semver/pub_semver.dart';
 
 import 'language_version.dart';
@@ -23,14 +19,14 @@ class PackageConfig {
   /// Date-time the `.dart_tool/package_config.json` file was generated.
   ///
   /// This property is **optional** and may be `null` if not given.
-  DateTime generated;
+  DateTime? generated;
 
   /// Tool that generated the `.dart_tool/package_config.json` file.
   ///
   /// For `pub` this is always `'pub'`.
   ///
   /// This property is **optional** and may be `null` if not given.
-  String generator;
+  String? generator;
 
   /// Version of the tool that generated the `.dart_tool/package_config.json`
   /// file.
@@ -38,15 +34,15 @@ class PackageConfig {
   /// For `pub` this is the Dart SDK version from which `pub get` was called.
   ///
   /// This property is **optional** and may be `null` if not given.
-  Version generatorVersion;
+  Version? generatorVersion;
 
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
-  Map<String, dynamic> additionalProperties;
+  Map<String, dynamic>? additionalProperties;
 
   PackageConfig({
-    @required this.configVersion,
-    @required this.packages,
+    required this.configVersion,
+    required this.packages,
     this.generated,
     this.generator,
     this.generatorVersion,
@@ -63,7 +59,7 @@ class PackageConfig {
     if (data is! Map<String, dynamic>) {
       throw FormatException('package_config.json must be a JSON object');
     }
-    final root = data as Map<String, dynamic>;
+    final root = data;
 
     void _throw(String property, String mustBe) => throw FormatException(
         '"$property" in .dart_tool/package_config.json $mustBe');
@@ -87,7 +83,7 @@ class PackageConfig {
     }
 
     // Read the 'generated' property
-    DateTime generated;
+    DateTime? generated;
     final generatedRaw = root['generated'];
     if (generatedRaw != null) {
       if (generatedRaw is! String) {
@@ -104,7 +100,7 @@ class PackageConfig {
     }
 
     // Read the 'generatorVersion' property
-    Version generatorVersion;
+    Version? generatorVersion;
     final generatorVersionRaw = root['generatorVersion'];
     if (generatorVersionRaw != null) {
       if (generatorVersionRaw is! String) {
@@ -134,10 +130,10 @@ class PackageConfig {
   }
 
   /// Convert to JSON structure.
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
         'configVersion': configVersion,
         'packages': packages.map((p) => p.toJson()).toList(),
-        'generated': generated?.toUtc()?.toIso8601String(),
+        'generated': generated?.toUtc().toIso8601String(),
         'generator': generator,
         'generatorVersion': generatorVersion?.toString(),
       }..addAll(additionalProperties ?? {});
@@ -159,7 +155,7 @@ class PackageConfigEntry {
   /// This must be in the sub-tree under [rootUri].
   ///
   /// This property is **optional** and may be `null` if not given.
-  Uri packageUri;
+  Uri? packageUri;
 
   /// Language version used by package.
   ///
@@ -168,15 +164,15 @@ class PackageConfigEntry {
   /// in the `pubspec.yaml` for the given package.
   ///
   /// This property is **optional** and may be `null` if not given.
-  LanguageVersion languageVersion;
+  LanguageVersion? languageVersion;
 
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
-  Map<String, dynamic> additionalProperties;
+  Map<String, dynamic>? additionalProperties;
 
   PackageConfigEntry({
-    @required this.name,
-    @required this.rootUri,
+    required this.name,
+    required this.rootUri,
     this.packageUri,
     this.languageVersion,
     this.additionalProperties,
@@ -193,7 +189,7 @@ class PackageConfigEntry {
       throw FormatException(
           'packages[] entries in package_config.json must be JSON objects');
     }
-    final root = data as Map<String, dynamic>;
+    final root = data;
 
     void _throw(String property, String mustBe) => throw FormatException(
         '"packages[].$property" in .dart_tool/package_config.json $mustBe');
@@ -203,7 +199,7 @@ class PackageConfigEntry {
       _throw('name', 'must be a string');
     }
 
-    Uri rootUri;
+    late Uri rootUri;
     final rootUriRaw = root['rootUri'];
     if (rootUriRaw is! String) {
       _throw('rootUri', 'must be a string');
@@ -214,7 +210,7 @@ class PackageConfigEntry {
       _throw('rootUri', 'must be a URI');
     }
 
-    Uri packageUri;
+    Uri? packageUri;
     var packageUriRaw = root['packageUri'];
     if (packageUriRaw != null) {
       if (packageUriRaw is! String) {
@@ -230,7 +226,7 @@ class PackageConfigEntry {
       }
     }
 
-    LanguageVersion languageVersion;
+    LanguageVersion? languageVersion;
     final languageVersionRaw = root['languageVersion'];
     if (languageVersionRaw != null) {
       if (languageVersionRaw is! String) {
@@ -252,7 +248,7 @@ class PackageConfigEntry {
   }
 
   /// Convert to JSON structure.
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
         'name': name,
         'rootUri': rootUri.toString(),
         if (packageUri != null) 'packageUri': packageUri?.toString(),
