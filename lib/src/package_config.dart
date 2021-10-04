@@ -18,14 +18,14 @@ class PackageConfig {
 
   /// Date-time the `.dart_tool/package_config.json` file was generated.
   ///
-  /// This property is **optional** and may be `null` if not given.
+  /// `null` if not given.
   DateTime? generated;
 
   /// Tool that generated the `.dart_tool/package_config.json` file.
   ///
   /// For `pub` this is always `'pub'`.
   ///
-  /// This property is **optional** and may be `null` if not given.
+  /// `null` if not given.
   String? generator;
 
   /// Version of the tool that generated the `.dart_tool/package_config.json`
@@ -33,12 +33,12 @@ class PackageConfig {
   ///
   /// For `pub` this is the Dart SDK version from which `pub get` was called.
   ///
-  /// This property is **optional** and may be `null` if not given.
+  /// `null` if not given.
   Version? generatorVersion;
 
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
-  Map<String, dynamic>? additionalProperties;
+  Map<String, dynamic> additionalProperties;
 
   PackageConfig({
     required this.configVersion,
@@ -46,10 +46,8 @@ class PackageConfig {
     this.generated,
     this.generator,
     this.generatorVersion,
-    this.additionalProperties,
-  }) {
-    additionalProperties ??= {};
-  }
+    Map<String, dynamic>? additionalProperties,
+  }) : additionalProperties = additionalProperties ?? {};
 
   /// Create [PackageConfig] from JSON [data].
   ///
@@ -154,7 +152,7 @@ class PackageConfigEntry {
   /// Import statements in Dart programs are resolved relative to this folder.
   /// This must be in the sub-tree under [rootUri].
   ///
-  /// This property is **optional** and may be `null` if not given.
+  /// `null` if not given.
   Uri? packageUri;
 
   /// Language version used by package.
@@ -163,7 +161,7 @@ class PackageConfigEntry {
   /// comment. This is derived from the lower-bound on the Dart SDK requirement
   /// in the `pubspec.yaml` for the given package.
   ///
-  /// This property is **optional** and may be `null` if not given.
+  /// `null` if not given.
   LanguageVersion? languageVersion;
 
   /// Additional properties not in the specification for the
