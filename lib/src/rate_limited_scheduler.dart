@@ -74,7 +74,7 @@ class RateLimitedScheduler<J, V> {
       return;
     }
     final task = _queue.removeFirst();
-    final completer = _cache[task.jobId];
+    final completer = _cache[task.jobId]!;
 
     if (!_started.add(task.jobId)) {
       return;
@@ -86,7 +86,7 @@ class RateLimitedScheduler<J, V> {
           await task.zone.runUnary(_runJob, task.jobId);
     }
 
-    completer!.complete(runJob());
+    completer.complete(runJob());
     // Listen to errors on the completer:
     // this will make errors thrown by [_run] not
     // become uncaught.

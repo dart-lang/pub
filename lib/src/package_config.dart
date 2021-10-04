@@ -134,7 +134,7 @@ class PackageConfig {
         'generated': generated?.toUtc().toIso8601String(),
         'generator': generator,
         'generatorVersion': generatorVersion?.toString(),
-      }..addAll(additionalProperties ?? {});
+      }..addAll(additionalProperties);
 }
 
 class PackageConfigEntry {
@@ -189,7 +189,7 @@ class PackageConfigEntry {
     }
     final root = data;
 
-    void _throw(String property, String mustBe) => throw FormatException(
+    Never _throw(String property, String mustBe) => throw FormatException(
         '"packages[].$property" in .dart_tool/package_config.json $mustBe');
 
     final name = root['name'];
@@ -197,7 +197,7 @@ class PackageConfigEntry {
       _throw('name', 'must be a string');
     }
 
-    late Uri rootUri;
+    final Uri rootUri;
     final rootUriRaw = root['rootUri'];
     if (rootUriRaw is! String) {
       _throw('rootUri', 'must be a string');
