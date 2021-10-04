@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:analyzer/dart/ast/ast.dart';
@@ -25,7 +23,7 @@ class StrictDependenciesValidator extends Validator {
       AnalysisContextManager();
 
   StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    var packagePath = p.normalize(p.absolute(entrypoint.root.dir!));
     analysisContextManager.createContextsForDirectory(packagePath);
   }
 
@@ -47,9 +45,9 @@ class StrictDependenciesValidator extends Validator {
       }
 
       for (var directive in directives) {
-        Uri url;
+        Uri? url;
         try {
-          url = Uri.parse(directive.uri.stringValue);
+          url = Uri.parse(directive.uri.stringValue!);
         } on FormatException catch (_) {
           // Ignore a format exception. [url] will be null, and we'll emit an
           // "Invalid URL" warning below.
@@ -84,7 +82,7 @@ class StrictDependenciesValidator extends Validator {
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
+  void _validateLibBin(Set<String?> deps, Set<String> devDeps) {
     for (var usage in _usagesBeneath(['lib', 'bin'])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
@@ -98,7 +96,7 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
+  void _validateBenchmarkTestTool(Set<String> deps, Set<String?> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {

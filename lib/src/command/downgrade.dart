@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -23,7 +21,7 @@ class DowngradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
   @override
-  bool get isOffline => argResults['offline'];
+  bool? get isOffline => argResults['offline'];
 
   DowngradeCommand() {
     argParser.addFlag('offline',
@@ -58,14 +56,15 @@ class DowngradeCommand extends PubCommand {
       unlock: argResults.rest,
       dryRun: dryRun,
     );
-    if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(SolveType.GET,
           unlock: argResults.rest,
           dryRun: dryRun,
           onlyReportSuccessOrFailure: true);
     }
 
-    if (isOffline) {
+    if (isOffline!) {
       log.warning('Warning: Downgrading when offline may not update you to '
           'the oldest versions of your dependencies.');
     }

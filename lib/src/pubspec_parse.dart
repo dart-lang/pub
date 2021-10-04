@@ -37,9 +37,9 @@ abstract class PubspecBase {
         _version = version;
 
   /// The package's name.
-  String get name {
-    if (_name != null) return _name!;
+  String get name => _name ??= _lookupName();
 
+  String _lookupName() {
     final name = fields['name'];
     if (name == null) {
       throw PubspecException('Missing the required "name" field.', fields.span);
@@ -54,8 +54,7 @@ abstract class PubspecBase {
           fields.nodes['name']?.span);
     }
 
-    _name = name;
-    return _name!;
+    return name;
   }
 
   String? _name;

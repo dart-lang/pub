@@ -2,11 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '../io.dart';
@@ -43,7 +40,7 @@ abstract class CachedSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, {String relativeFrom}) =>
+  String getDirectory(PackageId id, {String? relativeFrom}) =>
       getDirectoryInCache(id);
 
   String getDirectoryInCache(PackageId id);
@@ -82,5 +79,5 @@ class RepairResult {
   /// cache (but that might itself have failed).
   final bool success;
   final PackageId package;
-  RepairResult(this.package, {@required this.success});
+  RepairResult(this.package, {required this.success});
 }

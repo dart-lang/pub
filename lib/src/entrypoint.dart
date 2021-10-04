@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -80,7 +78,7 @@ class Entrypoint {
   final SystemCache cache;
 
   /// Whether this entrypoint exists within the package cache.
-  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
+  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir!);
 
   /// Whether this is an entrypoint for a globally-activated package.
   final bool isGlobal;
@@ -88,45 +86,42 @@ class Entrypoint {
   /// The lockfile for the entrypoint.
   ///
   /// If not provided to the entrypoint, it will be loaded lazily from disk.
-  LockFile get lockFile {
-    if (_lockFile != null) return _lockFile;
+  LockFile get lockFile => _lockFile ??= _loadLockFile();
 
+  LockFile _loadLockFile() {
     if (!fileExists(lockFilePath)) {
-      _lockFile = LockFile.empty();
+      return _lockFile = LockFile.empty();
     } else {
-      _lockFile = LockFile.load(lockFilePath, cache.sources);
+      return _lockFile = LockFile.load(lockFilePath, cache.sources);
     }
-
-    return _lockFile;
   }
 
-  LockFile _lockFile;
+  LockFile? _lockFile;
 
   /// The package graph for the application and all of its transitive
   /// dependencies.
   ///
   /// Throws a [DataError] if the `.dart_tool/package_config.json` file isn't
   /// up-to-date relative to the pubspec and the lockfile.
-  PackageGraph get packageGraph {
-    if (_packageGraph != null) return _packageGraph;
+  PackageGraph get packageGraph => _packageGraph ??= _createPackageGraph();
 
+  PackageGraph _createPackageGraph() {
     assertUpToDate();
     var packages = {
       for (var id in lockFile.packages.values) id.name: cache.load(id)
     };
     packages[root.name] = root;
 
-    _packageGraph = PackageGraph(this, lockFile, packages);
-    return _packageGraph;
+    return PackageGraph(this, lockFile, packages);
   }
 
-  PackageGraph _packageGraph;
+  PackageGraph? _packageGraph;
 
   /// Where the lock file and package configurations are to be found.
   ///
   /// Global packages (except those from path source)
   /// store these in the global cache.
-  String get _configRoot =>
+  String? get _configRoot =>
       isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
 
   /// The path to the entrypoint's ".packages" file.
@@ -134,17 +129,17 @@ class Entrypoint {
   /// This file is being slowly deprecated in favor of
   /// `.dart_tool/package_config.json`. Pub will still create it, but will
   /// not require it or make use of it within pub.
-  String get packagesFile => p.normalize(p.join(_configRoot, '.packages'));
+  String get packagesFile => p.normalize(p.join(_configRoot!, '.packages'));
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file.
   String get packageConfigFile =>
-      p.normalize(p.join(_configRoot, '.dart_tool', 'package_config.json'));
+      p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json'));
 
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
   /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => p.normalize(p.join(_configRoot, 'pubspec.lock'));
+  String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
 
   /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
   ///
@@ -184,7 +179,7 @@ class Entrypoint {
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passes as an optimization.
   Entrypoint.global(this.root, this._lockFile, this.cache,
-      {SolveResult solveResult})
+      {SolveResult? solveResult})
       : isGlobal = true {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
@@ -194,7 +189,7 @@ class Entrypoint {
   /// Gets the [Entrypoint] package for the current working directory.
   ///
   /// This will be null if the example folder doesn't have a `pubspec.yaml`.
-  Entrypoint get example {
+  Entrypoint? get example {
     if (_example != null) return _example;
     if (!fileExists(root.path('example', 'pubspec.yaml'))) {
       return null;
@@ -202,14 +197,14 @@ class Entrypoint {
     return _example = Entrypoint(root.path('example'), cache);
   }
 
-  Entrypoint _example;
+  Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles() async {
     writeTextFile(
         packagesFile,
         lockFile.packagesFile(cache,
-            entrypoint: root.name, relativeFrom: root.dir));
+            entrypoint: root.name, relativeFrom: root.dir!));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
@@ -217,7 +212,7 @@ class Entrypoint {
             entrypoint: root.name,
             entrypointSdkConstraint:
                 root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: root.dir));
+            relativeFrom: root.dir!));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -244,7 +239,7 @@ class Entrypoint {
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
     SolveType type, {
-    Iterable<String> unlock,
+    Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
     bool onlyReportSuccessOrFailure = false,
@@ -276,7 +271,7 @@ class Entrypoint {
     }
 
     // Log once about all overridden packages.
-    if (warnAboutPreReleaseSdkOverrides && result.pubspecs != null) {
+    if (warnAboutPreReleaseSdkOverrides) {
       var overriddenPackages = (result.pubspecs.values
               .where((pubspec) => pubspec.dartSdkWasOverridden)
               .map((pubspec) => pubspec.name)
@@ -315,7 +310,7 @@ class Entrypoint {
 
       try {
         if (precompile) {
-          await precompileExecutables(changed: result.changedPackages);
+          await precompileExecutables();
         } else {
           _deleteExecutableSnapshots(changed: result.changedPackages);
         }
@@ -345,7 +340,7 @@ class Entrypoint {
       }
     }
     final r = root.immediateDependencies.keys.expand((packageName) {
-      final package = packageGraph.packages[packageName];
+      final package = packageGraph.packages[packageName]!;
       return package.executablePaths
           .map((path) => Executable(packageName, path));
     }).toList();
@@ -353,7 +348,7 @@ class Entrypoint {
   }
 
   /// Precompiles all [_builtExecutables].
-  Future<void> precompileExecutables({Iterable<String> changed}) async {
+  Future<void> precompileExecutables() async {
     migrateCache();
 
     final executables = _builtExecutables;
@@ -378,7 +373,7 @@ class Entrypoint {
 
   /// Precompiles executable .dart file at [path] to a snapshot.
   Future<void> precompileExecutable(Executable executable) async {
-    return await log.progress('Building package executable', () async {
+    await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
       return waitAndPrintErrors([_precompileExecutable(executable)]);
     });
@@ -424,7 +419,7 @@ class Entrypoint {
   /// The absolute path of [executable] resolved relative to [this].
   String resolveExecutable(Executable executable) {
     return p.join(
-      packageGraph.packages[executable.package].dir,
+      packageGraph.packages[executable.package]!.dir!,
       executable.relativePath,
     );
   }
@@ -433,7 +428,7 @@ class Entrypoint {
   ///
   /// If [changed] is passed, only dependencies whose contents might be changed
   /// if one of the given packages changes will have their executables deleted.
-  void _deleteExecutableSnapshots({Iterable<String> changed}) {
+  void _deleteExecutableSnapshots({Iterable<String>? changed}) {
     if (!dirExists(_snapshotPath)) return;
 
     // If we don't know what changed, we can't safely re-use any snapshots.
@@ -441,7 +436,8 @@ class Entrypoint {
       deleteEntry(_snapshotPath);
       return;
     }
-    changed = changed.toSet();
+    var changedDeps = changed;
+    changedDeps = changedDeps.toSet();
 
     // If the existing executable was compiled with a different SDK, we need to
     // recompile regardless of what changed.
@@ -462,7 +458,7 @@ class Entrypoint {
           packageGraph.isPackageMutable(package) ||
           packageGraph
               .transitiveDependencies(package)
-              .any((dep) => changed.contains(dep.name))) {
+              .any((dep) => changedDeps.contains(dep.name))) {
         deleteEntry(entry);
       }
     }
@@ -555,8 +551,8 @@ class Entrypoint {
     }
 
     for (var match in _sdkConstraint.allMatches(lockFileText)) {
-      var identifier = match[1] == 'sdk' ? 'dart' : match[1].trim();
-      var sdk = sdks[identifier];
+      var identifier = match[1] == 'sdk' ? 'dart' : match[1]!.trim();
+      var sdk = sdks[identifier]!;
 
       // Don't complain if there's an SDK constraint for an unavailable SDK. For
       // example, the Flutter SDK being unavailable just means that we aren't
@@ -564,8 +560,8 @@ class Entrypoint {
       // able to `pub run` non-Flutter tools even in a Flutter app.
       if (!sdk.isAvailable) continue;
 
-      var parsedConstraint = VersionConstraint.parse(match[2]);
-      if (!parsedConstraint.allows(sdk.version)) {
+      var parsedConstraint = VersionConstraint.parse(match[2]!);
+      if (!parsedConstraint.allows(sdk.version!)) {
         dataError('${sdk.name} ${sdk.version} is incompatible with your '
             "dependencies' SDK constraints. Please run \"$topLevelProgram pub get\" again.");
       }
@@ -709,7 +705,7 @@ class Entrypoint {
 
     final packagePathsMapping = <String, String>{};
     for (final package in packages.keys) {
-      final packageUri = packages[package];
+      final packageUri = packages[package]!;
 
       // Pub only generates "file:" and relative URIs.
       if (packageUri.scheme != 'file' && packageUri.scheme.isNotEmpty) {
@@ -717,7 +713,7 @@ class Entrypoint {
       }
 
       // Get the dirname of the .packages path, since it's pointing to lib/.
-      final packagePath = p.dirname(p.join(root.dir, p.fromUri(packageUri)));
+      final packagePath = p.dirname(p.join(root.dir!, p.fromUri(packageUri)));
       packagePathsMapping[package] = packagePath;
     }
 
@@ -747,7 +743,7 @@ class Entrypoint {
           '"pub" version, please run "$topLevelProgram pub get".');
     }
 
-    String packageConfigRaw;
+    late String packageConfigRaw;
     try {
       packageConfigRaw = readTextFile(packageConfigFile);
     } on FileException {
@@ -755,7 +751,7 @@ class Entrypoint {
           'The "$packageConfigFile" file does not exist, please run "$topLevelProgram pub get".');
     }
 
-    PackageConfig cfg;
+    late PackageConfig cfg;
     try {
       cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
     } on FormatException {
@@ -844,7 +840,7 @@ class Entrypoint {
     final windowsLineEndings = fileExists(lockFilePath) &&
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
-    final serialized = _lockFile.serialize(root.dir);
+    final serialized = lockFile.serialize(root.dir!);
     writeTextFile(lockFilePath,
         windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
   }
@@ -855,7 +851,7 @@ class Entrypoint {
     // Cached packages don't have these.
     if (isCached) return;
 
-    var oldPath = p.join(_configRoot, '.pub');
+    var oldPath = p.join(_configRoot!, '.pub');
     if (!dirExists(oldPath)) return;
 
     var newPath = root.path('.dart_tool/pub');
@@ -872,8 +868,7 @@ class Entrypoint {
   /// We require an SDK constraint lower-bound as of Dart 2.12.0
   void _checkSdkConstraintIsDefined(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.sdkConstraints['dart'];
-    if (dartSdkConstraint is! VersionRange ||
-        (dartSdkConstraint is VersionRange && dartSdkConstraint.min == null)) {
+    if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
       // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
       // [CompatibleWithVersionRange] because some pub versions don't support
       // caret syntax (e.g. '^2.10.0')

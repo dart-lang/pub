@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../entrypoint.dart';
@@ -18,7 +16,7 @@ class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
-  final Uri _server;
+  final Uri? _server;
 
   RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
@@ -26,7 +24,7 @@ class RelativeVersionNumberingValidator extends Validator {
   @override
   Future<void> validate() async {
     final hostedSource = entrypoint.cache.sources.hosted;
-    List<PackageId> existingVersions;
+    List<PackageId?> existingVersions;
     try {
       existingVersions = await hostedSource
           .bind(entrypoint.cache)
@@ -34,9 +32,9 @@ class RelativeVersionNumberingValidator extends Validator {
     } on PackageNotFoundException {
       existingVersions = [];
     }
-    existingVersions.sort((a, b) => a.version.compareTo(b.version));
+    existingVersions.sort((a, b) => a!.version.compareTo(b!.version));
     final previousVersion = existingVersions.lastWhere(
-        (id) => id.version < entrypoint.root.version,
+        (id) => id!.version < entrypoint.root.version,
         orElse: () => null);
     if (previousVersion == null) return;
 

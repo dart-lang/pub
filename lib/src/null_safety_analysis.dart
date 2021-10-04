@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:analyzer/dart/analysis/context_builder.dart';
@@ -74,16 +72,17 @@ class NullSafetyAnalysis {
   /// If [packageId] is a relative path dependency [containingPath] must be
   /// provided with an absolute path to resolve it against.
   Future<NullSafetyAnalysisResult> nullSafetyCompliance(PackageId packageId,
-      {String containingPath}) async {
+      {String? containingPath}) async {
     // A space in the name prevents clashes with other package names.
     final fakeRootName = '${packageId.name} importer';
     final fakeRoot = Package.inMemory(Pubspec(fakeRootName,
         fields: {
           'dependencies': {
             packageId.name: {
-              packageId.source.name: packageId.source is PathSource
+              packageId.source!.name: packageId.source is PathSource
                   ? (packageId.description['relative']
-                      ? path.join(containingPath, packageId.description['path'])
+                      ? path.join(
+                          containingPath!, packageId.description['path'])
                       : packageId.description['path'])
                   : packageId.description,
               'version': packageId.version.toString(),
@@ -93,7 +92,7 @@ class NullSafetyAnalysis {
         sources: _systemCache.sources));
 
     final rootPubspec =
-        await packageId.source.bind(_systemCache).describe(packageId);
+        await packageId.source!.bind(_systemCache).describe(packageId);
     final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {
       final span =
@@ -119,10 +118,10 @@ class NullSafetyAnalysis {
           'Could not resolve constraints: $e');
     }
     return nullSafetyComplianceOfPackages(
-        result.packages.where((id) => id.name != fakeRootName),
-        Package(rootPubspec,
-            packageId.source.bind(_systemCache).getDirectory(packageId)),
-        containingPath);
+      result.packages.where((id) => id.name != fakeRootName),
+      Package(rootPubspec,
+          packageId.source!.bind(_systemCache).getDirectory(packageId)),
+    );
   }
 
   /// Decides if all dependendencies (transitively) have a language version
@@ -139,15 +138,14 @@ class NullSafetyAnalysis {
   Future<NullSafetyAnalysisResult> nullSafetyComplianceOfPackages(
     Iterable<PackageId> packages,
     Package rootPackage,
-    String containingPath,
   ) async {
-    NullSafetyAnalysisResult firstBadPackage;
+    NullSafetyAnalysisResult? firstBadPackage;
     for (final dependencyId in packages) {
       final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
         Pubspec pubspec;
-        BoundSource boundSource;
-        String packageDir;
+        BoundSource? boundSource;
+        String? packageDir;
         if (dependencyId.source == null) {
           pubspec = rootPackage.pubspec;
           packageDir = rootPackage.dir;
@@ -175,7 +173,7 @@ class NullSafetyAnalysis {
         }
 
         final libDir =
-            path.absolute(path.normalize(path.join(packageDir, 'lib')));
+            path.absolute(path.normalize(path.join(packageDir!, 'lib')));
         if (dirExists(libDir)) {
           final analysisSession = ContextBuilder()
               .createContext(
@@ -225,7 +223,6 @@ class NullSafetyAnalysis {
         }
         return NullSafetyAnalysisResult(NullSafetyCompliance.compliant, null);
       });
-      assert(packageInternalAnalysis != null);
       if (packageInternalAnalysis.compliance ==
           NullSafetyCompliance.analysisFailed) {
         return packageInternalAnalysis;
@@ -251,12 +248,12 @@ class NullSafetyAnalysisResult {
   final NullSafetyCompliance compliance;
 
   /// `null` if compliance == [NullSafetyCompliance.compliant].
-  final String reason;
+  final String? reason;
 
   NullSafetyAnalysisResult(this.compliance, this.reason);
 }
 
-SourceSpan _tryGetSpanFromYamlMap(Object map, String key) {
+SourceSpan? _tryGetSpanFromYamlMap(Object? map, String key) {
   if (map is YamlMap) {
     return map.nodes[key]?.span;
   }

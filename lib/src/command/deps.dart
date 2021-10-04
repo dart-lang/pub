@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:collection';
 import 'dart:convert';
 
@@ -37,10 +35,10 @@ class DepsCommand extends PubCommand {
       AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
-  StringBuffer _buffer;
+  final _buffer = StringBuffer();
 
   /// Whether to include dev dependencies.
-  bool get _includeDev => argResults['dev'];
+  bool? get _includeDev => argResults['dev'];
 
   DepsCommand() {
     argParser.addOption('style',
@@ -67,8 +65,7 @@ class DepsCommand extends PubCommand {
   Future<void> runProtected() async {
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
-
-    _buffer = StringBuffer();
+    _buffer.clear();
 
     if (argResults['json']) {
       if (argResults.wasParsed('dev')) {
@@ -89,7 +86,7 @@ class DepsCommand extends PubCommand {
         final current = toVisit.removeLast();
         if (visited.contains(current)) continue;
         visited.add(current);
-        final currentPackage = entrypoint.packageGraph.packages[current];
+        final currentPackage = entrypoint.packageGraph.packages[current]!;
         final next = (current == entrypoint.root.name
                 ? entrypoint.root.immediateDependencies
                 : currentPackage.dependencies)
@@ -121,7 +118,7 @@ class DepsCommand extends PubCommand {
           ...entrypoint.root.immediateDependencies.keys
               .map((name) => entrypoint.packageGraph.packages[name])
         ])
-          ...package.executableNames.map((name) => package == entrypoint.root
+          ...package!.executableNames.map((name) => package == entrypoint.root
               ? ':$name'
               : (package.name == name ? name : '${package.name}:$name'))
       ];
@@ -177,7 +174,7 @@ class DepsCommand extends PubCommand {
   void _outputCompact() {
     var root = entrypoint.root;
     _outputCompactPackages('dependencies', root.dependencies.keys);
-    if (_includeDev) {
+    if (_includeDev!) {
       _outputCompactPackages('dev dependencies', root.devDependencies.keys);
     }
     _outputCompactPackages(
@@ -194,7 +191,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln();
     _buffer.writeln('$section:');
     for (var name in ordered(names)) {
-      var package = _getPackage(name);
+      var package = _getPackage(name)!;
 
       _buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
@@ -215,7 +212,7 @@ class DepsCommand extends PubCommand {
   void _outputList() {
     var root = entrypoint.root;
     _outputListSection('dependencies', root.dependencies.keys);
-    if (_includeDev) {
+    if (_includeDev!) {
       _outputListSection('dev dependencies', root.devDependencies.keys);
     }
     _outputListSection('dependency overrides', root.dependencyOverrides.keys);
@@ -234,7 +231,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln('$name:');
 
     for (var name in deps) {
-      var package = _getPackage(name);
+      var package = _getPackage(name)!;
       _buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
@@ -254,14 +251,14 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = Queue<Pair<Package, Map<String, Map>>>();
+    var toWalk = Queue<Pair<Package?, Map<String, Map>>>();
     var visited = <String>{entrypoint.root.name};
 
     // Start with the root dependencies.
     var packageTree = <String, Map>{};
     var immediateDependencies =
         entrypoint.root.immediateDependencies.keys.toSet();
-    if (!_includeDev) {
+    if (!_includeDev!) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
@@ -271,7 +268,7 @@ class DepsCommand extends PubCommand {
     // Do a breadth-first walk to the dependency graph.
     while (toWalk.isNotEmpty) {
       var pair = toWalk.removeFirst();
-      var package = pair.first;
+      var package = pair.first!;
       var map = pair.last;
 
       if (visited.contains(package.name)) {
@@ -302,7 +299,7 @@ class DepsCommand extends PubCommand {
     var root = entrypoint.root;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.keys);
-    if (_includeDev) {
+    if (_includeDev!) {
       transitive.removeAll(root.devDependencies.keys);
     }
     transitive.removeAll(root.dependencyOverrides.keys);
@@ -310,7 +307,7 @@ class DepsCommand extends PubCommand {
   }
 
   Set<String> _getAllDependencies() {
-    if (_includeDev) return entrypoint.packageGraph.packages.keys.toSet();
+    if (_includeDev!) return entrypoint.packageGraph.packages.keys.toSet();
 
     var nonDevDependencies = entrypoint.root.dependencies.keys.toList()
       ..addAll(entrypoint.root.dependencyOverrides.keys);
@@ -326,7 +323,7 @@ class DepsCommand extends PubCommand {
   /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,
   /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
   /// check can return a false negative. This fails gracefully if that happens.
-  Package _getPackage(String name) {
+  Package? _getPackage(String name) {
     var package = entrypoint.packageGraph.packages[name];
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
@@ -338,11 +335,11 @@ class DepsCommand extends PubCommand {
   void _outputExecutables() {
     var packages = [
       entrypoint.root,
-      ...(_includeDev
+      ...(_includeDev!
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys
-          .map((name) => entrypoint.packageGraph.packages[name])
+          .map((name) => entrypoint.packageGraph.packages[name]!)
     ];
 
     for (var package in packages) {

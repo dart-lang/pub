@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:meta/meta.dart';
@@ -74,7 +72,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.originalDartSdkConstraint
+    if (entrypoint.root.pubspec.originalDartSdkConstraint!
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -95,7 +93,7 @@ abstract class Validator {
             ? firstSdkVersion.nextPatch
             : firstSdkVersion.nextBreaking);
 
-    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
+    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint!
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -123,8 +121,8 @@ abstract class Validator {
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
   static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, Uri serverUrl,
-      {List<String> hints, List<String> warnings, List<String> errors}) {
+      Entrypoint entrypoint, Future<int> packageSize, Uri? serverUrl,
+      {List<String>? hints, List<String>? warnings, List<String>? errors}) {
     var validators = [
       GitignoreValidator(entrypoint),
       PubspecValidator(entrypoint),
@@ -149,16 +147,14 @@ abstract class Validator {
       PubspecTypoValidator(entrypoint),
       LeakDetectionValidator(entrypoint),
     ];
-    if (packageSize != null) {
-      validators.add(SizeValidator(entrypoint, packageSize));
-    }
+    validators.add(SizeValidator(entrypoint, packageSize));
 
     return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {
-      hints.addAll([for (final validator in validators) ...validator.hints]);
-      warnings
+      hints!.addAll([for (final validator in validators) ...validator.hints]);
+      warnings!
           .addAll([for (final validator in validators) ...validator.warnings]);
-      errors.addAll([for (final validator in validators) ...validator.errors]);
+      errors!.addAll([for (final validator in validators) ...validator.errors]);
 
       if (errors.isNotEmpty) {
         final s = errors.length > 1 ? 's' : '';

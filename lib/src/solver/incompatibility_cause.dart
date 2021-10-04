@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -59,7 +57,7 @@ class _Cause implements IncompatibilityCause {
 /// incompatible with the current SDK.
 class SdkCause implements IncompatibilityCause {
   /// The union of all the incompatible versions' constraints on the SDK.
-  final VersionConstraint constraint;
+  final VersionConstraint? constraint;
 
   /// The SDK with which the package was incompatible.
   final Sdk sdk;
@@ -77,7 +75,7 @@ class PackageNotFoundCause implements IncompatibilityCause {
   /// that SDK.
   ///
   /// Otherwise `null`.
-  Sdk get sdk => exception.missingSdk;
+  Sdk? get sdk => exception.missingSdk;
 
   PackageNotFoundCause(this.exception);
 }

@@ -2,8 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -40,16 +39,16 @@ class AddCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
   @override
-  bool get isOffline => argResults['offline'];
+  bool? get isOffline => argResults['offline'];
 
-  bool get isDev => argResults['dev'];
-  bool get isDryRun => argResults['dry-run'];
-  String get gitUrl => argResults['git-url'];
-  String get gitPath => argResults['git-path'];
-  String get gitRef => argResults['git-ref'];
-  String get hostUrl => argResults['hosted-url'];
-  String get path => argResults['path'];
-  String get sdk => argResults['sdk'];
+  bool? get isDev => argResults['dev'];
+  bool? get isDryRun => argResults['dry-run'];
+  String? get gitUrl => argResults['git-url'];
+  String? get gitPath => argResults['git-path'];
+  String? get gitRef => argResults['git-ref'];
+  String? get hostUrl => argResults['hosted-url'];
+  String? get path => argResults['path'];
+  String? get sdk => argResults['sdk'];
 
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
   bool get hasHostOptions => hostUrl != null;
@@ -103,7 +102,7 @@ class AddCommand extends PubCommand {
     final updatedPubSpec =
         await _addPackageToPubspec(entrypoint.root.pubspec, package);
 
-    SolveResult solveResult;
+    late SolveResult solveResult;
 
     try {
       /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
@@ -127,10 +126,10 @@ class AddCommand extends PubCommand {
         .firstWhere((packageId) => packageId.name == package.name);
 
     /// Assert that [resultPackage] is within the original user's expectations.
-    if (package.constraint != null &&
-        !package.constraint.allows(resultPackage.version)) {
-      if (updatedPubSpec.dependencyOverrides != null &&
-          updatedPubSpec.dependencyOverrides.isNotEmpty) {
+    var constraint = package.constraint;
+    if (!constraint.allows(resultPackage.version)) {
+      var dependencyOverrides = updatedPubSpec.dependencyOverrides;
+      if (dependencyOverrides.isNotEmpty) {
         dataError(
             '"${package.name}" resolved to "${resultPackage.version}" which '
             'does not satisfy constraint "${package.constraint}". This could be '
@@ -141,7 +140,7 @@ class AddCommand extends PubCommand {
           'does not satisfy constraint "${package.constraint}".');
     }
 
-    if (isDryRun) {
+    if (isDryRun!) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
       /// to this new dependency.
@@ -160,16 +159,16 @@ class AddCommand extends PubCommand {
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(resultPackage, packageInformation, isDev);
+      _updatePubspec(resultPackage, packageInformation, isDev!);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
+      final updatedEntrypoint = Entrypoint(directory!, cache);
       await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
 
       if (argResults['example'] && entrypoint.example != null) {
-        await entrypoint.example.acquireDependencies(
+        await entrypoint.example!.acquireDependencies(
           SolveType.GET,
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
@@ -177,7 +176,7 @@ class AddCommand extends PubCommand {
       }
     }
 
-    if (isOffline) {
+    if (isOffline!) {
       log.warning('Warning: Packages added when offline may not resolve to '
           'the latest compatible version available.');
     }
@@ -196,7 +195,7 @@ class AddCommand extends PubCommand {
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
 
-    if (isDev) {
+    if (isDev!) {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (devDependencyNames.contains(package.name)) {
@@ -287,7 +286,7 @@ class AddCommand extends PubCommand {
       final conflictingFlag = _conflictingFlagSets
           .where((s) => !s.contains(flag))
           .expand((s) => s)
-          .firstWhere(argResults.wasParsed, orElse: () => null);
+          .firstWhereOrNull(argResults.wasParsed);
       if (conflictingFlag != null) {
         usageException(
             'Packages can only have one source, "pub add" flags "--$flag" and '
@@ -314,7 +313,7 @@ class AddCommand extends PubCommand {
 
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
-    VersionConstraint constraint;
+    VersionConstraint? constraint;
 
     try {
       constraint = splitPackage.length == 2
@@ -326,6 +325,7 @@ class AddCommand extends PubCommand {
 
     /// Determine the relevant [packageRange] and [pubspecInformation] depending
     /// on the type of package.
+    var path = this.path;
     if (hasGitOptions) {
       dynamic git;
 
@@ -334,7 +334,7 @@ class AddCommand extends PubCommand {
       }
       Uri parsed;
       try {
-        parsed = Uri.parse(gitUrl);
+        parsed = Uri.parse(gitUrl!);
       } on FormatException catch (e) {
         usageException('The --git-url must be a valid url: ${e.message}.');
       }
@@ -346,7 +346,7 @@ class AddCommand extends PubCommand {
           p.url.relative(
               p.url.join(Uri.file(p.absolute(p.current)).toString(),
                   parsed.toString()),
-              from: p.toUri(p.absolute(entrypoint.root.dir)).toString());
+              from: p.toUri(p.absolute(entrypoint.root.dir!)).toString());
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
@@ -357,7 +357,7 @@ class AddCommand extends PubCommand {
         git.removeWhere((key, value) => value == null);
       }
 
-      packageRange = cache.sources['git']
+      packageRange = cache.sources['git']!
           .parseRef(packageName, git, containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
@@ -366,13 +366,13 @@ class AddCommand extends PubCommand {
           ? PathSource.relativePathWithPosixSeparators(
               p.relative(path, from: entrypoint.root.dir))
           : path;
-      packageRange = cache.sources['path']
+      packageRange = cache.sources['path']!
           .parseRef(packageName, relativeToEntryPoint,
               containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'path': relativeToEntryPoint};
     } else if (sdk != null) {
-      packageRange = cache.sources['sdk']
+      packageRange = cache.sources['sdk']!
           .parseRef(packageName, sdk)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'sdk': sdk};
@@ -433,7 +433,8 @@ class AddCommand extends PubCommand {
 
     /// Handle situations where the user might not have the dependencies or
     /// dev_dependencies map.
-    if (yamlEditor.parseAt([dependencyKey], orElse: () => null)?.value ==
+    if (yamlEditor.parseAt([dependencyKey],
+            orElse: () => YamlScalar.wrap(null)).value ==
         null) {
       yamlEditor.update([dependencyKey],
           {package.name: pubspecInformation ?? '^${resultPackage.version}'});
@@ -447,8 +448,8 @@ class AddCommand extends PubCommand {
     /// Remove the package from dev_dependencies if we are adding it to
     /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
     if (!isDevelopment) {
-      final devDependenciesNode =
-          yamlEditor.parseAt(['dev_dependencies'], orElse: () => null);
+      final devDependenciesNode = yamlEditor
+          .parseAt(['dev_dependencies'], orElse: () => YamlScalar.wrap(null));
 
       if (devDependenciesNode is YamlMap &&
           devDependenciesNode.containsKey(package.name)) {

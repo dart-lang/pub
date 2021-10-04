@@ -2,13 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 
@@ -46,15 +45,25 @@ final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
 /// of subcommands. Only leaf commands are ever actually invoked. If a command
 /// has subcommands, then one of those must always be chosen.
 abstract class PubCommand extends Command<int> {
-  String get directory => argResults['directory'] ?? _pubTopLevel.directory;
+  @override
+  ArgResults get argResults {
+    final a = super.argResults;
+    if (a == null) {
+      throw StateError(
+          'argResults cannot be used before Command.run is called.');
+    }
+    return a;
+  }
 
-  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
+  String? get directory => argResults['directory'] ?? _pubTopLevel!.directory;
 
-  SystemCache _cache;
+  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline!);
+
+  SystemCache? _cache;
 
   GlobalPackages get globals => _globals ??= GlobalPackages(cache);
 
-  GlobalPackages _globals;
+  GlobalPackages? _globals;
 
   TokenStore get tokenStore => cache.tokenStore;
 
@@ -62,12 +71,12 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory, cache);
+  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory!, cache);
 
-  Entrypoint _entrypoint;
+  Entrypoint? _entrypoint;
 
   /// The URL for web documentation for this command.
-  String get docUrl => null;
+  String? get docUrl => null;
 
   /// Override this and return `false` to disallow trailing options from being
   /// parsed after a non-option argument is parsed.
@@ -79,16 +88,16 @@ abstract class PubCommand extends Command<int> {
   ArgParser get argParser => _argParser ??= ArgParser(
       allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
 
-  ArgParser _argParser;
+  ArgParser? _argParser;
 
   /// Override this to use offline-only sources instead of hitting the network.
   ///
   /// This will only be called before the [SystemCache] is created. After that,
   /// it has no effect. This only needs to be set in leaf commands.
-  bool get isOffline => false;
+  bool? get isOffline => false;
 
   @override
-  String get usageFooter {
+  String? get usageFooter {
     if (docUrl == null) return null;
     return 'See $docUrl for detailed documentation.';
   }
@@ -98,35 +107,40 @@ abstract class PubCommand extends Command<int> {
 
   /// The first command in the command chain.
   Command get _topCommand {
-    var command = this;
-    while (command.parent != null) {
+    Command current = this;
+    while (true) {
+      var parent = current.parent;
+      if (parent == null) return current;
+      current = parent;
+    }
+  }
+
+  PubEmbeddableCommand? get _pubEmbeddableCommand {
+    Command? command = this;
+    while (command is! PubEmbeddableCommand) {
+      if (command == null) {
+        return null;
+      }
       command = command.parent;
     }
+
     return command;
   }
 
-  PubEmbeddableCommand get _pubEmbeddableCommand {
-    var command = this;
-    while (command != null && command is! PubEmbeddableCommand) {
-      command = command.parent;
-    }
-    return command;
-  }
-
-  PubTopLevel get _pubTopLevel {
-    return _pubEmbeddableCommand ?? (runner as PubCommandRunner);
+  PubTopLevel? get _pubTopLevel {
+    return _pubEmbeddableCommand ?? (runner as PubCommandRunner?);
   }
 
   @override
   String get invocation {
-    var command = this;
+    PubCommand? command = this;
     var names = [];
     do {
-      names.add(command.name);
-      command = command.parent;
+      names.add(command?.name);
+      command = command?.parent as PubCommand?;
     } while (command != null);
     return [
-      runner.executableName,
+      runner!.executableName,
       ...names.reversed,
       argumentsDescription,
     ].join(' ');
@@ -143,7 +157,7 @@ abstract class PubCommand extends Command<int> {
   /// when exiting successfully.
   ///
   /// This should only be modified by [overrideExitCode].
-  int _exitCodeOverride;
+  int? _exitCodeOverride;
 
   /// Override the exit code that would normally be used when exiting
   /// successfully. Intended to be used by subcommands like `run` that wishes
@@ -160,24 +174,24 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel.argResults);
-    if (_pubTopLevel.trace) {
+    computeCommand(_pubTopLevel!.argResults!);
+    if (_pubTopLevel!.trace!) {
       log.recordTranscript();
     }
-    log.verbosity = _pubTopLevel.verbosity;
+    log.verbosity = _pubTopLevel!.verbosity;
     log.fine('Pub ${sdk.version}');
 
     try {
-      await captureErrors(runProtected,
-          captureStackChains: _pubTopLevel.captureStackChains);
+      await captureErrors<void>(() async => runProtected(),
+          captureStackChains: _pubTopLevel!.captureStackChains!);
       if (_exitCodeOverride != null) {
-        return _exitCodeOverride;
+        return _exitCodeOverride!;
       }
       return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
 
-      if (_pubTopLevel.trace) {
+      if (_pubTopLevel!.trace!) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
         // Escape the argument for users to copy-paste in bash.
@@ -190,7 +204,7 @@ abstract class PubCommand extends Command<int> {
         log.error("""
 This is an unexpected error. Please run
 
-    dart pub --trace ${_topCommand.name} ${_topCommand.argResults.arguments.map(protectArgument).join(' ')}
+    dart pub --trace ${_topCommand.name} ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}
 
 and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 """);
@@ -205,7 +219,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   /// appropriate exit code could be found.
   int _chooseExitCode(exception) {
     if (exception is SolveFailure) {
-      var packageNotFound = exception.packageNotFound;
+      dynamic packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
@@ -244,7 +258,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     log.message(usage);
   }
 
-  static String _command;
+  static String? _command;
 
   /// Returns the nested name of the command that's currently being run.
   /// Examples:
@@ -258,10 +272,10 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   ///
   /// For top-level commands, if an alias is used, the primary command name is
   /// returned. For instance `install` becomes `get`.
-  static String get command => _command;
+  static String get command => _command ??= '';
 
   static void computeCommand(ArgResults argResults) {
-    var list = <String>[];
+    var list = <String?>[];
     for (var command = argResults.command;
         command != null;
         command = command.command) {
@@ -269,9 +283,8 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 
       if (list.isEmpty) {
         // this is a top-level command
-        final rootCommand = pubCommandAliases.entries.singleWhere(
-            (element) => element.value.contains(command.name),
-            orElse: () => null);
+        final rootCommand = pubCommandAliases.entries.singleWhereOrNull(
+            (element) => element.value.contains(command!.name));
         if (rootCommand != null) {
           commandName = rootCommand.key;
         }
@@ -283,11 +296,11 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 }
 
 abstract class PubTopLevel {
-  bool get captureStackChains;
+  bool? get captureStackChains;
   log.Verbosity get verbosity;
-  bool get trace;
-  String get directory;
+  bool? get trace;
+  String? get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
-  ArgResults get argResults;
+  ArgResults? get argResults;
 }

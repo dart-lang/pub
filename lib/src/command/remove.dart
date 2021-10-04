@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -28,9 +26,9 @@ class RemoveCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool get isOffline => argResults['offline'];
+  bool? get isOffline => argResults['offline'];
 
-  bool get isDryRun => argResults['dry-run'];
+  bool? get isDryRun => argResults['dry-run'];
 
   RemoveCommand() {
     argParser.addFlag('offline',
@@ -62,7 +60,7 @@ class RemoveCommand extends PubCommand {
 
     final packages = Set<String>.from(argResults.rest);
 
-    if (isDryRun) {
+    if (isDryRun!) {
       final rootPubspec = entrypoint.root.pubspec;
       final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
       final newRoot = Package.inMemory(newPubspec);
@@ -79,12 +77,13 @@ class RemoveCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
+      final updatedEntrypoint = Entrypoint(directory!, cache);
       await updatedEntrypoint.acquireDependencies(SolveType.GET,
           precompile: argResults['precompile']);
 
-      if (argResults['example'] && entrypoint.example != null) {
-        await entrypoint.example.acquireDependencies(SolveType.GET,
+      var example = entrypoint.example;
+      if (argResults['example'] && example != null) {
+        await example.acquireDependencies(SolveType.GET,
             precompile: argResults['precompile'],
             onlyReportSuccessOrFailure: true);
       }
@@ -122,8 +121,8 @@ class RemoveCommand extends PubCommand {
       /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies.
       for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
-        final dependenciesNode =
-            yamlEditor.parseAt([dependencyKey], orElse: () => null);
+        final dependenciesNode = yamlEditor
+            .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
 
         if (dependenciesNode is YamlMap &&
             dependenciesNode.containsKey(package)) {

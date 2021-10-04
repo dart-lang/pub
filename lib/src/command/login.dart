@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -40,7 +38,7 @@ class LoginCommand extends PubCommand {
     }
   }
 
-  Future<_UserInfo> _retrieveUserInfo() async {
+  Future<_UserInfo?> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
       final discovery = await httpClient.get(Uri.https(
           'accounts.google.com', '/.well-known/openid-configuration'));
@@ -58,8 +56,8 @@ class LoginCommand extends PubCommand {
 }
 
 class _UserInfo {
-  final String name;
-  final String email;
+  final String? name;
+  final String? email;
   _UserInfo(this.name, this.email);
   @override
   String toString() => ['<$email>', if (name != null) name].join(' ');

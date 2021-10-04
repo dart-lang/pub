@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import '../entrypoint.dart';
 import '../levenshtein.dart';
 import '../validator.dart';
@@ -15,8 +13,6 @@ class PubspecTypoValidator extends Validator {
   @override
   Future validate() async {
     final fields = entrypoint.root.pubspec.fields;
-
-    if (fields == null) return;
 
     /// Limit the number of typo warnings so as not to drown out the other
     /// warnings

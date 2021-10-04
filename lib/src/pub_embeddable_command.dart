@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'command.dart';
 import 'command/add.dart';
 import 'command/build.dart';
@@ -35,7 +33,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => argResults['directory'];
+  String? get directory => argResults['directory'];
 
   PubEmbeddableCommand() : super() {
     argParser.addFlag('trace',
@@ -80,12 +78,12 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   }
 
   @override
-  bool get captureStackChains => argResults['verbose'];
+  bool? get captureStackChains => argResults['verbose'];
 
   @override
   Verbosity get verbosity =>
       argResults['verbose'] ? Verbosity.ALL : Verbosity.NORMAL;
 
   @override
-  bool get trace => argResults['verbose'];
+  bool? get trace => argResults['verbose'];
 }

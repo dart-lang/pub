@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -30,7 +28,7 @@ class NullSafetyMixedModeValidator extends Validator {
             entrypoint.root.name,
             entrypoint.cache.sources.path,
             entrypoint.root.version,
-            {'relative': false, 'path': p.absolute(entrypoint.root.dir)}));
+            {'relative': false, 'path': p.absolute(entrypoint.root.dir!)}));
 
     if (analysisResult.compliance == NullSafetyCompliance.mixed) {
       warnings.add('''

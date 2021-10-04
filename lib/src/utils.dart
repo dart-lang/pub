@@ -9,7 +9,6 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -501,8 +500,7 @@ String yamlToString(data) {
 }
 
 /// Throw a [ApplicationException] with [message].
-@alwaysThrows
-void fail(String message, [Object? innerError, StackTrace? innerTrace]) {
+Never fail(String message, [Object? innerError, StackTrace? innerTrace]) {
   if (innerError != null) {
     throw WrappedException(message, innerError, innerTrace);
   } else {

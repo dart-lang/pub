@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:async';
 import 'dart:io';
 
@@ -26,7 +24,7 @@ class TokenAddCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
-  String get envVar => argResults['env-var'];
+  String? get envVar => argResults['env-var'];
 
   TokenAddCommand() {
     argParser.addOption('env-var',
@@ -82,7 +80,7 @@ class TokenAddCommand extends PubCommand {
   }
 
   Future<void> _addEnvVarToken(Uri hostedUrl) async {
-    if (envVar.isEmpty) {
+    if (envVar!.isEmpty) {
       usageException('Cannot use the empty string as --env-var');
     }
 
@@ -90,7 +88,7 @@ class TokenAddCommand extends PubCommand {
     // equal signs.
     // [1] https://docs.microsoft.com/en-us/windows/win32/procthread/environment-variables
     // [2] https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
-    if (envVar.contains('=')) {
+    if (envVar!.contains('=')) {
       throw DataException(
         'Environment variable name --env-var="$envVar" cannot contain "=", the '
         'equals sign is not allowed in environment variable names.',
@@ -100,7 +98,7 @@ class TokenAddCommand extends PubCommand {
     // Help the user if they typed something that is unlikely to be correct.
     // This could happen if you include $, whitespace, quotes or accidentally
     // dereference the environment variable instead.
-    if (!RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(envVar)) {
+    if (!RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(envVar!)) {
       log.warning(
         'The environment variable name --env-var="$envVar" does not use '
         'uppercase characters A-Z, 0-9 and underscore. This is unusual for '

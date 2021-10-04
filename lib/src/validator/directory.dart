@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
@@ -27,7 +25,7 @@ class DirectoryValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      for (var dir in listDir(entrypoint.root.dir)) {
+      for (var dir in listDir(entrypoint.root.dir!)) {
         if (!dirExists(dir)) continue;
 
         dir = path.basename(dir);

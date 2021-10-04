@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -134,7 +132,7 @@ class DependencyValidator extends Validator {
   Future _warnAboutSource(PackageRange dep) async {
     List<Version> versions;
     try {
-      var ids = await entrypoint.cache.hosted
+      var ids = await entrypoint.cache.hosted!
           .getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));
       versions = ids.map((id) => id.version).toList();
     } on ApplicationException catch (_) {
@@ -223,7 +221,7 @@ class DependencyValidator extends Validator {
       constraint = '^${(dep.constraint as VersionRange).min}';
     } else {
       constraint = '"${dep.constraint} '
-          '<${(dep.constraint as VersionRange).min.nextBreaking}"';
+          '<${(dep.constraint as VersionRange).min!.nextBreaking}"';
     }
 
     warnings
@@ -240,7 +238,7 @@ class DependencyValidator extends Validator {
   void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
     final packageVersion = entrypoint.root.version;
     if (constraint.min != null &&
-        constraint.min.isPreRelease &&
+        constraint.min!.isPreRelease &&
         !packageVersion.isPreRelease) {
       warnings.add('Packages dependent on a pre-release of another package '
           'should themselves be published as a pre-release version. '

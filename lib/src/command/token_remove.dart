@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import '../command.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
@@ -20,7 +18,7 @@ class TokenRemoveCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
-  bool get isAll => argResults['all'];
+  bool? get isAll => argResults['all'];
 
   TokenRemoveCommand() {
     argParser.addFlag(
@@ -32,7 +30,7 @@ class TokenRemoveCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (isAll) {
+    if (isAll!) {
       final count = tokenStore.credentials.length;
       tokenStore.deleteTokensFile();
       log.message('Removed $count secret tokens.');

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -36,15 +34,13 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  Uri get server {
-    if (_server != null) {
-      return _server;
-    }
+  Uri get server => _server ??= _createServer();
 
+  Uri _createServer() {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return _server = validateAndNormalizeHostedUrl(argResults['server']);
+        return validateAndNormalizeHostedUrl(argResults['server']);
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }
@@ -54,24 +50,24 @@ class LishCommand extends PubCommand {
     final publishTo = entrypoint.root.pubspec.publishTo;
     if (publishTo != null) {
       try {
-        return _server = validateAndNormalizeHostedUrl(publishTo);
+        return validateAndNormalizeHostedUrl(publishTo);
       } on FormatException catch (e) {
         throw DataException('Invalid publish_to: $e');
       }
     }
 
     // Use the default server if nothing else is specified
-    return _server = cache.sources.hosted.defaultUrl;
+    return cache.sources.hosted.defaultUrl;
   }
 
   /// Cache value for [server].
-  Uri _server;
+  Uri? _server;
 
   /// Whether the publish is just a preview.
-  bool get dryRun => argResults['dry-run'];
+  bool? get dryRun => argResults['dry-run'];
 
   /// Whether the publish requires confirmation.
-  bool get force => argResults['force'];
+  bool? get force => argResults['force'];
 
   LishCommand() {
     argParser.addFlag('dry-run',
@@ -94,7 +90,7 @@ class LishCommand extends PubCommand {
     List<int> packageBytes,
     http.BaseClient client,
   ) async {
-    Uri cloudStorageUrl;
+    Uri? cloudStorageUrl;
 
     try {
       await log.progress('Uploading', () async {
@@ -107,7 +103,7 @@ class LishCommand extends PubCommand {
         cloudStorageUrl = Uri.parse(url);
         // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
         // should report that error and exit.
-        var request = http.MultipartRequest('POST', cloudStorageUrl);
+        var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
         var fields = _expectField(parameters, 'fields', response);
         if (fields is! Map) invalidServerResponse(response);
@@ -128,7 +124,7 @@ class LishCommand extends PubCommand {
             await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
     } on PubHttpException catch (error) {
-      var url = error.response.request.url;
+      var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
         // the error. Try to parse that out once we have an easily-accessible
@@ -169,11 +165,11 @@ class LishCommand extends PubCommand {
       } else {
         // For third party servers using bearer authentication client
         await withAuthenticatedClient(cache, server, (client) {
-          return _publishUsingClient(packageBytes, client);
+          return _publishUsingClient(packageBytes, client as http.BaseClient);
         });
       }
     } on PubHttpException catch (error) {
-      var url = error.response.request.url;
+      var url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {
@@ -194,7 +190,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       });
     }
 
-    if (force && dryRun) {
+    if (force! && dryRun!) {
       usageException('Cannot use both --force and --dry-run.');
     }
 
@@ -213,7 +209,7 @@ the \$PUB_HOSTED_URL environment variable.''',
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+        createTarGz(files, baseDir: entrypoint.root.dir!).toBytes();
 
     // Validate the package.
     var isValid =
@@ -221,7 +217,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
-    } else if (dryRun) {
+    } else if (dryRun!) {
       log.message('The server may enforce additional checks.');
       return;
     } else {
@@ -260,7 +256,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       return false;
     }
 
-    if (force) return true;
+    if (force!) return true;
 
     String formatWarningCount() {
       final hs = hints.length == 1 ? '' : 's';
@@ -269,7 +265,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       return '\nPackage has ${warnings.length} warning$ws$hintText.';
     }
 
-    if (dryRun) {
+    if (dryRun!) {
       log.warning(formatWarningCount());
       return warnings.isEmpty;
     }
