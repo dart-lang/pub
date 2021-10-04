@@ -224,16 +224,7 @@ class Package {
     // An in-memory package has no files.
     if (dir == null) return [];
 
-    var root = dir;
-    if (git.isInstalled) {
-      try {
-        root = p.normalize(
-          git.runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first,
-        );
-      } on git.GitException {
-        // Not in a git folder.
-      }
-    }
+    var root = git.repoRoot(dir) ?? dir;
     beneath = p
         .toUri(p.normalize(p.relative(p.join(dir, beneath ?? '.'), from: root)))
         .path;
