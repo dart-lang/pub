@@ -59,9 +59,12 @@ class GitignoreValidator extends Validator {
           return rules.isEmpty ? null : Ignore(rules);
         },
         isDir: (dir) => dirExists(resolve(dir)),
-      )
-          .map((file) => p.relative(resolve(file), from: entrypoint.root.dir))
-          .toSet();
+      ).map((file) {
+        final relative = p.relative(resolve(file), from: entrypoint.root.dir);
+        return Platform.isWindows
+            ? p.posix.joinAll(p.split(relative))
+            : relative;
+      }).toSet();
       final ignoredFilesCheckedIn = checkedIntoGit
           .where((file) => !unignoredByGitignore.contains(file))
           .toList();
