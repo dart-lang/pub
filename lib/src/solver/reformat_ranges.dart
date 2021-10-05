@@ -88,6 +88,7 @@ Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
   if (range.max == null) return null;
   if (range.includeMax) return null;
   if (range.max.isPreRelease) return null;
+  if (range.max.build.isNotEmpty) return null;
   if (range.min != null &&
       range.min.isPreRelease &&
       equalsIgnoringPreRelease(range.min, range.max)) {
