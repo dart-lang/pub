@@ -2,13 +2,53 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart' show ApplicationException;
-import 'utils.dart' show identifierRegExp, reservedWords;
+import 'log.dart' show warning, yellow;
+import 'sdk.dart' show sdk;
+import 'utils.dart'
+    show equalsIgnoringPreRelease, identifierRegExp, reservedWords;
+
+/// The default SDK upper bound constraint for packages that don't declare one.
+///
+/// This provides a sane default for packages that don't have an upper bound.
+final _defaultUpperBoundSdkConstraint = VersionConstraint.parse('<2.0.0');
+
+/// Whether or not to allow the pre-release SDK for packages that have an
+/// upper bound Dart SDK constraint of <2.0.0.
+///
+/// If enabled then a Dart SDK upper bound of <2.0.0 is always converted to
+/// <2.0.0-dev.infinity.
+///
+/// This has a default value of `true` but can be overridden with the
+/// PUB_ALLOW_PRERELEASE_SDK system environment variable.
+bool get _allowPreReleaseSdk => _allowPreReleaseSdkValue != 'false';
+
+/// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
+/// to `true`.
+final String _allowPreReleaseSdkValue = () {
+  var value =
+      Platform.environment['PUB_ALLOW_PRERELEASE_SDK']?.toLowerCase() ?? 'true';
+  if (!['true', 'quiet', 'false'].contains(value)) {
+    warning(yellow('''
+The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$value`.
+The expected value is either `true`, `quiet` (true but no logging), or `false`.
+Using a default value of `true`.
+'''));
+    value = 'true';
+  }
+  return value;
+}();
+
+/// Whether or not to warn about pre-release SDK overrides.
+bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 
 /// A regular expression matching allowed package names.
 ///
@@ -29,12 +69,20 @@ abstract class PubspecBase {
   /// This includes the fields from which other properties are derived.
   final YamlMap fields;
 
+  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// pubspec.
+  final bool _includeDefaultSdkConstraint;
+
   PubspecBase(
     this.fields, {
     String? name,
     Version? version,
+    bool includeDefaultSdkConstraint = false,
+    Map<String, VersionConstraint>? sdkConstraints,
   })  : _name = name,
-        _version = version;
+        _version = version,
+        _includeDefaultSdkConstraint = includeDefaultSdkConstraint,
+        _sdkConstraints = sdkConstraints;
 
   /// The package's name.
   String get name {
@@ -222,6 +270,158 @@ abstract class PubspecBase {
   ///
   /// This is specified in the pubspec by setting "publish_to" to "none".
   bool get isPrivate => publishTo == 'none';
+
+  /// A map from SDK identifiers to constraints on those SDK versions.
+  Map<String, VersionConstraint> get sdkConstraints {
+    ensureEnvironment();
+    return _sdkConstraints!;
+  }
+
+  Map<String, VersionConstraint>? _sdkConstraints;
+
+  /// Whether or not the SDK version was overridden from <2.0.0 to
+  /// <2.0.0-dev.infinity.
+  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
+  bool _dartSdkWasOverridden = false;
+
+  /// The original Dart SDK constraint as written in the pubspec.
+  ///
+  /// If [dartSdkWasOverridden] is `false`, this will be identical to
+  /// `sdkConstraints["dart"]`.
+  VersionConstraint? get originalDartSdkConstraint {
+    ensureEnvironment();
+    return _originalDartSdkConstraint ?? sdkConstraints['dart'];
+  }
+
+  VersionConstraint? _originalDartSdkConstraint;
+
+  /// Ensures that the top-level "environment" field has been parsed and
+  /// [_sdkConstraints] is set accordingly.
+  @protected
+  void ensureEnvironment() {
+    if (_sdkConstraints != null) return;
+
+    var sdkConstraints = parseEnvironment(fields);
+    var parsedDartSdkConstraint = sdkConstraints['dart'];
+
+    if (parsedDartSdkConstraint is VersionRange &&
+        _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
+      _originalDartSdkConstraint = parsedDartSdkConstraint;
+      _dartSdkWasOverridden = true;
+      sdkConstraints['dart'] = VersionRange(
+          min: parsedDartSdkConstraint.min,
+          includeMin: parsedDartSdkConstraint.includeMin,
+          max: sdk.version,
+          includeMax: true);
+    }
+
+    _sdkConstraints = UnmodifiableMapView(sdkConstraints);
+  }
+
+  /// Whether or not we should override [sdkConstraint] to be <= the user's
+  /// current SDK version.
+  ///
+  /// This is true if the following conditions are met:
+  ///
+  ///   - [_allowPreReleaseSdk] is `true`
+  ///   - The user's current SDK is a pre-release version.
+  ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
+  ///     is `false`).
+  ///   - The original [sdkConstraint] is not a pre-release version.
+  ///   - The original [sdkConstraint] matches the exact same major, minor, and
+  ///     patch versions as the user's current SDK.
+  bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
+    if (!_allowPreReleaseSdk) return false;
+    if (!sdk.version.isPreRelease) return false;
+    if (sdkConstraint.includeMax) return false;
+    if (sdkConstraint.min != null &&
+        sdkConstraint.min!.isPreRelease &&
+        equalsIgnoringPreRelease(sdkConstraint.min!, sdk.version)) {
+      return false;
+    }
+    if (sdkConstraint.max == null) return false;
+    if (sdkConstraint.max!.isPreRelease &&
+        !sdkConstraint.max!.isFirstPreRelease) {
+      return false;
+    }
+    return equalsIgnoringPreRelease(sdkConstraint.max!, sdk.version);
+  }
+
+  /// Parses the "environment" field in [parent] and returns a map from SDK
+  /// identifiers to constraints on those SDKs.
+  @protected
+  Map<String, VersionConstraint> parseEnvironment(YamlMap parent) {
+    var yaml = parent['environment'];
+    if (yaml == null) {
+      return {
+        'dart': _includeDefaultSdkConstraint
+            ? _defaultUpperBoundSdkConstraint
+            : VersionConstraint.any
+      };
+    }
+
+    if (yaml is! Map) {
+      _error('"environment" field must be a map.',
+          parent.nodes['environment']?.span);
+    }
+
+    var constraints = {
+      'dart': parseVersionConstraint(yaml.nodes['sdk'],
+          defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+              ? _defaultUpperBoundSdkConstraint
+              : null)
+    };
+    yaml.nodes.forEach((name, constraint) {
+      if (name.value is! String) {
+        _error('SDK names must be strings.', name.span);
+      } else if (name.value == 'dart') {
+        _error('Use "sdk" to for Dart SDK constraints.', name.span);
+      }
+      if (name.value == 'sdk') return;
+
+      constraints[name.value as String] = parseVersionConstraint(constraint,
+          // Flutter constraints get special treatment, as Flutter won't be
+          // using semantic versioning to mark breaking releases.
+          ignoreUpperBound: name.value == 'flutter');
+    });
+
+    return constraints;
+  }
+
+  /// Parses [node] to a [VersionConstraint].
+  ///
+  /// If or [defaultUpperBoundConstraint] is specified then it will be set as
+  /// the max constraint if the original constraint doesn't have an upper
+  /// bound and it is compatible with [defaultUpperBoundConstraint].
+  ///
+  /// If [ignoreUpperBound] the max constraint is ignored.
+  @protected
+  VersionConstraint parseVersionConstraint(YamlNode? node,
+      {VersionConstraint? defaultUpperBoundConstraint,
+      bool ignoreUpperBound = false}) {
+    if (node?.value == null) {
+      return defaultUpperBoundConstraint ?? VersionConstraint.any;
+    }
+    if (node!.value is! String) {
+      _error('A version constraint must be a string.', node.span);
+    }
+
+    return _wrapFormatException('version constraint', node.span, () {
+      var constraint = VersionConstraint.parse(node.value);
+      if (defaultUpperBoundConstraint != null &&
+          constraint is VersionRange &&
+          constraint.max == null &&
+          defaultUpperBoundConstraint.allowsAny(constraint)) {
+        constraint = VersionConstraint.intersection(
+            [constraint, defaultUpperBoundConstraint]);
+      }
+      if (ignoreUpperBound && constraint is VersionRange) {
+        return VersionRange(
+            min: constraint.min, includeMin: constraint.includeMin);
+      }
+      return constraint;
+    });
+  }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
   /// [PubspecException].

@@ -4,8 +4,6 @@
 
 // @dart=2.10
 
-import 'dart:io';
-
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
@@ -17,49 +15,12 @@ import 'exceptions.dart';
 import 'feature.dart';
 import 'io.dart';
 import 'language_version.dart';
-import 'log.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
-import 'sdk.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
-
-/// The default SDK upper bound constraint for packages that don't declare one.
-///
-/// This provides a sane default for packages that don't have an upper bound.
-final VersionRange _defaultUpperBoundSdkConstraint =
-    VersionConstraint.parse('<2.0.0');
-
-/// Whether or not to allow the pre-release SDK for packages that have an
-/// upper bound Dart SDK constraint of <2.0.0.
-///
-/// If enabled then a Dart SDK upper bound of <2.0.0 is always converted to
-/// <2.0.0-dev.infinity.
-///
-/// This has a default value of `true` but can be overridden with the
-/// PUB_ALLOW_PRERELEASE_SDK system environment variable.
-bool get _allowPreReleaseSdk => _allowPreReleaseSdkValue != 'false';
-
-/// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
-/// to `true`.
-final String _allowPreReleaseSdkValue = () {
-  var value =
-      Platform.environment['PUB_ALLOW_PRERELEASE_SDK']?.toLowerCase() ?? 'true';
-  if (!['true', 'quiet', 'false'].contains(value)) {
-    warning(yellow('''
-The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$value`.
-The expected value is either `true`, `quiet` (true but no logging), or `false`.
-Using a default value of `true`.
-'''));
-    value = 'true';
-  }
-  return value;
-}();
-
-/// Whether or not to warn about pre-release SDK overrides.
-bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 
 /// The parsed contents of a pubspec file.
 ///
@@ -156,7 +117,7 @@ class Pubspec extends PubspecBase {
           var dependencies = _parseDependencies(
               'dependencies', specNode.nodes['dependencies']);
 
-          var sdkConstraints = _parseEnvironment(specNode);
+          var sdkConstraints = parseEnvironment(specNode);
 
           return Feature(nameNode.value, dependencies.values,
               requires: requires,
@@ -167,125 +128,6 @@ class Pubspec extends PubspecBase {
   }
 
   Map<String, Feature> _features;
-
-  /// A map from SDK identifiers to constraints on those SDK versions.
-  Map<String, VersionConstraint> get sdkConstraints {
-    _ensureEnvironment();
-    return _sdkConstraints;
-  }
-
-  Map<String, VersionConstraint> _sdkConstraints;
-
-  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
-  /// pubspec.
-  final bool _includeDefaultSdkConstraint;
-
-  /// Whether or not the SDK version was overridden from <2.0.0 to
-  /// <2.0.0-dev.infinity.
-  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
-  bool _dartSdkWasOverridden = false;
-
-  /// The original Dart SDK constraint as written in the pubspec.
-  ///
-  /// If [dartSdkWasOverridden] is `false`, this will be identical to
-  /// `sdkConstraints["dart"]`.
-  VersionConstraint get originalDartSdkConstraint {
-    _ensureEnvironment();
-    return _originalDartSdkConstraint ?? sdkConstraints['dart'];
-  }
-
-  VersionConstraint _originalDartSdkConstraint;
-
-  /// Ensures that the top-level "environment" field has been parsed and
-  /// [_sdkConstraints] is set accordingly.
-  void _ensureEnvironment() {
-    if (_sdkConstraints != null) return;
-
-    var sdkConstraints = _parseEnvironment(fields);
-    var parsedDartSdkConstraint = sdkConstraints['dart'];
-
-    if (parsedDartSdkConstraint is VersionRange &&
-        _shouldEnableCurrentSdk(parsedDartSdkConstraint)) {
-      _originalDartSdkConstraint = parsedDartSdkConstraint;
-      _dartSdkWasOverridden = true;
-      sdkConstraints['dart'] = VersionRange(
-          min: parsedDartSdkConstraint.min,
-          includeMin: parsedDartSdkConstraint.includeMin,
-          max: sdk.version,
-          includeMax: true);
-    }
-
-    _sdkConstraints = UnmodifiableMapView(sdkConstraints);
-  }
-
-  /// Whether or not we should override [sdkConstraint] to be <= the user's
-  /// current SDK version.
-  ///
-  /// This is true if the following conditions are met:
-  ///
-  ///   - [_allowPreReleaseSdk] is `true`
-  ///   - The user's current SDK is a pre-release version.
-  ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
-  ///     is `false`).
-  ///   - The original [sdkConstraint] is not a pre-release version.
-  ///   - The original [sdkConstraint] matches the exact same major, minor, and
-  ///     patch versions as the user's current SDK.
-  bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
-    if (!_allowPreReleaseSdk) return false;
-    if (!sdk.version.isPreRelease) return false;
-    if (sdkConstraint.includeMax) return false;
-    if (sdkConstraint.min != null &&
-        sdkConstraint.min.isPreRelease &&
-        equalsIgnoringPreRelease(sdkConstraint.min, sdk.version)) {
-      return false;
-    }
-    if (sdkConstraint.max == null) return false;
-    if (sdkConstraint.max.isPreRelease &&
-        !sdkConstraint.max.isFirstPreRelease) {
-      return false;
-    }
-    return equalsIgnoringPreRelease(sdkConstraint.max, sdk.version);
-  }
-
-  /// Parses the "environment" field in [parent] and returns a map from SDK
-  /// identifiers to constraints on those SDKs.
-  Map<String, VersionConstraint> _parseEnvironment(YamlMap parent) {
-    var yaml = parent['environment'];
-    if (yaml == null) {
-      return {
-        'dart': _includeDefaultSdkConstraint
-            ? _defaultUpperBoundSdkConstraint
-            : VersionConstraint.any
-      };
-    }
-
-    if (yaml is! Map) {
-      _error('"environment" field must be a map.',
-          parent.nodes['environment'].span);
-    }
-
-    var constraints = {
-      'dart': _parseVersionConstraint(yaml.nodes['sdk'],
-          defaultUpperBoundConstraint: _includeDefaultSdkConstraint
-              ? _defaultUpperBoundSdkConstraint
-              : null)
-    };
-    yaml.nodes.forEach((name, constraint) {
-      if (name.value is! String) {
-        _error('SDK names must be strings.', name.span);
-      } else if (name.value == 'dart') {
-        _error('Use "sdk" to for Dart SDK constraints.', name.span);
-      }
-      if (name.value == 'sdk') return;
-
-      constraints[name.value as String] = _parseVersionConstraint(constraint,
-          // Flutter constraints get special treatment, as Flutter won't be
-          // using semantic versioning to mark breaking releases.
-          ignoreUpperBound: name.value == 'flutter');
-    });
-
-    return constraints;
-  }
 
   /// Whether or not the pubspec has no contents.
   bool get isEmpty =>
@@ -333,25 +175,23 @@ class Pubspec extends PubspecBase {
         _dependencyOverrides = dependencyOverrides == null
             ? null
             : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
-        _sdkConstraints = sdkConstraints ??
-            UnmodifiableMapView({'dart': VersionConstraint.any}),
-        _includeDefaultSdkConstraint = false,
         _sources = sources,
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
           name: name,
           version: version,
+          sdkConstraints: sdkConstraints ??
+              UnmodifiableMapView({'dart': VersionConstraint.any}),
         );
 
   Pubspec.empty()
       : _sources = null,
         _dependencies = {},
         _devDependencies = {},
-        _sdkConstraints = {'dart': VersionConstraint.any},
-        _includeDefaultSdkConstraint = false,
         super(
           YamlMap(),
           version: Version.none,
+          sdkConstraints: {'dart': VersionConstraint.any},
         );
 
   /// Returns a Pubspec object for an already-parsed map representing its
@@ -363,10 +203,12 @@ class Pubspec extends PubspecBase {
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
       {String expectedName, Uri location})
-      : _includeDefaultSdkConstraint = true,
-        super(fields is YamlMap
-            ? fields
-            : YamlMap.wrap(fields, sourceUrl: location)) {
+      : super(
+          fields is YamlMap
+              ? fields
+              : YamlMap.wrap(fields, sourceUrl: location),
+          includeDefaultSdkConstraint: true,
+        ) {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -426,7 +268,7 @@ class Pubspec extends PubspecBase {
     _collectError(() => features);
     _collectError(() => executables);
     _collectError(() => falseSecrets);
-    _collectError(_ensureEnvironment);
+    _collectError(ensureEnvironment);
     return errors;
   }
 
@@ -467,7 +309,7 @@ class Pubspec extends PubspecBase {
       } else if (spec is String) {
         descriptionNode = nameNode;
         sourceName = _sources.defaultSource.name;
-        versionConstraint = _parseVersionConstraint(specNode);
+        versionConstraint = parseVersionConstraint(specNode);
       } else if (spec is Map) {
         // Don't write to the immutable YAML map.
         spec = Map.from(spec);
@@ -475,7 +317,7 @@ class Pubspec extends PubspecBase {
 
         if (spec.containsKey('version')) {
           spec.remove('version');
-          versionConstraint = _parseVersionConstraint(specMap.nodes['version']);
+          versionConstraint = parseVersionConstraint(specMap.nodes['version']);
         }
 
         if (spec.containsKey('features')) {
@@ -520,40 +362,6 @@ class Pubspec extends PubspecBase {
     });
 
     return dependencies;
-  }
-
-  /// Parses [node] to a [VersionConstraint].
-  ///
-  /// If or [defaultUpperBoundConstraint] is specified then it will be set as
-  /// the max constraint if the original constraint doesn't have an upper
-  /// bound and it is compatible with [defaultUpperBoundConstraint].
-  ///
-  /// If [ignoreUpperBound] the max constraint is ignored.
-  VersionConstraint _parseVersionConstraint(YamlNode node,
-      {VersionConstraint defaultUpperBoundConstraint,
-      bool ignoreUpperBound = false}) {
-    if (node?.value == null) {
-      return defaultUpperBoundConstraint ?? VersionConstraint.any;
-    }
-    if (node.value is! String) {
-      _error('A version constraint must be a string.', node.span);
-    }
-
-    return _wrapFormatException('version constraint', node.span, () {
-      var constraint = VersionConstraint.parse(node.value);
-      if (defaultUpperBoundConstraint != null &&
-          constraint is VersionRange &&
-          constraint.max == null &&
-          defaultUpperBoundConstraint.allowsAny(constraint)) {
-        constraint = VersionConstraint.intersection(
-            [constraint, defaultUpperBoundConstraint]);
-      }
-      if (ignoreUpperBound && constraint is VersionRange) {
-        return VersionRange(
-            min: constraint.min, includeMin: constraint.includeMin);
-      }
-      return constraint;
-    });
   }
 
   /// Parses [node] to a map from feature names to whether those features are
