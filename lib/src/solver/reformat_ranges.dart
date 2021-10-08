@@ -4,6 +4,7 @@
 
 // @dart=2.10
 
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../package_name.dart';
@@ -48,7 +49,7 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   var range = term.package.constraint as VersionRange;
 
   var min = _reformatMin(versions, range);
-  var tuple = _reformatMax(versions, range);
+  var tuple = reformatMax(versions, range);
   var max = tuple?.first;
   var includeMax = tuple?.last;
 
@@ -84,10 +85,16 @@ Version _reformatMin(List<PackageId> versions, VersionRange range) {
 
 /// Returns the new maximum version to use for [range] and whether that maximum
 /// is inclusive, or `null` if it doesn't need to be reformatted.
-Pair<Version, bool> _reformatMax(List<PackageId> versions, VersionRange range) {
+@visibleForTesting
+Pair<Version, bool> reformatMax(List<PackageId> versions, VersionRange range) {
+  // This corresponds to the logic in the constructor of [VersionRange] with
+  // `alwaysIncludeMaxPreRelease = false` for discovering when a max-bound
+  // should not include prereleases.
+
   if (range.max == null) return null;
   if (range.includeMax) return null;
   if (range.max.isPreRelease) return null;
+  if (range.max.build.isNotEmpty) return null;
   if (range.min != null &&
       range.min.isPreRelease &&
       equalsIgnoringPreRelease(range.min, range.max)) {

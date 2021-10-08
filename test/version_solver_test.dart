@@ -31,6 +31,8 @@ void main() {
   group('override', override);
   group('downgrade', downgrade);
   group('features', features, skip: true);
+
+  group('regressions', regressions);
 }
 
 void basicGraph() {
@@ -3013,4 +3015,23 @@ Future expectResolves(
   }
 
   expect(ids, isEmpty, reason: 'Expected no additional packages.');
+}
+
+void regressions() {
+  test('reformatRanges with a build', () async {
+    await servePackages((b) {
+      b.serve('integration_test', '1.0.1',
+          deps: {'vm_service': '>= 4.2.0 <6.0.0'});
+      b.serve('integration_test', '1.0.2+2',
+          deps: {'vm_service': '>= 4.2.0 <7.0.0'});
+
+      b.serve('vm_service', '7.3.0');
+    });
+    await d.appDir({'integration_test': '^1.0.2'}).create();
+    await expectResolves(
+      error: contains(
+        'Because no versions of integration_test match >=1.0.2 <1.0.2+2',
+      ),
+    );
+  });
 }
