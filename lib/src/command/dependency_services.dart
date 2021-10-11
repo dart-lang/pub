@@ -224,12 +224,17 @@ class DependencyServicesListCommand extends PubCommand {
     final pubspec = entrypoint.root.pubspec;
 
     // This list will be empty if there is no lock file.
-    final currentPackages = entrypoint.lockFile.packages.values;
+    final currentPackages = fileExists(entrypoint.lockFilePath)
+        ? Map<String, PackageId>.from(entrypoint.lockFile.packages)
+        : Map<String, PackageId>.fromIterable(
+            await _tryResolve(entrypoint.root.pubspec, cache),
+            key: (e) => e.name);
+    currentPackages.remove(entrypoint.root.name);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
-    for (final package in currentPackages) {
+    for (final package in currentPackages.values) {
       dependencies.add({
         'name': package.name,
         'version': package.version.toString(),
