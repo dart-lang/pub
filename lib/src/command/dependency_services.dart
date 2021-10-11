@@ -282,9 +282,11 @@ class DependencyServicesApplyCommand extends PubCommand {
 
     final pubspec = entrypoint.root.pubspec;
     final pubspecEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
-    final lockFile = readTextFile(entrypoint.lockFilePath);
-    final lockFileYaml = loadYaml(lockFile);
-    final lockFileEditor = YamlEditor(lockFile);
+    final lockFile = fileExists(entrypoint.lockFilePath)
+        ? readTextFile(entrypoint.lockFilePath)
+        : null;
+    final lockFileYaml = lockFile == null ? null : loadYaml(lockFile);
+    final lockFileEditor = lockFile == null ? null : YamlEditor(lockFile);
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
@@ -299,16 +301,18 @@ class DependencyServicesApplyCommand extends PubCommand {
               VersionConstraint.compatibleWith(targetVersion).toString());
         }
 
-        if (lockFileYaml['packages'].containsKey(targetPackage)) {
-          lockFileEditor.update(
-              ['packages', targetPackage, 'version'], targetVersion.toString());
+        if (lockFile != null) {
+          if (lockFileYaml['packages'].containsKey(targetPackage)) {
+            lockFileEditor.update(['packages', targetPackage, 'version'],
+                targetVersion.toString());
+          }
         }
       }
     }
     if (pubspecEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.pubspecPath, pubspecEditor.toString());
     }
-    if (lockFileEditor.edits.isNotEmpty) {
+    if (lockFile != null && lockFileEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
     }
     await log.warningsOnlyUnlessTerminal(
