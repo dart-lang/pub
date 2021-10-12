@@ -152,7 +152,7 @@ class SolveResult {
           value: 1,
           parameters: {
             'ni': '1', // We consider a pub-get a non-interactive event.
-            analytics.dependencyKindCustomDimensionName: dependencyKind
+            analytics.dependencyKindCustomDimensionName: dependencyKind,
           },
         );
         log.fine(
