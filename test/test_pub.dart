@@ -387,14 +387,19 @@ Future<void> runPub(
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(PackageServer server,
-    {List<String> args}) async {
+Future<PubProcess> startPublish(
+  PackageServer server, {
+  List<String> args,
+  String authMethod = 'oauth2',
+  Map<String, String> environment,
+}) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
-  return await startPub(
-      args: args,
-      tokenEndpoint: tokenEndpoint,
-      environment: {'PUB_HOSTED_URL': server.url});
+  return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
+    'PUB_HOSTED_URL': server.url,
+    '_PUB_TEST_AUTH_METHOD': authMethod,
+    if (environment != null) ...environment,
+  });
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
