@@ -148,7 +148,7 @@ class SolveResult {
         analytics.analytics.sendEvent(
           'pub-get',
           package.name,
-          label: package.version.toString(),
+          label: package.version.canonicalizedVersion,
           value: 1,
           parameters: {
             'ni': '1', // We consider a pub-get a non-interactive event.
