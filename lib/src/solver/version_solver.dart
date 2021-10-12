@@ -68,9 +68,12 @@ class VersionSolver {
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
-  /// The set of package names that were overridden by the root package, for
-  /// which other packages' constraints should be ignored.
-  final Set<String> _overriddenPackages;
+  /// The dependency constraints that this package overrides when it is the
+  /// root package.
+  ///
+  /// Dependencies here will replace any dependency on a package with the same
+  /// name anywhere in the dependency graph.
+  final Map<String, PackageRange> _dependencyOverrides;
 
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
@@ -79,7 +82,7 @@ class VersionSolver {
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> unlock)
-      : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
+      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -335,6 +338,9 @@ class VersionSolver {
     var package = await minByAsync(unsatisfied, (package) async {
       return await _packageLister(package).countVersions(package.constraint);
     });
+    if (package == null) {
+      return null; // when unsatisfied.isEmpty
+    }
 
     PackageId version;
     try {
@@ -430,11 +436,12 @@ class VersionSolver {
   /// The version list may not always be complete. If the package is the root
   /// package, or if it's a package that we didn't unlock while solving because
   /// we weren't trying to upgrade it, we will just know the current version.
+  ///
+  /// The version list will not contain any retracted package versions.
   Future<Map<String, List<Version>>> _getAvailableVersions(
       List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
-      var cached = _packageListers[package.toRef()]?.cachedVersions;
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
       // TODO(sigurdm): This has a smell. The Git source should have a
@@ -442,12 +449,11 @@ class VersionSolver {
       // way that doesn't fetch.
       List<PackageId> ids;
       try {
-        ids = cached ??
-            (package.source is HostedSource
-                ? (await _systemCache
-                    .source(package.source)
-                    .getVersions(package.toRef(), maxAge: Duration(days: 3)))
-                : [package]);
+        ids = package.source is HostedSource
+            ? (await _systemCache
+                .source(package.source)
+                .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+            : [package];
       } on Exception {
         ids = <PackageId>[package];
       }
@@ -467,20 +473,25 @@ class VersionSolver {
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
-      var overridden = _overriddenPackages;
+      Set<String> overridden = MapKeySet(_dependencyOverrides);
       if (overridden.contains(package.name)) {
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
         overridden = Set.from(overridden)..add(_root.name);
       }
 
-      return PackageLister(_systemCache, ref, locked,
-          _root.dependencyType(package.name), overridden,
+      return PackageLister(
+          _systemCache,
+          ref,
+          locked,
+          _root.dependencyType(package.name),
+          overridden,
+          _getAllowedRetracted(ref.name),
           downgrade: _type == SolveType.DOWNGRADE);
     });
   }
 
-  /// Gets the version of [ref] currently locked in the lock file.
+  /// Gets the version of [package] currently locked in the lock file.
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
   PackageId _getLocked(String package) {
@@ -501,6 +512,22 @@ class VersionSolver {
 
     if (_unlock.isEmpty || _unlock.contains(package)) return null;
     return _lockFile.packages[package];
+  }
+
+  /// Gets the version of [package] which can be allowed during version solving
+  /// even if that version is marked as retracted.
+  ///
+  /// We only allow resolving to a retracted version if it is already in the
+  /// `pubspec.lock` or pinned in `dependency_overrides`.
+  Version _getAllowedRetracted(String package) {
+    if (_dependencyOverrides.containsKey(package)) {
+      var range = _dependencyOverrides[package];
+      if (range.constraint is Version) {
+        // We have a pinned dependency.
+        return range.constraint;
+      }
+    }
+    return _lockFile.packages[package]?.version;
   }
 
   /// Logs [message] in the context of the current selected packages.

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -13,7 +11,7 @@ import 'utils.dart';
 /// A live-updating progress indicator for long-running log entries.
 class Progress {
   /// The timer used to write "..." during a progress log.
-  Timer _timer;
+  Timer? _timer;
 
   /// The [Stopwatch] used to track how long a progress log has been running.
   final _stopwatch = Stopwatch();
@@ -71,7 +69,7 @@ class Progress {
     // If we were animating, print one final update to show the user the final
     // time.
     if (_timer == null) return;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
     _update();
     stdout.writeln();
@@ -93,7 +91,7 @@ class Progress {
     // If we were animating, print one final update to show the user the final
     // time.
     if (_timer == null) return;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
   }
 
@@ -108,7 +106,7 @@ class Progress {
     // half-complete time indicator on the console.
     stdout.writeln('\b' * _timeLength);
     _timeLength = 0;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
   }
 

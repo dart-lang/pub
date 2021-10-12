@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore_for_file: import_of_legacy_library_into_null_safe
+// @dart=2.11
 
 import '../command.dart';
 import '../exceptions.dart';
@@ -23,7 +23,11 @@ class TokenRemoveCommand extends PubCommand {
   bool get isAll => argResults['all'];
 
   TokenRemoveCommand() {
-    argParser.addFlag('all', help: 'Remove all secret tokens.');
+    argParser.addFlag(
+      'all',
+      negatable: false,
+      help: 'Remove all secret tokens.',
+    );
   }
 
   @override

@@ -11,6 +11,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exec;
@@ -388,6 +389,22 @@ To recompile executables, first run `global deactivate ${dep.name}`.
             'support Dart ${sdk.version}.');
       } else {
         dataError('${log.bold(name)} ${entrypoint.root.version} requires the '
+            '${sdk.name} SDK, which is unsupported for global executables.');
+      }
+    });
+
+    // Check that the SDK constraints the lockFile says we have are honored.
+    lockFile.sdkConstraints.forEach((sdkName, constraint) {
+      var sdk = sdks[sdkName];
+      if (sdk == null) {
+        dataError('${log.bold(name)} as globally activated requires '
+            'unknown SDK "$name".');
+      } else if (sdkName == 'dart') {
+        if (constraint.allows(sdk.version)) return;
+        dataError("${log.bold(name)} as globally activated doesn't "
+            'support Dart ${sdk.version}, try: $topLevelProgram pub global activate $name');
+      } else {
+        dataError('${log.bold(name)} as globally activated requires the '
             '${sdk.name} SDK, which is unsupported for global executables.');
       }
     });

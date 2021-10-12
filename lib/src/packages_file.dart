@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 // ignore_for_file: prefer_single_quotes
 
 // This code is copied from an older version of package:package_config - and
@@ -113,7 +111,7 @@ Map<String, Uri> parse(List<int> source, Uri baseLocation,
 /// All the keys of [packageMapping] must be valid package names,
 /// and the values must be URIs that do not have the `package:` scheme.
 void write(StringSink output, Map<String, Uri> packageMapping,
-    {Uri baseUri, String comment, bool allowDefaultPackage = false}) {
+    {Uri? baseUri, String? comment, bool allowDefaultPackage = false}) {
   ArgumentError.checkNotNull(allowDefaultPackage, 'allowDefaultPackage');
 
   if (baseUri != null && !baseUri.isAbsolute) {
@@ -317,7 +315,7 @@ int firstNonWhitespaceChar(List<int> bytes) {
 /// `baseUri.resolveUri(result) == uri`,
 ///
 /// The `baseUri` must be absolute.
-Uri relativizeUri(Uri uri, Uri /*?*/ baseUri) {
+Uri relativizeUri(Uri uri, Uri? baseUri) {
   if (baseUri == null) return uri;
   assert(baseUri.isAbsolute);
   if (uri.hasQuery || uri.hasFragment) {
@@ -472,7 +470,7 @@ abstract class PackageConfigError {
 
 class PackageConfigArgumentError extends ArgumentError
     implements PackageConfigError {
-  PackageConfigArgumentError(Object /*?*/ value, String name, String message)
+  PackageConfigArgumentError(Object? value, String name, String message)
       : super.value(value, name, message);
 
   PackageConfigArgumentError.from(ArgumentError error)
@@ -481,8 +479,7 @@ class PackageConfigArgumentError extends ArgumentError
 
 class PackageConfigFormatException extends FormatException
     implements PackageConfigError {
-  PackageConfigFormatException(String message, Object /*?*/ source,
-      [int /*?*/ offset])
+  PackageConfigFormatException(String message, Object? source, [int? offset])
       : super(message, source, offset);
 
   PackageConfigFormatException.from(FormatException exception)

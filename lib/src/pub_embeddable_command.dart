@@ -8,7 +8,6 @@ import 'package:usage/usage.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
-
 import 'command/add.dart';
 import 'command/build.dart';
 import 'command/cache.dart';

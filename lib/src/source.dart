@@ -161,7 +161,12 @@ abstract class BoundSource {
   /// Sources should not override this. Instead, they implement [doGetVersions].
   ///
   /// If [maxAge] is given answers can be taken from cache - up to that age old.
-  Future<List<PackageId>> getVersions(PackageRef ref, {Duration maxAge}) {
+  ///
+  /// If given, the [allowedRetractedVersion] is the only version which can be
+  /// selected even if it is marked as retracted. Otherwise, all the returned
+  /// IDs correspond to non-retracted versions.
+  Future<List<PackageId>> getVersions(PackageRef ref,
+      {Duration maxAge, Version allowedRetractedVersion}) async {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
@@ -169,7 +174,19 @@ abstract class BoundSource {
       throw ArgumentError('Package $ref does not use source ${source.name}.');
     }
 
-    return doGetVersions(ref, maxAge);
+    var versions = await doGetVersions(ref, maxAge);
+
+    versions = (await Future.wait(versions.map((id) async {
+      final packageStatus = await status(id, maxAge: maxAge);
+      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
+        return id;
+      }
+      return null;
+    })))
+        .where((element) => element != null)
+        .toList();
+
+    return versions;
   }
 
   /// Get the IDs of all versions that match [ref].
@@ -241,9 +258,14 @@ abstract class BoundSource {
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
   String getDirectory(PackageId id, {String relativeFrom});
 
-  /// Returns metadata about a given package. Information about remotely hosted
-  /// packages can be cached for up to [maxAge].
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async =>
+  /// Returns metadata about a given package.
+  ///
+  /// For remotely hosted packages, the information can be cached for up to
+  /// [maxAge]. If [maxAge] is not given, the information is not cached.
+  ///
+  /// In the case of offline sources, [maxAge] is not used, since information is
+  /// per definiton cached.
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async =>
       // Default implementation has no metadata.
       PackageStatus();
 

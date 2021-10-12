@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// A library for compiling Dart code and manipulating analyzer parse trees.
 import 'dart:async';
 import 'dart:io';
@@ -19,7 +17,6 @@ import 'package:analyzer/file_system/overlay_file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -36,7 +33,7 @@ bool isEntrypoint(CompilationUnit dart) {
   return dart.declarations.any((node) {
     return node is FunctionDeclaration &&
         node.name.name == 'main' &&
-        node.functionExpression.parameters.parameters.length <= 2;
+        (node.functionExpression.parameters?.parameters.length ?? 0) <= 2;
   });
 }
 
@@ -160,11 +157,11 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// The [name] is used to describe the executable in logs and error messages.
 Future<void> precompile({
-  @required String executablePath,
-  @required String incrementalDillOutputPath,
-  @required String name,
-  @required String outputPath,
-  @required String packageConfigPath,
+  required String executablePath,
+  required String incrementalDillOutputPath,
+  required String name,
+  required String outputPath,
+  required String packageConfigPath,
 }) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
@@ -191,7 +188,7 @@ Future<void> precompile({
 
       throw ApplicationException(
           log.yellow('Failed to build $highlightedName:\n') +
-              (result?.compilerOutputLines?.join('\n') ?? ''));
+              (result?.compilerOutputLines.join('\n') ?? ''));
     }
   } finally {
     client.kill();

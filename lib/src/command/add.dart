@@ -7,6 +7,7 @@
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -20,7 +21,6 @@ import '../pubspec.dart';
 import '../solver.dart';
 import '../source/path.dart';
 import '../utils.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
 /// the package. The user may pass in a git constraint, host url, or path as

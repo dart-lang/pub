@@ -211,20 +211,29 @@ class Package {
   /// [recursive] is true, this will return all files beneath that path;
   /// otherwise, it will only return files one level beneath it.
   ///
-  /// This will take .pubignore and .gitignore files into account. For each
-  /// directory a .pubignore takes precedence over a .gitignore.
+  /// This will take .pubignore and .gitignore files into account.
+  ///
+  /// If [dir] is inside a git repository, all ignore files from the repo root
+  /// are considered.
+  ///
+  /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
   List<String> listFiles({String beneath, bool recursive = true}) {
     // An in-memory package has no files.
     if (dir == null) return [];
-    beneath = beneath == null ? '.' : p.toUri(p.normalize(beneath)).path;
+
+    var root = git.repoRoot(dir) ?? dir;
+    beneath = p
+        .toUri(p.normalize(p.relative(p.join(dir, beneath ?? '.'), from: root)))
+        .path;
+    if (beneath == './') beneath = '.';
     String resolve(String path) {
       if (Platform.isWindows) {
-        return p.joinAll([dir, ...p.posix.split(path)]);
+        return p.joinAll([root, ...p.posix.split(path)]);
       }
-      return p.join(dir, path);
+      return p.join(root, path);
     }
 
     return Ignore.listFiles(
@@ -246,7 +255,7 @@ class Package {
                   '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
             }
           }
-          final relative = p.relative(entity.path, from: this.dir);
+          final relative = p.relative(entity.path, from: root);
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
           }
@@ -261,7 +270,7 @@ class Package {
             : (fileExists(gitIgnore) ? gitIgnore : null);
 
         final rules = [
-          if (dir == '.') ..._basicIgnoreRules,
+          if (dir == beneath) ..._basicIgnoreRules,
           if (ignoreFile != null) readTextFile(ignoreFile),
         ];
         return rules.isEmpty

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Implements an [Ignore] filter compatible with `.gitignore`.
 ///
 /// An [Ignore] instance holds a set of [`.gitignore` rules][1], and allows
@@ -98,7 +96,7 @@ class Ignore {
   Ignore(
     Iterable<String> patterns, {
     bool ignoreCase = false,
-    void Function(String pattern, FormatException exception) onInvalidPattern,
+    void Function(String pattern, FormatException exception)? onInvalidPattern,
   }) : _rules = _parseIgnorePatterns(
           patterns,
           ignoreCase,
@@ -221,9 +219,9 @@ class Ignore {
   /// ```
   static List<String> listFiles({
     String beneath = '',
-    @required Iterable<String> Function(String) listDir,
-    @required Ignore Function(String) ignoreForDir,
-    @required bool Function(String) isDir,
+    required Iterable<String> Function(String) listDir,
+    required Ignore? Function(String) ignoreForDir,
+    required bool Function(String) isDir,
     bool includeDirs = false,
   }) {
     if (beneath.startsWith('/') ||
@@ -246,7 +244,7 @@ class Ignore {
     // directories leading up to the current entity.
     // The single `null` aligns popping and pushing in this stack with [toVisit]
     // below.
-    final ignoreStack = <_IgnorePrefixPair>[null];
+    final ignoreStack = <_IgnorePrefixPair?>[null];
     // Find all ignores between './' and [beneath] (not inclusive).
 
     // [index] points at the next '/' in the path.
@@ -307,14 +305,14 @@ class _IgnoreParseResult {
   final String pattern;
 
   // The resulting matching rule. `null` if the pattern was empty or invalid.
-  final _IgnoreRule rule;
+  final _IgnoreRule? rule;
 
   // An invalid pattern is also considered empty.
   bool get empty => rule == null;
   bool get valid => exception == null;
 
   // For invalid patterns this contains a description of the problem.
-  final FormatException exception;
+  final FormatException? exception;
 
   _IgnoreParseResult(this.pattern, this.rule) : exception = null;
   _IgnoreParseResult.invalid(this.pattern, this.exception) : rule = null;
@@ -348,11 +346,11 @@ final _lineBreakPattern = RegExp('\r?\n');
 Iterable<_IgnoreRule> _parseIgnorePatterns(
   Iterable<String> patterns,
   bool ignoreCase, {
-  void Function(String pattern, FormatException exception) onInvalidPattern,
+  void Function(String pattern, FormatException exception)? onInvalidPattern,
 }) sync* {
   ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
-  onInvalidPattern ??= (_, __) => null;
+  onInvalidPattern ??= (_, __) {};
 
   final parsedPatterns = patterns
       .expand((s) => s.split(_lineBreakPattern))
@@ -360,10 +358,10 @@ Iterable<_IgnoreRule> _parseIgnorePatterns(
 
   for (final r in parsedPatterns) {
     if (!r.valid) {
-      onInvalidPattern(r.pattern, r.exception);
+      onInvalidPattern(r.pattern, r.exception!);
     }
     if (!r.empty) {
-      yield r.rule;
+      yield r.rule!;
     }
   }
 }
@@ -392,13 +390,13 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
   if (first == end) return _IgnoreParseResult.empty(pattern);
 
   var current = first;
-  String peekChar() => current >= end ? null : pattern[current];
+  String? peekChar() => current >= end ? null : pattern[current];
 
   var expr = '';
 
   // Parses the inside of a [] range. Returns the value as a RegExp character
   // range, or null if the pattern was broken.
-  String parseCharacterRange() {
+  String? parseCharacterRange() {
     var characterRange = '';
     var first = true;
     for (;;) {
@@ -553,7 +551,7 @@ class _IgnorePrefixPair {
 /// expects [path] to start with '/'
 ///
 /// If [path] should be matched as a directory, it should end with '/'.
-bool _matchesStack(List<_IgnorePrefixPair> ignores, String path) {
+bool _matchesStack(List<_IgnorePrefixPair?> ignores, String path) {
   // This is optimized by trying the rules in reverse order.
   // If a rule matches, the result is true if the rule is not negative.
   for (final ignorePair in ignores.reversed) {

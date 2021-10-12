@@ -34,6 +34,52 @@ void main() {
     }).validate();
   });
 
+  group('with environment variable creates tokens.json that contains env var',
+      () {
+    test('without environment variable provided', () async {
+      await d.tokensFile({
+        'version': 1,
+        'hosted': [
+          {'url': 'https://example.com', 'token': 'abc'},
+        ]
+      }).create();
+
+      await runPub(
+        args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
+        error: 'Environment variable "TOKEN" is not defined.',
+      );
+
+      await d.tokensFile({
+        'version': 1,
+        'hosted': [
+          {'url': 'https://example.com', 'env': 'TOKEN'},
+        ]
+      }).validate();
+    });
+
+    test('with environment variable provided', () async {
+      await d.tokensFile({
+        'version': 1,
+        'hosted': [
+          {'url': 'https://example.com', 'token': 'abc'},
+        ]
+      }).create();
+
+      await runPub(
+        args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
+        environment: {'TOKEN': 'secret'},
+        error: isNot(contains('is not defined.')),
+      );
+
+      await d.tokensFile({
+        'version': 1,
+        'hosted': [
+          {'url': 'https://example.com', 'env': 'TOKEN'},
+        ]
+      }).validate();
+    });
+  });
+
   test('persists unknown fields on unmodified entries', () async {
     await d.tokensFile({
       'version': 1,
@@ -89,8 +135,8 @@ void main() {
     await d.dir(configPath).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
-      error: contains('Insecure package repository could not be added.'),
-      exitCode: exit_codes.DATA,
+      error: contains('insecure repositories cannot use authentication'),
+      exitCode: exit_codes.USAGE,
     );
 
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();

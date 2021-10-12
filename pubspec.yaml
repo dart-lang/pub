@@ -26,6 +26,7 @@ dependencies:
   stack_trace: ^1.10.0
   usage: ^4.0.2
   yaml: ^3.1.0
+  yaml_edit: ^2.0.0
 
 dev_dependencies:
   shelf_test_handler: ^2.0.0

@@ -2,7 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore_for_file: import_of_legacy_library_into_null_safe
+// @dart=2.11
+
+import 'dart:io';
+
+import 'package:meta/meta.dart';
 
 import '../exceptions.dart';
 import '../source/hosted.dart';
@@ -23,14 +27,22 @@ import '../source/hosted.dart';
 class Credential {
   /// Internal constructor that's only used by [fromJson].
   Credential._internal({
-    required this.url,
-    required this.token,
-    required this.unknownFields,
+    @required this.url,
+    @required this.unknownFields,
+    @required this.token,
+    @required this.env,
   });
 
-  /// Create a new [Credential].
+  /// Create credential that stores clear text token.
   Credential.token(this.url, this.token)
-      : unknownFields = const <String, dynamic>{};
+      : env = null,
+        unknownFields = const <String, dynamic>{};
+
+  /// Create credential that stores environment variable name that stores token
+  /// value.
+  Credential.env(this.url, this.env)
+      : token = null,
+        unknownFields = const <String, dynamic>{};
 
   /// Deserialize [json] into [Credential] type.
   ///
@@ -42,14 +54,29 @@ class Credential {
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
 
-    const knownKeys = {'url', 'token'};
+    const knownKeys = {'url', 'token', 'env'};
     final unknownFields = Map.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
+    /// Returns [String] value from [json] at [key] index or `null` if [json]
+    /// doesn't contains [key].
+    ///
+    /// Throws [FormatException] if value type is not [String].
+    String _string(String key) {
+      if (json.containsKey(key)) {
+        if (json[key] is! String) {
+          throw FormatException('Provided $key value should be string');
+        }
+        return json[key] as String;
+      }
+      return null;
+    }
+
     return Credential._internal(
       url: hostedUrl,
-      token: json['token'] is String ? json['token'] as String : null,
       unknownFields: unknownFields,
+      token: _string('token'),
+      env: _string('env'),
     );
   }
 
@@ -57,7 +84,10 @@ class Credential {
   final Uri url;
 
   /// Authentication token value
-  final String? token;
+  final String token;
+
+  /// Environment variable name that stores token value
+  final String env;
 
   /// Unknown fields found in pub-tokens.json. The fields might be created by the
   /// future version of pub tool. We don't want to override them when using the
@@ -69,6 +99,7 @@ class Credential {
     return <String, dynamic>{
       'url': url.toString(),
       if (token != null) 'token': token,
+      if (env != null) 'env': env,
       ...unknownFields,
     };
   }
@@ -83,9 +114,20 @@ class Credential {
   Future<String> getAuthorizationHeaderValue() {
     if (!isValid()) {
       throw DataException(
-        'Saved credential for $url pub repository is not supported by current '
-        'version of Dart SDK.',
+        'Saved credential for "$url" pub repository is not supported by '
+        'current version of Dart SDK.',
       );
+    }
+
+    if (env != null) {
+      final value = Platform.environment[env];
+      if (value == null) {
+        throw DataException(
+          'Saved credential for "$url" pub repository requires environment '
+          'variable named "$env" but not defined.',
+        );
+      }
+      return Future.value('Bearer $value');
     }
 
     return Future.value('Bearer $token');
@@ -101,7 +143,8 @@ class Credential {
   ///
   /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
-  bool isValid() => token != null;
+  // Either [token] or [env] should be defined to be valid.
+  bool isValid() => (token == null) ^ (env == null);
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();

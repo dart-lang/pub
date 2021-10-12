@@ -2,12 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 
@@ -65,7 +62,7 @@ class RateLimitedScheduler<J, V> {
   final Set<J> _started = {};
 
   RateLimitedScheduler(Future<V> Function(J) runJob,
-      {@required int maxConcurrentOperations})
+      {required int maxConcurrentOperations})
       : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
@@ -77,7 +74,7 @@ class RateLimitedScheduler<J, V> {
       return;
     }
     final task = _queue.removeFirst();
-    final completer = _cache[task.jobId];
+    final completer = _cache[task.jobId]!;
 
     if (!_started.add(task.jobId)) {
       return;
@@ -140,7 +137,7 @@ class RateLimitedScheduler<J, V> {
 
   /// Returns the result of running [jobId] if that is already done.
   /// Otherwise returns `null`.
-  V peek(J jobId) => _results[jobId];
+  V? peek(J jobId) => _results[jobId];
 }
 
 class _Task<J> {

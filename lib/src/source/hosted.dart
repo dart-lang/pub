@@ -329,7 +329,7 @@ class BoundHostedSource extends CachedSource {
     if (preschedule != null) {
       /// If we have a cached response - preschedule dependencies of that.
       prescheduleDependenciesOfLatest(
-        await _cachedVersionListingResponse(ref, Duration(days: 365)),
+        await _cachedVersionListingResponse(ref),
       );
     }
     final result = await _fetchVersionsNoPrefetching(ref);
@@ -343,32 +343,54 @@ class BoundHostedSource extends CachedSource {
     return result;
   }
 
+  /// An in-memory cache to store the cached version listing loaded from
+  /// [_versionListingCachePath].
+  ///
+  /// Invariant: Entries in this cache are the parsed version of the exact same
+  ///  information cached on disk. I.e. if the entry is present in this cache,
+  /// there will not be a newer version on disk.
+  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
+      _responseCache = {};
+
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
   /// Otherwise deletes a cached response if it exists and returns `null`.
+  ///
+  /// If [maxAge] is not given, we will try to get the cached version no matter
+  /// how old it is.
   Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
-      PackageRef ref, Duration maxAge) async {
+      PackageRef ref,
+      {Duration maxAge}) async {
+    if (_responseCache.containsKey(ref)) {
+      final cacheAge = DateTime.now().difference(_responseCache[ref].first);
+      if (maxAge == null || maxAge > cacheAge) {
+        // The cached value is not too old.
+        return _responseCache[ref].last;
+      }
+    }
     final cachePath = _versionListingCachePath(ref);
-    final stat = await io.File(cachePath).stat();
+    final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
-      if (now.difference(stat.modified) < maxAge) {
+      if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
-          final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
+          final cachedDoc = jsonDecode(readTextFile(cachePath));
           final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is String) {
-            final cacheAge =
-                DateTime.now().difference(DateTime.parse(timestamp));
-            if (cacheAge > maxAge) {
+            final parsedTimestamp = DateTime.parse(timestamp);
+            final cacheAge = DateTime.now().difference(parsedTimestamp);
+            if (maxAge != null && cacheAge > maxAge) {
               // Too old according to internal timestamp - delete.
               tryDeleteEntry(cachePath);
             } else {
-              return _versionInfoFromPackageListing(
+              var res = _versionInfoFromPackageListing(
                 cachedDoc,
                 ref,
                 Uri.file(cachePath),
               );
+              _responseCache[ref] = Pair(parsedTimestamp, res);
+              return res;
             }
           }
         } on io.IOException {
@@ -400,6 +422,9 @@ class BoundHostedSource extends CachedSource {
           },
         ),
       );
+      // Delete the entry in the in-memory cache to maintain the invariant that
+      // cached information in memory is the same as that on the disk.
+      _responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
@@ -407,12 +432,15 @@ class BoundHostedSource extends CachedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
     final ref = id.toRef();
     // Did we already get info for this package?
     var versionListing = _scheduler.peek(ref);
-    // Do we have a cached version response on disk?
-    versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
+    if (maxAge != null) {
+      // Do we have a cached version response on disk?
+      versionListing ??=
+          await _cachedVersionListingResponse(ref, maxAge: maxAge);
+    }
     // Otherwise retrieve the info from the host.
     versionListing ??= await _scheduler
         .schedule(ref)
@@ -453,7 +481,8 @@ class BoundHostedSource extends CachedSource {
     var versionListing = _scheduler.peek(ref);
     if (maxAge != null) {
       // Do we have a cached version response on disk?
-      versionListing ??= await _cachedVersionListingResponse(ref, maxAge);
+      versionListing ??=
+          await _cachedVersionListingResponse(ref, maxAge: maxAge);
     }
     versionListing ??= await _scheduler.schedule(ref);
     return versionListing.keys.toList();
@@ -626,6 +655,15 @@ class BoundHostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   Future _download(PackageId id, String destPath) async {
+    // We never want to use a cached `archive_url`, so we never attempt to load
+    // the version listing from cache. Besides in most cases we already have
+    // downloaded a fresh copy of the version listing response in the in-memory
+    // cache, so looking in the file-system is pointless.
+    //
+    // We avoid using cached `archive_url` values because the `archive_url` for
+    // a custom package server may include a temporary signature in the
+    // query-string as is the case with signed S3 URLs. And we wish to allow for
+    // such URLs to be used.
     final versions = await _scheduler.schedule(id.toRef());
     final versionInfo = versions[id];
     final packageName = id.name;
@@ -839,10 +877,9 @@ class _OfflineHostedSource extends BoundHostedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, Duration maxAge) async {
+  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
     // Do we have a cached version response on disk?
-    final versionListing =
-        await _cachedVersionListingResponse(id.toRef(), maxAge);
+    final versionListing = await _cachedVersionListingResponse(id.toRef());
 
     if (versionListing == null) {
       return PackageStatus();
