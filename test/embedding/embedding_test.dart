@@ -130,7 +130,7 @@ main() {
       ['pub', 'get'],
       buffer,
       workingDirextory: app.io.path,
-      environment: {'_PUB_LOG_ANALYTICS': 'true'},
+      environment: {...getPubTestEnvironment(), '_PUB_LOG_ANALYTICS': 'true'},
     );
     final analytics = buffer
         .toString()
