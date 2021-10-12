@@ -474,16 +474,6 @@ Future<PubProcess> startPub(
 
   ensureDir(_pathInSandbox(appPath));
 
-  // Find a Dart executable we can use to spawn. Use the same one that was
-  // used to run this script itself.
-  var dartBin = Platform.executable;
-
-  // If the executable looks like a path, get its full path. That way we
-  // can still find it when we spawn it with a different working directory.
-  if (dartBin.contains(Platform.pathSeparator)) {
-    dartBin = p.absolute(dartBin);
-  }
-
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
   // recommended to use a temporary file with a unique name for each test run.
@@ -510,7 +500,7 @@ Future<PubProcess> startPub(
     }
   }
 
-  return await PubProcess.start(dartBin, dartArgs,
+  return await PubProcess.start(Platform.resolvedExecutable, dartArgs,
       environment: mergedEnvironment,
       workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}',
