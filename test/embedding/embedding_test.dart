@@ -25,7 +25,7 @@ Future<void> runEmbedding(List<String> args, StringBuffer buffer,
     dynamic exitCode = 0}) async {
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
-    [snapshot, ...args],
+    ['--enable-asserts', snapshot, ...args],
     environment: {
       ...getPubTestEnvironment(),
       ...?environment,
