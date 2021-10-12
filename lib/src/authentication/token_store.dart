@@ -5,9 +5,12 @@
 // @dart=2.11
 
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
+import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import 'credential.dart';
@@ -28,9 +31,9 @@ class TokenStore {
   /// Reads "pub-tokens.json" and parses / deserializes it into list of
   /// [Credential].
   List<Credential> _loadCredentials() {
-    final result = List<Credential>.empty(growable: true);
+    final result = <Credential>[];
     final path = _tokensFile;
-    if (!fileExists(path)) {
+    if (path == null || !fileExists(path)) {
       return result;
     }
 
@@ -90,11 +93,21 @@ class TokenStore {
     return result;
   }
 
+  @alwaysThrows
+  void missingConfigDir() {
+    final variable = Platform.isWindows ? '%APPDATA%' : r'$HOME';
+    throw DataException('No config dir found. Check that $variable is set');
+  }
+
   /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
-    ensureDir(path.dirname(_tokensFile));
+    final tokensFile = _tokensFile;
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
+    ensureDir(path.dirname(tokensFile));
     writeTextFile(
-        _tokensFile,
+        tokensFile,
         jsonEncode(<String, dynamic>{
           'version': 1,
           'hosted': credentials.map((it) => it.toJson()).toList(),
@@ -161,10 +174,18 @@ class TokenStore {
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
-    deleteEntry(_tokensFile);
-    log.message('pub-tokens.json is deleted.');
+    final tokensFile = _tokensFile;
+    if (tokensFile == null) {
+      missingConfigDir();
+    } else if (!fileExists(tokensFile)) {
+      log.message('No credentials file found at "$tokensFile"');
+    } else {
+      deleteEntry(_tokensFile);
+      log.message('pub-tokens.json is deleted.');
+    }
   }
 
   /// Full path to the "pub-tokens.json" file.
-  String get _tokensFile => path.join(configDir, 'pub-tokens.json');
+  String get _tokensFile =>
+      configDir == null ? null : path.join(configDir, 'pub-tokens.json');
 }

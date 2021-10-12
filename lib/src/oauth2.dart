@@ -191,10 +191,17 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 /// best place for storing secrets, as it might be shared.
 ///
 /// To provide backwards compatibility we use the legacy file if only it exists.
+///
+/// Returns `null` if there is no good place for the file.
 String _credentialsFile(SystemCache cache) {
-  final newCredentialsFile = path.join(dartConfigDir, 'pub-credentials.json');
-  return [newCredentialsFile, _legacyCredentialsFile(cache)]
-      .firstWhere(fileExists, orElse: () => newCredentialsFile);
+  final configDir = dartConfigDir;
+
+  final newCredentialsFile =
+      configDir == null ? null : path.join(configDir, 'pub-credentials.json');
+  return [
+    if (newCredentialsFile != null) newCredentialsFile,
+    _legacyCredentialsFile(cache)
+  ].firstWhere(fileExists, orElse: () => newCredentialsFile);
 }
 
 String _legacyCredentialsFile(SystemCache cache) {
