@@ -1,0 +1,22 @@
+// Copyright (c) 2021, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+// @dart=2.10
+
+import 'package:test/test.dart';
+
+import '../descriptor.dart' as d;
+import '../test_pub.dart';
+
+void main() {
+  test(r'runs even with an empty environment (eg. no $HOME)', () async {
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+
+    await d.appDir({'foo': 'any'}).create();
+
+    await pubGet(
+        environment: {'_PUB_TEST_CONFIG_DIR': null},
+        includeParentEnvironment: false);
+  });
+}
