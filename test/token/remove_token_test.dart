@@ -61,4 +61,14 @@ void main() {
 
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
+
+  test('with empty environment gives error message', () async {
+    await runPub(
+      args: ['token', 'remove', 'http://mypub.com'],
+      error: contains('No config dir found.'),
+      exitCode: exit_codes.DATA,
+      environment: {'_PUB_TEST_CONFIG_DIR': null},
+      includeParentEnvironment: false,
+    );
+  });
 }

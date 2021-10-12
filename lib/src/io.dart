@@ -8,7 +8,8 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cli_util/cli_util.dart' show applicationConfigHome;
+import 'package:cli_util/cli_util.dart'
+    show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
@@ -1026,9 +1027,16 @@ class PubProcessResult {
 }
 
 /// The location for dart-specific configuration.
-final String dartConfigDir = () {
-  if (runningFromTest) {
+///
+/// `null` if no config dir could be found.
+final String? dartConfigDir = () {
+  if (runningFromTest &&
+      Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
-  return applicationConfigHome('dart');
-}()!;
+  try {
+    return applicationConfigHome('dart');
+  } on EnvironmentNotFoundException {
+    return null;
+  }
+}();
