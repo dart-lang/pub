@@ -159,7 +159,11 @@ class SolveResult {
             'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
       }
     }
-    analytics.analytics.sendTiming('pub-get', resolutionTime.inMilliseconds);
+    analytics.analytics.sendTiming(
+      'resolution',
+      resolutionTime.inMilliseconds,
+      category: 'pub-get',
+    );
     log.fine(
         'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
   }

@@ -163,9 +163,9 @@ main() {
       {
         'hitType': 'timing',
         'message': {
-          'variableName': 'pub-get',
+          'variableName': 'resolution',
           'time': isA<int>(),
-          'category': null,
+          'category': 'pub-get',
           'label': null
         }
       },
