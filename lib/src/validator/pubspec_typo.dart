@@ -73,4 +73,5 @@ const _validPubspecKeys = [
   'publish_to',
   'false_secrets',
   'flutter',
+  'screenshots',
 ];
