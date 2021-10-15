@@ -53,16 +53,21 @@ class DowngradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     var dryRun = argResults['dry-run'];
+
     await entrypoint.acquireDependencies(
       SolveType.DOWNGRADE,
       unlock: argResults.rest,
       dryRun: dryRun,
+      analytics: analytics,
     );
     if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
-          unlock: argResults.rest,
-          dryRun: dryRun,
-          onlyReportSuccessOrFailure: true);
+      await entrypoint.example.acquireDependencies(
+        SolveType.GET,
+        unlock: argResults.rest,
+        dryRun: dryRun,
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+      );
     }
 
     if (isOffline) {

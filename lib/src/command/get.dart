@@ -51,14 +51,21 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    await entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+    await entrypoint.acquireDependencies(
+      SolveType.GET,
+      dryRun: argResults['dry-run'],
+      precompile: argResults['precompile'],
+      analytics: analytics,
+    );
 
     if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
-          dryRun: argResults['dry-run'],
-          precompile: argResults['precompile'],
-          onlyReportSuccessOrFailure: true);
+      await entrypoint.example.acquireDependencies(
+        SolveType.GET,
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile'],
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+      );
     }
   }
 }

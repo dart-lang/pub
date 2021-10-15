@@ -139,8 +139,12 @@ class GlobalActivateCommand extends PubCommand {
 
         var path = readArg('No package to activate given.');
         validateNoExtraArgs();
-        return globals.activatePath(path, executables,
-            overwriteBinStubs: overwrite);
+        return globals.activatePath(
+          path,
+          executables,
+          overwriteBinStubs: overwrite,
+          analytics: analytics,
+        );
     }
 
     throw StateError('unreachable');

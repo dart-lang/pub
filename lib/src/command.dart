@@ -117,6 +117,8 @@ abstract class PubCommand extends Command<int> {
     return _pubEmbeddableCommand ?? (runner as PubCommandRunner);
   }
 
+  PubAnalytics get analytics => _pubEmbeddableCommand?.analytics;
+
   @override
   String get invocation {
     var command = this;
