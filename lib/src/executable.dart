@@ -23,8 +23,7 @@ import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// Code shared between `run` `global run` and `run --dartdev` for extracting
-/// vm arguments from arguments.
+/// Extracting vm arguments from arguments.
 List<String> vmArgsFromArgResults(ArgResults argResults) {
   final experiments = argResults['enable-experiment'] as List;
   return [
