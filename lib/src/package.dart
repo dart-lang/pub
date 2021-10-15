@@ -226,7 +226,7 @@ class Package {
   /// convert them to paths relative to the package root, use [relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
     // An in-memory package has no files.
-    if (dir == null) return [];
+    if (isInMemory) return [];
 
     var packageDir = dir;
     var root = git.repoRoot(packageDir) ?? packageDir;

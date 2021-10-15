@@ -79,7 +79,7 @@ class Entrypoint {
   final SystemCache cache;
 
   /// Whether this entrypoint exists within the package cache.
-  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
+  bool get isCached => !root.isInMemory && p.isWithin(cache.rootDir, root.dir);
 
   /// Whether this is an entrypoint for a globally-activated package.
   final bool isGlobal;
@@ -246,7 +246,7 @@ class Entrypoint {
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
-    final suffix = root.dir == null || root.dir == '.' ? '' : ' in ${root.dir}';
+    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
@@ -262,7 +262,7 @@ class Entrypoint {
       });
     } catch (e) {
       if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
-        final directoryOption = root.dir == null || root.dir == '.'
+        final directoryOption = root.isInMemory || root.dir == '.'
             ? ''
             : ' --directory ${root.dir}';
         throw ApplicationException(

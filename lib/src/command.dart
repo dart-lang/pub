@@ -55,7 +55,7 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String? get directory => argResults['directory'] ?? _pubTopLevel!.directory;
+  String get directory => argResults['directory'] ?? _pubTopLevel!.directory;
 
   SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
@@ -71,7 +71,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory!, cache);
+  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory, cache);
 
   Entrypoint? _entrypoint;
 
