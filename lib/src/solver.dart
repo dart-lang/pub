@@ -32,7 +32,7 @@ Future<SolveResult> resolveVersions(
   SystemCache cache,
   Package root, {
   LockFile? lockFile,
-  Iterable<String>? unlock,
+  Iterable<String> unlock = const [],
 }) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
@@ -40,7 +40,7 @@ Future<SolveResult> resolveVersions(
     cache,
     root,
     lockFile,
-    unlock ?? [],
+    unlock,
   ).solve();
 }
 
@@ -71,7 +71,7 @@ Future<SolveResult?> tryResolveVersions(
       cache,
       root,
       lockFile: lockFile,
-      unlock: unlock,
+      unlock: unlock ?? [],
     );
   } on SolveFailure {
     return null;

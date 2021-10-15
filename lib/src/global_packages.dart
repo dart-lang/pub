@@ -86,7 +86,7 @@ class GlobalPackages {
   Future<void> activateGit(String repo, List<String>? executables,
       {Map<String, FeatureDependency>? features,
       required bool overwriteBinStubs}) async {
-    var name = await cache.git!.getPackageNameFromRepo(repo);
+    var name = await cache.git.getPackageNameFromRepo(repo);
 
     // TODO(nweiz): Add some special handling for git repos that contain path
     // dependencies. Their executables shouldn't be cached, and there should
@@ -94,8 +94,7 @@ class GlobalPackages {
     // changed (see also issue 20499).
     PackageRef ref;
     try {
-      ref =
-          cache.git!.source.parseRef(name, {'url': repo}, containingPath: '.');
+      ref = cache.git.source.parseRef(name, {'url': repo}, containingPath: '.');
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
     }
@@ -126,7 +125,7 @@ class GlobalPackages {
       required bool overwriteBinStubs,
       Uri? url}) async {
     await _installInCache(
-        cache.hosted!.source
+        cache.hosted.source
             .refFor(name, url: url)
             .withConstraint(constraint)
             .withFeatures(features ?? const {}),
@@ -163,7 +162,7 @@ class GlobalPackages {
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
-    var id = cache.path!.source.idFor(name, entrypoint.root.version, fullPath);
+    var id = cache.path.source.idFor(name, entrypoint.root.version, fullPath);
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
@@ -422,7 +421,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
-      Entrypoint entrypoint, exec.Executable executable, Iterable<String> args,
+      Entrypoint entrypoint, exec.Executable executable, List<String> args,
       {bool enableAsserts = false,
       Future<void> Function(exec.Executable)? recompile,
       List<String> vmArgs = const [],

@@ -105,7 +105,7 @@ class Pubspec extends PubspecBase {
 
   Map<String, PackageRange>? _dependencyOverrides;
 
-  Map<String, Feature> get features => _features ??= _computeFeatures();
+  late final Map<String, Feature> features = _computeFeatures();
 
   Map<String, Feature> _computeFeatures() {
     final features = fields['features'];
@@ -151,8 +151,6 @@ class Pubspec extends PubspecBase {
         });
   }
 
-  Map<String, Feature>? _features;
-
   /// A map from SDK identifiers to constraints on those SDK versions.
   Map<String, VersionConstraint> get sdkConstraints {
     _ensureEnvironment();
@@ -174,9 +172,9 @@ class Pubspec extends PubspecBase {
   ///
   /// If [dartSdkWasOverridden] is `false`, this will be identical to
   /// `sdkConstraints["dart"]`.
-  VersionConstraint? get originalDartSdkConstraint {
+  VersionConstraint get originalDartSdkConstraint {
     _ensureEnvironment();
-    return _originalDartSdkConstraint ?? sdkConstraints['dart'];
+    return _originalDartSdkConstraint ?? sdkConstraints['dart']!;
   }
 
   VersionConstraint? _originalDartSdkConstraint;
@@ -273,9 +271,6 @@ class Pubspec extends PubspecBase {
 
     return constraints;
   }
-
-  /// Whether or not the pubspec has no contents.
-  bool get isEmpty => version == Version.none && dependencies.isEmpty;
 
   /// The language version implied by the sdk constraint.
   LanguageVersion get languageVersion =>
@@ -427,14 +422,13 @@ class Pubspec extends PubspecBase {
       _error('"$field" field must be a map.', node.span);
     }
 
-    var map = node;
-    var nonStringNode = map.nodes.keys
+    var nonStringNode = node.nodes.keys
         .firstWhere((e) => e.value is! String, orElse: () => null);
     if (nonStringNode != null) {
       _error('A dependency name must be a string.', nonStringNode.span);
     }
 
-    map.nodes.forEach((nameNode, specNode) {
+    node.nodes.forEach((nameNode, specNode) {
       var name = nameNode.value;
       var spec = specNode.value;
       if (fields['name'] != null && name == this.name) {

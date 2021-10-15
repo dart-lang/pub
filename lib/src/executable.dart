@@ -47,7 +47,7 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
-    Entrypoint entrypoint, Executable executable, Iterable<String> args,
+    Entrypoint entrypoint, Executable executable, List<String> args,
     {bool enableAsserts = false,
     Future<void> Function(Executable)? recompile,
     List<String> vmArgs = const [],

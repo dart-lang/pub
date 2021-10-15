@@ -182,6 +182,8 @@ class TokenStore {
   }
 
   /// Full path to the "pub-tokens.json" file.
+  ///
+  /// `null` if no config directory could be found.
   String? get _tokensFile {
     var dir = configDir;
     return dir == null ? null : path.join(dir, 'pub-tokens.json');

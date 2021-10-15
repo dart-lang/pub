@@ -95,12 +95,12 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   }
 
   @override
-  bool? get captureStackChains => argResults['verbose'];
+  bool get captureStackChains => argResults['verbose'];
 
   @override
   Verbosity get verbosity =>
       argResults['verbose'] ? Verbosity.ALL : Verbosity.NORMAL;
 
   @override
-  bool? get trace => argResults['verbose'];
+  bool get trace => argResults['verbose'];
 }

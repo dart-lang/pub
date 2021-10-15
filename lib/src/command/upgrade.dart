@@ -114,7 +114,7 @@ class UpgradeCommand extends PubCommand {
     if (argResults['example'] && entrypoint.example != null) {
       // Reload the entrypoint to ensure we pick up potential changes that has
       // been made.
-      final exampleEntrypoint = Entrypoint(directory!, cache).example!;
+      final exampleEntrypoint = Entrypoint(directory, cache).example!;
       await _runUpgrade(exampleEntrypoint, onlySummary: true);
     }
   }
@@ -240,7 +240,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint(directory!, cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
         analytics: analytics,
@@ -334,7 +334,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint(directory!, cache).acquireDependencies(
+      await Entrypoint(directory, cache).acquireDependencies(
         SolveType.UPGRADE,
         precompile: _precompile,
         analytics: analytics,

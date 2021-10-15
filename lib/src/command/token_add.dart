@@ -52,7 +52,7 @@ class TokenAddCommand extends PubCommand {
       if (envVar == null) {
         await _addTokenFromStdin(hostedUrl);
       } else {
-        await _addEnvVarToken(hostedUrl);
+        await _addEnvVarToken(hostedUrl, envVar!);
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
@@ -79,8 +79,8 @@ class TokenAddCommand extends PubCommand {
     );
   }
 
-  Future<void> _addEnvVarToken(Uri hostedUrl) async {
-    if (envVar!.isEmpty) {
+  Future<void> _addEnvVarToken(Uri hostedUrl, String envVar) async {
+    if (envVar.isEmpty) {
       usageException('Cannot use the empty string as --env-var');
     }
 
@@ -88,7 +88,7 @@ class TokenAddCommand extends PubCommand {
     // equal signs.
     // [1] https://docs.microsoft.com/en-us/windows/win32/procthread/environment-variables
     // [2] https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
-    if (envVar!.contains('=')) {
+    if (envVar.contains('=')) {
       throw DataException(
         'Environment variable name --env-var="$envVar" cannot contain "=", the '
         'equals sign is not allowed in environment variable names.',
@@ -98,7 +98,7 @@ class TokenAddCommand extends PubCommand {
     // Help the user if they typed something that is unlikely to be correct.
     // This could happen if you include $, whitespace, quotes or accidentally
     // dereference the environment variable instead.
-    if (!RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(envVar!)) {
+    if (!RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(envVar)) {
       log.warning(
         'The environment variable name --env-var="$envVar" does not use '
         'uppercase characters A-Z, 0-9 and underscore. This is unusual for '

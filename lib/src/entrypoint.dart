@@ -257,7 +257,7 @@ class Entrypoint {
           cache,
           root,
           lockFile: lockFile,
-          unlock: unlock,
+          unlock: unlock ?? [],
         );
       });
     } catch (e) {

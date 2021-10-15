@@ -132,8 +132,7 @@ class DependencyValidator extends Validator {
   Future _warnAboutSource(PackageRange dep) async {
     List<Version> versions;
     try {
-      var ids = await entrypoint.cache.hosted!
-          .getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));
+      var ids = await entrypoint.cache.hosted.getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));
       versions = ids.map((id) => id.version).toList();
     } on ApplicationException catch (_) {
       versions = [];

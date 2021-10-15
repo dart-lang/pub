@@ -278,7 +278,7 @@ class OutdatedCommand extends PubCommand {
           showTransitiveDependencies: showTransitiveDependencies,
           hasUpgradableResolution: hasUpgradableResolution,
           hasResolvableResolution: hasResolvableResolution,
-          directory: path.normalize(directory!));
+          directory: path.normalize(directory));
     }
   }
 

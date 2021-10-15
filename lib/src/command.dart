@@ -57,9 +57,7 @@ abstract class PubCommand extends Command<int> {
 
   String get directory => argResults['directory'] ?? _pubTopLevel!.directory;
 
-  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
-
-  SystemCache? _cache;
+  late final SystemCache cache = SystemCache(isOffline: isOffline);
 
   GlobalPackages get globals => _globals ??= GlobalPackages(cache);
 
@@ -71,9 +69,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  Entrypoint get entrypoint => _entrypoint ??= Entrypoint(directory, cache);
-
-  Entrypoint? _entrypoint;
+  late final Entrypoint entrypoint = Entrypoint(directory, cache);
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;
@@ -85,10 +81,8 @@ abstract class PubCommand extends Command<int> {
   // Lazily initialize the parser because the superclass constructor requires
   // it but we want to initialize it based on [allowTrailingOptions].
   @override
-  ArgParser get argParser => _argParser ??= ArgParser(
+  late final ArgParser argParser = ArgParser(
       allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
-
-  ArgParser? _argParser;
 
   /// Override this to use offline-only sources instead of hitting the network.
   ///
@@ -176,8 +170,8 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel!.argResults!);
-    if (_pubTopLevel!.trace!) {
+    computeCommand(_pubTopLevel!.argResults);
+    if (_pubTopLevel!.trace) {
       log.recordTranscript();
     }
     log.verbosity = _pubTopLevel!.verbosity;
@@ -185,7 +179,7 @@ abstract class PubCommand extends Command<int> {
 
     try {
       await captureErrors<void>(() async => runProtected(),
-          captureStackChains: _pubTopLevel!.captureStackChains!);
+          captureStackChains: _pubTopLevel!.captureStackChains);
       if (_exitCodeOverride != null) {
         return _exitCodeOverride!;
       }
@@ -193,7 +187,7 @@ abstract class PubCommand extends Command<int> {
     } catch (error, chain) {
       log.exception(error, chain);
 
-      if (_pubTopLevel!.trace!) {
+      if (_pubTopLevel!.trace) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
         // Escape the argument for users to copy-paste in bash.
@@ -221,7 +215,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   /// appropriate exit code could be found.
   int _chooseExitCode(exception) {
     if (exception is SolveFailure) {
-      dynamic packageNotFound = exception.packageNotFound;
+      var packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
@@ -274,7 +268,7 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   ///
   /// For top-level commands, if an alias is used, the primary command name is
   /// returned. For instance `install` becomes `get`.
-  static String get command => _command ??= '';
+  static late final String command = _command ?? '';
 
   static void computeCommand(ArgResults argResults) {
     var list = <String?>[];
@@ -298,11 +292,11 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 }
 
 abstract class PubTopLevel {
-  bool? get captureStackChains;
+  bool get captureStackChains;
   log.Verbosity get verbosity;
-  bool? get trace;
+  bool get trace;
   String? get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
-  ArgResults? get argResults;
+  ArgResults get argResults;
 }

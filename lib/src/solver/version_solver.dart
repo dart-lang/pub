@@ -91,7 +91,7 @@ class VersionSolver {
         [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
 
     try {
-      return await _systemCache.hosted!.withPrefetching(() async {
+      return await _systemCache.hosted.withPrefetching(() async {
         String? next = _root.name;
         while (next != null) {
           _propagate(next);

@@ -76,7 +76,7 @@ class RemoveCommand extends PubCommand {
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory!, cache);
+      final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(
         SolveType.GET,
         precompile: argResults['precompile'],

@@ -77,7 +77,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   @override
-  bool? get trace => argResults['trace'];
+  bool get trace => argResults['trace'];
 
   ArgResults? _argResults;
 
