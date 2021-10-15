@@ -35,8 +35,8 @@ class RelativeVersionNumberingValidator extends Validator {
       existingVersions = [];
     }
     existingVersions.sort((a, b) => a.version.compareTo(b.version));
-    final previousVersion = existingVersions.lastWhereOrNull(
-        (id) => id.version < entrypoint.root.version);
+    final previousVersion = existingVersions
+        .lastWhereOrNull((id) => id.version < entrypoint.root.version);
     if (previousVersion == null) return;
 
     final previousPubspec =

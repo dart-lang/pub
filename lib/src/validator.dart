@@ -154,7 +154,8 @@ abstract class Validator {
     return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
-      warnings.addAll([for (final validator in validators) ...validator.warnings]);
+      warnings
+          .addAll([for (final validator in validators) ...validator.warnings]);
       errors.addAll([for (final validator in validators) ...validator.errors]);
 
       if (errors.isNotEmpty) {

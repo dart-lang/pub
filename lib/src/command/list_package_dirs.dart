@@ -3,12 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import '../package_name.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `list-package-dirs` pub command.

@@ -124,7 +124,7 @@ class Package {
   }
 
   /// Returns whether or not this package is in a Git repo.
-  late final bool  inGitRepo = computeInGitRepoCache();
+  late final bool inGitRepo = computeInGitRepoCache();
 
   bool computeInGitRepoCache() {
     if (isInMemory || !git.isInstalled) {

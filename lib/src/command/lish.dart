@@ -60,9 +60,6 @@ class LishCommand extends PubCommand {
     return cache.sources.hosted.defaultUrl;
   }
 
-  /// Cache value for [server].
-  Uri? _server;
-
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
 
