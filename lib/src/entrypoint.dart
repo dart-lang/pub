@@ -178,7 +178,7 @@ class Entrypoint {
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
-  /// If a SolveResult is already created it can be passes as an optimization.
+  /// If a SolveResult is already created it can be passed as an optimization.
   Entrypoint.global(this.root, this._lockFile, this.cache,
       {SolveResult? solveResult})
       : isGlobal = true {

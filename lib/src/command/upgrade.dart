@@ -78,7 +78,7 @@ class UpgradeCommand extends PubCommand {
 
   bool get _dryRun => argResults['dry-run'];
 
-  bool get _precompile => argResults['precompile'] ?? false;
+  bool get _precompile => argResults['precompile'];
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];

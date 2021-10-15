@@ -35,6 +35,7 @@ class DepsCommand extends PubCommand {
       AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
+  // TODO(sigurdm): use a local variable for this.
   final _buffer = StringBuffer();
 
   /// Whether to include dev dependencies.
@@ -191,7 +192,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln();
     _buffer.writeln('$section:');
     for (var name in ordered(names)) {
-      var package = _getPackage(name)!;
+      var package = _getPackage(name);
 
       _buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
@@ -231,7 +232,7 @@ class DepsCommand extends PubCommand {
     _buffer.writeln('$name:');
 
     for (var name in deps) {
-      var package = _getPackage(name)!;
+      var package = _getPackage(name);
       _buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
@@ -251,7 +252,7 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = Queue<Pair<Package?, Map<String, Map>>>();
+    var toWalk = Queue<Pair<Package, Map<String, Map>>>();
     var visited = <String>{entrypoint.root.name};
 
     // Start with the root dependencies.
@@ -268,7 +269,7 @@ class DepsCommand extends PubCommand {
     // Do a breadth-first walk to the dependency graph.
     while (toWalk.isNotEmpty) {
       var pair = toWalk.removeFirst();
-      var package = pair.first!;
+      var package = pair.first;
       var map = pair.last;
 
       if (visited.contains(package.name)) {
@@ -323,12 +324,11 @@ class DepsCommand extends PubCommand {
   /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,
   /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
   /// check can return a false negative. This fails gracefully if that happens.
-  Package? _getPackage(String name) {
+  Package _getPackage(String name) {
     var package = entrypoint.packageGraph.packages[name];
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "$topLevelProgram pub get" again.');
-    return null;
   }
 
   /// Outputs all executables reachable from [entrypoint].

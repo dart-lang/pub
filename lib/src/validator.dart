@@ -122,7 +122,9 @@ abstract class Validator {
   /// upload to the server.
   static Future<void> runAll(
       Entrypoint entrypoint, Future<int> packageSize, Uri? serverUrl,
-      {List<String>? hints, List<String>? warnings, List<String>? errors}) {
+      {required List<String> hints,
+      required List<String> warnings,
+      required List<String> errors}) {
     var validators = [
       GitignoreValidator(entrypoint),
       PubspecValidator(entrypoint),
@@ -151,10 +153,9 @@ abstract class Validator {
 
     return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {
-      hints!.addAll([for (final validator in validators) ...validator.hints]);
-      warnings!
-          .addAll([for (final validator in validators) ...validator.warnings]);
-      errors!.addAll([for (final validator in validators) ...validator.errors]);
+      hints.addAll([for (final validator in validators) ...validator.hints]);
+      warnings.addAll([for (final validator in validators) ...validator.warnings]);
+      errors.addAll([for (final validator in validators) ...validator.errors]);
 
       if (errors.isNotEmpty) {
         final s = errors.length > 1 ? 's' : '';

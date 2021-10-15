@@ -82,7 +82,7 @@ class StrictDependenciesValidator extends Validator {
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(Set<String?> deps, Set<String> devDeps) {
+  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
     for (var usage in _usagesBeneath(['lib', 'bin'])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
@@ -96,7 +96,7 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkTestTool(Set<String> deps, Set<String?> devDeps) {
+  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {

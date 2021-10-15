@@ -123,11 +123,11 @@ class PackageLister {
         _allowedRetractedVersion = null;
 
   /// Returns the number of versions of this package that match [constraint].
-  Future<int> countVersions(VersionConstraint? constraint) async {
-    if (_locked != null && constraint!.allows(_locked!.version)) return 1;
+  Future<int> countVersions(VersionConstraint constraint) async {
+    if (_locked != null && constraint.allows(_locked!.version)) return 1;
     try {
       return (await _versions)
-          .where((id) => constraint!.allows(id.version))
+          .where((id) => constraint.allows(id.version))
           .length;
     } on PackageNotFoundException {
       // If it fails for any reason, just treat that as no versions. This will

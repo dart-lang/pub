@@ -360,7 +360,7 @@ class AddCommand extends PubCommand {
         git.removeWhere((key, value) => value == null);
       }
 
-      packageRange = cache.sources['git']!
+      packageRange = cache.sources.git
           .parseRef(packageName, git, containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
@@ -369,13 +369,13 @@ class AddCommand extends PubCommand {
           ? PathSource.relativePathWithPosixSeparators(
               p.relative(path, from: entrypoint.root.dir))
           : path;
-      packageRange = cache.sources['path']!
+      packageRange = cache.sources.path
           .parseRef(packageName, relativeToEntryPoint,
               containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'path': relativeToEntryPoint};
     } else if (sdk != null) {
-      packageRange = cache.sources['sdk']!
+      packageRange = cache.sources.sdk
           .parseRef(packageName, sdk)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'sdk': sdk};

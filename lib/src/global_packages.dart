@@ -423,7 +423,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   Future<int> runExecutable(
       Entrypoint entrypoint, exec.Executable executable, List<String> args,
       {bool enableAsserts = false,
-      Future<void> Function(exec.Executable)? recompile,
+      required Future<void> Function(exec.Executable) recompile,
       List<String> vmArgs = const [],
       required bool alwaysUseSubprocess}) async {
     return await exec.runExecutable(
@@ -432,7 +432,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
       args,
       enableAsserts: enableAsserts,
       recompile: (exectuable) async {
-        await recompile!(exectuable);
+        await recompile(exectuable);
         _refreshBinStubs(entrypoint, executable);
       },
       vmArgs: vmArgs,

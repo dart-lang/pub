@@ -76,7 +76,7 @@ class GlobalActivateCommand extends PubCommand {
       features[feature] = FeatureDependency.unused;
     }
 
-    var overwrite = argResults['overwrite']!;
+    final overwrite = argResults['overwrite'] as bool;
     Uri? hostedUrl;
     if (argResults.wasParsed('hosted-url')) {
       try {
@@ -88,7 +88,7 @@ class GlobalActivateCommand extends PubCommand {
 
     Iterable<String> args = argResults.rest;
 
-    dynamic readArg([String error = '']) {
+    String readArg([String error = '']) {
       if (args.isEmpty) usageException(error);
       var arg = args.first;
       args = args.skip(1);

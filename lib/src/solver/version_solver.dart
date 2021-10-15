@@ -333,7 +333,7 @@ class VersionSolver {
 
     /// Prefer packages with as few remaining versions as possible, so that if a
     /// conflict is necessary it's forced quickly.
-    var package = await minByAsync(unsatisfied, (dynamic package) async {
+    var package = await minByAsync(unsatisfied, (PackageRange package) async {
       return await _packageLister(package).countVersions(package.constraint);
     });
     if (package == null) {

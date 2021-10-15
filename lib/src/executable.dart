@@ -49,7 +49,7 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 Future<int> runExecutable(
     Entrypoint entrypoint, Executable executable, List<String> args,
     {bool enableAsserts = false,
-    Future<void> Function(Executable)? recompile,
+    required Future<void> Function(Executable) recompile,
     List<String> vmArgs = const [],
     required bool alwaysUseSubprocess}) async {
   final package = executable.package;
@@ -97,7 +97,7 @@ Future<int> runExecutable(
 
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
-      await recompile!(executable);
+      await recompile(executable);
     }
     executablePath = snapshotPath;
   }
@@ -123,7 +123,7 @@ Future<int> runExecutable(
     }
 
     log.fine('Built executable is out of date.');
-    await recompile!(executable);
+    await recompile(executable);
     return await _runDartProgram(
       executablePath,
       args.toList(),

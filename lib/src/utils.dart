@@ -512,7 +512,7 @@ Never fail(String message, [Object? innerError, StackTrace? innerTrace]) {
 /// failed because of invalid input data.
 ///
 /// This will report the error and cause pub to exit with [exit_codes.DATA].
-void dataError(String message) => throw DataException(message);
+Never dataError(String message) => throw DataException(message);
 
 /// Returns a UUID in v4 format as a `String`.
 ///

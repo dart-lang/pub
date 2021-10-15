@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableExtension;
+
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../null_safety_analysis.dart';
@@ -24,7 +26,7 @@ class RelativeVersionNumberingValidator extends Validator {
   @override
   Future<void> validate() async {
     final hostedSource = entrypoint.cache.sources.hosted;
-    List<PackageId?> existingVersions;
+    List<PackageId> existingVersions;
     try {
       existingVersions = await hostedSource
           .bind(entrypoint.cache)
@@ -32,10 +34,9 @@ class RelativeVersionNumberingValidator extends Validator {
     } on PackageNotFoundException {
       existingVersions = [];
     }
-    existingVersions.sort((a, b) => a!.version.compareTo(b!.version));
-    final previousVersion = existingVersions.lastWhere(
-        (id) => id!.version < entrypoint.root.version,
-        orElse: () => null);
+    existingVersions.sort((a, b) => a.version.compareTo(b.version));
+    final previousVersion = existingVersions.lastWhereOrNull(
+        (id) => id.version < entrypoint.root.version);
     if (previousVersion == null) return;
 
     final previousPubspec =

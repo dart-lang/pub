@@ -56,8 +56,8 @@ class LoginCommand extends PubCommand {
 }
 
 class _UserInfo {
-  final String? name;
-  final String? email;
+  final String name;
+  final String email;
   _UserInfo(this.name, this.email);
   @override
   String toString() => ['<$email>', if (name != null) name].join(' ');

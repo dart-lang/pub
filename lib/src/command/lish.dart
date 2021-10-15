@@ -34,7 +34,7 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  Uri get server => _server ??= _createServer();
+  late final Uri server = _createServer();
 
   Uri _createServer() {
     // An explicit argument takes precedence.
@@ -88,7 +88,7 @@ class LishCommand extends PubCommand {
 
   Future<void> _publishUsingClient(
     List<int> packageBytes,
-    http.BaseClient client,
+    http.Client client,
   ) async {
     Uri? cloudStorageUrl;
 
@@ -165,7 +165,7 @@ class LishCommand extends PubCommand {
       } else {
         // For third party servers using bearer authentication client
         await withAuthenticatedClient(cache, server, (client) {
-          return _publishUsingClient(packageBytes, client as http.BaseClient);
+          return _publishUsingClient(packageBytes, client);
         });
       }
     } on PubHttpException catch (error) {

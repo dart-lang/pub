@@ -55,7 +55,7 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String get directory => argResults['directory'] ?? _pubTopLevel!.directory;
+  String get directory => argResults['directory'] ?? _pubTopLevel.directory;
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -121,9 +121,8 @@ abstract class PubCommand extends Command<int> {
     return command;
   }
 
-  PubTopLevel? get _pubTopLevel {
-    return _pubEmbeddableCommand ?? (runner as PubCommandRunner?);
-  }
+  PubTopLevel get _pubTopLevel =>
+      _pubEmbeddableCommand ?? runner as PubCommandRunner;
 
   PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
 
@@ -170,16 +169,16 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel!.argResults);
-    if (_pubTopLevel!.trace) {
+    computeCommand(_pubTopLevel.argResults);
+    if (_pubTopLevel.trace) {
       log.recordTranscript();
     }
-    log.verbosity = _pubTopLevel!.verbosity;
+    log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
 
     try {
       await captureErrors<void>(() async => runProtected(),
-          captureStackChains: _pubTopLevel!.captureStackChains);
+          captureStackChains: _pubTopLevel.captureStackChains);
       if (_exitCodeOverride != null) {
         return _exitCodeOverride!;
       }
@@ -187,7 +186,7 @@ abstract class PubCommand extends Command<int> {
     } catch (error, chain) {
       log.exception(error, chain);
 
-      if (_pubTopLevel!.trace) {
+      if (_pubTopLevel.trace) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
         // Escape the argument for users to copy-paste in bash.

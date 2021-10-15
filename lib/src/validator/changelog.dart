@@ -32,7 +32,7 @@ class ChangelogValidator extends Validator {
       }
 
       var bytes = readBinaryFile(changelog);
-      String? contents;
+      String contents;
 
       try {
         // utf8.decode doesn't allow invalid UTF-8.
@@ -41,9 +41,6 @@ class ChangelogValidator extends Validator {
         warnings.add('$changelog contains invalid UTF-8.\n'
             'This will cause it to be displayed incorrectly on '
             'the Pub site (https://pub.dev).');
-      }
-
-      if (contents == null) {
         // Failed to decode contents, so there's nothing else to check.
         return;
       }

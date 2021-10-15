@@ -24,8 +24,8 @@ class SourceRegistry {
   /// The default source, which is used when no source is specified.
   ///
   /// This defaults to [hosted].
-  Source? get defaultSource => _default;
-  Source? _default;
+  Source get defaultSource => _default;
+  late Source _default;
 
   /// The registered sources, in name order.
   List<Source> get all {
@@ -58,7 +58,7 @@ class SourceRegistry {
       throw StateError('Default source $name is not in the registry');
     }
 
-    _default = _sources[name];
+    _default = _sources[name]!;
   }
 
   /// Registers a new source.

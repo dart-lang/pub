@@ -442,10 +442,10 @@ class Pubspec extends PubspecBase {
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
         descriptionNode = nameNode;
-        sourceName = _sources!.defaultSource!.name;
+        sourceName = _sources!.defaultSource.name;
       } else if (spec is String) {
         descriptionNode = nameNode;
-        sourceName = _sources!.defaultSource!.name;
+        sourceName = _sources!.defaultSource.name;
         versionConstraint = _parseVersionConstraint(specNode);
       } else if (spec is Map) {
         // Don't write to the immutable YAML map.

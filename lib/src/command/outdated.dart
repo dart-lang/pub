@@ -290,21 +290,19 @@ class OutdatedCommand extends PubCommand {
     return argResults['mode'] != 'null-safety';
   }
 
-  bool? _prereleases;
-
-  bool get prereleases => _prereleases ??= () {
-        // First check if 'prereleases' was passed as an argument.
-        // If that was not the case, check for use of the legacy spelling
-        // 'pre-releases'.
-        // Otherwise fall back to the default implied by the mode.
-        if (argResults.wasParsed('prereleases')) {
-          return argResults['prereleases'];
-        }
-        if (argResults.wasParsed('pre-releases')) {
-          return argResults['pre-releases'];
-        }
-        return argResults['mode'] == 'null-safety';
-      }();
+  late final bool prereleases = () {
+    // First check if 'prereleases' was passed as an argument.
+    // If that was not the case, check for use of the legacy spelling
+    // 'pre-releases'.
+    // Otherwise fall back to the default implied by the mode.
+    if (argResults.wasParsed('prereleases')) {
+      return argResults['prereleases'];
+    }
+    if (argResults.wasParsed('pre-releases')) {
+      return argResults['pre-releases'];
+    }
+    return argResults['mode'] == 'null-safety';
+  }();
 
   /// Get the latest version of [package].
   ///

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import '../package_name.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -43,7 +44,7 @@ class ListPackageDirsCommand extends PubCommand {
 
     // Include the local paths to all locked packages.
     var packages = mapMap(entrypoint.lockFile.packages,
-        value: (dynamic name, dynamic package) {
+        value: (String name, PackageId package) {
       var source = entrypoint.cache.source(package.source);
       var packageDir = source.getDirectory(package);
       // Normalize paths and make them absolute for backwards compatibility
