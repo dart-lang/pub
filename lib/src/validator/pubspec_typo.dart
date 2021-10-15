@@ -70,4 +70,5 @@ const _validPubspecKeys = [
   'false_secrets',
   'flutter',
   'screenshots',
+  'platforms',
 ];

@@ -294,20 +294,6 @@ Future<PubProcess> pubRun(
   return pub;
 }
 
-/// Schedules starting the "pub run --v2" process and validates the
-/// expected startup output.
-///
-/// Returns the `pub run` process.
-Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
-  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
-
-  // Loading sources and transformers isn't normally printed, but the pub test
-  // infrastructure runs pub in verbose mode, which enables this.
-  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
-
-  return pub;
-}
-
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
 /// are assumed to be relative to [d.sandbox].
 void renameInSandbox(String from, String to) {

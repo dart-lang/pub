@@ -26,6 +26,7 @@ import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'packages_file.dart' as packages_file;
+import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -242,6 +243,7 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
+    required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
     final suffix = root.dir == null || root.dir == '.' ? '' : ' in ${root.dir}';
@@ -302,6 +304,10 @@ class Entrypoint {
     }
 
     if (!dryRun) {
+      if (analytics != null) {
+        result.sendAnalytics(analytics);
+      }
+
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
