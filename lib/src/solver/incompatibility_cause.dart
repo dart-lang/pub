@@ -57,6 +57,7 @@ class _Cause implements IncompatibilityCause {
 /// incompatible with the current SDK.
 class SdkCause implements IncompatibilityCause {
   /// The union of all the incompatible versions' constraints on the SDK.
+  // TODO(zarah): Investigate if this can be non-nullable
   final VersionConstraint? constraint;
 
   /// The SDK with which the package was incompatible.
