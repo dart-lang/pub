@@ -49,6 +49,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String? get directory => argResults['directory'];
 
+  @override
   final PubAnalytics? analytics;
 
   PubEmbeddableCommand(this.analytics) : super() {
