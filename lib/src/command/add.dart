@@ -39,10 +39,10 @@ class AddCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
   @override
-  bool? get isOffline => argResults['offline'];
+  bool get isOffline => argResults['offline'];
 
-  bool? get isDev => argResults['dev'];
-  bool? get isDryRun => argResults['dry-run'];
+  bool get isDev => argResults['dev'];
+  bool get isDryRun => argResults['dry-run'];
   String? get gitUrl => argResults['git-url'];
   String? get gitPath => argResults['git-path'];
   String? get gitRef => argResults['git-ref'];
@@ -140,7 +140,7 @@ class AddCommand extends PubCommand {
           'does not satisfy constraint "${package.constraint}".');
     }
 
-    if (isDryRun!) {
+    if (isDryRun) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
       /// to this new dependency.
@@ -158,7 +158,7 @@ class AddCommand extends PubCommand {
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(resultPackage, packageInformation, isDev!);
+      _updatePubspec(resultPackage, packageInformation, isDev);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
@@ -179,7 +179,7 @@ class AddCommand extends PubCommand {
       }
     }
 
-    if (isOffline!) {
+    if (isOffline) {
       log.warning('Warning: Packages added when offline may not resolve to '
           'the latest compatible version available.');
     }
@@ -198,7 +198,7 @@ class AddCommand extends PubCommand {
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
 
-    if (isDev!) {
+    if (isDev) {
       /// TODO(walnut): Change the error message once pub upgrade --bump is
       /// released
       if (devDependencyNames.contains(package.name)) {

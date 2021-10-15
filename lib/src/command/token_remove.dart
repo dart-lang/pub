@@ -18,7 +18,7 @@ class TokenRemoveCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
-  bool? get isAll => argResults['all'];
+  bool get isAll => argResults['all'];
 
   TokenRemoveCommand() {
     argParser.addFlag(
@@ -30,7 +30,7 @@ class TokenRemoveCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (isAll!) {
+    if (isAll) {
       final count = tokenStore.credentials.length;
       tokenStore.deleteTokensFile();
       log.message('Removed $count secret tokens.');

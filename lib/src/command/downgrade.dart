@@ -21,7 +21,7 @@ class DowngradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
   @override
-  bool? get isOffline => argResults['offline'];
+  bool get isOffline => argResults['offline'];
 
   DowngradeCommand() {
     argParser.addFlag('offline',
@@ -69,7 +69,7 @@ class DowngradeCommand extends PubCommand {
       );
     }
 
-    if (isOffline!) {
+    if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '
           'the oldest versions of your dependencies.');
     }

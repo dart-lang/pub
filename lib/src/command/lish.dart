@@ -64,10 +64,10 @@ class LishCommand extends PubCommand {
   Uri? _server;
 
   /// Whether the publish is just a preview.
-  bool? get dryRun => argResults['dry-run'];
+  bool get dryRun => argResults['dry-run'];
 
   /// Whether the publish requires confirmation.
-  bool? get force => argResults['force'];
+  bool get force => argResults['force'];
 
   LishCommand() {
     argParser.addFlag('dry-run',
@@ -190,7 +190,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       });
     }
 
-    if (force! && dryRun!) {
+    if (force && dryRun) {
       usageException('Cannot use both --force and --dry-run.');
     }
 
@@ -217,7 +217,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
-    } else if (dryRun!) {
+    } else if (dryRun) {
       log.message('The server may enforce additional checks.');
       return;
     } else {
@@ -256,7 +256,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       return false;
     }
 
-    if (force!) return true;
+    if (force) return true;
 
     String formatWarningCount() {
       final hs = hints.length == 1 ? '' : 's';
@@ -265,7 +265,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       return '\nPackage has ${warnings.length} warning$ws$hintText.';
     }
 
-    if (dryRun!) {
+    if (dryRun) {
       log.warning(formatWarningCount());
       return warnings.isEmpty;
     }

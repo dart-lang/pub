@@ -26,9 +26,9 @@ class RemoveCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool? get isOffline => argResults['offline'];
+  bool get isOffline => argResults['offline'];
 
-  bool? get isDryRun => argResults['dry-run'];
+  bool get isDryRun => argResults['dry-run'];
 
   RemoveCommand() {
     argParser.addFlag('offline',
@@ -60,7 +60,7 @@ class RemoveCommand extends PubCommand {
 
     final packages = Set<String>.from(argResults.rest);
 
-    if (isDryRun!) {
+    if (isDryRun) {
       final rootPubspec = entrypoint.root.pubspec;
       final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
       final newRoot = Package.inMemory(newPubspec);

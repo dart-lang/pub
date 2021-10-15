@@ -35,7 +35,7 @@ class UpgradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
   @override
-  bool? get isOffline => argResults['offline'];
+  bool get isOffline => argResults['offline'];
 
   UpgradeCommand() {
     argParser.addFlag('offline',
@@ -76,14 +76,14 @@ class UpgradeCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal.
   bool get _shouldShowSpinner => stdout.hasTerminal;
 
-  bool? get _dryRun => argResults['dry-run'];
+  bool get _dryRun => argResults['dry-run'];
 
   bool get _precompile => argResults['precompile'] ?? false;
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
 
-  bool? get _upgradeMajorVersions => argResults['major-versions'];
+  bool get _upgradeMajorVersions => argResults['major-versions'];
 
   @override
   Future<void> runProtected() async {
@@ -92,7 +92,7 @@ class UpgradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
 
-    if (_upgradeNullSafety && _upgradeMajorVersions!) {
+    if (_upgradeNullSafety && _upgradeMajorVersions) {
       usageException('--major-versions and --null-safety cannot be combined');
     }
 
@@ -102,7 +102,7 @@ class UpgradeCommand extends PubCommand {
             'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --null-safety --directory example/` separately.');
       }
       await _runUpgradeNullSafety();
-    } else if (_upgradeMajorVersions!) {
+    } else if (_upgradeMajorVersions) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
             'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.');
@@ -123,7 +123,7 @@ class UpgradeCommand extends PubCommand {
     await e.acquireDependencies(
       SolveType.UPGRADE,
       unlock: argResults.rest,
-      dryRun: _dryRun!,
+      dryRun: _dryRun,
       precompile: _precompile,
       onlyReportSuccessOrFailure: onlySummary,
       analytics: analytics,
@@ -136,7 +136,7 @@ class UpgradeCommand extends PubCommand {
   ///
   /// This assumes that either `--major-versions` or `--null-safety` was passed.
   List<String> _directDependenciesToUpgrade() {
-    assert(_upgradeNullSafety || _upgradeMajorVersions!);
+    assert(_upgradeNullSafety || _upgradeMajorVersions);
 
     final directDeps = [
       ...entrypoint.root.pubspec.dependencies.keys,
@@ -151,7 +151,7 @@ class UpgradeCommand extends PubCommand {
       if (_upgradeNullSafety) {
         modeFlag = '--null-safety';
       }
-      if (_upgradeMajorVersions!) {
+      if (_upgradeMajorVersions) {
         modeFlag = '--major-versions';
       }
 
@@ -219,7 +219,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ));
     }
 
-    if (_dryRun!) {
+    if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
@@ -313,7 +313,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       changes[dep] = dep.withConstraint(constraint);
     }
 
-    if (_dryRun!) {
+    if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
@@ -419,12 +419,12 @@ You may have to:
     ArgumentError.checkNotNull(changes, 'changes');
 
     if (changes.isEmpty) {
-      final wouldBe = _dryRun! ? 'would be made to' : 'to';
+      final wouldBe = _dryRun ? 'would be made to' : 'to';
       log.message('\nNo changes $wouldBe pubspec.yaml!');
     } else {
       final s = changes.length == 1 ? '' : 's';
 
-      final changed = _dryRun! ? 'Would change' : 'Changed';
+      final changed = _dryRun ? 'Would change' : 'Changed';
       log.message('\n$changed ${changes.length} constraint$s in pubspec.yaml:');
       changes.forEach((from, to) {
         log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
@@ -433,7 +433,7 @@ You may have to:
   }
 
   void _showOfflineWarning() {
-    if (isOffline!) {
+    if (isOffline) {
       log.warning('Warning: Upgrading when offline may not update you to the '
           'latest versions of your dependencies.');
     }

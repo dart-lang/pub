@@ -38,7 +38,7 @@ class DepsCommand extends PubCommand {
   final _buffer = StringBuffer();
 
   /// Whether to include dev dependencies.
-  bool? get _includeDev => argResults['dev'];
+  bool get _includeDev => argResults['dev'];
 
   DepsCommand() {
     argParser.addOption('style',
@@ -174,7 +174,7 @@ class DepsCommand extends PubCommand {
   void _outputCompact() {
     var root = entrypoint.root;
     _outputCompactPackages('dependencies', root.dependencies.keys);
-    if (_includeDev!) {
+    if (_includeDev) {
       _outputCompactPackages('dev dependencies', root.devDependencies.keys);
     }
     _outputCompactPackages(
@@ -212,7 +212,7 @@ class DepsCommand extends PubCommand {
   void _outputList() {
     var root = entrypoint.root;
     _outputListSection('dependencies', root.dependencies.keys);
-    if (_includeDev!) {
+    if (_includeDev) {
       _outputListSection('dev dependencies', root.devDependencies.keys);
     }
     _outputListSection('dependency overrides', root.dependencyOverrides.keys);
@@ -258,7 +258,7 @@ class DepsCommand extends PubCommand {
     var packageTree = <String, Map>{};
     var immediateDependencies =
         entrypoint.root.immediateDependencies.keys.toSet();
-    if (!_includeDev!) {
+    if (!_includeDev) {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
@@ -299,7 +299,7 @@ class DepsCommand extends PubCommand {
     var root = entrypoint.root;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.keys);
-    if (_includeDev!) {
+    if (_includeDev) {
       transitive.removeAll(root.devDependencies.keys);
     }
     transitive.removeAll(root.dependencyOverrides.keys);
@@ -307,7 +307,7 @@ class DepsCommand extends PubCommand {
   }
 
   Set<String> _getAllDependencies() {
-    if (_includeDev!) return entrypoint.packageGraph.packages.keys.toSet();
+    if (_includeDev) return entrypoint.packageGraph.packages.keys.toSet();
 
     var nonDevDependencies = entrypoint.root.dependencies.keys.toList()
       ..addAll(entrypoint.root.dependencyOverrides.keys);
@@ -335,7 +335,7 @@ class DepsCommand extends PubCommand {
   void _outputExecutables() {
     var packages = [
       entrypoint.root,
-      ...(_includeDev!
+      ...(_includeDev
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys

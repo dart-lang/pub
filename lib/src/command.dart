@@ -94,7 +94,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will only be called before the [SystemCache] is created. After that,
   /// it has no effect. This only needs to be set in leaf commands.
-  bool? get isOffline => false;
+  bool get isOffline => false;
 
   @override
   String? get usageFooter {
