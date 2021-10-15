@@ -73,7 +73,7 @@ class SolveReport {
 
     var suffix = '';
     if (_root.dir != null) {
-      final dir = path.normalize(_root.dir!);
+      final dir = path.normalize(_root.dir);
       if (dir != '.') {
         suffix = ' in $dir';
       }

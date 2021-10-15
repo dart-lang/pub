@@ -209,7 +209,7 @@ the \$PUB_HOSTED_URL environment variable.''',
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir!).toBytes();
+        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
 
     // Validate the package.
     var isValid =

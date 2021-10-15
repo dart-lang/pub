@@ -349,7 +349,7 @@ class AddCommand extends PubCommand {
           p.url.relative(
               p.url.join(Uri.file(p.absolute(p.current)).toString(),
                   parsed.toString()),
-              from: p.toUri(p.absolute(entrypoint.root.dir!)).toString());
+              from: p.toUri(p.absolute(entrypoint.root.dir)).toString());
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.

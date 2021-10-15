@@ -162,7 +162,7 @@ class GlobalPackages {
     }
 
     // Write a lockfile that points to the local package.
-    var fullPath = canonicalize(entrypoint.root.dir!);
+    var fullPath = canonicalize(entrypoint.root.dir);
     var id = cache.path!.source.idFor(name, entrypoint.root.version, fullPath);
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that

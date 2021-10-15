@@ -79,7 +79,7 @@ class Entrypoint {
   final SystemCache cache;
 
   /// Whether this entrypoint exists within the package cache.
-  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir!);
+  bool get isCached => root.dir != null && p.isWithin(cache.rootDir, root.dir);
 
   /// Whether this is an entrypoint for a globally-activated package.
   final bool isGlobal;
@@ -205,7 +205,7 @@ class Entrypoint {
     writeTextFile(
         packagesFile,
         lockFile.packagesFile(cache,
-            entrypoint: root.name, relativeFrom: root.dir!));
+            entrypoint: root.name, relativeFrom: root.dir));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
@@ -213,7 +213,7 @@ class Entrypoint {
             entrypoint: root.name,
             entrypointSdkConstraint:
                 root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: root.dir!));
+            relativeFrom: root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -425,7 +425,7 @@ class Entrypoint {
   /// The absolute path of [executable] resolved relative to [this].
   String resolveExecutable(Executable executable) {
     return p.join(
-      packageGraph.packages[executable.package]!.dir!,
+      packageGraph.packages[executable.package]!.dir,
       executable.relativePath,
     );
   }
@@ -719,7 +719,7 @@ class Entrypoint {
       }
 
       // Get the dirname of the .packages path, since it's pointing to lib/.
-      final packagePath = p.dirname(p.join(root.dir!, p.fromUri(packageUri)));
+      final packagePath = p.dirname(p.join(root.dir, p.fromUri(packageUri)));
       packagePathsMapping[package] = packagePath;
     }
 
@@ -846,7 +846,7 @@ class Entrypoint {
     final windowsLineEndings = fileExists(lockFilePath) &&
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
-    final serialized = lockFile.serialize(root.dir!);
+    final serialized = lockFile.serialize(root.dir);
     writeTextFile(lockFilePath,
         windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
   }

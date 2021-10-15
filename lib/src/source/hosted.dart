@@ -590,7 +590,7 @@ class BoundHostedSource extends CachedSource {
           packages.map((package) async {
             var id = source.idFor(package.name, package.version, url: url);
             try {
-              await _download(id, package.dir!);
+              await _download(id, package.dir);
               return RepairResult(id, success: true);
             } catch (error, stackTrace) {
               var message = 'Failed to repair ${log.bold(package.name)} '
@@ -599,7 +599,7 @@ class BoundHostedSource extends CachedSource {
               log.error('$message. Error:\n$error');
               log.fine(stackTrace);
 
-              tryDeleteEntry(package.dir!);
+              tryDeleteEntry(package.dir);
               return RepairResult(id, success: false);
             }
           }),

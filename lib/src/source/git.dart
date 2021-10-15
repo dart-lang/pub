@@ -411,7 +411,7 @@ class BoundGitSource extends CachedSource {
     for (var package in packages) {
       // If we've already failed to repair another package in this repository,
       // ignore it.
-      if (!dirExists(package.dir!)) continue;
+      if (!dirExists(package.dir)) continue;
 
       var id = PackageId(package.name, source, package.version, null);
 

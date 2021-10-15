@@ -35,12 +35,23 @@ class Package {
     return a.version.compareTo(b.version);
   }
 
+  final String? _dir;
+
   /// The path to the directory containing the package.
-  final String? dir;
+  ///
+  /// It is an error to access this on an in-memory package.
+  String get dir {
+    if (isInMemory) {
+      throw UnsupportedError(
+          'Package directory cannot be used for an in-memory package');
+    }
+
+    return _dir!;
+  }
 
   /// An in-memory package can be created for doing a resolution without having
   /// a package on disk. Paths should not be resolved for these.
-  bool get _isInMemory => dir == null;
+  bool get isInMemory => _dir == null;
 
   /// The name of the package.
   String get name => pubspec.name;
@@ -96,7 +107,7 @@ class Package {
         .where((entry) => entry.contains(_readmeRegexp));
     if (readmes.isEmpty) return null;
 
-    return p.join(dir!, readmes.reduce((readme1, readme2) {
+    return p.join(dir, readmes.reduce((readme1, readme2) {
       var extensions1 = '.'.allMatches(readme1).length;
       var extensions2 = '.'.allMatches(readme2).length;
       var comparison = extensions1.compareTo(extensions2);
@@ -116,7 +127,7 @@ class Package {
   bool get inGitRepo => _inGitRepoCache ??= computeInGitRepoCache();
 
   bool computeInGitRepoCache() {
-    if (dir == null || !git.isInstalled) {
+    if (isInMemory || !git.isInstalled) {
       return false;
     } else {
       // If the entire package directory is ignored, don't consider it part of a
@@ -136,16 +147,16 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String? name, String this.dir, SourceRegistry sources)
-      : pubspec = Pubspec.load(dir, sources, expectedName: name);
+  Package.load(String? name, String this._dir, SourceRegistry sources)
+      : pubspec = Pubspec.load(_dir, sources, expectedName: name);
 
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec) : dir = null;
+  Package.inMemory(this.pubspec) : _dir = null;
 
   /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, this.dir);
+  Package(this.pubspec, String this._dir);
 
   /// Given a relative path within this package, returns its absolute path.
   ///
@@ -159,17 +170,17 @@ class Package {
       String? part5,
       String? part6,
       String? part7]) {
-    if (_isInMemory) {
+    if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }
-    return p.join(dir!, part1, part2, part3, part4, part5, part6, part7);
+    return p.join(dir, part1, part2, part3, part4, part5, part6, part7);
   }
 
   /// Given an absolute path within this package (such as that returned by
   /// [path] or [listFiles]), returns it relative to the package root.
   String relative(String path) {
-    if (dir == null) {
+    if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }
@@ -218,7 +229,7 @@ class Package {
     if (dir == null) return [];
 
     var packageDir = dir;
-    var root = git.repoRoot(packageDir!) ?? packageDir;
+    var root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p
         .toUri(p.normalize(
             p.relative(p.join(packageDir, beneath ?? '.'), from: root)))

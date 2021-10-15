@@ -22,7 +22,7 @@ class LanguageVersionValidator extends Validator {
       AnalysisContextManager();
 
   LanguageVersionValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.normalize(p.absolute(entrypoint.root.dir!));
+    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
     analysisContextManager.createContextsForDirectory(packagePath);
   }
 

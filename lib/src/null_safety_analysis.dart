@@ -145,7 +145,7 @@ class NullSafetyAnalysis {
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
         Pubspec pubspec;
         BoundSource? boundSource;
-        String? packageDir;
+        String packageDir;
         if (dependencyId.source == null) {
           pubspec = rootPackage.pubspec;
           packageDir = rootPackage.dir;
@@ -173,7 +173,7 @@ class NullSafetyAnalysis {
         }
 
         final libDir =
-            path.absolute(path.normalize(path.join(packageDir!, 'lib')));
+            path.absolute(path.normalize(path.join(packageDir, 'lib')));
         if (dirExists(libDir)) {
           final analysisSession = ContextBuilder()
               .createContext(

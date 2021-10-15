@@ -57,7 +57,7 @@ abstract class PubCommand extends Command<int> {
 
   String? get directory => argResults['directory'] ?? _pubTopLevel!.directory;
 
-  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline!);
+  SystemCache get cache => _cache ??= SystemCache(isOffline: isOffline);
 
   SystemCache? _cache;
 

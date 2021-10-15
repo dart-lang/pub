@@ -25,7 +25,7 @@ class DirectoryValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      for (var dir in listDir(entrypoint.root.dir!)) {
+      for (var dir in listDir(entrypoint.root.dir)) {
         if (!dirExists(dir)) continue;
 
         dir = path.basename(dir);

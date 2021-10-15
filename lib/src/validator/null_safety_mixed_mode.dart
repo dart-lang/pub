@@ -28,7 +28,7 @@ class NullSafetyMixedModeValidator extends Validator {
             entrypoint.root.name,
             entrypoint.cache.sources.path,
             entrypoint.root.version,
-            {'relative': false, 'path': p.absolute(entrypoint.root.dir!)}));
+            {'relative': false, 'path': p.absolute(entrypoint.root.dir)}));
 
     if (analysisResult.compliance == NullSafetyCompliance.mixed) {
       warnings.add('''
