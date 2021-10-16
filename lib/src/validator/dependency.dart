@@ -223,6 +223,7 @@ class DependencyValidator extends Validator {
       constraint = '"${dep.constraint} '
           '<${(dep.constraint as VersionRange).min!.nextBreaking}"';
     }
+    // TODO: Handle the case where `dep.constraint.min` is null.
 
     warnings
         .add('Your dependency on "${dep.name}" should have an upper bound. For '

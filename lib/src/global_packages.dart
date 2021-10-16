@@ -21,6 +21,7 @@ import 'package_name.dart';
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
+import 'sdk/dart.dart';
 import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
@@ -383,7 +384,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         dataError('${log.bold(name)} ${entrypoint.root.version} requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows(sdk.version!)) return;
+        if (constraint.allows((sdk as DartSdk).version)) return;
         dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
             'support Dart ${sdk.version}.');
       } else {
@@ -399,7 +400,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         dataError('${log.bold(name)} as globally activated requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows(sdk.version!)) return;
+        if (constraint.allows((sdk as DartSdk).version)) return;
         dataError("${log.bold(name)} as globally activated doesn't "
             'support Dart ${sdk.version}, try: $topLevelProgram pub global activate $name');
       } else {
