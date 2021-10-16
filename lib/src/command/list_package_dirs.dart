@@ -2,15 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../command_runner.dart';
-import '../exit_codes.dart' as exit_codes;
 import '../io.dart';
 import '../log.dart' as log;
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `list-package-dirs` pub command.
@@ -45,7 +43,8 @@ class ListPackageDirsCommand extends PubCommand {
     var output = {};
 
     // Include the local paths to all locked packages.
-    var packages = mapMap(entrypoint.lockFile.packages, value: (name, package) {
+    var packages = mapMap(entrypoint.lockFile.packages,
+        value: (String name, PackageId package) {
       var source = entrypoint.cache.source(package.source);
       var packageDir = source.getDirectory(package);
       // Normalize paths and make them absolute for backwards compatibility
@@ -67,6 +66,5 @@ class ListPackageDirsCommand extends PubCommand {
     ];
 
     log.json.message(output);
-    return exit_codes.SUCCESS;
   }
 }

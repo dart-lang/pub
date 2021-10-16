@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -60,8 +58,9 @@ class DowngradeCommand extends PubCommand {
       dryRun: dryRun,
       analytics: analytics,
     );
-    if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(
         SolveType.GET,
         unlock: argResults.rest,
         dryRun: dryRun,

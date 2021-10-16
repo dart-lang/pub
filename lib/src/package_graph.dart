@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:collection/collection.dart' hide mapMap;
 
 import 'entrypoint.dart';
@@ -32,7 +30,7 @@ class PackageGraph {
   final Map<String, Package> packages;
 
   /// A map of transitive dependencies for each package.
-  Map<String, Set<Package>> _transitiveDependencies;
+  Map<String, Set<Package>>? _transitiveDependencies;
 
   PackageGraph(this.entrypoint, this.lockFile, this.packages);
 
@@ -47,7 +45,7 @@ class PackageGraph {
         value: (id) {
           if (id.name == entrypoint.root.name) return entrypoint.root;
 
-          return Package(result.pubspecs[id.name],
+          return Package(result.pubspecs[id.name]!,
               entrypoint.cache.source(id.source).getDirectory(id));
         });
 
@@ -69,13 +67,12 @@ class PackageGraph {
       _transitiveDependencies =
           mapMap<String, Set<String>, String, Set<Package>>(closure,
               value: (depender, names) {
-        var set = names.map((name) => packages[name]).toSet();
-        set.add(packages[depender]);
+        var set = names.map((name) => packages[name]!).toSet();
+        set.add(packages[depender]!);
         return set;
       });
     }
-
-    return _transitiveDependencies[package];
+    return _transitiveDependencies![package]!;
   }
 
   bool _isPackageCached(String package) {
@@ -86,7 +83,7 @@ class PackageGraph {
     if (package == entrypoint.root.name) {
       return entrypoint.isCached;
     } else {
-      var id = lockFile.packages[package];
+      var id = lockFile.packages[package]!;
       return entrypoint.cache.source(id.source) is CachedSource;
     }
   }

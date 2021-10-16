@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -58,14 +56,13 @@ class GetCommand extends PubCommand {
       analytics: analytics,
     );
 
-    if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(
-        SolveType.GET,
-        dryRun: argResults['dry-run'],
-        precompile: argResults['precompile'],
-        onlyReportSuccessOrFailure: true,
-        analytics: analytics,
-      );
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(SolveType.GET,
+          dryRun: argResults['dry-run'],
+          precompile: argResults['precompile'],
+          onlyReportSuccessOrFailure: true,
+          analytics: analytics);
     }
   }
 }

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -54,13 +52,13 @@ class GlobalActivateCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     // Default to `null`, which means all executables.
-    List<String> executables;
+    List<String>? executables;
     if (argResults.wasParsed('executable')) {
       if (argResults.wasParsed('no-executables')) {
         usageException('Cannot pass both --no-executables and --executable.');
       }
 
-      executables = argResults['executable'] as List<String>;
+      executables = argResults['executable'];
     } else if (argResults['no-executables']) {
       // An empty list means no executables.
       executables = [];
@@ -78,8 +76,8 @@ class GlobalActivateCommand extends PubCommand {
       features[feature] = FeatureDependency.unused;
     }
 
-    var overwrite = argResults['overwrite'];
-    Uri hostedUrl;
+    final overwrite = argResults['overwrite'] as bool;
+    Uri? hostedUrl;
     if (argResults.wasParsed('hosted-url')) {
       try {
         hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
@@ -90,7 +88,7 @@ class GlobalActivateCommand extends PubCommand {
 
     Iterable<String> args = argResults.rest;
 
-    dynamic readArg([String error]) {
+    String readArg([String error = '']) {
       if (args.isEmpty) usageException(error);
       var arg = args.first;
       args = args.skip(1);
