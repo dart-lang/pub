@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -31,18 +29,25 @@ class GitignoreValidator extends Validator {
         '--exclude-standard',
         '--recurse-submodules'
       ], workingDir: entrypoint.root.dir);
+      final root = git.repoRoot(entrypoint.root.dir) ?? entrypoint.root.dir;
+      var beneath = p.posix.joinAll(
+          p.split(p.normalize(p.relative(entrypoint.root.dir, from: root))));
+      if (beneath == './') {
+        beneath = '';
+      }
       String resolve(String path) {
         if (Platform.isWindows) {
-          return p.joinAll([entrypoint.root.dir, ...p.posix.split(path)]);
+          return p.joinAll([root, ...p.posix.split(path)]);
         }
-        return p.join(entrypoint.root.dir, path);
+        return p.join(root, path);
       }
 
       final unignoredByGitignore = Ignore.listFiles(
+        beneath: beneath,
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
-          return contents.map((entity) => p.posix.joinAll(
-              p.split(p.relative(entity.path, from: entrypoint.root.dir))));
+          return contents.map((entity) =>
+              p.posix.joinAll(p.split(p.relative(entity.path, from: root))));
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -52,8 +57,12 @@ class GitignoreValidator extends Validator {
           return rules.isEmpty ? null : Ignore(rules);
         },
         isDir: (dir) => dirExists(resolve(dir)),
-      ).toSet();
-
+      ).map((file) {
+        final relative = p.relative(resolve(file), from: entrypoint.root.dir);
+        return Platform.isWindows
+            ? p.posix.joinAll(p.split(relative))
+            : relative;
+      }).toSet();
       final ignoredFilesCheckedIn = checkedIntoGit
           .where((file) => !unignoredByGitignore.contains(file))
           .toList();

@@ -5,6 +5,8 @@
 /// Helper functionality for invoking Git.
 import 'dart:async';
 
+import 'package:path/path.dart' as p;
+
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -102,6 +104,22 @@ String? get command {
 }
 
 String? _commandCache;
+
+/// Returns the root of the git repo [dir] belongs to. Returns `null` if not
+/// in a git repo or git is not installed.
+String? repoRoot(String dir) {
+  if (isInstalled) {
+    try {
+      return p.normalize(
+        runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first,
+      );
+    } on GitException {
+      // Not in a git folder.
+      return null;
+    }
+  }
+  return null;
+}
 
 /// Checks whether [command] is the Git command for this computer.
 bool _tryGitCommand(String command) {

@@ -138,6 +138,7 @@ Future<void> pubCommand(
   int exitCode,
   Map<String, String> environment,
   String workingDirectory,
+  includeParentEnvironment = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -161,7 +162,8 @@ Future<void> pubCommand(
       silent: silent,
       exitCode: exitCode,
       environment: environment,
-      workingDirectory: workingDirectory);
+      workingDirectory: workingDirectory,
+      includeParentEnvironment: includeParentEnvironment);
 }
 
 Future<void> pubAdd({
@@ -192,6 +194,7 @@ Future<void> pubGet({
   int exitCode,
   Map<String, String> environment,
   String workingDirectory,
+  bool includeParentEnvironment = true,
 }) async =>
     await pubCommand(
       RunCommand.get,
@@ -202,6 +205,7 @@ Future<void> pubGet({
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
+      includeParentEnvironment: includeParentEnvironment,
     );
 
 Future<void> pubUpgrade(
@@ -290,20 +294,6 @@ Future<PubProcess> pubRun(
   return pub;
 }
 
-/// Schedules starting the "pub run --v2" process and validates the
-/// expected startup output.
-///
-/// Returns the `pub run` process.
-Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
-  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
-
-  // Loading sources and transformers isn't normally printed, but the pub test
-  // infrastructure runs pub in verbose mode, which enables this.
-  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
-
-  return pub;
-}
-
 /// Schedules renaming (moving) the directory at [from] to [to], both of which
 /// are assumed to be relative to [d.sandbox].
 void renameInSandbox(String from, String to) {
@@ -330,23 +320,27 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub({
-  List<String> args,
-  output,
-  error,
-  outputJson,
-  silent,
-  int exitCode,
-  String workingDirectory,
-  Map<String, String> environment,
-  List<String> input,
-}) async {
+Future<void> runPub(
+    {List<String> args,
+    output,
+    error,
+    outputJson,
+    silent,
+    int exitCode,
+    String workingDirectory,
+    Map<String, String> environment,
+    List<String> input,
+    includeParentEnvironment = true}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
-      args: args, workingDirectory: workingDirectory, environment: environment);
+    args: args,
+    workingDirectory: workingDirectory,
+    environment: environment,
+    includeParentEnvironment: includeParentEnvironment,
+  );
 
   if (input != null) {
     input.forEach(pub.stdin.writeln);
@@ -379,14 +373,19 @@ Future<void> runPub({
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(PackageServer server,
-    {List<String> args}) async {
+Future<PubProcess> startPublish(
+  PackageServer server, {
+  List<String> args,
+  String authMethod = 'oauth2',
+  Map<String, String> environment,
+}) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
-  return await startPub(
-      args: args,
-      tokenEndpoint: tokenEndpoint,
-      environment: {'PUB_HOSTED_URL': server.url});
+  return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
+    'PUB_HOSTED_URL': server.url,
+    '_PUB_TEST_AUTH_METHOD': authMethod,
+    if (environment != null) ...environment,
+  });
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
@@ -460,20 +459,11 @@ Future<PubProcess> startPub(
     String tokenEndpoint,
     String workingDirectory,
     Map<String, String> environment,
-    bool verbose = true}) async {
+    bool verbose = true,
+    includeParentEnvironment = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
-
-  // Find a Dart executable we can use to spawn. Use the same one that was
-  // used to run this script itself.
-  var dartBin = Platform.executable;
-
-  // If the executable looks like a path, get its full path. That way we
-  // can still find it when we spawn it with a different working directory.
-  if (dartBin.contains(Platform.pathSeparator)) {
-    dartBin = p.absolute(dartBin);
-  }
 
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
@@ -492,11 +482,20 @@ Future<PubProcess> startPub(
     ..addAll([pubPath, if (verbose) '--verbose'])
     ..addAll(args);
 
-  return await PubProcess.start(dartBin, dartArgs,
-      environment: getPubTestEnvironment(tokenEndpoint)
-        ..addAll(environment ?? {}),
+  final mergedEnvironment = getPubTestEnvironment(tokenEndpoint);
+  for (final e in (environment ?? {}).entries) {
+    if (e.value == null) {
+      mergedEnvironment.remove(e.key);
+    } else {
+      mergedEnvironment[e.key] = e.value;
+    }
+  }
+
+  return await PubProcess.start(Platform.resolvedExecutable, dartArgs,
+      environment: mergedEnvironment,
       workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-      description: args.isEmpty ? 'pub' : 'pub ${args.first}');
+      description: args.isEmpty ? 'pub' : 'pub ${args.first}',
+      includeParentEnvironment: includeParentEnvironment);
 }
 
 /// A subclass of [TestProcess] that parses pub's verbose logging output and

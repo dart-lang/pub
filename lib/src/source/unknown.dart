@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -44,12 +42,12 @@ class UnknownSource extends Source {
   int hashDescription(description) => description.hashCode;
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) =>
+  PackageRef parseRef(String name, description, {String? containingPath}) =>
       PackageRef(name, this, description);
 
   @override
   PackageId parseId(String name, Version version, description,
-          {String containingPath}) =>
+          {String? containingPath}) =>
       PackageId(name, this, version, description);
 }
 
@@ -63,7 +61,7 @@ class _BoundUnknownSource extends BoundSource {
   _BoundUnknownSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge) =>
       throw UnsupportedError(
           "Cannot get package versions from unknown source '${source.name}'.");
 
@@ -73,7 +71,7 @@ class _BoundUnknownSource extends BoundSource {
 
   /// Returns the directory where this package can be found locally.
   @override
-  String getDirectory(PackageId id, {String relativeFrom}) =>
+  String getDirectory(PackageId id, {String? relativeFrom}) =>
       throw UnsupportedError(
           "Cannot find a package from an unknown source '${source.name}'.");
 }

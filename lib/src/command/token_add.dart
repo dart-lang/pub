@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:async';
 import 'dart:io';
 
@@ -26,7 +24,7 @@ class TokenAddCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
-  String get envVar => argResults['env-var'];
+  String? get envVar => argResults['env-var'];
 
   TokenAddCommand() {
     argParser.addOption('env-var',
@@ -54,7 +52,7 @@ class TokenAddCommand extends PubCommand {
       if (envVar == null) {
         await _addTokenFromStdin(hostedUrl);
       } else {
-        await _addEnvVarToken(hostedUrl);
+        await _addEnvVarToken(hostedUrl, envVar!);
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
@@ -81,7 +79,7 @@ class TokenAddCommand extends PubCommand {
     );
   }
 
-  Future<void> _addEnvVarToken(Uri hostedUrl) async {
+  Future<void> _addEnvVarToken(Uri hostedUrl, String envVar) async {
     if (envVar.isEmpty) {
       usageException('Cannot use the empty string as --env-var');
     }

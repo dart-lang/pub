@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -35,7 +33,7 @@ class SdkSource extends Source {
 
   /// Parses an SDK dependency.
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(String name, description, {String? containingPath}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
@@ -45,7 +43,7 @@ class SdkSource extends Source {
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
@@ -72,7 +70,8 @@ class BoundSdkSource extends BoundSource {
   BoundSdkSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     var pubspec = _loadPubspec(ref);
     var id = PackageId(ref.name, source, pubspec.version, ref.description);
     memoizePubspec(id, pubspec);
@@ -95,8 +94,8 @@ class BoundSdkSource extends BoundSource {
   /// Throws a [PackageNotFoundException] if [package]'s SDK is unavailable or
   /// doesn't contain the package.
   String _verifiedPackagePath(PackageName package) {
-    var identifier = package.description as String;
-    var sdk = sdks[identifier];
+    var identifier = package.description as String?;
+    var sdk = sdks[identifier!];
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$identifier"');
     } else if (!sdk.isAvailable) {
@@ -112,7 +111,7 @@ class BoundSdkSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, {String relativeFrom}) {
+  String getDirectory(PackageId id, {String? relativeFrom}) {
     try {
       return _verifiedPackagePath(id);
     } on PackageNotFoundException catch (error) {
