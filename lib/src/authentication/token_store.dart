@@ -2,12 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '../exceptions.dart';
@@ -20,7 +17,7 @@ class TokenStore {
   TokenStore(this.configDir);
 
   /// Cache directory.
-  final String configDir;
+  final String? configDir;
 
   /// List of saved authentication tokens.
   ///
@@ -93,8 +90,7 @@ class TokenStore {
     return result;
   }
 
-  @alwaysThrows
-  void missingConfigDir() {
+  Never missingConfigDir() {
     final variable = Platform.isWindows ? '%APPDATA%' : r'$HOME';
     throw DataException('No config dir found. Check that $variable is set');
   }
@@ -147,8 +143,8 @@ class TokenStore {
 
   /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
   /// matching credential is found.
-  Credential findCredential(Uri hostedUrl) {
-    Credential matchedCredential;
+  Credential? findCredential(Uri hostedUrl) {
+    Credential? matchedCredential;
     for (final credential in credentials) {
       if (credential.url == hostedUrl && credential.isValid()) {
         if (matchedCredential == null) {
@@ -180,12 +176,16 @@ class TokenStore {
     } else if (!fileExists(tokensFile)) {
       log.message('No credentials file found at "$tokensFile"');
     } else {
-      deleteEntry(_tokensFile);
+      deleteEntry(tokensFile);
       log.message('pub-tokens.json is deleted.');
     }
   }
 
   /// Full path to the "pub-tokens.json" file.
-  String get _tokensFile =>
-      configDir == null ? null : path.join(configDir, 'pub-tokens.json');
+  ///
+  /// `null` if no config directory could be found.
+  String? get _tokensFile {
+    var dir = configDir;
+    return dir == null ? null : path.join(dir, 'pub-tokens.json');
+  }
 }

@@ -2,11 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
@@ -64,19 +63,21 @@ final _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 ///
 /// This should always be the same as the credentials file stored in the system
 /// cache.
-Credentials _credentials;
+Credentials? _credentials;
 
 /// Delete the cached credentials, if they exist.
 void _clearCredentials(SystemCache cache) {
   _credentials = null;
   var credentialsFile = _credentialsFile(cache);
-  if (entryExists(credentialsFile)) deleteEntry(credentialsFile);
+  if (credentialsFile != null && entryExists(credentialsFile)) {
+    deleteEntry(credentialsFile);
+  }
 }
 
 /// Try to delete the cached credentials.
 void logout(SystemCache cache) {
   var credentialsFile = _credentialsFile(cache);
-  if (entryExists(_credentialsFile(cache))) {
+  if (credentialsFile != null && entryExists(credentialsFile)) {
     log.message('Logging out of pub.dartlang.org.');
     log.message('Deleting $credentialsFile');
     _clearCredentials(cache);
@@ -151,14 +152,14 @@ Future<Client> _getClient(SystemCache cache) async {
 ///
 /// If the credentials can't be loaded for any reason, the returned [Future]
 /// completes to `null`.
-Credentials loadCredentials(SystemCache cache) {
+Credentials? loadCredentials(SystemCache cache) {
   log.fine('Loading OAuth2 credentials.');
 
   try {
     if (_credentials != null) return _credentials;
 
     var path = _credentialsFile(cache);
-    if (!fileExists(path)) return null;
+    if (path == null || !fileExists(path)) return null;
 
     var credentials = Credentials.fromJson(readTextFile(path));
     if (credentials.isExpired && !credentials.canRefresh) {
@@ -181,8 +182,10 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
   var credentialsPath = _credentialsFile(cache);
-  ensureDir(path.dirname(credentialsPath));
-  writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+  if (credentialsPath != null) {
+    ensureDir(path.dirname(credentialsPath));
+    writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+  }
 }
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
@@ -193,15 +196,16 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 /// To provide backwards compatibility we use the legacy file if only it exists.
 ///
 /// Returns `null` if there is no good place for the file.
-String _credentialsFile(SystemCache cache) {
+String? _credentialsFile(SystemCache cache) {
   final configDir = dartConfigDir;
 
   final newCredentialsFile =
       configDir == null ? null : path.join(configDir, 'pub-credentials.json');
-  return [
+  var file = [
     if (newCredentialsFile != null) newCredentialsFile,
     _legacyCredentialsFile(cache)
-  ].firstWhere(fileExists, orElse: () => newCredentialsFile);
+  ].firstWhereOrNull(fileExists);
+  return file ?? newCredentialsFile;
 }
 
 String _legacyCredentialsFile(SystemCache cache) {
@@ -230,7 +234,7 @@ Future<Client> _authorize() async {
     }
 
     log.message('Authorization received, processing...');
-    var queryString = request.url.query ?? '';
+    var queryString = request.url.query;
     // Closing the server here is safe, since it will wait until the response
     // is sent to actually shut down.
     server.close();

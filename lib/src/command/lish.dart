@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -36,15 +34,13 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  Uri get server {
-    if (_server != null) {
-      return _server;
-    }
+  late final Uri server = _createServer();
 
+  Uri _createServer() {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return _server = validateAndNormalizeHostedUrl(argResults['server']);
+        return validateAndNormalizeHostedUrl(argResults['server']);
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }
@@ -54,18 +50,15 @@ class LishCommand extends PubCommand {
     final publishTo = entrypoint.root.pubspec.publishTo;
     if (publishTo != null) {
       try {
-        return _server = validateAndNormalizeHostedUrl(publishTo);
+        return validateAndNormalizeHostedUrl(publishTo);
       } on FormatException catch (e) {
         throw DataException('Invalid publish_to: $e');
       }
     }
 
     // Use the default server if nothing else is specified
-    return _server = cache.sources.hosted.defaultUrl;
+    return cache.sources.hosted.defaultUrl;
   }
-
-  /// Cache value for [server].
-  Uri _server;
 
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
@@ -92,9 +85,9 @@ class LishCommand extends PubCommand {
 
   Future<void> _publishUsingClient(
     List<int> packageBytes,
-    http.BaseClient client,
+    http.Client client,
   ) async {
-    Uri cloudStorageUrl;
+    Uri? cloudStorageUrl;
 
     try {
       await log.progress('Uploading', () async {
@@ -107,7 +100,7 @@ class LishCommand extends PubCommand {
         cloudStorageUrl = Uri.parse(url);
         // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
         // should report that error and exit.
-        var request = http.MultipartRequest('POST', cloudStorageUrl);
+        var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
         var fields = _expectField(parameters, 'fields', response);
         if (fields is! Map) invalidServerResponse(response);
@@ -128,7 +121,7 @@ class LishCommand extends PubCommand {
             await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
     } on PubHttpException catch (error) {
-      var url = error.response.request.url;
+      var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
         // the error. Try to parse that out once we have an easily-accessible
@@ -173,7 +166,7 @@ class LishCommand extends PubCommand {
         });
       }
     } on PubHttpException catch (error) {
-      var url = error.response.request.url;
+      var url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {

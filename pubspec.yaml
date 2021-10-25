@@ -6,7 +6,7 @@ environment:
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
-  analyzer: ^1.5.0
+  analyzer: ^2.7.0
   args: ^2.1.0
   async: ^2.6.1
   cli_util: ^0.3.5
@@ -20,10 +20,11 @@ dependencies:
   path: ^1.8.0
   pedantic: ^1.11.0
   pool: ^1.5.0
-  pub_semver: ^2.0.0
+  pub_semver: ^2.1.0
   shelf: ^1.1.1
   source_span: ^1.8.1
   stack_trace: ^1.10.0
+  usage: ^4.0.2
   yaml: ^3.1.0
   yaml_edit: ^2.0.0
 

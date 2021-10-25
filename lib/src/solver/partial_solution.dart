@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import '../package_name.dart';
 import 'assignment.dart';
 import 'incompatibility.dart';
@@ -27,7 +25,7 @@ class PartialSolution {
   /// negative [Assignment]s that refer to that package.
   ///
   /// This is derived from [_assignments].
-  final _positive = <String, Term>{};
+  final _positive = <String, Term?>{};
 
   /// The union of all negative [Assignment]s for each package.
   ///
@@ -43,8 +41,8 @@ class PartialSolution {
   /// Returns all [PackageRange]s that have been assigned but are not yet
   /// satisfied.
   Iterable<PackageRange> get unsatisfied => _positive.values
-      .where((term) => !_decisions.containsKey(term.package.name))
-      .map((term) => term.package);
+      .where((term) => !_decisions.containsKey(term!.package.name))
+      .map((term) => term!.package);
 
   // The current decision level—that is, the length of [decisions].
   int get decisionLevel => _decisions.length;
@@ -70,7 +68,7 @@ class PartialSolution {
   }
 
   /// Adds an assignment of [package] as a derivation.
-  void derive(PackageName package, bool isPositive, Incompatibility cause) {
+  void derive(PackageRange package, bool isPositive, Incompatibility cause) {
     _assign(Assignment.derivation(
         package, isPositive, cause, decisionLevel, _assignments.length));
   }
@@ -119,7 +117,7 @@ class PartialSolution {
     var negativeByRef = _negative[name];
     var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
     var term =
-        oldNegative == null ? assignment : assignment.intersect(oldNegative);
+        oldNegative == null ? assignment : assignment.intersect(oldNegative)!;
 
     if (term.isPositive) {
       _negative.remove(name);
@@ -134,7 +132,7 @@ class PartialSolution {
   ///
   /// Throws a [StateError] if [term] isn't satisfied by [this].
   Assignment satisfier(Term term) {
-    Term assignedTerm;
+    Term? assignedTerm;
     for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
 
@@ -153,7 +151,7 @@ class PartialSolution {
           : assignedTerm.intersect(assignment);
 
       // As soon as we have enough assignments to satisfy [term], return them.
-      if (assignedTerm.satisfies(term)) return assignment;
+      if (assignedTerm!.satisfies(term)) return assignment;
     }
 
     throw StateError('[BUG] $term is not satisfied.');

@@ -2,11 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -44,7 +43,7 @@ class GitSource extends Source {
   }
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(String name, description, {String? containingPath}) {
     dynamic url;
     dynamic ref;
     dynamic path;
@@ -73,7 +72,7 @@ class GitSource extends Source {
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (description is! Map) {
       throw FormatException("The description must be a map with a 'url' "
           'key.');
@@ -114,7 +113,7 @@ class GitSource extends Source {
   }
 
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
-  Map<String, Object> _validatedUrl(dynamic url, String containingDir) {
+  Map<String, Object> _validatedUrl(dynamic url, String? containingDir) {
     if (url is! String) {
       throw FormatException("The 'url' field of the description must be a "
           'string.');
@@ -248,7 +247,8 @@ class BoundGitSource extends CachedSource {
   }
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     return await _pool.withResource(() async {
       await _ensureRepoCache(ref);
       var path = _repoCachePath(ref);
@@ -301,7 +301,7 @@ class BoundGitSource extends CachedSource {
 
     // Git doesn't recognize backslashes in paths, even on Windows.
     if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll('\\', '/');
-    List<String> lines;
+    late List<String> lines;
     try {
       lines = await git
           .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
@@ -361,8 +361,8 @@ class BoundGitSource extends CachedSource {
 
   /// Returns the path to the revision-specific cache of [id].
   @override
-  String getDirectoryInCache(PackageId id) =>
-      p.join(_revisionCachePath(id), id.description['path']);
+  String getDirectoryInCache(PackageId? id) =>
+      p.join(_revisionCachePath(id!), id.description['path']);
 
   @override
   List<Package> getCachedPackages() {
@@ -401,7 +401,7 @@ class BoundGitSource extends CachedSource {
             }
           });
         })
-        .where((package) => package != null)
+        .whereNotNull()
         .toList();
 
     // Note that there may be multiple packages with the same name and version
@@ -516,7 +516,7 @@ class BoundGitSource extends CachedSource {
         ['rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
       );
-      if (result?.join('\n') != 'true') {
+      if (result.join('\n') != 'true') {
         isValid = false;
       }
     } on git.GitException {

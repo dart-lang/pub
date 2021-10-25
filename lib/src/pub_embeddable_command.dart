@@ -2,8 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
+import 'package:meta/meta.dart';
+import 'package:usage/usage.dart';
 
+import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
 import 'command/build.dart';
@@ -24,6 +26,22 @@ import 'command/uploader.dart';
 import 'log.dart' as log;
 import 'log.dart';
 
+/// The information needed for the embedded pub command to send analytics.
+@sealed
+class PubAnalytics {
+  /// Name of the custom dimension of the dependency kind.
+  final String dependencyKindCustomDimensionName;
+
+  final Analytics? Function() _analyticsGetter;
+
+  Analytics? get analytics => _analyticsGetter();
+
+  PubAnalytics(
+    this._analyticsGetter, {
+    required this.dependencyKindCustomDimensionName,
+  });
+}
+
 /// Exposes the `pub` commands as a command to be embedded in another command
 /// runner such as `dart pub`.
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
@@ -37,7 +55,10 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get directory => argResults['directory'];
 
-  PubEmbeddableCommand() : super() {
+  @override
+  final PubAnalytics? analytics;
+
+  PubEmbeddableCommand(this.analytics) : super() {
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',

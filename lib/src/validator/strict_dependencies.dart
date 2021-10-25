@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:analyzer/dart/ast/ast.dart';
@@ -47,9 +45,9 @@ class StrictDependenciesValidator extends Validator {
       }
 
       for (var directive in directives) {
-        Uri url;
+        Uri? url;
         try {
-          url = Uri.parse(directive.uri.stringValue);
+          url = Uri.parse(directive.uri.stringValue!);
         } on FormatException catch (_) {
           // Ignore a format exception. [url] will be null, and we'll emit an
           // "Invalid URL" warning below.

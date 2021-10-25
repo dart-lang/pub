@@ -2,15 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../io.dart';
 import '../lock_file.dart';
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
+import '../source/hosted.dart';
 import '../source_registry.dart';
 import '../system_cache.dart';
 import 'report.dart';
@@ -43,6 +45,9 @@ class SolveResult {
   /// In other words, one more than the number of times it had to backtrack
   /// because it found an invalid solution.
   final int attemptedSolutions;
+
+  /// The wall clock time the resolution took.
+  final Duration resolutionTime;
 
   /// The [LockFile] representing the packages selected by this version
   /// resolution.
@@ -77,8 +82,6 @@ class SolveResult {
   ///
   /// This includes packages that were added or removed.
   Set<String> get changedPackages {
-    if (packages == null) return null;
-
     var changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
         .map((id) => id.name)
@@ -89,8 +92,15 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(this._sources, this._root, this._previousLockFile, this.packages,
-      this.pubspecs, this.availableVersions, this.attemptedSolutions);
+  SolveResult(
+      this._sources,
+      this._root,
+      this._previousLockFile,
+      this.packages,
+      this.pubspecs,
+      this.availableVersions,
+      this.attemptedSolutions,
+      this.resolutionTime);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
@@ -116,6 +126,46 @@ class SolveResult {
       await report.reportDiscontinued();
       report.reportOutdated();
     }
+  }
+
+  /// Send analytics about the package resolution.
+  void sendAnalytics(PubAnalytics pubAnalytics) {
+    ArgumentError.checkNotNull(pubAnalytics);
+    final analytics = pubAnalytics.analytics;
+    if (analytics == null) return;
+
+    for (final package in packages) {
+      final source = package.source;
+      // Only send analytics for packages from pub.dev.
+      if (source is HostedSource &&
+          (runningFromTest ||
+              package.description['url'] == HostedSource.pubDevUrl)) {
+        final dependencyKind = const {
+          DependencyType.dev: 'dev',
+          DependencyType.direct: 'direct',
+          DependencyType.none: 'transitive'
+        }[_root.dependencyType(package.name)]!;
+        analytics.sendEvent(
+          'pub-get',
+          package.name,
+          label: package.version.canonicalizedVersion,
+          value: 1,
+          parameters: {
+            'ni': '1', // We consider a pub-get a non-interactive event.
+            pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
+          },
+        );
+        log.fine(
+            'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
+      }
+    }
+    analytics.sendTiming(
+      'resolution',
+      resolutionTime.inMilliseconds,
+      category: 'pub-get',
+    );
+    log.fine(
+        'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
   }
 
   @override
