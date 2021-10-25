@@ -14,12 +14,14 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
 import 'package:usage/usage.dart';
 
+final _LoggingAnalytics loggingAnalytics = _LoggingAnalytics();
+
 class Runner extends CommandRunner<int> {
   ArgResults _options;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
-        ? PubAnalytics(_LoggingAnalytics(),
+        ? PubAnalytics(() => loggingAnalytics,
             dependencyKindCustomDimensionName: 'cd1')
         : null;
     addCommand(pubCommand(analytics: analytics));

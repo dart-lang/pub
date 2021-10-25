@@ -129,8 +129,10 @@ class SolveResult {
   }
 
   /// Send analytics about the package resolution.
-  void sendAnalytics(PubAnalytics analytics) {
-    ArgumentError.checkNotNull(analytics);
+  void sendAnalytics(PubAnalytics pubAnalytics) {
+    ArgumentError.checkNotNull(pubAnalytics);
+    final analytics = pubAnalytics.analytics;
+    if (analytics == null) return;
 
     for (final package in packages) {
       final source = package.source;
@@ -143,21 +145,21 @@ class SolveResult {
           DependencyType.direct: 'direct',
           DependencyType.none: 'transitive'
         }[_root.dependencyType(package.name)]!;
-        analytics.analytics.sendEvent(
+        analytics.sendEvent(
           'pub-get',
           package.name,
           label: package.version.canonicalizedVersion,
           value: 1,
           parameters: {
             'ni': '1', // We consider a pub-get a non-interactive event.
-            analytics.dependencyKindCustomDimensionName: dependencyKind,
+            pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
           },
         );
         log.fine(
             'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
       }
     }
-    analytics.analytics.sendTiming(
+    analytics.sendTiming(
       'resolution',
       resolutionTime.inMilliseconds,
       category: 'pub-get',
