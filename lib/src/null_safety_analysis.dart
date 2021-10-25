@@ -4,9 +4,9 @@
 
 import 'dart:async';
 
-import 'package:analyzer/dart/analysis/context_builder.dart';
-import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
@@ -175,14 +175,13 @@ class NullSafetyAnalysis {
         final libDir =
             path.absolute(path.normalize(path.join(packageDir, 'lib')));
         if (dirExists(libDir)) {
-          final analysisSession = ContextBuilder()
-              .createContext(
-                sdkPath: getSdkPath(),
-                contextRoot: ContextLocator().locateRoots(
-                  includedPaths: [path.normalize(packageDir)],
-                ).first,
-              )
-              .currentSession;
+          var contextCollection = AnalysisContextCollection(
+            includedPaths: [path.normalize(packageDir)],
+            resourceProvider: PhysicalResourceProvider.INSTANCE,
+            sdkPath: getSdkPath(),
+          );
+          var analysisContext = contextCollection.contexts.first;
+          var analysisSession = analysisContext.currentSession;
 
           for (final file in listDir(libDir,
               recursive: true, includeDirs: false, includeHidden: true)) {
@@ -190,7 +189,7 @@ class NullSafetyAnalysis {
               final fileUrl =
                   'package:${dependencyId.name}/${path.relative(file, from: libDir)}';
               final someUnitResult =
-                  analysisSession.getParsedUnit2(path.normalize(file));
+                  analysisSession.getParsedUnit(path.normalize(file));
               ParsedUnitResult unitResult;
               if (someUnitResult is ParsedUnitResult) {
                 unitResult = someUnitResult;
