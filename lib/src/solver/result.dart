@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -84,8 +82,6 @@ class SolveResult {
   ///
   /// This includes packages that were added or removed.
   Set<String> get changedPackages {
-    if (packages == null) return null;
-
     var changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
         .map((id) => id.name)
@@ -148,7 +144,7 @@ class SolveResult {
           DependencyType.dev: 'dev',
           DependencyType.direct: 'direct',
           DependencyType.none: 'transitive'
-        }[_root.dependencyType(package.name)];
+        }[_root.dependencyType(package.name)]!;
         analytics.sendEvent(
           'pub-get',
           package.name,

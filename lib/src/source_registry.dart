@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'source.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -27,7 +25,7 @@ class SourceRegistry {
   ///
   /// This defaults to [hosted].
   Source get defaultSource => _default;
-  Source _default;
+  late Source _default;
 
   /// The registered sources, in name order.
   List<Source> get all {
@@ -60,7 +58,7 @@ class SourceRegistry {
       throw StateError('Default source $name is not in the registry');
     }
 
-    _default = _sources[name];
+    _default = _sources[name]!;
   }
 
   /// Registers a new source.
@@ -80,7 +78,7 @@ class SourceRegistry {
   ///
   /// Returns an [UnknownSource] if no source with that name has been
   /// registered. If [name] is null, returns the default source.
-  Source operator [](String name) {
+  Source? operator [](String? name) {
     if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
     return UnknownSource(name);

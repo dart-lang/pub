@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
+
+import 'package:collection/collection.dart' show IterableExtension;
 
 import '../entrypoint.dart';
 import '../exceptions.dart';
@@ -18,7 +18,7 @@ class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
-  final Uri _server;
+  final Uri? _server;
 
   RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
@@ -35,9 +35,8 @@ class RelativeVersionNumberingValidator extends Validator {
       existingVersions = [];
     }
     existingVersions.sort((a, b) => a.version.compareTo(b.version));
-    final previousVersion = existingVersions.lastWhere(
-        (id) => id.version < entrypoint.root.version,
-        orElse: () => null);
+    final previousVersion = existingVersions
+        .lastWhereOrNull((id) => id.version < entrypoint.root.version);
     if (previousVersion == null) return;
 
     final previousPubspec =

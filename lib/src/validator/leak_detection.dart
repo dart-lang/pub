@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -75,7 +73,7 @@ class LeakDetectionValidator extends Validator {
       errors.addAll(leaks.take(2).map((leak) => leak.toString()));
 
       final files = leaks
-          .map((leak) => leak.span.sourceUrl.toFilePath(windows: false))
+          .map((leak) => leak.span.sourceUrl!.toFilePath(windows: false))
           .toSet()
           .toList(growable: false)
         ..sort();
@@ -155,8 +153,8 @@ class LeakPattern {
   final List<String> testsWithNoLeaks;
 
   LeakPattern._({
-    @required this.kind,
-    @required String pattern,
+    required this.kind,
+    required String pattern,
     Iterable<Pattern> allowed = const <Pattern>[],
     Map<int, double> entropyThresholds = const <int, double>{},
     Iterable<String> testsWithLeaks = const <String>[],
@@ -177,17 +175,17 @@ class LeakPattern {
   Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
     final source = SourceFile.fromString(content, url: file);
     for (final m in _pattern.allMatches(content)) {
-      if (_allowed.any((s) => m.group(0).contains(s))) {
+      if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
       }
       if (_entropyThresholds.entries
-          .any((entry) => _entropy(m.group(entry.key)) < entry.value)) {
+          .any((entry) => _entropy(m.group(entry.key)!) < entry.value)) {
         continue;
       }
 
       yield LeakMatch(
         this,
-        source.span(m.start, m.start + m.group(0).length),
+        source.span(m.start, m.start + m.group(0)!.length),
       );
     }
   }
@@ -554,7 +552,7 @@ H0M6xpM2q+53wmsN/eYLdgtjgBd3DBmHtPilCkiFICXyaA8z9LkJ
       '$_pemRequireLineBreak$_pemWSP',
       '=(?:(?:[a-zA-Z0-9+/]$_pemWSP){4})',
       _pemEnd('PGP PRIVATE KEY BLOCK'),
-    ].join(''),
+    ].join(),
     testsWithLeaks: [
       '''
 -----BEGIN PGP PRIVATE KEY BLOCK-----
@@ -607,7 +605,7 @@ String _pemBegin(String label) => [
       _pemRequireLineBreak,
       // Allow arbitrary whitespace and escaped line breaks
       _pemWSP,
-    ].join('');
+    ].join();
 
 String _pemBase64Block() => [
       // Require base64 character in blocks of 4, allow arbirary whitespace
@@ -629,10 +627,10 @@ String _pemBase64Block() => [
         // character, allow arbirary whitespace and escaped line breaks
         // in between.
         '(?:[a-zA-Z0-9+/]$_pemWSP){2}(?:=$_pemWSP){2}',
-      ].join(''),
+      ].join(),
       // End blocks
       '))?',
-    ].join('');
+    ].join();
 
 String _pemEnd(String label) => [
       // Require \n, \r, \\r, or \\n, backslash escaping is allowed if the key
@@ -641,10 +639,10 @@ String _pemEnd(String label) => [
       // Allow arbitrary whitespace and escaped line breaks
       _pemWSP,
       '-----END $label-----',
-    ].join('');
+    ].join();
 
 String _pemKeyFormat(String label) => [
       _pemBegin(label),
       _pemBase64Block(),
       _pemEnd(label),
-    ].join('');
+    ].join();
