@@ -36,16 +36,6 @@ Future<void> variations(String name, {Map<String, String> environment}) async {
 }
 
 Future<void> main() async {
-  test('help text', () async {
-    final buffer = StringBuffer();
-    await runPubIntoBuffer(
-      ['outdated', '--help'],
-      buffer,
-    );
-    expectMatchesGoldenFile(
-        buffer.toString(), 'test/outdated/goldens/helptext.txt');
-  });
-
   test('no pubspec', () async {
     await d.dir(appPath, []).create();
     final buffer = StringBuffer();

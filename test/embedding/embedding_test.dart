@@ -57,17 +57,6 @@ Future<void> main() async {
   tearDownAll(() {
     File(snapshot).parent.deleteSync(recursive: true);
   });
-  test('help text', () async {
-    final buffer = StringBuffer();
-    await runEmbedding([''], buffer, exitCode: 64);
-    await runEmbedding(['--help'], buffer);
-    await runEmbedding(['pub'], buffer, exitCode: 64);
-    await runEmbedding(['pub', '--help'], buffer);
-    await runEmbedding(['pub', 'get', '--help'], buffer);
-    await runEmbedding(['pub', 'global'], buffer, exitCode: 64);
-    expectMatchesGoldenFile(
-        buffer.toString(), 'test/embedding/goldens/helptext.txt');
-  });
 
   test('run works, though hidden', () async {
     final buffer = StringBuffer();
