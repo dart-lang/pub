@@ -4,11 +4,6 @@
 
 // @dart=2.10
 
-import 'package:pub/src/ascii_tree.dart' as tree;
-import 'package:pub/src/io.dart';
-import 'package:test/test.dart';
-
-import '../ascii_tree_test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
@@ -16,31 +11,29 @@ import '../test_pub.dart';
 const _validMain = 'main() {}';
 const _invalidMain = 'main() {';
 
-Future<void> variations(String name) async {
-  final buffer = StringBuffer();
-  buffer.writeln(stripColors(
-      tree.fromFiles(listDir(d.sandbox, recursive: true), baseDir: d.sandbox)));
+extension on GoldenTestContext {
+  Future<void> runExecutablesTest() async {
+    await pubGet();
 
-  await pubGet();
-  await runPubIntoBuffer(['deps', '--executables'], buffer);
-  await runPubIntoBuffer(['deps', '--executables', '--dev'], buffer);
-  // The json ouput also lists the exectuables.
-  await runPubIntoBuffer(['deps', '--json'], buffer);
-  // The easiest way to update the golden files is to delete them and rerun the
-  // test.
-  expectMatchesGoldenFile(buffer.toString(), 'test/deps/goldens/$name.txt');
+    await tree();
+
+    await run(['deps', '--executables']);
+    await run(['deps', '--executables', '--dev']);
+    await run(['deps', '--json']);
+  }
 }
 
 void main() {
-  test('skips non-Dart executables', () async {
+  testWithGolden('skips non-Dart executables', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bin', [d.file('foo.py'), d.file('bar.sh')])
     ]).create();
-    await variations('non_dart_executables');
+
+    await ctx.runExecutablesTest();
   });
 
-  test('lists Dart executables, even without entrypoints', () async {
+  testWithGolden('lists Dart executables, without entrypoints', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir(
@@ -48,10 +41,11 @@ void main() {
         [d.file('foo.dart', _validMain), d.file('bar.dart', _invalidMain)],
       )
     ]).create();
-    await variations('dart_executables');
+
+    await ctx.runExecutablesTest();
   });
 
-  test('skips executables in sub directories', () async {
+  testWithGolden('skips executables in sub directories', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bin', [
@@ -59,10 +53,11 @@ void main() {
         d.dir('sub', [d.file('bar.dart', _validMain)])
       ])
     ]).create();
-    await variations('nothing_in_sub_drectories');
+
+    await ctx.runExecutablesTest();
   });
 
-  test('lists executables from a dependency', () async {
+  testWithGolden('lists executables from a dependency', (ctx) async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
       d.dir('bin', [d.file('bar.dart', _validMain)])
@@ -74,10 +69,11 @@ void main() {
       })
     ]).create();
 
-    await variations('from_dependency');
+    await ctx.runExecutablesTest();
   });
 
-  test('lists executables only from immediate dependencies', () async {
+  testWithGolden('lists executables only from immediate dependencies',
+      (ctx) async {
     await d.dir(appPath, [
       d.appPubspec({
         'foo': {'path': '../foo'}
@@ -96,10 +92,10 @@ void main() {
       d.dir('bin', [d.file('qux.dart', _validMain)])
     ]).create();
 
-    await variations('only_immediate');
+    await ctx.runExecutablesTest();
   });
 
-  test('applies formatting before printing executables', () async {
+  testWithGolden('applies formatting before printing executables', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec({
         'foo': {'path': '../foo'},
@@ -119,10 +115,10 @@ void main() {
       d.dir('bin', [d.file('qux.dart', _validMain)])
     ]).create();
 
-    await variations('formatting');
+    await ctx.runExecutablesTest();
   });
 
-  test('dev dependencies', () async {
+  testWithGolden('dev dependencies', (ctx) async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
       d.dir('bin', [d.file('bar.dart', _validMain)])
@@ -136,10 +132,11 @@ void main() {
         }
       })
     ]).create();
-    await variations('dev_dependencies');
+
+    await ctx.runExecutablesTest();
   });
 
-  test('overriden dependencies executables', () async {
+  testWithGolden('overriden dependencies executables', (ctx) async {
     await d.dir('foo-1.0', [
       d.libPubspec('foo', '1.0.0'),
       d.dir('bin', [d.file('bar.dart', _validMain)])
@@ -162,6 +159,7 @@ void main() {
         }
       })
     ]).create();
-    await variations('overrides');
+
+    await ctx.runExecutablesTest();
   });
 }

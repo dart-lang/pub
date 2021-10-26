@@ -12,13 +12,9 @@ import '../../test_pub.dart';
 void main() {
   test('fails if there are extra arguments', () {
     return runPub(
-        args: ['global', 'deactivate', 'foo', 'bar', 'baz'], error: '''
-            Unexpected arguments "bar" and "baz".
-
-            Usage: pub global deactivate <package>
-            -h, --help    Print this usage information.
-
-            Run "pub help" to see global options.
-            ''', exitCode: exit_codes.USAGE);
+      args: ['global', 'deactivate', 'foo', 'bar', 'baz'],
+      error: contains('Unexpected arguments "bar" and "baz".'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

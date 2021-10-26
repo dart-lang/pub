@@ -15,19 +15,6 @@ import 'package:test_process/test_process.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-const _usageString = '''
-Manage uploaders for a package on pub.dartlang.org.
-
-Usage: pub uploader [options] {add/remove} <email>
--h, --help               Print this usage information.
-    --package            The package whose uploaders will be modified.
-                         (defaults to the current package)
--C, --directory=<dir>    Run this in the directory<dir>.
-
-Run "pub help" to see global options.
-See https://dart.dev/tools/pub/cmd/pub-uploader for detailed documentation.
-''';
-
 Future<TestProcess> startPubUploader(PackageServer server, List<String> args) {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   var allArgs = ['uploader', ...args];
@@ -40,22 +27,16 @@ Future<TestProcess> startPubUploader(PackageServer server, List<String> args) {
 void main() {
   group('displays usage', () {
     test('when run with no arguments', () {
-      return runPub(
-          args: ['uploader'], output: _usageString, exitCode: exit_codes.USAGE);
+      return runPub(args: ['uploader'], exitCode: exit_codes.USAGE);
     });
 
     test('when run with only a command', () {
-      return runPub(
-          args: ['uploader', 'add'],
-          output: _usageString,
-          exitCode: exit_codes.USAGE);
+      return runPub(args: ['uploader', 'add'], exitCode: exit_codes.USAGE);
     });
 
     test('when run with an invalid command', () {
       return runPub(
-          args: ['uploader', 'foo', 'email'],
-          output: _usageString,
-          exitCode: exit_codes.USAGE);
+          args: ['uploader', 'foo', 'email'], exitCode: exit_codes.USAGE);
     });
   });
 
