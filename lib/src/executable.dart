@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -202,7 +203,23 @@ Future<int> _runDartProgram(
   }
 }
 
-/// Returns the path to dart program/snapshot to invoke for running [descriptor]
+/// The result of a `getExecutableForCommand` command resolution.
+@sealed
+class DartExecutableWithPackageConfig {
+  /// Can be a .dart file or a incremental snapshot.
+  final String executable;
+
+  /// The package_config.json to run [executable] with. Or <null> if the VM
+  /// should find it according to the standard rules.
+  final String? packageConfig;
+
+  DartExecutableWithPackageConfig({
+    required this.executable,
+    required this.packageConfig,
+  });
+}
+
+/// Returns the dart program/snapshot to invoke for running [descriptor]
 /// resolved according to the package configuration of the package at [root]
 /// (defaulting to the current working directory). Using the pub-cache at
 /// [pubCacheDir] (defaulting to the default pub cache).
@@ -237,7 +254,7 @@ Future<int> _runDartProgram(
 /// * `` and `:` both resolves to `<current>:bin/<current>.dart` or
 ///   `bin/<current>:main.dart`.
 ///
-/// If that doesn't resolve as an existing file throw an exception.
+/// If that doesn't resolve as an existing file, throw an exception.
 ///
 /// ## Snapshotting
 ///
@@ -250,7 +267,7 @@ Future<int> _runDartProgram(
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
 /// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
-Future<String> getExecutableForCommand(
+Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
   String? root,
@@ -270,71 +287,127 @@ Future<String> getExecutableForCommand(
   }
 
   final asDirectFile = p.join(root, asPath);
-  if (fileExists(asDirectFile)) return p.relative(asDirectFile, from: root);
-  if (!fileExists(p.join(root, 'pubspec.yaml'))) {
-    throw CommandResolutionFailedException('Could not find file `$descriptor`');
+  if (fileExists(asDirectFile)) {
+    return DartExecutableWithPackageConfig(
+      executable: p.relative(asDirectFile, from: root),
+      packageConfig: null,
+    );
   }
+  if (!fileExists(p.join(root, 'pubspec.yaml'))) {
+    throw CommandResolutionFailedException._(
+        'Could not find file `$descriptor`',
+        CommandResolutionIssue.fileNotFound);
+  }
+  final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
-    final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
+    // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
+    entrypoint.assertUpToDate();
+  } on DataException {
     try {
-      // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
-      entrypoint.assertUpToDate();
-    } on DataException {
       await warningsOnlyUnlessTerminal(
         () => entrypoint.acquireDependencies(
           SolveType.GET,
           analytics: analytics,
         ),
       );
+    } on ApplicationException catch (e) {
+      throw CommandResolutionFailedException._(
+          e.toString(), CommandResolutionIssue.pubGetFailed);
     }
+  }
 
-    String command;
-    String package;
-    if (descriptor.contains(':')) {
-      final parts = descriptor.split(':');
-      if (parts.length > 2) {
-        throw CommandResolutionFailedException(
-            '[<package>[:command]] cannot contain multiple ":"');
-      }
-      package = parts[0];
-      if (package.isEmpty) package = entrypoint.root.name;
-      command = parts[1];
-    } else {
-      package = descriptor;
-      if (package.isEmpty) package = entrypoint.root.name;
-      command = package;
+  late final String command;
+  String package;
+  if (descriptor.contains(':')) {
+    final parts = descriptor.split(':');
+    if (parts.length > 2) {
+      throw CommandResolutionFailedException._(
+        '[<package>[:command]] cannot contain multiple ":"',
+        CommandResolutionIssue.parseError,
+      );
     }
+    package = parts[0];
+    if (package.isEmpty) package = entrypoint.root.name;
+    command = parts[1];
+  } else {
+    package = descriptor;
+    if (package.isEmpty) package = entrypoint.root.name;
+    command = package;
+  }
 
-    final executable = Executable(package, p.join('bin', '$command.dart'));
-    if (!entrypoint.packageGraph.packages.containsKey(package)) {
-      throw CommandResolutionFailedException(
-          'Could not find package `$package` or file `$descriptor`');
-    }
-    final path = entrypoint.resolveExecutable(executable);
-    if (!fileExists(path)) {
-      throw CommandResolutionFailedException(
-          'Could not find `bin${p.separator}$command.dart` in package `$package`.');
-    }
-    if (!allowSnapshot) {
-      return p.relative(path, from: root);
-    } else {
-      final snapshotPath = entrypoint.pathOfExecutable(executable);
-      if (!fileExists(snapshotPath) ||
-          entrypoint.packageGraph.isPackageMutable(package)) {
+  if (!entrypoint.packageGraph.packages.containsKey(package)) {
+    throw CommandResolutionFailedException._(
+      'Could not find package `$package` or file `$descriptor`',
+      CommandResolutionIssue.packageNotFound,
+    );
+  }
+  final executable = Executable(package, p.join('bin', '$command.dart'));
+  final packageConfig = p.join('.dart_tool', 'package_config.json');
+
+  final path = entrypoint.resolveExecutable(executable);
+  if (!fileExists(path)) {
+    throw CommandResolutionFailedException._(
+      'Could not find `bin${p.separator}$command.dart` in package `$package`.',
+      CommandResolutionIssue.noBinaryFound,
+    );
+  }
+  if (!allowSnapshot) {
+    return DartExecutableWithPackageConfig(
+      executable: p.relative(path, from: root),
+      packageConfig: packageConfig,
+    );
+  } else {
+    final snapshotPath = entrypoint.pathOfExecutable(executable);
+    if (!fileExists(snapshotPath) ||
+        entrypoint.packageGraph.isPackageMutable(package)) {
+      try {
         await warningsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(executable),
         );
+      } on ApplicationException catch (e) {
+        throw CommandResolutionFailedException._(
+          e.toString(),
+          CommandResolutionIssue.compilationFailed,
+        );
       }
-      return p.relative(snapshotPath, from: root);
     }
-  } on ApplicationException catch (e) {
-    throw CommandResolutionFailedException(e.toString());
+    return DartExecutableWithPackageConfig(
+      executable: p.relative(snapshotPath, from: root),
+      packageConfig: packageConfig,
+    );
   }
 }
 
+/// Information on why no executable is returned.
+enum CommandResolutionIssue {
+  /// The command string looked like a file (contained '.' '/' or '\\'), but no
+  /// such file exists.
+  fileNotFound,
+
+  /// The command-string was '<package>:<binary>' or '<package>', and <package>
+  /// was not in dependencies.
+  packageNotFound,
+
+  /// The command string was '<package>:<binary>' or ':<binary>' and <binary>
+  /// was not found.
+  noBinaryFound,
+
+  /// Failed retrieving dependencies (pub get).
+  pubGetFailed,
+
+  /// Pre-compilation of the binary failed.
+  compilationFailed,
+
+  /// The command string did not have a valid form (eg. more than one ':').
+  parseError,
+}
+
+/// Indicates that a command string did not resolve to an executable.
+@sealed
 class CommandResolutionFailedException implements Exception {
   final String message;
-  CommandResolutionFailedException(this.message);
+  final CommandResolutionIssue issue;
+  CommandResolutionFailedException._(this.message, this.issue);
 
   @override
   String toString() {
