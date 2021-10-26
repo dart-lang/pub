@@ -5,7 +5,6 @@
 // @dart=2.10
 import 'package:args/command_runner.dart';
 import 'package:pub/src/command_runner.dart' show PubCommandRunner;
-import 'package:test/test.dart';
 
 import 'golden_file.dart';
 
@@ -41,8 +40,8 @@ Iterable<List<String>> _extractCommands(
 Future<void> main() async {
   final cmds = _extractCommands([], PubCommandRunner().commands.values);
   for (final c in cmds) {
-    test('pub ${c.join(' ')} --help', () async {
-      await runPubGoldenTest('pub-${c.join('-')}', [...c, '--help']);
+    testWithGolden('pub ${c.join(' ')} --help', (ctx) async {
+      await ctx.run([...c, '--help']);
     });
   }
 }
