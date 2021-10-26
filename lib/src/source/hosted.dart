@@ -193,7 +193,9 @@ class HostedSource extends Source {
       {String containingPath}) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
     if (description is String) {
-      assert(description == name);
+      if (description != name) {
+        throw FormatException('The description should be the same as the name');
+      }
       return PackageId(
           name, this, version, _HostedDescription(name, defaultUrl));
     }
@@ -216,14 +218,14 @@ class HostedSource extends Source {
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
   _HostedDescription _parseDescription(
-      String packageName, description, LanguageVersion version) {
+      String packageName, description, LanguageVersion languageVersion) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
       return _HostedDescription(packageName, defaultUrl);
     }
 
-    final canUseShorthandSyntax =
-        version == null || version >= _minVersionForShorterHostedSyntax;
+    final canUseShorthandSyntax = languageVersion == null ||
+        languageVersion >= _minVersionForShorterHostedSyntax;
 
     if (description is String) {
       // Old versions of pub (pre Dart 2.15) interpret `hosted: foo` as
@@ -261,7 +263,7 @@ class HostedSource extends Source {
 
     if (name is! String) {
       throw FormatException("The 'name' key must have a string value without "
-          'a minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax.');
+          'a minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax.0 or higher.');
     }
 
     var url = defaultUrl;
