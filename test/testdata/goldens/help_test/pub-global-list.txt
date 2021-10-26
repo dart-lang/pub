@@ -1,8 +1,0 @@
-$ pub global list --help
-List globally activated packages.
-
-Usage: pub global list <subcommand> [arguments...]
--h, --help    Print this usage information.
-
-Run "pub help" to see global options.
-

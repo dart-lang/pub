@@ -1,8 +1,0 @@
-$ pub login --help
-Log into pub.dev.
-
-Usage: pub login
--h, --help    Print this usage information.
-
-Run "pub help" to see global options.
-
