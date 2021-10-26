@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -375,6 +376,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
 }
 
+/// Information on why no executable is returned.
 enum CommandResolutionIssue {
   /// The command string looked like a file (contained '.' '/' or '\\'), but no
   /// such file exists.
@@ -398,6 +400,8 @@ enum CommandResolutionIssue {
   parseError,
 }
 
+/// Indicates that a command string did not resolve to an executable.
+@sealed
 class CommandResolutionFailedException implements Exception {
   final String message;
   final CommandResolutionIssue issue;
