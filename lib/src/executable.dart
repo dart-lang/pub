@@ -339,7 +339,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-  final packageConfig = p.join(root, '.dart_tool', 'package_config.json');
+  final packageConfig = p.join('.dart_tool', 'package_config.json');
 
   final path = entrypoint.resolveExecutable(executable);
   if (!fileExists(path)) {
