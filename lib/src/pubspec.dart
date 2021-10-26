@@ -441,10 +441,8 @@ class Pubspec extends PubspecBase {
       VersionConstraint versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
-        descriptionNode = nameNode;
         sourceName = _sources!.defaultSource.name;
       } else if (spec is String) {
-        descriptionNode = nameNode;
         sourceName = _sources!.defaultSource.name;
         versionConstraint = _parseVersionConstraint(specNode);
       } else if (spec is Map) {
@@ -468,7 +466,6 @@ class Pubspec extends PubspecBase {
         } else if (sourceNames.isEmpty) {
           // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
-          descriptionNode = nameNode;
         }
 
         sourceName ??= sourceNames.single;
@@ -491,8 +488,12 @@ class Pubspec extends PubspecBase {
           pubspecPath = path.fromUri(_location);
         }
 
-        return _sources![sourceName]!.parseRef(name, descriptionNode?.value,
-            containingPath: pubspecPath);
+        return _sources![sourceName]!.parseRef(
+          name,
+          descriptionNode?.value,
+          containingPath: pubspecPath,
+          languageVersion: languageVersion,
+        );
       }, targetPackage: name);
 
       dependencies[name] =
@@ -611,6 +612,9 @@ class Pubspec extends PubspecBase {
     try {
       return fn();
     } on FormatException catch (e) {
+      // If we already have a pub exception with a span, re-use that
+      if (e is PubspecException) rethrow;
+
       var msg = 'Invalid $description';
       if (targetPackage != null) {
         msg = '$msg in the "$name" pubspec on the "$targetPackage" dependency';

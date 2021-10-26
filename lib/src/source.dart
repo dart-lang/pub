@@ -8,6 +8,7 @@ import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
+import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
@@ -76,16 +77,27 @@ abstract class Source {
   /// should be interpreted. This will be called during parsing to validate that
   /// the given [description] is well-formed according to this source, and to
   /// give the source a chance to canonicalize the description.
+  /// For simple hosted dependencies like `foo:` or `foo: ^1.2.3`, the
+  /// [description] may also be `null`.
   ///
   /// [containingPath] is the path to the pubspec where this description
   /// appears. It may be `null` if the description is coming from some in-memory
   /// source (such as pulling down a pubspec from pub.dartlang.org).
   ///
+  /// [languageVersion] is the minimum Dart version parsed from the pubspec's
+  /// `environment` field. Source implementations may use this parameter to only
+  /// support specific syntax for some versions.
+  ///
   /// The description in the returned [PackageRef] need bear no resemblance to
   /// the original user-provided description.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageRef parseRef(String name, description, {String? containingPath});
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    required LanguageVersion languageVersion,
+  });
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///

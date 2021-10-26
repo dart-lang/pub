@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
@@ -33,7 +34,8 @@ class SdkSource extends Source {
 
   /// Parses an SDK dependency.
   @override
-  PackageRef parseRef(String name, description, {String? containingPath}) {
+  PackageRef parseRef(String name, description,
+      {String? containingPath, LanguageVersion? languageVersion}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
